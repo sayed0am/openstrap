@@ -312,9 +312,9 @@ internal object SleepCopy {
     /** A deleted entry's name: "Night of Wed 29 Oct" or "Nap, Thu 30 Oct". */
     fun deletedName(nap: Boolean, day: String): String = if (nap) "Nap, $day" else "Night of $day"
 
-    /** Under it: "23:20 to 07:21, 6 days left". */
+    /** Under it, on two lines so neither wraps beside Restore: "23:20 to 07:21", then "6 days left". */
     fun deletedLine(from: String, to: String, daysLeft: Int): String =
-        "${span(from, to)}, ${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
+        "${span(from, to)}\n${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
 
     /** Under a nap whose heart rate stayed as when sitting still (edit spec 4.5). */
     fun stillNap(bpm: Int): String = "Heart rate stayed at $bpm, as when you sit still. Might not be a nap."
