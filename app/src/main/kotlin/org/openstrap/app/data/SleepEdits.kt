@@ -171,6 +171,23 @@ object SleepEdits {
     fun daysLeft(edit: SleepEdit, now: Long): Int =
         ((KEEP_DAYS * 86_400L - (now - edit.editedAt) + 86_399) / 86_400).toInt().coerceIn(1, KEEP_DAYS)
 
+    /** A nap's heart rate this close to the hour before it reads as sitting still, not sleep ([stillHeartRate]). */
+    const val STILL_BPM = 5f
+
+    /**
+     * The nap's average heart rate when it looks like sitting still rather than a nap (edit spec 4.5): within
+     * [STILL_BPM] of the hour before it, and no deep sleep. [heartRate] is (time, bpm) readings around the nap; null
+     * when it doesn't look like that, or there's too little to tell. Nothing is removed by it, the nap only says so.
+     */
+    fun stillHeartRate(heartRate: List<Pair<Long, Float>>, start: Long, end: Long, deepSeconds: Long): Int? {
+        if (deepSeconds > 0) return null
+        val during = heartRate.filter { it.first in start..end }.map { it.second }
+        val before = heartRate.filter { it.first in start - 3600 until start }.map { it.second }
+        if (during.isEmpty() || before.isEmpty()) return null
+        val avg = during.average().toFloat()
+        return if (abs(avg - before.average().toFloat()) <= STILL_BPM) Math.round(avg) else null
+    }
+
     /**
      * What's left of a delete [edit] once its session has gone for good: a marker with no times, so a later resync of
      * that sleep from the strap is dropped again instead of coming back.

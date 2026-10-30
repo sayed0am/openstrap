@@ -553,6 +553,11 @@ internal fun NapsDetail(
                             ChartTitle(SleepCopy.span(clock(nap.start), clock(nap.end)), TodayCopy.duration(nap.end - nap.start))
                             val detected = state.napsAsDetected[nap.start]
                             val stages = state.napStages[nap.start].orEmpty()
+                            // Heart rate as in the hour before and no deep sleep: maybe sitting still, said, never removed.
+                            val deep = state.napBreakdowns[nap.start]?.byStage?.get(org.openstrap.app.data.db.SleepStage.DEEP) ?: 0L
+                            SleepEdits.stillHeartRate(state.heartRate.map { it.x to it.y }, nap.start, nap.end, deep)?.let {
+                                Caption(SleepCopy.stillNap(it), Modifier.padding(bottom = 10.dp))
+                            }
                             if (stages.isEmpty()) Caption(SleepCopy.NAP_NO_STAGES)
                             else {
                                 StageStrip(stages, height = 8.dp)

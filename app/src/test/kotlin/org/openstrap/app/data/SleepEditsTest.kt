@@ -148,6 +148,17 @@ class SleepEditsTest {
         assertFalse(SleepEdits.expired(moved(main, 1, 2), now + 30 * 86_400L))
     }
 
+    @Test fun `a nap whose heart rate stayed as in the hour before, with no deep sleep, may not be a nap`() {
+        fun readings(before: Float, during: Float) =
+            (0 until 12).map { nap.start - 3600 + it * 300L to before } + (0 until 7).map { nap.start + it * 300L to during }
+        assertEquals(72, SleepEdits.stillHeartRate(readings(74f, 72f), nap.start, nap.end, deepSeconds = 0))
+        // A real drop into sleep, or any deep sleep, isn't flagged.
+        assertNull(SleepEdits.stillHeartRate(readings(74f, 62f), nap.start, nap.end, deepSeconds = 0))
+        assertNull(SleepEdits.stillHeartRate(readings(74f, 72f), nap.start, nap.end, deepSeconds = 600))
+        // Nothing to compare with says nothing.
+        assertNull(SleepEdits.stillHeartRate(readings(74f, 72f).filter { it.first >= nap.start }, nap.start, nap.end, deepSeconds = 0))
+    }
+
     @Test fun `a picked clock is read on the day nearest the session`() {
         assertEquals(at(14, 5), SleepEdits.atNear(14 * 60 + 5, nap.start, zone))
         // A late nap running past midnight: 00:20 is the next day's.

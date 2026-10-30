@@ -313,6 +313,9 @@ internal object SleepCopy {
     fun deletedLine(from: String, to: String, daysLeft: Int): String =
         "${span(from, to)}, ${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
 
+    /** Under a nap whose heart rate stayed as when sitting still (edit spec 4.5). */
+    fun stillNap(bpm: Int): String = "Heart rate stayed at $bpm, as when you sit still. Might not be a nap."
+
     /** The You page's row value. */
     fun deletedCount(n: Int): String = if (n == 1) "1 you can restore" else "$n you can restore"
 }
