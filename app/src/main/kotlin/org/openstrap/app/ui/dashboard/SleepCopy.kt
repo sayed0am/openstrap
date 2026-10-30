@@ -281,7 +281,7 @@ internal object SleepCopy {
     const val DELETE_WHAT = "It won't count toward your totals, scores or Health Connect. Heart rate and the other readings stay."
 
     /** Where to undo it later. */
-    const val DELETE_RESTORE = "You can bring it back from You, Data, Deleted sleep for 7 days."
+    const val DELETE_RESTORE = "You can bring it back from You, Your data, Deleted sleep for 7 days."
 
     /** The snackbar after a delete, with Undo. */
     fun deleted(nap: Boolean, today: Boolean, start: String): String = when {
@@ -305,6 +305,9 @@ internal object SleepCopy {
 
     const val DELETED_INTRO = "Sleep and naps you deleted in the last 7 days. Restoring puts it back in your totals, scores and Health Connect."
     const val DELETED_FOOT = "After 7 days they are deleted for good, even if the strap syncs them again."
+
+    /** The Deleted sleep page once nothing is left in it. */
+    const val DELETED_NONE = "Nothing deleted in the last 7 days."
 
     /** A deleted entry's name: "Night of Wed 29 Oct" or "Nap, Thu 30 Oct". */
     fun deletedName(nap: Boolean, day: String): String = if (nap) "Nap, $day" else "Night of $day"

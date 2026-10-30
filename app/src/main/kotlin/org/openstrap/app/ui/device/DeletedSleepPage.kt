@@ -46,7 +46,9 @@ fun DeletedSleepPage(
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Deleted sleep", onBack) }
         item { Text(SleepCopy.DELETED_INTRO, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp)) }
-        item {
+        // Once the last one is restored the page stays open, saying so, with no empty panel under it.
+        if (deleted.isEmpty()) item { Text(SleepCopy.DELETED_NONE, color = Color.White, style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp)) }
+        else item {
             PageRows {
                 deleted.forEachIndexed { i, r ->
                     // A night is named by the evening it began, a nap by its own day.
@@ -60,6 +62,6 @@ fun DeletedSleepPage(
                 }
             }
         }
-        item { PageNote(SleepCopy.DELETED_FOOT) }
+        if (deleted.isNotEmpty()) item { PageNote(SleepCopy.DELETED_FOOT) }
     }
 }

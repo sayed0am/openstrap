@@ -97,7 +97,7 @@ direct DAO sleep reads outside those two places.
 
 - Delete opens a sheet once: "Delete last night's sleep?" or "Delete this nap?", the times, then "It won't count
   toward your totals, scores or Health Connect. Heart rate and the other readings stay." and "You can bring it back
-  from You, Data, Deleted sleep for 7 days." Cancel and a red Delete with a trash icon.
+  from You, Your data, Deleted sleep for 7 days." Cancel and a red Delete with a trash icon.
 - After it: a snackbar "Last night's sleep deleted" or "Nap at 10:40 deleted" with **Undo** for 8 s.
 - Main sleep deleted: the detail shows "No score" and a card "No sleep recorded" that says which times were deleted
   and that recovery works without last night, with **Restore**. The day strip loses its dot.
@@ -105,7 +105,7 @@ direct DAO sleep reads outside those two places.
 
 ### 4.4 Deleted sleep [DeletedList]
 
-- You, Data, a row **Deleted sleep** (shown only when there is something in it).
+- You, Your data, a row **Deleted sleep** (shown only when there is something in it).
 - Each entry: night or nap, its day, its times, how long until it's gone ("6 days left"), and **Restore**.
 - **Deleted for good after 7 days.** A daily job (the existing sync worker) removes the session and its stages for
   every `deleted` edit older than 7 days, and the entry leaves the list. The `sleep_edit` row stays as a marker with
@@ -160,7 +160,7 @@ removed automatically.
 1. `sleep_edit`, the migration and `SleepEdits` with tests (no visible change, naps keep working).
 2. Route every reader through the repository wrapper.
 3. Main sleep Adjust times with the shared sheet.
-4. Delete, Undo, the no sleep state, then Deleted sleep in You, Data.
+4. Delete, Undo, the no sleep state, then Deleted sleep in You, Your data.
 5. The false nap hint.
 
 ## 9. Decisions

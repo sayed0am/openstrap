@@ -133,7 +133,7 @@ class HealthRepository(private val dao: HealthDao) {
         if (restored == null) dao.deleteSleepEdit(current.strapStart) else dao.upsertSleepEdit(restored)
     }
 
-    /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first, for You, Data, Deleted sleep. */
+    /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first, for You, Your data, Deleted sleep. */
     fun deletedSleep(): Flow<List<SleepEdits.Resolved>> = sleep.deleted { System.currentTimeMillis() / 1000 }
     fun spo2(w: DayWindow): Flow<List<Spo2Sample>> = dao.spo2(w.from, w.to)
     /**

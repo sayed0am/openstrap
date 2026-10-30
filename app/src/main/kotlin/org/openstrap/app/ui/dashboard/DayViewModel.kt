@@ -177,7 +177,7 @@ class DayViewModel(
         viewModelScope.launch { repo.restoreSleep(strap); onSleepEdited(strap.start) }
     }
 
-    /** Sleep and naps deleted in the last 7 days, newest first, for You, Data, Deleted sleep. */
+    /** Sleep and naps deleted in the last 7 days, newest first, for You, Your data, Deleted sleep. */
     val deletedSleep: StateFlow<List<SleepEdits.Resolved>> = repo.deletedSleep()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
