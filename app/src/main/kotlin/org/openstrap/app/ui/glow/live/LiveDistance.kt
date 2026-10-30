@@ -85,6 +85,8 @@ internal fun LiveDistanceScreen(
     liveView: Int?,
     onLiveView: (Int) -> Unit,
     kcal: WorkoutRecorder.Kcal?,
+    /** Run reps: Skip the rep or the rest, or start the reps after a warm up. */
+    onSkip: () -> Unit = {},
 ) {
     val pager = rememberPagerState(initialPage = LiveView.of(liveView).ordinal) { LiveView.entries.size }
     var viewApplied by rememberSaveable { mutableStateOf(false) }
@@ -113,10 +115,16 @@ internal fun LiveDistanceScreen(
     val active = activeSeconds(r)
     val averagePace = if (distance >= 50) active / (distance / 1000.0) else null
     val accuracy = route.lastOrNull()?.accuracy
+    val reps = r.structure is org.openstrap.app.data.Structure.Reps
     val gps = WorkoutCopy.gpsPill(accuracy) to if (accuracy != null && accuracy <= Route.MAX_ACCURACY_M) TrendGood else TrendBad
     LiveFrame(
         r, color, connected, contentPadding, controls,
-        lap = if (!r.paused) ({ LapButton(onLap, label = true) }) else null,
+        // Reps skip instead of marking laps: the rounds are the laps.
+        lap = when {
+            r.paused -> null
+            reps -> ({ LapButton(onSkip, label = true, text = "Skip") })
+            else -> ({ LapButton(onLap, label = true) })
+        },
         time = active, battery = (connection as? ConnectionState.Connected)?.batteryPercent, status = listOf(gps),
         paused = {
             LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
@@ -132,7 +140,7 @@ internal fun LiveDistanceScreen(
                     Modifier.fillMaxWidth().onSizeChanged { pageHeight = with(density) { it.height.toDp() } },
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    PaceCard(pace, averagePace, splits, speed)
+                    if (reps) RepCard(r, route, WorkoutCopy.readings(history, recent), bpm) else PaceCard(pace, averagePace, splits, speed)
                     HeartStrip(bpm, r.maxHeartRate, color, r.paused)
                     LiveFigures(listOf(
                         Glance.kmFigure(distance) to "km",

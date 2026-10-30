@@ -114,13 +114,16 @@ fun GlowWorkoutLiveScreen(
     exercises: List<org.openstrap.app.data.db.ExerciseRow> = emptyList(),
     onExercise: (String?) -> Unit = {},
     onLogSet: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit = { _, _, _, _ -> },
+    /** Rounds: Skip, Skip rest, Done or Start rounds; and +10 s on a rest. */
+    onSkip: () -> Unit = {},
+    onAddRest: () -> Unit = {},
 ) {
     val controls = LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
     // Each kind of workout has its own screen (workouts spec 2.3); the rest keep this one until theirs is built. Split
     // across a fold, this one keeps the figures while the other half shows the heart card.
     val family = Workouts.family(r.workout.sportType)
     if (!split && family == Workouts.Family.Distance && r.workout.useGps) {
-        LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal)
+        LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip)
         return
     }
     if (!split && family == Workouts.Family.Strength) {
@@ -130,7 +133,12 @@ fun GlowWorkoutLiveScreen(
         )
         return
     }
-    if (!split && (family == Workouts.Family.IndoorCardio || family == Workouts.Family.Distance)) {
+    if (!split && family == Workouts.Family.Intervals && r.structure != null) {
+        LiveIntervalsScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, onSkip, onAddRest)
+        return
+    }
+    // HIIT's Free has no timer: heart rate only, laps mark the rounds.
+    if (!split && (family == Workouts.Family.IndoorCardio || family == Workouts.Family.Distance || family == Workouts.Family.Intervals)) {
         LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal)
         return
     }

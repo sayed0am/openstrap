@@ -71,6 +71,9 @@ fun GlowChooseScreen(
     onReady: (Int) -> Unit,
     onAllSports: () -> Unit,
     onBack: () -> Unit,
+    /** The most recent saved workout, as one row; opening it opens Ready on it. */
+    saved: ChooseSaved? = null,
+    onSaved: () -> Unit = {},
 ) {
     BackHandler(onBack = onBack)
     WorkoutPage(Color.Transparent, contentPadding, pinned = { PageButton("All sports", onAllSports, Modifier.fillMaxWidth(), icon = SportIcons.Search) }) {
@@ -90,8 +93,15 @@ fun GlowChooseScreen(
                 }
             }
         }
+        // A list row, so it never looks like the recent cards above it.
+        if (saved != null) ListPanel {
+            PageRow(saved.name, value = saved.line, below = true, divider = false, icon = SportIcons.Lap, onClick = onSaved)
+        }
     }
 }
+
+/** A saved workout on Choose: its name and what it is ("Saved, 6 × 400 m run"). */
+data class ChooseSaved(val name: String, val line: String)
 
 /**
  * Your usual: a glow card lit from below in the sport's colour, its name, what you did last time, and Start inside

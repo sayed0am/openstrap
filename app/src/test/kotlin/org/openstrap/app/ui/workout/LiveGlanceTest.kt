@@ -128,6 +128,28 @@ class LiveGlanceTest {
         assertEquals("Set 1", g.shortLabel)
     }
 
+    private fun hiit(m: IntervalMoment) = run(target = null).copy(sportType = 49, gps = false, distanceMeters = null, interval = m)
+
+    @Test fun `intervals work in red with the seconds left, rest in green with Skip rest`() {
+        val work = Glance.of(hiit(IntervalMoment(org.openstrap.app.data.Phase.Work(2, now - 6, 26), 3, 8, left = 14, nextRest = 10)))
+        assertEquals("14", work.figure)
+        assertEquals("Work, round 3 of 8", work.line1)
+        assertEquals("Then 10 s rest, 142 bpm", work.line2)
+        assertEquals(GlanceTint.Work, work.tint)
+        assertEquals(GlanceAction.Pause, work.action)
+        val rest = Glance.of(hiit(IntervalMoment(org.openstrap.app.data.Phase.Rest(2, now - 3, 36), 4, 8, left = 7, drop = 19)))
+        assertEquals("Rest, round 4 next", rest.line1)
+        assertEquals("142 bpm, down 19", rest.line2)
+        assertEquals(GlanceTint.Rest, rest.tint)
+        assertEquals(GlanceAction.Skip, rest.action)
+        assertEquals("Skip rest", rest.actionLabel)
+        assertEquals("+10 s", rest.secondLabel)
+        val emom = Glance.of(hiit(IntervalMoment(org.openstrap.app.data.Phase.Work(0, now, null), 1, 12, left = 40, everyMinute = true)))
+        assertEquals("Done", emom.actionLabel)
+        val warm = Glance.of(hiit(IntervalMoment(org.openstrap.app.data.Phase.WarmUp, 1, 8)))
+        assertEquals("Start rounds", warm.actionLabel)
+    }
+
     @Test fun `paces read as clocks`() {
         assertEquals("5:42", Glance.paceClock(342.0))
         assertNull(Glance.paceClock(null))

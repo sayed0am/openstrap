@@ -59,6 +59,20 @@ class StartCopyTest {
         assertEquals("23 Oct", StartCopy.dayWord(today.minusDays(7), today, Locale.UK))
     }
 
+    @Test fun `rounds are named by their preset, else by what they are`() {
+        assertEquals("Tabata", StartCopy.structureName(org.openstrap.app.data.Structure.TABATA))
+        assertEquals("Tabata", StartCopy.structureName(org.openstrap.app.data.Structure.TABATA.warm(true)))
+        assertEquals("40 / 20", StartCopy.structureName(org.openstrap.app.data.Structure.FORTY_TWENTY))
+        assertEquals("6 × 400 m", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(400, null, 90, 6)))
+        assertEquals("8 × 2 min", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(null, 120, 60, 8)))
+        assertEquals("Saved, 6 × 400 m run", StartCopy.savedLine(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 1))
+        assertEquals(230L, StartCopy.totalTime(org.openstrap.app.data.Structure.TABATA))
+        // Reps fit a run, rounds fit HIIT, never the other way round.
+        assertEquals(true, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 2))
+        assertEquals(false, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.TABATA, 1))
+        assertEquals(true, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.TABATA, 49))
+    }
+
     @Test fun `GPS says how close the fix is`() {
         assertEquals("Finding GPS", StartCopy.gpsStatus(null))
         assertEquals("Finding GPS, ±48 m", StartCopy.gpsStatus(48f))

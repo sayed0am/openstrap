@@ -489,6 +489,8 @@ private fun AppRoot(
     var readyPicking by rememberSaveable { mutableStateOf(false) }
     // Choose, the first screen of a workout (workouts spec 2.1), open under Ready while it shows.
     var choosing by rememberSaveable { mutableStateOf(false) }
+    // The rounds Ready opens on when a saved workout was picked on Choose.
+    var readyStructure by rememberSaveable { mutableStateOf<String?>(null) }
     // The workout at a glance for the Today hero and the floating bar (workouts spec 2.10). Its State is passed down,
     // not read here, so only those two recompose as it ticks.
     val liveGlance = remember { org.openstrap.app.ui.workout.liveGlance(container.workout, container.strap.liveHeartRate, container.strap.connection) }
@@ -502,7 +504,8 @@ private fun AppRoot(
             org.openstrap.app.ui.workout.GlanceAction.KeepGoing -> container.workout.keepGoing()
             org.openstrap.app.ui.workout.GlanceAction.SetDone -> container.workout.setDone()
             org.openstrap.app.ui.workout.GlanceAction.StartSet -> container.workout.startSet()
-            org.openstrap.app.ui.workout.GlanceAction.AddRest -> container.workout.extendRest()
+            org.openstrap.app.ui.workout.GlanceAction.AddRest -> container.workout.let { if ((it.state.value as? org.openstrap.app.device.WorkoutState.Recording)?.strength == true) it.extendRest() else it.addRest() }
+            org.openstrap.app.ui.workout.GlanceAction.Skip -> container.workout.skipPhase()
             // Ending asks on the live screen, as it does there.
             org.openstrap.app.ui.workout.GlanceAction.End, org.openstrap.app.ui.workout.GlanceAction.Open -> container.workout.minimized.value = false
         }
@@ -1267,9 +1270,11 @@ private fun AppRoot(
         WorkoutLayer(
             container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, requestBluetooth, requestLocation,
             onReadySport = { readySport = it },
-            onCloseReady = { readySport = null; readyPicking = false },
+            onCloseReady = { readySport = null; readyPicking = false; readyStructure = null },
             choosing = choosing,
-            onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick },
+            onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick; readyStructure = null },
+            readyStructure = readyStructure,
+            onOpenSaved = { sport, structure -> readySport = sport; readyPicking = false; readyStructure = structure },
             onCloseChoose = { choosing = false },
             glance = liveGlance, onGlanceAction = onGlanceAction,
             capsuleHidden = liveHeroShown && tab == Tab.Today.ordinal && todayStack.isEmpty() && pages.isEmpty(),
@@ -1420,6 +1425,9 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     /** Opens Ready over Choose for a sport, or on the sport picker ([pick], All sports). */
     onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
     onCloseChoose: () -> Unit = {},
+    /** The rounds Ready opens on, from a saved workout picked on Choose; null for last time's. */
+    readyStructure: String? = null,
+    onOpenSaved: (sport: Int, structure: String) -> Unit = { s, _ -> onReadySport(s) },
     /** The workout at a glance, for the floating bar, read only there. */
     glance: androidx.compose.runtime.State<org.openstrap.app.ui.workout.LiveGlance?> = androidx.compose.runtime.mutableStateOf(null),
     onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = {},
@@ -1428,6 +1436,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
 ) {
     val session = container.workout
     val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
+    val saved by remember { session.savedWorkouts() }.collectAsStateWithLifecycle(emptyList())
     val context = androidx.compose.ui.platform.LocalContext.current
     val viewScope = rememberCoroutineScope()
     /**
@@ -1478,6 +1487,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                             onStartSet = session::startSet, onSetDone = session::setDone, onExtendRest = session::extendRest,
                             onLap = session::lap,
                             exercises = exercises, onExercise = session::setExercise, onLogSet = session::logSet,
+                            onSkip = session::skipPhase, onAddRest = session::addRest,
                             split = tabletop || bookHinge != null,
                             liveView = liveView, onLiveView = { v -> viewScope.launch { container.settings.setWorkoutLiveView(v) } },
                             kcal = kcal,
@@ -1541,6 +1551,10 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 },
                 onReady = { onOpenReady(it, false) },
                 onAllSports = { onOpenReady(sports.usual ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType, true) },
+                saved = saved.firstOrNull()?.let { w ->
+                    org.openstrap.app.data.Structure.parse(w.structure)?.let { s -> org.openstrap.app.ui.glow.ChooseSaved(w.name, org.openstrap.app.ui.workout.StartCopy.savedLine(s, w.sport)) }
+                },
+                onSaved = { saved.firstOrNull()?.let { w -> onOpenSaved(w.sport, w.structure) } },
                 onBack = onCloseChoose,
             )
         }
@@ -1561,6 +1575,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             org.openstrap.app.ui.glow.GlowWorkoutReadyScreen(
                 sport, readyPicking, connection, live, padding,
                 settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(), goalChips = goalChips,
+                saved = saved, onSaveIntervals = { name, code -> session.saveWorkout(name, sport, code) }, structure = readyStructure,
                 recentSports = recentSports, sides = sides,
                 kcalTargets = profile?.let { org.openstrap.app.data.EnergyExpenditure.bmrPerMinute(it, it.age()) } != null,
                 onSide = { s, indoor ->

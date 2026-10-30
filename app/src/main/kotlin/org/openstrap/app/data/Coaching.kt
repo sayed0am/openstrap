@@ -65,12 +65,12 @@ enum class Cue(val pattern: List<Int>) {
     BelowTarget(listOf(700)),
     /** Back in the target: one short pulse. */
     BackInTarget(listOf(200)),
-    /** Halfway through a time target: two short pulses. */
-    Halfway(listOf(150, 150, 150)),
-    /** Time or kcal target reached: long, short, long. */
-    GoalReached(listOf(500, 200, 200, 200, 500)),
-    /** Strength: rest is over, start the next set. Two medium pulses. */
-    RestOver(listOf(400, 150, 400)),
+    /** Halfway through a time or distance goal: one long ([WorkoutBuzz.LONG]). */
+    Halfway(WorkoutBuzz.LONG),
+    /** A time, distance or kcal goal reached: three short ([WorkoutBuzz.GOAL]). */
+    GoalReached(WorkoutBuzz.GOAL),
+    /** Strength: rest is over, start the next set. Two short, as work starting is everywhere ([WorkoutBuzz.WORK_STARTS]). */
+    RestOver(WorkoutBuzz.WORK_STARTS),
 }
 
 /**

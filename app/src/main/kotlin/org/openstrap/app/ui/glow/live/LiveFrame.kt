@@ -201,9 +201,9 @@ private fun Labelled(label: String, show: Boolean, button: @Composable () -> Uni
 
 /** The controls row's left button: Lap, which marks a lap, with its label on the labelled screens. */
 @Composable
-internal fun LapButton(onLap: () -> Unit, label: Boolean = false) = Labelled("Lap", label) {
+internal fun LapButton(onLap: () -> Unit, label: Boolean = false, text: String = "Lap") = Labelled(text, label) {
     FlatButton(Raised, 64.dp, onClick = onLap) {
-        Icon(SportIcons.Lap, "Lap", tint = Color.White, modifier = Modifier.size(22.dp))
+        Icon(if (text == "Lap") SportIcons.Lap else AppIcons.PlayFill, text, tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }
 

@@ -61,6 +61,8 @@ internal fun LiveIndoorScreen(
         time = active, battery = (connection as? ConnectionState.Connected)?.batteryPercent,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, recent, figures) },
     ) {
+        // Time reps on the treadmill side: the rep above the heart.
+        if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
         WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
         LiveFigures(figures, Modifier.padding(top = 4.dp))
     }

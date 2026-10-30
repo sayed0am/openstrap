@@ -79,6 +79,37 @@ object StartCopy {
     /** The sets stepper's value: the count, or Open for no plan. */
     fun setsValue(sets: Int?): String = sets?.toString() ?: "Open"
 
+    /** HIIT's presets on Ready, null for Free: their names and what each is. */
+    val PRESETS: List<Triple<org.openstrap.app.data.Structure?, String, String>> = listOf(
+        Triple(org.openstrap.app.data.Structure.TABATA, "Tabata", "20 s on, 10 off, 8 rounds"),
+        Triple(org.openstrap.app.data.Structure.FORTY_TWENTY, "40 / 20", "10 rounds"),
+        Triple(org.openstrap.app.data.Structure.EVERY_MINUTE, "Every minute", "12 rounds, rest is what's left"),
+        Triple(null, "Free", "No timer, heart rate only"),
+    )
+
+    const val INTERVALS_STATUS = "The strap buzzes at every switch, so the phone can stay on the floor."
+    const val WARM_UP_NOTE = "No timer until you start the rounds."
+
+    /** A structure's name: a preset's ("Tabata"), else what it is ("6 × 400 m", "8 × 2 min", "30 / 15, 6 rounds"). */
+    fun structureName(s: org.openstrap.app.data.Structure): String {
+        PRESETS.firstOrNull { it.first?.code == s.warm(false).code }?.let { return it.second }
+        return when (s) {
+            is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}, ${s.rounds} rounds"
+            is org.openstrap.app.data.Structure.EveryMinute -> "Every ${restText(s.period)}, ${s.rounds} rounds"
+            is org.openstrap.app.data.Structure.Reps -> "${s.rounds} × " + (s.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: restText(s.seconds ?: 0))
+        }
+    }
+
+    /** A saved workout on Choose: "Saved, 6 × 400 m run". */
+    fun savedLine(s: org.openstrap.app.data.Structure, sport: Int): String = "Saved, ${structureName(s)} ${Workouts.shortName(sport).lowercase()}"
+
+    /** All of a timed structure's time, rounds of work and the rests between, for Ready: "4:00". */
+    fun totalTime(s: org.openstrap.app.data.Structure): Long? = when (s) {
+        is org.openstrap.app.data.Structure.Timed -> s.rounds * s.work + (s.rounds - 1) * s.rest
+        is org.openstrap.app.data.Structure.EveryMinute -> s.rounds * s.period
+        is org.openstrap.app.data.Structure.Reps -> null
+    }
+
     /** A recent sport's card on Choose: last time's settings in one line ("5 sets, 90 s rest", "45 min", "Just run"). */
     fun settingsLine(type: Int, s: SportSettings): String {
         if (Workouts.family(type) == Workouts.Family.Strength) {

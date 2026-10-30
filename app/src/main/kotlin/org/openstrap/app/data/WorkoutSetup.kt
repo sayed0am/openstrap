@@ -116,6 +116,8 @@ object WorkoutSetup {
             sportType = sport, askToEnd = settings.askToEnd, target = goal, useGps = gps, keepRoute = gps && settings.keepRoute,
             rest = (Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT).takeIf { strength },
             setsTarget = settings.sets.takeIf { strength }, logSets = strength && settings.log,
+            // HIIT's rounds, or a run's reps.
+            structure = Structure.parse(settings.structure)?.takeIf { Structure.fits(it, sport) }?.code,
         )
     }
 

@@ -24,7 +24,24 @@ import kotlinx.coroutines.flow.flowOf
 enum class GlanceTint { Zone, Work, Rest, Mind, Paused, Asking }
 
 /** The next thing to do from the Today hero or the floating bar, or the second one beside it. */
-enum class GlanceAction { Pause, Resume, KeepGoing, End, Open, SetDone, StartSet, AddRest }
+enum class GlanceAction { Pause, Resume, KeepGoing, End, Open, SetDone, StartSet, AddRest, Skip }
+
+/**
+ * Where an interval workout is ([GlanceInput.interval]): its [phase], round [round] of [rounds] (from 1), the seconds
+ * [left] in a timed phase or the metres [metersLeft] in a run rep, the rest after this work ([nextRest]), and the
+ * heart rate's [drop] since the work ended. [everyMinute] work ends on Done.
+ */
+data class IntervalMoment(
+    val phase: org.openstrap.app.data.Phase,
+    val round: Int,
+    val rounds: Int,
+    val left: Long? = null,
+    val metersLeft: Float? = null,
+    val nextRest: Long? = null,
+    val drop: Int? = null,
+    val everyMinute: Boolean = false,
+    val reps: Boolean = false,
+)
 
 /**
  * Where a strength workout is ([GlanceInput.strength]): in set [setNumber] (or before it), its [setSeconds], the rest
@@ -110,6 +127,7 @@ data class GlanceInput(
     val lastSplitBpm: Int? = null,
     val fastestSplit: Int? = null,
     val strength: StrengthMoment? = null,
+    val interval: IntervalMoment? = null,
     /** Average heart rate so far, for an indoor workout's figures. */
     val averageBpm: Int? = null,
 )
@@ -168,6 +186,7 @@ private fun glanceTicks(
                 stoppedSince = r.endPrompt, inCar = r.inCar, averageBpm = stats?.average,
                 lastSplit = last, lastSplitBpm = lastBpm, fastestSplit = whole.minByOrNull { it.pace }?.index,
                 strength = if (r.strength) strengthMoment(r, now, bpm, session.history.value) else null,
+                interval = intervalMoment(r, now, bpm, WorkoutCopy.readings(session.history.value, session.recent.value), route),
             ),
         )
     }.distinctUntilChanged()
@@ -192,6 +211,46 @@ internal fun strengthMoment(r: WorkoutState.Recording, now: Long, bpm: Int?, his
         drop = if (atEnd != null && bpm != null && r.resting) atEnd - bpm else null,
         exercise = r.exercise, nextLoad = load,
     )
+}
+
+/**
+ * Where interval workout [r] is at [now], for its glance and live screen; null without rounds. [readings] are its
+ * live readings (time, bpm), for the drop since the work ended; [route] its GPS fixes, for a run rep's metres to go.
+ */
+internal fun intervalMoment(r: WorkoutState.Recording, now: Long, bpm: Int?, readings: List<Pair<Long, Int>>, route: List<Route.Point>): IntervalMoment? {
+    val s = r.structure ?: return null
+    val p = r.phase(now) ?: return null
+    val active = WorkoutRecorder.activeSeconds(r.workout, now)
+    val rest = when (s) {
+        is org.openstrap.app.data.Structure.Timed -> s.rest
+        is org.openstrap.app.data.Structure.Reps -> s.rest
+        is org.openstrap.app.data.Structure.EveryMinute -> null
+    }
+    return when (p) {
+        is org.openstrap.app.data.Phase.Work -> {
+            val meters = (s as? org.openstrap.app.data.Structure.Reps)?.meters?.let { goal ->
+                val ran = route.filter { it.t >= p.start }.takeIf { it.size > 1 }?.let { Route.distance(it, r.workout.pauseRanges).toFloat() } ?: 0f
+                (goal - ran).coerceAtLeast(0f)
+            }
+            val minuteLeft = (s as? org.openstrap.app.data.Structure.EveryMinute)?.let {
+                WorkoutRecorder.activeSeconds(r.workout, p.start) + it.period - active
+            }
+            IntervalMoment(
+                p, p.round + 1, s.rounds, left = (p.endsAt?.let { it - active } ?: minuteLeft)?.coerceAtLeast(0), metersLeft = meters,
+                nextRest = rest.takeIf { p.round + 1 < s.rounds }, everyMinute = s is org.openstrap.app.data.Structure.EveryMinute,
+                reps = s is org.openstrap.app.data.Structure.Reps,
+            )
+        }
+        is org.openstrap.app.data.Phase.Rest -> {
+            val atEnd = Workouts.heartRateAt(readings, p.start)
+            IntervalMoment(
+                p, p.round + 2, s.rounds, left = (p.endsAt - active).coerceAtLeast(0),
+                drop = if (atEnd != null && bpm != null) atEnd - bpm else null, reps = s is org.openstrap.app.data.Structure.Reps,
+            )
+        }
+        org.openstrap.app.data.Phase.WarmUp -> IntervalMoment(p, 1, s.rounds)
+        org.openstrap.app.data.Phase.Done -> IntervalMoment(p, s.rounds, s.rounds)
+    }
 }
 
 object Glance {
@@ -239,6 +298,7 @@ object Glance {
             else -> null
         }
         i.strength?.let { s -> return strength(base, s, bpm, i) }
+        i.interval?.let { m -> return interval(base, m, bpm) }
         if (distance) {
             val pace = paceClock(i.pace)
             val first = listOfNotNull(kmWithUnit(i.distanceMeters ?: 0f), pace?.let { "$it /km" }).joinToString(", ")
@@ -291,6 +351,40 @@ object Glance {
                 line1 = if (s.done == 0) "Ready for set 1" else "Rest over, set ${s.setNumber}$of next",
                 line2 = listOfNotNull(s.exercise, bpm?.let { "$it bpm" }).joinToString(", ").ifEmpty { null },
                 next = next,
+            )
+        }
+    }
+
+    /**
+     * Intervals' moments (spec 2.10's table): work in work red with the seconds left (or the metres of a run rep) and
+     * Pause; rest in rest green with Skip rest and +10 s; warming up with Start rounds; all rounds done.
+     */
+    private fun interval(base: LiveGlance, m: IntervalMoment, bpm: Int?): LiveGlance {
+        val word = if (m.reps) "Rep" else "Round"
+        val start = base.copy(goal = null, toGo = null, progress = null)
+        return when (m.phase) {
+            is org.openstrap.app.data.Phase.Work -> {
+                val figure = m.metersLeft?.let { "${it.toInt()}" } ?: m.left?.toString()
+                start.copy(
+                    figure = figure, unit = if (m.metersLeft != null) "m to go" else if (m.everyMinute) "s left in the minute" else "s left",
+                    tint = GlanceTint.Work, line1 = "Work, ${word.lowercase()} ${m.round} of ${m.rounds}",
+                    line2 = listOfNotNull(m.nextRest?.let { "Then ${StartCopy.restText(it)} rest" } ?: "Last one".takeIf { m.round == m.rounds }, bpm?.let { "$it bpm" })
+                        .joinToString(", ").ifEmpty { null },
+                    bpm = bpm,
+                    action = if (m.everyMinute) GlanceAction.Skip else GlanceAction.Pause, actionLabel = if (m.everyMinute) "Done" else "Pause",
+                )
+            }
+            is org.openstrap.app.data.Phase.Rest -> start.copy(
+                figure = m.left?.toString(), unit = "s rest", tint = GlanceTint.Rest,
+                line1 = "Rest, ${word.lowercase()} ${m.round} next",
+                line2 = bpm?.let { b -> "$b bpm" + (m.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") },
+                action = GlanceAction.Skip, actionLabel = "Skip rest", second = GlanceAction.AddRest, secondLabel = "+10 s",
+            )
+            org.openstrap.app.data.Phase.WarmUp -> start.copy(
+                line1 = "Warming up, ${base.clock}", line2 = bpm?.let { "$it bpm" }, action = GlanceAction.Skip, actionLabel = "Start rounds", bpm = null,
+            )
+            org.openstrap.app.data.Phase.Done -> start.copy(
+                line1 = "All ${m.rounds} ${word.lowercase()}s done", line2 = listOfNotNull(base.clock, bpm?.let { "$it bpm" }).joinToString(", "), bpm = bpm,
             )
         }
     }

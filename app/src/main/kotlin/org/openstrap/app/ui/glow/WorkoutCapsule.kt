@@ -70,6 +70,7 @@ private fun actionIcon(a: GlanceAction) = when (a) {
     GlanceAction.SetDone -> AppIcons.Tick02
     GlanceAction.StartSet -> AppIcons.PlayFill
     GlanceAction.AddRest -> AppIcons.Plus
+    GlanceAction.Skip -> AppIcons.PlayFill
 }
 
 /**

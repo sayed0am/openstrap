@@ -68,6 +68,7 @@ import org.openstrap.app.ui.workout.SportIcons
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.data.Structure
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
@@ -106,6 +107,11 @@ fun GlowWorkoutReadyScreen(
     onTurnOnLocation: (then: () -> Unit) -> Unit = { it() },
     /** kcal goals are offered: there's a profile to work kcal out from. */
     kcalTargets: Boolean = false,
+    /** Run intervals saved by name, for More, and saving one ([onSaveIntervals], its name and code). */
+    saved: List<org.openstrap.app.data.db.SavedWorkout> = emptyList(),
+    onSaveIntervals: (name: String, structure: String) -> Unit = { _, _ -> },
+    /** Rounds to open on instead of last time's, from a saved workout picked on Choose. */
+    structure: String? = null,
 ) {
     var picking by rememberSaveable { mutableStateOf(pickSport) }
     val pair = Workouts.sidesOf(sportType)
@@ -125,6 +131,10 @@ fun GlowWorkoutReadyScreen(
     var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }
     var restBelow by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm) }
     var log by rememberSaveable(key, settings) { mutableStateOf(settings.log) }
+    // HIIT's rounds (Tabata unless last time was another), or a run's reps; null is Free, or no reps.
+    var structureCode by rememberSaveable(key, settings, structure) {
+        mutableStateOf(structure ?: settings.structure ?: Structure.TABATA.code.takeIf { family == Workouts.Family.Intervals })
+    }
     var sheet by rememberSaveable { mutableStateOf<ReadySheet?>(null) }
     val context = LocalContext.current
     var locationOn by remember { mutableStateOf(locationAvailable(context)) }
@@ -136,7 +146,9 @@ fun GlowWorkoutReadyScreen(
     val useGps = outdoor && gpsOn && locationOn
     val strength = family == Workouts.Family.Strength
     // A distance only where there is one; a kcal goal picked before the profile went is dropped with its chip.
-    val goal = WorkoutTarget.parse(goalCode)?.takeIf { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
+    // Rounds only where they fit: HIIT, and reps for a run.
+    val rounds = Structure.parse(structureCode)?.takeIf { Structure.fits(it, type) }
+    val goal = WorkoutTarget.parse(goalCode)?.takeIf { rounds == null && WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
     // GPS warms up while Ready shows, so the fix is often there by Start.
     var accuracy by remember(useGps) { mutableStateOf<Float?>(null) }
     if (useGps) DisposableEffect(Unit) {
@@ -156,12 +168,12 @@ fun GlowWorkoutReadyScreen(
         onStart(
             WorkoutPlan(
                 type, askToEnd, goal.takeIf { !strength }, useGps, useGps && keepRoute,
-                rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log,
+                rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log, structure = rounds?.code,
             ),
             settings.copy(
                 goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = gpsOn, keepRoute = keepRoute,
                 rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
-                log = if (strength) log else settings.log,
+                log = if (strength) log else settings.log, structure = rounds?.code,
             ),
         )
     }
@@ -184,6 +196,11 @@ fun GlowWorkoutReadyScreen(
             StrengthPlan(sets, restSeconds, restBelow, log, { sets = it }, { restSeconds = it }, { restBelow = it }, { log = it })
             return@WorkoutPage
         }
+        if (family == Workouts.Family.Intervals) {
+            StrapLine(connection, liveHeartRate)
+            IntervalsPlan(rounds, { structureCode = it?.code })
+            return@WorkoutPage
+        }
         ReadyHeart(connection, liveHeartRate)
         // The one status line: GPS for an outdoor sport, else what the strap will do.
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -197,6 +214,7 @@ fun GlowWorkoutReadyScreen(
                 outdoor && !gpsOn -> StatusPill(StartCopy.GPS_OFF, null)
                 outdoor -> StatusPill(StartCopy.gpsStatus(accuracy), if (StartCopy.gpsReady(accuracy)) TrendGood else TrendBad)
                 family == Workouts.Family.Games -> StatusText(StartCopy.GAMES_STATUS)
+                rounds != null -> StatusText(StartCopy.INTERVALS_STATUS)
                 else -> StatusText(StartCopy.goalStatus(goal))
             }
         }
@@ -205,8 +223,12 @@ fun GlowWorkoutReadyScreen(
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val chips = if (family == Workouts.Family.MindBody) WorkoutSetup.LENGTHS
                     else (goalChips.filter { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) } + listOfNotNull(goal)).distinct()
-                Chip(if (family == Workouts.Family.MindBody) StartCopy.OPEN else StartCopy.noGoal(type), goal == null, Color.White) { goalCode = null }
-                chips.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code } }
+                Chip(if (family == Workouts.Family.MindBody) StartCopy.OPEN else StartCopy.noGoal(type), goal == null && rounds == null, Color.White) {
+                    goalCode = null; structureCode = null
+                }
+                chips.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; structureCode = null } }
+                // Run reps chosen in More show as a chip of their own.
+                rounds?.let { Chip(StartCopy.structureName(it), true, Color.White) { sheet = ReadySheet.More } }
                 if (family != Workouts.Family.MindBody) Chip("More", false, Color.White) { sheet = ReadySheet.More }
             }
         }
@@ -232,10 +254,16 @@ fun GlowWorkoutReadyScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     ChipLabel(kind)
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        shown.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; sheet = null } }
+                        shown.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; structureCode = null; sheet = null } }
                     }
                 }
             }
+            // A run can be reps instead: of a distance with GPS or on foot, or of a time.
+            if (type in Workouts.RUNS) RunIntervals(
+                rounds as? Structure.Reps, saved.filter { Workouts.tileType(it.sport) == key },
+                onUse = { structureCode = it.code; goalCode = null; sheet = null },
+                onSave = { name, s -> onSaveIntervals(name, s.code); structureCode = s.code; goalCode = null; sheet = null },
+            )
         }
         ReadySheet.About -> InfoSheet(
             Info("Recording", WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
@@ -446,4 +474,125 @@ internal fun Chip(label: String, on: Boolean, color: Color, onClick: () -> Unit)
             .pressClickable(onClick, CircleShape).semantics { selected = on }
             .padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically),
     )
+}
+
+/**
+ * HIIT's Ready (workouts spec 2.2, 2.5, board HiitReady): the presets as tiles, the one chosen lit in work red; what it
+ * is on a card (its total time, a strip of work and rest, and the work, rest and rounds); and Warm up first. Free has
+ * no timer: heart rate only, and laps mark the rounds.
+ */
+@Composable
+private fun IntervalsPlan(rounds: Structure?, onChange: (Structure?) -> Unit) {
+    val chosen = rounds?.warm(false)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StartCopy.PRESETS.chunked(2).forEach { row ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { (preset, name, note) ->
+                    val on = preset?.code == chosen?.code
+                    Column(
+                        Modifier.weight(1f).clip(GlowLayout.TileShape).background(if (on) MetricColors.heart else QuietSurface)
+                            .pressClickable({ onChange(preset?.warm(rounds?.warmUp == true)) }, GlowLayout.TileShape)
+                            .semantics { selected = on }.padding(14.dp),
+                    ) {
+                        Text(name, color = if (on) Color.Black else Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
+                        Text(note, color = (if (on) Color.Black else Color.White).copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2)
+                    }
+                }
+            }
+        }
+    }
+    if (rounds != null) {
+        EdgeCard(MetricColors.heart, Modifier.fillMaxWidth()) {
+            Row {
+                Text(StartCopy.structureName(rounds), color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
+                StartCopy.totalTime(rounds)?.let { Text(workoutClock(it), color = Color.White, style = GlowType.sentence) }
+            }
+            if (rounds is Structure.Timed) {
+                Spacer(Modifier.height(12.dp))
+                RoundsStrip(rounds)
+            }
+            Spacer(Modifier.height(12.dp))
+            Row(Modifier.fillMaxWidth()) {
+                val figures = when (rounds) {
+                    is Structure.Timed -> listOf("${rounds.work} s" to "Work", "${rounds.rest} s" to "Rest", "${rounds.rounds}" to "Rounds")
+                    is Structure.EveryMinute -> listOf(StartCopy.restText(rounds.period) to "Each round", "${rounds.rounds}" to "Rounds")
+                    is Structure.Reps -> listOf(StartCopy.structureName(rounds) to "Reps", StartCopy.restText(rounds.rest) to "Rest")
+                }
+                figures.forEach { (value, label) ->
+                    Column(Modifier.weight(1f)) {
+                        Text(value, color = Color.White, style = GlowType.sentence, maxLines = 1)
+                        Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                    }
+                }
+            }
+        }
+        QuietPanel {
+            PageSwitchRow("Warm up first", StartCopy.WARM_UP_NOTE, rounds.warmUp, { onChange(rounds.warm(it)) }, divider = false)
+        }
+    }
+    StatusText(StartCopy.INTERVALS_STATUS)
+}
+
+/** Work and rest along the rounds, each as wide as its time: work in heart red, rest in sleep blue. */
+@Composable
+private fun RoundsStrip(s: Structure.Timed) {
+    Row(
+        Modifier.fillMaxWidth().height(10.dp).semantics { contentDescription = "${s.rounds} rounds of ${s.work} seconds work and ${s.rest} seconds rest" },
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        repeat(s.rounds) { i ->
+            Box(Modifier.weight(s.work.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.heart))
+            if (i < s.rounds - 1 && s.rest > 0) Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.sleepDeep))
+        }
+    }
+}
+
+/**
+ * Run intervals in More (workouts spec 2.5): reps of a distance or a time, the rest between, how many; Use them, or
+ * Save them by name to find on Choose and here. Up to ten are kept.
+ */
+@Composable
+private fun RunIntervals(current: Structure.Reps?, saved: List<org.openstrap.app.data.db.SavedWorkout>, onUse: (Structure.Reps) -> Unit, onSave: (String, Structure.Reps) -> Unit) {
+    val reps = listOf<Pair<Int?, Long?>>(400 to null, 800 to null, 1000 to null, null to 120L, null to 180L)
+    var rep by rememberSaveable { mutableStateOf(reps.indexOfFirst { it.first == current?.meters && it.second == current?.seconds }.takeIf { it >= 0 } ?: 0) }
+    var rest by rememberSaveable { mutableStateOf(current?.rest ?: 90L) }
+    var count by rememberSaveable { mutableStateOf(current?.rounds ?: 6) }
+    var name by rememberSaveable { mutableStateOf("") }
+    val built = Structure.Reps(reps[rep].first, reps[rep].second, rest, count)
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        ChipLabel("Intervals")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            reps.forEachIndexed { i, (m, s) ->
+                Chip(m?.let { if (it >= 1000) "${it / 1000} km" else "$it m" } ?: StartCopy.restText(s ?: 0), i == rep, Color.White) { rep = i }
+            }
+        }
+        ChipLabel("Rest between")
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf(60L, 90L, 120L).forEach { s -> Chip(StartCopy.restText(s), s == rest, Color.White) { rest = s } }
+        }
+        Stepper("Reps", "$count", "Fewer reps", "More reps", { count = (count - 1).coerceAtLeast(2) }, { count = (count + 1).coerceAtMost(20) })
+        PageButton("Use ${StartCopy.structureName(built)}", { onUse(built) }, Modifier.fillMaxWidth(), primary = true, icon = AppIcons.PlayFill)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            androidx.compose.foundation.text.BasicTextField(
+                name, { name = it.take(40) }, Modifier.weight(1f), singleLine = true,
+                textStyle = GlowType.body.copy(color = Color.White), cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
+                decorationBox = { field ->
+                    Box(Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised).padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
+                        if (name.isEmpty()) Text("Name, like Tuesday intervals", color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body, maxLines = 1)
+                        field()
+                    }
+                },
+            )
+            PageButton("Save", { onSave(name.trim(), built) }, enabled = name.isNotBlank(), icon = AppIcons.Plus)
+        }
+        if (saved.isNotEmpty()) {
+            ChipLabel("Saved")
+            Column {
+                saved.forEachIndexed { i, w ->
+                    val s = Structure.parse(w.structure) as? Structure.Reps ?: return@forEachIndexed
+                    PageRow(w.name, value = StartCopy.structureName(s), divider = i > 0, onClick = { onUse(s) })
+                }
+            }
+        }
+    }
 }
