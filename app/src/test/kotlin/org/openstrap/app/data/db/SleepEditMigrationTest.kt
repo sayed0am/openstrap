@@ -13,7 +13,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
 
-/** A version 24 database opens at 25 with each nap's times kept as a nap's edit in `sleep_edit`, not deleted. */
+/** A version 24 database opens at 25 (and on to the latest) with each nap's times kept as a nap's edit in `sleep_edit`, not deleted. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class SleepEditMigrationTest {
@@ -39,7 +39,7 @@ class SleepEditMigrationTest {
 
         val before = System.currentTimeMillis() / 1000
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val dao = room.healthDao()
             val e = dao.sleepEditsOnce().single()

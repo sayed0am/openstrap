@@ -45,8 +45,14 @@ import androidx.room.RoomDatabase
         DeletedWorkout::class,
         DailyEnergyRow::class,
         SleepEdit::class,
+        AppWorkoutRound::class,
+        SavedWorkout::class,
+        ExerciseRow::class,
+        PersonalBest::class,
+        BadgeRow::class,
+        WeekResult::class,
     ],
-    version = 25,
+    version = 26,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6),
@@ -65,7 +71,10 @@ abstract class OpenStrapDatabase : RoomDatabase() {
     abstract fun healthDao(): HealthDao
 
     companion object {
+        /** Migrations Room can't make itself, after the automatic ones above. */
+        val MIGRATIONS = arrayOf<androidx.room.migration.Migration>(WorkoutsMigration)
+
         fun create(context: Context): OpenStrapDatabase =
-            Room.databaseBuilder(context, OpenStrapDatabase::class.java, "openstrap.db").build()
+            Room.databaseBuilder(context, OpenStrapDatabase::class.java, "openstrap.db").addMigrations(*MIGRATIONS).build()
     }
 }

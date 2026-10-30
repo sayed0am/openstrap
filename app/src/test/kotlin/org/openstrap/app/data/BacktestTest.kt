@@ -110,7 +110,7 @@ class BacktestTest {
             listOf("", "-wal", "-shm").map { File(source.path + it) }.filter { it.exists() }
                 .forEach { it.copyTo(File(dir, "openstrap.db" + it.name.removePrefix(source.name))) }
             Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, File(dir, "openstrap.db").absolutePath)
-                .allowMainThreadQueries().build()
+                .addMigrations(*org.openstrap.app.data.db.OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         }
         val profile = System.getProperty("openstrap.backtestProfile")?.split(',')?.let { p ->
             UserProfile(birthYear = p.getOrNull(0)?.toIntOrNull(), sex = p.getOrNull(1)?.let { s -> UserProfile.Sex.entries.firstOrNull { it.name.equals(s, true) } })

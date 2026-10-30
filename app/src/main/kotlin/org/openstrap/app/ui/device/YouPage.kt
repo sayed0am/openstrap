@@ -86,6 +86,8 @@ fun YouPage(
     contentPadding: PaddingValues,
     onProfile: () -> Unit,
     onGoals: () -> Unit,
+    /** The weekly goal, personal bests and badges (workouts spec 3.5). */
+    onGoalsAndBests: () -> Unit,
     /** Auto sync to Health Connect, said on its row; the row opens the Health Connect page. */
     healthConnectAuto: HealthConnectAuto,
     onHealthConnect: () -> Unit,
@@ -115,6 +117,10 @@ fun YouPage(
                 PageRow("Profile", profile.summary(), onClick = onProfile, below = true, divider = false, icon = AppIcons.User, selected = selected == "Profile")
                 PageRow("Goals", goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
                 PageRow("Sleep goal", sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true, icon = AppIcons.Moon)
+                PageRow(
+                    "Goals and bests", "${goals.workoutsPerWeek} workouts a week, personal bests and badges", onClick = onGoalsAndBests, below = true,
+                    icon = AppIcons.FlagCheckered, selected = selected == "Goals and bests",
+                )
             }
         }
         item { PanelHeading("Your data") }

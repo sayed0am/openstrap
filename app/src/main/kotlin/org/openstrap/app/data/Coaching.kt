@@ -1,15 +1,15 @@
 package org.openstrap.app.data
 
 /**
- * What a workout aims for, chosen on the ready screen: a zone or a range of zones (0..4, inclusive), a time, or active
- * kcal. Stored on the workout as [code] ("z:1-2", "t:2700", "k:300").
+ * What a workout aims for, chosen on the ready screen: a zone or a range of zones (0..4, inclusive), a time, active
+ * kcal or a distance. Stored on the workout as [code] ("z:1-2", "t:2700", "k:300", "d:5000").
  */
 sealed interface WorkoutTarget {
     val code: String
 
     data class Zones(val low: Int, val high: Int) : WorkoutTarget {
         override val code get() = "z:$low-$high"
-        val label: String get() = if (low == high) "Zone ${low + 1}" else "Zone ${low + 1}–${high + 1}"
+        val label: String get() = if (low == high) "Zone ${low + 1}" else "Zone ${low + 1} to ${high + 1}"
     }
 
     data class Time(val seconds: Long) : WorkoutTarget {
@@ -23,6 +23,17 @@ sealed interface WorkoutTarget {
         val label: String get() = "$kcal kcal"
     }
 
+    /** Metres: from GPS, or the strap's steps without it, as the workout counts its distance. */
+    data class Distance(val meters: Int) : WorkoutTarget {
+        override val code get() = "d:$meters"
+        /** "5 km", "21.1 km", "800 m". */
+        val label: String get() = when {
+            meters < 1000 -> "$meters m"
+            meters % 1000 == 0 -> "${meters / 1000} km"
+            else -> String.format(java.util.Locale.ROOT, "%.1f km", meters / 1000f)
+        }
+    }
+
     companion object {
         fun parse(code: String?): WorkoutTarget? {
             code ?: return null
@@ -31,6 +42,7 @@ sealed interface WorkoutTarget {
                 "z" -> v.split('-').mapNotNull { it.toIntOrNull() }.takeIf { it.size == 2 }?.let { (a, b) -> Zones(a, b) }
                 "t" -> v.toLongOrNull()?.let(::Time)
                 "k" -> v.toIntOrNull()?.takeIf { it > 0 }?.let(::Kcal)
+                "d" -> v.toIntOrNull()?.takeIf { it > 0 }?.let(::Distance)
                 else -> null
             }
         }
@@ -53,12 +65,12 @@ enum class Cue(val pattern: List<Int>) {
     BelowTarget(listOf(700)),
     /** Back in the target: one short pulse. */
     BackInTarget(listOf(200)),
-    /** Halfway through a time target: two short pulses. */
-    Halfway(listOf(150, 150, 150)),
-    /** Time or kcal target reached: long, short, long. */
-    GoalReached(listOf(500, 200, 200, 200, 500)),
-    /** Strength: rest is over, start the next set. Two medium pulses. */
-    RestOver(listOf(400, 150, 400)),
+    /** Halfway through a time or distance goal: one long ([WorkoutBuzz.LONG]). */
+    Halfway(WorkoutBuzz.LONG),
+    /** A time, distance or kcal goal reached: three short ([WorkoutBuzz.GOAL]). */
+    GoalReached(WorkoutBuzz.GOAL),
+    /** Strength: rest is over, start the next set. Two short, as work starting is everywhere ([WorkoutBuzz.WORK_STARTS]). */
+    RestOver(WorkoutBuzz.WORK_STARTS),
 }
 
 /**
@@ -88,7 +100,7 @@ class Coach(private val target: WorkoutTarget?, reachedAt: Long? = null) {
             else -> null
         }
         is WorkoutTarget.Zones -> zone?.let { zoneCue(t, it, target) }
-        is WorkoutTarget.Kcal, null -> null
+        is WorkoutTarget.Kcal, is WorkoutTarget.Distance, null -> null
     }
 
     /**
@@ -100,6 +112,19 @@ class Coach(private val target: WorkoutTarget?, reachedAt: Long? = null) {
         goalDone = true
         reachedAt = t
         return Cue.GoalReached
+    }
+
+    /**
+     * The distance so far, [meters] at [t]: the halfway cue, then the goal cue the first time it reaches a distance
+     * target, each once. Distance only grows, so a pause holds it where it is.
+     */
+    fun distance(t: Long, meters: Float): Cue? {
+        if (target !is WorkoutTarget.Distance || goalDone) return null
+        return when {
+            meters >= target.meters -> { goalDone = true; halfwayDone = true; reachedAt = t; Cue.GoalReached }
+            !halfwayDone && meters * 2 >= target.meters -> { halfwayDone = true; Cue.Halfway }
+            else -> null
+        }
     }
 
     private fun zoneCue(t: Long, zone: Int, target: WorkoutTarget.Zones): Cue? {

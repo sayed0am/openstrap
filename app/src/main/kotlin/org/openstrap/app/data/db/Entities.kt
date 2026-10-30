@@ -248,6 +248,16 @@ data class AppWorkout(
     val totalKcal: Float? = null,
     /** When the live active kcal first reached a kcal [target], epoch seconds; null until then and for other targets. */
     val targetReachedAt: Long? = null,
+    /**
+     * Rounds or periods ([org.openstrap.app.data.Phases]): intervals ("t:20/10x8"), run reps ("r:400m/90x6") or a
+     * game's periods ("p:2x2700/900"); null for an open workout. Added in version 25.
+     */
+    val structure: String? = null,
+    /**
+     * A GPS run's fastest stretches ([org.openstrap.app.data.Rewards.Stretch.code]), worked out from the route when it
+     * ends, kept or not, so its bests can be worked out again later. Null without GPS. Added in version 25.
+     */
+    val stretches: String? = null,
 ) {
     val lapMarks: List<Long> get() = laps.split(',').mapNotNull { it.toLongOrNull() }
 
@@ -276,7 +286,10 @@ data class AppWorkout(
     }
 }
 
-/** One set of a strength workout: when it began and ended, and when the rest after it ended (null while resting). */
+/**
+ * One set of a strength workout: when it began and ended, and when the rest after it ended (null while resting). Its
+ * [exercise], [reps] and [weightKg] are logged on the card after it when logging is on (version 25), else null.
+ */
 @Entity(tableName = "app_workout_set", primaryKeys = ["workoutStart", "index"])
 data class AppWorkoutSet(
     val workoutStart: Long,
@@ -284,6 +297,80 @@ data class AppWorkoutSet(
     val start: Long,
     val end: Long? = null,
     val restEnd: Long? = null,
+    val exercise: String? = null,
+    val reps: Int? = null,
+    val weightKg: Float? = null,
+)
+
+/**
+ * One round of an interval workout or one rep of run intervals (version 25): when its work began and ended, when the
+ * rest after it ended, and its peak heart rate. [workEnd] and [restEnd] are null while under way.
+ */
+@Entity(tableName = "app_workout_round", primaryKeys = ["workoutStart", "index"])
+data class AppWorkoutRound(
+    val workoutStart: Long,
+    val index: Int,
+    val workStart: Long,
+    val workEnd: Long? = null,
+    val restEnd: Long? = null,
+    val peakBpm: Int? = null,
+)
+
+/** An interval workout saved by name ("Tuesday intervals"), offered on Choose and in More (version 25). */
+@Entity(tableName = "saved_workout")
+data class SavedWorkout(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val sport: Int,
+    /** As [AppWorkout.structure]. */
+    val structure: String,
+    /** A goal as [AppWorkout.target], or null. */
+    val goal: String? = null,
+    val createdAt: Long,
+)
+
+/** An exercise named in a strength log, with its last reps and weight to fill the next log card (version 25). */
+@Entity(tableName = "exercise")
+data class ExerciseRow(
+    @PrimaryKey val name: String,
+    val lastReps: Int? = null,
+    val lastKg: Float? = null,
+    /** When it was last logged, epoch seconds, for the list's order. */
+    val usedAt: Long,
+)
+
+/**
+ * A personal best ([org.openstrap.app.data.Rewards]) by its [kind] ("run_5k", "lift:Bench press"): the [value] in its
+ * kind's unit, the [date] it was set (epoch day) and the workout that set it, if one did (version 25).
+ */
+@Entity(tableName = "personal_best")
+data class PersonalBest(
+    @PrimaryKey val kind: String,
+    val value: Double,
+    val date: Long,
+    val workoutStart: Long? = null,
+)
+
+/** A badge earned (requests spec 7.2, workouts spec 3.3): when, and the workout or day that earned it (version 25). */
+@Entity(tableName = "badge")
+data class BadgeRow(
+    @PrimaryKey val id: String,
+    val earnedAt: Long,
+    val workoutStart: Long? = null,
+    /** The epoch day, for a badge a day earned. */
+    val day: Long? = null,
+)
+
+/**
+ * A week's workouts against the weekly goal it had (workouts spec 3.1): [weekStart] its first day (epoch day), the
+ * [goal] then, how many workouts [count]ed and whether it was [met] (version 25).
+ */
+@Entity(tableName = "week_result")
+data class WeekResult(
+    @PrimaryKey val weekStart: Long,
+    val goal: Int,
+    val count: Int,
+    val met: Boolean,
 )
 
 /**

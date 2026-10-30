@@ -37,7 +37,7 @@ class DeletedWorkoutMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val dao = room.healthDao()
             assertEquals(listOf(1000L), dao.workoutsOnce(0, Long.MAX_VALUE).map { it.start })

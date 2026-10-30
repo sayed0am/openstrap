@@ -46,7 +46,22 @@ sealed interface WorkoutState {
         /** Strength: the sets so far, and when the rest under way ends (null when not resting). */
         val sets: List<org.openstrap.app.data.db.AppWorkoutSet> = emptyList(),
         val restUntil: Long? = null,
+        /** Strength: the exercise the next sets are of, null for numbered sets; and a log card after each set. */
+        val exercise: String? = null,
+        val logSets: Boolean = false,
+        /**
+         * A structured workout ([org.openstrap.app.data.Structure]): its rounds so far, which say the phase
+         * ([org.openstrap.app.data.Phases]), and the seconds added to the rest under way (+10 s).
+         */
+        val rounds: List<org.openstrap.app.data.db.AppWorkoutRound> = emptyList(),
+        val restExtra: Long = 0,
     ) : WorkoutState {
+        val structure: org.openstrap.app.data.Structure? get() = org.openstrap.app.data.Structure.parse(workout.structure)
+
+        /** The phase now, by the workout's active time. */
+        fun phase(now: Long): org.openstrap.app.data.Phase? = structure?.let { s ->
+            org.openstrap.app.data.Phases.phase(s, rounds, { t -> WorkoutRecorder.activeSeconds(workout, minOf(t, now)) }, restExtra)
+        }
         val paused: Boolean get() = workout.pausedAt != null
         val strength: Boolean get() = workout.sportType in org.openstrap.app.data.Strength.SPORTS
         /** A set under way. */
@@ -201,7 +216,12 @@ class WorkoutSession(
                     begin(w, maxHr)
                     val sets = dao.setsOnce(w.start)
                     val restUntil = sets.lastOrNull()?.takeIf { it.end != null && it.restEnd == null }?.let { it.end!! + restRule(w).seconds }
-                    (_state.value as? WorkoutState.Recording)?.let { _state.value = it.copy(sets = sets, restUntil = restUntil) }
+                    // Logging is the sport's setting at its start, which Ready saved then.
+                    val log = runCatching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)]?.log }.getOrNull() == true
+                    val rounds = if (w.structure != null) dao.roundsOnce(w.start) else emptyList()
+                    (_state.value as? WorkoutState.Recording)?.let {
+                        _state.value = it.copy(sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = log, rounds = rounds)
+                    }
                 }
             } finally {
                 _restored.value = true
@@ -217,6 +237,8 @@ class WorkoutSession(
         rest: org.openstrap.app.data.Strength.Rest? = null, setsTarget: Int? = null,
         /** Auto-start: the workout began here, earlier, and [seed] holds its live readings so far. */
         from: Long? = null, seed: List<Pair<Long, Int>> = emptyList(), seedSteps: Int? = null,
+        /** Strength: a log card after each set. Rounds or periods ([AppWorkout.structure]). */
+        logSets: Boolean = false, structure: String? = null,
     ) {
         scope.launch {
             lock.withLock {
@@ -224,7 +246,7 @@ class WorkoutSession(
                 val w = AppWorkout(
                     start = from ?: now(), end = null, sportType = sportType, askToEnd = askToEnd, target = target?.code,
                     useGps = useGps, keepRoute = useGps && keepRoute,
-                    rest = rest?.code, setsTarget = setsTarget,
+                    rest = rest?.code, setsTarget = setsTarget, structure = structure,
                 )
                 _route.value = emptyList()
                 savedPoints = 0
@@ -245,6 +267,7 @@ class WorkoutSession(
                 askSince = w.start
                 minimized.value = false
                 begin(w, maxHeartRate())
+                if (logSets) (_state.value as? WorkoutState.Recording)?.let { _state.value = it.copy(logSets = true) }
                 firstSteps = seedSteps
                 for ((t, bpm) in seed) record(t, bpm)
             }
@@ -490,6 +513,14 @@ class WorkoutSession(
                         else -> null
                     }
                 }?.let { dao.upsertSets(listOf(it)) }
+                // So does a round's work or rest.
+                r.rounds.lastOrNull()?.let { last ->
+                    when {
+                        last.workEnd == null -> last.copy(workEnd = end, restEnd = end)
+                        last.restEnd == null -> last.copy(restEnd = end)
+                        else -> null
+                    }
+                }?.let { dao.upsertRounds(listOf(it)) }
                 stop(keepLive = true)
                 // Under a minute is a mis-tap or a test, not a workout: nothing is kept, and the app says so.
                 if (!kept) {
@@ -502,8 +533,10 @@ class WorkoutSession(
                     }
                     return@withLock
                 }
-                // The route is still in memory here, kept or not, so a run gets its VO2max either way.
-                dao.upsertAppWorkout(withEffect(ended, dao.appWorkoutHeartRateOnce(w.start), _route.value))
+                // The route is still in memory here, kept or not, so a run gets its VO2max and its fastest stretches
+                // (its bests, workouts spec 3.2) either way.
+                val stretches = org.openstrap.app.data.Rewards.Stretch.format(org.openstrap.app.data.Rewards.stretches(_route.value, ended.pauseRanges))
+                dao.upsertAppWorkout(withEffect(ended.copy(stretches = stretches), dao.appWorkoutHeartRateOnce(w.start), _route.value))
                 _state.value = WorkoutState.Ended(w.start)
                 watchCalmDown(w.start, recorded)
                 // Its days' energy rows take its kcal now, after the summary is up, so Health Connect gets them with it.
@@ -609,9 +642,33 @@ class WorkoutSession(
         val now = now()
         val sets = r.sets.toMutableList()
         sets.lastOrNull()?.takeIf { it.restEnd == null && it.end != null }?.let { sets[sets.lastIndex] = it.copy(restEnd = now) }
-        sets += org.openstrap.app.data.db.AppWorkoutSet(r.workout.start, sets.size, now)
+        sets += org.openstrap.app.data.db.AppWorkoutSet(r.workout.start, sets.size, now, exercise = r.exercise)
         r.copy(sets = sets, restUntil = null)
     }
+
+    /** The exercise for the sets from now on ("Next exercise"), and the set under way if there is one; null numbers them. */
+    fun setExercise(name: String?) = editSets { r ->
+        val clean = name?.trim()?.takeIf { it.isNotEmpty() }
+        val sets = if (r.inSet) r.sets.dropLast(1) + r.sets.last().copy(exercise = clean) else r.sets
+        r.copy(sets = sets, exercise = clean)
+    }
+
+    /**
+     * The log card's Save: set [index]'s [reps] and [kg], of [exercise], kept for the next card of that exercise too.
+     * Logging never touches the set's times.
+     */
+    fun logSet(index: Int, exercise: String?, reps: Int, kg: Float) {
+        val name = exercise?.trim()?.takeIf { it.isNotEmpty() }
+        editSets { r ->
+            val i = r.sets.indexOfFirst { it.index == index }
+            if (i < 0) return@editSets r
+            r.copy(sets = r.sets.toMutableList().also { it[i] = it[i].copy(exercise = name, reps = reps, weightKg = kg) })
+        }
+        if (name != null) scope.launch { runCatching { dao.upsertExercise(org.openstrap.app.data.db.ExerciseRow(name, reps, kg, now())) } }
+    }
+
+    /** The exercises logged before, last used first, for the exercise list and the log card. */
+    fun exercises(): kotlinx.coroutines.flow.Flow<List<org.openstrap.app.data.db.ExerciseRow>> = dao.exercises()
 
     /** "Set done": the rest begins, ending at its time or earlier on heart rate. */
     fun setDone() = editSets { r ->
@@ -643,6 +700,88 @@ class WorkoutSession(
         if (!org.openstrap.app.data.Strength.restOver(restRule(r.workout), last, until, window, now())) return
         editSets { it.copy(sets = it.sets.dropLast(1) + it.sets.last().copy(restEnd = now()), restUntil = null) }
         cue(org.openstrap.app.data.Cue.RestOver)
+    }
+
+    /* ------------------------------------------- Rounds -------------------------------------------- */
+
+    /** Skip work, Skip rest, Done (every minute), or start the rounds after the warm up: the phase under way ends now. */
+    fun skipPhase() = stepRounds(skip = true)
+
+    /** Interval workouts saved by name, newest first. */
+    fun savedWorkouts(): kotlinx.coroutines.flow.Flow<List<org.openstrap.app.data.db.SavedWorkout>> = dao.savedWorkouts()
+
+    /** Saves [structure] for [sport] as [name] ("Tuesday intervals"); only the newest [MAX_SAVED] are kept. */
+    fun saveWorkout(name: String, sport: Int, structure: String) {
+        scope.launch {
+            runCatching {
+                dao.upsertSavedWorkout(org.openstrap.app.data.db.SavedWorkout(name = name, sport = sport, structure = structure, createdAt = now()))
+                dao.savedWorkoutsOnce().drop(MAX_SAVED).forEach { dao.deleteSavedWorkout(it.id) }
+            }.onFailure { (strap as? StrapManager)?.log("workout not saved: ${it.message}") }
+        }
+    }
+
+    /** "+10 s" on a rest. */
+    fun addRest() {
+        val r = _state.value as? WorkoutState.Recording ?: return
+        if (r.phase(now()) is org.openstrap.app.data.Phase.Rest) _state.value = r.copy(restExtra = r.restExtra + REST_ADD_S)
+    }
+
+    /**
+     * Moves a structured workout's rounds on ([org.openstrap.app.data.Phases]): once a second by the clock (and by the
+     * distance, for run reps), or now on a tap ([skip]). A switch buzzes the strap ([org.openstrap.app.data.WorkoutBuzz]),
+     * and the phone beeps the last three seconds of a timed phase when its sound is on. Paused, the clock doesn't move.
+     */
+    private fun stepRounds(skip: Boolean) {
+        scope.launch {
+            lock.withLock {
+                val r = _state.value as? WorkoutState.Recording ?: return@withLock
+                val s = r.structure ?: return@withLock
+                if (r.paused) return@withLock
+                val t = now()
+                val w = r.workout
+                val active = { at: Long -> WorkoutRecorder.activeSeconds(w, minOf(at, t)) }
+                val readings = synchronized(allReadings) { allReadings.toList() }
+                val peak = { a: Long, b: Long -> org.openstrap.app.data.Strength.peak(readings, a, b) }
+                val meters = { from: Long -> _route.value.filter { it.t >= from }.takeIf { it.size > 1 }?.let { Route.distance(it, w.pauseRanges).toFloat() } }
+                val step = if (skip) org.openstrap.app.data.Phases.skip(s, r.rounds, w.start, t, active, peak)
+                    else org.openstrap.app.data.Phases.tick(s, r.rounds, w.start, t, active, meters, peak, r.restExtra)
+                if (step.rounds != r.rounds) {
+                    val changed = step.rounds.filter { it !in r.rounds }
+                    runCatching { dao.upsertRounds(changed) }.onFailure { (strap as? StrapManager)?.log("rounds not saved: ${it.message}") }
+                    _state.value = r.copy(rounds = step.rounds, restExtra = if (step.switch != null) 0 else r.restExtra)
+                }
+                step.switch?.let { buzz(org.openstrap.app.data.WorkoutBuzz.of(it, game = s is org.openstrap.app.data.Structure.Periods), it.name) }
+                if (step.switch == null && !skip) {
+                    val ends = when (val p = (_state.value as WorkoutState.Recording).phase(t)) {
+                        is org.openstrap.app.data.Phase.Work -> p.endsAt
+                        is org.openstrap.app.data.Phase.Rest -> p.endsAt
+                        else -> null
+                    }
+                    val left = ends?.let { it - active(t) }
+                    if (left != null && left in 1..COUNTDOWN_S) beep()
+                }
+            }
+        }
+    }
+
+    /** A named buzz ([org.openstrap.app.data.WorkoutBuzz]), as quiet as a coaching cue: never during a call or Do Not Disturb. */
+    private fun buzz(pattern: List<Int>, what: String) {
+        if (callRinging()) return
+        val filter = context.getSystemService(android.app.NotificationManager::class.java).currentInterruptionFilter
+        if (filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE || filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS) return
+        scope.launch { runCatching { strap.buzz(pattern) }.onFailure { (strap as? StrapManager)?.log("buzz $what not played: ${it.message}") } }
+        (strap as? StrapManager)?.log("buzz: $what")
+    }
+
+    /** One short beep from the phone, only while its ringer is on (workouts spec 2.5, the countdown). */
+    private fun beep() {
+        val audio = context.getSystemService(android.media.AudioManager::class.java) ?: return
+        if (audio.ringerMode != android.media.AudioManager.RINGER_MODE_NORMAL) return
+        runCatching {
+            val tone = android.media.ToneGenerator(android.media.AudioManager.STREAM_NOTIFICATION, BEEP_VOLUME)
+            tone.startTone(android.media.ToneGenerator.TONE_PROP_BEEP, BEEP_MS)
+            scope.launch { delay(BEEP_MS + 100L); tone.release() }
+        }
     }
 
     /** Puts back what an early end or a trim left out: the workout as recorded. */
@@ -738,6 +877,11 @@ class WorkoutSession(
                 .onSuccess { savedPoints = points.size }
         }
         val (meters, fromSteps) = distanceNow(w) ?: return
+        // A distance goal buzzes at halfway and once reached; when is kept for the summary.
+        if (!r.paused) coach.distance(now(), meters)?.let { c ->
+            cue(c)
+            if (c == org.openstrap.app.data.Cue.GoalReached) { val t = now(); update { it.copy(targetReachedAt = t) } }
+        }
         if (kotlin.math.abs((w.distanceMeters ?: 0f) - meters) < 5f) return
         update { it.copy(distanceMeters = meters, distanceFromSteps = fromSteps) }
     }
@@ -813,6 +957,13 @@ class WorkoutSession(
                 while (isActive) {
                     delay(1_000)
                     checkRest()
+                }
+            }
+            // So are a structured workout's rounds, screen on or off.
+            if (org.openstrap.app.data.Structure.parse(w.structure) != null) launch {
+                while (isActive) {
+                    stepRounds(skip = false)
+                    delay(1_000 - System.currentTimeMillis() % 1_000)
                 }
             }
             var tick = 0
@@ -909,6 +1060,12 @@ class WorkoutSession(
      */
     private fun cue(c: org.openstrap.app.data.Cue) {
         if (callRinging()) return
+        // Mind and body is a quiet strap: no halfway and no zone cues, and one soft buzz when its length is over.
+        val r = _state.value as? WorkoutState.Recording
+        if (r != null && org.openstrap.app.data.Workouts.family(r.workout.sportType) == org.openstrap.app.data.Workouts.Family.MindBody) {
+            if (c == org.openstrap.app.data.Cue.GoalReached) buzz(org.openstrap.app.data.WorkoutBuzz.SOFT, "length over")
+            return
+        }
         val filter = context.getSystemService(android.app.NotificationManager::class.java).currentInterruptionFilter
         if (filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE || filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS) return
         scope.launch { runCatching { strap.buzz(c.pattern) }.onFailure { (strap as? StrapManager)?.log("coach $c not played: ${it.message}") } }
@@ -997,6 +1154,14 @@ class WorkoutSession(
         const val WATCH_TICK_MS = 5_000L
         /** Three short pulses: unlike the stop question's two long ones. */
         val OFFER_BUZZ = listOf(150, 150, 150, 150, 150)
+        /** Saved workouts kept (workouts spec 2.5). */
+        const val MAX_SAVED = 10
+        /** "+10 s" on an interval's rest. */
+        const val REST_ADD_S = 10L
+        /** The phone beeps the last this many seconds of a timed work or rest. */
+        const val COUNTDOWN_S = 3L
+        const val BEEP_MS = 120
+        const val BEEP_VOLUME = 70
         /** A safety net should end() never come; the strap's battery is long gone by then. */
         const val MAX_WAKE_MS = 12 * 3600_000L
     }
