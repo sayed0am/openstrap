@@ -84,8 +84,10 @@ private fun actionIcon(a: GlanceAction) = when (a) {
 fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier = Modifier) {
     val color = glanceColor(glance)
     val shape = RoundedCornerShape(50)
+    val quiet = glance.tint == GlanceTint.Mind
     Box(
-        modifier.fillMaxWidth().height(64.dp).shadow(24.dp, shape, ambientColor = color, spotColor = color)
+        // Mind and body is quieter: 56 dp and no glow.
+        modifier.fillMaxWidth().height(if (quiet) 56.dp else 64.dp).then(if (quiet) Modifier else Modifier.shadow(24.dp, shape, ambientColor = color, spotColor = color))
             .clip(shape).background(Raised).border(BorderStroke(1.5.dp, color), shape).pressClickable(onClick, shape),
     ) {
         Row(Modifier.fillMaxSize().padding(start = 18.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically) {

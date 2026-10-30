@@ -22,10 +22,10 @@ object WorkoutBuzz {
     /** Mind and body's end: one soft, the shortest the strap does. */
     val SOFT = listOf(60)
 
-    /** The buzz for a switch between phases. */
-    fun of(s: Switch): List<Int> = when (s) {
+    /** The buzz for a switch between phases; a [game]'s period ending is one long, as is its last. */
+    fun of(s: Switch, game: Boolean = false): List<Int> = when (s) {
         Switch.WorkStarts -> WORK_STARTS
-        Switch.RestStarts -> REST_STARTS
-        Switch.Finished -> GOAL
+        Switch.RestStarts -> if (game) LONG else REST_STARTS
+        Switch.Finished -> if (game) LONG else GOAL
     }
 }

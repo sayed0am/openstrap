@@ -137,6 +137,14 @@ fun GlowWorkoutLiveScreen(
         LiveIntervalsScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, onSkip, onAddRest)
         return
     }
+    if (!split && family == Workouts.Family.MindBody) {
+        LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls)
+        return
+    }
+    if (!split && family == Workouts.Family.Games) {
+        LiveGameScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), stats, zoneSeconds, connection, contentPadding, controls, kcal, onSkip)
+        return
+    }
     // HIIT's Free has no timer: heart rate only, laps mark the rounds.
     if (!split && (family == Workouts.Family.IndoorCardio || family == Workouts.Family.Distance || family == Workouts.Family.Intervals)) {
         LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal)

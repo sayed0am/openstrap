@@ -31,7 +31,7 @@ class PhasesTest {
         }
         assertEquals("t:20/10x8", Structure.TABATA.code)
         assertEquals("r:400m/90x6", Structure.Reps(400, null, 90, 6).code)
-        assertNull(Structure.parse("p:2x2700/900"))
+        assertEquals(Structure.Periods(2, 2700, 900), Structure.parse("p:2x2700/900"))
         assertNull(Structure.parse("t:0/10x8"))
         assertNull(Structure.parse(null))
     }

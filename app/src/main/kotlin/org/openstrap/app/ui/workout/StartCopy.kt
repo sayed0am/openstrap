@@ -97,8 +97,42 @@ object StartCopy {
             is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}, ${s.rounds} rounds"
             is org.openstrap.app.data.Structure.EveryMinute -> "Every ${restText(s.period)}, ${s.rounds} rounds"
             is org.openstrap.app.data.Structure.Reps -> "${s.rounds} × " + (s.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: restText(s.seconds ?: 0))
+            is org.openstrap.app.data.Structure.Periods -> periodsName(s)
         }
     }
+
+    /** "Halves", "Quarters" or "3 periods". */
+    fun periodsName(s: org.openstrap.app.data.Structure.Periods): String = when (s.rounds) {
+        2 -> "Halves"
+        4 -> "Quarters"
+        else -> "${s.rounds} periods"
+    }
+
+    /** A period by its place: "1st half", "3rd quarter", "Period 2". */
+    fun periodName(index: Int, of: Int): String {
+        val n = index + 1
+        val nth = when {
+            n % 100 in 11..13 -> "${n}th"
+            n % 10 == 1 -> "${n}st"
+            n % 10 == 2 -> "${n}nd"
+            n % 10 == 3 -> "${n}rd"
+            else -> "${n}th"
+        }
+        return when (of) {
+            2 -> "$nth half"
+            4 -> "$nth quarter"
+            else -> "Period $n"
+        }
+    }
+
+    /** What the break between periods is called. */
+    fun breakName(of: Int): String = if (of == 2) "Half time" else "Break"
+
+    /** Mind and body's line on Ready (workouts spec 2.2). */
+    const val MIND_STATUS = "Quiet strap and a dim screen. One soft buzz at the end."
+
+    /** A game's choice on Ready, no label: free play or its periods. */
+    const val FREE_PLAY = "Free play"
 
     /** A saved workout on Choose: "Saved, 6 × 400 m run". */
     fun savedLine(s: org.openstrap.app.data.Structure, sport: Int): String = "Saved, ${structureName(s)} ${Workouts.shortName(sport).lowercase()}"
@@ -108,6 +142,7 @@ object StartCopy {
         is org.openstrap.app.data.Structure.Timed -> s.rounds * s.work + (s.rounds - 1) * s.rest
         is org.openstrap.app.data.Structure.EveryMinute -> s.rounds * s.period
         is org.openstrap.app.data.Structure.Reps -> null
+        is org.openstrap.app.data.Structure.Periods -> s.rounds * s.length + (s.rounds - 1) * s.rest
     }
 
     /** A recent sport's card on Choose: last time's settings in one line ("5 sets, 90 s rest", "45 min", "Just run"). */

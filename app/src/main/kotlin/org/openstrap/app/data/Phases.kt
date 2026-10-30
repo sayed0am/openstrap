@@ -36,14 +36,28 @@ sealed interface Structure {
         override fun warm(on: Boolean) = copy(warmUp = on)
     }
 
+    /**
+     * A game's periods (workouts spec 2.7): [rounds] periods of [length] seconds with a [rest] break between, "p:2x2700/900".
+     * Half time can come early (a tap), and the strap buzzes at the end of each period and break.
+     */
+    data class Periods(override val rounds: Int, val length: Long, val rest: Long) : Structure {
+        override val warmUp get() = false
+        override val code get() = "p:${rounds}x$length/$rest"
+        override fun warm(on: Boolean) = this
+    }
+
     companion object {
+        private val PERIODS = Regex("""p:(\d+)x(\d+)/(\d+)""")
         private val TIMED = Regex("""t:(\d+)/(\d+)x(\d+)""")
         private val EVERY = Regex("""e:(\d+)x(\d+)""")
         private val REPS = Regex("""r:(\d+)([ms])/(\d+)x(\d+)""")
 
-        /** [code] as written by [Structure.code]; null for none, a game's periods, or anything unreadable. */
+        /** [code] as written by [Structure.code]; null for none, or anything unreadable. */
         fun parse(code: String?): Structure? {
             code ?: return null
+            PERIODS.matchEntire(code)?.destructured?.let { (n, l, r) ->
+                return Periods(n.toInt(), l.toLong(), r.toLong()).takeIf { it.rounds > 0 && it.length > 0 }
+            }
             val warm = code.endsWith(":w")
             val body = code.removeSuffix(":w")
             TIMED.matchEntire(body)?.destructured?.let { (w, r, n) ->
@@ -58,8 +72,15 @@ sealed interface Structure {
         }
 
         /** Whether [s] fits a workout of [sport]: timed rounds for HIIT, reps for a run. */
-        fun fits(s: Structure, sport: Int): Boolean =
-            if (s is Reps) sport in Workouts.RUNS else Workouts.family(sport) == Workouts.Family.Intervals
+        fun fits(s: Structure, sport: Int): Boolean = when (s) {
+            is Reps -> sport in Workouts.RUNS
+            is Periods -> Workouts.family(sport) == Workouts.Family.Games
+            else -> Workouts.family(sport) == Workouts.Family.Intervals
+        }
+
+        /** A game's Halves and Quarters on Ready, before you change their length and break. */
+        val HALVES = Periods(2, 40 * 60, 10 * 60)
+        val QUARTERS = Periods(4, 12 * 60, 2 * 60)
 
         /** HIIT's presets (workouts spec 2.5): Tabata, 40 / 20 and Every minute. Free has none. */
         val TABATA = Timed(20, 10, 8)
@@ -102,6 +123,7 @@ object Phases {
         is Structure.Timed -> (active?.invoke(start) ?: 0) + s.work
         is Structure.EveryMinute -> null
         is Structure.Reps -> s.seconds?.let { (active?.invoke(start) ?: 0) + it }
+        is Structure.Periods -> (active?.invoke(start) ?: 0) + s.length
     }
 
     /** When the rest after [r] ends, in active seconds. Every minute rests for what's left of the round's minute. */
@@ -109,6 +131,7 @@ object Phases {
         is Structure.Timed -> active(r.workEnd!!) + s.rest
         is Structure.EveryMinute -> active(r.workStart) + s.period
         is Structure.Reps -> active(r.workEnd!!) + s.rest
+        is Structure.Periods -> active(r.workEnd!!) + s.rest
     }
 
     /** What changed at a tick or a tap: the rounds to store (whole list) and the buzz for the switch, if one happened. */

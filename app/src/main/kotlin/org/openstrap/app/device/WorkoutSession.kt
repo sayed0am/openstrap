@@ -748,7 +748,7 @@ class WorkoutSession(
                     runCatching { dao.upsertRounds(changed) }.onFailure { (strap as? StrapManager)?.log("rounds not saved: ${it.message}") }
                     _state.value = r.copy(rounds = step.rounds, restExtra = if (step.switch != null) 0 else r.restExtra)
                 }
-                step.switch?.let { buzz(org.openstrap.app.data.WorkoutBuzz.of(it), it.name) }
+                step.switch?.let { buzz(org.openstrap.app.data.WorkoutBuzz.of(it, game = s is org.openstrap.app.data.Structure.Periods), it.name) }
                 if (step.switch == null && !skip) {
                     val ends = when (val p = (_state.value as WorkoutState.Recording).phase(t)) {
                         is org.openstrap.app.data.Phase.Work -> p.endsAt
@@ -1058,6 +1058,12 @@ class WorkoutSession(
      */
     private fun cue(c: org.openstrap.app.data.Cue) {
         if (callRinging()) return
+        // Mind and body is a quiet strap: no halfway and no zone cues, and one soft buzz when its length is over.
+        val r = _state.value as? WorkoutState.Recording
+        if (r != null && org.openstrap.app.data.Workouts.family(r.workout.sportType) == org.openstrap.app.data.Workouts.Family.MindBody) {
+            if (c == org.openstrap.app.data.Cue.GoalReached) buzz(org.openstrap.app.data.WorkoutBuzz.SOFT, "length over")
+            return
+        }
         val filter = context.getSystemService(android.app.NotificationManager::class.java).currentInterruptionFilter
         if (filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE || filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS) return
         scope.launch { runCatching { strap.buzz(c.pattern) }.onFailure { (strap as? StrapManager)?.log("coach $c not played: ${it.message}") } }

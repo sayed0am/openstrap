@@ -214,9 +214,15 @@ fun GlowWorkoutReadyScreen(
                 outdoor && !gpsOn -> StatusPill(StartCopy.GPS_OFF, null)
                 outdoor -> StatusPill(StartCopy.gpsStatus(accuracy), if (StartCopy.gpsReady(accuracy)) TrendGood else TrendBad)
                 family == Workouts.Family.Games -> StatusText(StartCopy.GAMES_STATUS)
+                family == Workouts.Family.MindBody -> StatusText(StartCopy.MIND_STATUS)
                 rounds != null -> StatusText(StartCopy.INTERVALS_STATUS)
                 else -> StatusText(StartCopy.goalStatus(goal))
             }
+        }
+        // A game: free play, halves or quarters, with no label (workouts spec 2.2), then their length and break.
+        if (family == Workouts.Family.Games) {
+            GamePlan(rounds as? Structure.Periods) { structureCode = it?.code; goalCode = null }
+            return@WorkoutPage
         }
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             ChipLabel(StartCopy.goalTitle(family))
@@ -517,6 +523,7 @@ private fun IntervalsPlan(rounds: Structure?, onChange: (Structure?) -> Unit) {
                     is Structure.Timed -> listOf("${rounds.work} s" to "Work", "${rounds.rest} s" to "Rest", "${rounds.rounds}" to "Rounds")
                     is Structure.EveryMinute -> listOf(StartCopy.restText(rounds.period) to "Each round", "${rounds.rounds}" to "Rounds")
                     is Structure.Reps -> listOf(StartCopy.structureName(rounds) to "Reps", StartCopy.restText(rounds.rest) to "Rest")
+                    is Structure.Periods -> listOf(StartCopy.restText(rounds.length) to "Each", StartCopy.restText(rounds.rest) to "Break")
                 }
                 figures.forEach { (value, label) ->
                     Column(Modifier.weight(1f)) {
@@ -531,6 +538,31 @@ private fun IntervalsPlan(rounds: Structure?, onChange: (Structure?) -> Unit) {
         }
     }
     StatusText(StartCopy.INTERVALS_STATUS)
+}
+
+/**
+ * A game's Ready (board ReadyGame): Free play, Halves or Quarters as chips, no label; with periods, steppers for
+ * their length (5 min at a time) and the break (1 min).
+ */
+@Composable
+private fun GamePlan(periods: Structure.Periods?, onChange: (Structure.Periods?) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Chip(StartCopy.FREE_PLAY, periods == null, Color.White) { onChange(null) }
+        listOf(Structure.HALVES, Structure.QUARTERS).forEach { p ->
+            Chip(StartCopy.periodsName(p), periods?.rounds == p.rounds, Color.White) { onChange(p) }
+        }
+    }
+    if (periods != null) QuietPanel {
+        Stepper(
+            "Length", StartCopy.restText(periods.length), "Shorter", "Longer",
+            { onChange(periods.copy(length = (periods.length - 300).coerceAtLeast(300))) }, { onChange(periods.copy(length = (periods.length + 300).coerceAtMost(90 * 60))) },
+        )
+        Stepper(
+            StartCopy.breakName(periods.rounds), StartCopy.restText(periods.rest), "Shorter break", "Longer break",
+            { onChange(periods.copy(rest = (periods.rest - 60).coerceAtLeast(0))) }, { onChange(periods.copy(rest = (periods.rest + 60).coerceAtMost(30 * 60))) },
+        )
+        Text("The strap buzzes at the end of each period and break.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+    }
 }
 
 /** Work and rest along the rounds, each as wide as its time: work in heart red, rest in sleep blue. */

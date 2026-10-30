@@ -41,6 +41,8 @@ data class IntervalMoment(
     val drop: Int? = null,
     val everyMinute: Boolean = false,
     val reps: Boolean = false,
+    /** A game's periods: each one's length, for the time in it. */
+    val periodLength: Long? = null,
 )
 
 /**
@@ -128,6 +130,8 @@ data class GlanceInput(
     val fastestSplit: Int? = null,
     val strength: StrengthMoment? = null,
     val interval: IntervalMoment? = null,
+    /** A game's effort so far, 1 to 5 ([org.openstrap.app.data.Games.effort]). */
+    val effort: Int? = null,
     /** Average heart rate so far, for an indoor workout's figures. */
     val averageBpm: Int? = null,
 )
@@ -187,6 +191,7 @@ private fun glanceTicks(
                 lastSplit = last, lastSplitBpm = lastBpm, fastestSplit = whole.minByOrNull { it.pace }?.index,
                 strength = if (r.strength) strengthMoment(r, now, bpm, session.history.value) else null,
                 interval = intervalMoment(r, now, bpm, WorkoutCopy.readings(session.history.value, session.recent.value), route),
+                effort = org.openstrap.app.data.Games.effort(session.zoneSeconds.value),
             ),
         )
     }.distinctUntilChanged()
@@ -225,6 +230,7 @@ internal fun intervalMoment(r: WorkoutState.Recording, now: Long, bpm: Int?, rea
         is org.openstrap.app.data.Structure.Timed -> s.rest
         is org.openstrap.app.data.Structure.Reps -> s.rest
         is org.openstrap.app.data.Structure.EveryMinute -> null
+        is org.openstrap.app.data.Structure.Periods -> s.rest
     }
     return when (p) {
         is org.openstrap.app.data.Phase.Work -> {
@@ -238,6 +244,7 @@ internal fun intervalMoment(r: WorkoutState.Recording, now: Long, bpm: Int?, rea
             IntervalMoment(
                 p, p.round + 1, s.rounds, left = (p.endsAt?.let { it - active } ?: minuteLeft)?.coerceAtLeast(0), metersLeft = meters,
                 nextRest = rest.takeIf { p.round + 1 < s.rounds }, everyMinute = s is org.openstrap.app.data.Structure.EveryMinute,
+                periodLength = (s as? org.openstrap.app.data.Structure.Periods)?.length,
                 reps = s is org.openstrap.app.data.Structure.Reps,
             )
         }
@@ -298,7 +305,9 @@ object Glance {
             else -> null
         }
         i.strength?.let { s -> return strength(base, s, bpm, i) }
-        i.interval?.let { m -> return interval(base, m, bpm) }
+        i.interval?.let { m -> return interval(base, m, bpm, i) }
+        if (Workouts.family(i.sportType) == Workouts.Family.MindBody) return mind(base, i)
+        if (Workouts.family(i.sportType) == Workouts.Family.Games) return game(base, null, bpm, i)
         if (distance) {
             val pace = paceClock(i.pace)
             val first = listOfNotNull(kmWithUnit(i.distanceMeters ?: 0f), pace?.let { "$it /km" }).joinToString(", ")
@@ -356,10 +365,60 @@ object Glance {
     }
 
     /**
+     * Mind and body (spec 2.10's table): the minutes of the length in violet, one line ("Yoga, 23:40 of 45 min"), a
+     * quieter Pause and no heart rate in dots.
+     */
+    private fun mind(base: LiveGlance, i: GlanceInput): LiveGlance {
+        val of = (i.target as? WorkoutTarget.Time)?.let { " of ${it.seconds / 60} min" } ?: ""
+        return base.copy(
+            figure = "${i.activeSeconds / 60}", unit = "min$of", line1 = "${Workouts.sportName(i.sportType)}, ${base.clock}$of", line2 = null,
+            tint = GlanceTint.Mind, zone = null, bpm = null, goal = null, toGo = null, figures = emptyList(),
+        )
+    }
+
+    /**
+     * Games (spec 2.10's table): the period and the time in it, the zone and the effort, and Half time; in the break, its
+     * time left and Start the next period. Free play has no periods: the sport and its time.
+     */
+    private fun game(base: LiveGlance, m: IntervalMoment?, bpm: Int?, i: GlanceInput): LiveGlance {
+        val zone = base.zone?.let { "Zone ${it + 1}" }
+        val effort = i.effort?.let { "effort $it" }
+        val figures = listOf(
+            bpm?.toString() to (base.zone?.let { "bpm, zone ${it + 1}" } ?: "bpm"),
+            i.effort?.let { "$it of 5" } to "Effort",
+            i.activeKcal?.toInt()?.toString() to "Active kcal",
+        )
+        val heart = listOfNotNull(zone, effort).joinToString(", ").ifEmpty { null }
+        val game = base.copy(figures = figures, goal = null, toGo = null, progress = null, bpm = bpm, line2 = heart)
+        if (m == null || m.periodLength == null) return game.copy(line1 = "${Workouts.sportName(i.sportType)}, ${base.clock}")
+        return when (m.phase) {
+            is org.openstrap.app.data.Phase.Work -> {
+                val inPeriod = workoutClock((m.periodLength - (m.left ?: 0)).coerceAtLeast(0))
+                game.copy(
+                    figure = inPeriod, unit = StartCopy.periodName(m.round - 1, m.rounds).lowercase(),
+                    line1 = "${StartCopy.periodName(m.round - 1, m.rounds)}, $inPeriod",
+                    action = GlanceAction.Skip, actionLabel = StartCopy.breakName(m.rounds),
+                )
+            }
+            is org.openstrap.app.data.Phase.Rest -> {
+                val left = workoutClock(m.left ?: 0)
+                game.copy(
+                    figure = left, unit = "left", tint = GlanceTint.Rest,
+                    line1 = "${StartCopy.breakName(m.rounds)}, $left left",
+                    action = GlanceAction.Skip, actionLabel = "Start ${StartCopy.periodName(m.round - 1, m.rounds).lowercase()}",
+                    shortLabel = "Start",
+                )
+            }
+            else -> game.copy(line1 = "Full time, ${base.clock}")
+        }
+    }
+
+    /**
      * Intervals' moments (spec 2.10's table): work in work red with the seconds left (or the metres of a run rep) and
      * Pause; rest in rest green with Skip rest and +10 s; warming up with Start rounds; all rounds done.
      */
-    private fun interval(base: LiveGlance, m: IntervalMoment, bpm: Int?): LiveGlance {
+    private fun interval(base: LiveGlance, m: IntervalMoment, bpm: Int?, i: GlanceInput): LiveGlance {
+        if (m.periodLength != null) return game(base, m, bpm, i)
         val word = if (m.reps) "Rep" else "Round"
         val start = base.copy(goal = null, toGo = null, progress = null)
         return when (m.phase) {

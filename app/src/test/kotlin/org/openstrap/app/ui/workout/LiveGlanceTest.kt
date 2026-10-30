@@ -150,6 +150,30 @@ class LiveGlanceTest {
         assertEquals("Start rounds", warm.actionLabel)
     }
 
+    @Test fun `mind and body is one quiet line in violet`() {
+        val g = Glance.of(run(target = WorkoutTarget.Time(45 * 60)).copy(sportType = 60, gps = false, distanceMeters = null, activeSeconds = 23 * 60 + 40L))
+        assertEquals("Yoga, 23:40 of 45 min", g.line1)
+        assertNull(g.line2)
+        assertEquals(GlanceTint.Mind, g.tint)
+        assertNull(g.bpm)
+        assertEquals("23", g.figure)
+    }
+
+    @Test fun `a game shows its period, zone and effort, and Half time`() {
+        val m = IntervalMoment(org.openstrap.app.data.Phase.Work(0, now - 1930, 2700), 1, 2, left = 770, periodLength = 2700)
+        val g = Glance.of(run(target = null).copy(sportType = 18, gps = false, distanceMeters = null, interval = m, effort = 3))
+        assertEquals("1st half, 32:10", g.line1)
+        assertEquals("Zone 3, effort 3", g.line2)
+        assertEquals(GlanceAction.Skip, g.action)
+        assertEquals("Half time", g.actionLabel)
+        val ht = Glance.of(run(target = null).copy(sportType = 18, gps = false, distanceMeters = null, effort = 3,
+            interval = IntervalMoment(org.openstrap.app.data.Phase.Rest(0, now - 100, 3300), 2, 2, left = 492, periodLength = 2700)))
+        assertEquals("Half time, 8:12 left", ht.line1)
+        assertEquals("Start 2nd half", ht.actionLabel)
+        val free = Glance.of(run(target = null).copy(sportType = 17, gps = false, distanceMeters = null))
+        assertEquals("Tennis, 24:51", free.line1)
+    }
+
     @Test fun `paces read as clocks`() {
         assertEquals("5:42", Glance.paceClock(342.0))
         assertNull(Glance.paceClock(null))
