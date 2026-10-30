@@ -85,7 +85,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val hrAll = minuteHeartRate(loadFrom, to, activityAll)
         val hr = hrAll.filter { it.first >= from }
         // Naps count with the user's own times when they changed them.
-        val sessions = NapTimes.applyAll(dao.sleepSessionsOnce(from, to), dao.napEditsOnce())
+        val sessions = SleepEdits.apply(dao.sleepSessionsOnce(from, to), dao.sleepEditsOnce())
         val hrv = dao.hrvOnce(from, to)
         val skin = dao.skinTemperatureOnce(from, to)
         val breath = dao.breathRateOnce(from, to)
@@ -304,7 +304,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val activity = dao.activityOnce(day.from, day.to)
         val minuteSteps = activity.filter { it.steps in 0..250 }.associate { it.timestamp / 60 * 60 to it.steps }
         val minuteHr = minuteHeartRate(day.from, day.to, activity).toMap()
-        val sessions = NapTimes.applyAll(dao.sleepSessionsOnce(day.from, day.to), dao.napEditsOnce())
+        val sessions = SleepEdits.apply(dao.sleepSessionsOnce(day.from, day.to), dao.sleepEditsOnce())
         val strap = dao.workoutsOnce(day.from, day.to)
         val phone = HashMap<Long, Float>()
         for (w in dao.appWorkoutsOnce(day.from, day.to)) {

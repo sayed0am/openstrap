@@ -337,17 +337,30 @@ interface HealthDao {
     @Query("DELETE FROM sleep_session WHERE day = :day AND nap = :nap")
     suspend fun deleteSleepSessionsForDay(day: Long, nap: Boolean)
 
-    @Query("SELECT * FROM nap_edit")
-    fun napEdits(): Flow<List<NapEdit>>
+    @Query("SELECT * FROM sleep_edit")
+    fun sleepEdits(): Flow<List<SleepEdit>>
 
-    @Query("SELECT * FROM nap_edit")
-    suspend fun napEditsOnce(): List<NapEdit>
+    @Query("SELECT * FROM sleep_edit")
+    suspend fun sleepEditsOnce(): List<SleepEdit>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertNapEdit(edit: NapEdit)
+    suspend fun upsertSleepEdit(edit: SleepEdit)
 
-    @Query("DELETE FROM nap_edit WHERE strapStart = :strapStart")
-    suspend fun deleteNapEdit(strapStart: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSleepEdits(edits: List<SleepEdit>)
+
+    @Query("DELETE FROM sleep_edit WHERE strapStart = :strapStart")
+    suspend fun deleteSleepEdit(strapStart: Long)
+
+    /** Sessions the strap started in [from, to], for finding the one a delete removes for good. */
+    @Query("SELECT * FROM sleep_session WHERE start BETWEEN :from AND :to ORDER BY start")
+    suspend fun sleepSessionsStartingOnce(from: Long, to: Long): List<SleepSession>
+
+    @Query("DELETE FROM sleep_stage WHERE sessionStart = :sessionStart")
+    suspend fun deleteSleepStagesOf(sessionStart: Long)
+
+    @Query("DELETE FROM sleep_session WHERE start = :start")
+    suspend fun deleteSleepSession(start: Long)
 
     /**
      * Naps that overlap a main sleep. The strap can briefly report a stretch of broken night sleep as a nap,

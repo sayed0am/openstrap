@@ -32,7 +32,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
-import org.openstrap.app.data.NapTimes
+import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.SleepHistory
@@ -460,10 +460,10 @@ private fun NapTimesSheet(nap: SleepSession, detected: SleepSession, heartRate: 
     var scrub by remember { mutableStateOf<DetailHeadline?>(null) }
     // A clock left on the minute it opened at keeps the time to the second, so the strap's own times stay its own.
     fun picked(c: androidx.compose.material3.TimePickerState, was: Long, near: Long): Long =
-        if (c.hour == local(was).hour && c.minute == local(was).minute) was else NapTimes.atNear(c.hour * 60 + c.minute, near, zone)
+        if (c.hour == local(was).hour && c.minute == local(was).minute) was else SleepEdits.atNear(c.hour * 60 + c.minute, near, zone)
     val start = picked(startClock, nap.start, detected.start)
     val end = picked(endClock, nap.end, detected.end)
-    val problem = NapTimes.problem(detected, start, end, Instant.now().epochSecond)
+    val problem = SleepEdits.problem(detected, start, end, Instant.now().epochSecond)
     val window = (detected.start - 3600)..(detected.end + 3600)
     val hr = heartRate.filter { it.x in window }
 

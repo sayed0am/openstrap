@@ -91,7 +91,7 @@ class HealthRepository(private val dao: HealthDao) {
      */
     fun changes(): Flow<Unit> = kotlinx.coroutines.flow.combine(
         dao.latestHeartRateTime(), dao.latestStressTime(), dao.latestSleepEnd(), dao.workoutCountFlow().distinctUntilChanged(),
-        dao.napEdits().distinctUntilChanged(),
+        dao.sleepEdits().distinctUntilChanged(),
     ) { _, _, _, _, _ -> }
 
     /** Local days that have any heart rate, steps or sleep, for the calendar. */
@@ -103,12 +103,13 @@ class HealthRepository(private val dao: HealthDao) {
     fun activity(w: DayWindow): Flow<List<ActivityMinute>> = dao.activity(w.from, w.to)
     fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = dao.sleepSessions(w.from, w.to)
     fun sleepStages(sessionStart: Long): Flow<List<SleepStage>> = dao.sleepStages(sessionStart)
-    fun napEdits(): Flow<List<org.openstrap.app.data.db.NapEdit>> = dao.napEdits()
+    fun sleepEdits(): Flow<List<org.openstrap.app.data.db.SleepEdit>> = dao.sleepEdits()
 
-    /** Keeps [start] to [end] as the strap's nap [strap]'s times; its own times again drop the edit. */
-    suspend fun setNapTimes(strap: SleepSession, start: Long, end: Long) {
-        val e = NapTimes.edit(strap, start, end)
-        if (e == null) dao.deleteNapEdit(strap.start) else dao.upsertNapEdit(e)
+    /** Keeps [start] to [end] as the strap's session [strap]'s times; its own times again drop the edit. */
+    suspend fun setSleepTimes(strap: SleepSession, start: Long, end: Long) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        val e = SleepEdits.edit(strap, start, end, current, System.currentTimeMillis() / 1000)
+        if (e == null) dao.deleteSleepEdit(current?.strapStart ?: strap.start) else dao.upsertSleepEdit(e)
     }
     fun spo2(w: DayWindow): Flow<List<Spo2Sample>> = dao.spo2(w.from, w.to)
     /**

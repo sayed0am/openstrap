@@ -44,9 +44,9 @@ import androidx.room.RoomDatabase
         HabitAgeWeekRow::class,
         DeletedWorkout::class,
         DailyEnergyRow::class,
-        NapEdit::class,
+        SleepEdit::class,
     ],
-    version = 24,
+    version = 25,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6),
@@ -58,6 +58,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 18, to = 19), AutoMigration(from = 19, to = 20),
         AutoMigration(from = 20, to = 21), AutoMigration(from = 21, to = 22), AutoMigration(from = 22, to = 23),
         AutoMigration(from = 23, to = 24),
+        AutoMigration(from = 24, to = 25, spec = SleepEditMigration::class),
     ],
 )
 abstract class OpenStrapDatabase : RoomDatabase() {
