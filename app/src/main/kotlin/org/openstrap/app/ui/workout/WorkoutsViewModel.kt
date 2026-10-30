@@ -137,7 +137,7 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
         combine(dao.heartRate(suggestFrom, Long.MAX_VALUE), dao.activity(suggestFrom, Long.MAX_VALUE)) { hr, minutes ->
             org.openstrap.app.data.Summaries.bucketAverage(org.openstrap.app.data.Summaries.heartRateSeries(hr, minutes), 60)
         },
-        combine(dao.workouts(), dao.appWorkouts(), dao.dismissedWorkouts(suggestFrom), dao.sleepSessions(suggestFrom, Long.MAX_VALUE)) { strap, phone, dismissed, sleep ->
+        combine(dao.workouts(), dao.appWorkouts(), dao.dismissedWorkouts(suggestFrom), org.openstrap.app.data.SleepSource(dao).sessions(suggestFrom, Long.MAX_VALUE)) { strap, phone, dismissed, sleep ->
             strap.map { it.start..it.end } + phone.map { it.start..(it.recordedEnd ?: it.end ?: it.start) } +
                 dismissed.map { it.start..it.end } + sleep.map { it.start..it.end }
         },

@@ -74,10 +74,10 @@ class SleepWidget : LoadingWidget<SleepWidgetModel>(WidgetKind.Sleep) {
             val today = now.atZone(zone).toLocalDate()
             return try {
                 val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
-                val sessions = dao.sleepSessionsOnce(span.from, span.to)
+                val sessions = org.openstrap.app.data.SleepSource(dao).sessionsOnce(span.from, span.to)
                 val nights = SleepHistory.mainSleeps(sessions, zone)
                 suspend fun night(date: LocalDate): SleepWidgetNight? = SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(date, zone))?.let { main ->
-                    SleepWidgetNight.of(date, main, dao.sleepStagesOnce(main.start), nights)
+                    SleepWidgetNight.of(date, main, org.openstrap.app.data.SleepSource(dao).stagesOnce(main), nights)
                 }
                 val tonight = night(today)
                 val yesterday = if (tonight == null) night(today.minusDays(1)) else null

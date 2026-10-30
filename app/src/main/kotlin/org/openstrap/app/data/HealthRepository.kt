@@ -50,6 +50,8 @@ data class DayWindow(val from: Long, val to: Long) {
 class HealthRepository(private val dao: HealthDao) {
     private val recoveryEngine = RecoveryEngine(dao)
     private val healthspanEngine = HealthspanEngine(dao)
+    /** The one reader of sleep for everything shown ([SleepSource]). */
+    val sleep = SleepSource(dao)
 
     /**
      * Readiness and charge for [date]; heavy, so call it off the main thread. Also logs the night's own inputs next to
@@ -101,8 +103,12 @@ class HealthRepository(private val dao: HealthDao) {
 
     fun heartRate(w: DayWindow): Flow<List<HeartRateSample>> = dao.heartRate(w.from, w.to)
     fun activity(w: DayWindow): Flow<List<ActivityMinute>> = dao.activity(w.from, w.to)
-    fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = dao.sleepSessions(w.from, w.to)
-    fun sleepStages(sessionStart: Long): Flow<List<SleepStage>> = dao.sleepStages(sessionStart)
+    /** Sleep and naps as shown, ending in [w]: with the user's times, deleted ones left out ([SleepSource]). */
+    fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = sleep.sessions(w.from, w.to)
+    /** Each strap session ending in [w] with its edit, deleted ones too, for the screens that change them. */
+    fun sleepResolved(w: DayWindow): Flow<List<SleepEdits.Resolved>> = sleep.resolved(w.from, w.to)
+    /** [r]'s stages as shown. */
+    fun sleepStages(r: SleepEdits.Resolved): Flow<List<SleepStage>> = sleep.stages(r)
     fun sleepEdits(): Flow<List<org.openstrap.app.data.db.SleepEdit>> = dao.sleepEdits()
 
     /** Keeps [start] to [end] as the strap's session [strap]'s times; its own times again drop the edit. */

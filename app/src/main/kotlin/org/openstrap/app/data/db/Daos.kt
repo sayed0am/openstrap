@@ -629,7 +629,10 @@ interface HealthDao {
     @Query("SELECT timestamp / 60 FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm BETWEEN 30 AND 230 UNION SELECT timestamp / 60 FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND heartRate BETWEEN 30 AND 230")
     suspend fun wornMinutesOnce(from: Long, to: Long): List<Long>
 
-    /** A cheap fingerprint of the data in a window: changes when a sync adds minutes, sleep or workouts to it. */
-    @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003")
+    /**
+     * A cheap fingerprint of the data in a window: changes when a sync adds minutes, sleep or workouts to it, or when
+     * any sleep is moved, deleted or restored (every edit changes its editedAt).
+     */
+    @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003 + (SELECT COUNT(*) + COALESCE(SUM(editedAt), 0) FROM sleep_edit) * 31")
     suspend fun dataFingerprint(from: Long, to: Long): Long
 }

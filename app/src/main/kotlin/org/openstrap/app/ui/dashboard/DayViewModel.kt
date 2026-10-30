@@ -258,24 +258,26 @@ class DayViewModel(
         val vitals = combine(repo.spo2(day), repo.stress(day), repo.hrv(day)) { spo2, stress, hrv -> Triple(spo2, stress, hrv) }
         // Sessions ending from the start of the night into early tomorrow, so tonight's evening naps are included too.
         val nightBefore = DayWindow.nightEndingOn(date.minusDays(1))
-        val sessionsAndEdits = combine(repo.sleepSessions(DayWindow(nightBefore.from, day.to + 12 * 3600)), repo.sleepEdits()) { s, e -> s to e }
-        val sleep = sessionsAndEdits.flatMapLatest { (sessions, edits) ->
-            // Main sleep = the longest non-nap session that ended in the night window.
-            val main = SleepHistory.mainSleep(sessions, night)
-            val before = SleepHistory.mainSleep(sessions, nightBefore)
+        val sleep = repo.sleepResolved(DayWindow(nightBefore.from, day.to + 12 * 3600)).flatMapLatest { all ->
+            val shown = all.filter { !it.deleted }
+            // Main sleep = the longest non-nap session that ended in the night window, as shown.
+            fun mainIn(w: DayWindow) = shown.filter { !it.strap.nap && it.end in w.from..w.to }.maxByOrNull { it.end - it.start }
+            val main = mainIn(night)
+            val before = mainIn(nightBefore)?.shown
             // Naps belong to the calendar day they started on, not the night window (which ends at 18:00).
             // The strap's start decides the day, so moving a nap's times never moves it to another day.
-            val resolved = SleepEdits.resolve(sessions.filter { it.nap && it.start in day.from..day.to }, edits).filter { !it.deleted }
-            val detected = resolved.map { it.strap }
+            val resolved = shown.filter { it.strap.nap && it.strap.start in day.from..day.to }
             val naps = resolved.mapNotNull { it.shown }
-            val mainStages = if (main == null) flowOf(emptyList()) else repo.sleepStages(main.start)
             // Stages stay under the strap's start; they're trimmed to the times shown.
+            val mainStages = if (main == null) flowOf(emptyList()) else repo.sleepStages(main)
             val napStages = if (naps.isEmpty()) flowOf(emptyMap())
-            else combine(detected.map { repo.sleepStages(it.start) }) { all ->
-                naps.zip(all) { n, st -> n.start to SleepEdits.clip(st.toList(), n.start, n.end) }.toMap()
+            else combine(resolved.map { repo.sleepStages(it) }) { st -> naps.zip(st) { n, s -> n.start to s }.toMap() }
+            val asDetected = naps.zip(resolved) { n, r -> n.start to r.strap }.toMap()
+            combine(mainStages, napStages) { st, ns ->
+                // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
+                val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, st) else it }
+                SleepParts(session, st, naps, ns, before?.score, asDetected)
             }
-            val asDetected = naps.zip(detected) { n, d -> n.start to d }.toMap()
-            combine(mainStages, napStages) { st, ns -> SleepParts(main, st, naps, ns, before?.score, asDetected) }
         }
         val extras = combine(repo.skinTemperature(day), repo.breathRate(night), repo.latestPai(day.to)) { skin, breath, pai ->
             Triple(skin, breath, pai?.takeIf { it.timestamp >= day.from })

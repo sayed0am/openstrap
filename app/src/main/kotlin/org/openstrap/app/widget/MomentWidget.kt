@@ -98,9 +98,9 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
             val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
             val night = read("last night", null) {
                 val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
-                val sessions = dao.sleepSessionsOnce(span.from, span.to)
+                val sessions = org.openstrap.app.data.SleepSource(dao).sessionsOnce(span.from, span.to)
                 SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(today, zone))?.let { main ->
-                    SleepWidgetNight.of(today, main, dao.sleepStagesOnce(main.start), SleepHistory.mainSleeps(sessions, zone))
+                    SleepWidgetNight.of(today, main, org.openstrap.app.data.SleepSource(dao).stagesOnce(main), SleepHistory.mainSleeps(sessions, zone))
                 }
             }
             // Workouts over the usual workout time's look-back, as Today's usual sport reads them.

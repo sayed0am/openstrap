@@ -62,6 +62,8 @@ data class RecoveryResult(
 
 /** Loads what [Recovery] needs from the database and runs it. All work happens off the main thread by the caller. */
 class RecoveryEngine(private val dao: HealthDao) {
+    /** Sleep as shown, with the user's edits ([SleepEdits]). */
+    private val sleepSource = SleepSource(dao)
 
     /**
      * [RecoveryResult.usualBedtime] for [date] without the whole model: the same main sleeps over the same nights
@@ -70,7 +72,7 @@ class RecoveryEngine(private val dao: HealthDao) {
     suspend fun usualBedtime(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): java.time.LocalTime? {
         val day = DayWindow.of(date, zone)
         val from = DayWindow.of(date.minusDays(Recovery.BASELINE_NIGHTS.toLong() + 1), zone).from
-        val mains = mainsByMorning(dao.sleepSessionsOnce(from, day.to), zone)
+        val mains = mainsByMorning(sleepSource.sessionsOnce(from, day.to), zone)
         return usualBedtime(mains.filterKeys { it <= day.from }.values, date, zone)
     }
 
@@ -85,7 +87,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val hrAll = minuteHeartRate(loadFrom, to, activityAll)
         val hr = hrAll.filter { it.first >= from }
         // Naps count with the user's own times when they changed them.
-        val sessions = SleepEdits.apply(dao.sleepSessionsOnce(from, to), dao.sleepEditsOnce())
+        val sessions = sleepSource.sessionsOnce(from, to)
         val hrv = dao.hrvOnce(from, to)
         val skin = dao.skinTemperatureOnce(from, to)
         val breath = dao.breathRateOnce(from, to)
@@ -103,7 +105,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val napsByDay = sessions.filter { it.nap }.groupBy { Instant.ofEpochSecond(it.start).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond() }
             .mapValues { (_, v) -> v.sumOf { asleepMinutes(it) } }
         val nights = mains.map { (morning, s) ->
-            val stages = dao.sleepStagesOnce(s.start).map { Triple(it.start, it.end, it.stage) }
+            val stages = sleepSource.stagesOnce(s).map { Triple(it.start, it.end, it.stage) }
             night(morning, s, hr, hrv, skin, breath, sleepSpo2, osaByMorning[morning]).copy(
                 strapHrv = strapNights[morning]?.sleepHrv?.toFloat(),
                 strapRestingHr = strapNights[morning]?.sleepRestingHr?.toFloat(),
@@ -169,7 +171,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         // last the night, which makes it a gap rather than a drift ([Recovery.charge]); the window is still the day.
         val simTo = minOf(day.to + 1 + LOOKAHEAD_SECONDS, now / 60 * 60 + 60)
         val stages = sessions.filter { it.end > simFrom && it.start < simTo }
-            .flatMap { s -> dao.sleepStagesOnce(s.start).map { Triple(it.start, it.end, it.stage) } }
+            .flatMap { s -> sleepSource.stagesOnce(s).map { Triple(it.start, it.end, it.stage) } }
         val stress = dao.stressOnce(simFrom, simTo).map { it.timestamp to it.value }
         val simActivity = dao.activityOnce(simFrom, simTo)
         val steps = simActivity.associate { it.timestamp / 60 * 60 to it.steps }
@@ -245,7 +247,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val gridStart = date.minusDays(SleepRegularity.SRI_DAYS.toLong() + 1).atTime(SleepRegularity.DAY_START_HOUR, 0).atZone(zone).toEpochSecond()
         val gridEnd = date.atTime(SleepRegularity.DAY_START_HOUR, 0).atZone(zone).toEpochSecond()
         val gridStages = sessions.filter { it.end > gridStart && it.start < gridEnd }
-            .flatMap { s -> dao.sleepStagesOnce(s.start).map { Triple(it.start, it.end, it.stage) } }
+            .flatMap { s -> sleepSource.stagesOnce(s).map { Triple(it.start, it.end, it.stage) } }
         val wornMinutes = hr.mapTo(HashSet()) { it.first / 60 * 60 }
         val grids = (0..SleepRegularity.SRI_DAYS).map { k ->
             val noon = date.minusDays(SleepRegularity.SRI_DAYS.toLong() + 1 - k).atTime(SleepRegularity.DAY_START_HOUR, 0).atZone(zone).toEpochSecond()
@@ -257,7 +259,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val regularity = SleepRegularity.result(grids, midpoints)
         val sleepHealth = tonight?.let { n ->
             val main = mains[midnight]
-            val stagesTonight = main?.let { dao.sleepStagesOnce(it.start).filter { st -> st.stage != org.openstrap.app.data.db.SleepStage.AWAKE } }.orEmpty()
+            val stagesTonight = main?.let { sleepSource.stagesOnce(it).filter { st -> st.stage != org.openstrap.app.data.db.SleepStage.AWAKE } }.orEmpty()
             val period = stagesTonight.takeIf { it.isNotEmpty() }?.let { ((it.maxOf { st -> st.end } - it.minOf { st -> st.start }) / 60).toInt() }
             val mid = Instant.ofEpochSecond((n.start + n.end) / 2).atZone(zone).toLocalTime().toSecondOfDay() / 60
             SleepRegularity.health(n.asleepMinutes, n.wasoMinutes, period, regularity, age, mid)
@@ -304,7 +306,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val activity = dao.activityOnce(day.from, day.to)
         val minuteSteps = activity.filter { it.steps in 0..250 }.associate { it.timestamp / 60 * 60 to it.steps }
         val minuteHr = minuteHeartRate(day.from, day.to, activity).toMap()
-        val sessions = SleepEdits.apply(dao.sleepSessionsOnce(day.from, day.to), dao.sleepEditsOnce())
+        val sessions = sleepSource.sessionsOnce(day.from, day.to)
         val strap = dao.workoutsOnce(day.from, day.to)
         val phone = HashMap<Long, Float>()
         for (w in dao.appWorkoutsOnce(day.from, day.to)) {
@@ -352,7 +354,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val to = DayWindow.of(monday, zone).to
         val hr = minuteHeartRate(from, to)
         val hrv = dao.hrvOnce(from, to)
-        val nights = mainsByMorning(dao.sleepSessionsOnce(from, to), zone).mapNotNull { (morning, s) ->
+        val nights = mainsByMorning(sleepSource.sessionsOnce(from, to), zone).mapNotNull { (morning, s) ->
             night(morning, s, hr, hrv, emptyList(), emptyList(), emptyList(), null).validRestingHr?.let { morning to it }
         }.toMap()
         return Vo2max.estimate(profile, profile.age(monday), nights, DayWindow.of(monday, zone).from).first?.value?.toFloat()
