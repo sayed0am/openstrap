@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,7 +46,6 @@ import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.ui.alarms.AlarmClockColors
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
@@ -420,6 +419,7 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
 private fun ScrubLine(
     points: List<ChartPoint>, window: LongRange, height: Dp, labels: List<String>, color: Color, unit: String, decimals: Int = 0,
     span: LongRange? = null,
+    spanColor: Color = color,
     onScrub: (DetailHeadline?) -> Unit,
 ) {
     val step = 5 * 60L
@@ -427,7 +427,7 @@ private fun ScrubLine(
     val length = (window.last - window.first).coerceAtLeast(1).toFloat()
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
-        span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length },
+        span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length }, spanColor = spanColor,
         onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline("%.${decimals}f".format(v), "$unit at ${clock(window.first + i * step)}", null) }) },
     )
 }
@@ -620,9 +620,9 @@ internal fun NapsDetail(
 }
 
 /**
- * A sleep's or nap's own times, one sheet for both: Fell asleep and Woke up on the alarms' clock, with the heart rate
- * from two hours before to two hours after the strap's session and the chosen span shaded on it, so the drop into sleep
- * and the rise out of it can be found by scrubbing. [others] are the day's other sleep and naps as shown, which the
+ * A sleep's or nap's own times, one sheet for both: Fell asleep and Woke up as two boxes typed on the number pad, with
+ * the heart rate from two hours before to two hours after the strap's session and the chosen span shaded on it, so the
+ * drop into sleep and the rise out of it can be found by scrubbing. [others] are the day's other sleep and naps as shown, which the
  * times mustn't run into. The strap's times stay one tap away.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -655,12 +655,13 @@ private fun SleepTimesSheet(
             Box(Modifier.padding(top = 8.dp)) {
                 ScrubLine(
                     hr, window, 90.dp, listOf(clock(window.first), clock(window.last)), MetricColors.heart, "bpm",
-                    span = if (end > start) start..end else null,
+                    span = if (end > start) start..end else null, spanColor = MetricColors.sleepDeep,
                 ) { scrub = it }
             }
         }
         GlowSegments(listOf("Fell asleep ${clock(start)}", "Woke up ${clock(end)}"), if (pickingEnd) 1 else 0, { pickingEnd = it == 1 })
-        TimePicker(if (pickingEnd) endClock else startClock, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
+        // Hours and minutes as two boxes, typed on the number pad: no dial, so the sheet stays short.
+        TimeInput(if (pickingEnd) endClock else startClock, Modifier.align(Alignment.CenterHorizontally), colors = SleepTimeColors())
         if (problem != null) PageNote(problem, color = MetricColors.warn)
         else Text(SleepCopy.timesResult(detected.nap, end - start), color = Color.White, style = GlowType.body)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -675,6 +676,17 @@ private fun SleepTimesSheet(
         }
     }
 }
+
+/** The box being typed in lit in the sleep colour, the other plain, as on the alarms' clock otherwise. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SleepTimeColors() = androidx.compose.material3.TimePickerDefaults.colors(
+    containerColor = Color.Transparent,
+    timeSelectorSelectedContainerColor = MetricColors.sleepDeep.copy(alpha = 0.25f),
+    timeSelectorUnselectedContainerColor = ControlSurface,
+    timeSelectorSelectedContentColor = Color.White,
+    timeSelectorUnselectedContentColor = Color.White,
+)
 
 /* ----------------------------------------------- Related -------------------------------------------- */
 

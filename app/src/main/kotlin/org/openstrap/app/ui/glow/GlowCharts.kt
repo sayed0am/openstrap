@@ -145,10 +145,12 @@ fun GlowLineChart(
      */
     onScrub: ((Int?) -> Unit)? = null,
     /**
-     * A chosen stretch of the x range, as fractions: shaded in the colour at 12% with its two edges drawn (a sleep's
+     * A chosen stretch of the x range, as fractions: shaded in [spanColor] with its two edges drawn in white (a sleep's
      * times picked against its heart rate).
      */
     span: ClosedFloatingPointRange<Float>? = null,
+    /** The shading of [span]; the line's colour by default. */
+    spanColor: Color = color,
     /** Text for the touch readout at a reading; null turns scrubbing off. */
     describe: ((index: Int, value: Float) -> String)? = null,
 ) {
@@ -177,8 +179,8 @@ fun GlowLineChart(
             fun x(f: Float) = inset + f.coerceIn(0f, 1f) * (size.width - inset * 2)
             val a = x(span.start)
             val b = x(span.endInclusive)
-            drawRect(color.copy(alpha = NormalBandAlpha), Offset(a, 0f), Size(b - a, h))
-            listOf(a, b).forEach { drawLine(color.copy(alpha = 0.8f), Offset(it, 0f), Offset(it, h), 1.5.dp.toPx()) }
+            drawRect(spanColor.copy(alpha = 0.18f), Offset(a, 0f), Size(b - a, h))
+            listOf(a, b).forEach { drawLine(Color.White, Offset(it, 0f), Offset(it, h), 1.5.dp.toPx()) }
         }
         drawLineChartBody(g, color)
 
