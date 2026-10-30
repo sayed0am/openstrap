@@ -385,6 +385,39 @@ object Workouts {
         return (load / full).coerceIn(EFFORT_MIN, 1f)
     }
 
+    /**
+     * How a sport is recorded and shown (workouts spec 1): which live screen, which choice on Ready and which summary.
+     * Internal only: the app says the sport, never its family.
+     */
+    enum class Family { Distance, IndoorCardio, Strength, Intervals, MindBody, Games }
+
+    /** The outdoor sides and sports done outdoors, with GPS: runs, walks, hikes, rides, skiing. */
+    private val DISTANCE = setOf(1, 3, 4, 11, 12, 15, 215, 224, 225)
+
+    /** Machines and indoor sides, and the open sports whose live screen is the heart rate. */
+    private val INDOOR_CARDIO = setOf(2, 5, 8, 9, 16, 21, 23, 40, 51, 57, 58, 76, 97, 108, 109, 130, 143, GENERIC_ACTIVITY)
+
+    private val MIND_BODY = setOf(53, 55, 60, 61)
+
+    /** HIIT. Run intervals keep the run's family, with rounds as their structure. */
+    private val INTERVALS = setOf(49)
+
+    /**
+     * [type]'s family. A sport not listed is Indoor cardio when it has an indoor side ([sidesOf], the swims), else
+     * Games and sports: tennis, padel, climbing and the rest are played with the phone in a bag.
+     */
+    fun family(type: Int): Family = when (type) {
+        in Strength.SPORTS -> Family.Strength
+        in INTERVALS -> Family.Intervals
+        in MIND_BODY -> Family.MindBody
+        in DISTANCE -> Family.Distance
+        in INDOOR_CARDIO -> Family.IndoorCardio
+        else -> if (sidesOf(type) != null) Family.IndoorCardio else Family.Games
+    }
+
+    /** Every sport id with a name, kept or hidden, for tests that must cover them all. */
+    internal val SPORT_IDS: Set<Int> get() = SPORT_NAMES.keys
+
     /** Offered before any workout has been recorded: outdoor run, walk, strength training. */
     val DEFAULT_SPORTS = listOf(1, 3, 52)
 

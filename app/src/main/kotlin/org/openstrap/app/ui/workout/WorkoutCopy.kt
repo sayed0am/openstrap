@@ -175,6 +175,12 @@ object WorkoutCopy {
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */
     fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal): String = "${activeKcal?.toInt() ?: 0} of ${target.label}"
 
+    /** The same toward a distance goal, in the goal's unit: "2.15 of 5 km", "640 of 800 m". */
+    fun distanceProgress(meters: Float?, target: WorkoutTarget.Distance): String {
+        val m = meters ?: 0f
+        return if (target.meters < 1000) "${m.toInt()} of ${target.label}" else String.format(java.util.Locale.ROOT, "%.2f of %s", m / 1000f, target.label)
+    }
+
     /** "312 kcal" for the notification and the capsule; null before there's a figure. */
     fun kcalText(activeKcal: Float?): String? = activeKcal?.let { "${it.toInt()} kcal" }
 

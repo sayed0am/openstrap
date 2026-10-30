@@ -45,6 +45,98 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.device.ConnectionState
+
+/* ---------------------------------------------- Choose ----------------------------------------------- */
+
+/** A sport offered on Choose, with its one line: what you did last time, or last time's settings. */
+data class ChooseSport(val type: Int, val line: String)
+
+/**
+ * Choose (workouts spec 2.1), the first screen of a workout: "Start a workout" and the strap in one line; your usual
+ * sport as a glow card in its colour with Start inside it, which starts with last time's settings and skips Ready
+ * ([onStartUsual]), while the card elsewhere opens Ready ([onReady]); two recent sports as small cards opening Ready;
+ * and All sports, the picker with search. A new user has no usual, and Run, Walk and Strength as recent.
+ */
+@Composable
+fun GlowChooseScreen(
+    usual: ChooseSport?,
+    recent: List<ChooseSport>,
+    connection: ConnectionState,
+    liveHeartRate: Int?,
+    contentPadding: PaddingValues,
+    onStartUsual: (Int) -> Unit,
+    onReady: (Int) -> Unit,
+    onAllSports: () -> Unit,
+    onBack: () -> Unit,
+) {
+    BackHandler(onBack = onBack)
+    WorkoutPage(Color.Transparent, contentPadding, pinned = { PageButton("All sports", onAllSports, Modifier.fillMaxWidth(), icon = SportIcons.Search) }) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            RoundIcon(AppIcons.X, "Close", onBack)
+            Spacer(Modifier.width(12.dp))
+            Text("Start a workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+        }
+        StrapLine(connection, liveHeartRate)
+        if (usual != null) UsualCard(usual, { onStartUsual(usual.type) }, { onReady(usual.type) })
+        if (recent.isNotEmpty()) {
+            ChipLabel("Recent")
+            recent.chunked(2).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    row.forEach { s -> RecentCard(s, Modifier.weight(1f)) { onReady(s.type) } }
+                    if (row.size == 1) Spacer(Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Your usual: a glow card lit from below in the sport's colour, its name, what you did last time, and Start inside
+ * it. The card itself opens Ready.
+ */
+@Composable
+private fun UsualCard(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
+    val color = familyColor(Workouts.family(s.type))
+    val haptics = org.openstrap.app.ui.components.rememberHaptics()
+    GlowCard(heroStyle(color, LightAngle.Below), Modifier.fillMaxWidth(), onClick = onOpen) {
+        Column {
+            Text("Your usual", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            Spacer(Modifier.height(6.dp))
+            Text(Workouts.sportName(s.type), color = Color.White, style = GlowType.pageTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (s.line.isNotEmpty()) Text(s.line, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 4.dp))
+            Spacer(Modifier.height(18.dp))
+            PageButton(
+                WorkoutCopy.startLabel(s.type),
+                { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
+                primary = true, icon = AppIcons.PlayFill,
+            )
+        }
+    }
+}
+
+/** A recent sport: a quiet card with its icon in its colour, its name and last time's settings. */
+@Composable
+private fun RecentCard(s: ChooseSport, modifier: Modifier, onClick: () -> Unit) {
+    val shape = GlowLayout.CardShape
+    Column(
+        modifier.clip(shape).background(QuietCard).pressClickable(onClick, shape).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(SportIcons.of(s.type), null, tint = familyColor(Workouts.family(s.type)), modifier = Modifier.size(26.dp))
+        Column {
+            Text(Workouts.shortName(s.type), color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(s.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/** Choose's quiet cards, a step off black so the usual's glow stays the one lit thing. */
+private val QuietCard = Color(0xFF0F0F11)
+
+/* --------------------------------------------- Sport picker -------------------------------------------- */
 
 /**
  * A sport's tile in the picker (spec 6.3): a 64 dp Control tile with 16 dp corners, the icon at 24 dp, the name in

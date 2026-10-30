@@ -5,50 +5,55 @@ import android.content.Intent
 import android.location.LocationManager
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import kotlin.math.min
+import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
+import org.openstrap.app.data.WorkoutPlan
+import org.openstrap.app.data.WorkoutSetup
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
@@ -60,19 +65,28 @@ import org.openstrap.app.ui.dashboard.Info
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.ui.workout.familyColor
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
+/** What opens over Ready. */
+private enum class ReadySheet { Settings, More, About }
+
 /**
- * One screen, not a wizard (spec 6.3): close, the sport (tap to change), the Outdoor or Indoor switch for a sport with
- * both, the strap as the hero with its live heart rate, the settings as list rows, and Start pinned to the bottom.
- * Recording starts even when the strap is away; the strap's history fills in after it syncs.
+ * Ready (workouts spec 2.2): the same frame for every sport. Close, the sport as a pill (tap to change it), the
+ * settings; the live heart rate large, one status line saying what the strap or phone will do, the sport's one choice,
+ * and Start named for the sport. Recording starts even when the strap is away; the strap's history fills in after it
+ * syncs.
  *
- * The switch picks the sport type saved ([Workouts.Sides]) and whether GPS is offered; it opens on the side you last
- * chose for the sport ([sides], saved through [onSide]). GPS is on for the outdoor side and sports done outdoors, with
- * its row to turn it off for this workout. While the phone's location is off or not allowed, the row says so with
- * Turn on ([onTurnOnLocation] asks for the permission), and Start works without GPS.
+ * Everything opens on what was chosen last time for the sport ([settings]); Ready never asks what it can answer
+ * itself. The Outdoor or Indoor switch picks the sport type saved ([Workouts.Sides]) and opens on the side last chosen
+ * ([sides], saved through [onSide]). An outdoor sport warms GPS up while Ready shows and says how close the fix is; Start
+ * never waits for it. The goal chips are the sport's two most used goals ([goalChips]), More has the rest.
+ *
+ * Strength shows its plan and steppers instead of the heart rate: the sets, the rest, and the level that ends rest
+ * sooner. [onStart] gets the workout to record and the settings to open on next time.
  */
 @Composable
 fun GlowWorkoutReadyScreen(
@@ -82,157 +96,275 @@ fun GlowWorkoutReadyScreen(
     liveHeartRate: Int?,
     contentPadding: PaddingValues,
     onSport: (Int) -> Unit,
-    onStart: (sportType: Int, askToEnd: Boolean, target: WorkoutTarget?, useGps: Boolean, keepRoute: Boolean, rest: Strength.Rest?, setsTarget: Int?) -> Unit,
+    onStart: (WorkoutPlan, SportSettings) -> Unit,
     onBack: () -> Unit,
+    settings: SportSettings = SportSettings(),
+    goalChips: List<WorkoutTarget> = WorkoutSetup.defaultGoals(Workouts.family(sportType)),
     recentSports: List<Int> = emptyList(),
     sides: Map<Int, Boolean> = emptyMap(),
     onSide: (sport: Int, indoor: Boolean) -> Unit = { _, _ -> },
     onTurnOnLocation: (then: () -> Unit) -> Unit = { it() },
-    /** kcal targets are offered: there's a profile to work kcal out from. */
+    /** kcal goals are offered: there's a profile to work kcal out from. */
     kcalTargets: Boolean = false,
 ) {
     var picking by rememberSaveable { mutableStateOf(pickSport) }
-    var askToEnd by rememberSaveable { mutableStateOf(true) }
-    var targetCode by rememberSaveable { mutableStateOf<String?>(null) }
     val pair = Workouts.sidesOf(sportType)
     // The side picked on this screen; until then the one you last chose for the sport, or its default.
     var chosenIndoor by rememberSaveable(sportType) { mutableStateOf<Boolean?>(null) }
     val indoor = chosenIndoor ?: Workouts.indoorSide(sportType, sides)
     val type = pair?.type(indoor == true) ?: sportType
-    val outdoor = Workouts.gpsOffered(sportType, indoor)
-    // GPS is on wherever it's offered; turning it off holds for this workout only.
-    var gpsOff by rememberSaveable(type, indoor) { mutableStateOf(false) }
-    var keepRoute by rememberSaveable { mutableStateOf(false) }
+    val family = Workouts.family(type)
+    // Last time's settings until changed here. Keyed on them too: the stored ones load a moment after the screen opens.
+    val key = Workouts.tileType(sportType)
+    var goalCode by rememberSaveable(key, settings) { mutableStateOf(settings.goal) }
+    var askToEnd by rememberSaveable(key, settings) { mutableStateOf(settings.askToEnd) }
+    var gpsOn by rememberSaveable(key, settings) { mutableStateOf(settings.gps) }
+    var keepRoute by rememberSaveable(key, settings) { mutableStateOf(settings.keepRoute) }
+    val lastRest = Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT
+    var sets by rememberSaveable(key, settings) { mutableStateOf(settings.sets) }
+    var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }
+    var restBelow by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm) }
+    var sheet by rememberSaveable { mutableStateOf<ReadySheet?>(null) }
     val context = LocalContext.current
     var locationOn by remember { mutableStateOf(locationAvailable(context)) }
     LifecycleResumeEffect(Unit) {
         locationOn = locationAvailable(context)
         onPauseOrDispose { }
     }
-    val useGps = outdoor && !gpsOff && locationOn
-    val strength = type in Strength.SPORTS
-    var setsTarget by rememberSaveable { mutableStateOf<Int?>(null) }
-    var restSeconds by rememberSaveable { mutableStateOf(Strength.Rest.DEFAULT.seconds) }
-    var restBelow by rememberSaveable { mutableStateOf<Int?>(null) }
-    // A kcal target picked before the profile went is dropped with its chip.
-    val target = WorkoutTarget.parse(targetCode)?.takeIf { it in WorkoutTarget.offered(kcalTargets) }
-    var info by rememberSaveable { mutableStateOf(false) }
+    val outdoor = Workouts.gpsOffered(sportType, indoor)
+    val useGps = outdoor && gpsOn && locationOn
+    val strength = family == Workouts.Family.Strength
+    // A distance only where there is one; a kcal goal picked before the profile went is dropped with its chip.
+    val goal = WorkoutTarget.parse(goalCode)?.takeIf { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
+    // GPS warms up while Ready shows, so the fix is often there by Start.
+    var accuracy by remember(useGps) { mutableStateOf<Float?>(null) }
+    if (useGps) DisposableEffect(Unit) {
+        val location = WorkoutLocation(context) { accuracy = it.accuracy }
+        location.start()
+        onDispose { location.stop() }
+    }
     val haptics = rememberHaptics()
     if (picking) {
         SportPicker(type, recentSports, contentPadding, onPick = { onSport(it); picking = false }, onBack = { if (pickSport) onBack() else picking = false })
         return
     }
     BackHandler(onBack = onBack)
-    // Start takes the target's colour, previewing the workout mode; plain white with none.
-    val accent = targetColor(target)
+    val start = {
+        haptics.perform(HapticEvent.WorkoutStart)
+        val rest = Strength.Rest(restSeconds, restBelow)
+        onStart(
+            WorkoutPlan(
+                type, askToEnd, goal.takeIf { !strength }, useGps, useGps && keepRoute,
+                rest.takeIf { strength }, sets.takeIf { strength },
+            ),
+            settings.copy(
+                goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = gpsOn, keepRoute = keepRoute,
+                rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
+            ),
+        )
+    }
     WorkoutPage(
-        accent, contentPadding,
-        pinned = {
-            WorkoutButton(WorkoutCopy.startLabel(type), accent, Color.Black, {
-                haptics.perform(HapticEvent.WorkoutStart)
-                onStart(
-                    type, askToEnd, target, useGps, useGps && keepRoute,
-                    Strength.Rest(restSeconds, restBelow).takeIf { strength }, setsTarget.takeIf { strength },
-                )
-            }, icon = AppIcons.PlayFill)
-        },
+        Color.Transparent, contentPadding,
+        pinned = { WorkoutButton(WorkoutCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) },
     ) {
         Box(Modifier.fillMaxWidth()) {
-            Box(
-                Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(onBack, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) { Icon(AppIcons.X, "Close", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            RoundIcon(AppIcons.X, "Close", onBack, Modifier.align(Alignment.CenterStart))
             Box(Modifier.align(Alignment.Center)) { Pill(Workouts.shortName(type), null, onClick = { picking = true }, caret = true) }
-        }
-        Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Ready when you are", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
-            Text("Recording starts when you tap Start.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            RoundIcon(AppIcons.SlidersHorizontal, "${Workouts.shortName(type)} settings", { sheet = ReadySheet.Settings }, Modifier.align(Alignment.CenterEnd))
         }
         // Outdoor or indoor is a switch, not a second sport.
         if (pair != null) SideSwitch(listOf(pair.outdoorName, pair.indoorName), if (indoor == true) 1 else 0) { i ->
             chosenIndoor = i == 1
             onSide(pair.outdoor, i == 1)
         }
-        StrapHero(connection, liveHeartRate) { info = true }
-        // GPS for the outdoor side and sports done outdoors only; indoors there's no row at all.
-        if (outdoor) ListPanel {
-            if (locationOn) {
-                SettingRow(SportIcons.Location, "GPS", WorkoutCopy.gpsNote(useGps, type), divider = false, onClick = { gpsOff = !gpsOff }) {
-                    GlowSwitch(!gpsOff, { gpsOff = !it })
+        if (strength) {
+            StrapLine(connection, liveHeartRate)
+            StrengthPlan(sets, restSeconds, restBelow, { sets = it }, { restSeconds = it }, { restBelow = it })
+            return@WorkoutPage
+        }
+        ReadyHeart(connection, liveHeartRate)
+        // The one status line: GPS for an outdoor sport, else what the strap will do.
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            when {
+                outdoor && !locationOn -> StatusPill(WorkoutCopy.LOCATION_OFF, TrendBad) {
+                    SmallPill("Turn on") {
+                        if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
+                        else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    }
                 }
-                if (useGps) SettingRow(AppIcons.Route01, "Keep the route", WorkoutCopy.routeNote(keepRoute), onClick = { keepRoute = !keepRoute }) {
-                    GlowSwitch(keepRoute, { keepRoute = it })
-                }
-            } else {
-                val turnOn = {
-                    if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
-                    else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                }
-                SettingRow(SportIcons.Location, WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, divider = false, onClick = turnOn) {
-                    SmallPill("Turn on", turnOn)
-                }
+                outdoor && !gpsOn -> StatusPill(StartCopy.GPS_OFF, null)
+                outdoor -> StatusPill(StartCopy.gpsStatus(accuracy), if (StartCopy.gpsReady(accuracy)) TrendGood else TrendBad)
+                family == Workouts.Family.Games -> StatusText(StartCopy.GAMES_STATUS)
+                else -> StatusText(StartCopy.goalStatus(goal))
             }
         }
-        // Strength counts sets and rest; the strap buzzes when rest is over, so the phone can stay in a pocket.
-        if (strength) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ChipLabel("Sets")
-            Chips(listOf("Open") + listOf(3, 4, 5).map { "$it sets" }, listOf(null, 3, 4, 5).indexOf(setsTarget), Color.White) { setsTarget = listOf(null, 3, 4, 5)[it] }
-            ChipLabel("Rest. The strap buzzes when it's over.")
-            Chips(Strength.Rest.TIMES.map { "${it} s" }, Strength.Rest.TIMES.indexOf(restSeconds), Color.White) { restSeconds = Strength.Rest.TIMES[it] }
-            ChipLabel("Or sooner, once heart rate drops below")
-            Chips(Strength.Rest.LEVELS.map { it?.let { b -> "$b bpm" } ?: "Off" }, Strength.Rest.LEVELS.indexOf(restBelow), Color.White) { restBelow = Strength.Rest.LEVELS[it] }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ChipLabel(WorkoutCopy.targetHint(target))
-            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                (listOf<WorkoutTarget?>(null) + WorkoutTarget.offered(kcalTargets)).forEach { t ->
-                    Chip(targetLabel(t), t == target, targetColor(t)) { targetCode = t?.code }
-                }
-            }
-        }
-        ListPanel {
-            SettingRow(null, "Ask to end when I stop", "After 8 min near resting heart rate and no steps, the strap buzzes and asks.", divider = false, onClick = { askToEnd = !askToEnd }) {
-                GlowSwitch(askToEnd, { askToEnd = it })
+        Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            ChipLabel(StartCopy.goalTitle(family))
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val chips = if (family == Workouts.Family.MindBody) WorkoutSetup.LENGTHS
+                    else (goalChips.filter { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) } + listOfNotNull(goal)).distinct()
+                Chip(if (family == Workouts.Family.MindBody) StartCopy.OPEN else StartCopy.noGoal(type), goal == null, Color.White) { goalCode = null }
+                chips.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code } }
+                if (family != Workouts.Family.MindBody) Chip("More", false, Color.White) { sheet = ReadySheet.More }
             }
         }
     }
-    if (info) InfoSheet(
-        Info("Recording", WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), accent, null, null,
-        onDismiss = { info = false }, rows = WorkoutCopy.readyRows(outdoor),
-    )
+    when (sheet) {
+        ReadySheet.Settings -> PageSheet({ sheet = null }, "${Workouts.shortName(type)} settings") {
+            Column {
+                if (outdoor) {
+                    PageSwitchRow("GPS", WorkoutCopy.gpsNote(gpsOn, type), gpsOn, { gpsOn = it }, divider = false)
+                    if (gpsOn) PageSwitchRow("Keep the route", WorkoutCopy.routeNote(keepRoute), keepRoute, { keepRoute = it })
+                }
+                PageSwitchRow(
+                    "Ask to end when I stop", "After 8 min near resting heart rate and no steps, the strap buzzes and asks.",
+                    askToEnd, { askToEnd = it }, divider = outdoor,
+                )
+            }
+            PageButton("About recording", { sheet = ReadySheet.About }, icon = AppIcons.Info)
+        }
+        ReadySheet.More -> PageSheet({ sheet = null }, "Goal", note = StartCopy.goalStatus(goal)) {
+            WorkoutSetup.moreGoals(kcalTargets).forEach { (kind, goals) ->
+                val shown = goals.filter { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
+                if (shown.isEmpty()) return@forEach
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    ChipLabel(kind)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        shown.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; sheet = null } }
+                    }
+                }
+            }
+        }
+        ReadySheet.About -> InfoSheet(
+            Info("Recording", WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
+            onDismiss = { sheet = null }, rows = WorkoutCopy.readyRows(outdoor),
+        )
+        null -> Unit
+    }
 }
 
 /** Whether the phone's location can be used now: allowed, and turned on. */
 internal fun locationAvailable(context: Context): Boolean =
     WorkoutLocation.granted(context) && context.getSystemService(LocationManager::class.java)?.isLocationEnabled == true
 
+/** A 44 dp round button on the Control surface with its icon, as on the workout pages' top bars. */
+@Composable
+internal fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(
+        modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) { Icon(icon, label, tint = Color.White, modifier = Modifier.size(18.dp)) }
+}
+
 /**
- * Ready's hero, the strap (spec 6.3): a glow in heart red lit from below with the live heart rate in the hero's dots,
- * pulsing at the real bpm, "Live from your strap." and the battery when low. While the strap is away it drops to an
- * outline card that says you can start anyway. The (i) explains recording, GPS and the route.
+ * Ready's heart: the live heart rate from the strap in large dots on a soft heart red glow, no card, "bpm, live from
+ * your strap" under it. While the strap is away, what's wrong and that you can start anyway.
  */
 @Composable
-private fun StrapHero(connection: ConnectionState, liveHeartRate: Int?, onInfo: () -> Unit) {
+private fun ReadyHeart(connection: ConnectionState, liveHeartRate: Int?) {
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
-    val style = GlowStyle.chart(MetricColors.heart).copy(
-        lightAngle = LightAngle.Below,
-        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
-        outline = !hero.live,
-    )
-    GlowCard(style, Modifier.fillMaxWidth()) {
-        Column {
-            GlowHeader(hero.title, trailingContent = { RoundButton(AppIcons.Info, "About recording", onInfo, size = 32.dp) })
-            if (bpm != null) Row(Modifier.padding(top = 20.dp), verticalAlignment = Alignment.Bottom) {
-                DotMatrixText(bpm.toString(), dot = DotSize.Hero)
-                // The word after a number (spec 2.3).
-                Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
-            }
-            Text(
-                hero.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
-                modifier = Modifier.padding(top = if (bpm != null) 4.dp else 12.dp),
+    Box(
+        Modifier.fillMaxWidth().heightIn(min = 220.dp).drawBehind {
+            val radius = size.minDimension * 0.55f
+            drawCircle(
+                Brush.radialGradient(listOf(MetricColors.heart.copy(alpha = if (bpm != null) 0.45f else 0.18f), Color.Transparent), center, radius),
+                radius, center,
             )
+        },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (bpm != null) {
+                DotMatrixText(bpm.toString(), dot = DotSize.Detail)
+                Text("bpm, live from your strap", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            } else {
+                Text(hero.title, color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center)
+                Text(hero.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, textAlign = TextAlign.Center)
+            }
         }
+    }
+}
+
+/** The strap in one line with its dot, where Ready shows no heart rate (strength): "Strap ready, 72 bpm". */
+@Composable
+internal fun StrapLine(connection: ConnectionState, liveHeartRate: Int?) {
+    Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Canvas(Modifier.size(6.dp)) { drawCircle(if (connection is ConnectionState.Connected) TrendGood else TrendBad) }
+        Spacer(Modifier.width(8.dp))
+        Text(StartCopy.strapLine(connection, liveHeartRate), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+    }
+}
+
+/** Ready's status line as a quiet pill, with a [dot] for GPS and an optional [action] at its end. */
+@Composable
+private fun StatusPill(text: String, dot: Color?, action: (@Composable () -> Unit)? = null) {
+    Row(
+        Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(50)).background(QuietSurface).padding(start = 14.dp, end = if (action != null) 4.dp else 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (dot != null) {
+            Canvas(Modifier.size(8.dp)) { drawCircle(dot) }
+            Spacer(Modifier.width(8.dp))
+        }
+        Text(text, color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(vertical = 8.dp))
+        if (action != null) {
+            Spacer(Modifier.width(10.dp))
+            action()
+        }
+    }
+}
+
+/** Ready's status line where there's nothing to point at: what the strap will do, centred. */
+@Composable
+private fun StatusText(text: String) =
+    Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, textAlign = TextAlign.Center, modifier = Modifier.padding(horizontal = 12.dp))
+
+/** The status pill's surface, darker than the Control surface so the chips under it stay the things to press. */
+private val QuietSurface = Color(0xFF0F0F11)
+
+/**
+ * Strength's Ready (workouts spec 2.2): the plan in one sentence on a card lit in strength's orange, then the sets and
+ * rest steppers and the level that ends rest sooner, on a quiet panel, so the two never look alike.
+ */
+@Composable
+private fun StrengthPlan(
+    sets: Int?, restSeconds: Long, restBelow: Int?,
+    onSets: (Int?) -> Unit, onRest: (Long) -> Unit, onBelow: (Int?) -> Unit,
+) {
+    EdgeCard(StrengthColor, Modifier.fillMaxWidth()) {
+        Text("Your plan", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Spacer(Modifier.height(6.dp))
+        Text(StartCopy.plan(sets, Strength.Rest(restSeconds, restBelow)), color = Color.White, style = GlowType.sentence)
+        Spacer(Modifier.height(8.dp))
+        Text(StartCopy.STRENGTH_STATUS, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+    }
+    QuietPanel {
+        Stepper("Sets", StartCopy.setsValue(sets), "Fewer sets", "More sets", { onSets(Strength.stepSets(sets, -1)) }, { onSets(Strength.stepSets(sets, 1)) })
+        Stepper("Rest", StartCopy.restText(restSeconds), "Shorter rest", "Longer rest", { onRest(Strength.stepRest(restSeconds, -1)) }, { onRest(Strength.stepRest(restSeconds, 1)) })
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            ChipLabel("End rest sooner below")
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Strength.Rest.LEVELS.forEachIndexed { i, level ->
+                    val label = level?.let { if (i == Strength.Rest.LEVELS.lastIndex) "$it bpm" else "$it" } ?: "Off"
+                    Chip(label, level == restBelow, Color.White) { onBelow(level) }
+                }
+            }
+        }
+    }
+}
+
+/** Strength's colour on Ready, the orange of zone 4 the live strength screen keeps. */
+internal val StrengthColor = familyColor(Workouts.Family.Strength)
+
+/** A labelled value with round minus and plus buttons either side of it. */
+@Composable
+private fun Stepper(label: String, value: String, less: String, more: String, onLess: () -> Unit, onMore: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
+        RoundIcon(AppIcons.Minus, less, onLess)
+        Text(value, color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.width(96.dp))
+        RoundIcon(AppIcons.Plus, more, onMore)
     }
 }
 
@@ -263,7 +395,7 @@ private fun SideSwitch(options: List<String>, selected: Int, onSelect: (Int) -> 
  * under it in Secondary, and [trailing] (a switch) on the right. The whole row toggles through [onClick].
  */
 @Composable
-private fun SettingRow(
+internal fun SettingRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector?, title: String, note: String, divider: Boolean = true,
     onClick: () -> Unit, trailing: @Composable () -> Unit,
 ) {
@@ -292,6 +424,7 @@ private fun SmallPill(label: String, onClick: () -> Unit) {
     Text(
         label, color = Color.Black, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
         modifier = Modifier.clip(CircleShape).background(Color.White).pressClickable(onClick, CircleShape)
+            .semantics { role = Role.Button; contentDescription = label }
             .padding(horizontal = 14.dp, vertical = 8.dp),
     )
 }
@@ -301,20 +434,13 @@ private fun SmallPill(label: String, onClick: () -> Unit) {
 internal fun ChipLabel(text: String) =
     Text(text, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, modifier = Modifier.padding(start = 4.dp))
 
-/** A choice on a Control tile, the chosen one lit in [color]. */
+/** A choice as a round chip on the Control surface, the chosen one lit in [color]. */
 @Composable
-private fun Chip(label: String, on: Boolean, color: Color, onClick: () -> Unit) {
+internal fun Chip(label: String, on: Boolean, color: Color, onClick: () -> Unit) {
     Text(
         label, color = if (on) Color.Black else Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
-        modifier = Modifier.height(40.dp).clip(GlowLayout.TileShape).background(if (on) color else Raised)
-            .pressClickable(onClick, GlowLayout.TileShape).padding(horizontal = 14.dp).wrapContentHeight(Alignment.CenterVertically),
+        modifier = Modifier.height(40.dp).clip(CircleShape).background(if (on) color else Raised)
+            .pressClickable(onClick, CircleShape).semantics { selected = on }
+            .padding(horizontal = 16.dp).wrapContentHeight(Alignment.CenterVertically),
     )
-}
-
-/** A scrolling row of choices; the chosen one lit in [color]. */
-@Composable
-private fun Chips(labels: List<String>, selected: Int, color: Color, onSelect: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        labels.forEachIndexed { i, label -> Chip(label, i == selected, color) { onSelect(i) } }
-    }
 }

@@ -249,6 +249,22 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    /**
+     * What Ready was set to the last time each sport started (workouts spec 4), by the sport's tile
+     * ([org.openstrap.app.data.Workouts.tileType]). Sports never started aren't in it.
+     */
+    val sportSettings: Flow<Map<Int, org.openstrap.app.data.SportSettings>> = context.dataStore.data.map { prefs ->
+        prefs.asMap().mapNotNull { (key, value) ->
+            val sport = key.name.removePrefix(SPORT_SETTINGS_PREFIX).takeIf { key.name.startsWith(SPORT_SETTINGS_PREFIX) }?.toIntOrNull()
+            if (sport == null || value !is String) null else sport to org.openstrap.app.data.SportSettings.parse(value)
+        }.toMap()
+    }
+
+    suspend fun setSportSettings(sport: Int, settings: org.openstrap.app.data.SportSettings) {
+        val key = stringPreferencesKey(SPORT_SETTINGS_PREFIX + org.openstrap.app.data.Workouts.tileType(sport))
+        context.dataStore.edit { it[key] = settings.encode() }
+    }
+
     private val birthYear = androidx.datastore.preferences.core.intPreferencesKey("profile_birth_year")
     private val sex = stringPreferencesKey("profile_sex")
     private val weight = androidx.datastore.preferences.core.floatPreferencesKey("profile_weight_kg")
@@ -627,3 +643,6 @@ class SettingsStore(private val context: Context) {
         return written
     }
 }
+
+/** The key each sport's [SportSettings][org.openstrap.app.data.SportSettings] is stored under, before the sport's id. */
+private const val SPORT_SETTINGS_PREFIX = "sport_settings_"

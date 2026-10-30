@@ -335,6 +335,7 @@ internal fun WorkoutHeartCard(
                     is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
                     is WorkoutTarget.Time -> Note("${workoutClock(active)} of ${t.label}")
                     is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
+                    is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
                     null -> Unit
                 }
             }

@@ -738,6 +738,11 @@ class WorkoutSession(
                 .onSuccess { savedPoints = points.size }
         }
         val (meters, fromSteps) = distanceNow(w) ?: return
+        // A distance goal buzzes at halfway and once reached; when is kept for the summary.
+        if (!r.paused) coach.distance(now(), meters)?.let { c ->
+            cue(c)
+            if (c == org.openstrap.app.data.Cue.GoalReached) { val t = now(); update { it.copy(targetReachedAt = t) } }
+        }
         if (kotlin.math.abs((w.distanceMeters ?: 0f) - meters) < 5f) return
         update { it.copy(distanceMeters = meters, distanceFromSteps = fromSteps) }
     }

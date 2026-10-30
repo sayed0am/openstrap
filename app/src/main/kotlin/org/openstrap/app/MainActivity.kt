@@ -487,6 +487,8 @@ private fun AppRoot(
     // The ready screen's sport while it is open, and whether it opened on the sport list ("All sports").
     var readySport by rememberSaveable { mutableStateOf<Int?>(null) }
     var readyPicking by rememberSaveable { mutableStateOf(false) }
+    // Choose, the first screen of a workout (workouts spec 2.1), open under Ready while it shows.
+    var choosing by rememberSaveable { mutableStateOf(false) }
     val suggestions by workoutsVm.suggestions.collectAsStateWithLifecycle()
     // Hidden while a workout records: the strap's history may show the one under way.
     val suggestion = suggestions.firstOrNull().takeIf { workoutState !is org.openstrap.app.device.WorkoutState.Recording }
@@ -535,7 +537,7 @@ private fun AppRoot(
         if (todayRequest) {
             closePages()
             allMetricsOpen = false
-            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) readySport = null
+            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) { readySport = null; choosing = false }
             todayStack = emptyList()
             dayVm.select(java.time.LocalDate.now())
             nav = nav.select(Tab.Today.ordinal)
@@ -1018,7 +1020,7 @@ private fun AppRoot(
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
                                 // The same way in as Activity's start card: the ready screen for the sport, or its sport list.
                                 onStartSport = { readySport = it; readyPicking = false },
-                                onOtherSport = { readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType; readyPicking = true },
+                                onOtherSport = { choosing = true },
                                 offer = offer,
                                 onRecordOffer = { container.workout.recordOffer() },
                                 onDeclineOffer = { container.workout.declineOffer() },
@@ -1066,7 +1068,7 @@ private fun AppRoot(
                                 suggestion = suggestion,
                                 onSaveSuggestion = { savingSuggestion = suggestion },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
-                                onAllSports = { readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType; readyPicking = true },
+                                onAllSports = { choosing = true },
                                 onAddWorkout = { addingOn = day.date },
                                 liveHeartRate = live, history = history, wear = wear,
                             )
@@ -1248,6 +1250,9 @@ private fun AppRoot(
             container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, requestBluetooth, requestLocation,
             onReadySport = { readySport = it },
             onCloseReady = { readySport = null; readyPicking = false },
+            choosing = choosing,
+            onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick },
+            onCloseChoose = { choosing = false },
             capsuleBottom = if (showBar) 104.dp else 16.dp,
             tabletop = hinge != null, bookHinge = bookHinge,
         )
@@ -1391,13 +1396,34 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     capsuleBottom: androidx.compose.ui.unit.Dp,
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
+    choosing: Boolean = false,
+    /** Opens Ready over Choose for a sport, or on the sport picker ([pick], All sports). */
+    onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
+    onCloseChoose: () -> Unit = {},
 ) {
     val session = container.workout
+    val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val viewScope = rememberCoroutineScope()
+    /**
+     * Starts [plan] once Bluetooth (and location, for GPS) may be used, then closes Ready and Choose. [saved] is what
+     * Ready opens on next time for the sport; Choose's Start on your usual saves nothing new.
+     */
+    val startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit = { plan, saved ->
+        val start = {
+            session.start(plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget)
+            saved?.let { s -> viewScope.launch { container.settings.setSportSettings(plan.sportType, s) } }
+            onCloseReady()
+            onCloseChoose()
+        }
+        val granted = container.app.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val withBluetooth = { if (granted) start() else requestBluetooth(start) }
+        if (plan.useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) requestLocation(withBluetooth) else withBluetooth()
+    }
     // Read here, ahead of a workout, so the live screen usually opens on the right view at once.
     val liveView by container.settings.workoutLiveView.collectAsStateWithLifecycle(null)
     val kcal by session.kcal.collectAsStateWithLifecycle()
     val profile by container.settings.profile.collectAsStateWithLifecycle(null)
-    val viewScope = rememberCoroutineScope()
     val padding = androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues()
     val full = androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     when {
@@ -1463,11 +1489,50 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     }
     // The ready screen comes and goes like any other screen; a workout starting replaces it at once.
     val recording = state is org.openstrap.app.device.WorkoutState.Recording || state is org.openstrap.app.device.WorkoutState.Ended
+    // Choose sits under Ready, so closing Ready comes back to it.
+    org.openstrap.app.ui.glow.PushOverlay(choosing.takeIf { it && !recording }, cut = recording) {
+        androidx.compose.foundation.layout.Box(full) {
+            val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+            val (_, sides) = pickerSports(container, workoutsVm)
+            val zone = java.time.ZoneId.systemDefault()
+            val mine = remember(workouts) { workouts.filter { it.startedByYou }.sortedByDescending { it.workout.start } }
+            val sports = remember(mine) { org.openstrap.app.data.WorkoutSetup.choose(mine.map { it.workout.sportType to it.workout.start }, System.currentTimeMillis() / 1000) }
+            val today = java.time.LocalDate.now(zone)
+            val usual = sports.usual?.let { type ->
+                val last = mine.firstOrNull { org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == type }
+                org.openstrap.app.ui.glow.ChooseSport(type, last?.let { org.openstrap.app.ui.workout.StartCopy.lastTime(it, today, zone) } ?: "")
+            }
+            val recent = sports.recent.map { type ->
+                org.openstrap.app.ui.glow.ChooseSport(type, org.openstrap.app.ui.workout.StartCopy.settingsLine(type, sportSettings[type] ?: org.openstrap.app.data.SportSettings()))
+            }
+            org.openstrap.app.ui.glow.GlowChooseScreen(
+                usual, recent, connection, live, padding,
+                onStartUsual = { type ->
+                    val settings = sportSettings[type] ?: org.openstrap.app.data.SportSettings()
+                    startPlan(org.openstrap.app.data.WorkoutSetup.plan(type, settings, sides, org.openstrap.app.ui.glow.locationAvailable(context)), null)
+                },
+                onReady = { onOpenReady(it, false) },
+                onAllSports = { onOpenReady(sports.usual ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType, true) },
+                onBack = onCloseChoose,
+            )
+        }
+    }
     org.openstrap.app.ui.glow.PushOverlay(readySport.takeIf { !recording }, cut = recording) { sport ->
         androidx.compose.foundation.layout.Box(full) {
             val (recentSports, sides) = pickerSports(container, workoutsVm)
+            val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+            val key = org.openstrap.app.data.Workouts.tileType(sport)
+            // The sport's two most used goals, from the phone workouts that had one, newest first.
+            val goalChips = remember(workouts, key) {
+                org.openstrap.app.data.WorkoutSetup.goalChips(
+                    org.openstrap.app.data.Workouts.family(sport),
+                    workouts.filter { it.fromPhone && org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == key }
+                        .sortedByDescending { it.workout.start }.map { it.target },
+                )
+            }
             org.openstrap.app.ui.glow.GlowWorkoutReadyScreen(
                 sport, readyPicking, connection, live, padding,
+                settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(), goalChips = goalChips,
                 recentSports = recentSports, sides = sides,
                 kcalTargets = profile?.let { org.openstrap.app.data.EnergyExpenditure.bmrPerMinute(it, it.age()) } != null,
                 onSide = { s, indoor ->
@@ -1479,12 +1544,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 },
                 onTurnOnLocation = requestLocation,
                 onSport = onReadySport,
-                onStart = { sport, askToEnd, target, useGps, keepRoute, rest, setsTarget ->
-                    val start = { session.start(sport, askToEnd, target, useGps, keepRoute, rest, setsTarget); onCloseReady() }
-                    val granted = container.app.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    val withBluetooth = { if (granted) start() else requestBluetooth(start) }
-                    if (useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) requestLocation(withBluetooth) else withBluetooth()
-                },
+                onStart = startPlan,
                 onBack = onCloseReady,
             )
         }

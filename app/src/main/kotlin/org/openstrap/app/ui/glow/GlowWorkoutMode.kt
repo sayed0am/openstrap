@@ -110,7 +110,7 @@ internal fun workoutClock(seconds: Long): String =
 
 internal fun zoneRange(zone: Int, maxHr: Int) =
     if (zone == 0) "under ${60 * maxHr / 100} bpm"
-    else "${(50 + zone * 10) * maxHr / 100}–${if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+    else "${(50 + zone * 10) * maxHr / 100} to ${if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
@@ -122,11 +122,15 @@ internal fun activeSeconds(r: WorkoutState.Recording): Long = produceState(Worko
     }
 }.value
 
-/** A target's colour: the top zone it aims for, a calm blue for a time, Calories' gold for kcal, white for none. */
+/**
+ * A target's colour: the top zone it aims for, a calm blue for a time, Calories' gold for kcal, Steps' lime for a
+ * distance, white for none.
+ */
 internal fun targetColor(t: WorkoutTarget?): Color = when (t) {
     is WorkoutTarget.Zones -> ZONE_COLORS[t.high]
     is WorkoutTarget.Time -> ZONE_COLORS[0]
     is WorkoutTarget.Kcal -> MetricColors.calories
+    is WorkoutTarget.Distance -> MetricColors.steps
     null -> Color.White
 }
 
@@ -134,6 +138,7 @@ internal fun targetLabel(t: WorkoutTarget?): String = when (t) {
     is WorkoutTarget.Zones -> t.label
     is WorkoutTarget.Time -> t.label
     is WorkoutTarget.Kcal -> t.label
+    is WorkoutTarget.Distance -> t.label
     null -> "None"
 }
 
