@@ -67,6 +67,9 @@ private fun actionIcon(a: GlanceAction) = when (a) {
     GlanceAction.Pause -> AppIcons.PauseFill
     GlanceAction.Resume, GlanceAction.Open, GlanceAction.KeepGoing -> AppIcons.PlayFill
     GlanceAction.End -> AppIcons.StopFill
+    GlanceAction.SetDone -> AppIcons.Tick02
+    GlanceAction.StartSet -> AppIcons.PlayFill
+    GlanceAction.AddRest -> AppIcons.Plus
 }
 
 /**
@@ -107,7 +110,7 @@ fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAct
                     BarPill(glance.secondLabel ?: "", false, endDot = second == GlanceAction.End) { onAction(second) }
                     Spacer(Modifier.width(8.dp))
                 }
-                BarPill(glance.actionLabel, true, icon = actionIcon(glance.action)) { onAction(glance.action) }
+                BarPill(glance.shortLabel ?: glance.actionLabel, true, icon = actionIcon(glance.action)) { onAction(glance.action) }
             }
         }
         // A goal fills along the bottom edge, inside the bar's curve.
@@ -197,15 +200,28 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
                     }
                 }
             }
+            glance.next?.let { next ->
+                Spacer(Modifier.height(16.dp))
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(14.dp)) {
+                    Text("Next", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                    Text(next, color = Color.White, style = GlowType.body)
+                }
+            }
             Spacer(Modifier.height(22.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                // Pause, or the second action, dark and round; the next action white beside it.
+                // Pause dark and round, or the second action as a dark pill; the next action white beside it.
                 val dark = glance.second ?: GlanceAction.Pause.takeIf { glance.action == GlanceAction.Pause }
                 dark?.let { a ->
+                    val label = glance.secondLabel.takeIf { a == glance.second }
                     Box(
-                        Modifier.size(52.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).pressClickable({ onAction(a) }, CircleShape),
+                        Modifier.height(52.dp).then(if (label == null) Modifier.size(52.dp) else Modifier).clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.45f)).pressClickable({ onAction(a) }, RoundedCornerShape(50))
+                            .padding(horizontal = if (label == null) 0.dp else 18.dp),
                         contentAlignment = Alignment.Center,
-                    ) { Icon(actionIcon(a), if (a == GlanceAction.Pause) "Pause" else glance.secondLabel, tint = Color.White, modifier = Modifier.size(18.dp)) }
+                    ) {
+                        if (label != null) Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
+                        else Icon(actionIcon(a), "Pause", tint = Color.White, modifier = Modifier.size(18.dp))
+                    }
                     Spacer(Modifier.width(12.dp))
                 }
                 val white = if (glance.action == GlanceAction.Pause) GlanceAction.Open else glance.action

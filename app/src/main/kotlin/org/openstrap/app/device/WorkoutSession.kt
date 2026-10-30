@@ -46,6 +46,9 @@ sealed interface WorkoutState {
         /** Strength: the sets so far, and when the rest under way ends (null when not resting). */
         val sets: List<org.openstrap.app.data.db.AppWorkoutSet> = emptyList(),
         val restUntil: Long? = null,
+        /** Strength: the exercise the next sets are of, null for numbered sets; and a log card after each set. */
+        val exercise: String? = null,
+        val logSets: Boolean = false,
     ) : WorkoutState {
         val paused: Boolean get() = workout.pausedAt != null
         val strength: Boolean get() = workout.sportType in org.openstrap.app.data.Strength.SPORTS
@@ -201,7 +204,11 @@ class WorkoutSession(
                     begin(w, maxHr)
                     val sets = dao.setsOnce(w.start)
                     val restUntil = sets.lastOrNull()?.takeIf { it.end != null && it.restEnd == null }?.let { it.end!! + restRule(w).seconds }
-                    (_state.value as? WorkoutState.Recording)?.let { _state.value = it.copy(sets = sets, restUntil = restUntil) }
+                    // Logging is the sport's setting at its start, which Ready saved then.
+                    val log = runCatching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)]?.log }.getOrNull() == true
+                    (_state.value as? WorkoutState.Recording)?.let {
+                        _state.value = it.copy(sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = log)
+                    }
                 }
             } finally {
                 _restored.value = true
@@ -217,6 +224,8 @@ class WorkoutSession(
         rest: org.openstrap.app.data.Strength.Rest? = null, setsTarget: Int? = null,
         /** Auto-start: the workout began here, earlier, and [seed] holds its live readings so far. */
         from: Long? = null, seed: List<Pair<Long, Int>> = emptyList(), seedSteps: Int? = null,
+        /** Strength: a log card after each set. Rounds or periods ([AppWorkout.structure]). */
+        logSets: Boolean = false, structure: String? = null,
     ) {
         scope.launch {
             lock.withLock {
@@ -224,7 +233,7 @@ class WorkoutSession(
                 val w = AppWorkout(
                     start = from ?: now(), end = null, sportType = sportType, askToEnd = askToEnd, target = target?.code,
                     useGps = useGps, keepRoute = useGps && keepRoute,
-                    rest = rest?.code, setsTarget = setsTarget,
+                    rest = rest?.code, setsTarget = setsTarget, structure = structure,
                 )
                 _route.value = emptyList()
                 savedPoints = 0
@@ -245,6 +254,7 @@ class WorkoutSession(
                 askSince = w.start
                 minimized.value = false
                 begin(w, maxHeartRate())
+                if (logSets) (_state.value as? WorkoutState.Recording)?.let { _state.value = it.copy(logSets = true) }
                 firstSteps = seedSteps
                 for ((t, bpm) in seed) record(t, bpm)
             }
@@ -609,9 +619,33 @@ class WorkoutSession(
         val now = now()
         val sets = r.sets.toMutableList()
         sets.lastOrNull()?.takeIf { it.restEnd == null && it.end != null }?.let { sets[sets.lastIndex] = it.copy(restEnd = now) }
-        sets += org.openstrap.app.data.db.AppWorkoutSet(r.workout.start, sets.size, now)
+        sets += org.openstrap.app.data.db.AppWorkoutSet(r.workout.start, sets.size, now, exercise = r.exercise)
         r.copy(sets = sets, restUntil = null)
     }
+
+    /** The exercise for the sets from now on ("Next exercise"), and the set under way if there is one; null numbers them. */
+    fun setExercise(name: String?) = editSets { r ->
+        val clean = name?.trim()?.takeIf { it.isNotEmpty() }
+        val sets = if (r.inSet) r.sets.dropLast(1) + r.sets.last().copy(exercise = clean) else r.sets
+        r.copy(sets = sets, exercise = clean)
+    }
+
+    /**
+     * The log card's Save: set [index]'s [reps] and [kg], of [exercise], kept for the next card of that exercise too.
+     * Logging never touches the set's times.
+     */
+    fun logSet(index: Int, exercise: String?, reps: Int, kg: Float) {
+        val name = exercise?.trim()?.takeIf { it.isNotEmpty() }
+        editSets { r ->
+            val i = r.sets.indexOfFirst { it.index == index }
+            if (i < 0) return@editSets r
+            r.copy(sets = r.sets.toMutableList().also { it[i] = it[i].copy(exercise = name, reps = reps, weightKg = kg) })
+        }
+        if (name != null) scope.launch { runCatching { dao.upsertExercise(org.openstrap.app.data.db.ExerciseRow(name, reps, kg, now())) } }
+    }
+
+    /** The exercises logged before, last used first, for the exercise list and the log card. */
+    fun exercises(): kotlinx.coroutines.flow.Flow<List<org.openstrap.app.data.db.ExerciseRow>> = dao.exercises()
 
     /** "Set done": the rest begins, ending at its time or earlier on heart rate. */
     fun setDone() = editSets { r ->

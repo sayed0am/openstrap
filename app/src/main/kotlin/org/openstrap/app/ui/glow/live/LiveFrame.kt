@@ -96,6 +96,8 @@ internal fun LiveFrame(
     controls: LiveControls,
     lap: (@Composable () -> Unit)? = null,
     time: Long? = null,
+    /** The total time small on the top right instead of large under it (strength, intervals). */
+    smallTime: Boolean = false,
     battery: Int? = null,
     status: List<Pair<String, Color>> = emptyList(),
     paused: (@Composable ColumnScope.() -> Unit)? = null,
@@ -120,7 +122,15 @@ internal fun LiveFrame(
                     battery != null && labelled -> "Strap $battery%"
                     else -> "Strap"
                 }
-                (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
+                if (time != null && smallTime) {
+                    // The total, small, where a set or a round's clock is the screen's number.
+                    Text(workoutClock(time), color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Total", color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                        Spacer(Modifier.width(8.dp))
+                        Canvas(Modifier.size(6.dp)) { drawCircle(if (connected) TrendGood else TrendBad) }
+                    }
+                } else (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(text, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
                         Spacer(Modifier.width(8.dp))
@@ -129,7 +139,7 @@ internal fun LiveFrame(
                 }
             }
         }
-        if (time != null) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (time != null && !smallTime) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             // Plain digits: the screen's one dot-matrix number is further down.
             Text(workoutClock(time), color = Color.White, style = LiveClock)
             Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)

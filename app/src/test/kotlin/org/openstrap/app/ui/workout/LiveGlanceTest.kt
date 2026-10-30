@@ -91,6 +91,43 @@ class LiveGlanceTest {
         assertNull(Glance.of(run()).split)
     }
 
+    private fun lift(m: StrengthMoment) = run(target = null).copy(sportType = 52, gps = false, distanceMeters = null, strength = m)
+
+    @Test fun `strength in a set offers Set done`() {
+        val g = Glance.of(lift(StrengthMoment(inSet = true, setNumber = 3, setsTarget = 5, done = 2, setSeconds = 42, exercise = "Bench press")))
+        assertEquals("Set 3 of 5, 0:42", g.line1)
+        assertEquals("Bench press, 142 bpm", g.line2)
+        assertEquals(GlanceAction.SetDone, g.action)
+        assertEquals("Set done", g.actionLabel)
+        assertEquals("0:42", g.figure)
+        assertNull(g.progress)
+    }
+
+    @Test fun `strength resting drains in green with Start set and 30 s more`() {
+        val g = Glance.of(lift(StrengthMoment(
+            inSet = false, setNumber = 4, setsTarget = 5, done = 3, restLeft = 58, restTotal = 90, restBelow = 110, drop = 28,
+            exercise = "Bench press", nextLoad = "10 × 60 kg",
+        )).copy(bpm = 118))
+        assertEquals("0:58 rest left", g.line1)
+        assertEquals("118 bpm, down 28, set 4 next", g.line2)
+        assertEquals(GlanceTint.Rest, g.tint)
+        assertEquals(58f / 90f, g.progress!!.fraction, 1e-4f)
+        assertEquals(true, g.progress!!.drain)
+        assertEquals(GlanceAction.StartSet, g.action)
+        assertEquals("Start set 4", g.actionLabel)
+        assertEquals("Set 4", g.shortLabel)
+        assertEquals(GlanceAction.AddRest, g.second)
+        assertEquals("+30 s", g.secondLabel)
+        assertEquals("118 bpm, down 28. Ends sooner once you stay under 110.", g.goal)
+        assertEquals("Set 4, bench press 10 × 60 kg", g.next)
+    }
+
+    @Test fun `strength before the first set offers Start set 1`() {
+        val g = Glance.of(lift(StrengthMoment(inSet = false, setNumber = 1, setsTarget = null, done = 0)))
+        assertEquals("Ready for set 1", g.line1)
+        assertEquals("Set 1", g.shortLabel)
+    }
+
     @Test fun `paces read as clocks`() {
         assertEquals("5:42", Glance.paceClock(342.0))
         assertNull(Glance.paceClock(null))

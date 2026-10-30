@@ -284,8 +284,84 @@ interface HealthDao {
     @Query("SELECT * FROM app_workout_dismissed ORDER BY start")
     suspend fun dismissedWorkoutsAll(): List<DismissedWorkout>
 
+    /* -------------------------------- Workouts, first release (version 25) -------------------------------- */
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertRounds(rounds: List<AppWorkoutRound>)
+
+    @Query("SELECT * FROM app_workout_round WHERE workoutStart = :start ORDER BY `index`")
+    suspend fun roundsOnce(start: Long): List<AppWorkoutRound>
+
+    @Query("SELECT * FROM app_workout_round WHERE workoutStart = :start ORDER BY `index`")
+    fun rounds(start: Long): Flow<List<AppWorkoutRound>>
+
+    @Query("DELETE FROM app_workout_round WHERE workoutStart = :start")
+    suspend fun deleteRounds(start: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertExercise(e: ExerciseRow)
+
+    /** The exercises logged, last used first. */
+    @Query("SELECT * FROM exercise ORDER BY usedAt DESC")
+    suspend fun exercisesOnce(): List<ExerciseRow>
+
+    @Query("SELECT * FROM exercise ORDER BY usedAt DESC")
+    fun exercises(): Flow<List<ExerciseRow>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertSavedWorkout(w: SavedWorkout): Long
+
+    /** Saved workouts, newest first. */
+    @Query("SELECT * FROM saved_workout ORDER BY createdAt DESC")
+    fun savedWorkouts(): Flow<List<SavedWorkout>>
+
+    @Query("SELECT * FROM saved_workout ORDER BY createdAt DESC")
+    suspend fun savedWorkoutsOnce(): List<SavedWorkout>
+
+    @Query("DELETE FROM saved_workout WHERE id = :id")
+    suspend fun deleteSavedWorkout(id: Long)
+
+    @Query("SELECT * FROM personal_best")
+    fun personalBests(): Flow<List<PersonalBest>>
+
+    @Query("SELECT * FROM personal_best")
+    suspend fun personalBestsOnce(): List<PersonalBest>
+
+    @Query("DELETE FROM personal_best")
+    suspend fun deletePersonalBests()
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertPersonalBests(bests: List<PersonalBest>)
+
+    /** The bests worked out again from every workout and day: what was there goes, so a delete takes its bests too. */
+    @androidx.room.Transaction
+    suspend fun replacePersonalBests(bests: List<PersonalBest>) {
+        deletePersonalBests()
+        insertPersonalBests(bests)
+    }
+
+    @Query("SELECT * FROM badge ORDER BY earnedAt")
+    fun badges(): Flow<List<BadgeRow>>
+
+    @Query("SELECT * FROM badge ORDER BY earnedAt")
+    suspend fun badgesOnce(): List<BadgeRow>
+
+    /** Badges once earned stay (requests spec 7.2): new ones only. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertBadges(badges: List<BadgeRow>)
+
+    @Query("SELECT * FROM week_result ORDER BY weekStart")
+    fun weekResults(): Flow<List<WeekResult>>
+
+    @Query("SELECT * FROM week_result ORDER BY weekStart")
+    suspend fun weekResultsOnce(): List<WeekResult>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertWeekResults(weeks: List<WeekResult>)
+
     @androidx.room.Transaction
     suspend fun deleteAppWorkout(start: Long) {
+        deleteRounds(start)
         deleteSets(start)
         deleteRoute(start)
         deleteAppWorkoutHeartRate(start)

@@ -500,6 +500,9 @@ private fun AppRoot(
             org.openstrap.app.ui.workout.GlanceAction.Pause -> container.workout.pause()
             org.openstrap.app.ui.workout.GlanceAction.Resume -> container.workout.resume()
             org.openstrap.app.ui.workout.GlanceAction.KeepGoing -> container.workout.keepGoing()
+            org.openstrap.app.ui.workout.GlanceAction.SetDone -> container.workout.setDone()
+            org.openstrap.app.ui.workout.GlanceAction.StartSet -> container.workout.startSet()
+            org.openstrap.app.ui.workout.GlanceAction.AddRest -> container.workout.extendRest()
             // Ending asks on the live screen, as it does there.
             org.openstrap.app.ui.workout.GlanceAction.End, org.openstrap.app.ui.workout.GlanceAction.Open -> container.workout.minimized.value = false
         }
@@ -1433,7 +1436,10 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
      */
     val startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit = { plan, saved ->
         val start = {
-            session.start(plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget)
+            session.start(
+                plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
+                logSets = plan.logSets, structure = plan.structure,
+            )
             saved?.let { s -> viewScope.launch { container.settings.setSportSettings(plan.sportType, s) } }
             onCloseReady()
             onCloseChoose()
@@ -1458,6 +1464,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 val zoneSeconds by session.zoneSeconds.collectAsStateWithLifecycle()
                 val route by session.route.collectAsStateWithLifecycle()
                 val history by session.history.collectAsStateWithLifecycle()
+                val exercises by remember { session.exercises() }.collectAsStateWithLifecycle(emptyList())
                 // Folded, the heart card has the standing half: above the fold (drawn with the tabletop heart) or,
                 // stood up like a book, the left half here.
                 val liveScreen: @Composable (androidx.compose.ui.Modifier) -> Unit = { modifier ->
@@ -1470,6 +1477,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                             route = route, history = history,
                             onStartSet = session::startSet, onSetDone = session::setDone, onExtendRest = session::extendRest,
                             onLap = session::lap,
+                            exercises = exercises, onExercise = session::setExercise, onLogSet = session::logSet,
                             split = tabletop || bookHinge != null,
                             liveView = liveView, onLiveView = { v -> viewScope.launch { container.settings.setWorkoutLiveView(v) } },
                             kcal = kcal,

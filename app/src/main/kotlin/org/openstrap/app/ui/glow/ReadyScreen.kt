@@ -124,6 +124,7 @@ fun GlowWorkoutReadyScreen(
     var sets by rememberSaveable(key, settings) { mutableStateOf(settings.sets) }
     var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }
     var restBelow by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm) }
+    var log by rememberSaveable(key, settings) { mutableStateOf(settings.log) }
     var sheet by rememberSaveable { mutableStateOf<ReadySheet?>(null) }
     val context = LocalContext.current
     var locationOn by remember { mutableStateOf(locationAvailable(context)) }
@@ -155,11 +156,12 @@ fun GlowWorkoutReadyScreen(
         onStart(
             WorkoutPlan(
                 type, askToEnd, goal.takeIf { !strength }, useGps, useGps && keepRoute,
-                rest.takeIf { strength }, sets.takeIf { strength },
+                rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log,
             ),
             settings.copy(
                 goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = gpsOn, keepRoute = keepRoute,
                 rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
+                log = if (strength) log else settings.log,
             ),
         )
     }
@@ -179,7 +181,7 @@ fun GlowWorkoutReadyScreen(
         }
         if (strength) {
             StrapLine(connection, liveHeartRate)
-            StrengthPlan(sets, restSeconds, restBelow, { sets = it }, { restSeconds = it }, { restBelow = it })
+            StrengthPlan(sets, restSeconds, restBelow, log, { sets = it }, { restSeconds = it }, { restBelow = it }, { log = it })
             return@WorkoutPage
         }
         ReadyHeart(connection, liveHeartRate)
@@ -330,7 +332,7 @@ private val QuietSurface = Color(0xFF0F0F11)
 @Composable
 private fun StrengthPlan(
     sets: Int?, restSeconds: Long, restBelow: Int?,
-    onSets: (Int?) -> Unit, onRest: (Long) -> Unit, onBelow: (Int?) -> Unit,
+    log: Boolean, onSets: (Int?) -> Unit, onRest: (Long) -> Unit, onBelow: (Int?) -> Unit, onLog: (Boolean) -> Unit,
 ) {
     EdgeCard(StrengthColor, Modifier.fillMaxWidth()) {
         Text("Your plan", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
@@ -351,6 +353,7 @@ private fun StrengthPlan(
                 }
             }
         }
+        PageSwitchRow("Log reps and weight", "A quick card after each set. Off by default.", log, onLog)
     }
 }
 

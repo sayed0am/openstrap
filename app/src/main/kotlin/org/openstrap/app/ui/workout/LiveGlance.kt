@@ -24,7 +24,26 @@ import kotlinx.coroutines.flow.flowOf
 enum class GlanceTint { Zone, Work, Rest, Mind, Paused, Asking }
 
 /** The next thing to do from the Today hero or the floating bar, or the second one beside it. */
-enum class GlanceAction { Pause, Resume, KeepGoing, End, Open }
+enum class GlanceAction { Pause, Resume, KeepGoing, End, Open, SetDone, StartSet, AddRest }
+
+/**
+ * Where a strength workout is ([GlanceInput.strength]): in set [setNumber] (or before it), its [setSeconds], the rest
+ * [restLeft] of [restTotal] and the level that ends it sooner ([restBelow]), the [drop] in heart rate since the set
+ * ended, and what's next ([nextLoad], "10 × 60 kg").
+ */
+data class StrengthMoment(
+    val inSet: Boolean,
+    val setNumber: Int,
+    val setsTarget: Int?,
+    val done: Int,
+    val setSeconds: Long = 0,
+    val restLeft: Long? = null,
+    val restTotal: Long? = null,
+    val restBelow: Int? = null,
+    val drop: Int? = null,
+    val exercise: String? = null,
+    val nextLoad: String? = null,
+)
 
 /** The bar under the figure: how far toward the goal ([drain] false, it fills), or rest running out (it empties). */
 data class GlanceProgress(val fraction: Float, val drain: Boolean = false)
@@ -49,6 +68,10 @@ data class LiveGlance(
     val actionLabel: String,
     val second: GlanceAction? = null,
     val secondLabel: String? = null,
+    /** The action's name where the bar has less room ("Set 4" for "Start set 4"). */
+    val shortLabel: String? = null,
+    /** The hero's Next box ("Set 4, bench press 10 × 60 kg"). */
+    val next: String? = null,
     val goal: String? = null,
     val toGo: String? = null,
     val figures: List<Pair<String?, String>> = emptyList(),
@@ -86,6 +109,7 @@ data class GlanceInput(
     val lastSplit: Route.Split? = null,
     val lastSplitBpm: Int? = null,
     val fastestSplit: Int? = null,
+    val strength: StrengthMoment? = null,
     /** Average heart rate so far, for an indoor workout's figures. */
     val averageBpm: Int? = null,
 )
@@ -143,11 +167,32 @@ private fun glanceTicks(
                 target = WorkoutTarget.parse(w.target), activeKcal = kcal?.active,
                 stoppedSince = r.endPrompt, inCar = r.inCar, averageBpm = stats?.average,
                 lastSplit = last, lastSplitBpm = lastBpm, fastestSplit = whole.minByOrNull { it.pace }?.index,
+                strength = if (r.strength) strengthMoment(r, now, bpm, session.history.value) else null,
             ),
         )
     }.distinctUntilChanged()
 }
 
+
+/** Where strength workout [r] is at [now], for its glance; [history] is its live readings, for the drop since the set. */
+internal fun strengthMoment(r: WorkoutState.Recording, now: Long, bpm: Int?, history: List<Pair<Long, Int>>): StrengthMoment {
+    val last = r.sets.lastOrNull()
+    val done = r.sets.count { it.end != null }
+    val ended = last?.end
+    val atEnd = ended?.let { Workouts.heartRateAt(history, it) ?: org.openstrap.app.data.Strength.peak(history, it - 5, it) }
+    val load = r.exercise?.let { e ->
+        r.sets.lastOrNull { it.reps != null && it.exercise.equals(e, ignoreCase = true) }
+            ?.let { s -> "${s.reps} × ${org.openstrap.app.data.Strength.kgText(s.weightKg ?: 0f)} kg" }
+    }
+    return StrengthMoment(
+        inSet = r.inSet, setNumber = if (r.inSet) r.sets.size else r.sets.size + 1, setsTarget = r.workout.setsTarget, done = done,
+        setSeconds = if (r.inSet && last != null) (now - last.start).coerceAtLeast(0) else 0,
+        restLeft = r.restUntil?.let { it - now }, restTotal = r.restUntil?.let { u -> ended?.let { u - it } },
+        restBelow = org.openstrap.app.data.Strength.Rest.parse(r.workout.rest)?.belowBpm,
+        drop = if (atEnd != null && bpm != null && r.resting) atEnd - bpm else null,
+        exercise = r.exercise, nextLoad = load,
+    )
+}
 
 object Glance {
     /** [i] worked out (workouts spec 2.10's table): asking first, then paused, then the sport's own moment. */
@@ -193,6 +238,7 @@ object Glance {
             bpm == null -> "Waiting for heart rate"
             else -> null
         }
+        i.strength?.let { s -> return strength(base, s, bpm, i) }
         if (distance) {
             val pace = paceClock(i.pace)
             val first = listOfNotNull(kmWithUnit(i.distanceMeters ?: 0f), pace?.let { "$it /km" }).joinToString(", ")
@@ -204,6 +250,49 @@ object Glance {
             line1 = "$sport, $clock", line2 = listOfNotNull(state ?: zoneLine, toGoShort(i)).joinToString(", ").ifEmpty { null },
             bpm = bpm,
         )
+    }
+
+    /**
+     * Strength's moments (spec 2.10's table): in a set, the set's clock with Set done; resting, the rest left draining
+     * in green with Start set N and +30 s, the drop in heart rate and what's next; between sets, Start set N.
+     */
+    private fun strength(base: LiveGlance, s: StrengthMoment, bpm: Int?, i: GlanceInput): LiveGlance {
+        val of = s.setsTarget?.let { " of $it" } ?: ""
+        val figures = listOf(
+            bpm?.toString() to (base.zone?.let { "bpm, zone ${it + 1}" } ?: "bpm"),
+            s.done.toString() to if (s.done == 1) "Set done" else "Sets done",
+            i.activeKcal?.toInt()?.toString() to "Active kcal",
+        )
+        val next = listOfNotNull("Set ${s.setNumber}", s.exercise?.lowercase()?.let { e -> listOfNotNull(e, s.nextLoad).joinToString(" ") })
+            .joinToString(", ")
+        val start = base.copy(
+            action = GlanceAction.StartSet, actionLabel = "Start set ${s.setNumber}", shortLabel = "Set ${s.setNumber}",
+            figures = figures, progress = null, goal = null, toGo = null,
+        )
+        return when {
+            s.inSet -> base.copy(
+                figure = workoutClock(s.setSeconds), unit = "in this set",
+                line1 = "Set ${s.setNumber}$of, ${workoutClock(s.setSeconds)}",
+                line2 = listOfNotNull(s.exercise, bpm?.let { "$it bpm" }).joinToString(", ").ifEmpty { null },
+                action = GlanceAction.SetDone, actionLabel = "Set done", figures = figures, progress = null, goal = null, toGo = null,
+            )
+            s.restLeft != null -> {
+                val left = workoutClock(s.restLeft.coerceAtLeast(0))
+                val heart = bpm?.let { b -> "$b bpm" + (s.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") }
+                start.copy(
+                    figure = left, unit = "left", tint = GlanceTint.Rest,
+                    line1 = "$left rest left", line2 = listOfNotNull(heart, "set ${s.setNumber} next").joinToString(", "),
+                    progress = s.restTotal?.takeIf { it > 0 }?.let { GlanceProgress((s.restLeft.toFloat() / it).coerceIn(0f, 1f), drain = true) },
+                    goal = listOfNotNull(heart?.let { "$it." }, s.restBelow?.let { "Ends sooner once you stay under $it." }).joinToString(" ").ifEmpty { null },
+                    second = GlanceAction.AddRest, secondLabel = "+30 s", next = next,
+                )
+            }
+            else -> start.copy(
+                line1 = if (s.done == 0) "Ready for set 1" else "Rest over, set ${s.setNumber}$of next",
+                line2 = listOfNotNull(s.exercise, bpm?.let { "$it bpm" }).joinToString(", ").ifEmpty { null },
+                next = next,
+            )
+        }
     }
 
     /** The hero's split strip: "Km 4 in 5:55", then its average and which was fastest; null before a whole kilometre. */

@@ -82,6 +82,20 @@ object WorkoutCopy {
         else -> "Start " + if (name.any { it.isLowerCase() }) name.lowercase() else name
     }
 
+    /** "Set 3 of 5", or "Set 3" with no plan. */
+    fun setOf(number: Int, target: Int?): String = "Set $number" + (target?.let { " of $it" } ?: "")
+
+    /** What ends strength's rest, under its countdown. */
+    fun restRule(belowBpm: Int?): String =
+        if (belowBpm == null) "Rest ends when the time is up." else "Rest ends when the time is up, or sooner once you stay under $belowBpm."
+
+    /** A set done, as the live screen lists it: "10 × 60 kg, 0:51, peak 148", or without the log "0:51, peak 148". */
+    fun setLine(s: org.openstrap.app.data.db.AppWorkoutSet, peak: Int?): String = listOfNotNull(
+        s.reps?.let { r -> s.weightKg?.let { "$r × ${org.openstrap.app.data.Strength.kgText(it)} kg" } ?: "$r reps" },
+        s.end?.let { workoutClock(it - s.start) },
+        peak?.let { "peak $it" },
+    ).joinToString(", ")
+
     /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
     fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
 

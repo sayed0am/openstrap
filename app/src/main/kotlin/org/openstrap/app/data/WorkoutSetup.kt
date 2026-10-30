@@ -72,6 +72,10 @@ data class WorkoutPlan(
     val keepRoute: Boolean = false,
     val rest: Strength.Rest? = null,
     val setsTarget: Int? = null,
+    /** Strength: a log card after each set. */
+    val logSets: Boolean = false,
+    /** Rounds or periods, as [org.openstrap.app.data.db.AppWorkout.structure]. */
+    val structure: String? = null,
 )
 
 /** Choose's sports (workouts spec 2.1): [usual] gets the big card with Start, [recent] the small ones, by tile. */
@@ -111,7 +115,7 @@ object WorkoutSetup {
         return WorkoutPlan(
             sportType = sport, askToEnd = settings.askToEnd, target = goal, useGps = gps, keepRoute = gps && settings.keepRoute,
             rest = (Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT).takeIf { strength },
-            setsTarget = settings.sets.takeIf { strength },
+            setsTarget = settings.sets.takeIf { strength }, logSets = strength && settings.log,
         )
     }
 

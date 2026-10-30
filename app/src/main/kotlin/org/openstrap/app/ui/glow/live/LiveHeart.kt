@@ -110,6 +110,10 @@ fun GlowWorkoutLiveScreen(
     liveView: Int? = null,
     onLiveView: (Int) -> Unit = {},
     kcal: WorkoutRecorder.Kcal? = null,
+    /** Strength: the exercises logged before, naming the exercise, and the log card's Save. */
+    exercises: List<org.openstrap.app.data.db.ExerciseRow> = emptyList(),
+    onExercise: (String?) -> Unit = {},
+    onLogSet: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit = { _, _, _, _ -> },
 ) {
     val controls = LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
     // Each kind of workout has its own screen (workouts spec 2.3); the rest keep this one until theirs is built. Split
@@ -117,6 +121,13 @@ fun GlowWorkoutLiveScreen(
     val family = Workouts.family(r.workout.sportType)
     if (!split && family == Workouts.Family.Distance && r.workout.useGps) {
         LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal)
+        return
+    }
+    if (!split && family == Workouts.Family.Strength) {
+        LiveStrengthScreen(
+            r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, exercises,
+            onStartSet, onSetDone, onExtendRest, onExercise, onLogSet,
+        )
         return
     }
     if (!split && (family == Workouts.Family.IndoorCardio || family == Workouts.Family.Distance)) {
