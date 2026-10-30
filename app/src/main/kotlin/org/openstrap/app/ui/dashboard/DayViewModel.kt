@@ -79,7 +79,12 @@ data class DayUiState(
     val napBreakdowns: Map<Long, Summaries.SleepBreakdown> = emptyMap(),
     /** Each nap as the strap saw it, keyed by the nap's start as shown (the user's own when they changed its times). */
     val napsAsDetected: Map<Long, SleepSession> = emptyMap(),
+    /** The main sleep as the strap saw it, when there's one ([sleep] has the user's times when they changed them). */
+    val sleepAsDetected: SleepSession? = null,
+    /** The night's stages, clipped to [sleep]'s times. */
     val sleepStages: List<StageSpan> = emptyList(),
+    /** The strap's whole stages when the user moved the main sleep, so the chart can dim what's left out; else empty. */
+    val strapSleepStages: List<StageSpan> = emptyList(),
     val sleepBreakdown: Summaries.SleepBreakdown? = null,
     val spo2: List<ChartPoint> = emptyList(),
     val stress: List<ChartPoint> = emptyList(),
@@ -133,6 +138,8 @@ class DayViewModel(
     private val repo: HealthRepository,
     private val strapSteps: Flow<StepTotals?> = flowOf(null),
     profile: Flow<UserProfile> = flowOf(UserProfile()),
+    /** A sleep or nap (by the strap's start) was moved, deleted or restored: Health Connect is written again. */
+    private val onSleepEdited: (Long) -> Unit = {},
 ) : ViewModel() {
     private val selected = MutableStateFlow(LocalDate.now())
 
@@ -153,9 +160,9 @@ class DayViewModel(
     /** Works out the day's Recovery again, after it failed ([recoveryFailure]). */
     fun retryRecovery() { recoveryRetries.value++ }
 
-    /** Keeps [start] to [end] as the times of the strap's nap [strap]. */
-    fun setNapTimes(strap: SleepSession, start: Long, end: Long) {
-        viewModelScope.launch { repo.setSleepTimes(strap, start, end) }
+    /** Keeps [start] to [end] as the times of the strap's sleep or nap [strap]. */
+    fun setSleepTimes(strap: SleepSession, start: Long, end: Long) {
+        viewModelScope.launch { repo.setSleepTimes(strap, start, end); onSleepEdited(strap.start) }
     }
 
     /** The last Recovery worked out, for yesterday's score when today's fails. */
@@ -269,14 +276,16 @@ class DayViewModel(
             val resolved = shown.filter { it.strap.nap && it.strap.start in day.from..day.to }
             val naps = resolved.mapNotNull { it.shown }
             // Stages stay under the strap's start; they're trimmed to the times shown.
-            val mainStages = if (main == null) flowOf(emptyList()) else repo.sleepStages(main)
+            // The main sleep's are read whole, so the chart can show what a move left out.
+            val strapStages = if (main == null) flowOf(emptyList()) else repo.strapStages(main.strap)
             val napStages = if (naps.isEmpty()) flowOf(emptyMap())
             else combine(resolved.map { repo.sleepStages(it) }) { st -> naps.zip(st) { n, s -> n.start to s }.toMap() }
             val asDetected = naps.zip(resolved) { n, r -> n.start to r.strap }.toMap()
-            combine(mainStages, napStages) { st, ns ->
+            combine(strapStages, napStages) { whole, ns ->
+                val st = if (main?.moved == true) SleepEdits.clip(whole, main.start, main.end) else whole
                 // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
                 val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, st) else it }
-                SleepParts(session, st, naps, ns, before?.score, asDetected)
+                SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList())
             }
         }
         val extras = combine(repo.skinTemperature(day), repo.breathRate(night), repo.latestPai(day.to)) { skin, breath, pai ->
@@ -402,6 +411,8 @@ class DayViewModel(
                 napStages = napStages.mapValues { (_, st) -> st.map { StageSpan(it.start, it.end, it.stage) } },
                 napBreakdowns = napStages.filterValues { it.isNotEmpty() }.mapValues { (_, st) -> Summaries.sleepBreakdown(st) },
                 napsAsDetected = sleepParts.napsAsDetected,
+                sleepAsDetected = sleepParts.mainAsDetected,
+                strapSleepStages = sleepParts.strapStages.map { StageSpan(it.start, it.end, it.stage) },
                 sleepStages = stages.map { StageSpan(it.start, it.end, it.stage) },
                 sleepBreakdown = if (stages.isEmpty()) null else Summaries.sleepBreakdown(stages),
                 spo2 = spo2.map { ChartPoint(it.timestamp, it.percent.toFloat()) },
@@ -449,6 +460,9 @@ private data class SleepParts(
     val napStages: Map<Long, List<SleepStage>>,
     val previousScore: Int? = null,
     val napsAsDetected: Map<Long, SleepSession> = emptyMap(),
+    val mainAsDetected: SleepSession? = null,
+    /** The strap's whole stages for a main sleep the user moved; empty otherwise. */
+    val strapStages: List<SleepStage> = emptyList(),
 )
 
 private data class MoreParts(

@@ -144,6 +144,11 @@ fun GlowLineChart(
      * on release. Used without [describe].
      */
     onScrub: ((Int?) -> Unit)? = null,
+    /**
+     * A chosen stretch of the x range, as fractions: shaded in the colour at 12% with its two edges drawn (a sleep's
+     * times picked against its heart rate).
+     */
+    span: ClosedFloatingPointRange<Float>? = null,
     /** Text for the touch readout at a reading; null turns scrubbing off. */
     describe: ((index: Int, value: Float) -> String)? = null,
 ) {
@@ -168,6 +173,13 @@ fun GlowLineChart(
         // The shared line geometry ([lineChartGeometry]), as a widget's chart draws it.
         val g = lineChartGeometry(values, size.width, size.height, density, inset, axis = labels.isNotEmpty(), yRange = yRange, band = band) ?: return@Canvas
         val h = g.plotBottom
+        if (span != null) {
+            fun x(f: Float) = inset + f.coerceIn(0f, 1f) * (size.width - inset * 2)
+            val a = x(span.start)
+            val b = x(span.endInclusive)
+            drawRect(color.copy(alpha = NormalBandAlpha), Offset(a, 0f), Size(b - a, h))
+            listOf(a, b).forEach { drawLine(color.copy(alpha = 0.8f), Offset(it, 0f), Offset(it, h), 1.5.dp.toPx()) }
+        }
         drawLineChartBody(g, color)
 
         if (showAverage) {
@@ -480,6 +492,8 @@ fun GlowHypnogram(
      * hero, spec 2.7); null keeps the white pills, brighter the deeper, joined by thin connectors.
      */
     rowColors: List<Color>? = null,
+    /** The part kept, as fractions of the chart: what's either side is dimmed (a sleep whose times the user moved). */
+    kept: ClosedFloatingPointRange<Float>? = null,
     /** Text for the touch readout on a stage; null turns scrubbing off. */
     describe: ((GlowStage) -> String)? = null,
 ) {
@@ -513,6 +527,13 @@ fun GlowHypnogram(
             if (showNames) text(m, name, axisText, 0f, g.rowY[row] - 7.dp.toPx())
         }
         drawHypnogramBands(g, rowColors)
+        if (kept != null) {
+            val dim = Color.Black.copy(alpha = 0.65f)
+            val a = g.xOf(kept.start.coerceIn(0f, 1f))
+            val b = g.xOf(kept.endInclusive.coerceIn(0f, 1f))
+            if (a > nameW) drawRect(dim, Offset(nameW, 0f), Size(a - nameW, h))
+            if (b < size.width) drawRect(dim, Offset(b, 0f), Size(size.width - b, h))
+        }
         if (labels.isNotEmpty()) {
             labels.forEachIndexed { i, l ->
                 val f = if (labels.size == 1) 0f else i / (labels.size - 1f)

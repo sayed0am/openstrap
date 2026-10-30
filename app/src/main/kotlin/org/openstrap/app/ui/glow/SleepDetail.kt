@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -112,10 +113,12 @@ private fun ChartTitle(title: String, note: String?, modifier: Modifier = Modifi
 internal fun SleepScoreDetail(
     state: DayUiState, r: RecoveryResult?, history: DailyHistory,
     onOpen: (Detail) -> Unit, onSwitch: (Detail) -> Unit, onSelectDay: (LocalDate) -> Unit, contentPadding: PaddingValues, onBack: () -> Unit,
+    onSetTimes: (SleepSession, Long, Long) -> Unit,
 ) {
     val session = state.sleep
     val score = session?.score
     val color = MetricColors.sleepDeep
+    var adjusting by remember(state.date) { mutableStateOf(false) }
     // TODO(step 6): Month and Year wait for a stored history of the strap's sleep scores; the day loads only 14 nights.
     val ranges = listOf(Range.Day, Range.Week)
     var rangeIndex by rememberSaveable { mutableIntStateOf(0) }
@@ -153,13 +156,21 @@ internal fun SleepScoreDetail(
                 item { DetailEmpty(TabCopy.noNight(state.naps.isNotEmpty(), isToday)) }
             } else {
                 val asleep = state.asleepSeconds ?: (session.end - session.start)
+                val detected = state.sleepAsDetected
+                val moved = detected != null && (detected.start != session.start || detected.end != session.end)
                 item {
                     Column(Modifier.padding(top = 8.dp)) {
-                        if (state.sleepStages.isNotEmpty()) GlowSleepStages(state.sleepStages, 150.dp)
+                        // Moved, the strap's whole night shows with what's outside the user's times dimmed.
+                        if (moved && state.strapSleepStages.isNotEmpty()) GlowSleepStages(state.strapSleepStages, 150.dp, kept = session.start..session.end)
+                        else if (state.sleepStages.isNotEmpty()) GlowSleepStages(state.sleepStages, 150.dp)
                         state.sleepBreakdown?.let { StageBars(it, Modifier.padding(top = 18.dp)) }
                         DetailFigures(
                             listOf(clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE, clockDuration(asleep) to SleepCopy.ASLEEP),
                             Modifier.padding(top = 20.dp),
+                        )
+                        if (detected != null) SleepEditActions(
+                            if (moved) SleepCopy.yourTimes(clock(detected.start), clock(detected.end)) else null,
+                            onAdjust = { adjusting = true }, Modifier.padding(top = 20.dp),
                         )
                     }
                 }
@@ -206,10 +217,44 @@ internal fun SleepScoreDetail(
         item { SleepRelated(Score.Sleep, state, r, onOpen) }
     }
 
+    val detected = state.sleepAsDetected
+    // A move of 15 minutes or more has the score worked out again from the user's times (edit spec 5).
+    val ownScore = session != null && detected != null && score != null && !SleepEdits.keepsScore(detected, session.start, session.end)
     if (info) InfoSheet(
         InfoCopy.of(Score.Sleep), color, score?.let(InfoCopy::sleepBar), score?.let { InfoCopy.HERE },
-        onDismiss = { info = false }, notes = InfoCopy.sleepNotes(r?.sleepNeed ?: Recovery.SLEEP_NEED_MINUTES),
+        onDismiss = { info = false },
+        notes = listOfNotNull(SleepCopy.SCORE_FROM_YOUR_TIMES.takeIf { ownScore }) + InfoCopy.sleepNotes(r?.sleepNeed ?: Recovery.SLEEP_NEED_MINUTES),
     )
+    if (adjusting && session != null && detected != null) SleepTimesSheet(
+        session, detected, state.sleepHeartRate, state.naps,
+        onSave = { from, to -> adjusting = false; onSetTimes(detected, from, to) }, onDismiss = { adjusting = false },
+    )
+}
+
+/**
+ * Under a sleep's or nap's figures: the note that the times are the user's ([note], with a pencil, when they are),
+ * then Adjust times.
+ */
+@Composable
+private fun SleepEditActions(note: String?, onAdjust: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (note != null) EditedNote(note)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            PageButton("Adjust times", onAdjust, Modifier.weight(1f), icon = AppIcons.PencilEdit)
+        }
+    }
+}
+
+/** "Your times. The strap saw 23:20 to 07:21." on the list surface, with a pencil. */
+@Composable
+private fun EditedNote(text: String) {
+    Row(
+        Modifier.fillMaxWidth().background(ListSurface, RoundedCornerShape(16.dp)).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        androidx.compose.material3.Icon(AppIcons.PencilEdit, null, Modifier.size(16.dp), tint = Color.White.copy(alpha = 0.7f))
+        Text(text, color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(start = 10.dp).weight(1f))
+    }
 }
 
 /**
@@ -270,12 +315,15 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
 @Composable
 private fun ScrubLine(
     points: List<ChartPoint>, window: LongRange, height: Dp, labels: List<String>, color: Color, unit: String, decimals: Int = 0,
+    span: LongRange? = null,
     onScrub: (DetailHeadline?) -> Unit,
 ) {
     val step = 5 * 60L
     val values = remember(points, window) { evenly(points, window, step) }
+    val length = (window.last - window.first).coerceAtLeast(1).toFloat()
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
+        span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length },
         onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline("%.${decimals}f".format(v), "$unit at ${clock(window.first + i * step)}", null) }) },
     )
 }
@@ -399,14 +447,8 @@ internal fun NapsDetail(
                         Modifier.fillMaxWidth().padding(top = 12.dp)
                             .let { if (i > 0) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
                     ) {
-                        ChartTitle("${clock(nap.start)}–${clock(nap.end)}", TodayCopy.duration(nap.end - nap.start))
+                        ChartTitle(SleepCopy.span(clock(nap.start), clock(nap.end)), TodayCopy.duration(nap.end - nap.start))
                         val detected = state.napsAsDetected[nap.start]
-                        if (detected != null) {
-                            if (detected.start != nap.start || detected.end != nap.end) {
-                                Caption("Your times. The strap saw ${clock(detected.start)}–${clock(detected.end)}.")
-                            }
-                            PageButton("Adjust times", { adjusting = nap.start }, Modifier.padding(top = 4.dp, bottom = 14.dp), icon = AppIcons.PencilEdit)
-                        }
                         val stages = state.napStages[nap.start].orEmpty()
                         if (stages.isEmpty()) Caption(SleepCopy.NAP_NO_STAGES)
                         else {
@@ -418,6 +460,13 @@ internal fun NapsDetail(
                                 ).mapNotNull { st -> b.byStage[st]?.takeIf { it > 0 }?.let { clockDuration(it) to SLEEP_NAMES[st].orEmpty() } }
                                 if (figures.isNotEmpty()) DetailFigures(figures, Modifier.padding(top = 14.dp))
                             }
+                        }
+                        if (detected != null) {
+                            val moved = detected.start != nap.start || detected.end != nap.end
+                            SleepEditActions(
+                                if (moved) SleepCopy.yourTimes(clock(detected.start), clock(detected.end)) else null,
+                                onAdjust = { adjusting = nap.start }, Modifier.padding(top = 16.dp),
+                            )
                         }
                         // The strap sends no average for a nap, so its heart rate is the day's readings in its window.
                         val window = nap.start..nap.end
@@ -440,53 +489,66 @@ internal fun NapsDetail(
         val nap = naps.firstOrNull { it.start == start }
         val detected = state.napsAsDetected[start]
         if (nap == null || detected == null) adjusting = null
-        else NapTimesSheet(nap, detected, state.heartRate, onSave = { from, to -> adjusting = null; onSetNapTimes(detected, from, to) }, onDismiss = { adjusting = null })
+        else SleepTimesSheet(
+            nap, detected, state.heartRate, listOfNotNull(state.sleep) + naps.filter { it.start != start },
+            onSave = { from, to -> adjusting = null; onSetNapTimes(detected, from, to) }, onDismiss = { adjusting = null },
+        )
     }
 }
 
 /**
- * A nap's own times: Fell asleep and Woke up on the alarms' clock, with the heart rate from an hour before to an
- * hour after the strap's nap, so the drop into sleep and the rise out of it can be found by scrubbing. The strap's
- * times stay one tap away.
+ * A sleep's or nap's own times, one sheet for both: Fell asleep and Woke up on the alarms' clock, with the heart rate
+ * from two hours before to two hours after the strap's session and the chosen span shaded on it, so the drop into sleep
+ * and the rise out of it can be found by scrubbing. [others] are the day's other sleep and naps as shown, which the
+ * times mustn't run into. The strap's times stay one tap away.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NapTimesSheet(nap: SleepSession, detected: SleepSession, heartRate: List<ChartPoint>, onSave: (Long, Long) -> Unit, onDismiss: () -> Unit) {
+private fun SleepTimesSheet(
+    shown: SleepSession, detected: SleepSession, heartRate: List<ChartPoint>, others: List<SleepSession>,
+    onSave: (Long, Long) -> Unit, onDismiss: () -> Unit,
+) {
     val zone = ZoneId.systemDefault()
     fun local(t: Long) = Instant.ofEpochSecond(t).atZone(zone)
-    val startClock = rememberTimePickerState(local(nap.start).hour, local(nap.start).minute, is24Hour = true)
-    val endClock = rememberTimePickerState(local(nap.end).hour, local(nap.end).minute, is24Hour = true)
+    val startClock = rememberTimePickerState(local(shown.start).hour, local(shown.start).minute, is24Hour = true)
+    val endClock = rememberTimePickerState(local(shown.end).hour, local(shown.end).minute, is24Hour = true)
     var pickingEnd by remember { mutableStateOf(false) }
     var scrub by remember { mutableStateOf<DetailHeadline?>(null) }
     // A clock left on the minute it opened at keeps the time to the second, so the strap's own times stay its own.
     fun picked(c: androidx.compose.material3.TimePickerState, was: Long, near: Long): Long =
         if (c.hour == local(was).hour && c.minute == local(was).minute) was else SleepEdits.atNear(c.hour * 60 + c.minute, near, zone)
-    val start = picked(startClock, nap.start, detected.start)
-    val end = picked(endClock, nap.end, detected.end)
-    val problem = SleepEdits.problem(detected, start, end, Instant.now().epochSecond)
-    val window = (detected.start - 3600)..(detected.end + 3600)
+    val start = picked(startClock, shown.start, detected.start)
+    val end = picked(endClock, shown.end, detected.end)
+    val problem = SleepEdits.problem(detected, start, end, Instant.now().epochSecond, others, zone)
+    val window = (detected.start - 2 * 3600)..(detected.end + 2 * 3600)
     val hr = heartRate.filter { it.x in window }
 
-    PageSheet(onDismiss, "Nap times", note = "The strap saw ${clock(detected.start)}–${clock(detected.end)}.") {
+    PageSheet(onDismiss, SleepCopy.timesTitle(detected.nap), note = SleepCopy.strapSaw(clock(detected.start), clock(detected.end))) {
         if (hr.isNotEmpty()) Column {
             Text(
-                scrub?.let { "${it.value} ${it.label}" } ?: "Heart rate around the nap. It drops as you fall asleep.",
-                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
+                scrub?.let { "${it.value} ${it.label}" } ?: SleepCopy.TIMES_HINT,
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
             )
             Box(Modifier.padding(top = 8.dp)) {
-                ScrubLine(hr, window, 90.dp, listOf(clock(window.first), clock(window.last)), MetricColors.heart, "bpm") { scrub = it }
+                ScrubLine(
+                    hr, window, 90.dp, listOf(clock(window.first), clock(window.last)), MetricColors.heart, "bpm",
+                    span = if (end > start) start..end else null,
+                ) { scrub = it }
             }
         }
         GlowSegments(listOf("Fell asleep ${clock(start)}", "Woke up ${clock(end)}"), if (pickingEnd) 1 else 0, { pickingEnd = it == 1 })
         TimePicker(if (pickingEnd) endClock else startClock, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
         if (problem != null) PageNote(problem, color = MetricColors.warn)
-        else Text("A nap of ${TodayCopy.duration(end - start)}.", color = Color.White, style = GlowType.body)
+        else Text(SleepCopy.timesResult(detected.nap, end - start), color = Color.White, style = GlowType.body)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PageButton("Cancel", onDismiss, Modifier.weight(1f))
             PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null, primary = true)
         }
-        if (nap.start != detected.start || nap.end != detected.end) {
-            PageTextButton("Use the strap's times", { onSave(detected.start, detected.end) }, Modifier.align(Alignment.CenterHorizontally))
+        if (shown.start != detected.start || shown.end != detected.end) {
+            PageButton(
+                "Use the strap's times", { onSave(detected.start, detected.end) }, Modifier.fillMaxWidth(),
+                icon = AppIcons.ArrowCounterClockwise,
+            )
         }
     }
 }

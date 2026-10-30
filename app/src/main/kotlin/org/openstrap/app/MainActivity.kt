@@ -409,7 +409,7 @@ private fun AppRoot(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile) } })
+    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })
     val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })
 
     // Which tab shows and the one before it, for back; every tab keeps its own stack of details.
@@ -925,7 +925,7 @@ private fun AppRoot(
                         onOpen = push, onSwitch = { setStack(t, stack.dropLast(1) + it) }, onSelectDay = dayVm::select,
                         contentPadding = padding, onBack = pop,
                         workouts = workouts, paiHistory = paiHistory, onEditProfile = { openPage(Page.Profile) }, energyHistory = energyHistory,
-                        onSetNapTimes = dayVm::setNapTimes,
+                        onSetSleepTimes = dayVm::setSleepTimes,
                     )
                     Detail.Week -> org.openstrap.app.ui.glow.WeekDetail(
                         org.openstrap.app.ui.glow.ActivityDetailContext(

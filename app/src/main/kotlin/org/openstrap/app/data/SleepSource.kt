@@ -44,6 +44,9 @@ class SleepSource(private val dao: HealthDao) {
     fun stages(r: SleepEdits.Resolved): Flow<List<SleepStage>> =
         dao.sleepStages(r.strap.start).map { if (r.moved) SleepEdits.clip(it, r.start, r.end) else it }
 
+    /** The strap's own stages for its session [strap], unclipped: for showing what a move left out. */
+    fun strapStages(strap: SleepSession): Flow<List<SleepStage>> = dao.sleepStages(strap.start)
+
     /** The stages of a session as shown ([sessions]), as they change. */
     fun stages(session: SleepSession): Flow<List<SleepStage>> =
         kotlinx.coroutines.flow.flow { emit(movedFrom(session)) }.flatMapLatest { strap ->

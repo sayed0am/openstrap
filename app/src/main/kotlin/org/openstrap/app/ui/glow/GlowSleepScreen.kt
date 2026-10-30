@@ -212,9 +212,10 @@ private fun StageLegend(totals: List<Pair<Int, Long>>) {
 /**
  * Stages as the glow hypnogram, rows Awake to Deep, each stage a band in its own colour (spec 2.7, every hypnogram),
  * with start and end times underneath. Shared with Today and the Sleep detail; [compact] leaves the names and times out.
+ * [kept], the user's own times for a sleep they moved, dims the strap's stages outside it.
  */
 @Composable
-internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolean = false) {
+internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolean = false, kept: LongRange? = null) {
     val start = spans.minOf { it.start }
     val end = spans.maxOf { it.end }.coerceAtLeast(start + 1)
     val rows = DayViewModel.SLEEP_STAGE_ROWS
@@ -227,6 +228,7 @@ internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolea
     GlowHypnogram(
         stages, names, height = height, labels = if (compact) emptyList() else listOf(clock(start), clock(end)), showNames = !compact,
         rowColors = colors,
+        kept = kept?.let { (it.first - start).toFloat() / (end - start)..(it.last - start).toFloat() / (end - start) },
     ) { st ->
         val mins = (((end - start) * (st.to - st.from)) / 60).toInt().coerceAtLeast(1)
         "${names[st.row]}, ${at(st.from)}–${at(st.to)}, $mins min"

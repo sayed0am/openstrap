@@ -57,6 +57,16 @@ object AutoHealthConnect {
     fun workoutRange(from: Long, end: Long, now: Long): Pair<Long, Long> =
         from / 3600 * 3600 to minOf(maxOf(now, end), (end / 3600 + 1) * 3600 - 1)
 
+    /**
+     * The range written after a sleep the strap started at [strapStart] was edited: one that reaches every time it
+     * can be shown at ([org.openstrap.app.data.SleepEdits.MAX_SHIFT_SECONDS] either side of a session up to 16 h), not
+     * past [now]. The export's own sleep delete reaches a day further back.
+     */
+    fun sleepRange(strapStart: Long, now: Long): Pair<Long, Long> {
+        val shift = org.openstrap.app.data.SleepEdits.MAX_SHIFT_SECONDS
+        return strapStart - shift to minOf(now, strapStart + org.openstrap.app.data.SleepEdits.SLEEP_MAX_SECONDS + shift)
+    }
+
     /** Why auto sync has to stop: Health Connect not [available], or the write permissions not [granted]. Null when fine. */
     fun stopReason(available: Boolean, granted: Boolean): HealthConnectAuto.Stopped? = when {
         !available -> HealthConnectAuto.Stopped.UNAVAILABLE
@@ -107,6 +117,20 @@ class HealthConnectAutoSync(
             guarded("workout $start") {
                 val n = exporter.exportWorkout(start)
                 Log.i(TAG, "health connect: wrote workout $start, $n records")
+            }
+        }
+    }
+
+    /**
+     * A sleep or nap the strap started at [strapStart] was moved, deleted or brought back: writes its night again now
+     * ([AutoHealthConnect.sleepRange]), not on the next sync, so Health Connect moves or drops it too.
+     */
+    fun sleepEdited(strapStart: Long) {
+        scope.launch {
+            guarded("sleep $strapStart") {
+                val (from, to) = AutoHealthConnect.sleepRange(strapStart, System.currentTimeMillis() / 1000)
+                val n = exporter.export(from, to)
+                Log.i(TAG, "health connect: wrote the sleep at $strapStart again, $n records")
             }
         }
     }

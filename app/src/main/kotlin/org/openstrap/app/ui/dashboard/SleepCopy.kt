@@ -243,4 +243,28 @@ internal object SleepCopy {
 
     /** A nap the strap recorded without stages. */
     const val NAP_NO_STAGES = "The strap didn't record stages for this nap."
+
+    /* --------------------------------------- Adjust times (edit spec 4.2) ------------------------------- */
+
+    /** A span of clock times in text: "23:20 to 07:21". */
+    fun span(from: String, to: String): String = "$from to $to"
+
+    /** The times sheet's title. */
+    fun timesTitle(nap: Boolean): String = if (nap) "Nap times" else "Sleep times"
+
+    /** Under the sheet's title. */
+    fun strapSaw(from: String, to: String): String = "The strap saw ${span(from, to)}."
+
+    /** How to read the sheet's heart rate. */
+    const val TIMES_HINT = "Your heart rate drops as you fall asleep and rises as you wake."
+
+    /** The sheet's result line for times that can be saved. */
+    fun timesResult(nap: Boolean, seconds: Long): String =
+        if (nap) "A nap of ${TodayCopy.duration(seconds)}." else "Asleep for ${TodayCopy.duration(seconds)}."
+
+    /** On a detail whose sleep or nap has the user's times. */
+    fun yourTimes(from: String, to: String): String = "Your times. ${strapSaw(from, to)}"
+
+    /** The score's info sheet, when the score is OpenStrap's own from the user's times. */
+    const val SCORE_FROM_YOUR_TIMES = "Score worked out from your times."
 }

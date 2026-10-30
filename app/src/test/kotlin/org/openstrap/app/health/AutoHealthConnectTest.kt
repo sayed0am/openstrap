@@ -65,4 +65,10 @@ class AutoHealthConnectTest {
         assertEquals(HealthConnectAuto.Stopped.PERMISSIONS, AutoHealthConnect.stopReason(available = true, granted = false))
         assertNull(AutoHealthConnect.stopReason(available = true, granted = true))
     }
+
+    @Test fun `an edited sleep is written over every time it can be shown at, not past now`() {
+        val start = 1_000_000L
+        assertEquals(start - 3 * 3600 to start + 19 * 3600, AutoHealthConnect.sleepRange(start, start + 30 * 3600))
+        assertEquals(start - 3 * 3600 to start + 9 * 3600, AutoHealthConnect.sleepRange(start, start + 9 * 3600))
+    }
 }

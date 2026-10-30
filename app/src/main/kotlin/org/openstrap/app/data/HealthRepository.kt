@@ -109,6 +109,8 @@ class HealthRepository(private val dao: HealthDao) {
     fun sleepResolved(w: DayWindow): Flow<List<SleepEdits.Resolved>> = sleep.resolved(w.from, w.to)
     /** [r]'s stages as shown. */
     fun sleepStages(r: SleepEdits.Resolved): Flow<List<SleepStage>> = sleep.stages(r)
+    /** The strap's own stages for its session [strap], unclipped. */
+    fun strapStages(strap: SleepSession): Flow<List<SleepStage>> = sleep.strapStages(strap)
     fun sleepEdits(): Flow<List<org.openstrap.app.data.db.SleepEdit>> = dao.sleepEdits()
 
     /** Keeps [start] to [end] as the strap's session [strap]'s times; its own times again drop the edit. */
