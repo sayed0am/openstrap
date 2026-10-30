@@ -151,4 +151,41 @@ class SleepCopyTest {
             listOf(InfoCopy.breathingLine(Recovery.BreathingDisturbances(2.4f, null, 3), true), InfoCopy.breathingLine(Recovery.BreathingDisturbances(2.4f, 2.1f, 9), false))
         lines.forEach { l -> listOf("·", ";", "—").forEach { assertFalse("$l has $it", l.contains(it)) } }
     }
+
+    @Test fun `the times sheet and the edited note say the times with to, never a dash`() {
+        assertEquals("Sleep times", SleepCopy.timesTitle(false))
+        assertEquals("Nap times", SleepCopy.timesTitle(true))
+        assertEquals("The strap saw 23:20 to 07:21.", SleepCopy.strapSaw("23:20", "07:21"))
+        assertEquals("Your times. The strap saw 23:20 to 07:21.", SleepCopy.yourTimes("23:20", "07:21"))
+        assertEquals("Asleep for 7 h 26.", SleepCopy.timesResult(false, 7 * 3600L + 26 * 60))
+        assertEquals("A nap of 42 min.", SleepCopy.timesResult(true, 42 * 60L))
+        assertEquals("Delete last night's sleep?", SleepCopy.deleteTitle(nap = false, today = true))
+        assertEquals("Delete this nap?", SleepCopy.deleteTitle(nap = true, today = true))
+        assertEquals("Last night's sleep deleted", SleepCopy.deleted(nap = false, today = true, start = "23:20"))
+        assertEquals("Nap at 10:40 deleted", SleepCopy.deleted(nap = true, today = true, start = "10:40"))
+        assertEquals(
+            "You deleted 23:20 to 07:21. Recovery this morning works without last night, as on a night the strap was off.",
+            SleepCopy.deletedNight("23:20", "07:21", today = true),
+        )
+        assertEquals("Night of Wed 29 Oct", SleepCopy.deletedName(false, "Wed 29 Oct"))
+        assertEquals("Nap, Thu 30 Oct", SleepCopy.deletedName(true, "Thu 30 Oct"))
+        assertEquals("23:20 to 07:21\n7 days left", SleepCopy.deletedLine("23:20", "07:21", 7))
+        assertEquals("10:40 to 11:05\n1 day left", SleepCopy.deletedLine("10:40", "11:05", 1))
+        listOf(
+            SleepCopy.yourTimes("23:20", "07:21"), SleepCopy.span("14:05", "14:47"), SleepCopy.TIMES_HINT, SleepCopy.DELETE_WHAT,
+            SleepCopy.DELETE_RESTORE, SleepCopy.DELETED_INTRO, SleepCopy.DELETED_FOOT, SleepCopy.deletedNight("23:20", "07:21", false),
+        ).forEach { l ->
+            listOf("·", ";", "—", "–").forEach { assertFalse("$l has $it", l.contains(it)) }
+        }
+    }
+
+    @Test fun `a deleted night says the user deleted it, never asks whether the strap was on`() {
+        assertEquals("You can bring it back from You, Your data, Deleted sleep for 7 days.", SleepCopy.DELETE_RESTORE)
+        assertEquals("Nothing deleted in the last 7 days.", SleepCopy.DELETED_NONE)
+        assertEquals("You deleted last night's sleep.", TabCopy.noNight(naps = true, isToday = true, deleted = true))
+        assertEquals("You deleted that night's sleep.", TabCopy.noNight(naps = false, isToday = false, deleted = true))
+        assertEquals(TodayCopy.NO_SLEEP, TabCopy.noNight(naps = false, isToday = true))
+        assertEquals("You deleted last night's sleep.", TodayCopy.waking(null, null, false, null, firstNights = false, isToday = true, deleted = true))
+        listOf(TabCopy.noNight(false, true, deleted = true), TabCopy.DELETED_SLEEP_SCORE).forEach { assertFalse(it, "strap on" in it) }
+    }
 }

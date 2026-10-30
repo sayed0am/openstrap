@@ -71,10 +71,12 @@ object TodayCopy {
 
     /**
      * The waking hero (spec 4.2, 4.3): how long you slept, then what Recovery says, or why there's no score yet and the
-     * strap's own [estimate] when there is one. [firstNights] is before the strap has seen any sleep.
+     * strap's own [estimate] when there is one. [firstNights] is before the strap has seen any sleep. [deleted] is a
+     * night the user deleted, which never asks whether the strap was on.
      */
-    fun waking(asleepSeconds: Long?, score: Int?, alert: Boolean, noScore: NoScore?, firstNights: Boolean, isToday: Boolean): String {
+    fun waking(asleepSeconds: Long?, score: Int?, alert: Boolean, noScore: NoScore?, firstNights: Boolean, isToday: Boolean, deleted: Boolean = false): String {
         if (firstNights) return RECOVERY_FIRST_NIGHT
+        if (asleepSeconds == null && deleted) return deletedNight(isToday)
         if (asleepSeconds == null) return if (isToday) NO_SLEEP else "No sleep recorded that night."
         val slept = "Slept ${duration(asleepSeconds)}."
         return when {
@@ -90,6 +92,9 @@ object TodayCopy {
 
     /** Today's waking hero with no sleep recorded last night, and the Sleep tab's night (spec 4.3). */
     const val NO_SLEEP = "No sleep recorded last night. Was the strap on?"
+
+    /** In [NO_SLEEP]'s place when the user deleted the night themselves (sleep edit spec 4.3). */
+    fun deletedNight(isToday: Boolean): String = if (isToday) "You deleted last night's sleep." else "You deleted that night's sleep."
 
     /** What a Recovery card shows: the number (null for a dash), the word beside it and the line under it. */
     data class RecoveryShown(val value: Int?, val word: String?, val line: String, val estimate: Boolean = false)

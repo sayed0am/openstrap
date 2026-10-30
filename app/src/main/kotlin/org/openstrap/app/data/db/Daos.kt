@@ -337,17 +337,30 @@ interface HealthDao {
     @Query("DELETE FROM sleep_session WHERE day = :day AND nap = :nap")
     suspend fun deleteSleepSessionsForDay(day: Long, nap: Boolean)
 
-    @Query("SELECT * FROM nap_edit")
-    fun napEdits(): Flow<List<NapEdit>>
+    @Query("SELECT * FROM sleep_edit")
+    fun sleepEdits(): Flow<List<SleepEdit>>
 
-    @Query("SELECT * FROM nap_edit")
-    suspend fun napEditsOnce(): List<NapEdit>
+    @Query("SELECT * FROM sleep_edit")
+    suspend fun sleepEditsOnce(): List<SleepEdit>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertNapEdit(edit: NapEdit)
+    suspend fun upsertSleepEdit(edit: SleepEdit)
 
-    @Query("DELETE FROM nap_edit WHERE strapStart = :strapStart")
-    suspend fun deleteNapEdit(strapStart: Long)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSleepEdits(edits: List<SleepEdit>)
+
+    @Query("DELETE FROM sleep_edit WHERE strapStart = :strapStart")
+    suspend fun deleteSleepEdit(strapStart: Long)
+
+    /** Sessions the strap started in [from, to], for finding the one a delete removes for good. */
+    @Query("SELECT * FROM sleep_session WHERE start BETWEEN :from AND :to ORDER BY start")
+    suspend fun sleepSessionsStartingOnce(from: Long, to: Long): List<SleepSession>
+
+    @Query("DELETE FROM sleep_stage WHERE sessionStart = :sessionStart")
+    suspend fun deleteSleepStagesOf(sessionStart: Long)
+
+    @Query("DELETE FROM sleep_session WHERE start = :start")
+    suspend fun deleteSleepSession(start: Long)
 
     /**
      * Naps that overlap a main sleep. The strap can briefly report a stretch of broken night sleep as a nap,
@@ -616,7 +629,10 @@ interface HealthDao {
     @Query("SELECT timestamp / 60 FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm BETWEEN 30 AND 230 UNION SELECT timestamp / 60 FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND heartRate BETWEEN 30 AND 230")
     suspend fun wornMinutesOnce(from: Long, to: Long): List<Long>
 
-    /** A cheap fingerprint of the data in a window: changes when a sync adds minutes, sleep or workouts to it. */
-    @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003")
+    /**
+     * A cheap fingerprint of the data in a window: changes when a sync adds minutes, sleep or workouts to it, or when
+     * any sleep is moved, deleted or restored (every edit changes its editedAt).
+     */
+    @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003 + (SELECT COUNT(*) + COALESCE(SUM(editedAt), 0) FROM sleep_edit) * 31")
     suspend fun dataFingerprint(from: Long, to: Long): Long
 }

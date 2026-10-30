@@ -98,9 +98,9 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
             val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
             val night = read("last night", null) {
                 val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
-                val sessions = dao.sleepSessionsOnce(span.from, span.to)
+                val sessions = org.openstrap.app.data.SleepSource(dao).sessionsOnce(span.from, span.to)
                 SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(today, zone))?.let { main ->
-                    SleepWidgetNight.of(today, main, dao.sleepStagesOnce(main.start), SleepHistory.mainSleeps(sessions, zone))
+                    SleepWidgetNight.of(today, main, org.openstrap.app.data.SleepSource(dao).stagesOnce(main), SleepHistory.mainSleeps(sessions, zone))
                 }
             }
             // Workouts over the usual workout time's look-back, as Today's usual sport reads them.
@@ -144,6 +144,9 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
                 restingHr = resting,
                 steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value),
                 stepGoal = container.settings.goals.first().steps,
+                nightDeleted = night == null && read("a deleted night", false) {
+                    DayWindow.nightEndingOn(today, zone).let { w -> org.openstrap.app.data.SleepSource(dao).nightDeleted(w.from, w.to) }
+                },
             )
             val forced = WidgetRefresh.momentOverride
             val model = MomentWidgetModel.from(input, now, zone, forced)

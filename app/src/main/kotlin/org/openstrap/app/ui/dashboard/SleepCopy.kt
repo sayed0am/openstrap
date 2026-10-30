@@ -243,4 +243,82 @@ internal object SleepCopy {
 
     /** A nap the strap recorded without stages. */
     const val NAP_NO_STAGES = "The strap didn't record stages for this nap."
+
+    /* --------------------------------------- Adjust times (edit spec 4.2) ------------------------------- */
+
+    /** A span of clock times in text: "23:20 to 07:21". */
+    fun span(from: String, to: String): String = "$from to $to"
+
+    /** The times sheet's title. */
+    fun timesTitle(nap: Boolean): String = if (nap) "Nap times" else "Sleep times"
+
+    /** Under the sheet's title. */
+    fun strapSaw(from: String, to: String): String = "The strap saw ${span(from, to)}."
+
+    /** How to read the sheet's heart rate. */
+    const val TIMES_HINT = "Your heart rate drops as you fall asleep and rises as you wake."
+
+    /** The sheet's result line for times that can be saved. */
+    fun timesResult(nap: Boolean, seconds: Long): String =
+        if (nap) "A nap of ${TodayCopy.duration(seconds)}." else "Asleep for ${TodayCopy.duration(seconds)}."
+
+    /** On a detail whose sleep or nap has the user's times. */
+    fun yourTimes(from: String, to: String): String = "Your times. ${strapSaw(from, to)}"
+
+    /** The score's info sheet, when the strap's score was moved for the user's times ([org.openstrap.app.data.SleepEdits.anchored]). */
+    const val SCORE_FROM_YOUR_TIMES = "The strap's score, adjusted for your times."
+
+    /* ------------------------------------------ Delete (edit spec 4.3) ---------------------------------- */
+
+    /** The delete sheet's question. */
+    fun deleteTitle(nap: Boolean, today: Boolean): String = when {
+        nap -> "Delete this nap?"
+        today -> "Delete last night's sleep?"
+        else -> "Delete that night's sleep?"
+    }
+
+    /** What a delete does, after the times. */
+    const val DELETE_WHAT = "It won't count toward your totals, scores or Health Connect. Heart rate and the other readings stay."
+
+    /** Where to undo it later. */
+    const val DELETE_RESTORE = "You can bring it back from You, Your data, Deleted sleep for 7 days."
+
+    /** The snackbar after a delete, with Undo. */
+    fun deleted(nap: Boolean, today: Boolean, start: String): String = when {
+        nap -> "Nap at $start deleted"
+        today -> "Last night's sleep deleted"
+        else -> "That night's sleep deleted"
+    }
+
+    /** The card in a deleted night's place. */
+    const val NO_SLEEP_TITLE = "No sleep recorded"
+
+    fun deletedNight(from: String, to: String, today: Boolean): String =
+        "You deleted ${span(from, to)}. " +
+            if (today) "Recovery this morning works without last night, as on a night the strap was off."
+            else "Recovery that morning works without that night, as on a night the strap was off."
+
+    /** The headline's label on a deleted night. */
+    fun noScoreDeleted(today: Boolean): String = if (today) "Last night" else "That night"
+
+    /* ---------------------------------- Deleted sleep page (edit spec 4.4) ------------------------------ */
+
+    const val DELETED_INTRO = "Sleep and naps you deleted in the last 7 days. Restoring puts it back in your totals, scores and Health Connect."
+    const val DELETED_FOOT = "After 7 days they are deleted for good, even if the strap syncs them again."
+
+    /** The Deleted sleep page once nothing is left in it. */
+    const val DELETED_NONE = "Nothing deleted in the last 7 days."
+
+    /** A deleted entry's name: "Night of Wed 29 Oct" or "Nap, Thu 30 Oct". */
+    fun deletedName(nap: Boolean, day: String): String = if (nap) "Nap, $day" else "Night of $day"
+
+    /** Under it, on two lines so neither wraps beside Restore: "23:20 to 07:21", then "6 days left". */
+    fun deletedLine(from: String, to: String, daysLeft: Int): String =
+        "${span(from, to)}\n${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
+
+    /** Under a nap whose heart rate stayed as when sitting still (edit spec 4.5). */
+    fun stillNap(bpm: Int): String = "Heart rate stayed at $bpm, as when you sit still. Might not be a nap."
+
+    /** The You page's row value. */
+    fun deletedCount(n: Int): String = if (n == 1) "1 you can restore" else "$n you can restore"
 }

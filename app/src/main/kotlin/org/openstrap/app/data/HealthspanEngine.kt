@@ -14,6 +14,8 @@ import java.time.temporal.TemporalAdjusters
  * thread. The last result is kept until a sync adds data to its window.
  */
 class HealthspanEngine(private val dao: HealthDao) {
+    /** Sleep as shown, with the user's edits ([SleepEdits]). */
+    private val sleepSource = SleepSource(dao)
     private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: Long)
     private var cached: Pair<Key, Healthspan.Outcome>? = null
 
@@ -76,7 +78,7 @@ class HealthspanEngine(private val dao: HealthDao) {
         }.toMap()
 
         // Main sleeps: the longest non-nap session per morning, as Recovery picks them.
-        val sessions = dao.sleepSessionsOnce(from, to)
+        val sessions = sleepSource.sessionsOnce(from, to)
         val mains = sessions.filter { !it.nap }
             .groupBy { RecoveryEngine.morningOf(it, zone) }
             .filterKeys { it in from until asOf }
@@ -97,7 +99,7 @@ class HealthspanEngine(private val dao: HealthDao) {
         }.toMap()
 
         // Sleep regularity: one SRI per week, each over 8 noon-to-noon grid days ending at a Saturday noon.
-        val stages = sessions.flatMap { s -> dao.sleepStagesOnce(s.start).map { Triple(it.start, it.end, it.stage) } }
+        val stages = sessions.flatMap { s -> sleepSource.stagesOnce(s).map { Triple(it.start, it.end, it.stage) } }
         val weeks = (Healthspan.WINDOW_DAYS - 1) / 7
         val weeklySri = (0 until weeks).mapNotNull { k ->
             val end = sunday.minusDays(7L * k + 1)

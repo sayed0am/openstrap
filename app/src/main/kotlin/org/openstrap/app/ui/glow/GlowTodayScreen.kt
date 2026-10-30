@@ -456,7 +456,7 @@ private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit
                 "Recovery", trailing = score?.let { org.openstrap.app.ui.dashboard.TabCopy.vsYesterday(it, before) },
                 tag = if (ctx.firstScore && score != null) TitleTag(FIRST_SCORE) else null,
             )
-            if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday))
+            if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday, deleted = ctx.state.deletedSleep != null))
             // A hero leaves out a figure it doesn't have rather than show a lone dash; the sentence says why.
             if (shown.value == null && atWake == null) return@Column
             Spacer(Modifier.height(24.dp))
@@ -507,7 +507,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
             HeroSentence(
                 when {
                     failed -> CHARGE_FAILED
-                    noSleep -> TodayCopy.NO_SLEEP
+                    noSleep -> if (ctx.state.deletedSleep != null) TodayCopy.deletedNight(ctx.isToday) else TodayCopy.NO_SLEEP
                     else -> TodayCopy.charge(now, c?.let { org.openstrap.app.ui.dashboard.TabCopy.drainedAmount(it.drainedExercise + it.drainedStress + it.drainedLiving).toInt() }, c?.anchored == true, LocalTime.now().hour)
                 },
             )

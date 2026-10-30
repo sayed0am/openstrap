@@ -46,15 +46,27 @@ data class SleepSession(
 )
 
 /**
- * The user's own times for a nap the strap detected, kept apart from [SleepSession] because a sync rewrites the
- * day's naps. Keyed by the strap's start for the nap, which stays the same across syncs.
+ * The user's own times for a sleep or nap the strap detected, or its removal, kept apart from [SleepSession] because a
+ * sync rewrites the day's sessions. Keyed by the strap's start for the session, which stays the same across syncs or
+ * moves a few minutes ([org.openstrap.app.data.SleepEdits.resolve] allows for that). The strap's rows are never
+ * changed by an edit, so Undo and Restore bring back exactly what was there.
  */
-@Entity(tableName = "nap_edit")
-data class NapEdit(
+@Entity(tableName = "sleep_edit")
+data class SleepEdit(
     @PrimaryKey val strapStart: Long,
-    val start: Long,
-    val end: Long,
-)
+    /** Which kind the strap's session was, so an edit never moves or removes a session of the other kind. */
+    @ColumnInfo(defaultValue = "0") val nap: Boolean,
+    /** The user's times; both null when not moved. */
+    val start: Long? = null,
+    val end: Long? = null,
+    /** Removed: left out of everything. Its session goes for good after [org.openstrap.app.data.SleepEdits.KEEP_DAYS]. */
+    @ColumnInfo(defaultValue = "0") val deleted: Boolean = false,
+    /** When it was last changed, epoch seconds: for the Deleted sleep list and the clean up. */
+    @ColumnInfo(defaultValue = "0") val editedAt: Long = 0,
+) {
+    /** True when the user moved the session's times. */
+    val moved: Boolean get() = start != null && end != null
+}
 
 @Entity(tableName = "sleep_stage", indices = [Index("sessionStart")])
 data class SleepStage(

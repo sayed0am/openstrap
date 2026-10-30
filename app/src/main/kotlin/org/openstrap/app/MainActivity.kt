@@ -373,7 +373,7 @@ private enum class Page(
     /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
     val row: String? = null,
 ) {
-    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), Updates("Updates"), Diagnostics("Diagnostics"),
+    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), DeletedSleep("Deleted sleep"), Updates("Updates"), Diagnostics("Diagnostics"),
     Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
 }
 
@@ -409,7 +409,7 @@ private fun AppRoot(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile) } })
+    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })
     val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })
 
     // Which tab shows and the one before it, for back; every tab keeps its own stack of details.
@@ -925,7 +925,7 @@ private fun AppRoot(
                         onOpen = push, onSwitch = { setStack(t, stack.dropLast(1) + it) }, onSelectDay = dayVm::select,
                         contentPadding = padding, onBack = pop,
                         workouts = workouts, paiHistory = paiHistory, onEditProfile = { openPage(Page.Profile) }, energyHistory = energyHistory,
-                        onSetNapTimes = dayVm::setNapTimes,
+                        sleepEditing = org.openstrap.app.ui.glow.SleepEditing(dayVm::setSleepTimes, dayVm::deleteSleep, dayVm::restoreSleep),
                     )
                     Detail.Week -> org.openstrap.app.ui.glow.WeekDetail(
                         org.openstrap.app.ui.glow.ActivityDetailContext(
@@ -963,7 +963,7 @@ private fun AppRoot(
                         androidx.activity.compose.BackHandler(onBack = pop)
                         org.openstrap.app.ui.glow.GlowSleepScreen(
                             day, header = { org.openstrap.app.ui.glow.PageHeader("Sleep", pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
-                            contentPadding = padding, onOpen = push, recovery = recovery,
+                            contentPadding = padding, onOpen = push, recovery = recovery, onRestore = dayVm::restoreSleep,
                         )
                     }
                 }
@@ -1051,7 +1051,7 @@ private fun AppRoot(
                             )
                             Tab.Sleep -> org.openstrap.app.ui.glow.GlowSleepScreen(
                                 day, header = { header(Tab.Sleep) }, contentPadding = padding,
-                                onOpen = { sleepStack = listOf(it) },
+                                onOpen = { sleepStack = listOf(it) }, onRestore = dayVm::restoreSleep,
                                 recovery = recovery,
                             )
                             Tab.Activity -> org.openstrap.app.ui.glow.GlowActivityScreen(
@@ -1102,6 +1102,7 @@ private fun AppRoot(
                             val backup by deviceVm.backup.collectAsStateWithLifecycle()
                             val updates by container.updater.state.collectAsStateWithLifecycle()
                             val updateWaiting by container.updater.waiting.collectAsStateWithLifecycle()
+                            val deletedSleep by dayVm.deletedSleep.collectAsStateWithLifecycle()
                             // Permissions can be taken back in Health Connect while away: the row says so on return.
                             androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { deviceVm.checkAutoHealthConnect(); onPauseOrDispose { } }
                             org.openstrap.app.ui.device.YouPage(
@@ -1112,6 +1113,8 @@ private fun AppRoot(
                                 onHealthConnect = { open(Page.HealthConnect) },
                                 backup = backup,
                                 onBackup = { open(Page.Backup) },
+                                deletedSleep = deletedSleep.size,
+                                onDeletedSleep = { open(Page.DeletedSleep) },
                                 updates = updates,
                                 installedVersion = container.updater.installed,
                                 updateWaiting = updateWaiting,
@@ -1184,6 +1187,10 @@ private fun AppRoot(
                                         onGitHub = { uri.openUri(org.openstrap.app.update.Releases.PAGE) },
                                         onBack = { updater.dismissFailure(); onBack() },
                                     )
+                                }
+                                Page.DeletedSleep -> {
+                                    val deleted by dayVm.deletedSleep.collectAsStateWithLifecycle()
+                                    org.openstrap.app.ui.device.DeletedSleepPage(deleted, padding, onRestore = dayVm::restoreSleep, onBack = onBack)
                                 }
                                 else -> Unit
                             }
@@ -1335,7 +1342,7 @@ private fun OverPages(
             Page.PhoneAlerts -> org.openstrap.app.ui.alarms.PhoneAlertsScreen(container.phoneAlerts, container.settings, padding, onBack = close)
             Page.Firmware -> FirmwareScreen(firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })
             Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)
-            Page.HealthConnect, Page.Backup, Page.Updates -> dataPage(shown, close)
+            Page.HealthConnect, Page.Backup, Page.DeletedSleep, Page.Updates -> dataPage(shown, close)
             Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close)
             Page.Diagnostics -> {
                 val log by container.strap.log.collectAsStateWithLifecycle()

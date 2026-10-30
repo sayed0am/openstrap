@@ -143,6 +143,10 @@ class HistorySync(
             // A session the strap ran alongside a phone workout has just come in: its figures replace the model's.
             runCatching { org.openstrap.app.data.WorkoutEffectEngine(dao).takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK) }
                 .onFailure { log("strap effect: $it") }
+            // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
+            runCatching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
+                .onSuccess { if (it > 0) log("history: removed $it sleep sessions deleted over a week ago") }
+                .onFailure { log("deleted sleep: $it") }
             state.value = SyncState.Done(System.currentTimeMillis() / 1000)
         } catch (e: FastRechargeModeException) {
             // Zepp ends the sync job at once in this mode (xyk.java:66-70); the data waits on the strap.

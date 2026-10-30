@@ -26,6 +26,7 @@ import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.RecoveryHeartRateRow
 import org.openstrap.app.data.db.RestingHeartRate
 import org.openstrap.app.data.db.SkinTemperature
+import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepSpo2Sample
 import org.openstrap.app.data.db.SleepStage
@@ -139,6 +140,17 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { listOf(it.sessionStart, iso(it.start), iso(it.end), CsvExporter.stageName(it.stage)) },
         { SleepStage(it.instant("start"), it.instant("end"), it.long("session_start_epoch"), stageCode(it.string("stage"))) },
         { d, r -> d.insertSleepStages(r) }),
+    // The user's own times for a sleep or nap, and the ones they deleted. The strap re-sends its sessions, so a restore
+    // without these would bring deleted ones back. The sessions above are the strap's, as synced.
+    CsvTable("sleep_edit.csv", "strap_start_epoch,nap,start_epoch,end_epoch,deleted,edited_epoch",
+        Key("sleep_edit", "strapStart", "strap_start_epoch"),
+        { d, f, t -> d.sleepEditsOnce().filter { it.strapStart in f..t } },
+        { listOf(it.strapStart, it.nap, it.start, it.end, it.deleted, it.editedAt) },
+        {
+            SleepEdit(it.long("strap_start_epoch"), it.bool("nap"), it.longOrNull("start_epoch"), it.longOrNull("end_epoch"),
+                it.bool("deleted"), it.longOrNull("edited_epoch") ?: 0)
+        },
+        { d, r -> d.insertSleepEdits(r) }),
     CsvTable("spo2.csv", "time,epoch,percent",
         Key("spo2", "timestamp", "epoch"),
         { d, f, t -> d.spo2Once(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
