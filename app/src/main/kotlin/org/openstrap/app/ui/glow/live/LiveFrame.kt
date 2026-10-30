@@ -44,6 +44,9 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.SportIcons
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -75,10 +78,14 @@ internal class LiveControls(
 )
 
 /**
- * The frame every live screen shares (workouts spec 6): minimize, the sport in the workout's [color] and the strap's
- * state along the top, the screen's own [content], then what any workout may need to say (the strap away, "Looks like
- * you've stopped"), and the controls row at the bottom in the same place on every screen: [lap] on the left (Lap or
- * Skip, or nothing), Pause or Resume in the middle and largest, and the square to hold to end. Back tucks it away.
+ * The frame every live screen shares (workouts spec 2.3, 6): minimize, the sport in the workout's [color] and the
+ * strap's state along the top, then the moving time large ([time], on the screens built for each sport), the screen's
+ * own [content], what any workout may need to say (the strap away, "Looks like you've stopped"), and the controls row
+ * at the bottom in the same place on every screen: [lap] on the left (Lap or Skip, or nothing), Pause or Resume in the
+ * middle and largest, and the square to hold to end. Back tucks it away.
+ *
+ * With [paused] given, a paused workout shows it in place of [content], and the controls become End workout (held, so
+ * ending still takes a hold) and Resume. [status] adds lines to the strap's on the top right (GPS and its accuracy).
  */
 @Composable
 internal fun LiveFrame(
@@ -88,9 +95,15 @@ internal fun LiveFrame(
     contentPadding: PaddingValues,
     controls: LiveControls,
     lap: (@Composable () -> Unit)? = null,
+    time: Long? = null,
+    battery: Int? = null,
+    status: List<Pair<String, Color>> = emptyList(),
+    paused: (@Composable ColumnScope.() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = controls.onMinimize)
+    // The screens built for each sport label their buttons; the older one says to hold the square under them.
+    val labelled = time != null
     WorkoutPage(color, contentPadding, scroll = false) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
@@ -100,34 +113,64 @@ internal fun LiveFrame(
             Spacer(Modifier.width(10.dp))
             Pill(Workouts.sportName(r.workout.sportType), color)
             Spacer(Modifier.weight(1f))
-            Text(
-                when { r.paused -> "Paused"; connected -> "Strap"; else -> "Reconnecting" },
-                color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary,
-            )
-            Spacer(Modifier.width(8.dp))
-            Canvas(Modifier.size(6.dp)) { drawCircle(if (connected) TrendGood else TrendBad) }
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                val strap = when {
+                    r.paused -> "Paused"
+                    !connected -> "Reconnecting"
+                    battery != null && labelled -> "Strap $battery%"
+                    else -> "Strap"
+                }
+                (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                        Spacer(Modifier.width(8.dp))
+                        Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
+                    }
+                }
+            }
         }
-        content()
+        if (time != null) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            // Plain digits: the screen's one dot-matrix number is further down.
+            Text(workoutClock(time), color = Color.White, style = LiveClock)
+            Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
+        }
+        if (r.paused && paused != null) paused() else content()
         if (!connected && !r.paused) {
             Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
         }
         r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
         Spacer(Modifier.weight(1f))
+        if (r.paused && paused != null) {
+            Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                HoldPill("End workout", Modifier.weight(1f), controls.onEnd)
+                WorkoutButton("Resume", Color.White, Color.Black, controls.onResume, Modifier.weight(1f), icon = AppIcons.PlayFill, height = 64.dp)
+            }
+            Text(
+                "Hold End workout to finish. Resume carries on where you stopped.", color = Color.White.copy(alpha = 0.6f),
+                style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(20.dp))
+            return@WorkoutPage
+        }
         // At most a thumb's reach wide, so on a wide screen (an unfolded or half-folded phone) Lap and End stay by Pause.
         Row(
             Modifier.align(Alignment.CenterHorizontally).widthIn(max = 360.dp).fillMaxWidth().padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
         ) {
+            val pauseLabel = if (r.paused) "Resume" else "Pause"
             // Pause stays centred with or without the left button.
+            // The left button labels itself ([LapButton]).
             if (lap != null) lap() else Spacer(Modifier.size(64.dp))
             Spacer(Modifier.weight(1f))
-            FlatButton(Color.White, 88.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
-                Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) "Resume" else "Pause", tint = Color.Black, modifier = Modifier.size(30.dp))
+            Labelled(pauseLabel, labelled) {
+                FlatButton(Color.White, 88.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
+                    Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, pauseLabel, tint = Color.Black, modifier = Modifier.size(30.dp))
+                }
             }
             Spacer(Modifier.weight(1f))
-            HoldToEnd(controls.onEnd)
+            Labelled("Hold to end", labelled) { HoldToEnd(controls.onEnd) }
         }
-        Text(
+        if (!labelled) Text(
             "Hold the square to end", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
             modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
         )
@@ -136,10 +179,59 @@ internal fun LiveFrame(
     }
 }
 
-/** The controls row's left button: Lap, which marks a lap. */
+/** A control on the controls row, with its [label] under it on the screens that label them ([show]). */
 @Composable
-internal fun LapButton(onLap: () -> Unit) = FlatButton(Raised, 64.dp, onClick = onLap) {
-    Icon(SportIcons.Lap, "Lap", tint = Color.White, modifier = Modifier.size(22.dp))
+private fun Labelled(label: String, show: Boolean, button: @Composable () -> Unit) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        // Every button sits in Pause's height, so the row's buttons stay centred on one line and the labels on another.
+        Box(Modifier.height(88.dp), contentAlignment = Alignment.Center) { button() }
+        if (show) Text(label, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
+    }
+}
+
+/** The controls row's left button: Lap, which marks a lap, with its label on the labelled screens. */
+@Composable
+internal fun LapButton(onLap: () -> Unit, label: Boolean = false) = Labelled("Lap", label) {
+    FlatButton(Raised, 64.dp, onClick = onLap) {
+        Icon(SportIcons.Lap, "Lap", tint = Color.White, modifier = Modifier.size(22.dp))
+    }
+}
+
+/**
+ * End workout on the paused screen: a pill that ends only once held for [HOLD_MS], filling with red as it's held, so
+ * a pocket still can't end a workout.
+ */
+@Composable
+private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit) {
+    val progress = remember { Animatable(0f) }
+    val haptics = rememberHaptics()
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
+    Row(
+        modifier.height(64.dp).clip(shape).background(Raised)
+            .drawBehind { drawRect(EndRed.copy(alpha = 0.35f), size = size.copy(width = size.width * progress.value)) }
+            .pointerInput(Unit) {
+                detectTapGestures(onPress = {
+                    coroutineScope {
+                        val hold = launch {
+                            progress.animateTo(1f, tween(HOLD_MS, easing = LinearEasing))
+                            haptics.perform(HapticEvent.WorkoutEnd)
+                            onEnd()
+                        }
+                        tryAwaitRelease()
+                        if (progress.value < 1f) {
+                            hold.cancel()
+                            progress.animateTo(0f, tween(200))
+                        }
+                    }
+                })
+            }
+            .semantics { contentDescription = "Hold to end the workout" },
+        horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Canvas(Modifier.size(10.dp)) { drawCircle(EndRed) }
+        Spacer(Modifier.width(10.dp))
+        Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
+    }
 }
 
 private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))

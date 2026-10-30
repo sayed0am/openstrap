@@ -330,6 +330,35 @@ object Route {
         return out
     }
 
+    /** A rise counts toward the climb only once it is this many metres above the last low: GPS height is noisy. */
+    const val CLIMB_STEP_M = 4.0
+
+    /**
+     * Metres climbed along [points]: the rises in GPS altitude, each counted once it clears [CLIMB_STEP_M] above the
+     * last low, from fixes good enough to count ([MAX_ACCURACY_M]). Null without heights.
+     */
+    fun climb(points: List<Point>): Double? {
+        val heights = points.filter { it.accuracy <= MAX_ACCURACY_M }.mapNotNull { it.altitude }
+        if (heights.size < 2) return null
+        var total = 0.0
+        var low = heights.first()
+        var high = low
+        for (h in heights) {
+            if (h > high) high = h
+            if (high - low >= CLIMB_STEP_M && h <= high - CLIMB_STEP_M) {
+                // Past a peak: the rise to it is climbed, and the next one starts from here.
+                total += high - low
+                low = h
+                high = h
+            } else if (h < low) {
+                low = h
+                high = h
+            }
+        }
+        if (high - low >= CLIMB_STEP_M) total += high - low
+        return total
+    }
+
     /** Seconds per kilometre over the last [windowS] seconds of [points], or null with too little to say. */
     fun currentPace(points: List<Point>, windowS: Long = 30): Double? {
         val clean = track(points)

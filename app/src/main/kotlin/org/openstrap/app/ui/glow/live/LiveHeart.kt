@@ -111,6 +111,18 @@ fun GlowWorkoutLiveScreen(
     onLiveView: (Int) -> Unit = {},
     kcal: WorkoutRecorder.Kcal? = null,
 ) {
+    val controls = LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
+    // Each kind of workout has its own screen (workouts spec 2.3); the rest keep this one until theirs is built. Split
+    // across a fold, this one keeps the figures while the other half shows the heart card.
+    val family = Workouts.family(r.workout.sportType)
+    if (!split && family == Workouts.Family.Distance && r.workout.useGps) {
+        LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal)
+        return
+    }
+    if (!split && (family == Workouts.Family.IndoorCardio || family == Workouts.Family.Distance)) {
+        LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal)
+        return
+    }
     // Saved with the screen; [liveView] is the view from the last workout, loaded a moment after the screen opens.
     val pager = rememberPagerState(initialPage = LiveView.of(liveView).ordinal) { LiveView.entries.size }
     var viewApplied by rememberSaveable { mutableStateOf(false) }
@@ -140,7 +152,6 @@ fun GlowWorkoutLiveScreen(
         if (WorkoutCopy.zoneTick(lastZone, zone)) haptics.perform(HapticEvent.ZoneChange)
         lastZone = if (r.paused) null else zone ?: lastZone
     }
-    val controls = LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
     // Lap (not for strength, which has sets). An ordinary tap: no tick.
     LiveFrame(r, color, connected, contentPadding, controls, lap = if (!r.strength && !r.paused) ({ LapButton(onLap) }) else null) {
         val heartCard: @Composable () -> Unit = {
@@ -283,6 +294,8 @@ internal fun WorkoutHeartCard(
     fill: Boolean = false,
     /** The live active kcal, for a kcal target's progress. */
     kcal: Float? = null,
+    /** The time in each zone as a bar under the zone (indoor cardio, board Main). */
+    zoneBar: Boolean = false,
 ) {
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate)
@@ -326,6 +339,10 @@ internal fun WorkoutHeartCard(
                     Text(word, color = Color.White.copy(alpha = 0.75f), style = GlowType.sentence, modifier = Modifier.weight(1f))
                     Text(zoneRange(zone, r.maxHeartRate), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary)
                 } else Text(if (r.paused) "No zone while paused" else "No zone yet", color = Color.White, style = GlowType.sentence)
+            }
+            if (zoneBar) {
+                Spacer(Modifier.height(12.dp))
+                ZoneTimeBar(zoneSeconds, zone)
             }
             Spacer(Modifier.height(8.dp))
             Row {

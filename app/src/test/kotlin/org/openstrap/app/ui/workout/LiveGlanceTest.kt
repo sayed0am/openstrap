@@ -1,0 +1,108 @@
+package org.openstrap.app.ui.workout
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Test
+import org.openstrap.app.data.Route
+import org.openstrap.app.data.WorkoutTarget
+
+class LiveGlanceTest {
+    private val now = 1_000_000L
+
+    /** A run 24:51 in, at 4.32 km and 5:42 /km, 142 bpm (zone 3 of 190). */
+    private fun run(target: WorkoutTarget? = WorkoutTarget.Distance(5000), pausedAt: Long? = null, stoppedSince: Long? = null) = GlanceInput(
+        sportType = 1, now = now, activeSeconds = 24 * 60 + 51L, pausedAt = pausedAt, bpm = 142, connected = true, maxHr = 190,
+        gps = true, distanceMeters = 4320f, pace = 342.0, averagePace = 345.0, target = target, activeKcal = 312f,
+        stoppedSince = stoppedSince,
+    )
+
+    @Test fun `a run with a goal shows its distance, pace and what's left`() {
+        val g = Glance.of(run())
+        assertEquals("4.32", g.figure)
+        assertEquals("km", g.unit)
+        assertEquals("4.32 km, 5:42 /km", g.line1)
+        assertEquals("24:51, 680 m to go", g.line2)
+        assertEquals(0.864f, g.progress!!.fraction, 1e-3f)
+        assertFalse(g.progress!!.drain)
+        assertEquals(GlanceAction.Pause, g.action)
+        assertEquals(142, g.bpm)
+        assertEquals(GlanceTint.Zone, g.tint)
+        assertEquals(2, g.zone)
+        assertEquals("Goal 5 km", g.goal)
+        // 680 m at 5:42 /km is 3.9 min: about 4.
+        assertEquals("About 4 min to go", g.toGo)
+        assertEquals(listOf("5:42" to "Pace /km", "142" to "bpm, zone 3", "312" to "Active kcal"), g.figures)
+        assertEquals("24:51", g.clock)
+    }
+
+    @Test fun `without a goal there's no bar and the zone takes the place of what's left`() {
+        val g = Glance.of(run(target = null))
+        assertNull(g.progress)
+        assertEquals("24:51, zone 3", g.line2)
+        assertNull(g.goal)
+    }
+
+    @Test fun `a time goal counts the minutes down, and a met goal says so`() {
+        val g = Glance.of(run(target = WorkoutTarget.Time(30 * 60)))
+        assertEquals("24:51, 6 min to go", g.line2)
+        val met = Glance.of(run(target = WorkoutTarget.Distance(4000)))
+        assertEquals("Reached", met.toGo)
+        assertEquals("24:51, zone 3", met.line2)
+    }
+
+    @Test fun `indoor cardio leads with the heart rate`() {
+        val g = Glance.of(run(target = null).copy(sportType = 2, gps = false, distanceMeters = 2140f, distanceFromSteps = true, averageBpm = 128))
+        assertEquals("142", g.figure)
+        assertEquals("bpm", g.unit)
+        assertEquals("Treadmill, 24:51", g.line1)
+        assertEquals("Zone 3, tempo", g.line2)
+        assertEquals(listOf("2.14" to "km from steps", "128" to "Avg bpm", "312" to "Active kcal"), g.figures)
+    }
+
+    @Test fun `paused shows how long, what's done, and Resume`() {
+        val g = Glance.of(run(pausedAt = now - 72))
+        assertEquals("Paused for 1:12", g.line1)
+        assertEquals("Outdoor run, 4.32 km so far", g.line2)
+        assertEquals(GlanceAction.Resume, g.action)
+        assertEquals(GlanceTint.Paused, g.tint)
+        assertNull(g.bpm)
+    }
+
+    @Test fun `stopped moving asks, with End beside Keep going`() {
+        val g = Glance.of(run(stoppedSince = now - 200))
+        assertEquals("Still going?", g.line1)
+        assertEquals("No movement for 3 min", g.line2)
+        assertEquals(GlanceAction.KeepGoing, g.action)
+        assertEquals(GlanceAction.End, g.second)
+        assertEquals("End", g.secondLabel)
+        assertEquals(GlanceTint.Asking, g.tint)
+    }
+
+    @Test fun `the strap away says so instead of a zone`() {
+        val g = Glance.of(run(target = null).copy(sportType = 2, gps = false, connected = false))
+        assertEquals("Strap reconnecting", g.line2)
+        assertNull(g.figure)
+    }
+
+    @Test fun `the hero's split strip names the last kilometre and the fastest`() {
+        val g = Glance.of(run().copy(lastSplit = Route.Split(3, now - 30, 355, 1000.0), lastSplitBpm = 146, fastestSplit = 2))
+        assertEquals("Km 4 in 5:55" to "Avg 146 bpm. Fastest so far was km 3.", g.split)
+        assertNull(Glance.of(run()).split)
+    }
+
+    @Test fun `paces read as clocks`() {
+        assertEquals("5:42", Glance.paceClock(342.0))
+        assertNull(Glance.paceClock(null))
+        assertNull(Glance.paceClock(4000.0))
+        assertEquals("680 m", Glance.kmWithUnit(680f))
+        assertEquals("4.32 km", Glance.kmWithUnit(4320f))
+    }
+
+    @Test fun `no glance line uses banned punctuation`() {
+        val all = listOf(run(), run(target = null), run(pausedAt = now - 5), run(stoppedSince = now - 60)).map(Glance::of)
+        all.flatMap { listOfNotNull(it.line1, it.line2, it.goal, it.toGo, it.actionLabel) }.forEach { s ->
+            assertFalse(s, s.any { it in "·;—–" })
+        }
+    }
+}

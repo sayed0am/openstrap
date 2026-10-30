@@ -489,6 +489,21 @@ private fun AppRoot(
     var readyPicking by rememberSaveable { mutableStateOf(false) }
     // Choose, the first screen of a workout (workouts spec 2.1), open under Ready while it shows.
     var choosing by rememberSaveable { mutableStateOf(false) }
+    // The workout at a glance for the Today hero and the floating bar (workouts spec 2.10). Its State is passed down,
+    // not read here, so only those two recompose as it ticks.
+    val liveGlance = remember { org.openstrap.app.ui.workout.liveGlance(container.workout, container.strap.liveHeartRate, container.strap.connection) }
+        .collectAsStateWithLifecycle(null)
+    // The Today hero shows the workout: the floating bar stays away meanwhile.
+    var liveHeroShown by remember { mutableStateOf(false) }
+    val onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = { a ->
+        when (a) {
+            org.openstrap.app.ui.workout.GlanceAction.Pause -> container.workout.pause()
+            org.openstrap.app.ui.workout.GlanceAction.Resume -> container.workout.resume()
+            org.openstrap.app.ui.workout.GlanceAction.KeepGoing -> container.workout.keepGoing()
+            // Ending asks on the live screen, as it does there.
+            org.openstrap.app.ui.workout.GlanceAction.End, org.openstrap.app.ui.workout.GlanceAction.Open -> container.workout.minimized.value = false
+        }
+    }
     val suggestions by workoutsVm.suggestions.collectAsStateWithLifecycle()
     // Hidden while a workout records: the strap's history may show the one under way.
     val suggestion = suggestions.firstOrNull().takeIf { workoutState !is org.openstrap.app.device.WorkoutState.Recording }
@@ -1026,7 +1041,7 @@ private fun AppRoot(
                                 onDeclineOffer = { container.workout.declineOffer() },
                                 running = workoutState as? org.openstrap.app.device.WorkoutState.Recording,
                                 onOpenRunning = { container.workout.minimized.value = false },
-                                onResumeRunning = container.workout::resume,
+                                liveHero = org.openstrap.app.ui.glow.LiveHeroHooks({ liveGlance.value }, onGlanceAction, { liveHeroShown = it }),
                                 heroLightAngle = todayMoment?.let { org.openstrap.app.ui.dashboard.heroLightAngle(it) },
                                 strap = org.openstrap.app.ui.glow.TodayStrap(
                                     paired = pairedKnown, pairing = pairing, stopped = syncStopped(pairedKnown, connection, sync), record = strapView.record,
@@ -1253,6 +1268,8 @@ private fun AppRoot(
             choosing = choosing,
             onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick },
             onCloseChoose = { choosing = false },
+            glance = liveGlance, onGlanceAction = onGlanceAction,
+            capsuleHidden = liveHeroShown && tab == Tab.Today.ordinal && todayStack.isEmpty() && pages.isEmpty(),
             capsuleBottom = if (showBar) 104.dp else 16.dp,
             tabletop = hinge != null, bookHinge = bookHinge,
         )
@@ -1400,6 +1417,11 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     /** Opens Ready over Choose for a sport, or on the sport picker ([pick], All sports). */
     onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
     onCloseChoose: () -> Unit = {},
+    /** The workout at a glance, for the floating bar, read only there. */
+    glance: androidx.compose.runtime.State<org.openstrap.app.ui.workout.LiveGlance?> = androidx.compose.runtime.mutableStateOf(null),
+    onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = {},
+    /** The Today hero is showing the workout, so the bar stays away. */
+    capsuleHidden: Boolean = false,
 ) {
     val session = container.workout
     val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
@@ -1467,11 +1489,9 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 } else liveScreen(androidx.compose.ui.Modifier.fillMaxSize())
             },
             capsule = { place ->
-                org.openstrap.app.ui.glow.WorkoutCapsule(
-                    state, live, connection is ConnectionState.Connected, onClick = { session.minimized.value = false },
-                    onPause = session::pause, onResume = session::resume, modifier = place, kcal = kcal,
-                )
+                glance.value?.let { g -> org.openstrap.app.ui.glow.WorkoutCapsule(g, onClick = { session.minimized.value = false }, onAction = onGlanceAction, modifier = place) }
             },
+            capsuleHidden = capsuleHidden,
         )
         state is org.openstrap.app.device.WorkoutState.Ended -> androidx.compose.foundation.layout.Box(full) {
             // A debug preview of a stored workout writes nothing just by opening, so no effect is worked out for it.

@@ -82,6 +82,9 @@ object WorkoutCopy {
         else -> "Start " + if (name.any { it.isLowerCase() }) name.lowercase() else name
     }
 
+    /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
+    fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
+
     /** The Ready info sheet's meaning. */
     const val READY_MEANING = "Heart rate comes from the strap every second. GPS is on for outdoor workouts, and you can turn it off."
 
@@ -174,6 +177,9 @@ object WorkoutCopy {
 
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */
     fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal): String = "${activeKcal?.toInt() ?: 0} of ${target.label}"
+
+    /** GPS on the live screen's top line: "GPS ±4 m", or "Finding GPS" before a fix worth naming. */
+    fun gpsPill(accuracy: Float?): String = if (accuracy == null || accuracy > 1000) "Finding GPS" else "GPS ±${accuracy.toInt()} m"
 
     /** The same toward a distance goal, in the goal's unit: "2.15 of 5 km", "640 of 800 m". */
     fun distanceProgress(meters: Float?, target: WorkoutTarget.Distance): String {

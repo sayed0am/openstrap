@@ -43,84 +43,175 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.ui.workout.LiveGlance
+import org.openstrap.app.ui.workout.GlanceTint
+import org.openstrap.app.ui.workout.GlanceAction
+import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.theme.MetricColors
+import androidx.compose.ui.text.style.TextOverflow
 
 /* ------------------------------------- Rest of the app meanwhile ------------------------------------- */
 
+/** The colour a [LiveGlance] is lit in ([GlanceTint]). */
+internal fun glanceColor(g: LiveGlance): Color = when (g.tint) {
+    GlanceTint.Zone -> g.zone?.let { ZONE_COLORS[it] } ?: PausedColor
+    GlanceTint.Work -> MetricColors.heart
+    GlanceTint.Rest -> ZONE_COLORS[1]
+    GlanceTint.Mind -> MetricColors.evening
+    GlanceTint.Paused -> PausedColor
+    GlanceTint.Asking -> MetricColors.warn
+}
+
+/** An action's icon on the bar and the hero. */
+private fun actionIcon(a: GlanceAction) = when (a) {
+    GlanceAction.Pause -> AppIcons.PauseFill
+    GlanceAction.Resume, GlanceAction.Open, GlanceAction.KeepGoing -> AppIcons.PlayFill
+    GlanceAction.End -> AppIcons.StopFill
+}
+
 /**
- * The workout tucked away: a bar above the tab bar ringed in the zone's colour, with a dot pulsing at the heart
- * rate, the sport and time (and the active kcal after it when there's room), the zone, the bpm and Pause. Tap it to
- * bring the live screen back.
+ * The workout tucked away (workouts spec 2.10, board CapsuleStates): a 64 dp bar above the tab bar ringed in the
+ * glance's colour, a dot pulsing at the heart rate, the glance's two lines, and its next action. Where that is Pause it
+ * stays one round tap, beside the bpm in dots; otherwise it's a white pill named for it ("Resume", "Keep going"),
+ * with End beside it while the stop question is open. A goal fills a thin bar along the bottom edge. Tapping the bar
+ * brings the live screen back.
  */
 @Composable
-fun WorkoutCapsule(
-    r: WorkoutState.Recording,
-    liveHeartRate: Int?,
-    connected: Boolean,
-    onClick: () -> Unit,
-    onPause: () -> Unit,
-    onResume: () -> Unit,
-    modifier: Modifier = Modifier,
-    kcal: WorkoutRecorder.Kcal? = null,
-) {
-    val bpm = liveHeartRate.takeIf { connected && !r.paused }
-    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate)
-    val color = workoutColor(r, liveHeartRate, connected)
-    val active = activeSeconds(r)
+fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier = Modifier) {
+    val color = glanceColor(glance)
     val shape = RoundedCornerShape(50)
-    Row(
+    Box(
         modifier.fillMaxWidth().height(64.dp).shadow(24.dp, shape, ambientColor = color, spotColor = color)
-            .clip(shape).background(Raised).border(BorderStroke(1.5.dp, color), shape)
-            .pressClickable(onClick, shape).padding(start = 18.dp, end = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .clip(shape).background(Raised).border(BorderStroke(1.5.dp, color), shape).pressClickable(onClick, shape),
     ) {
-        PulseDot(color, bpm, 12.dp)
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            AfterIfRoom(
-                { Text("${Workouts.sportName(r.workout.sportType)}, ${workoutClock(active)}", color = Color.White, style = MediumBody, maxLines = 1) },
-                WorkoutCopy.kcalText(kcal?.active)?.let { k ->
-                    { Text(k, color = Color.White.copy(alpha = 0.6f), style = MediumBody.copy(fontFeatureSettings = "tnum"), maxLines = 1, modifier = Modifier.padding(start = 8.dp)) }
-                },
-            )
-            Text(
-                when {
-                    r.endPrompt != null -> "Stopped? Tap to answer"
-                    r.paused -> "Paused"
-                    zone != null -> WorkoutCopy.zoneTitle(zone).let { (name, word) -> "$name $word" }
-                    connected -> "Waiting for heart rate"
-                    else -> "Strap reconnecting"
-                },
-                color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1,
-            )
-        }
-        if (bpm != null) {
-            DotMatrixText("$bpm", dot = DotSize.Edge, color = color)
+        Row(Modifier.fillMaxSize().padding(start = 18.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            PulseDot(color, glance.bpm, 12.dp)
             Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text(glance.line1, color = Color.White, style = MediumBody.copy(fontFeatureSettings = "tnum"), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                glance.line2?.let {
+                    Text(it, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (glance.action == GlanceAction.Pause) {
+                glance.bpm?.let {
+                    DotMatrixText("$it", dot = DotSize.Edge, color = color)
+                    Spacer(Modifier.width(12.dp))
+                }
+                Box(
+                    Modifier.size(44.dp).clip(CircleShape).background(color).pressClickable({ onAction(GlanceAction.Pause) }, CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(AppIcons.PauseFill, "Pause", tint = Color.Black, modifier = Modifier.size(18.dp)) }
+            } else {
+                glance.second?.let { second ->
+                    BarPill(glance.secondLabel ?: "", false, endDot = second == GlanceAction.End) { onAction(second) }
+                    Spacer(Modifier.width(8.dp))
+                }
+                BarPill(glance.actionLabel, true, icon = actionIcon(glance.action)) { onAction(glance.action) }
+            }
         }
-        Box(
-            Modifier.size(44.dp).clip(CircleShape).background(color).pressClickable(if (r.paused) onResume else onPause, CircleShape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) "Resume" else "Pause", tint = Color.Black, modifier = Modifier.size(18.dp))
+        // A goal fills along the bottom edge, inside the bar's curve.
+        glance.progress?.let { p ->
+            Canvas(Modifier.align(Alignment.BottomCenter).fillMaxWidth().height(3.dp).padding(horizontal = 28.dp)) {
+                drawRect(Color.White.copy(alpha = 0.12f))
+                drawRect(color, size = size.copy(width = size.width * p.fraction))
+            }
         }
     }
 }
 
+/** A pill on the bar: white with its [icon] for the next action ([primary]), else dark, End with its red dot. */
+@Composable
+private fun BarPill(label: String, primary: Boolean, icon: androidx.compose.ui.graphics.vector.ImageVector? = null, endDot: Boolean = false, onClick: () -> Unit) {
+    val shape = RoundedCornerShape(50)
+    Row(
+        Modifier.height(44.dp).clip(shape).background(if (primary) Color.White else ControlSurface).pressClickable(onClick, shape)
+            .padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (icon != null) {
+            Icon(icon, null, tint = if (primary) Color.Black else Color.White, modifier = Modifier.size(14.dp))
+            Spacer(Modifier.width(6.dp))
+        }
+        if (endDot) {
+            Canvas(Modifier.size(8.dp)) { drawCircle(MetricColors.heart) }
+            Spacer(Modifier.width(6.dp))
+        }
+        Text(label, color = if (primary) Color.Black else Color.White, style = MediumBody, maxLines = 1)
+    }
+}
+
 /**
- * [first], then [after] beside it on the same line only if all of it fits in the width left; otherwise
- * [after] is left out rather than cut short.
+ * The Today hero while a workout records and its live screen is tucked away (workouts spec 2.10, board HomeLiveRun):
+ * a glow card in the glance's colour lit from below; the sport and the total time; the glance's figure in the card's
+ * one dotted number; the goal's bar with the goal and what's left under it; three figures; then the buttons: Pause (or
+ * the glance's second action) as a dark round button and its action as the white one, "Open run" while it runs.
+ * Tapping the card elsewhere opens the live screen.
  */
 @Composable
-private fun AfterIfRoom(first: @Composable () -> Unit, after: (@Composable () -> Unit)?) {
-    androidx.compose.ui.layout.Layout(content = { first(); after?.invoke() }) { measurables, constraints ->
-        val loose = constraints.copy(minWidth = 0)
-        val a = measurables[0].measure(loose)
-        val b = measurables.getOrNull(1)?.measure(loose.copy(maxWidth = androidx.compose.ui.unit.Constraints.Infinity))
-            ?.takeIf { a.width + it.width <= constraints.maxWidth }
-        val height = maxOf(a.height, b?.height ?: 0)
-        layout((a.width + (b?.width ?: 0)).coerceIn(constraints.minWidth, constraints.maxWidth), height) {
-            a.placeRelative(0, 0)
-            b?.placeRelative(a.width, 0)
+internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen: () -> Unit, onAction: (GlanceAction) -> Unit, modifier: Modifier) {
+    val color = glanceColor(glance)
+    val style = heroStyle(color, LightAngle.Below).let { s -> glance.bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
+    GlowCard(style, modifier, onClick = onOpen) {
+        Column {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Canvas(Modifier.size(8.dp)) { drawCircle(color) }
+                Spacer(Modifier.width(8.dp))
+                Text(Workouts.sportName(sportType), color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
+                Text(clock, color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+            }
+            Spacer(Modifier.height(18.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                if (glance.figure != null) DotMatrixText(glance.figure, dot = DotSize.Hero) else WaitingDash(Modifier.padding(vertical = 12.dp))
+                glance.unit?.let {
+                    Spacer(Modifier.width(10.dp))
+                    Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.sentence)
+                }
+            }
+            if (glance.line1.isNotEmpty() && glance.tint in setOf(GlanceTint.Paused, GlanceTint.Asking)) {
+                Spacer(Modifier.height(8.dp))
+                Text(glance.line1 + (glance.line2?.let { ". $it" } ?: ""), color = Color.White, style = GlowType.body)
+            }
+            glance.progress?.let { p ->
+                Spacer(Modifier.height(16.dp))
+                Box(Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(50)).background(Color.Black.copy(alpha = 0.4f))) {
+                    Box(Modifier.fillMaxWidth(p.fraction).height(6.dp).clip(RoundedCornerShape(50)).background(Color.White))
+                }
+            }
+            if (glance.goal != null || glance.toGo != null) {
+                Spacer(Modifier.height(8.dp))
+                Row {
+                    glance.goal?.let { Text(it, color = Color.White, style = GlowType.secondary, modifier = Modifier.weight(1f)) }
+                    glance.toGo?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary) }
+                }
+            }
+            if (glance.figures.isNotEmpty()) {
+                Spacer(Modifier.height(18.dp))
+                Row(Modifier.fillMaxWidth()) {
+                    glance.figures.forEach { (value, label) ->
+                        Column(Modifier.weight(1f)) {
+                            if (value != null) Text(value, color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                            else WaitingDash(Modifier.padding(vertical = 8.dp))
+                            Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(22.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Pause, or the second action, dark and round; the next action white beside it.
+                val dark = glance.second ?: GlanceAction.Pause.takeIf { glance.action == GlanceAction.Pause }
+                dark?.let { a ->
+                    Box(
+                        Modifier.size(52.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.45f)).pressClickable({ onAction(a) }, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(actionIcon(a), if (a == GlanceAction.Pause) "Pause" else glance.secondLabel, tint = Color.White, modifier = Modifier.size(18.dp)) }
+                    Spacer(Modifier.width(12.dp))
+                }
+                val white = if (glance.action == GlanceAction.Pause) GlanceAction.Open else glance.action
+                val label = if (white == GlanceAction.Open) WorkoutCopy.openLabel(sportType) else glance.actionLabel
+                PageButton(label, { onAction(white) }, Modifier.weight(1f), primary = true, icon = actionIcon(white))
+            }
         }
     }
 }
@@ -142,7 +233,8 @@ fun PulseDot(color: Color, bpm: Int?, size: Dp) {
 /**
  * The live screen tucking away into its capsule above the tab bar, and back, in the app's screen motion: the screen
  * drops a quarter of its height and fades while the capsule rises a little and fades in, and the reverse. [capsule]
- * gets the modifier that places it; [capsuleBottom] is its distance from the bottom edge.
+ * gets the modifier that places it; [capsuleBottom] is its distance from the bottom edge. [capsuleHidden] keeps it
+ * away while the Today hero shows the workout, so the two are never on screen together (workouts spec 2.10).
  */
 @Composable
 fun WorkoutMorph(
@@ -150,6 +242,7 @@ fun WorkoutMorph(
     capsuleBottom: androidx.compose.ui.unit.Dp,
     full: @Composable () -> Unit,
     capsule: @Composable (Modifier) -> Unit,
+    capsuleHidden: Boolean = false,
 ) {
     val swift = org.openstrap.app.ui.components.Motion.SWIFT
     val move = androidx.compose.animation.core.tween<androidx.compose.ui.unit.IntOffset>(swift, easing = org.openstrap.app.ui.components.Motion.easing)
@@ -162,31 +255,9 @@ fun WorkoutMorph(
             exit = androidx.compose.animation.slideOutVertically(move) { it / 4 } + fadeOut,
         ) { Box(Modifier.fillMaxSize().background(Color.Black)) { full() } }
         androidx.compose.animation.AnimatedVisibility(
-            minimized, Modifier.align(Alignment.BottomCenter),
+            minimized && !capsuleHidden, Modifier.align(Alignment.BottomCenter),
             enter = androidx.compose.animation.slideInVertically(move) { it / 2 } + fadeIn,
             exit = androidx.compose.animation.slideOutVertically(move) { it / 2 } + fadeOut,
         ) { capsule(Modifier.widthIn(max = 440.dp).padding(start = 16.dp, end = 16.dp, bottom = capsuleBottom)) }
-    }
-}
-
-/**
- * Where Today's Start workout pill stands while a workout records, in the same white pill: running, the sport and its
- * clock with a live dot, opening the live screen; paused, "Resume" with a play icon, resuming at once.
- */
-@Composable
-fun WorkoutShortcut(r: WorkoutState.Recording, liveHeartRate: Int?, onOpen: () -> Unit, onResume: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    val sport = Workouts.sportName(r.workout.sportType)
-    val clock = workoutClock(activeSeconds(r))
-    Row(
-        Modifier.fillMaxWidth().height(52.dp).clip(shape).background(Color.White).pressClickable(if (r.paused) onResume else onOpen, shape),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
-    ) {
-        if (r.paused) Icon(AppIcons.PlayFill, null, tint = Color.Black, modifier = Modifier.size(16.dp))
-        else PulseDot(Color.Black, liveHeartRate, 10.dp)
-        Spacer(Modifier.width(10.dp))
-        Text(if (r.paused) "Resume ${sport.lowercase()}" else sport, color = Color.Black, style = MediumBody)
-        Spacer(Modifier.width(8.dp))
-        Text(clock, color = Color.Black, style = MediumBody.copy(fontFeatureSettings = "tnum"))
     }
 }

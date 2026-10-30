@@ -225,4 +225,17 @@ class RouteTest {
         val smoothed = Route.distance(points)
         assertTrue("smoothed $smoothed m", smoothed in 178.0..188.0)
     }
+
+    @Test
+    fun climbCountsRisesPastTheNoise() {
+        fun at(t: Long, h: Double?, acc: Float = 5f) = Route.Point(t, 51.5, -0.1, acc, altitude = h)
+        // Up 10 m, down 6, up 8: 18 m climbed. The 2 m wobbles along the way don't count.
+        val hill = listOf(100.0, 102.0, 101.0, 105.0, 110.0, 108.0, 104.0, 106.0, 104.0, 112.0).mapIndexed { i, h -> at(i.toLong(), h) }
+        assertEquals(18.0, Route.climb(hill)!!, 1e-6)
+        // Flat with noise under the step: nothing.
+        assertEquals(0.0, Route.climb(listOf(100.0, 102.0, 100.0, 103.0, 101.0).mapIndexed { i, h -> at(i.toLong(), h) })!!, 1e-6)
+        // A bad fix's height is left out; no heights at all is no climb.
+        assertEquals(0.0, Route.climb(listOf(at(0, 100.0), at(1, 150.0, acc = 80f), at(2, 101.0)))!!, 1e-6)
+        assertNull(Route.climb(listOf(at(0, null), at(1, null))))
+    }
 }
