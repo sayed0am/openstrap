@@ -71,35 +71,65 @@ object SleepEdits {
     /**
      * [strap] at [start] to [end]. Its stage totals are the strap's for its own span, so they go (the time asleep is
      * then the span, until [restage] works them out from the clipped stages). Its score stays when the move is small
-     * ([keepsScore]); a main sleep's otherwise is worked out again from the span, a nap's goes.
+     * ([keepsScore]); a main sleep's otherwise moves from the strap's by what the span changes ([anchored]), a nap's
+     * goes.
      */
     fun moved(strap: SleepSession, start: Long, end: Long): SleepSession {
         val s = strap.copy(start = start, end = end, deepMinutes = null, lightMinutes = null, remMinutes = null, awakeMinutes = null, wakeCount = null)
-        return s.copy(score = score(strap, s, ((end - start) / 60).toInt(), null))
+        // Without stages both sides are their spans, so only the change in length counts.
+        return s.copy(score = score(strap, s, Part(((end - start) / 60).toInt(), null), Part(((strap.end - strap.start) / 60).toInt(), null)))
     }
 
     /**
-     * A moved [shown] with its totals worked out from [stages], already [clip]ped to its times: what [moved] left
-     * out. [strap] is the strap's own session, for the score rule.
+     * A moved [shown] with its totals worked out from the strap's [stages] for its whole session, [clip]ped here to
+     * the user's times: what [moved] left out. [strap] is the strap's own session, for the score rule.
      */
     fun restage(shown: SleepSession, strap: SleepSession, stages: List<SleepStage>): SleepSession {
         if (stages.isEmpty()) return shown
-        fun minutes(stage: Int) = (stages.filter { it.stage == stage }.sumOf { it.end - it.start } / 60).toInt()
-        val deep = minutes(SleepStage.DEEP)
-        val light = minutes(SleepStage.LIGHT)
-        val rem = minutes(SleepStage.REM)
-        val waso = Recovery.wasoMinutes(stages.map { Triple(it.start, it.end, it.stage) })
+        val clipped = clip(stages, shown.start, shown.end)
+        fun minutes(st: List<SleepStage>, stage: Int) = (st.filter { it.stage == stage }.sumOf { it.end - it.start } / 60).toInt()
+        fun part(st: List<SleepStage>) = Part(
+            listOf(SleepStage.DEEP, SleepStage.LIGHT, SleepStage.REM).sumOf { minutes(st, it) },
+            Recovery.wasoMinutes(st.map { Triple(it.start, it.end, it.stage) }),
+        )
         return shown.copy(
-            deepMinutes = deep, lightMinutes = light, remMinutes = rem, awakeMinutes = minutes(SleepStage.AWAKE),
-            score = score(strap, shown, deep + light + rem, waso),
+            deepMinutes = minutes(clipped, SleepStage.DEEP), lightMinutes = minutes(clipped, SleepStage.LIGHT),
+            remMinutes = minutes(clipped, SleepStage.REM), awakeMinutes = minutes(clipped, SleepStage.AWAKE),
+            score = score(strap, shown, part(clipped), part(stages)),
         )
     }
 
-    /** The strap's score when [shown] keeps it, else OpenStrap's own for a main sleep the strap scored; a nap has none. */
-    private fun score(strap: SleepSession, shown: SleepSession, asleepMinutes: Int, wasoMinutes: Int?): Int? = when {
+    /** Minutes asleep and awake after sleep onset (null without stages): what OpenStrap's own score reads. */
+    private data class Part(val asleep: Int, val waso: Int?)
+
+    /**
+     * The strap's score when [shown] keeps it ([keepsScore]), else [anchored] to it for a main sleep the strap scored
+     * ([user] the shown span, [own] the strap's); a nap has none.
+     */
+    private fun score(strap: SleepSession, shown: SleepSession, user: Part, own: Part): Int? = when {
         keepsScore(strap, shown.start, shown.end) -> strap.score
         strap.nap || strap.score == null -> null
-        else -> Recovery.sleepScore(Recovery.Night(shown.day, shown.start, shown.end, asleepMinutes, wasoMinutes = wasoMinutes))
+        else -> anchored(
+            strap.score,
+            Recovery.sleepScore(Recovery.Night(shown.day, shown.start, shown.end, user.asleep, wasoMinutes = user.waso)),
+            Recovery.sleepScore(Recovery.Night(strap.day, strap.start, strap.end, own.asleep, wasoMinutes = own.waso)),
+            (shown.end - shown.start) - (strap.end - strap.start),
+        )
+    }
+
+    /**
+     * The strap's [strapScore] moved by what OpenStrap's own score says the new times change ([ownShown] less
+     * [ownStrap]), so the strap's judgement of the night stays the anchor. A shorter night ([lengthChange], seconds,
+     * below 0) never scores higher than the strap's, nor a longer one lower, whatever the clipped stages do to its
+     * wake after sleep onset. 0 to 100.
+     */
+    fun anchored(strapScore: Int, ownShown: Int, ownStrap: Int, lengthChange: Long): Int {
+        val moved = (strapScore + ownShown - ownStrap).coerceIn(0, 100)
+        return when {
+            lengthChange < 0 -> minOf(moved, strapScore)
+            lengthChange > 0 -> maxOf(moved, strapScore)
+            else -> moved
+        }
     }
 
     /** True when [start] to [end] is close enough to [strap]'s own times to keep its score. */

@@ -303,7 +303,7 @@ class DayViewModel(
             combine(strapStages, napStages) { whole, ns ->
                 val st = if (main?.moved == true) SleepEdits.clip(whole, main.start, main.end) else whole
                 // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
-                val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, st) else it }
+                val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, whole) else it }
                 SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList(), deleted)
             }
         }

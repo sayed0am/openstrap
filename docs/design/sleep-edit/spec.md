@@ -126,8 +126,11 @@ removed automatically.
 - Main sleep deleted: recovery for that morning does what it does on a night with no sleep. The morning hero and
   widgets show their no sleep state.
 - Moved: the stages are clipped (`clip`). When both ends moved less than 15 minutes in all, the strap's own score
-  stays. A bigger move has the score worked out again by OpenStrap's own model, since the strap's score is for its
-  own span, and the score's info sheet says "Score worked out from your times."
+  stays. A bigger move keeps the strap's score as the anchor and moves it by what OpenStrap's own model says the
+  change does: shown = strap score + (own score of the user's span less own score of the strap's span), 0 to 100. A
+  shorter night never scores above the strap's, nor a longer one below it. The score's info sheet then says "The
+  strap's score, adjusted for your times." (Changed 2026-10-30 after phone testing: replacing the strap's score
+  outright made a night 35 minutes shorter score 90 against the strap's 83.)
 - Health Connect: the exporter already deletes and rewrites sleep for its range, so the next export removes or
   moves it there too. The export runs right after an edit, not only on the next sync.
 - Heart rate, SpO2, HRV, skin temperature and breathing samples in the window stay.

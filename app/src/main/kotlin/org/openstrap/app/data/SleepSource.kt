@@ -92,7 +92,7 @@ class SleepSource(private val dao: HealthDao) {
     /** Moved sessions take their totals from their clipped stages. */
     private suspend fun shown(resolved: List<SleepEdits.Resolved>): List<SleepSession> = resolved.mapNotNull { r ->
         val s = r.shown ?: return@mapNotNull null
-        if (!r.moved) s else SleepEdits.restage(s, r.strap, SleepEdits.clip(dao.sleepStagesOnce(r.strap.start), s.start, s.end))
+        if (!r.moved) s else SleepEdits.restage(s, r.strap, dao.sleepStagesOnce(r.strap.start))
     }
 
     /**

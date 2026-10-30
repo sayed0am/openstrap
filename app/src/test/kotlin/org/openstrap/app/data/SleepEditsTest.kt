@@ -85,7 +85,7 @@ class SleepEditsTest {
         val out = SleepEdits.clip(stages, at(14, 15), at(14, 40))
         assertEquals(listOf(at(14, 15) to at(14, 20), at(14, 20) to at(14, 40)), out.map { it.start to it.end })
         val shown = SleepEdits.moved(nap, at(14, 15), at(14, 40))
-        val restaged = SleepEdits.restage(shown, nap, out)
+        val restaged = SleepEdits.restage(shown, nap, stages)
         assertEquals(20, restaged.deepMinutes)
         assertEquals(5, restaged.lightMinutes)
     }
@@ -94,9 +94,38 @@ class SleepEditsTest {
         assertEquals(81, SleepEdits.moved(main, main.start + 5 * 60, main.end - 9 * 60).score)
         val big = SleepEdits.moved(main, main.start + 35 * 60, main.end)
         assertNotNull(big.score)
-        assertTrue(big.score != 81)
+        assertTrue(big.score!! < 81)
         // A nap has no score of its own.
         assertNull(SleepEdits.moved(nap.copy(score = 50), nap.start - 30 * 60, nap.end).score)
+    }
+
+    @Test fun `35 minutes cut from the start never raises the strap's score`() {
+        // Last night as the strap scored it, 83, then the start moved from 23:20 to 23:55.
+        val night = SleepSession(at(23, 20, day = 29), at(7, 21), score = 83, deepMinutes = 95, lightMinutes = 296, remMinutes = 60, awakeMinutes = 30)
+        fun stage(h1: Int, m1: Int, h2: Int, m2: Int, st: Int) =
+            SleepStage(at(h1, m1, day = if (h1 >= 12) 29 else 30), at(h2, m2, day = if (h2 >= 12) 29 else 30), night.start, st)
+        val stages = listOf(
+            stage(23, 20, 23, 30, SleepStage.AWAKE), stage(23, 30, 23, 55, SleepStage.LIGHT),
+            stage(23, 55, 1, 30, SleepStage.DEEP), stage(1, 30, 1, 40, SleepStage.AWAKE),
+            stage(1, 40, 4, 0, SleepStage.LIGHT), stage(4, 0, 5, 0, SleepStage.REM),
+            stage(5, 0, 5, 20, SleepStage.AWAKE), stage(5, 20, 7, 21, SleepStage.LIGHT),
+        )
+        val start = at(23, 55, day = 29)
+        val shown = SleepEdits.restage(SleepEdits.moved(night, start, night.end), night, stages)
+        assertTrue("scored ${shown.score}", shown.score!! <= 83)
+        assertTrue("scored ${SleepEdits.moved(night, start, night.end).score}", SleepEdits.moved(night, start, night.end).score!! <= 83)
+        // Moving it back to the strap's own times gives the strap's score again.
+        assertEquals(83, SleepEdits.restage(SleepEdits.moved(night, night.start, night.end), night, stages).score)
+    }
+
+    @Test fun `a big move shifts the strap's score by the change in OpenStrap's own, never past the direction of the move`() {
+        assertEquals(70, SleepEdits.anchored(83, 72, 85, lengthChange = -2100))
+        // Shorter but the clipped stages read better: held at the strap's.
+        assertEquals(83, SleepEdits.anchored(83, 90, 85, lengthChange = -2100))
+        // Longer but reading worse: held at the strap's too.
+        assertEquals(83, SleepEdits.anchored(83, 80, 85, lengthChange = 1800))
+        assertEquals(100, SleepEdits.anchored(95, 100, 80, lengthChange = 1800))
+        assertEquals(0, SleepEdits.anchored(10, 20, 60, lengthChange = -3600))
     }
 
     @Test fun `times that can't be saved are refused, by kind`() {

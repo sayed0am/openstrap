@@ -265,8 +265,8 @@ internal object SleepCopy {
     /** On a detail whose sleep or nap has the user's times. */
     fun yourTimes(from: String, to: String): String = "Your times. ${strapSaw(from, to)}"
 
-    /** The score's info sheet, when the score is OpenStrap's own from the user's times. */
-    const val SCORE_FROM_YOUR_TIMES = "Score worked out from your times."
+    /** The score's info sheet, when the strap's score was moved for the user's times ([org.openstrap.app.data.SleepEdits.anchored]). */
+    const val SCORE_FROM_YOUR_TIMES = "The strap's score, adjusted for your times."
 
     /* ------------------------------------------ Delete (edit spec 4.3) ---------------------------------- */
 

@@ -235,7 +235,7 @@ internal fun SleepScoreDetail(
     }
 
     val detected = state.sleepAsDetected
-    // A move of 15 minutes or more has the score worked out again from the user's times (edit spec 5).
+    // A move of 15 minutes or more has the strap's score adjusted for the user's times (edit spec 5).
     val ownScore = session != null && detected != null && score != null && !SleepEdits.keepsScore(detected, session.start, session.end)
     if (info) InfoSheet(
         InfoCopy.of(Score.Sleep), color, score?.let(InfoCopy::sleepBar), score?.let { InfoCopy.HERE },
