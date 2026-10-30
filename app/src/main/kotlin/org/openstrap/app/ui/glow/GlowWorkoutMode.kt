@@ -422,15 +422,11 @@ internal fun ColumnScope.SummaryActions(justEnded: Boolean, onDone: () -> Unit, 
 /** What deleting a phone workout does. */
 internal const val PHONE_DELETE = "Its heart rate and times are removed from OpenStrap. The strap's own history is kept."
 
-/** "Delete workout" in [DestructiveInk], asking first; [what] says what deleting it does. */
+/** "Delete this workout" as a warn coloured button with a trash icon, asking first; [what] says what deleting it does. */
 @Composable
 internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     var confirmDelete by remember { mutableStateOf(false) }
-    Text(
-        "Delete this workout", color = DestructiveInk, style = GlowType.body,
-        modifier = modifier.clip(RoundedCornerShape(50))
-            .pressClickable({ confirmDelete = true }, RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 10.dp),
-    )
+    PageButton("Delete this workout", { confirmDelete = true }, modifier.fillMaxWidth(), color = MetricColors.warn, icon = AppIcons.Trash)
     if (confirmDelete) {
         GlassAlertDialog(
             onDismissRequest = { confirmDelete = false },
