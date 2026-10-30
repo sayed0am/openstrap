@@ -258,7 +258,7 @@ object Rewards {
         Badge("km_500", "500 km in all", Group.Milestones, "500", 500, "km"),
         Badge("km_1000", "1,000 km in all", Group.Milestones, "1000", 1000, "km"),
         Badge("steps_1m", "A million steps", Group.Milestones, "1M", 1_000_000, "steps"),
-        Badge("goal_first", "First weekly goal met", Group.Weekly, "4/4", 1, "weeks"),
+        Badge("goal_first", "First weekly goal met", Group.Weekly, "✓", 1, "weeks"),
         Badge("goal_4", "4 weeks in a row", Group.Weekly, "4", 4, "weeks"),
         Badge("goal_12", "12 weeks in a row", Group.Weekly, "12", 12, "weeks"),
         Badge("goal_26", "26 weeks in a row", Group.Weekly, "26", 26, "weeks"),
@@ -276,6 +276,16 @@ object Rewards {
 
     fun badge(id: String): Badge? = BADGES.firstOrNull { it.id == id }
 
+    /**
+     * The goal of the week a badge [row] was earned in, from [weeks]: the first weekly goal badge shows it ("3/3").
+     * Null for a badge a day earned, or a week not stored.
+     */
+    fun goalAt(row: BadgeRow, weeks: List<WeekResult>, firstDay: DayOfWeek, zone: ZoneId): Int? {
+        if (row.workoutStart == null) return null
+        val week = weekStart(day(row.earnedAt, zone), firstDay).toEpochDay()
+        return weeks.firstOrNull { it.weekStart == week }?.goal
+    }
+
     /** What a badge was earned by: the time, and the workout or the day. */
     private data class Earn(val at: Long, val workout: Long? = null, val day: Long? = null)
 
@@ -287,13 +297,18 @@ object Rewards {
         val earned = linkedMapOf<String, Earn>()
         fun earn(id: String, e: Earn) { earned.putIfAbsent(id, e) }
         val mine = workouts.filter { it.startedByYou }.sortedBy { it.shownStart }
+        // The distance in all counts every workout you started; the firsts and the workout counts only those that
+        // count toward the weekly goal, so a mis-tap of a minute earns nothing.
         var km = 0.0
-        mine.forEachIndexed { i, w ->
+        var counted = 0
+        mine.forEach { w ->
             val e = Earn(w.end, w.start)
-            earn("first_workout", e)
-            listOf(10, 50, 100, 500).forEach { n -> if (i + 1 >= n) earn("workouts_$n", e) }
             km += (w.meters ?: 0f) / 1000.0
             listOf(100, 500, 1000).forEach { n -> if (km >= n) earn("km_$n", e) }
+            if (!w.counts) return@forEach
+            counted++
+            earn("first_workout", e)
+            listOf(10, 50, 100, 500).forEach { n -> if (counted >= n) earn("workouts_$n", e) }
             val family = Workouts.family(w.sport)
             val structure = Structure.parse(w.structure)
             if (w.sport in Workouts.RUNS) earn("first_run", e)
@@ -347,7 +362,7 @@ object Rewards {
         val need = b.needs ?: return null
         val mine = workouts.filter { it.startedByYou }
         val have = when {
-            b.id.startsWith("workouts_") -> mine.size.toLong()
+            b.id.startsWith("workouts_") -> mine.count { it.counts }.toLong()
             b.id.startsWith("km_") -> (mine.sumOf { (it.meters ?: 0f).toDouble() } / 1000).toLong()
             b.id == "steps_1m" -> days.sumOf { it.steps.toLong() }
             b.id == "first_10k_steps" -> days.maxOfOrNull { it.steps.toLong() } ?: 0

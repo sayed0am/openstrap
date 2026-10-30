@@ -80,4 +80,14 @@ class RewardsCopyTest {
         assertEquals("5 of 4 workouts, goal met. 6 weeks in a row.", RewardsCopy.recapText(WeekResult(0, 4, 5, true), 6))
         assertEquals("2 of 4 workouts.", RewardsCopy.recapText(WeekResult(0, 4, 2, false), 0))
     }
+
+    @Test
+    fun theLongestWorkoutReadsAsADurationAndTheGoalBadgeAsItsGoal() {
+        assertEquals("50 min", RewardsCopy.bestValue(Rewards.Kind.LONGEST_WORKOUT, 3000.0))
+        assertEquals("1 h 12", RewardsCopy.bestValue(Rewards.Kind.LONGEST_WORKOUT, 4320.0))
+        val goal = Rewards.BADGES.single { it.id == "goal_first" }
+        assertEquals("3/3", RewardsCopy.face(goal, 3))
+        assertEquals("✓", RewardsCopy.face(goal, null))
+        assertEquals("10K", RewardsCopy.face(Rewards.BADGES.single { it.id == "first_10k" }, 3))
+    }
 }

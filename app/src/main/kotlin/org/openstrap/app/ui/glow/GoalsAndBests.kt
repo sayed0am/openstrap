@@ -39,6 +39,11 @@ import org.openstrap.app.ui.workout.RewardsView
 /** The goal colour: met weeks, the goal moment. */
 private val GoalColor = MetricColors.good
 
+/** What a badge's art reads on these pages: the first weekly goal shows the goal it was met at, or this week's while locked. */
+private fun RewardsView.face(b: Rewards.Badge): String =
+    earned.firstOrNull { it.id == b.id }?.let { RewardsCopy.face(b, Rewards.goalAt(it, weeks, firstDay, ZoneId.systemDefault())) }
+        ?: RewardsCopy.face(b, goal)
+
 /** The days of [first]'s week, each a letter and whether a workout in [view] counted on it. */
 private fun weekDots(view: RewardsView, first: LocalDate, zone: ZoneId = ZoneId.systemDefault()): List<Pair<String, Boolean>> {
     val days = view.counted.map { Instant.ofEpochSecond(it.shownStart).atZone(zone).toLocalDate() }.toSet()
@@ -131,7 +136,7 @@ fun GoalsAndBestsPage(
                     "Badges, ${view.earned.size} of ${Rewards.BADGES.size}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                 )
-                BadgeGrid(earned + listOfNotNull(next), locked = { b -> view.earned.none { it.id == b.id } })
+                BadgeGrid(earned + listOfNotNull(next), locked = { b -> view.earned.none { it.id == b.id } }, face = view::face)
             }
         }
         item {
@@ -183,7 +188,7 @@ fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () 
                         Rewards.BADGES.filter { it.group == group }.map { b ->
                             b to (earned[b.id]?.let { shortDate(it.earnedAt) } ?: view.progress[b.id]?.let { (have, need) -> RewardsCopy.progressLine(have, need, b.unit) })
                         },
-                        locked = { it.id !in earned },
+                        locked = { it.id !in earned }, face = view::face,
                     )
                 }
             }

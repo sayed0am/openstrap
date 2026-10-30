@@ -181,7 +181,7 @@ fun GlowWorkoutSummaryScreen(
  * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
  */
 @Composable
-private fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: Float) {
+internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: Float) {
     val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell).coerceAtMost(1f))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {

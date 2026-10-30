@@ -62,9 +62,15 @@ object RewardsCopy {
         Rewards.Kind.fastestMeters(kind) != null -> workoutClock(Math.round(value))
         Rewards.Kind.liftName(kind) != null -> org.openstrap.app.data.Strength.kgText(value.toFloat()) + " kg"
         kind == Rewards.Kind.LONGEST_RUN -> String.format(Locale.ROOT, "%.1f km", value / 1000)
-        kind == Rewards.Kind.LONGEST_WORKOUT -> workoutClock(Math.round(value))
+        kind == Rewards.Kind.LONGEST_WORKOUT -> org.openstrap.app.ui.dashboard.TodayCopy.duration(Math.round(value))
         else -> "%,d".format(Math.round(value))
     }
+
+    /**
+     * What a badge's art reads: its short text, except the first weekly goal, which shows the goal it was met at
+     * ([goalAt], "3/3"), or a check when that week isn't known.
+     */
+    fun face(b: Rewards.Badge, goalAt: Int?): String = if (b.id == "goal_first" && goalAt != null) "$goalAt/$goalAt" else b.short
 
     /** "22 s faster", "2.5 kg more", "1.2 km farther", "4 min longer": how far [b] beat [before]. */
     fun beatBy(b: PersonalBest, before: PersonalBest): String {

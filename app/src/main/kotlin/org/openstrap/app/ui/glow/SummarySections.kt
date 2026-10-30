@@ -52,74 +52,93 @@ internal fun familyColor(f: Workouts.Family): Color = when (f) {
     Workouts.Family.Games -> MetricColors.charge
 }
 
-/** The hero: its one number in dots and its word, then a sentence or three figures in text. */
-internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String, String>> = emptyList(), val sentence: String? = null, val line: String? = null)
+/**
+ * The hero: its one number in dots and its word, then a sentence or three figures in text. A figure's value is null
+ * when it's missing (no heart rate, no profile for kcal): it shows the waiting dash.
+ */
+internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null)
 
-/** What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. */
+/**
+ * What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. When the kind's own number is missing
+ * (no heart rate for an indoor workout, no sets or rounds), the hero falls back to the minutes, for every kind.
+ */
 internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLoad: Float?): SummaryHero {
     val a = summary.analysis
     val active = a.activeSeconds
     val readings = summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
-    val peak = readings.maxOfOrNull { it.second }?.toString() ?: "None"
-    val avg = a.workout.averageHeartRate?.toString() ?: "None"
-    val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) } ?: "None"
-    val minutes = (active / 60).toString()
+    val peak = readings.maxOfOrNull { it.second }?.toString()
+    val avg = a.workout.averageHeartRate?.toString()
+    val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) }
+    val time = workoutClock(active)
+    // Minutes, or seconds under one.
+    val (minutes, minUnit) = if (active >= 60) "${active / 60}" to "min" else "$active" to "s"
+    fun byTime(figures: List<Pair<String?, String>>) = SummaryHero(minutes, minUnit, listOf(time to "Time") + figures)
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters
             val gps = FamilySummary.gpsDistance(m, summary.distanceFromSteps)
             val pace = Glance.paceClock(FamilySummary.pace(gps, active))
             when {
-                m == null || m <= 0f -> SummaryHero(minutes, "min", listOf(workoutClock(active) to "Time", avg to "Avg bpm", kcal to "Active kcal"))
+                m == null || m <= 0f -> byTime(listOf(avg to "Avg bpm", kcal to "Active kcal"))
                 else -> SummaryHero(
                     if (m < 1000) m.toInt().toString() else km(m), if (m < 1000) "m" else "km",
-                    listOf(workoutClock(active) to "Time", (pace ?: kcal) to (if (pace != null) "Avg pace" else "Active kcal"), avg to "Avg bpm"),
+                    listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
                 )
             }
         }
-        Workouts.Family.IndoorCardio -> SummaryHero(avg, "avg bpm", listOf(workoutClock(active) to "Time", kcal to "Active kcal", peak to "Peak"))
+        Workouts.Family.IndoorCardio ->
+            if (avg != null) SummaryHero(avg, "avg bpm", listOf(time to "Time", kcal to "Active kcal", peak to "Peak"))
+            else byTime(listOf(kcal to "Active kcal", peak to "Peak"))
         Workouts.Family.Strength -> {
             val lifted = org.openstrap.app.data.Strength.kgLifted(summary.sets)
             val sets = FamilySummary.setsDone(summary.sets)
-            val rest = FamilySummary.averageRest(summary.sets)?.let(::workoutClock) ?: "None"
-            // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8).
-            if (lifted != null) SummaryHero("%,d".format(Math.round(lifted)), "kg lifted", listOf(workoutClock(active) to "Time", "$sets" to "Sets", rest to "Avg rest"))
-            else SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(workoutClock(active) to "Time", rest to "Avg rest", peak to "Peak"))
+            val rest = FamilySummary.averageRest(summary.sets)?.let(::workoutClock)
+            // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8); without sets, the minutes.
+            when {
+                lifted != null -> SummaryHero("%,d".format(Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"))
+                sets > 0 -> SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))
+                else -> byTime(listOf(avg to "Avg bpm", peak to "Peak"))
+            }
         }
         Workouts.Family.Intervals -> {
             val done = org.openstrap.app.data.Phases.roundsDone(summary.rounds)
             val reps = summary.structure is Structure.Reps
             val hard = a.zoneSeconds.drop(3).sum()
-            SummaryHero(
+            if (done == 0) byTime(listOf(avg to "Avg bpm", peak to "Peak"))
+            else SummaryHero(
                 "$done", if (reps) "reps done" else "rounds done",
-                listOf(workoutClock(FamilySummary.workSeconds(summary.rounds)) to (if (reps) "Rep time" else "Work time"), peak to "Peak", "${hard / 60} min" to "In zone 4 to 5"),
+                listOf(
+                    workoutClock(FamilySummary.workSeconds(summary.rounds)) to (if (reps) "Rep time" else "Work time"), peak to "Peak",
+                    (if (readings.isEmpty()) null else "${hard / 60} min") to "In zone 4 to 5",
+                ),
             )
         }
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             SummaryHero(
-                minutes, "min", sentence = settled?.let { (f, t) -> FamilySummary.settledLine(f, t) },
+                minutes, minUnit, sentence = settled?.let { (f, t) -> FamilySummary.settledLine(f, t) },
                 line = listOfNotNull(a.workout.averageHeartRate?.let { "Average $it bpm" }, a.activeKcal?.let { "${Math.round(it)} active kcal" }).joinToString(", ").ifEmpty { null },
             )
         }
         Workouts.Family.Games -> {
             val load = a.workout.trainingLoad
             SummaryHero(
-                minutes, "min played",
-                listOf((load?.toString() ?: "None") to (load?.let { FamilySummary.loadLabel(it, usualLoad) } ?: "Load"), kcal to "Active kcal", peak to "Peak bpm"),
+                minutes, if (minUnit == "min") "min played" else "s played",
+                listOf(load?.toString() to (load?.let { FamilySummary.loadLabel(it, usualLoad) } ?: "Load"), kcal to "Active kcal", peak to "Peak bpm"),
             )
         }
     }
 }
 
-/** The hero's figures: values in Row value type over their labels, the last one to the right. */
+/** The hero's figures: values in Row value type over their labels, the last one to the right; a missing one is the dash. */
 @Composable
-internal fun SummaryFigures(figures: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+internal fun SummaryFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth()) {
         figures.forEachIndexed { i, (value, label) ->
             val end = i == figures.lastIndex && i > 0
             Column(Modifier.weight(1f), horizontalAlignment = if (end) Alignment.End else Alignment.Start) {
-                Text(value, color = Color.White, style = GlowType.rowValue, maxLines = 1)
+                if (value != null) Text(value, color = Color.White, style = GlowType.rowValue, maxLines = 1)
+                else WaitingDash(Modifier.padding(vertical = 10.5.dp))
                 Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
             }
         }
@@ -131,7 +150,11 @@ internal fun SummaryFigures(figures: List<Pair<String, String>>, modifier: Modif
  * instead.
  */
 @Composable
-internal fun FamilySection(family: Workouts.Family, summary: PhoneSummary, liveRoute: List<Route.Point>, others: List<WorkoutAnalysis>, weekStarts: List<Long>): Boolean {
+internal fun FamilySection(
+    family: Workouts.Family, summary: PhoneSummary, liveRoute: List<Route.Point>, others: List<WorkoutAnalysis>, weekStarts: List<Long>,
+    /** False on a past workout's page, whose heart rate card has the line already: the lines under it stay. */
+    heartLine: Boolean = true,
+): Boolean {
     val a = summary.analysis
     val readings = remember(summary) { summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm } }
     val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
@@ -142,7 +165,7 @@ internal fun FamilySection(family: Workouts.Family, summary: PhoneSummary, liveR
         }
         Workouts.Family.IndoorCardio -> {
             if (zones.sum() > 0) ZonesList(zones, a.maxHeartRate, note = FamilySummary.mostlyZone(zones) ?: "Max ${a.maxHeartRate} bpm")
-            HeartLineCard(readings, MetricColors.heart, listOfNotNull(
+            HeartLineCard(readings, MetricColors.heart, chart = heartLine, lines = listOfNotNull(
                 org.openstrap.app.ui.workout.SummaryCopy.targetLine(a.target, a.targetReachedSeconds, a.activeKcal?.let(Math::round)),
                 FamilySummary.versusLast(a, others)?.let { "vs last time: ${it.replaceFirstChar { c -> c.lowercase() }}" },
             ))
@@ -193,8 +216,8 @@ internal fun FamilySection(family: Workouts.Family, summary: PhoneSummary, liveR
         }
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
-            HeartLineCard(readings, MetricColors.evening, emptyList(), settled)
-            WeekDaysPanel(weekStarts)
+            HeartLineCard(readings, MetricColors.evening, emptyList(), settled, chart = heartLine)
+            WeekDaysPanel(weekStarts, day = java.time.Instant.ofEpochSecond(a.shownStart).atZone(java.time.ZoneId.systemDefault()).toLocalDate())
             return true
         }
         Workouts.Family.Games -> {
@@ -240,8 +263,8 @@ private fun RouteCard(summary: PhoneSummary) {
  * [settled], the start and end figures of a calm session instead of the range.
  */
 @Composable
-private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, lines: List<String>, settled: Pair<Int, Int>? = null) {
-    if (readings.size < 10) {
+private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, lines: List<String>, settled: Pair<Int, Int>? = null, chart: Boolean = true) {
+    if (readings.size < 10 || (!chart && settled == null)) {
         if (lines.isEmpty()) return
         EdgeCard(color, Modifier.fillMaxWidth()) { lines.forEach { Text(it, color = Color.White, style = GlowType.body) } }
         return
@@ -259,7 +282,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, lines: 
         val lo = readings.minOf { it.second }
         val hi = readings.maxOf { it.second }
         EdgeTitle("Heart rate", if (settled != null && settled.first - settled.second >= 3) "Down ${settled.first - settled.second}" else "$lo to $hi")
-        GlowLineChart(values, Modifier.padding(top = 12.dp), height = 90.dp, showAverage = false)
+        if (chart) GlowLineChart(values, Modifier.padding(top = 12.dp), height = 90.dp, showAverage = false)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 10.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("${settled.first}", color = Color.White, style = GlowType.rowValue)
@@ -274,15 +297,16 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, lines: 
     }
 }
 
-/** The days of this week with a workout lit, from the locale's first day, and the [note] under them. */
+/** The days of [day]'s week with a workout lit, from the locale's first day, and the [note] under them. */
 @Composable
-internal fun WeekDaysPanel(weekStarts: List<Long>, note: String? = null) {
+internal fun WeekDaysPanel(weekStarts: List<Long>, note: String? = null, day: LocalDate = LocalDate.now()) {
     val firstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
-    val days = remember(weekStarts) { FamilySummary.weekDays(weekStarts, LocalDate.now(), firstDay) }
+    val days = remember(weekStarts, day) { FamilySummary.weekDays(weekStarts, day, firstDay) }
+    val thisWeek = days.any { it.first == LocalDate.now() }
     QuietPanel {
-        PanelTitle("This week")
+        PanelTitle(if (thisWeek) "This week" else "That week")
         WeekDots(days.map { (d, on) -> d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) to on })
-        val text = note ?: days.count { it.second }.let { n -> "$n ${if (n == 1) "day" else "days"} with a workout this week." }
+        val text = note ?: days.count { it.second }.let { n -> "$n ${if (n == 1) "day" else "days"} with a workout ${if (thisWeek) "this" else "that"} week." }
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
     }
 }

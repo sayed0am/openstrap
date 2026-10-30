@@ -1312,10 +1312,15 @@ private fun AppRoot(
         val historyBadges by container.settings.historyBadgesWaiting.collectAsStateWithLifecycle(false)
         if (historyBadges && workoutState is org.openstrap.app.device.WorkoutState.Idle && readySport == null && !choosing) {
             val earned by remember { container.database.healthDao().badges() }.collectAsStateWithLifecycle(emptyList())
+            val weeks by remember { container.database.healthDao().weekResults() }.collectAsStateWithLifecycle(emptyList())
             if (earned.isNotEmpty()) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
                 org.openstrap.app.ui.glow.HistoryBadgesScreen(
                     earned.mapNotNull { org.openstrap.app.data.Rewards.badge(it.id) }, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
                     onContinue = { scope.launch { container.settings.historyBadgesShown() } },
+                    face = { b ->
+                        val goal = earned.firstOrNull { it.id == b.id }?.let { org.openstrap.app.data.Rewards.goalAt(it, weeks, container.rewards.firstDay, java.time.ZoneId.systemDefault()) }
+                        org.openstrap.app.ui.workout.RewardsCopy.face(b, goal)
+                    },
                 )
             }
         }

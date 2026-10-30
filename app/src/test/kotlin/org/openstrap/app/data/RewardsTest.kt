@@ -168,4 +168,27 @@ class RewardsTest {
         assertEquals(7L to 100L, Rewards.progress(km, ws, emptyList(), emptyList(), LocalDate.parse("2026-10-26")))
         assertEquals(1L to 10L, Rewards.progress(Rewards.BADGES.single { it.id == "workouts_10" }, ws, emptyList(), emptyList(), LocalDate.parse("2026-10-26")))
     }
+
+    @Test
+    fun aWorkoutTooShortToCountEarnsNoFirstsOrCounts() {
+        // 1:09 on the treadmill, then a 5 minute run: neither counts toward the goal, so neither earns a first.
+        val tiny = workout("2026-10-27", 7, sport = 2).copy(activeSeconds = 69, end = at("2026-10-27", 7) + 69)
+        val short = workout("2026-10-28", 7, minutes = 5, sport = 1, gps = 900f)
+        val badges = Rewards.badges(listOf(tiny, short), emptyList(), emptyList(), monday, utc).map { it.id }
+        assertTrue(badges.isEmpty())
+        assertEquals(0L to 10L, Rewards.progress(Rewards.BADGES.single { it.id == "workouts_10" }, listOf(tiny, short), emptyList(), emptyList(), LocalDate.parse("2026-10-26")))
+        // Its distance still adds to the total.
+        assertEquals(0L to 100L, Rewards.progress(Rewards.BADGES.single { it.id == "km_100" }, listOf(tiny, short), emptyList(), emptyList(), LocalDate.parse("2026-10-26")))
+        // A real one earns them.
+        val real = workout("2026-10-29", 7, sport = 2)
+        assertEquals(listOf("first_workout", "first_run", "first_indoor"), Rewards.badges(listOf(tiny, short, real), emptyList(), emptyList(), monday, utc).map { it.id })
+    }
+
+    @Test
+    fun theFirstGoalBadgeKnowsTheGoalItWasMetAt() {
+        val ws = listOf(workout("2026-10-27", 7), workout("2026-10-28", 7), workout("2026-10-29", 7))
+        val weeks = Rewards.weeks(ws, emptyList(), 3, LocalDate.parse("2026-10-30"), monday, utc)
+        val row = Rewards.badges(ws, emptyList(), weeks, monday, utc).single { it.id == "goal_first" }
+        assertEquals(3, Rewards.goalAt(row, weeks, monday, utc))
+    }
 }

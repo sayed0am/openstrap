@@ -159,7 +159,7 @@ fun CelebrationsSheet(goalMoment: Boolean, weeklyRecap: Boolean, onGoalMoment: (
  * rather than one by one.
  */
 @Composable
-fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValues, onContinue: () -> Unit) {
+fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValues, onContinue: () -> Unit, face: (Rewards.Badge) -> String = { it.short }) {
     BackHandler(onBack = onContinue)
     WorkoutPage(MetricColors.good, contentPadding, pinned = { WorkoutButton("Continue", Color.White, Color.Black, onContinue) }) {
         CloseRow(null, onContinue)
@@ -168,19 +168,22 @@ fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValu
             "${badges.size} ${if (badges.size == 1) "badge" else "badges"} already earned. New ones show on the summary after a workout.",
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 4.dp),
         )
-        BadgeGrid(badges.map { it to null })
+        BadgeGrid(badges.map { it to null }, face = face)
     }
 }
 
-/** Badges three to a row, each its art and title; [note] under the title is the date earned or what it needs. */
+/**
+ * Badges three to a row, each its art and title; [note] under the title is the date earned or what it needs, [face]
+ * what its art reads ([RewardsCopy.face]).
+ */
 @Composable
-internal fun BadgeGrid(badges: List<Pair<Rewards.Badge, String?>>, locked: (Rewards.Badge) -> Boolean = { false }) {
+internal fun BadgeGrid(badges: List<Pair<Rewards.Badge, String?>>, locked: (Rewards.Badge) -> Boolean = { false }, face: (Rewards.Badge) -> String = { it.short }) {
     QuietPanel {
         badges.chunked(3).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { (b, note) ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        BadgeArt(b.short, badgeColor(b.group), 64.dp, locked = locked(b))
+                        BadgeArt(face(b), badgeColor(b.group), 64.dp, locked = locked(b))
                         Text(b.title, color = Color.White, style = GlowType.secondary, textAlign = TextAlign.Center, maxLines = 2)
                         note?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, textAlign = TextAlign.Center) }
                     }
