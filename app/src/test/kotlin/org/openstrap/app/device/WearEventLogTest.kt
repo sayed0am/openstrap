@@ -1,6 +1,7 @@
 package org.openstrap.app.device
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
@@ -12,6 +13,7 @@ import org.junit.Test
 import org.openstrap.app.data.db.WearEventRow
 
 /** Wear changes are stored one at a time, in order; wear_event is keyed by the second with REPLACE. */
+@OptIn(ExperimentalCoroutinesApi::class)
 class WearEventLogTest {
     private val jobs = mutableListOf<Job>()
 

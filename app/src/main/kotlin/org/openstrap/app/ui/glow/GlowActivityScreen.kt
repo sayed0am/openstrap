@@ -460,7 +460,7 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        a.sportName, color = Color.White, style = GlowType.label.copy(fontWeight = null),
+                        a.sportName, color = Color.White, style = GlowType.body,
                         maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
                     )
                     if (!a.startedByYou) {

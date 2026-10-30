@@ -27,7 +27,7 @@ class LightSpecTest {
     private val w = 358f * density
     private val h = 176f * density
 
-    @Test fun `a hero lit from below fades from the light to the body by 45%`() {
+    @Test fun `a hero lit from below fades from the light to the body by 45 percent`() {
         val style = GlowStyle(MetricColors.readiness, lightAngle = LightAngle.Below)
         val p = glowPaint(style, w, h, density)
         val palette = GlowPalette(style)
@@ -49,7 +49,7 @@ class LightSpecTest {
         assertEquals(GlowLayout.CardCorner.value * density, p.radius, 1e-3f)
     }
 
-    @Test fun `the second glow starts at 70% and reaches the body by 28%`() {
+    @Test fun `the second glow starts at 70 percent and reaches the body by 28 percent`() {
         val p = glowPaint(GlowStyle(MetricColors.readiness, lightAngle = LightAngle.Below, second = true), w, h, density)
         assertEquals(listOf(0f, 0.28f, 1f), p.fill.stops)
         assertEquals(0.7f, p.rims[0].color.alpha, 1f / 255)

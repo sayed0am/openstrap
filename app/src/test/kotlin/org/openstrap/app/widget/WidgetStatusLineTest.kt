@@ -254,7 +254,7 @@ class WidgetStatusLineTest {
             }
             assertNotNull(f.top)
             assertEquals(f.top!!.titleSp, f.name.sp, 0f)
-            Triple(f.fits(h), f.gap(h), f.top!!)
+            Triple(f.fits(h), f.gap(h), f.top)
         }
     }
 

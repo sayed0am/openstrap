@@ -180,7 +180,7 @@ class ChannelSession(
         val c = cipher
         // Zepp encrypts only when the channel version said encryption is on and the endpoint asks for it.
         val encrypt = c != null && version?.encryptEnable == true && services.requiresEncryption(endpoint)
-        val body = if (encrypt) c!!.encrypt(sid, payload) else payload
+        val body = if (encrypt) c.encrypt(sid, payload) else payload
         val chunks = buildChunks(endpoint, sid, body, payload.size, encrypt, link.payloadMtu, wantReply || encrypt)
         if (!encrypt || !awaitEncryptedAcks) {
             for (chunk in chunks) link.writeControl(chunk)

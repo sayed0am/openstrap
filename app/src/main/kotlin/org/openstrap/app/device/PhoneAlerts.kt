@@ -147,8 +147,9 @@ class PhoneAlerts(
                 val l = callListener
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && l is TelephonyCallback) {
                     telephony.unregisterTelephonyCallback(l)
-                } else if (l is PhoneStateListener) {
-                    @Suppress("DEPRECATION") telephony.listen(l, PhoneStateListener.LISTEN_NONE)
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (l is PhoneStateListener) telephony.listen(l, PhoneStateListener.LISTEN_NONE)
                 }
                 callListener = null
                 val m = modeListener

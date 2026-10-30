@@ -149,7 +149,7 @@ internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text, color = Color.White, style = GlowType.label.copy(fontWeight = null), modifier = Modifier.weight(1f))
+        Text(text, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
         TapCaret(ROW_CARET_ALPHA)
     }
 }

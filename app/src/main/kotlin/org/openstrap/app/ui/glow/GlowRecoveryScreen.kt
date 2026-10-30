@@ -298,7 +298,7 @@ private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Mo
         failed -> FAILED_SHORT
         !ready -> AFTER_FIRST_NIGHT
         recharged -> TabCopy.RECHARGED
-        else -> TabCopy.drainedMostly(c!!.drainedExercise, c.drainedStress, c.drainedLiving)
+        else -> TabCopy.drainedMostly(c.drainedExercise, c.drainedStress, c.drainedLiving)
     }
     SmallCard(MetricColors.charge, if (recharged) "Recharged" else "Drained", value, null, status, modifier, plain = true)
 }

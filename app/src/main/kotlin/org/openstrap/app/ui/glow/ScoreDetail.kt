@@ -231,7 +231,7 @@ private fun ChargeDetail(
         else -> DetailHeadline(
             now.toString(),
             when {
-                stale -> "at ${clockAt(lastAt!!)}"
+                stale -> "at ${clockAt(lastAt)}"
                 isToday -> "now"
                 else -> "at the end of the day"
             },

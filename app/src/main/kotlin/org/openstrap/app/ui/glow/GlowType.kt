@@ -62,15 +62,6 @@ object GlowType {
      * the dotted answer is the other card's.
      */
     val smallValue = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 34.sp, letterSpacing = (-0.02).em, lineHeight = 36.sp, fontFeatureSettings = "tnum")
-
-    @Deprecated("Not a role in spec 2.3. Workout pages move to pageTitle (step 9).")
-    val headline = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 26.sp, letterSpacing = (-0.02).em, lineHeight = 30.sp)
-
-    @Deprecated("Card titles are cardTitle (spec 2.3).", ReplaceWith("GlowType.cardTitle"))
-    val title = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 20.sp, letterSpacing = (-0.02).em)
-
-    @Deprecated("Titles are cardTitle, names and buttons body (spec 2.3). The pages still on it move in later steps.")
-    val label = TextStyle(fontFamily = FunnelSans, fontWeight = FontWeight.Medium, fontSize = 15.sp, lineHeight = 20.sp)
 }
 
 /**

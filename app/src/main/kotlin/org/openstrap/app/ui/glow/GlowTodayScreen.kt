@@ -499,7 +499,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
         Column {
             val start = c?.takeIf { it.anchored }?.atWake?.toInt()
             GlowHeader(
-                "Energy", trailing = start?.let { if (c?.strapOffOvernight == true) "$it at start" else "$it at waking" },
+                "Energy", trailing = start?.let { if (c.strapOffOvernight) "$it at start" else "$it at waking" },
                 marker = ctx.upTo(ctx.newest), tag = ctx.partial,
             )
             // Charge is worked out with Recovery, so when that fails it says so rather than waiting for a first night.
@@ -584,7 +584,7 @@ private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Lon
                 // About 40 points over whatever time has passed, and never narrower than the strap's usual gap between
                 // readings (it keeps one every few minutes outside a workout): a slot with no reading between two that
                 // have one breaks the line into lone dots.
-                val gaps = since.zipWithNext { a, b -> (b.x - a.x).toLong() }.filter { it > 0 }.sorted()
+                val gaps = since.zipWithNext { a, b -> b.x - a.x }.filter { it > 0 }.sorted()
                 val typical = gaps.getOrNull(gaps.size / 2) ?: 0L
                 // Half as wide again, so a reading a little late still lands in its own slot.
                 val step = maxOf(60L, (ctx.now - w.end) / 40, typical * 3 / 2)

@@ -313,7 +313,7 @@ class StartWidgetModelTest {
             val b = StartLayout.large(m, 260f, 220f, s)
             assertNotNull("Large 300 x 260 at $s lost its tiles", b.tiles)
             assertTrue(b.tiles!!.sports.size >= 3)
-            assertCaptionsWhole(b.tiles!!, 260f, s, "Large at $s")
+            assertCaptionsWhole(b.tiles, 260f, s, "Large at $s")
             assertTrue(b.content + (b.gaps - 2) * StartLayout.MIN_GAP_DP <= 220f)
         }
     }

@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
@@ -32,6 +33,7 @@ import org.robolectric.annotation.Config
 /** The workout list's zone bars come from each workout's whole HR stream, and agree with its page. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
+@OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutListZonesTest {
     private lateinit var db: OpenStrapDatabase
     private val start = 1_792_000_000L

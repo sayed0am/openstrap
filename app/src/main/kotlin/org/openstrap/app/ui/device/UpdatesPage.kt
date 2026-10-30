@@ -117,7 +117,7 @@ private fun ReleaseNotesView(release: Release) {
     val blocks = remember(release.notes) { ReleaseNotes.parse(release.notes) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(release.versionName, color = Color.White, style = GlowType.label, modifier = Modifier.weight(1f))
+            Text(release.versionName, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))
             release.publishedAt?.let {
                 Text(UpdateCopy.date(it), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             }
@@ -125,7 +125,7 @@ private fun ReleaseNotesView(release: Release) {
         if (blocks.isEmpty()) Text("No notes for this release.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         blocks.forEachIndexed { i, block -> when (block) {
             is NoteBlock.Heading -> Text(
-                spans(block.spans), color = Color.White, style = GlowType.label, modifier = Modifier.padding(top = 6.dp),
+                spans(block.spans), color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(top = 6.dp),
             )
             // The opening paragraph leads, larger; any later one reads like the bullets.
             is NoteBlock.Paragraph ->
