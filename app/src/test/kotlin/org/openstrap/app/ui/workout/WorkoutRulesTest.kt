@@ -137,7 +137,9 @@ class WorkoutRulesTest {
 
     @Test fun `the workout pages use the type roles and no Material parts`() {
         val root = listOf(File("src/main"), File("app/src/main")).first { it.isDirectory }
-        val files = listOf("GlowWorkoutMode.kt", "GlowWorkoutSummary.kt", "GlowWorkoutScreen.kt").map { File(root, "kotlin/org/openstrap/app/ui/glow/$it") }
+        val glow = File(root, "kotlin/org/openstrap/app/ui/glow")
+        val files = listOf("GlowWorkoutMode.kt", "ChooseScreen.kt", "ReadyScreen.kt", "WorkoutCapsule.kt", "GlowWorkoutSummary.kt", "GlowWorkoutScreen.kt").map { File(glow, it) } +
+            File(glow, "live").listFiles().orEmpty().filter { it.extension == "kt" }.sortedBy { it.name }
         val banned = Regex("""MaterialTheme\.typography|GlowType\.(headline|title|label)\b|OutlinedTextField|\bIconButton\b|headline\.fontSize""")
         val found = files.flatMap { f ->
             f.readLines().mapIndexedNotNull { i, line ->

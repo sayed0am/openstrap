@@ -833,7 +833,7 @@ private fun AppRoot(
               val recent by container.workout.recent.collectAsStateWithLifecycle()
               val zoneSeconds by container.workout.zoneSeconds.collectAsStateWithLifecycle()
               val kcal by container.workout.kcal.collectAsStateWithLifecycle()
-              org.openstrap.app.ui.glow.GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, realConnection, top, kcal)
+              org.openstrap.app.ui.glow.live.GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, realConnection, top, kcal)
           } else org.openstrap.app.ui.glow.GlowTabletopHeart(
               day, live, liveEnabled.takeIf { realConnection is ConnectionState.Connected }, { container.strap.setLiveHeartRate(it) }, top,
           )
@@ -1414,7 +1414,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 // stood up like a book, the left half here.
                 val liveScreen: @Composable (androidx.compose.ui.Modifier) -> Unit = { modifier ->
                     androidx.compose.foundation.layout.Box(modifier) {
-                        org.openstrap.app.ui.glow.GlowWorkoutLiveScreen(
+                        org.openstrap.app.ui.glow.live.GlowWorkoutLiveScreen(
                             state, live, recent, stats, zoneSeconds, connection, padding,
                             onPause = session::pause, onResume = session::resume, onEnd = session::end,
                             onMinimize = { session.minimized.value = true },
@@ -1431,7 +1431,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 if (bookHinge != null) {
                     val density = androidx.compose.ui.platform.LocalDensity.current
                     androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxSize()) {
-                        org.openstrap.app.ui.glow.GlowWorkoutGlance(
+                        org.openstrap.app.ui.glow.live.GlowWorkoutGlance(
                             state, live, recent, zoneSeconds, connection,
                             androidx.compose.ui.Modifier.width(with(density) { bookHinge.bounds.left.toDp() }).fillMaxHeight(), kcal,
                         )
