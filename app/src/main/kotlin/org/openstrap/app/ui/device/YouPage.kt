@@ -92,6 +92,9 @@ fun YouPage(
     /** Automatic backup, said on its row; the row opens the Backup page. */
     backup: BackupState,
     onBackup: () -> Unit,
+    /** Sleep and naps deleted in the last 7 days; the Deleted sleep row shows only when there are any. */
+    deletedSleep: Int,
+    onDeletedSleep: () -> Unit,
     /** New versions from GitHub, said on its row; the row opens the Updates page. */
     updates: org.openstrap.app.update.UpdateState,
     installedVersion: String,
@@ -125,6 +128,10 @@ fun YouPage(
                     icon = AppIcons.Heartbeat, selected = selected == "Health Connect",
                 )
                 PageRow("Backup", BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true, icon = AppIcons.ShieldCheck, selected = selected == "Backup")
+                if (deletedSleep > 0) PageRow(
+                    "Deleted sleep", org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep), onClick = onDeletedSleep, below = true,
+                    icon = AppIcons.Trash, selected = selected == "Deleted sleep",
+                )
             }
         }
         item { PanelHeading("Help") }

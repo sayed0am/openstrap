@@ -53,6 +53,42 @@ class SleepSource(private val dao: HealthDao) {
             if (strap == null) dao.sleepStages(session.start) else dao.sleepStages(strap).map { SleepEdits.clip(it, session.start, session.end) }
         }
 
+    /**
+     * The sleep and naps deleted less than [SleepEdits.KEEP_DAYS] before [now] whose sessions are still there, newest
+     * delete first: the Deleted sleep list.
+     */
+    suspend fun deletedOnce(now: Long): List<SleepEdits.Resolved> {
+        val edits = dao.sleepEditsOnce()
+        return edits.filter { it.deleted && !SleepEdits.expired(it, now) }.sortedByDescending { it.editedAt }.mapNotNull { e -> strapOf(e, edits) }
+    }
+
+    fun deleted(now: () -> Long): Flow<List<SleepEdits.Resolved>> = dao.sleepEdits().mapLatest { deletedOnce(now()) }
+
+    /**
+     * Removes for good the session and stages of every delete older than [SleepEdits.KEEP_DAYS] at [now], and keeps
+     * its edit as a marker without times ([SleepEdits.marker]), so a resync of that sleep is dropped again. Run after
+     * every sync, which also takes away a resynced copy. Returns the sessions removed.
+     */
+    suspend fun purgeExpired(now: Long): Int {
+        val edits = dao.sleepEditsOnce()
+        var removed = 0
+        for (e in edits.filter { SleepEdits.expired(it, now) }) {
+            strapOf(e, edits)?.let { r ->
+                dao.deleteSleepStagesOf(r.strap.start)
+                dao.deleteSleepSession(r.strap.start)
+                removed++
+            }
+            if (e.moved) dao.upsertSleepEdit(SleepEdits.marker(e))
+        }
+        return removed
+    }
+
+    /** The strap's session [edit] resolves to among [edits], when it's still there. */
+    private suspend fun strapOf(edit: org.openstrap.app.data.db.SleepEdit, edits: List<org.openstrap.app.data.db.SleepEdit>): SleepEdits.Resolved? {
+        val near = dao.sleepSessionsStartingOnce(edit.strapStart - SleepEdits.MATCH_SECONDS, edit.strapStart + SleepEdits.MATCH_SECONDS)
+        return SleepEdits.resolve(near, edits).firstOrNull { it.edit == edit }
+    }
+
     /** Moved sessions take their totals from their clipped stages. */
     private suspend fun shown(resolved: List<SleepEdits.Resolved>): List<SleepSession> = resolved.mapNotNull { r ->
         val s = r.shown ?: return@mapNotNull null
@@ -66,8 +102,7 @@ class SleepSource(private val dao: HealthDao) {
     private suspend fun movedFrom(session: SleepSession): Long? {
         val edits = dao.sleepEditsOnce()
         val e = edits.firstOrNull { !it.deleted && it.nap == session.nap && it.start == session.start && it.end == session.end } ?: return null
-        val near = dao.sleepSessionsStartingOnce(e.strapStart - SleepEdits.MATCH_SECONDS, e.strapStart + SleepEdits.MATCH_SECONDS)
-        return SleepEdits.resolve(near, edits).firstOrNull { it.edit == e }?.strap?.start ?: e.strapStart
+        return strapOf(e, edits)?.strap?.start ?: e.strapStart
     }
 
     private fun resolvedIn(sessions: List<SleepSession>, edits: List<org.openstrap.app.data.db.SleepEdit>, from: Long, to: Long) =

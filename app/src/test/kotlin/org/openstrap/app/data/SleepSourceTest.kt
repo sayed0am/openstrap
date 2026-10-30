@@ -76,6 +76,45 @@ class SleepSourceTest {
         assertEquals(116 * h, source.sessionsOnce(0, 117 * h).single { it.nap }.end)
     }
 
+    @Test fun `delete, undo and restore through the repository bring back exactly what was there`() = runTest {
+        seed()
+        val repo = HealthRepository(dao)
+        repo.setSleepTimes(main, 101 * h, 108 * h)
+        val moved = repo.sleep.sessionsOnce(0, 200 * h)
+        repo.deleteSleep(main)
+        assertEquals(listOf(nap), repo.sleep.sessionsOnce(0, 200 * h))
+        assertEquals(listOf(main.start), repo.sleep.deletedOnce(200 * h).map { it.strap.start })
+        repo.restoreSleep(main)
+        assertEquals(moved, repo.sleep.sessionsOnce(0, 200 * h))
+        assertEquals(emptyList<SleepEdits.Resolved>(), repo.sleep.deletedOnce(200 * h))
+        // A delete of an unmoved nap leaves no trace once restored.
+        repo.deleteSleep(nap)
+        repo.restoreSleep(nap)
+        assertEquals(listOf(main.start), dao.sleepEditsOnce().map { it.strapStart })
+    }
+
+    @Test fun `after 7 days a delete goes for good, and a resync doesn't bring it back`() = runTest {
+        seed()
+        val day = 86_400L
+        dao.upsertSleepEdit(SleepEdit(main.start, nap = false, start = 101 * h, end = 108 * h, deleted = true, editedAt = 200 * h))
+        val source = SleepSource(dao)
+        // Still restorable on day 6, and nothing goes.
+        assertEquals(0, source.purgeExpired(200 * h + 6 * day))
+        assertEquals(1, source.deletedOnce(200 * h + 6 * day).size)
+        // Day 7: the session and its stages go, the edit stays as a marker without times.
+        assertEquals(1, source.purgeExpired(200 * h + 7 * day))
+        assertEquals(listOf(nap), dao.sleepSessionsOnce(0, 200 * h))
+        assertEquals(emptyList<SleepStage>(), dao.sleepStagesOnce(main.start))
+        val marker = dao.sleepEditsOnce().single()
+        assertTrue(marker.deleted && marker.start == null && marker.end == null)
+        assertEquals(emptyList<SleepEdits.Resolved>(), source.deletedOnce(200 * h + 7 * day))
+        // The strap sends the night again, a few minutes off: it stays out, and the next clean up takes it away.
+        dao.insertSleepSessions(listOf(main.copy(start = main.start + 120)))
+        assertEquals(listOf(nap), source.sessionsOnce(0, 200 * h))
+        assertEquals(1, source.purgeExpired(200 * h + 8 * day))
+        assertEquals(listOf(nap), dao.sleepSessionsOnce(0, 200 * h))
+    }
+
     @Test fun `a resync that shifts the strap's start keeps the move, and the stages follow`() = runTest {
         seed()
         dao.upsertSleepEdit(SleepEdit(main.start, nap = false, start = 101 * h, end = 108 * h, editedAt = 1))

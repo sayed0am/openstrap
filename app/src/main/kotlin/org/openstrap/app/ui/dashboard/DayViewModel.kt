@@ -85,6 +85,8 @@ data class DayUiState(
     val sleepStages: List<StageSpan> = emptyList(),
     /** The strap's whole stages when the user moved the main sleep, so the chart can dim what's left out; else empty. */
     val strapSleepStages: List<StageSpan> = emptyList(),
+    /** The night's main sleep the user deleted, when there's no other ([sleep] is null then), for its Restore. */
+    val deletedSleep: SleepEdits.Resolved? = null,
     val sleepBreakdown: Summaries.SleepBreakdown? = null,
     val spo2: List<ChartPoint> = emptyList(),
     val stress: List<ChartPoint> = emptyList(),
@@ -164,6 +166,20 @@ class DayViewModel(
     fun setSleepTimes(strap: SleepSession, start: Long, end: Long) {
         viewModelScope.launch { repo.setSleepTimes(strap, start, end); onSleepEdited(strap.start) }
     }
+
+    /** Deletes the strap's sleep or nap [strap]; [restoreSleep] brings it back. */
+    fun deleteSleep(strap: SleepSession) {
+        viewModelScope.launch { repo.deleteSleep(strap); onSleepEdited(strap.start) }
+    }
+
+    /** Brings back the strap's deleted sleep or nap [strap], as it was: Undo and Restore. */
+    fun restoreSleep(strap: SleepSession) {
+        viewModelScope.launch { repo.restoreSleep(strap); onSleepEdited(strap.start) }
+    }
+
+    /** Sleep and naps deleted in the last 7 days, newest first, for You, Data, Deleted sleep. */
+    val deletedSleep: StateFlow<List<SleepEdits.Resolved>> = repo.deletedSleep()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The last Recovery worked out, for yesterday's score when today's fails. */
     @Volatile private var lastRecovery: RecoveryResult? = null
@@ -271,6 +287,9 @@ class DayViewModel(
             fun mainIn(w: DayWindow) = shown.filter { !it.strap.nap && it.end in w.from..w.to }.maxByOrNull { it.end - it.start }
             val main = mainIn(night)
             val before = mainIn(nightBefore)?.shown
+            // With no main sleep, the one the user deleted, for the "No sleep recorded" card and its Restore.
+            val deleted = if (main != null) null
+            else all.filter { it.deleted && !it.strap.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
             // Naps belong to the calendar day they started on, not the night window (which ends at 18:00).
             // The strap's start decides the day, so moving a nap's times never moves it to another day.
             val resolved = shown.filter { it.strap.nap && it.strap.start in day.from..day.to }
@@ -285,7 +304,7 @@ class DayViewModel(
                 val st = if (main?.moved == true) SleepEdits.clip(whole, main.start, main.end) else whole
                 // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
                 val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, st) else it }
-                SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList())
+                SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList(), deleted)
             }
         }
         val extras = combine(repo.skinTemperature(day), repo.breathRate(night), repo.latestPai(day.to)) { skin, breath, pai ->
@@ -413,6 +432,7 @@ class DayViewModel(
                 napsAsDetected = sleepParts.napsAsDetected,
                 sleepAsDetected = sleepParts.mainAsDetected,
                 strapSleepStages = sleepParts.strapStages.map { StageSpan(it.start, it.end, it.stage) },
+                deletedSleep = sleepParts.deletedMain,
                 sleepStages = stages.map { StageSpan(it.start, it.end, it.stage) },
                 sleepBreakdown = if (stages.isEmpty()) null else Summaries.sleepBreakdown(stages),
                 spo2 = spo2.map { ChartPoint(it.timestamp, it.percent.toFloat()) },
@@ -463,6 +483,7 @@ private data class SleepParts(
     val mainAsDetected: SleepSession? = null,
     /** The strap's whole stages for a main sleep the user moved; empty otherwise. */
     val strapStages: List<SleepStage> = emptyList(),
+    val deletedMain: SleepEdits.Resolved? = null,
 )
 
 private data class MoreParts(

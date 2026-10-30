@@ -119,6 +119,22 @@ class HealthRepository(private val dao: HealthDao) {
         val e = SleepEdits.edit(strap, start, end, current, System.currentTimeMillis() / 1000)
         if (e == null) dao.deleteSleepEdit(current?.strapStart ?: strap.start) else dao.upsertSleepEdit(e)
     }
+
+    /** Deletes the strap's session [strap], keeping any times the user gave it, so [restoreSleep] brings back exactly that. */
+    suspend fun deleteSleep(strap: SleepSession) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        dao.upsertSleepEdit(SleepEdits.delete(strap, current, System.currentTimeMillis() / 1000))
+    }
+
+    /** Brings back the strap's deleted session [strap], with the times it had: Undo and Restore. */
+    suspend fun restoreSleep(strap: SleepSession) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit ?: return
+        val restored = SleepEdits.restore(current, System.currentTimeMillis() / 1000)
+        if (restored == null) dao.deleteSleepEdit(current.strapStart) else dao.upsertSleepEdit(restored)
+    }
+
+    /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first, for You, Data, Deleted sleep. */
+    fun deletedSleep(): Flow<List<SleepEdits.Resolved>> = sleep.deleted { System.currentTimeMillis() / 1000 }
     fun spo2(w: DayWindow): Flow<List<Spo2Sample>> = dao.spo2(w.from, w.to)
     /**
      * The day's stress readings that count as daily stress: those outside the exclusion around workouts
