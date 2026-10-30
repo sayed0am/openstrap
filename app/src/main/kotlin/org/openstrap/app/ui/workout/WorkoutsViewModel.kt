@@ -55,6 +55,13 @@ data class PhoneSummary(
     val pauses: List<LongRange> = emptyList(),
     /** Its effect figures are the strap's own ([org.openstrap.app.data.db.AppWorkout.effectFromStrap]). */
     val effectFromStrap: Boolean = false,
+    /** Its rounds or periods ([org.openstrap.app.data.db.AppWorkout.structure]) and each one recorded. */
+    val structure: org.openstrap.app.data.Structure? = null,
+    val rounds: List<org.openstrap.app.data.db.AppWorkoutRound> = emptyList(),
+    /** Strength: the heart rate rest ended under, when rest ended on heart rate ([org.openstrap.app.data.Strength.Rest]). */
+    val restBelow: Int? = null,
+    /** Strength: how long the heart rate took to fall under [restBelow] in the last session before ([FamilySummary.restRecovery]). */
+    val restBefore: Long? = null,
 )
 
 /** Workouts list (newest first) and the one open in detail. */
@@ -175,11 +182,11 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
      * opening the summary writes nothing.
      */
     fun phoneSummary(start: Long, backfill: Boolean = true): Flow<PhoneSummary?> =
-        combine(dao.appWorkout(start), dao.appWorkoutHeartRate(start), fallbackMaxHr, workouts, combine(dao.route(start), dao.sets(start)) { r, s -> r to s }) { w, hr, maxHr, all, extra ->
+        combine(dao.appWorkout(start), dao.appWorkoutHeartRate(start), fallbackMaxHr, workouts, combine(dao.route(start), dao.sets(start), dao.rounds(start)) { r, s, n -> Triple(r, s, n) }) { w, hr, maxHr, all, extra ->
             Quad(w, hr, maxHr, all) to extra
         }
             .mapLatest { (q, extra) ->
-                val (routeRows, sets) = extra
+                val (routeRows, sets, rounds) = extra
                 val (w, hr, maxHr, all) = q
                 w ?: return@mapLatest null
                 // A workout from before its effect was worked out gets it now; saving it brings this summary round again.
@@ -192,6 +199,7 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
                 val strap = Workouts.strapTwins(dao.workoutsOnce(w.from, w.end ?: a.end), w.from..(w.end ?: a.end))
                     .map { s -> Workouts.analyse(s, dao.workoutHeartRate(s.start).first(), effects, maxHr) }
                 val route = routeRows.map { it.point }.filter { it.t in w.from..(w.end ?: Long.MAX_VALUE) }
+                val below = org.openstrap.app.data.Strength.Rest.parse(w.rest)?.belowBpm
                 PhoneSummary(
                     a, WorkoutRecorder.expand(hr), w.start, w.recordedEnd ?: w.end ?: a.end, w.endReason,
                     route, hr.filter { !it.fromHistory }.map { it.timestamp to it.bpm }, w.distanceMeters, w.distanceFromSteps, sets, strap,
@@ -199,8 +207,22 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
                         WorkoutRecorder.laps(w.from, w.end ?: a.end, marks, hr.filter { !it.fromHistory }.map { it.timestamp to it.bpm }, route, w.pauseRanges)
                     }.orEmpty(),
                     w.pauseRanges, w.effectFromStrap,
+                    org.openstrap.app.data.Structure.parse(w.structure), rounds, below,
+                    below?.let { restBefore(w, it) },
                 )
             }.flowOn(Dispatchers.Default)
+
+    /**
+     * How fast rest brought the heart rate under [below] in the last strength session before [w] with sets, in the
+     * fortnight before ([FamilySummary.restRecovery]); null without one.
+     */
+    private suspend fun restBefore(w: org.openstrap.app.data.db.AppWorkout, below: Int): Long? {
+        val last = dao.appWorkoutsOnce(w.start - 14 * 86_400L, w.start - 1)
+            .filter { it.end != null && it.start < w.start && it.sportType in org.openstrap.app.data.Strength.SPORTS }
+            .maxByOrNull { it.start } ?: return null
+        val readings = dao.appWorkoutHeartRateOnce(last.start).map { it.timestamp to it.bpm }
+        return FamilySummary.restRecovery(dao.setsOnce(last.start), readings, below)
+    }
 
     /**
      * Your usual heart rate drop in the first minute after a workout, before [before] ([SummaryCopy.usualDrop]): from
