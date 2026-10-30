@@ -81,6 +81,8 @@ fun GlowSleepScreen(
     onOpen: (Detail) -> Unit,
     /** The nightly model, for regularity and breathing disturbances. */
     recovery: org.openstrap.app.data.RecoveryResult? = null,
+    /** Brings back a night the user deleted, the strap's own session given: the hero's Restore. */
+    onRestore: (org.openstrap.app.data.db.SleepSession) -> Unit = {},
 ) {
     val list = rememberLazyListState()
     val rec = recovery?.takeIf { it.date == state.date }
@@ -97,7 +99,7 @@ fun GlowSleepScreen(
             val pair = (breathing != null || firstNights) && state.naps.isNotEmpty()
             tabCards(slots) { card, m ->
                 when (card) {
-                    SleepCard.Hero -> NightHero(state, firstNights) { onOpen(Detail.OfScore(Score.Sleep)) }
+                    SleepCard.Hero -> NightHero(state, firstNights, onRestore) { onOpen(Detail.OfScore(Score.Sleep)) }
                     SleepCard.Vitals -> VitalsList(state, firstNights) { onOpen(Detail.OfMetric(it, night = true)) }
                     SleepCard.Regularity -> RegularityCard(state, rec?.regularity, firstNights) { onOpen(Detail.OfScore(Score.Regularity)) }
                     SleepCard.Breathing -> when {
@@ -134,10 +136,10 @@ private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.syst
  * The night (spec 5.2, the sleep hero): how long, against the rest of the week, then the score in dots with its word
  * and how often you woke beside it, the one dotted number on the card. The stages to scrub in their colours, then
  * their totals as one bar with a plain legend. No arc. As high as its content. Tapping opens the Sleep score's detail
- * ([onOpen]).
+ * ([onOpen]). A night the user deleted says so, with Restore ([onRestore]).
  */
 @Composable
-private fun NightHero(state: DayUiState, firstNights: Boolean, onOpen: () -> Unit) {
+private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.openstrap.app.data.db.SleepSession) -> Unit, onOpen: () -> Unit) {
     val session = state.sleep
     val isToday = state.date == LocalDate.now()
     GlowCard(SleepGlow, Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
@@ -145,7 +147,14 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onOpen: () -> Uni
             GlowHeader("Last night", trailing = session?.let { TabCopy.nightTimes(it.start, it.end) })
             if (session == null) {
                 // Nothing said until the night has loaded, so a cold start doesn't open on "No sleep recorded".
-                if (state.loaded) HeroSentence(if (firstNights) TabCopy.FIRST_NIGHT_SLEEP else TabCopy.noNight(state.naps.isNotEmpty(), isToday))
+                val deleted = state.deletedSleep
+                if (state.loaded) HeroSentence(
+                    if (firstNights) TabCopy.FIRST_NIGHT_SLEEP else TabCopy.noNight(state.naps.isNotEmpty(), isToday, deleted = deleted != null),
+                )
+                if (state.loaded && deleted != null) {
+                    Spacer(Modifier.height(20.dp))
+                    PageButton("Restore", { onRestore(deleted.strap) }, icon = org.openstrap.app.ui.theme.AppIcons.ArrowCounterClockwise)
+                }
                 return@Column
             }
             val asleep = state.asleepSeconds ?: (session.end - session.start)

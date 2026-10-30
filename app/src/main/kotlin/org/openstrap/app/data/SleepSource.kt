@@ -54,6 +54,15 @@ class SleepSource(private val dao: HealthDao) {
         }
 
     /**
+     * True when the night [from, to] (a [DayWindow.nightEndingOn]) has no main sleep because the user deleted it, so
+     * what shows it says so instead of asking whether the strap was on.
+     */
+    suspend fun nightDeleted(from: Long, to: Long): Boolean {
+        val mains = resolvedOnce(from, to).filter { !it.strap.nap }
+        return mains.isNotEmpty() && mains.all { it.deleted }
+    }
+
+    /**
      * The sleep and naps deleted less than [SleepEdits.KEEP_DAYS] before [now] whose sessions are still there, newest
      * delete first: the Deleted sleep list.
      */

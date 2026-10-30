@@ -112,7 +112,7 @@ fun GlowRecoveryScreen(
                         if (failure != null) RecoveryFailedHero(failure, onOpen = { onOpenScore(Score.Recovery) }, onRetry = onRetryRecovery)
                         else RecoveryHero(
                             r, onOpen = { onOpenScore(Score.Recovery) }, onInfo = { info = true }, firstNights = firstNights,
-                            noSleep = isToday && state.loaded && state.asleepSeconds == null, firstScore = firstScore,
+                            noSleep = isToday && state.loaded && state.asleepSeconds == null, deleted = state.deletedSleep != null, firstScore = firstScore,
                             shown = TodayCopy.recoveryShown(r?.readiness, strapScore, waiting),
                         )
                     RecoveryCard.Drivers -> DriversList(r?.readiness, onAll = { onOpenScore(Score.Recovery) })
@@ -155,7 +155,7 @@ private fun recoveryHeroStyle(color: Color) = GlowStyle.Bloom.copy(
  */
 @Composable
 private fun RecoveryHero(
-    r: RecoveryResult?, onOpen: () -> Unit, onInfo: () -> Unit, firstNights: Boolean = false, noSleep: Boolean = false, firstScore: Boolean = false,
+    r: RecoveryResult?, onOpen: () -> Unit, onInfo: () -> Unit, firstNights: Boolean = false, noSleep: Boolean = false, deleted: Boolean = false, firstScore: Boolean = false,
     shown: TodayCopy.RecoveryShown? = null,
 ) {
     val ready = r?.readiness
@@ -177,7 +177,7 @@ private fun RecoveryHero(
                     firstNights -> TodayCopy.RECOVERY_FIRST_NIGHT
                     ready == null -> TabCopy.RECOVERY_WAITING
                     score != null -> TabCopy.recovery(score, alert, ready.contributors)
-                    noSleep -> TabCopy.NO_SLEEP_SCORE
+                    noSleep -> if (deleted) TabCopy.DELETED_SLEEP_SCORE else TabCopy.NO_SLEEP_SCORE
                     ready.phase == Recovery.Phase.Withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.Learning(ready.baselineNights, Recovery.SCORED_NIGHTS))
                     ready.withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.NoHeartData)
                     else -> "Recovery is scored each morning from the night's sleep."

@@ -90,7 +90,12 @@ private val DAY = DateTimeFormatter.ofPattern("EEE d MMM")
 @Composable
 private fun sleepDays(state: DayUiState, history: DailyHistory): Set<LocalDate> {
     val today = LocalDate.now()
-    return state.nights.filter { it.session != null }.map { it.date }.toSet() + daysWithData(DailyMetric.Breathing, state.date, today, history)
+    // The loaded nights are sleep as shown (a deleted night has none); breathing only fills in days past them. The day
+    // shown goes by its own night, as the page says it, so a dot never stands beside "No sleep recorded".
+    val loaded = state.nights.map { it.date }.toSet()
+    val days = state.nights.filter { it.session != null }.map { it.date }.toSet() +
+        daysWithData(DailyMetric.Breathing, state.date, today, history).filter { it !in loaded }
+    return if (state.loaded && state.sleep == null) days - state.date else days
 }
 
 /** The lines in a detail's body that aren't the one sentence: a reading's caption, a chart's title. */

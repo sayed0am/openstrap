@@ -963,7 +963,7 @@ private fun AppRoot(
                         androidx.activity.compose.BackHandler(onBack = pop)
                         org.openstrap.app.ui.glow.GlowSleepScreen(
                             day, header = { org.openstrap.app.ui.glow.PageHeader("Sleep", pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
-                            contentPadding = padding, onOpen = push, recovery = recovery,
+                            contentPadding = padding, onOpen = push, recovery = recovery, onRestore = dayVm::restoreSleep,
                         )
                     }
                 }
@@ -1051,7 +1051,7 @@ private fun AppRoot(
                             )
                             Tab.Sleep -> org.openstrap.app.ui.glow.GlowSleepScreen(
                                 day, header = { header(Tab.Sleep) }, contentPadding = padding,
-                                onOpen = { sleepStack = listOf(it) },
+                                onOpen = { sleepStack = listOf(it) }, onRestore = dayVm::restoreSleep,
                                 recovery = recovery,
                             )
                             Tab.Activity -> org.openstrap.app.ui.glow.GlowActivityScreen(

@@ -100,10 +100,10 @@ data class SleepWidgetModel(
          * isn't synced. Before any: the title and why, "After your first night" before the strap has seen one
          * ([firstNight]), else what the Sleep tab says for a day with no night ([napsToday] as it reads them).
          */
-        fun from(today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean, zone: ZoneId = ZoneId.systemDefault()): SleepWidgetModel {
+        fun from(today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean, zone: ZoneId = ZoneId.systemDefault(), deleted: Boolean = false): SleepWidgetModel {
             today?.let { return night(it, stale = false, zone) }
             yesterday?.let { return night(it, stale = true, zone) }
-            val line = if (firstNight) AFTER_FIRST_NIGHT else TabCopy.noNight(napsToday, isToday = true)
+            val line = if (firstNight) AFTER_FIRST_NIGHT else TabCopy.noNight(napsToday, isToday = true, deleted = deleted)
             return SleepWidgetModel(null, TITLE, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line)
         }
 

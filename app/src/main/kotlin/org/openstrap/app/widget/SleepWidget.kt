@@ -80,11 +80,13 @@ class SleepWidget : LoadingWidget<SleepWidgetModel>(WidgetKind.Sleep) {
                     SleepWidgetNight.of(date, main, org.openstrap.app.data.SleepSource(dao).stagesOnce(main), nights)
                 }
                 val tonight = night(today)
-                val yesterday = if (tonight == null) night(today.minusDays(1)) else null
-                val first = tonight == null && yesterday == null && nights.isEmpty() && dao.latestSleepEnd().first() == null
+                // A night the user deleted is this morning's answer: yesterday's doesn't stand in for it.
+                val deleted = tonight == null && DayWindow.nightEndingOn(today, zone).let { w -> org.openstrap.app.data.SleepSource(dao).nightDeleted(w.from, w.to) }
+                val yesterday = if (tonight == null && !deleted) night(today.minusDays(1)) else null
+                val first = tonight == null && yesterday == null && !deleted && nights.isEmpty() && dao.latestSleepEnd().first() == null
                 val day = DayWindow.of(today, zone)
                 val naps = sessions.any { it.nap && it.start in day.from..day.to }
-                SleepWidgetModel.from(tonight, yesterday, first, naps, zone)
+                SleepWidgetModel.from(tonight, yesterday, first, naps, zone, deleted)
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

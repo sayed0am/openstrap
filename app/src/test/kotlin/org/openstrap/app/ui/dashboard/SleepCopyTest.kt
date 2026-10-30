@@ -178,4 +178,14 @@ class SleepCopyTest {
             listOf("·", ";", "—", "–").forEach { assertFalse("$l has $it", l.contains(it)) }
         }
     }
+
+    @Test fun `a deleted night says the user deleted it, never asks whether the strap was on`() {
+        assertEquals("You can bring it back from You, Your data, Deleted sleep for 7 days.", SleepCopy.DELETE_RESTORE)
+        assertEquals("Nothing deleted in the last 7 days.", SleepCopy.DELETED_NONE)
+        assertEquals("You deleted last night's sleep.", TabCopy.noNight(naps = true, isToday = true, deleted = true))
+        assertEquals("You deleted that night's sleep.", TabCopy.noNight(naps = false, isToday = false, deleted = true))
+        assertEquals(TodayCopy.NO_SLEEP, TabCopy.noNight(naps = false, isToday = true))
+        assertEquals("You deleted last night's sleep.", TodayCopy.waking(null, null, false, null, firstNights = false, isToday = true, deleted = true))
+        listOf(TabCopy.noNight(false, true, deleted = true), TabCopy.DELETED_SLEEP_SCORE).forEach { assertFalse(it, "strap on" in it) }
+    }
 }

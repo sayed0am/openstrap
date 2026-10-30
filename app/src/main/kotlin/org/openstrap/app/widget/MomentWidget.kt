@@ -144,6 +144,9 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
                 restingHr = resting,
                 steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value),
                 stepGoal = container.settings.goals.first().steps,
+                nightDeleted = night == null && read("a deleted night", false) {
+                    DayWindow.nightEndingOn(today, zone).let { w -> org.openstrap.app.data.SleepSource(dao).nightDeleted(w.from, w.to) }
+                },
             )
             val forced = WidgetRefresh.momentOverride
             val model = MomentWidgetModel.from(input, now, zone, forced)
