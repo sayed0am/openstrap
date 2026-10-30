@@ -64,6 +64,15 @@ class RewardsCopyTest {
     }
 
     @Test
+    fun aWorkoutTooShortToCountHasNoGoalLine() {
+        val earlier = listOf(run("2026-10-27"), run("2026-10-28"), run("2026-10-29"))
+        val short = at("2026-10-30", 7).let { s -> Rewards.Done(s, s, s + 90, 1, 90, true, 0f, 0f, emptyList()) }
+        val r = RewardsCopy.summary(short, earlier + short, emptyList(), emptyList(), emptyList(), 3, DayOfWeek.MONDAY, utc, at("2026-10-30", 9))
+        assertTrue(r.earned.isEmpty())
+        assertFalse(r.goalMet)
+    }
+
+    @Test
     fun goalLineSaysWhatsLeft() {
         assertEquals("2 more to go this week", RewardsCopy.goalLine(Rewards.WeekLine(1, 3, false), 0).note)
         assertEquals("6 weeks in a row", RewardsCopy.goalLine(Rewards.WeekLine(4, 4, true), 6).note)

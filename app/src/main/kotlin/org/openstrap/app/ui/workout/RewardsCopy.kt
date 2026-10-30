@@ -103,7 +103,7 @@ object RewardsCopy {
     }
 
     /**
-     * The weekly goal row, always last under Earned (workouts spec 2.8): "Weekly goal met" on the workout that met it,
+     * The weekly goal row, last under Earned for a workout that counts toward it (workouts spec 2.8): "Weekly goal met" on the workout that met it,
      * else "Weekly goal", with "3 of 4" and what's left or the weeks in a row.
      */
     fun goalLine(week: Rewards.WeekLine, inARow: Int): EarnedLine {
@@ -130,7 +130,9 @@ object RewardsCopy {
         val inARow = Rewards.inARow(weeks, weekStart)
         val earned = bests.map { n ->
             EarnedLine(EarnedLine.Kind.Best, bestTitle(n.best.kind), bestValue(n.best.kind, n.best.value), "New best, ${beatBy(n.best, n.before)}")
-        } + badges.map { EarnedLine(EarnedLine.Kind.Badge, it.title, null, "New badge") } + goalLine(week, inARow)
+        } + badges.map { EarnedLine(EarnedLine.Kind.Badge, it.title, null, "New badge") } +
+            // The goal line only for a workout that counts toward it.
+            listOfNotNull(goalLine(week, inARow).takeIf { w.counts })
         return SummaryRewards(earned, leading(bests), week.metByThis, week, inARow, weekStart.toEpochDay())
     }
 

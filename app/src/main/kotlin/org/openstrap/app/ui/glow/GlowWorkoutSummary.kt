@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import org.openstrap.app.ui.dashboard.Info
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -166,8 +167,15 @@ fun GlowWorkoutSummaryScreen(
         val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
         val underList = FamilySection(family, summary, liveRoute, others, weekStarts)
         EarnedPanel(earned, underList)
-        CalmDownHero(summary, calmDown?.takeIf { it.start == w.start }, usualDrop, effort, 0f) { info = true }
-        LoadCard(a, usualLoad, best = null)
+        // The drop only with heart rate to show: recorded in the workout, or arriving live after it.
+        val live = calmDown?.takeIf { it.start == w.start }
+        val dropShown = summary.recorded.isNotEmpty() || !live?.readings.isNullOrEmpty()
+        if (dropShown) CalmDownHero(summary, live, usualDrop, effort, 0f) { info = true }
+        // Load is lit from the left: what comes before it (the hero, the drop, Earned on an edge card) is lit from
+        // below, so two cards in a row never look the same.
+        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left)) {
+            LoadCard(a, usualLoad, best = null)
+        }
         TrimSection(summary, onTrim, onUndoTrim)
     }
     if (info) InfoSheet(
