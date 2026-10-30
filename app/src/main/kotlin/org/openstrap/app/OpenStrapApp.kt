@@ -40,8 +40,15 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
     override fun getWorkManagerConfiguration(): androidx.work.Configuration =
         androidx.work.Configuration.Builder().setWorkerFactory(org.openstrap.app.widget.WidgetWork).build()
 
+    /** The words before anything else runs: content providers start before [onCreate]. */
+    override fun attachBaseContext(base: android.content.Context) {
+        super.attachBaseContext(base)
+        Texts.install(base)
+    }
+
     override fun onCreate() {
         super.onCreate()
+        Texts.install(this)
         container = AppContainer(this)
         container.companion.refresh()
         // A workout still recording when the process died carries on (the service restarts it too).

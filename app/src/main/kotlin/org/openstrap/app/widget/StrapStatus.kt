@@ -8,6 +8,8 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** At or under this battery level, while not charging, every widget says so (widgets spec 5). */
 const val STRAP_LOW_PERCENT = 15
@@ -57,13 +59,13 @@ fun strapStateChanged(paired: Boolean, battery: Int?, charging: Boolean, wasPair
  * weekday within the week ("Synced Tuesday") and the date before that ("Synced 21 Oct").
  */
 fun strapStatusLine(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String = when (status) {
-    StrapStatus.NotPaired -> "Pair your strap"
-    is StrapStatus.LowBattery -> "Strap at ${status.percent}%"
-    StrapStatus.Syncing -> "Syncing"
+    StrapStatus.NotPaired -> tr(R.string.strap_status_pair_your_strap)
+    is StrapStatus.LowBattery -> tr(R.string.strap_status_strap_at, status.percent)
+    StrapStatus.Syncing -> tr(R.string.strap_status_syncing)
     is StrapStatus.StaleSync -> {
         val then = Instant.ofEpochSecond(status.at).atZone(zone).toLocalDate()
         val days = ChronoUnit.DAYS.between(then, Instant.ofEpochSecond(now).atZone(zone).toLocalDate())
-        "Synced " + when {
+        tr(R.string.strap_status_synced) + when {
             days <= 0 -> clockText(status.at, zone)
             days == 1L -> recentDay(then, then.plusDays(1), locale).lowercase(locale)
             else -> recentDay(then, then.plusDays(days), locale)
@@ -78,8 +80,8 @@ fun strapStatusLine(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale
 fun recentDay(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String {
     val days = ChronoUnit.DAYS.between(date, today)
     return when {
-        days <= 0 -> "Today"
-        days == 1L -> "Yesterday"
+        days <= 0 -> tr(R.string.common_today)
+        days == 1L -> tr(R.string.common_yesterday)
         days < 7 -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
         else -> date.format(DateTimeFormatter.ofPattern("d MMM", locale))
     }

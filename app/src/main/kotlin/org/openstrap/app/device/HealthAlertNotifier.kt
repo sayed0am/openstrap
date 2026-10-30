@@ -13,6 +13,8 @@ import org.openstrap.protocol.services.HealthAlert
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Shows the strap's own health alerts (0x001D `0D`) as notifications, like Zepp's "Health Reminders" channel
@@ -22,7 +24,7 @@ class HealthAlertNotifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Health alerts", NotificationManager.IMPORTANCE_HIGH))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.common_health_alerts), NotificationManager.IMPORTANCE_HIGH))
     }
 
     fun show(alert: HealthAlert) {
@@ -30,12 +32,12 @@ class HealthAlertNotifier(private val context: Context) {
         // The timestamp unit isn't confirmed on hardware (03 §7); fall back to now if it doesn't look like seconds.
         val at = alert.timestamp.takeIf { it in MIN_EPOCH..now + 86_400 } ?: now
         val (title, text) = when (alert.type) {
-            HealthAlert.Type.HIGH_HEART_RATE -> "High heart rate" to "Your heart rate reached ${alert.value} bpm."
-            HealthAlert.Type.LOW_HEART_RATE -> "Low heart rate" to "Your heart rate dropped to ${alert.value} bpm."
-            HealthAlert.Type.HIGH_STRESS -> "High stress" to "Your stress is at ${alert.value}. Take a moment to breathe."
-            HealthAlert.Type.LOW_SPO2 -> "Low blood oxygen" to "Your blood oxygen was ${alert.value}%."
+            HealthAlert.Type.HIGH_HEART_RATE -> tr(R.string.health_alert_notifier_high_heart_rate) to tr(R.string.health_alert_notifier_your_heart_rate_reached, alert.value)
+            HealthAlert.Type.LOW_HEART_RATE -> tr(R.string.health_alert_notifier_low_heart_rate) to tr(R.string.health_alert_notifier_your_heart_rate_dropped, alert.value)
+            HealthAlert.Type.HIGH_STRESS -> tr(R.string.health_alert_notifier_high_stress) to tr(R.string.health_alert_notifier_your_stress_is_at, alert.value)
+            HealthAlert.Type.LOW_SPO2 -> tr(R.string.health_alert_notifier_low_blood_oxygen) to tr(R.string.health_alert_notifier_your_blood_oxygen_was, alert.value)
             HealthAlert.Type.IRREGULAR_RHYTHM ->
-                "Irregular heart rhythm" to "The strap noticed an irregular heart rhythm at ${TIME.format(Instant.ofEpochSecond(at))}."
+                tr(R.string.common_irregular_heart_rhythm) to tr(R.string.health_alert_notifier_the_strap_noticed_an, TIME.format(Instant.ofEpochSecond(at)))
         }
         val metric = when (alert.type) {
             HealthAlert.Type.HIGH_HEART_RATE, HealthAlert.Type.LOW_HEART_RATE, HealthAlert.Type.IRREGULAR_RHYTHM -> Metric.HeartRate
@@ -65,7 +67,7 @@ class HealthAlertNotifier(private val context: Context) {
     fun showBodySignals(signals: List<String>, nights: Int) {
         val text = BodySignalsCopy.pushText(signals, nights)
         // Body signals lead the Recovery screen, so that's where the notification opens.
-        val open = openRoute("Recovery", java.time.LocalDate.now(), BODY_SIGNALS_ID)
+        val open = openRoute(tr(R.string.common_recovery), java.time.LocalDate.now(), BODY_SIGNALS_ID)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
             .setContentTitle(BodySignalsCopy.TITLE)

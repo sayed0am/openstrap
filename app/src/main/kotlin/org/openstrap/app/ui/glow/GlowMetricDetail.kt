@@ -80,6 +80,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
 
@@ -88,8 +91,8 @@ import java.util.Locale
 internal fun GlowDetailHeader(title: String, subtitle: String?, onBack: () -> Unit) = PageHeader(title, onBack, subtitle = subtitle)
 
 internal fun dayName(date: LocalDate): String = when (date) {
-    LocalDate.now() -> "Today"
-    LocalDate.now().minusDays(1) -> "Yesterday"
+    LocalDate.now() -> tr(R.string.common_today)
+    LocalDate.now().minusDays(1) -> tr(R.string.common_yesterday)
     else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM"))
 }
 
@@ -192,7 +195,7 @@ internal fun DetailTemplate(
                             when {
                                 // No number: the state in words, large in the value's place, as a Small does.
                                 headline.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(headline.word ?: "No reading", color = Color.White, style = GlowType.pageTitle)
+                                    Text(headline.word ?: tr(R.string.common_no_reading), color = Color.White, style = GlowType.pageTitle)
                                     Text(headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
                                 }
                                 else -> Row(verticalAlignment = Alignment.Bottom) {
@@ -253,7 +256,7 @@ private fun DetailHero(color: Color, gutter: Dp, content: @Composable () -> Unit
  */
 @Composable
 private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, onInfo: () -> Unit, onSwitch: () -> Unit) {
-    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton("About $title", onInfo) }
+    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton(tr(R.string.glow_metric_detail_about, title), onInfo) }
 }
 
 /**
@@ -269,7 +272,7 @@ internal fun LiveChip(on: Boolean, onChange: (Boolean) -> Unit) {
             .padding(horizontal = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text("Live", color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
+        Text(tr(R.string.common_live), color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
     }
 }
 
@@ -299,7 +302,7 @@ private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (Loc
             Column(
                 Modifier.width(40.dp).clip(RoundedCornerShape(14.dp))
                     .background(if (d.selected) Color.White.copy(alpha = 0.10f) else Color.Transparent)
-                    .clickable(onClickLabel = "Show ${d.label}", role = Role.Button) { onDay(d.date) }
+                    .clickable(onClickLabel = tr(R.string.glow_metric_detail_show, d.label), role = Role.Button) { onDay(d.date) }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -337,7 +340,7 @@ private fun SwitcherSheet(siblings: List<DetailSibling>, color: Color, onDismiss
             ListPanel {
                 siblings.forEachIndexed { i, s ->
                     ListRow(
-                        s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
+                        s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) tr(R.string.glow_metric_detail_showing) else null,
                         onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
                     )
                 }
@@ -367,7 +370,7 @@ internal fun DetailFigures(figures: List<Pair<String?, String>>, modifier: Modif
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 Text(
-                    value ?: "No reading", color = if (value != null) Color.White else Color.White.copy(alpha = 0.3f),
+                    value ?: tr(R.string.common_no_reading), color = if (value != null) Color.White else Color.White.copy(alpha = 0.3f),
                     style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1,
                 )
                 Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
@@ -466,9 +469,9 @@ fun GlowMetricDetailScreen(
     val headline = scrub ?: when {
         value != null -> DetailHeadline(metric.format(value), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
-        night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
-        range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
-        else -> DetailHeadline.none("No reading", DetailCopy.noValue(metric, range, isToday))
+        night && range == Range.Week -> DetailHeadline.none(tr(R.string.common_no_reading), tr(R.string.common_in_the_last_nights))
+        range != Range.Day && stats == null -> DetailHeadline.none(tr(R.string.common_loading), DetailCopy.noValue(metric, range, isToday))
+        else -> DetailHeadline.none(tr(R.string.common_no_reading), DetailCopy.noValue(metric, range, isToday))
     }
     val withData = stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
 
@@ -496,7 +499,7 @@ fun GlowMetricDetailScreen(
         } else if (night && range == Range.Week) {
             val values = nightWeek.map { it.second }
             item {
-                if (values.all { it == null }) DetailEmpty("No ${inSentence(metric.title)} in the last 7 nights yet.")
+                if (values.all { it == null }) DetailEmpty(tr(R.string.glow_metric_detail_no_in_the_last, inSentence(metric.title)))
                 else Column {
                     NormalTrend(
                         values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { shortDay(it.first) },
@@ -527,8 +530,8 @@ fun GlowMetricDetailScreen(
             val inRange = stats
             item {
                 when {
-                    inRange == null -> DetailEmpty("Loading")
-                    summary == null -> DetailEmpty("No ${inSentence(metric.title)} in this range yet.")
+                    inRange == null -> DetailEmpty(tr(R.string.common_loading))
+                    summary == null -> DetailEmpty(tr(R.string.glow_metric_detail_no_in_this_range, inSentence(metric.title)))
                     else -> HistoryChart(metric, range, inRange, normal, start, end, color, nightly) { scrub = it }
                 }
             }
@@ -578,7 +581,7 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
     val session = state.sleep
     val series = SleepCopy.nightSeries(state, metric)
     if (session == null || series.isEmpty()) {
-        DetailEmpty(if (session == null) SleepCopy.noNight(state.date == LocalDate.now()) else "No ${inSentence(metric.title)} readings while asleep.")
+        DetailEmpty(if (session == null) SleepCopy.noNight(state.date == LocalDate.now()) else tr(R.string.glow_metric_detail_no_readings_while_asleep, inSentence(metric.title)))
         return
     }
     val window = session.start..session.end
@@ -589,7 +592,7 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
         GlowLineChart(
             values, height = 220.dp, labels = listOf(clock(window.first), clock(window.last)), color = color, showAverage = false, format = metric::format,
             onScrub = { i ->
-                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), tr(R.string.missed_value_at_time, metric.unit, clock(window.first + i * bucket)).trim(), null) })
             },
         )
     }
@@ -629,7 +632,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
         else -> emptyList<ChartPoint>() to day
     }
     if (!hasValue) {
-        DetailEmpty(if (metric == Metric.Breathing) "Breathing rate is measured during sleep." else "No ${inSentence(metric.title)} for this day yet.")
+        DetailEmpty(if (metric == Metric.Breathing) tr(R.string.glow_metric_detail_breathing_rate_is_measured) else tr(R.string.glow_metric_detail_no_for_this_day, inSentence(metric.title)))
         return
     }
     Column(Modifier.padding(top = 8.dp)) {
@@ -637,7 +640,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
             // Holding an hour puts its steps in the headline.
             Metric.Steps -> GlowBars(
                 state.hourlySteps, height = 200.dp, labels = HOURS, accent = color,
-                onScrub = { h -> onScrub(h?.let { DetailHeadline("%,d".format(Math.round(state.hourlySteps[it])), "steps, %02d:00 to %02d:00".format(it, (it + 1) % 24), null) }) },
+                onScrub = { h -> onScrub(h?.let { DetailHeadline("%,d".format(Math.round(state.hourlySteps[it])), trRaw(R.string.common_steps_d_to_d).format(it, (it + 1) % 24), null) }) },
             )
             Metric.RestingHr -> if (state.restingTrend.any { it.value != null }) {
                 GlowTrend(state.restingTrend.map { GlowDay(it.label, it.value) }, height = 200.dp)
@@ -651,7 +654,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
                 GlowLineChart(
                     values, height = 220.dp, labels = labels, color = color, showAverage = false, band = band, format = metric::format,
                     onScrub = { i ->
-                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), tr(R.string.missed_value_at_time, metric.unit, clock(window.first + i * bucket)).trim(), null) })
                     },
                 )
             }
@@ -677,7 +680,7 @@ private fun HistoryChart(
         onScrub = { i ->
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
-                val label = if (range == Range.Year) "week of ${d.format(DateTimeFormatter.ofPattern("d MMM"))}" else d.format(day)
+                val label = if (range == Range.Year) tr(R.string.glow_metric_detail_week_of, d.format(DateTimeFormatter.ofPattern("d MMM"))) else d.format(day)
                 DetailHeadline(metric.format(v), listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", "), DetailCopy.statusWord(History.status(v, normal)))
             })
         },
@@ -715,12 +718,12 @@ private fun series(range: Range, stats: List<DayStat>, start: LocalDate, end: Lo
  */
 @Composable
 private fun RelatedList(related: List<Metric>, state: DayUiState, history: DailyHistory, onOpen: (Detail) -> Unit, sleepRow: Boolean = false) {
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
+    ListPanel(Modifier.padding(top = 8.dp), title = tr(R.string.common_related)) {
         if (sleepRow) {
             val score = state.sleep?.score
             ListRow(
                 org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: "Nothing for this night",
+                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: tr(R.string.common_nothing_for_this_night),
                 onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
                 icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
             )
@@ -731,7 +734,7 @@ private fun RelatedList(related: List<Metric>, state: DayUiState, history: Daily
             val status = if (m == Metric.HeartRate) null else History.status(v, normal)
             ListRow(
                 m.title, colorOf(m), v?.let { m.format(it) },
-                if (v == null) "Nothing for this day" else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+                if (v == null) tr(R.string.common_nothing_for_this_day) else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
                 offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = i > 0 || sleepRow,
                 icon = m.rowIcon(),
             )

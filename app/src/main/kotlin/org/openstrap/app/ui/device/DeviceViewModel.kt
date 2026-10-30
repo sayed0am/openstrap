@@ -20,6 +20,9 @@ import org.openstrap.app.data.settings.PairedDevice
 import org.openstrap.app.device.StrapController
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 data class ScanUiState(
     val scanning: Boolean = false,
@@ -66,11 +69,11 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         val key = normalizeAuthKey(authKey)
         if (key == null) {
             val n = authKey.trim().removePrefix("0x").removePrefix("0X").count { it.isLetterOrDigit() }
-            _message.value = "The auth key must be 32 characters of 0–9 and a–f. You entered $n."
+            _message.value = tr(R.string.device_view_model_the_auth_key_must, n)
             return
         }
         if (!MAC.matches(address.uppercase())) {
-            _message.value = "The Bluetooth address should look like C8:0F:10:AB:CD:EF. Scan to fill it in."
+            _message.value = tr(R.string.device_view_model_the_bluetooth_address_should)
             return
         }
         stopScan()
@@ -87,12 +90,12 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         container.settings.saveZeppAccount(listing.session.toAccount(listing.apiBase, strap?.china == true, System.currentTimeMillis()))
         val key = strap?.authKey
         if (strap != null && key != null) pair(strap.macAddress, DEFAULT_NAME, key)
-        else _message.value = "Zepp sign-in saved, but no auth key came with it. Get the key on a computer and enter it by hand."
+        else _message.value = tr(R.string.device_view_model_zepp_sign_in_saved)
     }
 
     fun loadSampleData() = viewModelScope.launch {
         org.openstrap.app.data.SampleData.load(container.database.healthDao())
-        _message.value = "Loaded a week of sample data."
+        _message.value = tr(R.string.device_view_model_loaded_a_week_of)
     }
 
     /** Set at the end of pairing: the strap page then asks Android to associate the strap, once. */
@@ -107,17 +110,17 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Find strap: buzzes it until stopped or Zepp's 60 s are up. */
     fun findStrap() = viewModelScope.launch {
-        runCatching { container.strap.findStrap() }.onFailure { _message.value = it.message ?: "Couldn't buzz the strap" }
+        runCatching { container.strap.findStrap() }.onFailure { _message.value = it.message ?: tr(R.string.common_couldn_t_buzz_the) }
     }
 
     fun stopFindingStrap() = viewModelScope.launch {
-        runCatching { container.strap.stopFindingStrap() }.onFailure { _message.value = it.message ?: "Couldn't stop the strap buzzing" }
+        runCatching { container.strap.stopFindingStrap() }.onFailure { _message.value = it.message ?: tr(R.string.device_view_model_couldn_t_stop_the) }
     }
 
     /** Restarts the strap; the link drops and the usual reconnect brings it back. */
     fun restartStrap() = viewModelScope.launch {
-        _message.value = runCatching { container.strap.restartStrap(); "Restarting the strap. OpenStrap reconnects when it's back." }
-            .getOrElse { it.message ?: "Couldn't restart the strap" }
+        _message.value = runCatching { container.strap.restartStrap(); tr(R.string.device_view_model_restarting_the_strap_openstrap) }
+            .getOrElse { it.message ?: tr(R.string.device_view_model_couldn_t_restart_the) }
     }
 
     fun forget() = viewModelScope.launch {
@@ -132,8 +135,8 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
                 val settings = org.openstrap.app.export.SettingsBackup.toJson(container.settings.backupValues())
                 container.app.contentResolver.openOutputStream(uri)!!.use { container.csv.exportZip(it, settings = settings) }
             }
-            "Saved a copy."
-        }.getOrElse { "Couldn't save the copy: ${it.message}" }
+            tr(R.string.device_view_model_saved_a_copy)
+        }.getOrElse { tr(R.string.device_view_model_couldn_t_save_the, it.message) }
     }
 
     /**
@@ -150,7 +153,7 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
                 runCatching { container.settings.restoreValues(org.openstrap.app.export.SettingsBackup.fromJson(json)) }.getOrDefault(0)
             } ?: 0
             BackupCopy.restored(result.total, settings > 0, result.skipped)
-        }.getOrElse { "Couldn't restore the copy: ${it.message}" }
+        }.getOrElse { tr(R.string.device_view_model_couldnt_restore_the_copy, it.message) }
     }
 
     val backup: StateFlow<org.openstrap.app.data.settings.BackupState> = container.settings.backup
@@ -169,7 +172,7 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         val kept = runCatching { resolver.takePersistableUriPermission(uri, flags) }
         if (kept.isFailure) {
-            _message.value = "OpenStrap can't keep writing to that folder. Choose another one."
+            _message.value = tr(R.string.device_view_model_openstrap_cant_keep_writing)
             return@launch
         }
         val before = backup.value.folder
@@ -209,8 +212,8 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     fun importHealthConnect() = viewModelScope.launch {
         _message.value = runCatching {
             val n = withContext(Dispatchers.IO) { container.healthConnect.import() }
-            if (n == 0) "Health Connect has no OpenStrap data to restore." else "Restored %,d records from Health Connect.".format(n)
-        }.getOrElse { "Couldn't restore from Health Connect: ${it.message}" }
+            if (n == 0) tr(R.string.device_view_model_health_connect_has_no) else trRaw(R.string.device_view_model_restored_d_records_from_2).format(n)
+        }.getOrElse { tr(R.string.device_view_model_couldn_t_restore_from, it.message) }
     }
 
     fun exportHealthConnect() = viewModelScope.launch {
@@ -218,8 +221,8 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
             val now = System.currentTimeMillis() / 1000
             val n = container.healthConnect.export(now - 30L * 24 * 3600, now)
             container.settings.setHealthConnectSynced(now)
-            "Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Couldn't write to Health Connect: ${it.message}" }
+            tr(R.string.device_view_model_wrote_records_to_health, n)
+        }.getOrElse { tr(R.string.device_view_model_couldnt_write_to_health, it.message) }
     }
 
     /** Auto sync to Health Connect, for the You page's row. */
@@ -231,8 +234,8 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         if (!on) { container.settings.setHealthConnectAuto(false); return@launch }
         _message.value = runCatching {
             val n = container.autoHealthConnect.turnOn()
-            "Auto sync is on. Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Auto sync is on, but the first copy didn't work: ${it.message}" }
+            tr(R.string.device_view_model_auto_sync_is_on, n)
+        }.getOrElse { tr(R.string.device_view_model_auto_sync_is_on_2, it.message) }
     }
 
     /** The You page opened: auto sync turns off, saying why, if Health Connect or its permissions went away. */
@@ -241,7 +244,7 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     companion object {
-        const val DEFAULT_NAME = "Amazfit Helio Strap"
+        val DEFAULT_NAME: String get() = tr(R.string.device_view_model_amazfit_helio_strap)
         private val MAC = Regex("^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
 
         fun isAddress(input: String) = MAC.matches(input.trim().uppercase())

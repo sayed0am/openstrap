@@ -12,6 +12,9 @@ import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.sportNoun
 import org.openstrap.app.ui.glow.km
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * What the page of a past workout says (spec 6.3, "Workout detail"): the sentence first ("Hard run, mostly in zone
@@ -39,7 +42,7 @@ object WorkoutDetailCopy {
     const val MIN_PAUSED_S = 60L
 
     /** The effort word, read from [Workouts.effort]: half is your usual Load, full twice it or more. */
-    enum class Effort(val word: String) { Easy("Easy"), Steady("Steady"), Hard("Hard"), VeryHard("Very hard") }
+    enum class Effort(val word: String) { Easy(tr(R.string.common_easy)), Steady(tr(R.string.common_steady)), Hard(tr(R.string.workout_detail_copy_hard)), VeryHard(tr(R.string.workout_detail_copy_very_hard)) }
 
     /**
      * How hard a workout was from its [load] against your [usual] workout Load ([Workouts.usualLoad]). The bands match
@@ -76,21 +79,21 @@ object WorkoutDetailCopy {
      */
     fun sentence(sportType: Int, activeSeconds: Long, load: Int?, usual: Float?, zoneSeconds: List<Int>): String {
         val sport = sport(sportType)
-        val word = if (activeSeconds < SHORT_S) "Short" else effort(load, usual)?.word
+        val word = if (activeSeconds < SHORT_S) tr(R.string.workout_detail_copy_short) else effort(load, usual)?.word
         val head = when {
             word != null -> "$word $sport"
-            sportNoun(sportType) != null -> "A $sport"
+            sportNoun(sportType) != null -> tr(R.string.missed_a_sport, sport)
             else -> sport.replaceFirstChar { it.uppercase() }
         }
-        return head + (mostlyZone(zoneSeconds)?.let { ", mostly in zone ${it + 1}" } ?: "") + "."
+        return head + (mostlyZone(zoneSeconds)?.let { tr(R.string.workout_detail_copy_mostly_in_zone, it + 1) } ?: "") + "."
     }
 
     /** The hero's day: "Today", "Yesterday", "Tue 21 Oct", with the year when it isn't [today]'s. */
     fun day(start: Long, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
         val d = Instant.ofEpochSecond(start).atZone(zone).toLocalDate()
         return when {
-            d == today -> "Today"
-            d == today.minusDays(1) -> "Yesterday"
+            d == today -> tr(R.string.common_today)
+            d == today.minusDays(1) -> tr(R.string.common_yesterday)
             d.year == today.year -> d.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
             else -> d.format(DateTimeFormatter.ofPattern("EEE d MMM yyyy", locale))
         }
@@ -107,14 +110,14 @@ object WorkoutDetailCopy {
     ): List<WorkoutFact> =
         listOfNotNull(
             meters?.takeIf { it >= 10f }?.let { m ->
-                val unit = if (m >= 1000) "Kilometres" else "Metres"
-                WorkoutFact("Distance", if (m >= 1000) km(m) else m.toInt().toString(), if (fromSteps) "$unit, estimated from your steps" else unit)
+                val unit = if (m >= 1000) tr(R.string.workout_detail_copy_kilometres) else tr(R.string.workout_detail_copy_metres)
+                WorkoutFact(tr(R.string.common_distance), if (m >= 1000) km(m) else m.toInt().toString(), if (fromSteps) tr(R.string.workout_detail_copy_estimated_from_your_steps, unit) else unit)
             },
-            pausedSeconds.takeIf { it >= MIN_PAUSED_S }?.let { WorkoutFact("Paused", workoutClock(it), "Not counted in the time") },
-            steps?.takeIf { it > 0 }?.let { WorkoutFact("Steps", "%,d".format(locale, it), null) },
+            pausedSeconds.takeIf { it >= MIN_PAUSED_S }?.let { WorkoutFact(tr(R.string.common_paused), workoutClock(it), tr(R.string.workout_detail_copy_not_counted_in_the)) },
+            steps?.takeIf { it > 0 }?.let { WorkoutFact(tr(R.string.common_steps), "%,d".format(locale, it), null) },
             calories?.takeIf { it > 0 }?.let { total ->
-                if (activeKcal != null && activeKcal != total) WorkoutFact("Calories", "%,d".format(locale, activeKcal), "Total %,d".format(locale, total))
-                else WorkoutFact("Calories", "%,d".format(locale, total), "kcal")
+                if (activeKcal != null && activeKcal != total) WorkoutFact(tr(R.string.common_calories), "%,d".format(locale, activeKcal), trRaw(R.string.workout_detail_copy_total).format(locale, total))
+                else WorkoutFact(tr(R.string.common_calories), "%,d".format(locale, total), "kcal")
             },
         )
 
@@ -125,12 +128,12 @@ object WorkoutDetailCopy {
     fun targetFact(target: String?, reachedSeconds: Long?, activeKcal: Int?, locale: Locale = Locale.getDefault()): WorkoutFact? {
         val k = WorkoutTarget.parse(target) as? WorkoutTarget.Kcal ?: return null
         val status = when {
-            reachedSeconds != null -> "Reached at ${workoutClock(reachedSeconds)}"
-            activeKcal != null && activeKcal >= k.kcal -> "Reached"
-            activeKcal != null -> "Not reached, %,d of %,d".format(locale, activeKcal, k.kcal)
-            else -> "Not reached"
+            reachedSeconds != null -> tr(R.string.workout_detail_copy_reached_at, workoutClock(reachedSeconds))
+            activeKcal != null && activeKcal >= k.kcal -> tr(R.string.workout_detail_copy_reached)
+            activeKcal != null -> trRaw(R.string.workout_detail_copy_not_reached_of).format(locale, activeKcal, k.kcal)
+            else -> tr(R.string.workout_detail_copy_not_reached)
         }
-        return WorkoutFact("Target", "%,d kcal".format(locale, k.kcal), status)
+        return WorkoutFact("Target", trRaw(R.string.summary_copy_kcal).format(locale, k.kcal), status)
     }
 
     /**
@@ -139,17 +142,17 @@ object WorkoutDetailCopy {
      */
     fun dropLine(drop: Int?, meaningful: Boolean, usual: Int?): String? {
         if (drop == null || drop <= 0 || !meaningful) return null
-        val head = "Heart rate drop $drop bpm in the first minute"
+        val head = tr(R.string.workout_detail_copy_heart_rate_drop_bpm, drop)
         return when {
             usual == null -> "$head."
-            drop >= usual + SummaryCopy.DROP_BAND -> "$head, quick for you."
-            drop <= usual - SummaryCopy.DROP_BAND -> "$head, slow for you."
-            else -> "$head, about usual for you."
+            drop >= usual + SummaryCopy.DROP_BAND -> tr(R.string.workout_detail_copy_quick_for_you, head)
+            drop <= usual - SummaryCopy.DROP_BAND -> tr(R.string.workout_detail_copy_slow_for_you, head)
+            else -> tr(R.string.workout_detail_copy_about_usual_for_you, head)
         }
     }
 
     /** The 0 to 5 training effect, low to high, in plain words. */
-    val EFFECT_SCALE = listOf("Light", "Keeps", "Builds", "Builds a lot", "Overreach")
+    val EFFECT_SCALE = listOf(tr(R.string.common_light), tr(R.string.workout_detail_copy_keeps), tr(R.string.workout_detail_copy_builds), tr(R.string.workout_detail_copy_builds_a_lot), tr(R.string.workout_detail_copy_overreach))
 
     /** Which bar of [EFFECT_SCALE] a training effect is in. */
     fun effectBand(te: Float): Int = when {
@@ -168,15 +171,15 @@ object WorkoutDetailCopy {
      */
     private fun strapLine(strap: List<EffectFigures>): String {
         fun figures(s: EffectFigures) = listOfNotNull(
-            s.aerobic?.let { "aerobic ${one(it)}" }, s.anaerobic?.let { "anaerobic ${one(it)}" }, s.load?.let { "Load $it" },
-            SummaryCopy.recoverSpan(s.recoveryMinutes)?.let { "time to recover $it" },
+            s.aerobic?.let { "aerobic ${one(it)}" }, s.anaerobic?.let { "anaerobic ${one(it)}" }, s.load?.let { tr(R.string.workout_detail_copy_load, it) },
+            SummaryCopy.recoverSpan(s.recoveryMinutes)?.let { tr(R.string.workout_detail_copy_time_to_recover, it) },
         ).joinToString(", ")
         val each = strap.map { it to figures(it) }.filter { it.second.isNotEmpty() }
         return when {
             each.isEmpty() -> ""
-            strap.size == 1 -> " The strap recorded this workout too. Its own figures: ${each.single().second}."
-            else -> " The strap recorded it as ${strap.size} workouts of its own. " +
-                each.joinToString(" ") { (s, f) -> "From ${s.from ?: "its start"}: $f." }
+            strap.size == 1 -> " " + tr(R.string.workout_detail_copy_the_strap_recorded_this_2, each.single().second)
+            else -> " " + tr(R.string.workout_detail_copy_the_strap_recorded_it, strap.size) + " " +
+                each.joinToString(" ") { (s, f) -> tr(R.string.workout_detail_copy_from, s.from ?: tr(R.string.workout_detail_copy_its_start), f) }
         }
     }
 
@@ -195,50 +198,44 @@ object WorkoutDetailCopy {
     ): EffectSheet {
         val rows = listOfNotNull(
             load?.let { l ->
-                val vs = usualLoad?.let { " Your usual is ${Math.round(it)}." } ?: ""
-                "Load" to "Load on a workout is EPOC: the extra oxygen your body uses afterwards to recover, in ml per kg of " +
-                    "body weight. The harder and longer the workout, the higher it goes. It isn't the day's Load, which " +
-                    "counts every minute on another scale. This workout: $l.$vs"
+                val vs = usualLoad?.let { tr(R.string.workout_detail_copy_your_usual_is, Math.round(it)) } ?: ""
+                tr(R.string.common_load) to tr(R.string.workout_detail_copy_load_on_a_workout, l, vs)
             },
             if (aerobic != null || anaerobic != null) {
-                "Training effect" to "Two scales from 0 to 5. Aerobic is what the workout did for your endurance, anaerobic " +
-                    "for short, hard efforts. Under 2 trains little, 2 to 3 keeps what you have, 3 to 4 builds on it, 4 to 5 " +
-                    "builds a lot, and 5 is more than your body can use right away. This workout: " +
-                    listOfNotNull(aerobic?.let { "aerobic ${one(it)}" }, anaerobic?.let { "anaerobic ${one(it)}" }).joinToString(", ") + "."
+                tr(R.string.workout_detail_copy_training_effect) to tr(R.string.workout_detail_copy_two_scales_from_to) +
+                    listOfNotNull(aerobic?.let { tr(R.string.missed_aerobic, one(it)) }, anaerobic?.let { tr(R.string.missed_anaerobic, one(it)) }).joinToString(", ") + "."
             } else null,
             SummaryCopy.recoverSpan(recoveryMinutes)?.let {
-                "Time to recover" to "How long until your body is ready for another hard workout, from the training effect " +
-                    "and how tired you've been lately. It never drops below what earlier workouts left. This workout: " +
+                tr(R.string.common_time_to_recover) to tr(R.string.workout_detail_copy_how_long_until_your_2) + " " +
+                    tr(R.string.workout_detail_copy_and_how_tired_youve) + " " +
                     (SummaryCopy.carriedOver(recoveryMinutes, ownRecoveryMinutes, sportType) ?: it) + "."
             },
             drop60?.let { d ->
                 val value = if (meaningfulDrop) {
-                    "This workout: down $d in the first minute" + (drop120?.let { ", $it in two" } ?: "") + "."
+                    tr(R.string.workout_detail_copy_this_workout_down_in, d) + (drop120?.let { tr(R.string.workout_detail_copy_in_two, it) } ?: "") + "."
                 } else {
-                    "You finished at ${endBpm ?: d} bpm, close to resting, so there was little to come down from and it isn't rated."
+                    tr(R.string.workout_detail_copy_you_finished_at_bpm, endBpm ?: d)
                 }
-                "Heart rate drop" to "How far your heart rate falls in the first minute after you stop. A bigger drop " +
-                    "usually means a fitter heart, and under 12 bpm is on the low side. It only says something after a " +
-                    "hard effort. $value"
+                tr(R.string.common_heart_rate_drop) to tr(R.string.workout_detail_copy_how_far_your_heart, value)
             },
-            vo2max?.let { "VO2 max" to "The most oxygen your body can use, in ml per kg per minute, estimated from this workout: ${Math.round(it)}." },
-            "Where these come from" to (
+            vo2max?.let { tr(R.string.common_vo_max) to tr(R.string.workout_detail_copy_the_most_oxygen_your, Math.round(it)) },
+            tr(R.string.workout_detail_copy_where_these_come_from) to (
                 when {
-                    effectFromStrap -> "From the strap, which recorded this workout alongside the phone and worked these out itself."
-                    fromPhone -> "Worked out by OpenStrap from your heart rate, on the strap's own scales."
-                    else -> "From the strap, worked out during the workout."
+                    effectFromStrap -> tr(R.string.workout_detail_copy_from_the_strap_which)
+                    fromPhone -> tr(R.string.workout_detail_copy_worked_out_by_openstrap)
+                    else -> tr(R.string.workout_detail_copy_from_the_strap_worked)
                 }
                 ) + if (effectFromStrap) "" else strapLine(strap),
         )
         val info = Info(
-            name = "Load and training effect",
-            meaning = "What this workout asked of your body, and what it trained.",
+            name = tr(R.string.workout_detail_copy_load_and_training_effect),
+            meaning = tr(R.string.workout_detail_copy_what_this_workout_asked),
             scale = if (aerobic != null) EFFECT_SCALE else emptyList(),
             how = "", moves = "", off = "",
         )
         return EffectSheet(
             info, aerobic?.let(::effectBand),
-            aerobic?.let { "You are here. Aerobic ${one(it)} on the 0 to 5 scale." },
+            aerobic?.let { tr(R.string.workout_detail_copy_you_are_here_aerobic, one(it)) },
             rows,
         )
     }

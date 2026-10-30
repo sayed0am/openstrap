@@ -37,7 +37,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Recovered"
+        android:text="@string/widget_preview_recovery_recovered"
         android:textSize="15sp"
         android:textColor="#B8FFFFFF"
         android:maxLines="1"

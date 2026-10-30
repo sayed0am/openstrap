@@ -13,6 +13,8 @@ import org.openstrap.app.ui.glow.DotSize
 import org.openstrap.app.ui.glow.draw.stageTotals
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * One night as the Sleep tab's hero reads it ([org.openstrap.app.ui.dashboard.DayUiState]): the night's main sleep, its
@@ -83,17 +85,17 @@ data class SleepWidgetModel(
     val waiting: String?,
 ) {
     /** What TalkBack reads for the dotted number: "Sleep score 82, good". */
-    val scoreDescription: String? get() = score?.let { s -> word?.let { "Sleep score $s, ${it.lowercase()}" } ?: "Sleep score $s" }
+    val scoreDescription: String? get() = score?.let { s -> word?.let { tr(R.string.sleep_widget_model_sleep_score, s, it.lowercase()) } ?: tr(R.string.sleep_widget_model_sleep_score_2, s) }
 
     /** The Large's right of the score row: how often you woke, else time asleep. */
     val largeRight: String? get() = woke ?: asleep
 
     companion object {
-        const val TITLE = "Last night"
+        val TITLE: String get() = tr(R.string.common_last_night_2)
 
         /** The title while yesterday's night stands in: it isn't last night. */
-        const val STALE_TITLE = "Sleep"
-        const val LAST_SYNCED = "Last synced night"
+        val STALE_TITLE: String get() = tr(R.string.common_sleep)
+        val LAST_SYNCED: String get() = tr(R.string.sleep_widget_model_last_synced_night)
 
         /**
          * The widget for [today]'s night, or [yesterday]'s with "Last synced night" as the note while this morning's

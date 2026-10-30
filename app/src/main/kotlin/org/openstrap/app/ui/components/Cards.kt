@@ -28,6 +28,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 val PanelShape = org.openstrap.app.ui.glow.GlowLayout.CardShape
 
@@ -88,9 +90,9 @@ fun formatDuration(seconds: Long): String {
     val m = (seconds % 3600) / 60
     return when {
         // A short workout reads "45s", not "0m".
-        seconds in 1 until 60 -> "${seconds}s"
-        h > 0 && m == 0L -> "${h}h"
-        h > 0 -> "${h}h ${m}m"
-        else -> "${m}m"
+        seconds in 1 until 60 -> tr(R.string.missed_compact_s, seconds)
+        h > 0 && m == 0L -> tr(R.string.missed_compact_h, h)
+        h > 0 -> tr(R.string.missed_compact_h_m, h, m)
+        else -> tr(R.string.missed_compact_m, m)
     }
 }

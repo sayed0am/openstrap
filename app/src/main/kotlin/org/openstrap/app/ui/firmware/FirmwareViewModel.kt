@@ -26,6 +26,8 @@ import org.openstrap.app.zepp.ZeppCloud
 import org.openstrap.protocol.firmware.DfuProgress
 import org.openstrap.protocol.firmware.FirmwareType
 import org.openstrap.protocol.firmware.HmfwTrailer
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** A firmware image that has been fetched and checked, waiting for the user to confirm the install. */
 data class ReadyImage(
@@ -79,9 +81,9 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
     private val busy get() = _step.value.let { it is FirmwareStep.Checking || it is FirmwareStep.Downloading || it is FirmwareStep.Installing }
 
     fun check() {
-        val acc = account.value ?: return fail("Add your Zepp app token first.")
+        val acc = account.value ?: return fail(tr(R.string.firmware_view_model_add_your_zepp_app))
         val info = strap.info.value
-        val firmware = info?.firmware ?: return fail("Connect the strap first so its firmware version is known.")
+        val firmware = info?.firmware ?: return fail(tr(R.string.firmware_view_model_connect_the_strap_first))
         _step.value = FirmwareStep.Checking
         viewModelScope.launch {
             _step.value = runCatching {
@@ -101,7 +103,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                     cloud.check(current.apiBase, current.appToken, current.userId, identity)
                 }
                 FirmwareStep.Checked(result)
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Update check failed") }
+            }.getOrElse { FirmwareStep.Failed(it.message ?: tr(R.string.firmware_view_model_update_check_failed)) }
         }
     }
 
@@ -118,7 +120,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Downloads the first part in install order and stages it. Further parts follow after the strap restarts. */
     fun download(part: FirmwarePart) {
-        val type = part.type ?: return fail("Unknown part type ${part.prefix}")
+        val type = part.type ?: return fail(tr(R.string.firmware_view_model_unknown_part_type, part.prefix))
         _step.value = FirmwareStep.Downloading(part, 0f)
         viewModelScope.launch {
             _step.value = runCatching {
@@ -129,7 +131,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                 FirmwareStep.Ready(
                     ReadyImage(bytes, type, "${part.label} ${part.version}", part.version, fromCloud = true, trailer, trailerWarnings(bytes, trailer, type)),
                 )
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Download failed") }
+            }.getOrElse { FirmwareStep.Failed(it.message ?: tr(R.string.firmware_view_model_download_failed)) }
         }
     }
 
@@ -139,54 +141,54 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
             val bytes = withContext(Dispatchers.IO) {
                 container.app.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
             }
-            require(bytes.size in 1024..16 * 1024 * 1024) { "That file is ${bytes.size} bytes, which isn't a plausible firmware image." }
+            require(bytes.size in 1024..16 * 1024 * 1024) { tr(R.string.firmware_view_model_that_file_is_bytes, bytes.size) }
             val trailer = HmfwTrailer.read(bytes)
             val warnings = buildList {
-                add("This file didn't come from Zepp's update server for this strap. Only install files you trust.")
-                if (trailer == null) add("The file has no HMFW signature block. It's probably not a strap firmware image.")
+                add(tr(R.string.firmware_view_model_this_file_didn_t))
+                if (trailer == null) add(tr(R.string.firmware_view_model_the_file_has_no))
                 addAll(trailerWarnings(bytes, trailer, FirmwareType.FIRMWARE))
             }
-            FirmwareStep.Ready(ReadyImage(bytes, FirmwareType.FIRMWARE, "Firmware from file", null, fromCloud = false, trailer, warnings))
-        }.getOrElse { FirmwareStep.Failed(it.message ?: "Couldn't read the file") }
+            FirmwareStep.Ready(ReadyImage(bytes, FirmwareType.FIRMWARE, tr(R.string.firmware_view_model_firmware_from_file), null, fromCloud = false, trailer, warnings))
+        }.getOrElse { FirmwareStep.Failed(it.message ?: tr(R.string.firmware_view_model_couldn_t_read_the)) }
     }
 
     /** Problems that make an image look wrong for this strap (docs/protocol/03 §2.2, advisory). */
     private fun trailerWarnings(bytes: ByteArray, trailer: HmfwTrailer?, type: Int): List<String> = buildList {
         if (trailer == null || type != FirmwareType.FIRMWARE) return@buildList
         if (trailer.pnpId != StrapIdentity.PRODUCT_ID) {
-            add("The image says it's for product ${trailer.pnpId}, but this strap is product ${StrapIdentity.PRODUCT_ID}.")
+            add(tr(R.string.firmware_view_model_the_image_says_it, trailer.pnpId, StrapIdentity.PRODUCT_ID))
         }
-        if (trailer.fwSize > bytes.size) add("The image's size field (${trailer.fwSize}) is larger than the file.")
+        if (trailer.fwSize > bytes.size) add(tr(R.string.firmware_view_model_the_image_s_size, trailer.fwSize))
     }
 
     /** Problems that must be fixed before installing. */
     fun blockers(): List<String> = buildList {
         val c = strap.connection.value
-        if (c !is ConnectionState.Connected) add("Connect the strap.")
+        if (c !is ConnectionState.Connected) add(tr(R.string.firmware_view_model_connect_the_strap))
         else {
             val battery = c.batteryPercent
-            if (battery == null) add("Battery level unknown. Reconnect the strap.")
-            else if (battery <= MIN_BATTERY) add("Charge the strap above $MIN_BATTERY% (now $battery%).")
+            if (battery == null) add(tr(R.string.firmware_view_model_battery_level_unknown_reconnect))
+            else if (battery <= MIN_BATTERY) add(tr(R.string.firmware_view_model_charge_the_strap_above, MIN_BATTERY, battery))
         }
-        if (strap.info.value?.dfuAvailable == false) add("This strap doesn't offer the firmware update service.")
+        if (strap.info.value?.dfuAvailable == false) add(tr(R.string.firmware_view_model_this_strap_doesn_t))
     }
 
     fun install(image: ReadyImage) {
         val blocking = blockers()
         if (blocking.isNotEmpty()) return fail(blocking.joinToString(" "))
-        _step.value = FirmwareStep.Installing("Starting…", null)
+        _step.value = FirmwareStep.Installing(tr(R.string.missed_starting), null)
         viewModelScope.launch {
             _step.value = runCatching {
                 strap.installFirmware(image.bytes, image.type) { p ->
                     _step.value = when (p) {
-                        is DfuProgress.Transferring -> FirmwareStep.Installing("Sending to strap", p.sent.toFloat() / p.total)
-                        DfuProgress.Validating -> FirmwareStep.Installing("Strap is checking the image", null)
-                        DfuProgress.Applying -> FirmwareStep.Installing("Strap is installing", null)
-                        DfuProgress.Done -> FirmwareStep.Installing("Restarting", 1f)
+                        is DfuProgress.Transferring -> FirmwareStep.Installing(tr(R.string.firmware_view_model_sending_to_strap), p.sent.toFloat() / p.total)
+                        DfuProgress.Validating -> FirmwareStep.Installing(tr(R.string.firmware_view_model_strap_is_checking_the), null)
+                        DfuProgress.Applying -> FirmwareStep.Installing(tr(R.string.firmware_view_model_strap_is_installing), null)
+                        DfuProgress.Done -> FirmwareStep.Installing(tr(R.string.firmware_view_model_restarting), 1f)
                     }
                 }
                 FirmwareStep.Installed
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Install failed") }
+            }.getOrElse { FirmwareStep.Failed(it.message ?: tr(R.string.firmware_view_model_install_failed)) }
         }
     }
 

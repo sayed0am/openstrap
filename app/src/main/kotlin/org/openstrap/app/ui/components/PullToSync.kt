@@ -50,6 +50,8 @@ import org.openstrap.app.device.SyncState
 import org.openstrap.app.ui.dashboard.DATA_ON_STRAP
 import org.openstrap.app.ui.theme.AppIcons
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** How far the pull has gone (1 = far enough to sync) and whether a sync is running. */
 class PullSyncState(val fraction: () -> Float, val syncing: () -> Boolean)
@@ -90,7 +92,7 @@ fun PullToSync(
                 started = false
                 if (syncNow is SyncState.Failed) {
                     feedback.perform(HapticEvent.SyncFailed)
-                    Toast.makeText(context, "Couldn't sync. $DATA_ON_STRAP", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, tr(R.string.pull_to_sync_couldn_t_sync, DATA_ON_STRAP), Toast.LENGTH_SHORT).show()
                 } else haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             }
             // The strap busy or dropping: a sync that doesn't start soon just lets go.
@@ -105,7 +107,7 @@ fun PullToSync(
         onRefresh = {
             if (!connected) {
                 feedback.perform(HapticEvent.SyncFailed)
-                Toast.makeText(context, "The strap isn't connected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, tr(R.string.common_the_strap_isn_t), Toast.LENGTH_SHORT).show()
             } else {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 pulled = true
@@ -148,9 +150,9 @@ fun PullSyncReveal() {
             )
             Spacer(Modifier.width(8.dp))
             val label = when {
-                syncing -> "Syncing strap…"
-                ready -> "Release to sync strap"
-                else -> "Pull to sync strap"
+                syncing -> tr(R.string.pull_to_sync_syncing_strap)
+                ready -> tr(R.string.pull_to_sync_release_to_sync_strap)
+                else -> tr(R.string.pull_to_sync_pull_to_sync_strap)
             }
             // One line at a time: the old one fades out before the new one fades in, so "Pull to sync strap" never
             // draws over "Syncing strap…" as a sync starts.

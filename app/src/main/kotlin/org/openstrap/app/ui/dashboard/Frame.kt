@@ -9,6 +9,8 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
 import org.openstrap.app.ui.glow.GlowMood
 import org.openstrap.app.ui.glow.LightAngle
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * The frame around every tab (spec 3): what the header says about the day and the strap, and how the tabs answer
@@ -17,8 +19,8 @@ import org.openstrap.app.ui.glow.LightAngle
 
 /** The header's title for [date] on Today: "Today", "Yesterday", or the weekday ("Tuesday"). */
 fun dayTitle(date: LocalDate, today: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): String = when (date) {
-    today -> "Today"
-    today.minusDays(1) -> "Yesterday"
+    today -> tr(R.string.common_today)
+    today.minusDays(1) -> tr(R.string.common_yesterday)
     else -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
 }
 
@@ -29,17 +31,28 @@ fun dayTitle(date: LocalDate, today: LocalDate = LocalDate.now(), locale: Locale
  */
 fun todayTitle(moment: Moment, date: LocalDate, sportType: Int? = null, today: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): String =
     if (date < today) dayTitle(date, today, locale) else when (moment) {
-        Moment.During -> sportType?.let(::sportDoing) ?: "Workout"
-        Moment.After -> "After your ${sportType?.let(::sportNoun) ?: "workout"}"
-        Moment.WorkoutWindow -> "Workout time"
-        Moment.Waking -> "Waking up"
-        Moment.Night -> "Night"
-        Moment.Evening -> "Evening"
-        Moment.Midday -> "Midday"
+        Moment.During -> sportType?.let(::sportDoing) ?: tr(R.string.common_workout)
+        Moment.After -> tr(R.string.frame_after_your, sportType?.let(::sportNoun) ?: tr(R.string.frame_after_your__workout))
+        Moment.WorkoutWindow -> tr(R.string.frame_workout_time)
+        Moment.Waking -> tr(R.string.frame_waking_up)
+        Moment.Night -> tr(R.string.frame_night)
+        Moment.Evening -> tr(R.string.frame_evening)
+        Moment.Midday -> tr(R.string.frame_midday)
     }
 
 /** A sport as a short noun ("run", "ride"), for "After your run"; null where none reads well, so it says "workout". */
-internal fun sportNoun(sportType: Int): String? = when (sportType) {
+internal fun sportNoun(sportType: Int): String? = when (sportKey(sportType)) {
+    "run" -> tr(R.string.missed_sport_run)
+    "walk" -> tr(R.string.missed_sport_walk)
+    "ride" -> tr(R.string.missed_sport_ride)
+    "swim" -> tr(R.string.missed_sport_swim)
+    "hike" -> tr(R.string.missed_sport_hike)
+    "row" -> tr(R.string.missed_sport_row)
+    else -> null
+}
+
+/** The sport's noun in English, which names it in code. */
+private fun sportKey(sportType: Int): String? = when (sportType) {
     1, 2, 11 -> "run"
     3, 40, 215 -> "walk"
     4, 8, 143 -> "ride"
@@ -50,13 +63,13 @@ internal fun sportNoun(sportType: Int): String? = when (sportType) {
 }
 
 /** A sport as what you're doing ("Running"), for the header during it; its name where no verb reads well. */
-internal fun sportDoing(sportType: Int): String = when (sportNoun(sportType)) {
-    "run" -> "Running"
-    "walk" -> "Walking"
-    "ride" -> "Cycling"
-    "swim" -> "Swimming"
-    "hike" -> "Hiking"
-    "row" -> "Rowing"
+internal fun sportDoing(sportType: Int): String = when (sportKey(sportType)) {
+    "run" -> tr(R.string.frame_running)
+    "walk" -> tr(R.string.frame_walking)
+    "ride" -> tr(R.string.common_cycling)
+    "swim" -> tr(R.string.frame_swimming)
+    "hike" -> tr(R.string.common_hiking)
+    "row" -> tr(R.string.common_rowing)
     else -> org.openstrap.app.data.Workouts.sportName(sportType)
 }
 
@@ -132,27 +145,27 @@ const val STARTUP_GRACE_S = 120L
  * sync rather than the other way round; the data waits on the strap.
  */
 fun strapChip(paired: Boolean, connection: ConnectionState, sync: SyncState, lastSeen: Long?, now: Long, sinceStart: Long = Long.MAX_VALUE): StrapChip {
-    if (!paired || connection == ConnectionState.NotPaired) return StrapChip("Not paired", StrapChip.Dot.Quiet, "No strap paired")
-    if (connection !is ConnectionState.Connected && sinceStart < STARTUP_GRACE_S) return StrapChip("", StrapChip.Dot.Quiet, "Connecting to the strap")
+    if (!paired || connection == ConnectionState.NotPaired) return StrapChip(tr(R.string.common_not_paired), StrapChip.Dot.Quiet, tr(R.string.common_no_strap_paired))
+    if (connection !is ConnectionState.Connected && sinceStart < STARTUP_GRACE_S) return StrapChip("", StrapChip.Dot.Quiet, tr(R.string.common_connecting_to_the_strap))
     val ago = lastSeen?.let { now - it }
     val unseen = if (ago != null) {
         val text = agoText(ago)
-        StrapChip(text, StrapChip.Dot.Warn, "Strap last seen $text")
-    } else StrapChip("Not connected", StrapChip.Dot.Warn, "Strap not connected")
+        StrapChip(text, StrapChip.Dot.Warn, tr(R.string.frame_strap_last_seen, text))
+    } else StrapChip(tr(R.string.common_not_connected), StrapChip.Dot.Warn, tr(R.string.common_strap_not_connected))
     return when (connection) {
         is ConnectionState.Connected -> {
             val battery = connection.batteryPercent
             when {
-                connection.charging && battery != null -> StrapChip("Charging $battery%", StrapChip.Dot.Charging, "Strap charging, battery $battery percent")
-                sync is SyncState.Failed -> StrapChip("Not synced", StrapChip.Dot.Warn, "Strap connected, not synced")
-                battery == null -> StrapChip("", StrapChip.Dot.Fine, "Strap connected")
-                battery <= StrapChip.LOW_BATTERY -> StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
-                else -> StrapChip("$battery%", StrapChip.Dot.Fine, "Strap connected, battery $battery percent")
+                connection.charging && battery != null -> StrapChip(tr(R.string.frame_charging, battery), StrapChip.Dot.Charging, tr(R.string.frame_strap_charging_battery_percent, battery))
+                sync is SyncState.Failed -> StrapChip(tr(R.string.common_not_synced), StrapChip.Dot.Warn, tr(R.string.frame_strap_connected_not_synced))
+                battery == null -> StrapChip("", StrapChip.Dot.Fine, tr(R.string.common_strap_connected))
+                battery <= StrapChip.LOW_BATTERY -> StrapChip("$battery%", StrapChip.Dot.Low, tr(R.string.frame_strap_connected_battery_low, battery))
+                else -> StrapChip("$battery%", StrapChip.Dot.Fine, tr(R.string.frame_strap_connected_battery_percent, battery))
             }
         }
         // A moment's connecting (the app coming to the front) isn't news; a strap gone for minutes is.
         ConnectionState.Connecting, ConnectionState.Authenticating ->
-            if (ago != null && ago >= CONNECTING_GRACE_S) unseen else StrapChip("", StrapChip.Dot.Quiet, "Connecting to the strap")
+            if (ago != null && ago >= CONNECTING_GRACE_S) unseen else StrapChip("", StrapChip.Dot.Quiet, tr(R.string.common_connecting_to_the_strap))
         else -> unseen
     }
 }
@@ -161,11 +174,11 @@ fun strapChip(paired: Boolean, connection: ConnectionState, sync: SyncState, las
 fun agoText(seconds: Long): String {
     val minutes = seconds.coerceAtLeast(0) / 60
     return when {
-        minutes < 1 -> "Just now"
-        minutes < 60 -> "$minutes min ago"
-        minutes < 24 * 60 -> "${minutes / 60} h ago"
-        minutes < 48 * 60 -> "1 day ago"
-        else -> "${minutes / (24 * 60)} days ago"
+        minutes < 1 -> tr(R.string.frame_just_now)
+        minutes < 60 -> tr(R.string.frame_min_ago, minutes)
+        minutes < 24 * 60 -> tr(R.string.frame_h_ago, minutes / 60)
+        minutes < 48 * 60 -> tr(R.string.frame_day_ago)
+        else -> tr(R.string.frame_days_ago, minutes / (24 * 60))
     }
 }
 

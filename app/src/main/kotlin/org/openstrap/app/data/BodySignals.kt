@@ -1,6 +1,8 @@
 package org.openstrap.app.data
 
 import kotlin.math.max
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * "Body signals off baseline": a night-by-night state machine over overnight resting HR, skin temperature and
@@ -13,7 +15,7 @@ import kotlin.math.max
 object BodySignals {
 
     /** Independent signal families: only flags from different families count as separate votes. */
-    enum class Family(val label: String) { Cardiac("resting heart rate"), Thermal("skin temperature"), Respiratory("breathing rate") }
+    enum class Family(val label: String) { Cardiac(tr(R.string.common_resting_heart_rate)), Thermal(tr(R.string.body_signals_skin_temperature)), Respiratory(tr(R.string.body_signals_breathing_rate)) }
 
     enum class Flag(val family: Family?, val core: Boolean) {
         /** rhr − c ≥ max([RHR_FLAG_BPM], [FLAG_SCALES]·s). */
@@ -99,21 +101,21 @@ object BodySignals {
                     val d = rhr - rhrBase.centre
                     if (d >= max(RHR_FLAG_BPM, FLAG_SCALES * rhrBase.scale)) flags += Flag.RhrFlag
                     if (d >= RHR_WATCH_BPM) flags += Flag.RhrWatch
-                    if (d >= RHR_WATCH_BPM) signals += "resting heart rate up ${d.toInt()} bpm"
+                    if (d >= RHR_WATCH_BPM) signals += tr(R.string.body_signals_resting_heart_rate_up, d.toInt())
                 }
                 val tempBase = Recovery.baseline(pool.mapNotNull { it.skinTemperature }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.TEMP_SD_FLOOR, MIN_ALERT_NIGHTS)
                 if (tempBase != null) n.skinTemperature?.let { t ->
                     val d = t - tempBase.centre
-                    if (d >= TEMP_FLAG_C && d >= FLAG_SCALES * tempBase.scale) { flags += Flag.TempFlag; signals += "skin temperature up from your usual" }
+                    if (d >= TEMP_FLAG_C && d >= FLAG_SCALES * tempBase.scale) { flags += Flag.TempFlag; signals += tr(R.string.body_signals_skin_temperature_up_from) }
                 }
                 val rrBase = Recovery.baseline(pool.mapNotNull { it.breathRate }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.BREATH_SD_FLOOR, MIN_ALERT_NIGHTS)
                 if (rrBase != null) n.breathRate?.let { rr ->
                     val d = rr - rrBase.centre
-                    if (d >= RR_FLAG_PER_MIN && d >= FLAG_SCALES * rrBase.scale) { flags += Flag.RrFlag; signals += "breathing rate up ${"%.1f".format(d)}/min" }
+                    if (d >= RR_FLAG_PER_MIN && d >= FLAG_SCALES * rrBase.scale) { flags += Flag.RrFlag; signals += tr(R.string.body_signals_breathing_rate_up_min, "%.1f".format(d)) }
                     if (d >= RR_ALERT_PER_MIN && d >= FLAG_SCALES * rrBase.scale) rrBig = true
                 }
                 val hrvBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.hrvLn }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.HRV_LN_SD_FLOOR, MIN_ALERT_NIGHTS)
-                if (hrvBase != null) hrvOf(n)?.let { if (hrvBase.z(it) <= HRV_SUPPORT_Z) { flags += Flag.HrvSupport; signals += "HRV well below your normal" } }
+                if (hrvBase != null) hrvOf(n)?.let { if (hrvBase.z(it) <= HRV_SUPPORT_Z) { flags += Flag.HrvSupport; signals += tr(R.string.body_signals_hrv_well_below_your) } }
             }
             val core = flags.filter { it.core }
             val families = core.mapNotNull { it.family }.distinct()

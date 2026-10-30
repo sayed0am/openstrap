@@ -9,6 +9,8 @@ import org.openstrap.app.ui.dashboard.TodayCopy
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * One day's Recovery as the widget reads it, taken from the app's own result and copy, so the widget says what the
@@ -85,12 +87,12 @@ data class RecoveryWidgetModel(
     val scoreDescription: String? get() = score?.let { s -> word?.let { "$s, $it" } ?: s }
 
     companion object {
-        const val TITLE = "Recovery"
-        const val THIS_MORNING = "This morning"
-        const val YESTERDAY = "Yesterday"
+        val TITLE: String get() = tr(R.string.common_recovery)
+        val THIS_MORNING: String get() = tr(R.string.common_this_morning)
+        val YESTERDAY: String get() = tr(R.string.common_yesterday)
 
         /** A figure the night didn't give. */
-        const val NO_READING = "No reading"
+        val NO_READING: String get() = tr(R.string.common_no_reading)
 
         /**
          * The widget for [today], or [yesterday] with "Yesterday" as the note while this morning's score isn't in.
@@ -128,9 +130,9 @@ data class RecoveryWidgetModel(
 
         /** Resting HR "52 bpm", HRV "64 ms", Sleep "82". */
         fun figures(d: RecoveryDay): List<RecoveryFigure> = listOf(
-            RecoveryFigure("Resting HR", d.restingHr?.let { "${Metric.RestingHr.format(it)} ${Metric.RestingHr.unit}" } ?: NO_READING),
-            RecoveryFigure("HRV", d.hrv?.let { "${Metric.Hrv.format(it)} ${Metric.Hrv.unit}" } ?: NO_READING),
-            RecoveryFigure("Sleep", d.sleep?.toString() ?: NO_READING),
+            RecoveryFigure(tr(R.string.recovery_widget_model_resting_hr), d.restingHr?.let { "${Metric.RestingHr.format(it)} ${Metric.RestingHr.unit}" } ?: NO_READING),
+            RecoveryFigure(tr(R.string.common_hrv), d.hrv?.let { "${Metric.Hrv.format(it)} ${Metric.Hrv.unit}" } ?: NO_READING),
+            RecoveryFigure(tr(R.string.common_sleep), d.sleep?.toString() ?: NO_READING),
         )
     }
 }

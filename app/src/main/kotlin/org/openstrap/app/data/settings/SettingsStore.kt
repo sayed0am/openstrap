@@ -8,6 +8,8 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
 
@@ -105,14 +107,14 @@ data class HealthConnectAuto(val on: Boolean = false, val lastSynced: Long? = nu
 
 /** Notification buzz patterns: alternating vibrate and pause milliseconds for the strap's motor. */
 enum class BuzzPattern(val label: String, val millis: List<Int>) {
-    ONE_SHORT("Single", listOf(200)),
-    TWO_SHORT("Double", listOf(150, 150, 150)),
-    THREE_SHORT("Triple", listOf(120, 120, 120, 120, 120)),
-    ONE_LONG("Long", listOf(600)),
+    ONE_SHORT(tr(R.string.settings_store_single), listOf(200)),
+    TWO_SHORT(tr(R.string.settings_store_double), listOf(150, 150, 150)),
+    THREE_SHORT(tr(R.string.settings_store_triple), listOf(120, 120, 120, 120, 120)),
+    ONE_LONG(tr(R.string.settings_store_long), listOf(600)),
 }
 
 /** How the strap buzzes while a call rings: the find-device buzz without a break, or 600 ms motor pulses once a second. */
-enum class CallBuzz(val label: String) { STEADY("Steady"), PULSED("Pulsed") }
+enum class CallBuzz(val label: String) { STEADY(tr(R.string.common_steady)), PULSED(tr(R.string.settings_store_pulsed)) }
 
 /**
  * Hours the strap stays still for notifications, such as the night: from [from] to [to] in minutes after midnight,
@@ -135,7 +137,7 @@ class SettingsStore(private val context: Context) {
     val pairedDevice: Flow<PairedDevice?> = context.dataStore.data.map { prefs ->
         val a = prefs[address] ?: return@map null
         val k = prefs[authKey] ?: return@map null
-        PairedDevice(a, k, prefs[name] ?: "Helio Strap")
+        PairedDevice(a, k, prefs[name] ?: tr(R.string.common_helio_strap))
     }
 
     suspend fun savePairedDevice(device: PairedDevice) {

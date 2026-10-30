@@ -13,6 +13,8 @@ import kotlinx.coroutines.launch
 import org.openstrap.app.MainActivity
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The Quick Settings tile. Idle it reads "Start workout" with the last sport and opens the ready screen, like every
@@ -31,11 +33,11 @@ class WorkoutTileService : TileService() {
                     val tile = qsTile ?: return@collect
                     val r = state as? WorkoutState.Recording
                     tile.state = if (r != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                    tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else "Start workout"
+                    tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else tr(R.string.common_start_workout)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                         tile.subtitle = when {
-                            r?.paused == true -> "Paused"
-                            r != null -> "Recording"
+                            r?.paused == true -> tr(R.string.common_paused)
+                            r != null -> tr(R.string.common_recording)
                             else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
                         }
                     }

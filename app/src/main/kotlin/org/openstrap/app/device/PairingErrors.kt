@@ -1,6 +1,8 @@
 package org.openstrap.app.device
 
 import org.openstrap.protocol.auth.AuthException
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** Turns the strap's auth status codes (docs/protocol/01 §3.4) into what the user should do next. */
 object PairingErrors {
@@ -15,22 +17,20 @@ object PairingErrors {
 
     fun authFailure(e: AuthException): ConnectionState.Failed = when (e.status) {
         WRONG_KEY, CIPHERTEXT_MISMATCH, AES_FAILED -> ConnectionState.Failed(
-            "The strap rejected this auth key. Use the key from the strap's most recent Zepp bind: every new bind " +
-                "creates a new key, and keys from other devices on the account won't work.",
+            tr(R.string.pairing_errors_the_strap_rejected_this),
             keyRejected = true,
         )
         NO_KEY -> ConnectionState.Failed(
-            "The strap has no key, which means it was unbound from Zepp or reset. Bind it in the Zepp app again, " +
-                "get the new key, and don't unbind it afterwards.",
+            tr(R.string.pairing_errors_the_strap_has_no),
             keyRejected = true,
         )
         SIGNATURE_FAILED, BINDING_PROTECTED, CLOUD_BIND_REQUIRED -> ConnectionState.Failed(
-            "The strap only accepts a key from a Zepp bind. Bind it in the Zepp app first, then use that bind's key.",
+            tr(R.string.pairing_errors_the_strap_only_accepts),
             keyRejected = true,
         )
-        WORKOUT_RUNNING -> ConnectionState.Failed("A workout is running on the strap. End it, then tap Connect.")
+        WORKOUT_RUNNING -> ConnectionState.Failed(tr(R.string.pairing_errors_a_workout_is_running))
         else -> ConnectionState.Failed(
-            "Pairing failed (${e.message ?: "unknown error"}). Put the strap on its charger and tap Connect to try again.",
+            tr(R.string.pairing_errors_pairing_failed_put_the, e.message ?: tr(R.string.pairing_errors_pairing_failed_put_the__unknown_error)),
         )
     }
 }

@@ -28,6 +28,8 @@ import kotlin.math.roundToInt
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** The Healthspan card's orchid, used for the glow: warm enough to stay clear of Sleep's blue. */
 private val Orchid = MetricColors.habitAge
@@ -39,18 +41,20 @@ internal val HealthspanGlow = GlowStyle.chart(Orchid)
 internal fun healthspanVerdict(age: Int, estimate: Float): String {
     val years = age - estimate.roundToInt()
     return when {
-        years > 0 -> "$years ${if (years == 1) "year" else "years"} younger"
-        years < 0 -> "${-years} ${if (-years == 1) "year" else "years"} older"
-        else -> "Right on your age"
+        years == 1 -> tr(R.string.missed_year_younger)
+        years > 0 -> tr(R.string.missed_years_younger, years)
+        years == -1 -> tr(R.string.missed_year_older)
+        years < 0 -> tr(R.string.missed_years_older, -years)
+        else -> tr(R.string.glow_healthspan_right_on_your_age)
     }
 }
 
 /** "Steady" at 1x, "Slower" below, "Faster" above; "Learning" until there's enough history. */
 internal fun paceLabel(pace: Float?): String = when {
-    pace == null -> "Learning"
-    pace < 1f -> "Slower"
-    pace > 1f -> "Faster"
-    else -> "Steady"
+    pace == null -> tr(R.string.common_learning)
+    pace < 1f -> tr(R.string.glow_healthspan_slower)
+    pace > 1f -> tr(R.string.glow_healthspan_faster)
+    else -> tr(R.string.common_steady)
 }
 
 /** "1x", "0.5x", "-1x". */
@@ -59,12 +63,17 @@ internal fun paceText(pace: Float): String = if (pace % 1f == 0f) "${pace.toInt(
 /** "takes off about 1 year", "adds about ½ year", "takes off a few months" or "no change". */
 internal fun effectText(years: Float): String {
     val y = abs(years)
-    val verb = if (years < 0) "takes off" else "adds"
+    val verb = if (years < 0) tr(R.string.glow_healthspan_takes_off) else tr(R.string.missed_adds)
     return when {
-        y < 0.05f -> "no change"
-        y < 0.375f -> "$verb a few months"
-        y < 0.75f -> "$verb about ½ year"
-        else -> y.roundToInt().let { "$verb about $it ${if (it == 1) "year" else "years"}" }
+        y < 0.05f -> tr(R.string.glow_healthspan_no_change)
+        y < 0.375f -> tr(R.string.glow_healthspan_a_few_months, verb)
+        y < 0.75f -> tr(R.string.glow_healthspan_about_year, verb)
+        else -> y.roundToInt().let {
+            when {
+                it == 1 -> tr(if (years < 0) R.string.missed_takes_off_about_year else R.string.missed_adds_about_year)
+                else -> tr(if (years < 0) R.string.missed_takes_off_about_years else R.string.missed_adds_about_years, it)
+            }
+        }
     }
 }
 
@@ -72,19 +81,19 @@ internal fun effectText(years: Float): String {
 internal fun termDetail(t: Healthspan.Term, age: Int): String {
     val v = t.value
     val ref = t.reference
-    if (v == null) return if (t.habit == Healthspan.Habit.Vo2max) "No VO2 max from workouts yet, counted as typical" else "Not enough data yet, counted as typical"
+    if (v == null) return if (t.habit == Healthspan.Habit.Vo2max) tr(R.string.glow_healthspan_no_vo_max_from) else tr(R.string.glow_healthspan_not_enough_data_yet)
     return when (t.habit) {
         Healthspan.Habit.Strength -> {
             val m = v.roundToInt()
-            (if (m == 0) "None recorded" else "$m min a week") + ", most people your age do none" +
-                (if (m < Healthspan.STRENGTH_TARGET_MINUTES) ", aim for ${Healthspan.STRENGTH_TARGET_MINUTES}" else "")
+            (if (m == 0) tr(R.string.glow_healthspan_none_recorded) else tr(R.string.glow_healthspan_min_a_week, m)) + tr(R.string.glow_healthspan_most_people_your_age) +
+                (if (m < Healthspan.STRENGTH_TARGET_MINUTES) tr(R.string.glow_healthspan_aim_for, Healthspan.STRENGTH_TARGET_MINUTES) else "")
         }
-        Healthspan.Habit.Vo2max -> "${v.roundToInt()} ml/kg/min, typical at $age: ${ref?.roundToInt()}"
-        Healthspan.Habit.Steps -> "${"%,d".format(v.roundToInt())} a day, typical: ${"%,d".format(((ref ?: 0f) / 100).roundToInt() * 100)}" +
-            (if (v < 8000f) ", aim for 8,000–10,000" else "")
-        Healthspan.Habit.Regularity -> "${v.roundToInt()}, typical: ${ref?.roundToInt()}"
-        Healthspan.Habit.RestingHr -> "${v.roundToInt()} bpm asleep, typical: about ${ref?.roundToInt()}"
-        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> "${m / 60} h ${m % 60} m, counts only below 6 h 30 m" }
+        Healthspan.Habit.Vo2max -> tr(R.string.glow_healthspan_ml_kg_min_typical, v.roundToInt(), age, ref?.roundToInt())
+        Healthspan.Habit.Steps -> tr(R.string.glow_healthspan_a_day_typical, "%,d".format(v.roundToInt()), "%,d".format(((ref ?: 0f) / 100).roundToInt() * 100)) +
+            (if (v < 8000f) tr(R.string.glow_healthspan_aim_for_2) else "")
+        Healthspan.Habit.Regularity -> tr(R.string.glow_healthspan_typical, v.roundToInt(), ref?.roundToInt())
+        Healthspan.Habit.RestingHr -> tr(R.string.glow_healthspan_bpm_asleep_typical_about, v.roundToInt(), ref?.roundToInt())
+        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> tr(R.string.glow_healthspan_h_m_counts_only, m / 60, m % 60) }
     }
 }
 
@@ -94,14 +103,14 @@ internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day
 
 /** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
 internal fun profileReminder(missing: List<String>): String =
-    "Add your ${missing.joinToString(" and ")} in your profile to see your Habit Age."
+    tr(R.string.glow_healthspan_add_your_in_your, missing.joinToString(tr(R.string.glow_healthspan_add_your_in_your__and)))
 
 /** The starting state's line under your age: when a first estimate is due, or what it's still waiting for. */
 internal fun learningText(o: Healthspan.Outcome): String = when {
     // The date's line is kept whole, so "First estimate:" never ends up apart from its date.
-    o.firstEstimate != null -> "Starts at your age.\nFirst\u00A0estimate:\u00A0${sundayText(o.firstEstimate)}."
-    o.withheld == Healthspan.Withheld.Learning -> "Starts at your age. Wear the strap for 30 days for a first estimate."
-    else -> "Starts at your age. ${o.withheld?.reason.orEmpty()}"
+    o.firstEstimate != null -> tr(R.string.glow_healthspan_starts_at_your_age, sundayText(o.firstEstimate))
+    o.withheld == Healthspan.Withheld.Learning -> tr(R.string.glow_healthspan_starts_at_your_age_2)
+    else -> tr(R.string.glow_healthspan_starts_at_your_age_3, o.withheld?.reason.orEmpty())
 }
 
 /** The local date of [epoch] (a local midnight). */
@@ -130,8 +139,8 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
         onClick = if (needsProfile) onOpenProfile else onClick,
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            CardTitle("Habit Age", Modifier.weight(1f))
-            InfoButton("About Habit Age", { info = true })
+            CardTitle(tr(R.string.common_habit_age), Modifier.weight(1f))
+            InfoButton(tr(R.string.glow_healthspan_about_habit_age), { info = true })
         }
         r?.let {
             Text(
@@ -149,7 +158,7 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
         // The estimate once there is one; until then your own age stands in. Without a birth year, no number.
         val shown = r?.estimate?.roundToInt() ?: state.age
         EdgeValue(
-            shown?.toString(), shown?.let { "years" },
+            shown?.toString(), shown?.let { tr(R.string.missed_unit_years) },
             line?.text ?: if (shown != null) org.openstrap.app.ui.dashboard.TabCopy.habitAgeForNow(waiting) else waiting,
             if (line?.moved == true) Orchid else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             waiting = shown != null,

@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Android binds this while the associated strap is in range (see [CompanionLink]), starting the process if it
@@ -33,6 +35,6 @@ class StrapPresenceService : CompanionDeviceService() {
 
     @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
-        if (event.event == DevicePresenceEvent.EVENT_BLE_APPEARED) appeared("presence event, association ${event.associationId}")
+        if (event.event == DevicePresenceEvent.EVENT_BLE_APPEARED) appeared(tr(R.string.strap_presence_service_presence_event_association, event.associationId))
     }
 }

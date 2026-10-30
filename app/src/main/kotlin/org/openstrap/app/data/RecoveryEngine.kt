@@ -6,6 +6,8 @@ import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** Everything the Charge screens show for one day. */
 data class RecoveryResult(
@@ -147,7 +149,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         }.map { loadDays[it].first }
         val causes = { morning: Long ->
             val before = morning - 86_400 + 3600
-            listOfNotNull("a hard training day".takeIf { hardDays.any { d -> d in before - 7200..before + 7200 } })
+            listOfNotNull(tr(R.string.recovery_engine_a_hard_training_day).takeIf { hardDays.any { d -> d in before - 7200..before + 7200 } })
         }
         val todaySplit = dailyLoad(hrByDay[date].orEmpty())
         val todayLoad = todaySplit.total

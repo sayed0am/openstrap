@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
+import org.openstrap.app.tr
+
 /**
  * What a workout aims for, chosen on the ready screen: a zone or a range of zones (0..4, inclusive), a time, or active
  * kcal. Stored on the workout as [code] ("z:1-2", "t:2700", "k:300").
@@ -9,12 +12,12 @@ sealed interface WorkoutTarget {
 
     data class Zones(val low: Int, val high: Int) : WorkoutTarget {
         override val code get() = "z:$low-$high"
-        val label: String get() = if (low == high) "Zone ${low + 1}" else "Zone ${low + 1}–${high + 1}"
+        val label: String get() = if (low == high) tr(R.string.coaching_zone, low + 1) else tr(R.string.coaching_zone_2, low + 1, high + 1)
     }
 
     data class Time(val seconds: Long) : WorkoutTarget {
         override val code get() = "t:$seconds"
-        val label: String get() = "${seconds / 60} min"
+        val label: String get() = tr(R.string.missed_duration_min, seconds / 60)
     }
 
     /** Active kcal ([org.openstrap.app.data.WorkoutRecorder.Kcal.active]), so only offered with a profile to work it out. */

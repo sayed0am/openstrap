@@ -10,6 +10,9 @@ import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.abs
 import org.openstrap.app.data.Recovery
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * The words on Today's hero and its small facts (spec 4.2 and 7). Built only from numbers the app already has: where
@@ -22,36 +25,36 @@ object TodayCopy {
         val h = minutes / 60
         val m = minutes % 60
         return when {
-            h == 0L -> "$m min"
-            m == 0L -> "$h h"
-            else -> "$h h %02d".format(m)
+            h == 0L -> tr(R.string.missed_duration_min, m)
+            m == 0L -> tr(R.string.missed_duration_h, h)
+            else -> tr(R.string.missed_duration_h_m, h, "%02d".format(m))
         }
     }
 
     /** A value against your normal, from [org.openstrap.app.data.History.status]: null is no normal yet. */
     fun normalWord(direction: Int?): String = when {
-        direction == null -> "Learning your normal"
-        direction > 0 -> "Above your normal"
-        direction < 0 -> "Below your normal"
-        else -> "Usual"
+        direction == null -> tr(R.string.today_copy_learning_your_normal)
+        direction > 0 -> tr(R.string.common_above_your_normal)
+        direction < 0 -> tr(R.string.common_below_your_normal)
+        else -> tr(R.string.common_usual)
     }
 
     /** What a Recovery score means for the day, in a sentence. */
     fun recoveryMeaning(score: Int, alert: Boolean): String = when {
-        alert -> "Some overnight signals are off your normal. An easy day suits."
-        score >= 85 -> "Well recovered. A good day for a hard session."
-        score >= 70 -> "Recovered enough for your usual training."
-        score >= Recovery.FAIR_FROM -> "Not fully recovered. Keep the effort moderate."
-        else -> "Still catching up. An easy day helps."
+        alert -> tr(R.string.today_copy_some_overnight_signals_are)
+        score >= 85 -> tr(R.string.today_copy_well_recovered_a_good)
+        score >= 70 -> tr(R.string.today_copy_recovered_enough_for_your)
+        score >= Recovery.FAIR_FROM -> tr(R.string.today_copy_not_fully_recovered_keep)
+        else -> tr(R.string.today_copy_still_catching_up_an)
     }
 
     /** The status word beside the score. */
     fun recoveryWord(score: Int, alert: Boolean): String = when {
-        alert -> "Take it easy"
-        score >= 85 -> "Ready for more"
-        score >= 70 -> "Ready"
-        score >= Recovery.FAIR_FROM -> "Moderate"
-        else -> "Take it easy"
+        alert -> tr(R.string.common_take_it_easy)
+        score >= 85 -> tr(R.string.common_ready_for_more)
+        score >= 70 -> tr(R.string.common_ready)
+        score >= Recovery.FAIR_FROM -> tr(R.string.common_moderate)
+        else -> tr(R.string.common_take_it_easy)
     }
 
     /**
@@ -65,8 +68,8 @@ object TodayCopy {
 
     /** "OpenStrap is still learning your nights, 5 of 7." and the like. */
     fun noScoreLine(why: NoScore): String = when (why) {
-        is NoScore.Learning -> "OpenStrap is still learning your nights, ${why.nights} of ${why.of}."
-        NoScore.NoHeartData -> "Not enough heart data last night for a Recovery score."
+        is NoScore.Learning -> tr(R.string.today_copy_openstrap_is_still_learning, why.nights, why.of)
+        NoScore.NoHeartData -> tr(R.string.today_copy_not_enough_heart_data)
     }
 
     /**
@@ -75,8 +78,8 @@ object TodayCopy {
      */
     fun waking(asleepSeconds: Long?, score: Int?, alert: Boolean, noScore: NoScore?, firstNights: Boolean, isToday: Boolean): String {
         if (firstNights) return RECOVERY_FIRST_NIGHT
-        if (asleepSeconds == null) return if (isToday) NO_SLEEP else "No sleep recorded that night."
-        val slept = "Slept ${duration(asleepSeconds)}."
+        if (asleepSeconds == null) return if (isToday) NO_SLEEP else tr(R.string.common_no_sleep_recorded_that)
+        val slept = tr(R.string.today_copy_slept, duration(asleepSeconds))
         return when {
             score != null -> "$slept ${recoveryMeaning(score, alert)}"
             // The strap's estimate stands under the sentence with its label, so the sentence doesn't repeat it.
@@ -86,10 +89,10 @@ object TodayCopy {
     }
 
     /** The Recovery heroes before the strap has seen a night (spec 4.3). */
-    const val RECOVERY_FIRST_NIGHT = "Recovery starts after your first night with the strap."
+    val RECOVERY_FIRST_NIGHT: String get() = tr(R.string.today_copy_recovery_starts_after_your)
 
     /** Today's waking hero with no sleep recorded last night, and the Sleep tab's night (spec 4.3). */
-    const val NO_SLEEP = "No sleep recorded last night. Was the strap on?"
+    val NO_SLEEP: String get() = tr(R.string.today_copy_no_sleep_recorded_last)
 
     /** What a Recovery card shows: the number (null for a dash), the word beside it and the line under it. */
     data class RecoveryShown(val value: Int?, val word: String?, val line: String, val estimate: Boolean = false)
@@ -100,7 +103,7 @@ object TodayCopy {
      */
     fun recoveryShown(score: Int?, alert: Boolean, noScore: NoScore?, estimate: Int?, waiting: String): RecoveryShown = when {
         score != null -> RecoveryShown(score, recoveryWord(score, alert), recoveryMeaning(score, alert))
-        estimate != null -> RecoveryShown(estimate, "Strap's estimate", noScore?.let(::noScoreLine) ?: "OpenStrap's own score isn't ready yet.", estimate = true)
+        estimate != null -> RecoveryShown(estimate, tr(R.string.common_strap_s_estimate), noScore?.let(::noScoreLine) ?: tr(R.string.today_copy_openstrap_s_own_score), estimate = true)
         noScore != null -> RecoveryShown(null, null, noScoreLine(noScore))
         else -> RecoveryShown(null, null, waiting)
     }
@@ -128,37 +131,37 @@ object TodayCopy {
      * so the morning is called the morning.
      */
     fun charge(now: Int?, drained: Int?, anchored: Boolean, hour: Int): String {
-        if (now == null || !anchored) return "Energy starts after your first night. Sleep is what fills it."
-        val part = if (hour < 12) "The morning" else "The day so far"
+        if (now == null || !anchored) return tr(R.string.common_energy_starts_after_your)
+        val part = if (hour < 12) tr(R.string.today_copy_the_morning) else tr(R.string.today_copy_the_day_so_far)
         val first = when {
             drained == null -> null
-            drained >= 1 -> "$part drained $drained."
-            else -> "Nothing drained since waking."
+            drained >= 1 -> tr(R.string.today_copy_drained, part, drained)
+            else -> tr(R.string.today_copy_nothing_drained_since_waking)
         }
         val left = when {
-            now >= 50 -> "Plenty left for this evening."
-            now >= 25 -> "Enough left for an easy evening."
-            else -> "Running low. An early night helps."
+            now >= 50 -> tr(R.string.today_copy_plenty_left_for_this)
+            now >= 25 -> tr(R.string.today_copy_enough_left_for_an)
+            else -> tr(R.string.today_copy_running_low_an_early)
         }
         return listOfNotNull(first, left).joinToString(" ")
     }
 
     /** The workout window hero's title: what Recovery says about effort now. */
     fun windowTitle(score: Int?): String = when {
-        score == null -> "Your usual workout time"
-        score >= 70 -> "Ready for effort"
-        score >= Recovery.FAIR_FROM -> "Fine for a steady session"
-        else -> "An easy session suits today"
+        score == null -> tr(R.string.today_copy_your_usual_workout_time)
+        score >= 70 -> tr(R.string.today_copy_ready_for_effort)
+        score >= Recovery.FAIR_FROM -> tr(R.string.today_copy_fine_for_a_steady)
+        else -> tr(R.string.today_copy_an_easy_session_suits)
     }
 
     /** "You usually run around now. Energy is 58, plenty left." [sport] is a short noun that is also a verb. */
     fun window(sport: String?, charge: Int?): String {
-        val usual = "You usually ${sport ?: "work out"} around now."
+        val usual = tr(R.string.today_copy_you_usually_around_now, sport ?: tr(R.string.today_copy_you_usually_around_now__work_out))
         val left = charge?.let {
-            " Energy is $it, " + when {
-                it >= 50 -> "plenty left."
-                it >= 25 -> "enough for something easy."
-                else -> "running low."
+            tr(R.string.today_copy_energy_is, it) + when {
+                it >= 50 -> tr(R.string.today_copy_plenty_left)
+                it >= 25 -> tr(R.string.today_copy_enough_for_something_easy)
+                else -> tr(R.string.today_copy_running_low)
             }
         }
         return usual + left.orEmpty()
@@ -166,10 +169,10 @@ object TodayCopy {
 
     /** After a workout: how the heart is coming down, from the latest reading against resting. */
     fun after(nowHr: Int?, resting: Int?): String = when {
-        nowHr == null -> "Heart rate since the end shows once the strap sends it."
-        resting == null -> "Heart rate $nowHr now."
-        nowHr <= resting + SETTLED_BPM -> "Heart rate back near resting."
-        else -> "Heart rate settling."
+        nowHr == null -> tr(R.string.today_copy_heart_rate_since_the)
+        resting == null -> tr(R.string.today_copy_heart_rate_now, nowHr)
+        nowHr <= resting + SETTLED_BPM -> tr(R.string.today_copy_heart_rate_back_near)
+        else -> tr(R.string.today_copy_heart_rate_settling)
     }
 
     /** Within this many bpm of resting, the heart has settled. */
@@ -177,7 +180,7 @@ object TodayCopy {
 
     /** How a Load compares with your usual. */
     enum class LoadStatus(val text: String) {
-        Above("Above your usual"), Usual("Usual"), Below("Below your usual"), SoFar("So far today")
+        Above(tr(R.string.common_above_your_usual)), Usual(tr(R.string.common_usual)), Below(tr(R.string.common_below_your_usual)), SoFar(tr(R.string.common_so_far_today))
     }
 
     /**
@@ -206,41 +209,41 @@ object TodayCopy {
         workouts: List<String?>, steps: Int, stepGoal: Int, load: LoadStatus?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
     ): String {
         val head = when {
-            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadStatus.Above) -> "A full day."
-            workouts.isEmpty() && steps < stepGoal / 2 -> "A quiet day."
-            else -> "A steady day."
+            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadStatus.Above) -> tr(R.string.today_copy_a_full_day)
+            workouts.isEmpty() && steps < stepGoal / 2 -> tr(R.string.today_copy_a_quiet_day)
+            else -> tr(R.string.today_copy_a_steady_day)
         }
         val parts = listOfNotNull(
             when (workouts.size) {
                 0 -> null
-                1 -> "a ${workouts[0] ?: "workout"}"
-                else -> "${workouts.size} workouts"
+                1 -> tr(R.string.missed_a_workout, workouts[0] ?: tr(R.string.frame_after_your__workout))
+                else -> tr(R.string.missed_n_workouts, workouts.size)
             },
-            if (stepCount || stepGoal <= 0) "%,d steps".format(locale, steps) else stepsAgainstGoal(steps, stepGoal),
+            if (stepCount || stepGoal <= 0) trRaw(R.string.today_copy_steps_2).format(locale, steps) else stepsAgainstGoal(steps, stepGoal),
             when (load) {
-                LoadStatus.Above -> "a Load above your usual"
-                LoadStatus.Below -> "a Load below your usual"
-                LoadStatus.Usual -> "a usual Load"
+                LoadStatus.Above -> tr(R.string.today_copy_a_load_above_your)
+                LoadStatus.Below -> tr(R.string.today_copy_a_load_below_your)
+                LoadStatus.Usual -> tr(R.string.today_copy_a_usual_load)
                 LoadStatus.SoFar, null -> null
             },
         )
-        val list = if (parts.size == 1) parts[0] else parts.dropLast(1).joinToString(", ") + " and " + parts.last()
-        return "$head ${list.replaceFirstChar { it.uppercase() }}."
+        val list = if (parts.size == 1) parts[0] else tr(R.string.missed_list_and, parts.dropLast(1).joinToString(trRaw(R.string.missed_list_separator)), parts.last())
+        return tr(R.string.missed_head_and_list, head, list.replaceFirstChar { it.uppercase() })
     }
 
     /** The day's [steps] against the [goal] in words: under half is well short, from 80% close, the goal itself past. */
     fun stepsAgainstGoal(steps: Int, goal: Int): String = when {
-        steps >= goal -> "past your step goal"
-        steps >= goal * 0.8 -> "close to your step goal"
-        steps >= goal / 2 -> "short of your step goal"
-        else -> "well short of your step goal"
+        steps >= goal -> tr(R.string.today_copy_past_your_step_goal)
+        steps >= goal * 0.8 -> tr(R.string.today_copy_close_to_your_step)
+        steps >= goal / 2 -> tr(R.string.today_copy_short_of_your_step)
+        else -> tr(R.string.today_copy_well_short_of_your)
     }
 
     /** "Bedtime in 1 h 10" until your usual [bedtime], read on a clock that starts at noon; null once it's passed. */
     fun bedtimeIn(now: LocalTime, bedtime: LocalTime?): String? {
         bedtime ?: return null
         val minutes = afterNoon(bedtime) - afterNoon(now)
-        return if (minutes <= 0) null else "Bedtime in ${duration(minutes * 60L)}"
+        return if (minutes <= 0) null else tr(R.string.today_copy_bedtime_in, duration(minutes * 60L))
     }
 
     private fun afterNoon(t: LocalTime): Int = Math.floorMod(t.toSecondOfDay() / 60 - 720, 1440)
@@ -253,30 +256,30 @@ object TodayCopy {
      * 20:30". Recovered has no number, only the word (null value).
      */
     fun recoverText(left: Long, now: Long, zone: ZoneId): Pair<String?, String> {
-        if (left <= 0) return null to "Recovered"
+        if (left <= 0) return null to tr(R.string.common_recovered)
         val hours = (left + 3599) / 3600
         val ready = Instant.ofEpochSecond(now + left).atZone(zone)
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        val unit = if (hours == 1L) "Hour left" else "Hours left"
+        val unit = if (hours == 1L) tr(R.string.today_copy_hour_left) else tr(R.string.today_copy_hours_left)
         val status = when (ready.toLocalDate()) {
-            today -> "ready by ${ready.format(DateTimeFormatter.ofPattern("HH:mm"))}"
-            today.plusDays(1) -> "ready tomorrow"
-            else -> "ready ${ready.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault())}"
+            today -> tr(R.string.today_copy_ready_by, ready.format(DateTimeFormatter.ofPattern("HH:mm")))
+            today.plusDays(1) -> tr(R.string.today_copy_ready_tomorrow)
+            else -> tr(R.string.missed_ready_weekday, ready.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault()))
         }
         return "$hours" to "$unit, $status"
     }
 
     /** The line under Load today's number, which says it's a Load and how it compares. */
     fun loadLine(status: LoadStatus?): String = when (status) {
-        null -> "Load, learning your usual"
-        LoadStatus.Above -> "Load above your usual"
-        LoadStatus.Usual -> "Your usual Load"
-        LoadStatus.Below -> "Load below your usual"
-        LoadStatus.SoFar -> "Load so far today"
+        null -> tr(R.string.today_copy_load_learning_your_usual)
+        LoadStatus.Above -> tr(R.string.today_copy_load_above_your_usual)
+        LoadStatus.Usual -> tr(R.string.today_copy_your_usual_load)
+        LoadStatus.Below -> tr(R.string.today_copy_load_below_your_usual)
+        LoadStatus.SoFar -> tr(R.string.today_copy_load_so_far_today)
     }
 
     /** Under Your week before there's a week before it to compare with. */
-    const val WEEK_FIRST = "Week on week comparisons start next Monday."
+    val WEEK_FIRST: String get() = tr(R.string.today_copy_week_on_week_comparisons)
 
     /** The week Your week tells (spec 4.2): Monday to Sunday, the last full week before [date]. */
     fun lastWeek(date: LocalDate): ClosedRange<LocalDate> {
@@ -288,16 +291,16 @@ object TodayCopy {
     fun stepsChange(now: Double?, before: Double?): String? {
         if (now == null || before == null || before <= 0) return null
         val pct = Math.round((now - before) / before * 100).toInt()
-        return if (pct == 0) "Steps held steady" else "Steps ${if (pct > 0) "up" else "down"} ${abs(pct)}%"
+        return if (pct == 0) tr(R.string.today_copy_steps_held_steady) else tr(R.string.today_copy_steps, if (pct > 0) tr(R.string.today_copy_steps__up) else tr(R.string.today_copy_steps__down), abs(pct))
     }
 
     /** The Last night strip: "7 h 40, score 83". */
     fun lastNight(asleepSeconds: Long?, score: Int?): String? = asleepSeconds?.let {
-        duration(it) + (score?.let { s -> ", score $s" } ?: "")
+        duration(it) + (score?.let { s -> tr(R.string.today_copy_score, s) } ?: "")
     }
 
     /** A Small's word for Load against your usual: the [LoadStatus]'s, or that the usual is still being learned. */
-    fun loadWord(status: LoadStatus?): String = status?.text ?: "Learning your usual"
+    fun loadWord(status: LoadStatus?): String = status?.text ?: tr(R.string.common_learning_your_usual)
 
     /**
      * Time to recover as a Small says it: the hours as the value and when you're ready as the word. "14" and "Ready
@@ -311,12 +314,12 @@ object TodayCopy {
 
     /** How to read the heart rate line, with [band] when your resting range is drawn behind it. */
     fun heartLineNote(band: Boolean): String =
-        if (band) "Hold to scrub, the number follows. The band is your resting range." else "Hold to scrub, the number follows."
+        if (band) tr(R.string.today_copy_hold_to_scrub_the) else tr(R.string.today_copy_hold_to_scrub_the_2)
 
     /** The heart rate card's line under its number: live, or when the reading shown was taken. */
     fun heartAt(live: Boolean, at: String?): String = when {
-        live -> "Live now"
-        at != null -> "At $at"
-        else -> "Waiting for the strap"
+        live -> tr(R.string.today_copy_live_now)
+        at != null -> tr(R.string.today_copy_at, at)
+        else -> tr(R.string.common_waiting_for_the_strap)
     }
 }

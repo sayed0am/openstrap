@@ -64,6 +64,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * The Sleep tab's details (spec 5.2 and 6.1) in the metric template: the Sleep score with the night it came from,
@@ -132,8 +135,8 @@ internal fun SleepScoreDetail(
     val known = week.mapNotNull { it.second }
 
     val headline = scrub ?: when {
-        range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 nights", null)
-        range == Range.Week -> DetailHeadline.none("No scores", "In the last 7 nights")
+        range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), tr(R.string.sleep_detail_average_of_the_last), null)
+        range == Range.Week -> DetailHeadline.none(tr(R.string.common_no_scores), tr(R.string.common_in_the_last_nights))
         score != null -> DetailHeadline(score.toString(), SleepCopy.scoreLabel(isToday), TabCopy.sleepScoreWord(score))
         else -> SleepCopy.noScore(session != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
     }
@@ -175,7 +178,7 @@ internal fun SleepScoreDetail(
                 val waso = Recovery.wasoMinutes(state.sleepStages.map { Triple(it.start, it.end, it.stage) })
                 val factors = SleepCopy.factors(Narrative.sleepContributors(session, asleep, need, waso), asleep, need, waso)
                 if (factors.isNotEmpty()) item {
-                    ListPanel(Modifier.padding(top = 8.dp), title = "What shaped the score") {
+                    ListPanel(Modifier.padding(top = 8.dp), title = tr(R.string.sleep_detail_what_shaped_the_score)) {
                         factors.forEachIndexed { i, f ->
                             ContributorRow(f.name, color, f.word, f.fraction, offNormal = f.off, divider = i > 0, detail = f.detail, onClick = { info = true })
                         }
@@ -185,7 +188,7 @@ internal fun SleepScoreDetail(
             }
         } else {
             item {
-                if (known.isEmpty()) DetailEmpty("No sleep scores in the last 7 nights yet.")
+                if (known.isEmpty()) DetailEmpty(tr(R.string.sleep_detail_no_sleep_scores_in))
                 else Column {
                     val values = week.map { it.second }
                     NormalTrend(
@@ -256,12 +259,12 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
     var breathAt by remember(window) { mutableStateOf<DetailHeadline?>(null) }
     Column {
         if (hr.isNotEmpty()) {
-            ChartTitle("Heart rate", "Lowest ${hr.minOf { it.y }.toInt()}, average ${hr.map { it.y }.average().toInt()} bpm", scrubbed = hrAt)
+            ChartTitle(tr(R.string.common_heart_rate), tr(R.string.sleep_detail_lowest_average_bpm, hr.minOf { it.y }.toInt(), hr.map { it.y }.average().toInt()), scrubbed = hrAt)
             ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, "bpm") { hrAt = it; onScrub(it) }
         }
         if (breath.isNotEmpty()) {
-            ChartTitle("Breathing rate", "Average %.1f br/min".format(breath.map { it.y }.average()), scrubbed = breathAt)
-            ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, "br/min", decimals = 1) { breathAt = it; onScrub(it) }
+            ChartTitle(tr(R.string.common_breathing_rate), tr(R.string.sleep_detail_average_br_min, breath.map { it.y }.average()), scrubbed = breathAt)
+            ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, tr(R.string.missed_unit_br_min), decimals = 1) { breathAt = it; onScrub(it) }
         }
     }
 }
@@ -276,7 +279,7 @@ private fun ScrubLine(
     val values = remember(points, window) { evenly(points, window, step) }
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
-        onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline("%.${decimals}f".format(v), "$unit at ${clock(window.first + i * step)}", null) }) },
+        onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline("%.${decimals}f".format(v), tr(R.string.missed_value_at_time, unit, clock(window.first + i * step)), null) }) },
     )
 }
 
@@ -314,7 +317,7 @@ internal fun RegularityDetail(
     val w = sleepWeek(state, LocalGoals.current.sleepSeconds, reg, zone)
     val headline = when {
         sri != null && band != null -> DetailHeadline(Math.round(sri).toString(), SleepCopy.REGULARITY_LABEL, band.label)
-        w == null -> DetailHeadline.none("No sleep", "In the last 7 nights")
+        w == null -> DetailHeadline.none(tr(R.string.common_no_sleep), tr(R.string.common_in_the_last_nights))
         else -> SleepCopy.regularityState(reg).let { (word, why) -> DetailHeadline.none(word, why) }
     }
 
@@ -326,7 +329,7 @@ internal fun RegularityDetail(
         ranges = listOf(Range.Week), range = Range.Week, onRange = {},
     ) {
         item {
-            if (w == null) DetailEmpty("No sleep recorded in the last 7 nights.")
+            if (w == null) DetailEmpty(tr(R.string.sleep_detail_no_sleep_recorded_in))
             else Column(Modifier.padding(top = 8.dp)) {
                 SleepWindows(w.nights, w.usual, zone, selected = state.date, onNight = onSelectDay, height = 200.dp)
                 val night = state.sleep
@@ -338,8 +341,8 @@ internal fun RegularityDetail(
                 )
                 if (u != null) DetailFigures(
                     listOf(
-                        minutesClock(u.bedtime) to "Usually asleep by",
-                        minutesClock(u.wake) to "Usually up at",
+                        minutesClock(u.bedtime) to tr(R.string.sleep_detail_usually_asleep_by),
+                        minutesClock(u.wake) to tr(R.string.sleep_detail_usually_up_at),
                     ),
                     Modifier.padding(top = 18.dp),
                 )
@@ -390,7 +393,7 @@ internal fun NapsDetail(
         strip = DetailCopy.strip(state.date, today, if (naps.isEmpty()) emptySet() else setOf(state.date)), onDay = onSelectDay,
         ranges = listOf(Range.Day), range = Range.Day, onRange = {},
     ) {
-        if (naps.isEmpty()) item { DetailEmpty(if (isToday) "No naps recorded today." else "No naps recorded that day.") }
+        if (naps.isEmpty()) item { DetailEmpty(if (isToday) tr(R.string.sleep_detail_no_naps_recorded_today) else tr(R.string.sleep_detail_no_naps_recorded_that)) }
         else {
             item { DetailSentence(SleepCopy.naps(naps.size, total)) }
             naps.forEachIndexed { i, nap ->
@@ -403,9 +406,9 @@ internal fun NapsDetail(
                         val detected = state.napsAsDetected[nap.start]
                         if (detected != null) {
                             if (detected.start != nap.start || detected.end != nap.end) {
-                                Caption("Your times. The strap saw ${clock(detected.start)}–${clock(detected.end)}.")
+                                Caption(tr(R.string.sleep_detail_your_times_the_strap, clock(detected.start), clock(detected.end)))
                             }
-                            PageButton("Adjust times", { adjusting = nap.start }, Modifier.padding(top = 4.dp, bottom = 14.dp), icon = AppIcons.PencilEdit)
+                            PageButton(tr(R.string.sleep_detail_adjust_times), { adjusting = nap.start }, Modifier.padding(top = 4.dp, bottom = 14.dp), icon = AppIcons.PencilEdit)
                         }
                         val stages = state.napStages[nap.start].orEmpty()
                         if (stages.isEmpty()) Caption(SleepCopy.NAP_NO_STAGES)
@@ -467,26 +470,26 @@ private fun NapTimesSheet(nap: SleepSession, detected: SleepSession, heartRate: 
     val window = (detected.start - 3600)..(detected.end + 3600)
     val hr = heartRate.filter { it.x in window }
 
-    PageSheet(onDismiss, "Nap times", note = "The strap saw ${clock(detected.start)}–${clock(detected.end)}.") {
+    PageSheet(onDismiss, tr(R.string.sleep_detail_nap_times), note = tr(R.string.sleep_detail_the_strap_saw, clock(detected.start), clock(detected.end))) {
         if (hr.isNotEmpty()) Column {
             Text(
-                scrub?.let { "${it.value} ${it.label}" } ?: "Heart rate around the nap. It drops as you fall asleep.",
+                scrub?.let { "${it.value} ${it.label}" } ?: tr(R.string.sleep_detail_heart_rate_around_the),
                 color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
             )
             Box(Modifier.padding(top = 8.dp)) {
                 ScrubLine(hr, window, 90.dp, listOf(clock(window.first), clock(window.last)), MetricColors.heart, "bpm") { scrub = it }
             }
         }
-        GlowSegments(listOf("Fell asleep ${clock(start)}", "Woke up ${clock(end)}"), if (pickingEnd) 1 else 0, { pickingEnd = it == 1 })
+        GlowSegments(listOf(tr(R.string.sleep_detail_fell_asleep, clock(start)), tr(R.string.sleep_detail_woke_up, clock(end))), if (pickingEnd) 1 else 0, { pickingEnd = it == 1 })
         TimePicker(if (pickingEnd) endClock else startClock, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
         if (problem != null) PageNote(problem, color = MetricColors.warn)
-        else Text("A nap of ${TodayCopy.duration(end - start)}.", color = Color.White, style = GlowType.body)
+        else Text(tr(R.string.sleep_detail_a_nap_of, TodayCopy.duration(end - start)), color = Color.White, style = GlowType.body)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null, primary = true)
+            PageButton(tr(R.string.common_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(tr(R.string.common_save), { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null, primary = true)
         }
         if (nap.start != detected.start || nap.end != detected.end) {
-            PageTextButton("Use the strap's times", { onSave(detected.start, detected.end) }, Modifier.align(Alignment.CenterHorizontally))
+            PageTextButton(tr(R.string.sleep_detail_use_the_straps_times), { onSave(detected.start, detected.end) }, Modifier.align(Alignment.CenterHorizontally))
         }
     }
 }
@@ -503,7 +506,7 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
     val rows = buildList<@Composable (Boolean) -> Unit> {
         if (current != Score.Sleep) add { divider ->
             ListRow(
-                Score.Sleep.title, MetricColors.sleepDeep, score?.toString(), score?.let(TabCopy::sleepScoreWord) ?: "Nothing for this night",
+                Score.Sleep.title, MetricColors.sleepDeep, score?.toString(), score?.let(TabCopy::sleepScoreWord) ?: tr(R.string.common_nothing_for_this_night),
                 onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, divider = divider, icon = Score.Sleep.rowIcon(),
             )
         }
@@ -516,17 +519,17 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
         if (current != Score.Naps) add { divider ->
             ListRow(
                 Score.Naps.title, MetricColors.sleepDeep, naps.takeIf { it.isNotEmpty() }?.let { n -> clockDuration(n.sumOf { it.end - it.start }) },
-                if (naps.isEmpty()) "None that day" else TabCopy.naps(naps.size, clock(naps.minOf { it.start })),
+                if (naps.isEmpty()) tr(R.string.sleep_detail_none_that_day) else TabCopy.naps(naps.size, clock(naps.minOf { it.start })),
                 onClick = { onOpen(Detail.OfScore(Score.Naps)) }, divider = divider, icon = Score.Naps.rowIcon(),
             )
         }
         add { divider ->
             ListRow(
                 Score.Recovery.title, MetricColors.readiness, ready?.score?.toString(),
-                ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: "Nothing for this day",
+                ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: tr(R.string.common_nothing_for_this_day),
                 onClick = { onOpen(Detail.OfScore(Score.Recovery)) }, divider = divider, icon = Score.Recovery.rowIcon(),
             )
         }
     }
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") { rows.forEachIndexed { i, row -> row(i > 0) } }
+    ListPanel(Modifier.padding(top = 8.dp), title = tr(R.string.common_related)) { rows.forEachIndexed { i, row -> row(i > 0) } }
 }

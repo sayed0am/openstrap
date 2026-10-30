@@ -3,6 +3,8 @@ package org.openstrap.app.ui.dashboard
 import org.openstrap.app.data.Moment
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.CardSize
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * Which cards Today shows for a moment, in what order and at what size (spec 4.2), and how Edit Today changes that.
@@ -15,25 +17,25 @@ import org.openstrap.app.ui.glow.CardSize
  */
 enum class TodayCard(val label: String, val editable: Boolean = true, val pinnable: Boolean = false) {
     Hero("", editable = false),
-    Offer("Workout under way", editable = false),
-    Suggestion("Workout to save", editable = false),
-    Alerts("From your strap", editable = false),
-    CheckIn("How do you feel"),
-    BodyMorning("Your body this morning"),
-    RightNow("Right now", pinnable = true),
-    LastNight("Last night", pinnable = true),
-    HeartRate("Heart rate", pinnable = true),
-    Activity("Steps", pinnable = true),
-    Recovery("Recovery", pinnable = true),
-    Charge("Energy", pinnable = true),
-    LoadToday("Load and time to recover", pinnable = true),
+    Offer(tr(R.string.today_plan_workout_under_way), editable = false),
+    Suggestion(tr(R.string.today_plan_workout_to_save), editable = false),
+    Alerts(tr(R.string.common_from_your_strap), editable = false),
+    CheckIn(tr(R.string.today_plan_how_do_you_feel)),
+    BodyMorning(tr(R.string.common_your_body_this_morning)),
+    RightNow(tr(R.string.common_right_now), pinnable = true),
+    LastNight(tr(R.string.common_last_night_2), pinnable = true),
+    HeartRate(tr(R.string.common_heart_rate), pinnable = true),
+    Activity(tr(R.string.common_steps), pinnable = true),
+    Recovery(tr(R.string.common_recovery), pinnable = true),
+    Charge(tr(R.string.common_energy), pinnable = true),
+    LoadToday(tr(R.string.today_plan_load_and_time_to), pinnable = true),
     /** Time to recover as a Small beside Load's after a workout: part of [LoadToday], hidden and pinned with it. */
     Recover("", editable = false),
-    Workout("The workout"),
-    Week("Your week", pinnable = true),
-    HabitAge("Habit Age", pinnable = true),
+    Workout(tr(R.string.common_the_workout)),
+    Week(tr(R.string.common_your_week), pinnable = true),
+    HabitAge(tr(R.string.common_habit_age), pinnable = true),
     /** Start a workout (spec 4.2): a strip above Edit Today, opening Ready with your usual sport. */
-    StartWorkout("Start a workout"),
+    StartWorkout(tr(R.string.common_start_a_workout)),
     EditToday("", editable = false),
 }
 

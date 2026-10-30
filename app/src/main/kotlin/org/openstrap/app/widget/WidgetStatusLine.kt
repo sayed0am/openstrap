@@ -6,6 +6,8 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The strap status line as a widget shows it (widgets spec 5): the [status] and its wordings, longest first, so a
@@ -23,7 +25,7 @@ data class StatusLine(val status: StrapStatus, val options: List<String>) {
         fun of(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): StatusLine {
             val full = strapStatusLine(status, now, zone, locale)
             val shorter = when (status) {
-                StrapStatus.NotPaired -> listOf("Pair strap")
+                StrapStatus.NotPaired -> listOf(tr(R.string.widget_status_line_pair_strap))
                 is StrapStatus.LowBattery -> listOf("${status.percent}%")
                 StrapStatus.Syncing -> emptyList()
                 is StrapStatus.StaleSync -> {
@@ -31,13 +33,13 @@ data class StatusLine(val status: StrapStatus, val options: List<String>) {
                     val days = ChronoUnit.DAYS.between(then, Instant.ofEpochSecond(now).atZone(zone).toLocalDate())
                     when {
                         days <= 0 -> listOf(clockText(status.at, zone))
-                        days == 1L -> listOf("Yesterday")
+                        days == 1L -> listOf(tr(R.string.common_yesterday))
                         days < 7 -> {
                             val day = then.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
                             val short = then.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
-                            listOf("Synced $short", day, short)
+                            listOf(tr(R.string.widget_status_line_synced, short), day, short)
                         }
-                        else -> listOf(full.removePrefix("Synced "))
+                        else -> listOf(full.removePrefix(tr(R.string.widget_status_line_synced, "")))
                     }
                 }
             }

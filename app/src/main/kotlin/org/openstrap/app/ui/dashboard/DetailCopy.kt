@@ -4,6 +4,9 @@ import org.openstrap.app.data.History
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * The words and the plain decisions of a detail screen (spec 6.1): the status word beside the value, the label under
@@ -14,9 +17,9 @@ internal object DetailCopy {
     /** The status word beside a value against your normal (spec 7.2); null without a normal to compare with. */
     fun statusWord(status: Int?): String? = when (status) {
         null -> null
-        1 -> "Above your normal"
-        -1 -> "Below your normal"
-        else -> "Usual"
+        1 -> tr(R.string.common_above_your_normal)
+        -1 -> tr(R.string.common_below_your_normal)
+        else -> tr(R.string.common_usual)
     }
 
     /** Where a chart's point sits against your normal: inside it stays dim, above or below it gets the full colour. */
@@ -34,11 +37,11 @@ internal object DetailCopy {
     }
 
     /** The band's label on the chart: "Your normal, 44 to 58". */
-    fun bandLabel(normal: History.Normal, format: (Float) -> String): String = "Your normal, ${format(normal.low)} to ${format(normal.high)}"
+    fun bandLabel(normal: History.Normal, format: (Float) -> String): String = tr(R.string.detail_copy_your_normal_to, format(normal.low), format(normal.high))
 
     /** Before there's a normal: "Learning your normal, 4 of 7 days" (spec 2.7). */
     fun learningNormal(days: Int, nightly: Boolean): String =
-        "Learning your normal, ${days.coerceAtMost(History.MIN_NORMAL_DAYS)} of ${History.MIN_NORMAL_DAYS} ${if (nightly) "nights" else "days"}"
+        tr(R.string.detail_copy_learning_your_normal_of, days.coerceAtMost(History.MIN_NORMAL_DAYS), History.MIN_NORMAL_DAYS, if (nightly) tr(R.string.detail_copy_learning_your_normal_of__nights) else tr(R.string.detail_copy_learning_your_normal_of__days))
 
     /**
      * The latest run of values off your normal on one side, counting back from the last value and skipping days with
@@ -52,12 +55,12 @@ internal object DetailCopy {
 
     /** Small counts in words, as a sentence says them: "three nights", "12 days". */
     fun count(n: Int, unit: String): String {
-        val word = listOf("no", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine").getOrNull(n) ?: n.toString()
-        return "$word $unit${if (n == 1) "" else "s"}"
+        val word = trRaw(R.string.missed_count_words).split(',').getOrNull(n) ?: n.toString()
+        return tr(R.string.missed_count, word, unit + if (n == 1) "" else trRaw(R.string.missed_plural))
     }
 
     /** "days" or "nights", singular. */
-    private fun dayWord(nightly: Boolean) = if (nightly) "night" else "day"
+    private fun dayWord(nightly: Boolean) = tr(if (nightly) R.string.missed_unit_night else R.string.missed_unit_day)
 
     /**
      * The label under the value: what the number is for the range. "bpm now", "ms, day average", "steps, average of
@@ -68,15 +71,15 @@ internal object DetailCopy {
         fun with(text: String) = if (unit.isEmpty()) text.replaceFirstChar { it.uppercase() } else "$unit, $text"
         return when (range) {
             Range.Day -> when (metric) {
-                Metric.HeartRate -> if (live) "bpm now" else "bpm, latest"
-                Metric.RestingHr -> "bpm resting"
-                Metric.Steps -> if (today) "steps so far today" else "steps"
-                Metric.Breathing -> "br/min during sleep"
-                else -> with("day average")
+                Metric.HeartRate -> if (live) tr(R.string.common_bpm_now) else tr(R.string.detail_copy_bpm_latest)
+                Metric.RestingHr -> tr(R.string.detail_copy_bpm_resting)
+                Metric.Steps -> if (today) tr(R.string.detail_copy_steps_so_far_today) else tr(R.string.missed_unit_steps)
+                Metric.Breathing -> tr(R.string.detail_copy_br_min_during_sleep)
+                else -> with(tr(R.string.detail_copy_day_average))
             }
             else -> {
-                val span = when (range) { Range.Week -> "last 7 days"; Range.Month -> "last 30 days"; else -> "last 12 months" }
-                if (metric == Metric.Steps) "steps a day, $span" else with("average of the $span")
+                val span = when (range) { Range.Week -> tr(R.string.detail_copy_last_days); Range.Month -> tr(R.string.detail_copy_last_days_2); else -> tr(R.string.detail_copy_last_months) }
+                if (metric == Metric.Steps) tr(R.string.detail_copy_steps_a_day, span) else with(tr(R.string.detail_copy_average_of_the, span))
             }
         }
     }
@@ -90,14 +93,14 @@ internal object DetailCopy {
     fun day(status: Int?, source: DaySource, today: Boolean, days: Int): String {
         val word = when (status) {
             null -> return learningNormal(days, source == DaySource.Night) + "."
-            1 -> "above your normal"
-            -1 -> "below your normal"
-            else -> "within your normal"
+            1 -> tr(R.string.detail_copy_above_your_normal)
+            -1 -> tr(R.string.detail_copy_below_your_normal)
+            else -> tr(R.string.detail_copy_within_your_normal)
         }
         val prefix = when (source) {
-            DaySource.Night -> if (today) "Last night" else "That night"
-            DaySource.Average -> if (today) "Today's average so far" else "That day's average"
-            DaySource.SoFar -> if (today) "So far today" else "That day"
+            DaySource.Night -> if (today) tr(R.string.common_last_night_2) else tr(R.string.detail_copy_that_night)
+            DaySource.Average -> if (today) tr(R.string.detail_copy_today_s_average_so) else tr(R.string.detail_copy_that_day_s_average)
+            DaySource.SoFar -> if (today) tr(R.string.common_so_far_today) else tr(R.string.common_that_day)
         }
         return "$prefix, $word."
     }
@@ -105,17 +108,17 @@ internal object DetailCopy {
     /** Under the state word when there's no value: why, for the range. */
     fun noValue(metric: Metric, range: Range, today: Boolean): String = when (range) {
         Range.Day -> when {
-            metric == Metric.Breathing -> "Measured during sleep"
-            daySource(metric) == DaySource.Night -> if (today) "For last night" else "For that night"
-            else -> if (today) "So far today" else "For that day"
+            metric == Metric.Breathing -> tr(R.string.detail_copy_measured_during_sleep)
+            daySource(metric) == DaySource.Night -> if (today) tr(R.string.detail_copy_for_last_night) else tr(R.string.detail_copy_for_that_night)
+            else -> if (today) tr(R.string.common_so_far_today) else tr(R.string.detail_copy_for_that_day)
         }
-        Range.Week -> "In the last 7 days"
-        Range.Month -> "In the last 30 days"
-        Range.Year -> "In the last 12 months"
+        Range.Week -> tr(R.string.common_in_the_last_days)
+        Range.Month -> tr(R.string.common_in_the_last_days_2)
+        Range.Year -> tr(R.string.detail_copy_in_the_last_months)
     }
 
     /** Heart rate's day sentence: its spread, since your normal is a daily average and not a reading. */
-    fun heartDay(low: Int, high: Int, today: Boolean): String = "Between $low and $high bpm ${if (today) "so far today" else "that day"}."
+    fun heartDay(low: Int, high: Int, today: Boolean): String = tr(R.string.detail_copy_between_and_bpm, low, high, if (today) tr(R.string.detail_copy_between_and_bpm__so_far_today) else tr(R.string.detail_copy_between_and_bpm__that_day))
 
     /**
      * A week's or a month's sentence from the daily [levels] against your normal: a run off it first ("Below your
@@ -127,27 +130,27 @@ internal object DetailCopy {
         if (!normalKnown) return learningNormal(days, nightly) + "."
         val unit = dayWord(nightly)
         latestRun(levels)?.takeIf { it.second >= 2 }?.let { (side, n) ->
-            return "${if (side == Level.Above) "Above" else "Below"} your normal for ${count(n, unit)}."
+            return tr(R.string.detail_copy_your_normal_for, if (side == Level.Above) tr(R.string.detail_copy_your_normal_for__above) else tr(R.string.detail_copy_your_normal_for__below), count(n, unit))
         }
         val inside = known.count { it == Level.Inside }
-        val over = if (range == Range.Month) " in the last 30 days" else ""
+        val over = if (range == Range.Month) tr(R.string.detail_copy_in_the_last_days) else ""
         return when (inside) {
-            known.size -> "Within your normal on every ${unit}${if (known.size < range.days) " with data" else ""}$over."
-            else -> "Within your normal on $inside of ${known.size} ${unit}s$over."
+            known.size -> tr(R.string.detail_copy_within_your_normal_on, unit, if (known.size < range.days) tr(R.string.detail_copy_within_your_normal_on__with_data) else "", over)
+            else -> tr(R.string.detail_copy_within_your_normal_on_2, inside, known.size, unit, over)
         }
     }
 
     /** The year's sentence, from its weekly averages: "Over the last 12 months, weeks averaged from 48 to 61 ms." */
     fun year(lowest: String, highest: String, unit: String): String =
-        "Over the last 12 months, weeks averaged from $lowest to $highest${if (unit.isEmpty()) "" else " $unit"}."
+        tr(R.string.detail_copy_over_the_last_months, lowest, highest, if (unit.isEmpty()) "" else " $unit")
 
     /** A score's last 7 days: "Averaged 74 over the last 7 days, from 61 to 84." Null without any. */
     fun scoreWeek(values: List<Int?>): String? {
         val known = values.filterNotNull()
         return when (known.size) {
             0 -> null
-            1 -> "One score in the last 7 days so far."
-            else -> "Averaged ${Math.round(known.average())} over the last 7 days, from ${known.min()} to ${known.max()}."
+            1 -> tr(R.string.detail_copy_one_score_in_the)
+            else -> tr(R.string.detail_copy_averaged_over_the_last, Math.round(known.average()), known.min(), known.max())
         }
     }
 
@@ -157,8 +160,8 @@ internal object DetailCopy {
      */
     fun charge(now: Int?, atWake: Int?, drained: Int?, anchored: Boolean, today: Boolean, hour: Int): String = when {
         today || now == null || !anchored -> TodayCopy.charge(now, drained, anchored, hour)
-        atWake != null -> "Started the day at $atWake and ended it at $now."
-        else -> "Ended the day at $now."
+        atWake != null -> tr(R.string.detail_copy_started_the_day_at, atWake, now)
+        else -> tr(R.string.detail_copy_ended_the_day_at, now)
     }
 
     /**
@@ -166,11 +169,11 @@ internal object DetailCopy {
      * "6 of 7 nights"), a night without the heart data a score needs, or waiting for the night.
      */
     fun recoveryState(ready: org.openstrap.app.data.Recovery.Readiness?, today: Boolean): Pair<String, String> = when {
-        ready == null -> "Waiting" to if (today) "For last night's sleep" else "No sleep recorded that night"
+        ready == null -> tr(R.string.common_waiting) to if (today) tr(R.string.detail_copy_for_last_night_s) else tr(R.string.detail_copy_no_sleep_recorded_that)
         ready.phase == org.openstrap.app.data.Recovery.Phase.Withheld ->
-            "Learning" to "${ready.baselineNights} of ${org.openstrap.app.data.Recovery.SCORED_NIGHTS} nights"
-        ready.withheld -> "No score" to "Not enough heart data that night"
-        else -> "No score" to "Scored each morning from the night"
+            tr(R.string.common_learning) to tr(R.string.detail_copy_of_nights, ready.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS)
+        ready.withheld -> tr(R.string.common_no_score) to tr(R.string.detail_copy_not_enough_heart_data)
+        else -> tr(R.string.common_no_score) to tr(R.string.detail_copy_scored_each_morning_from)
     }
 
     /** A day of the seven-day strip under the value: its short name, whether it has data, and whether it's shown. */

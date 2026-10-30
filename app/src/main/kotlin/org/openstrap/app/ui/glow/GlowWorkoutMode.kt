@@ -142,6 +142,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
@@ -177,8 +179,8 @@ internal fun workoutClock(seconds: Long): String =
     if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
 
 internal fun zoneRange(zone: Int, maxHr: Int) =
-    if (zone == 0) "under ${60 * maxHr / 100} bpm"
-    else "${(50 + zone * 10) * maxHr / 100}–${if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+    if (zone == 0) tr(R.string.common_under_bpm, 60 * maxHr / 100)
+    else tr(R.string.glow_workout_mode_bpm, (50 + zone * 10) * maxHr / 100, if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1)
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
@@ -202,7 +204,7 @@ internal fun targetLabel(t: WorkoutTarget?): String = when (t) {
     is WorkoutTarget.Zones -> t.label
     is WorkoutTarget.Time -> t.label
     is WorkoutTarget.Kcal -> t.label
-    null -> "None"
+    null -> tr(R.string.common_none)
 }
 
 /** A full-width pill button, 56 dp like Start and Done (spec 6.3). */
@@ -323,7 +325,7 @@ private fun SportTile(type: Int, name: String, modifier: Modifier, selected: Boo
             val ink = if (selected) Color.Black else Color.White
             Icon(SportIcons.of(type), null, tint = ink, modifier = Modifier.size(24.dp))
             if (type in Workouts.OUTDOOR_ONLY) Icon(
-                SportIcons.Location, "Outdoors", tint = ink.copy(alpha = 0.7f),
+                SportIcons.Location, tr(R.string.glow_workout_mode_outdoors), tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
             )
         }
@@ -360,14 +362,14 @@ internal fun SuggestionPanel(
             Icon(AppIcons.Heartbeat, null, tint = ZONE_COLORS[s.zone], modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("Looks like you worked out", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Text(tr(R.string.glow_workout_mode_looks_like_you_worked), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 val day = dayName(Instant.ofEpochSecond(s.start).atZone(ZoneId.systemDefault()).toLocalDate())
-                Note("$day ${clock(s.start)}–${clock(s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average. Nobody pressed Start.")
+                Note(tr(R.string.glow_workout_mode_mostly_zone_bpm_on, day, clock(s.start), clock(s.end), s.zone + 1, s.averageHeartRate))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Save as workout", Color.White, Color.Black, onSave, height = 48.dp) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Not a workout", Raised, Color.White, onDismiss, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.glow_workout_mode_save_as_workout), Color.White, Color.Black, onSave, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_not_a_workout), Raised, Color.White, onDismiss, height = 48.dp) }
         }
     }
 }
@@ -383,13 +385,13 @@ internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () 
             Icon(SportIcons.of(o.sportType), null, tint = MetricColors.heart, modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("Looks like a workout", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
-                Note("Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?")
+                Text(tr(R.string.common_looks_like_a_workout), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Note(tr(R.string.glow_workout_mode_your_heart_rate_has, clock(o.start), o.averageHeartRate, Workouts.sportName(o.sportType).lowercase(), clock(o.start)))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Record", MetricColors.heart, Color.Black, onRecord, height = 48.dp) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Not now", Raised, Color.White, onDecline, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_record), MetricColors.heart, Color.Black, onRecord, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_not_now), Raised, Color.White, onDecline, height = 48.dp) }
         }
     }
 }
@@ -421,25 +423,25 @@ fun GlowAddWorkoutScreen(
         return
     }
     BackHandler(onBack = onBack)
-    WorkoutPage(Color.Transparent, contentPadding, pinned = { WorkoutButton("Choose the sport", Color.White, Color.Black, { picking = true }) }) {
-        PageHeader("Add a workout", onBack, subtitle = dayName(date))
+    WorkoutPage(Color.Transparent, contentPadding, pinned = { WorkoutButton(tr(R.string.glow_workout_mode_choose_the_sport), Color.White, Color.Black, { picking = true }) }) {
+        PageHeader(tr(R.string.glow_workout_mode_add_a_workout), onBack, subtitle = dayName(date))
         if (minuteHr == null) {
-            QuietPanel { Note("Loading…") }
+            QuietPanel { Note(tr(R.string.missed_loading)) }
             return@WorkoutPage
         }
         if (series.size < 2) {
-            QuietPanel { Note("The strap hasn't sent heart rate for this day yet. Sync, then try again.") }
+            QuietPanel { Note(tr(R.string.glow_workout_mode_the_strap_hasn_t)) }
             return@WorkoutPage
         }
         QuietPanel {
-            PanelTitle("When was it?", trailing = "${clock(from)} – ${clock(to)}")
+            PanelTitle(tr(R.string.glow_workout_mode_when_was_it), trailing = "${clock(from)} – ${clock(to)}")
             RangeChart(series, first, last, from, to, maxHr) { f, t -> from = f; to = t }
             Row(Modifier.fillMaxWidth()) {
                 Note(clock(first))
                 Spacer(Modifier.weight(1f))
                 Note(clock(last))
             }
-            Note("Drag the handles to where the workout began and ended. Its heart rate comes from the strap's minute records.")
+            Note(tr(R.string.glow_workout_mode_drag_the_handles_to))
         }
     }
 }
@@ -585,12 +587,12 @@ fun GlowWorkoutReadyScreen(
             Box(
                 Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(onBack, CircleShape),
                 contentAlignment = Alignment.Center,
-            ) { Icon(AppIcons.X, "Close", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            ) { Icon(AppIcons.X, tr(R.string.common_close), tint = Color.White, modifier = Modifier.size(18.dp)) }
             Box(Modifier.align(Alignment.Center)) { Pill(Workouts.shortName(type), null, onClick = { picking = true }, caret = true) }
         }
         Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Ready when you are", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
-            Text("Recording starts when you tap Start.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            Text(tr(R.string.glow_workout_mode_ready_when_you_are), color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+            Text(tr(R.string.glow_workout_mode_recording_starts_when_you), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         // Outdoor or indoor is a switch, not a second sport.
         if (pair != null) SideSwitch(listOf(pair.outdoorName, pair.indoorName), if (indoor == true) 1 else 0) { i ->
@@ -601,10 +603,10 @@ fun GlowWorkoutReadyScreen(
         // GPS for the outdoor side and sports done outdoors only; indoors there's no row at all.
         if (outdoor) ListPanel {
             if (locationOn) {
-                SettingRow(SportIcons.Location, "GPS", WorkoutCopy.gpsNote(useGps, type), divider = false, onClick = { gpsOff = !gpsOff }) {
+                SettingRow(SportIcons.Location, tr(R.string.common_gps), WorkoutCopy.gpsNote(useGps, type), divider = false, onClick = { gpsOff = !gpsOff }) {
                     GlowSwitch(!gpsOff, { gpsOff = !it })
                 }
-                if (useGps) SettingRow(AppIcons.Route01, "Keep the route", WorkoutCopy.routeNote(keepRoute), onClick = { keepRoute = !keepRoute }) {
+                if (useGps) SettingRow(AppIcons.Route01, tr(R.string.common_keep_the_route), WorkoutCopy.routeNote(keepRoute), onClick = { keepRoute = !keepRoute }) {
                     GlowSwitch(keepRoute, { keepRoute = it })
                 }
             } else {
@@ -613,18 +615,18 @@ fun GlowWorkoutReadyScreen(
                     else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
                 }
                 SettingRow(SportIcons.Location, WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, divider = false, onClick = turnOn) {
-                    SmallPill("Turn on", turnOn)
+                    SmallPill(tr(R.string.glow_workout_mode_turn_on), turnOn)
                 }
             }
         }
         // Strength counts sets and rest; the strap buzzes when rest is over, so the phone can stay in a pocket.
         if (strength) Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ChipLabel("Sets")
-            Chips(listOf("Open") + listOf(3, 4, 5).map { "$it sets" }, listOf(null, 3, 4, 5).indexOf(setsTarget), Color.White) { setsTarget = listOf(null, 3, 4, 5)[it] }
-            ChipLabel("Rest. The strap buzzes when it's over.")
-            Chips(Strength.Rest.TIMES.map { "${it} s" }, Strength.Rest.TIMES.indexOf(restSeconds), Color.White) { restSeconds = Strength.Rest.TIMES[it] }
-            ChipLabel("Or sooner, once heart rate drops below")
-            Chips(Strength.Rest.LEVELS.map { it?.let { b -> "$b bpm" } ?: "Off" }, Strength.Rest.LEVELS.indexOf(restBelow), Color.White) { restBelow = Strength.Rest.LEVELS[it] }
+            ChipLabel(tr(R.string.common_sets))
+            Chips(listOf(tr(R.string.common_open)) + listOf(3, 4, 5).map { tr(R.string.missed_n_sets, it) }, listOf(null, 3, 4, 5).indexOf(setsTarget), Color.White) { setsTarget = listOf(null, 3, 4, 5)[it] }
+            ChipLabel(tr(R.string.glow_workout_mode_rest_the_strap_buzzes))
+            Chips(Strength.Rest.TIMES.map { tr(R.string.missed_seconds, it) }, Strength.Rest.TIMES.indexOf(restSeconds), Color.White) { restSeconds = Strength.Rest.TIMES[it] }
+            ChipLabel(tr(R.string.glow_workout_mode_or_sooner_once_heart))
+            Chips(Strength.Rest.LEVELS.map { it?.let { b -> "$b bpm" } ?: tr(R.string.common_off) }, Strength.Rest.LEVELS.indexOf(restBelow), Color.White) { restBelow = Strength.Rest.LEVELS[it] }
         }
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             ChipLabel(WorkoutCopy.targetHint(target))
@@ -635,13 +637,13 @@ fun GlowWorkoutReadyScreen(
             }
         }
         ListPanel {
-            SettingRow(null, "Ask to end when I stop", "After 8 min near resting heart rate and no steps, the strap buzzes and asks.", divider = false, onClick = { askToEnd = !askToEnd }) {
+            SettingRow(null, tr(R.string.glow_workout_mode_ask_to_end_when), tr(R.string.glow_workout_mode_after_min_near_resting), divider = false, onClick = { askToEnd = !askToEnd }) {
                 GlowSwitch(askToEnd, { askToEnd = it })
             }
         }
     }
     if (info) InfoSheet(
-        Info("Recording", WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), accent, null, null,
+        Info(tr(R.string.common_recording), WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), accent, null, null,
         onDismiss = { info = false }, rows = WorkoutCopy.readyRows(outdoor),
     )
 }
@@ -666,7 +668,7 @@ private fun StrapHero(connection: ConnectionState, liveHeartRate: Int?, onInfo: 
     )
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
-            GlowHeader(hero.title, trailingContent = { RoundButton(AppIcons.Info, "About recording", onInfo, size = 32.dp) })
+            GlowHeader(hero.title, trailingContent = { RoundButton(AppIcons.Info, tr(R.string.glow_workout_mode_about_recording), onInfo, size = 32.dp) })
             if (bpm != null) Row(Modifier.padding(top = 20.dp), verticalAlignment = Alignment.Bottom) {
                 DotMatrixText(bpm.toString(), dot = DotSize.Hero)
                 // The word after a number (spec 2.3).
@@ -777,7 +779,7 @@ private fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddin
     BackHandler { if (more) more = false else onBack() }
     if (more) {
         ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-            item { PageHeader("More sports", { more = false }) }
+            item { PageHeader(tr(R.string.glow_workout_mode_more_sports), { more = false }) }
             item {
                 ListPanel {
                     Workouts.MORE.forEachIndexed { i, type ->
@@ -792,23 +794,23 @@ private fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddin
     val found = remember(query) { Workouts.search(query) }
     val chosen = Workouts.tileType(selected)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Choose a sport", onBack) }
+        item { PageHeader(tr(R.string.common_choose_a_sport), onBack) }
         item { SearchField(query) { query = it } }
         if (query.isNotBlank()) {
             item(key = "found") {
                 if (found.isEmpty()) Text(
-                    "No sport matches \"${query.trim()}\".", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    tr(R.string.glow_workout_mode_no_sport_matches, query.trim()), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                     style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp, top = 8.dp),
                 )
                 else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, onPick)
             }
             return@ScreenList
         }
-        if (recent.isNotEmpty()) item(key = "recent") { SportTiles("Recent", recent, Workouts::shortName, { it == chosen }, onPick) }
-        item(key = "sports") { SportTiles("Sports", Workouts.EVERYDAY, Workouts::shortName, { it == chosen }, onPick) }
+        if (recent.isNotEmpty()) item(key = "recent") { SportTiles(tr(R.string.glow_workout_mode_recent), recent, Workouts::shortName, { it == chosen }, onPick) }
+        item(key = "sports") { SportTiles(tr(R.string.glow_workout_mode_sports), Workouts.EVERYDAY, Workouts::shortName, { it == chosen }, onPick) }
         item(key = "more") {
             ListPanel {
-                PageRow("More sports", "Tennis, padel, dance and the rest", below = true, divider = false, onClick = { more = true })
+                PageRow(tr(R.string.glow_workout_mode_more_sports), tr(R.string.glow_workout_mode_tennis_padel_dance_and), below = true, divider = false, onClick = { more = true })
             }
         }
     }
@@ -846,11 +848,11 @@ private fun SearchField(query: String, onChange: (String) -> Unit) {
                 Icon(SportIcons.Search, null, tint = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(10.dp))
                 Box(Modifier.weight(1f)) {
-                    if (query.isEmpty()) Text("Search", color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body, maxLines = 1)
+                    if (query.isEmpty()) Text(tr(R.string.common_search), color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body, maxLines = 1)
                     field()
                 }
                 if (query.isNotEmpty()) Icon(
-                    AppIcons.X, "Clear", tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    AppIcons.X, tr(R.string.glow_workout_mode_clear), tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                     modifier = Modifier.size(28.dp).clip(CircleShape).clickable { onChange("") }.padding(6.dp),
                 )
             }
@@ -929,12 +931,12 @@ fun GlowWorkoutLiveScreen(
             Box(
                 Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(onMinimize, CircleShape),
                 contentAlignment = Alignment.Center,
-            ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            ) { Icon(AppIcons.CaretDown, tr(R.string.glow_workout_mode_minimize), tint = Color.White, modifier = Modifier.size(18.dp)) }
             Spacer(Modifier.width(10.dp))
             Pill(Workouts.sportName(r.workout.sportType), color)
             Spacer(Modifier.weight(1f))
             Text(
-                when { r.paused -> "Paused"; connected -> "Strap"; else -> "Reconnecting" },
+                when { r.paused -> tr(R.string.common_paused); connected -> tr(R.string.glow_workout_mode_strap); else -> tr(R.string.common_reconnecting) },
                 color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary,
             )
             Spacer(Modifier.width(8.dp))
@@ -969,7 +971,7 @@ fun GlowWorkoutLiveScreen(
         Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.Bottom) {
             SideStat(figures.sides[0], r, stats, kcal, route, Modifier.weight(1f))
             StatRule()
-            LiveStat("Moving time", Modifier.weight(1.5f)) {
+            LiveStat(tr(R.string.glow_workout_mode_moving_time), Modifier.weight(1.5f)) {
                 // Plain digits: the heart rate above is the one dot-matrix number on the screen.
                 Text(workoutClock(active), color = Color.White, style = LiveClock)
             }
@@ -991,13 +993,13 @@ fun GlowWorkoutLiveScreen(
         r.workout.lapMarks.lastOrNull()?.let { mark ->
             val lap = (active - WorkoutRecorder.activeSeconds(r.workout, mark)).coerceAtLeast(0)
             Text(
-                "Lap ${r.workout.lapMarks.size + 1}, ${workoutClock(lap)}",
+                tr(R.string.glow_workout_mode_lap, r.workout.lapMarks.size + 1, workoutClock(lap)),
                 color = Color.White.copy(alpha = 0.75f), style = MediumBody.copy(fontFeatureSettings = "tnum"),
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
         }
         if (!connected && !r.paused) {
-            Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
+            Note(tr(R.string.glow_workout_mode_the_strap_isn_t))
         }
         r.endPrompt?.let { at -> StoppedPrompt(r, at, onEndAtPrompt, onKeepGoing) }
         Spacer(Modifier.weight(1f))
@@ -1008,17 +1010,17 @@ fun GlowWorkoutLiveScreen(
         ) {
             // Lap (not for strength, which has sets), keeping Pause centred either way. An ordinary tap: no tick.
             if (!r.strength && !r.paused) FlatButton(Raised, 64.dp, onClick = onLap) {
-                Icon(SportIcons.Lap, "Lap", tint = Color.White, modifier = Modifier.size(22.dp))
+                Icon(SportIcons.Lap, tr(R.string.common_lap), tint = Color.White, modifier = Modifier.size(22.dp))
             } else Spacer(Modifier.size(64.dp))
             Spacer(Modifier.weight(1f))
             FlatButton(Color.White, 88.dp, onClick = if (r.paused) onResume else onPause) {
-                Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) "Resume" else "Pause", tint = Color.Black, modifier = Modifier.size(30.dp))
+                Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) tr(R.string.common_resume) else tr(R.string.common_pause), tint = Color.Black, modifier = Modifier.size(30.dp))
             }
             Spacer(Modifier.weight(1f))
             HoldToEnd(onEnd)
         }
         Text(
-            "Hold the square to end", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
+            tr(R.string.glow_workout_mode_hold_the_square_to), color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
             modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
         )
         // A little room under the controls, so they sit up off the screen's edge.
@@ -1133,7 +1135,7 @@ private fun WorkoutHeartCard(
     )
     GlowCard(style, modifier) {
         Column(if (fill) Modifier.fillMaxSize() else Modifier) {
-            GlowHeader("Heart rate", trailing = bpm?.let { "${it * 100 / r.maxHeartRate}% of max" })
+            GlowHeader(tr(R.string.common_heart_rate), trailing = bpm?.let { tr(R.string.glow_workout_mode_of_max, it * 100 / r.maxHeartRate) })
             BoxWithConstraints(Modifier.fillMaxWidth().then(if (fill) Modifier.weight(1f) else Modifier.height(220.dp))) {
                 val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
                 val values = remember(recent) { bucketRecent(recent, now) }
@@ -1149,9 +1151,9 @@ private fun WorkoutHeartCard(
                     if (bpm != null) {
                         DotMatrixText(bpm.toString(), dot = DotSize.Live, scale = scale)
                         Spacer(Modifier.height(8.dp))
-                        Text("bpm, last 10 min behind", color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
+                        Text(tr(R.string.glow_workout_mode_bpm_last_min_behind), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
                     } else Text(
-                        when { r.paused -> "Paused"; !connected -> "Waiting for the strap"; else -> "Waiting for heart rate" },
+                        when { r.paused -> tr(R.string.common_paused); !connected -> tr(R.string.common_waiting_for_the_strap); else -> tr(R.string.common_waiting_for_heart_rate) },
                         color = Color.White, style = GlowType.sentence,
                     )
                 }
@@ -1164,14 +1166,14 @@ private fun WorkoutHeartCard(
                     Spacer(Modifier.width(6.dp))
                     Text(word, color = Color.White.copy(alpha = 0.75f), style = GlowType.sentence, modifier = Modifier.weight(1f))
                     Text(zoneRange(zone, r.maxHeartRate), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary)
-                } else Text(if (r.paused) "No zone while paused" else "No zone yet", color = Color.White, style = GlowType.sentence)
+                } else Text(if (r.paused) tr(R.string.glow_workout_mode_no_zone_while_paused) else tr(R.string.glow_workout_mode_no_zone_yet), color = Color.White, style = GlowType.sentence)
             }
             Spacer(Modifier.height(8.dp))
             Row {
                 zone?.let { Note(WorkoutCopy.zoneTime(zoneSeconds[it])) }
                 Spacer(Modifier.weight(1f))
                 when (val t = WorkoutTarget.parse(r.workout.target)) {
-                    is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
+                    is WorkoutTarget.Zones -> Note(tr(R.string.glow_workout_mode_target_the_strap_buzzes_3, t.label.removePrefix("Zone ")))
                     is WorkoutTarget.Time -> Note("${workoutClock(active)} of ${t.label}")
                     is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
                     null -> Unit
@@ -1215,10 +1217,10 @@ private fun SetsPanel(r: WorkoutState.Recording, color: Color, onStartSet: () ->
             Box(Modifier.weight(1f)) {
                 PanelTitle(
                     when {
-                        r.inSet -> "Set ${r.sets.size}, ${workoutClock(now - r.sets.last().start)}"
-                        r.resting -> "Resting after set $done, ${workoutClock((r.restUntil!! - now).coerceAtLeast(0))}"
-                        done == 0 -> "Ready for set 1"
-                        else -> "Rest over. Set ${done + 1} next."
+                        r.inSet -> tr(R.string.glow_workout_mode_set, r.sets.size, workoutClock(now - r.sets.last().start))
+                        r.resting -> tr(R.string.glow_workout_mode_resting_after_set, done, workoutClock((r.restUntil!! - now).coerceAtLeast(0)))
+                        done == 0 -> tr(R.string.glow_workout_mode_ready_for_set)
+                        else -> tr(R.string.glow_workout_mode_rest_over_set_next, done + 1)
                     },
                 )
             }
@@ -1233,11 +1235,11 @@ private fun SetsPanel(r: WorkoutState.Recording, color: Color, onStartSet: () ->
             GlowBar(((now - start).toFloat() / (until - start).coerceAtLeast(1)).coerceIn(0f, 1f), color)
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            if (r.inSet) Box(Modifier.weight(1f)) { WorkoutButton("Set done", Color.White, Color.Black, onSetDone, height = 52.dp) }
-            else Box(Modifier.weight(1f)) { WorkoutButton("Start set ${r.sets.size + 1}", Color.White, Color.Black, onStartSet, height = 52.dp) }
-            if (r.resting) Box(Modifier.width(96.dp)) { WorkoutButton("+30 s", Raised, Color.White, onExtend, height = 52.dp) }
+            if (r.inSet) Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_set_done), Color.White, Color.Black, onSetDone, height = 52.dp) }
+            else Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_start_set, r.sets.size + 1), Color.White, Color.Black, onStartSet, height = 52.dp) }
+            if (r.resting) Box(Modifier.width(96.dp)) { WorkoutButton(tr(R.string.missed_plus_30_s), Raised, Color.White, onExtend, height = 52.dp) }
         }
-        if (target != null && done >= target && !r.inSet) Note("All $target sets done. Hold the square to end, or keep going.")
+        if (target != null && done >= target && !r.inSet) Note(tr(R.string.glow_workout_mode_all_sets_done_hold, target))
     }
 }
 
@@ -1269,8 +1271,8 @@ private fun LiveMapPage(
         BpmChip(bpm, color, paused, Modifier.align(Alignment.TopStart).padding(16.dp))
         Row(Modifier.align(Alignment.BottomStart).padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val acc = route.lastOrNull()?.accuracy
-            Pill(if (acc == null || acc > 1000) "Finding GPS…" else "GPS ±${acc.toInt()} m", if (acc != null && acc <= Route.MAX_ACCURACY_M) TrendGood else TrendBad)
-            Pill(if (routeOnly) "Route only" else "Map", null, onClick = { onRouteOnly(!routeOnly) })
+            Pill(if (acc == null || acc > 1000) tr(R.string.glow_workout_mode_finding_gps) else tr(R.string.glow_workout_mode_gps_m, acc.toInt()), if (acc != null && acc <= Route.MAX_ACCURACY_M) TrendGood else TrendBad)
+            Pill(if (routeOnly) tr(R.string.glow_workout_mode_route_only) else tr(R.string.glow_workout_mode_map), null, onClick = { onRouteOnly(!routeOnly) })
         }
     }
 }
@@ -1288,7 +1290,7 @@ private fun BpmChip(bpm: Int?, color: Color, paused: Boolean, modifier: Modifier
             DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
             Spacer(Modifier.width(6.dp))
             Text("bpm", color = Color.Black, style = MediumBody)
-        } else Text(if (paused) "Paused" else "No heart rate yet", color = Color.Black, style = MediumBody)
+        } else Text(if (paused) tr(R.string.common_paused) else tr(R.string.glow_workout_mode_no_heart_rate_yet), color = Color.Black, style = MediumBody)
     }
 }
 
@@ -1311,19 +1313,19 @@ private fun SideStat(
 ) {
     val distance = r.workout.distanceMeters
     val (label, value) = when (figure) {
-        SideFigure.Avg -> "Avg" to stats?.average?.toString()
-        SideFigure.Max -> "Max" to stats?.max?.toString()
+        SideFigure.Avg -> tr(R.string.glow_workout_mode_avg) to stats?.average?.toString()
+        SideFigure.Max -> tr(R.string.common_max) to stats?.max?.toString()
         SideFigure.Kcal -> "kcal" to kcal?.active?.toInt()?.toString()
-        SideFigure.Distance -> (if (r.workout.distanceFromSteps) "Distance ≈" else "Distance") +
+        SideFigure.Distance -> (if (r.workout.distanceFromSteps) tr(R.string.glow_workout_mode_distance) else tr(R.string.common_distance)) +
             (if (distance != null && distance >= 1000) " km" else "") to distance?.let(::km)
-        SideFigure.Pace -> "Pace /km" to Route.formatPace(Route.currentPace(route))
+        SideFigure.Pace -> tr(R.string.glow_workout_mode_pace_km) to Route.formatPace(Route.currentPace(route))
     }
     val spoken = when (figure) {
-        SideFigure.Avg -> "Average heart rate"
-        SideFigure.Max -> "Peak heart rate"
-        SideFigure.Kcal -> "Active kcal"
-        SideFigure.Distance -> if (r.workout.distanceFromSteps) "Distance from steps" else "Distance"
-        SideFigure.Pace -> "Pace per kilometre"
+        SideFigure.Avg -> tr(R.string.sleep_panels_average_heart_rate)
+        SideFigure.Max -> tr(R.string.glow_workout_mode_peak_heart_rate)
+        SideFigure.Kcal -> tr(R.string.glow_workout_mode_active_kcal)
+        SideFigure.Distance -> if (r.workout.distanceFromSteps) tr(R.string.glow_workout_mode_distance_from_steps) else tr(R.string.common_distance)
+        SideFigure.Pace -> tr(R.string.glow_workout_mode_pace_per_kilometre)
     }
     val unit = if (figure == SideFigure.Distance && distance != null && distance >= 1000) " kilometres" else ""
     LiveStat(
@@ -1376,14 +1378,14 @@ private fun FlatButton(container: Color, size: Dp, modifier: Modifier = Modifier
 @Composable
 private fun StoppedPrompt(r: WorkoutState.Recording, at: Long, onEnd: () -> Unit, onKeep: () -> Unit) {
     QuietPanel {
-        PanelTitle(if (r.inCar) "Looks like you're in a car" else "Looks like you've stopped")
+        PanelTitle(if (r.inCar) tr(R.string.common_looks_like_you_re) else tr(R.string.common_looks_like_you_ve))
         Note(
-            if (r.inCar) "You last moved at ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} there, so the drive isn't counted?"
-            else "Your heart rate has been back near resting since ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} at ${clock(at)}?",
+            if (r.inCar) tr(R.string.glow_workout_mode_you_last_moved_at, clock(at), Workouts.sportName(r.workout.sportType).lowercase())
+            else tr(R.string.glow_workout_mode_your_heart_rate_has_2, clock(at), Workouts.sportName(r.workout.sportType).lowercase(), clock(at)),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("End at ${clock(at)}", Color.White, Color.Black, onEnd) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Keep going", Raised, Color.White, onKeep) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.glow_workout_mode_end_at, clock(at)), Color.White, Color.Black, onEnd) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_keep_going), Raised, Color.White, onKeep) }
         }
     }
 }
@@ -1413,7 +1415,7 @@ private fun HoldToEnd(onEnd: () -> Unit) {
                 })
             },
         ) {
-            Icon(AppIcons.StopFill, "Hold to end the workout", tint = EndRed, modifier = Modifier.size(20.dp))
+            Icon(AppIcons.StopFill, tr(R.string.glow_workout_mode_hold_to_end_the), tint = EndRed, modifier = Modifier.size(20.dp))
         }
         Canvas(Modifier.size(64.dp).padding(2.dp)) {
             if (progress.value > 0f) drawArc(EndRed, -90f, 360f * progress.value, false, style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
@@ -1464,11 +1466,11 @@ fun WorkoutCapsule(
             )
             Text(
                 when {
-                    r.endPrompt != null -> "Stopped? Tap to answer"
-                    r.paused -> "Paused"
+                    r.endPrompt != null -> tr(R.string.glow_workout_mode_stopped_tap_to_answer)
+                    r.paused -> tr(R.string.common_paused)
                     zone != null -> WorkoutCopy.zoneTitle(zone).let { (name, word) -> "$name $word" }
-                    connected -> "Waiting for heart rate"
-                    else -> "Strap reconnecting"
+                    connected -> tr(R.string.common_waiting_for_heart_rate)
+                    else -> tr(R.string.glow_workout_mode_strap_reconnecting)
                 },
                 color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1,
             )
@@ -1481,7 +1483,7 @@ fun WorkoutCapsule(
             Modifier.size(44.dp).clip(CircleShape).background(color).pressClickable(if (r.paused) onResume else onPause, CircleShape),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) "Resume" else "Pause", tint = Color.Black, modifier = Modifier.size(18.dp))
+            Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, if (r.paused) tr(R.string.common_resume) else tr(R.string.common_pause), tint = Color.Black, modifier = Modifier.size(18.dp))
         }
     }
 }
@@ -1526,29 +1528,29 @@ private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.syst
 /** Done right after the end, and Delete workout behind a question. */
 @Composable
 internal fun ColumnScope.SummaryActions(justEnded: Boolean, onDone: () -> Unit, onDelete: () -> Unit) {
-    if (justEnded) WorkoutButton("Done", Color.White, Color.Black, onDone)
+    if (justEnded) WorkoutButton(tr(R.string.common_done), Color.White, Color.Black, onDone)
     DeleteWorkout(PHONE_DELETE, onDelete, Modifier.align(Alignment.CenterHorizontally))
 }
 
 /** What deleting a phone workout does. */
-internal const val PHONE_DELETE = "Its heart rate and times are removed from OpenStrap. The strap's own history is kept."
+internal val PHONE_DELETE: String get() = tr(R.string.glow_workout_mode_its_heart_rate_and)
 
 /** "Delete workout" in [DestructiveInk], asking first; [what] says what deleting it does. */
 @Composable
 internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     var confirmDelete by remember { mutableStateOf(false) }
     Text(
-        "Delete this workout", color = DestructiveInk, style = GlowType.body,
+        tr(R.string.glow_workout_mode_delete_this_workout), color = DestructiveInk, style = GlowType.body,
         modifier = modifier.clip(RoundedCornerShape(50))
             .pressClickable({ confirmDelete = true }, RoundedCornerShape(50)).padding(horizontal = 16.dp, vertical = 10.dp),
     )
     if (confirmDelete) {
         GlassAlertDialog(
             onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this workout?") },
+            title = { Text(tr(R.string.glow_workout_mode_delete_this_workout_2)) },
             text = { Text(what) },
-            confirmButton = { TextButton(onClick = { confirmDelete = false; onDelete() }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+            confirmButton = { TextButton(onClick = { confirmDelete = false; onDelete() }) { Text(tr(R.string.glow_workout_mode_delete)) } },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(tr(R.string.common_cancel)) } },
         )
     }
 }
@@ -1565,24 +1567,24 @@ internal fun TrimSection(summary: PhoneSummary, onTrim: (from: Long, to: Long) -
     // What the app did, with undo: an early end it proposed, or a trim.
     a.recordedEnd?.let { recorded ->
         val cut = recorded - a.end
-        val left = if (cut < 60) "$cut s" else "${cut / 60} min"
+        val left = if (cut < 60) tr(R.string.missed_seconds, cut) else tr(R.string.missed_duration_min, cut / 60)
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(
-                if (summary.endReason == AppWorkout.END_CAR && a.shownStart == w.start) "Ended at ${clock(a.end)}. $left of driving were left out."
-                else if (summary.endReason == AppWorkout.END_AUTO && a.shownStart == w.start) "Ended at ${clock(a.end)}, when you'd stopped. $left after that were left out."
-                else "Trimmed to ${clock(a.shownStart)}–${clock(a.end)}. The rest is kept.",
+                if (summary.endReason == AppWorkout.END_CAR && a.shownStart == w.start) tr(R.string.glow_workout_mode_ended_at_of_driving, clock(a.end), left)
+                else if (summary.endReason == AppWorkout.END_AUTO && a.shownStart == w.start) tr(R.string.glow_workout_mode_ended_at_when_you, clock(a.end), left)
+                else tr(R.string.glow_workout_mode_trimmed_to_the_rest, clock(a.shownStart), clock(a.end)),
                 color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f),
             )
             Text(
-                "Undo", color = Color.White, style = MediumBody,
+                tr(R.string.common_undo), color = Color.White, style = MediumBody,
                 modifier = Modifier.clip(RoundedCornerShape(50)).pressClickable(onUndoTrim, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
             )
         }
     } ?: if (a.shownStart != w.start) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Trimmed to start at ${clock(a.shownStart)}. The rest is kept.", color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f))
+            Text(tr(R.string.glow_workout_mode_trimmed_to_start_at, clock(a.shownStart)), color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f))
             Text(
-                "Undo", color = Color.White, style = MediumBody,
+                tr(R.string.common_undo), color = Color.White, style = MediumBody,
                 modifier = Modifier.clip(RoundedCornerShape(50)).pressClickable(onUndoTrim, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
             )
         }
@@ -1594,7 +1596,7 @@ internal fun TrimSection(summary: PhoneSummary, onTrim: (from: Long, to: Long) -
             Modifier.fillMaxWidth().glass(GlassRowShape, { trimming = true }).padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Trim start and end", color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
+            Text(tr(R.string.glow_workout_mode_trim_start_and_end), color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
             TapCaret(ROW_CARET_ALPHA)
         }
     }
@@ -1623,7 +1625,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
         List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
     }
     QuietPanel {
-        PanelTitle("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
+        PanelTitle(tr(R.string.glow_workout_mode_trim), trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
         val known = points.filterNotNull()
         val lo = (known.minOrNull() ?: 60f) - 10f
         val hi = (known.maxOrNull() ?: 180f) + 5f
@@ -1688,10 +1690,10 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
             Spacer(Modifier.weight(1f))
             Note(clock(last))
         }
-        Note("Drag the handles to where the workout really started and ended. Nothing recorded is deleted.")
+        Note(tr(R.string.glow_workout_mode_drag_the_handles_to_2))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Cancel", Raised, Color.White, onCancel) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Save", Color.White, Color.Black, { onSave(from, to) }) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_cancel), Raised, Color.White, onCancel) }
+            Box(Modifier.weight(1f)) { WorkoutButton(tr(R.string.common_save), Color.White, Color.Black, { onSave(from, to) }) }
         }
     }
 }
@@ -1742,7 +1744,7 @@ fun WorkoutShortcut(r: WorkoutState.Recording, liveHeartRate: Int?, onOpen: () -
         if (r.paused) Icon(AppIcons.PlayFill, null, tint = Color.Black, modifier = Modifier.size(16.dp))
         else PulseDot(Color.Black, liveHeartRate, 10.dp)
         Spacer(Modifier.width(10.dp))
-        Text(if (r.paused) "Resume ${sport.lowercase()}" else sport, color = Color.Black, style = MediumBody)
+        Text(if (r.paused) tr(R.string.glow_workout_mode_resume, sport.lowercase()) else sport, color = Color.Black, style = MediumBody)
         Spacer(Modifier.width(8.dp))
         Text(clock, color = Color.Black, style = MediumBody.copy(fontFeatureSettings = "tnum"))
     }

@@ -49,13 +49,15 @@ import org.openstrap.app.ui.glow.PageSwitchRow
 import androidx.compose.ui.graphics.Color
 import org.openstrap.app.ui.glow.GlowSegments
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** What the Strap page's Phone alerts row says: "Calls and notifications", "Calls", "Notifications" or "Off". */
 fun phoneAlertsSummary(calls: Boolean, notifications: Boolean): String = when {
-    calls && notifications -> "Calls and notifications"
-    calls -> "Calls"
-    notifications -> "Notifications"
-    else -> "Off"
+    calls && notifications -> tr(R.string.phone_alerts_screen_calls_and_notifications)
+    calls -> tr(R.string.phone_alerts_screen_calls)
+    notifications -> tr(R.string.phone_alerts_screen_notifications)
+    else -> tr(R.string.common_off)
 }
 
 /** "22:00" for minutes after midnight. */
@@ -63,10 +65,10 @@ internal fun quietClock(minutes: Int): String = "%02d:%02d".format(minutes / 60,
 
 /** Under the Quiet hours switch: what it holds back, and when. */
 internal fun quietHoursSummary(q: QuietHours, callsOn: Boolean): String = when {
-    !q.on -> "Pause the buzz at night or during set hours."
-    q.from == q.to -> "Pick different start and end times."
-    q.calls && callsOn -> "No buzz from ${quietClock(q.from)} to ${quietClock(q.to)}, calls included."
-    else -> "No notification buzz from ${quietClock(q.from)} to ${quietClock(q.to)}."
+    !q.on -> tr(R.string.phone_alerts_screen_pause_the_buzz_at)
+    q.from == q.to -> tr(R.string.phone_alerts_screen_pick_different_start_and)
+    q.calls && callsOn -> tr(R.string.phone_alerts_screen_no_buzz_from_to, quietClock(q.from), quietClock(q.to))
+    else -> tr(R.string.phone_alerts_screen_no_notification_buzz_from, quietClock(q.from), quietClock(q.to))
 }
 
 /**
@@ -110,11 +112,11 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
     }
 
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Phone alerts", onBack) }
+        item { PageHeader(tr(R.string.common_phone_alerts), onBack) }
         item {
             PagePanel {
                 PageSwitchRow(
-                    "Incoming calls", "Buzzes while your phone rings. App calls like WhatsApp need notification access.",
+                    tr(R.string.phone_alerts_screen_incoming_calls), tr(R.string.phone_alerts_screen_buzzes_while_your_phone),
                     calls && callPermission,
                     { on ->
                         when {
@@ -127,61 +129,61 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
                 )
                 if (calls && callPermission) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Call buzz", style = GlowType.body, color = Color.White)
+                        Text(tr(R.string.phone_alerts_screen_call_buzz), style = GlowType.body, color = Color.White)
                         // Picking one plays it for a few seconds, so the two can be compared on the wrist.
                         GlowSegments(CallBuzz.entries.map { it.label }, callStyle.ordinal, { i ->
                             val style = CallBuzz.entries[i]
                             scope.launch {
                                 settings.setCallBuzzStyle(style)
-                                callPreviewError = runCatching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: "Couldn't buzz the strap" }
+                                callPreviewError = runCatching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: tr(R.string.common_couldn_t_buzz_the) }
                             }
                         })
                         callPreviewError?.let { PageNote(it, color = MetricColors.warn) }
                     }
                 }
-                PageSwitchRow("Notifications", "Buzzes for notifications that make a sound.", notifications && notificationAccess, { on ->
+                PageSwitchRow(tr(R.string.phone_alerts_screen_notifications), tr(R.string.phone_alerts_screen_buzzes_for_notifications_that), notifications && notificationAccess, { on ->
                     scope.launch { settings.setBuzzOnNotifications(on) }
                     if (on && !notificationAccess) openNotificationAccess()
                 })
                 if (notifications && !notificationAccess) {
-                    PageNote("Needs notification access.", color = MetricColors.warn)
-                    PageButton("Open settings", openNotificationAccess, Modifier.fillMaxWidth())
+                    PageNote(tr(R.string.phone_alerts_screen_needs_notification_access), color = MetricColors.warn)
+                    PageButton(tr(R.string.phone_alerts_screen_open_settings), openNotificationAccess, Modifier.fillMaxWidth())
                 }
                 if (notifications && notificationAccess) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Buzz pattern", style = GlowType.body, color = Color.White)
+                        Text(tr(R.string.phone_alerts_screen_buzz_pattern), style = GlowType.body, color = Color.White)
                         // Picking a pattern plays it once, so it can be felt before the next notification.
                         GlowSegments(BuzzPattern.entries.map { it.label }, pattern.ordinal, { i ->
                             val p = BuzzPattern.entries[i]
                             scope.launch {
                                 settings.setNotificationPattern(p)
-                                previewError = runCatching { alerts.preview(p) }.exceptionOrNull()?.let { it.message ?: "Couldn't buzz the strap" }
+                                previewError = runCatching { alerts.preview(p) }.exceptionOrNull()?.let { it.message ?: tr(R.string.common_couldn_t_buzz_the) }
                             }
                         })
                         previewError?.let { PageNote(it, color = MetricColors.warn) }
                     }
-                    PageSwitchRow("Quiet hours", quietHoursSummary(quiet, calls && callPermission), quiet.on, { on ->
+                    PageSwitchRow(tr(R.string.phone_alerts_screen_quiet_hours), quietHoursSummary(quiet, calls && callPermission), quiet.on, { on ->
                         scope.launch { settings.setQuietHours(quiet.copy(on = on)) }
                     })
                     if (quiet.on) {
-                        PageRow("From", quietClock(quiet.from), onClick = { pickingFrom = true }, divider = false)
-                        PageRow("To", quietClock(quiet.to), onClick = { pickingFrom = false })
+                        PageRow(tr(R.string.phone_alerts_screen_from), quietClock(quiet.from), onClick = { pickingFrom = true }, divider = false)
+                        PageRow(tr(R.string.phone_alerts_screen_to), quietClock(quiet.to), onClick = { pickingFrom = false })
                         if (calls && callPermission) {
-                            PageSwitchRow("Calls too", "Off lets a ringing phone still buzz.", quiet.calls, { on ->
+                            PageSwitchRow(tr(R.string.phone_alerts_screen_calls_too), tr(R.string.phone_alerts_screen_off_lets_a_ringing), quiet.calls, { on ->
                                 scope.launch { settings.setQuietHours(quiet.copy(calls = on)) }
                             })
                         }
                     }
                 }
                 // Do Not Disturb is said once, here, for calls and notifications both.
-                PageNote("Follows Do Not Disturb and silent apps. Never reads what a notification says.")
+                PageNote(tr(R.string.phone_alerts_screen_follows_do_not_disturb))
             }
         }
     }
 
     pickingFrom?.let { from ->
         QuietTimeSheet(
-            if (from) "Quiet from" else "Quiet until", if (from) quiet.from else quiet.to,
+            if (from) tr(R.string.phone_alerts_screen_quiet_from) else tr(R.string.phone_alerts_screen_quiet_until), if (from) quiet.from else quiet.to,
             onSave = { m ->
                 pickingFrom = null
                 scope.launch { settings.setQuietHours(if (from) quiet.copy(from = m) else quiet.copy(to = m)) }
@@ -199,8 +201,8 @@ private fun QuietTimeSheet(title: String, minutes: Int, onSave: (Int) -> Unit, o
     PageSheet(onDismiss, title) {
         TimePicker(time, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Save", { onSave(time.hour * 60 + time.minute) }, Modifier.weight(1f), primary = true)
+            PageButton(tr(R.string.common_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(tr(R.string.common_save), { onSave(time.hour * 60 + time.minute) }, Modifier.weight(1f), primary = true)
         }
     }
 }

@@ -15,6 +15,8 @@ import java.security.MessageDigest
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** What the strap reports about itself; sent so the server can pick the matching image. */
 data class StrapIdentity(
@@ -93,12 +95,12 @@ data class FirmwarePart(
 ) {
     val type: Int? get() = FirmwareType.BY_PREFIX[prefix]
     val label: String get() = when (prefix) {
-        "firmware" -> "Firmware"
-        "resource" -> "Resources"
-        "baseResource" -> "Base resources"
-        "extResource" -> "Extra resources"
-        "font" -> "Font"
-        "gps" -> "GPS"
+        "firmware" -> tr(R.string.common_firmware)
+        "resource" -> tr(R.string.firmware_cloud_resources)
+        "baseResource" -> tr(R.string.firmware_cloud_base_resources)
+        "extResource" -> tr(R.string.firmware_cloud_extra_resources)
+        "font" -> tr(R.string.firmware_cloud_font)
+        "gps" -> tr(R.string.common_gps)
         else -> prefix
     }
 }
@@ -127,7 +129,7 @@ class FirmwareCloud(private val cacheDir: File) {
     suspend fun check(apiBase: String, appToken: String, userId: String, strap: StrapIdentity): UpdateCheck =
         withContext(Dispatchers.IO) {
             val base = apiBase.trim().let { if (it.endsWith("/")) it else "$it/" }
-            require(base.startsWith("https://")) { "The server address must start with https://" }
+            require(base.startsWith("https://")) { tr(R.string.common_the_server_address_must) }
             val locale = Locale.getDefault()
             val params = queryParams(strap, userId, locale, TimeZone.getDefault().id, android.os.Build.VERSION.SDK_INT)
             val query = params.entries.joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
@@ -152,8 +154,8 @@ class FirmwareCloud(private val cacheDir: File) {
                 val body = (if (code in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
                 when (code) {
                     in 200..299 -> parse(body)
-                    401, 403 -> throw FirmwareCloudException("The server rejected the app token (HTTP $code). It may have expired.", rejected = true)
-                    else -> throw FirmwareCloudException("Update server returned HTTP $code${body.take(200).let { if (it.isBlank()) "" else ": $it" }}")
+                    401, 403 -> throw FirmwareCloudException(tr(R.string.firmware_cloud_the_server_rejected_the, code), rejected = true)
+                    else -> throw FirmwareCloudException(tr(R.string.firmware_cloud_update_server_returned_http, code, body.take(200).let { if (it.isBlank()) "" else ": $it" }))
                 }
             } finally {
                 conn.disconnect()
@@ -162,7 +164,7 @@ class FirmwareCloud(private val cacheDir: File) {
 
     /** Downloads [part] (or reuses a cached copy) and returns its bytes once the MD5 matches. */
     suspend fun download(part: FirmwarePart, onProgress: (Long, Long) -> Unit): ByteArray = withContext(Dispatchers.IO) {
-        require(part.url.startsWith("https://")) { "Refusing a non-HTTPS download" }
+        require(part.url.startsWith("https://")) { tr(R.string.firmware_cloud_refusing_a_non_https) }
         val dir = File(cacheDir, "firmware").apply { mkdirs() }
         val file = File(dir, part.md5.lowercase())
         if (file.exists() && md5(file.readBytes()).equals(part.md5, ignoreCase = true)) return@withContext file.readBytes()
@@ -172,7 +174,7 @@ class FirmwareCloud(private val cacheDir: File) {
             try {
                 conn.connectTimeout = 15_000
                 conn.readTimeout = 30_000
-                if (conn.responseCode !in 200..299) throw FirmwareCloudException("Download failed (HTTP ${conn.responseCode})")
+                if (conn.responseCode !in 200..299) throw FirmwareCloudException(tr(R.string.firmware_cloud_download_failed_http, conn.responseCode))
                 val total = conn.contentLengthLong.takeIf { it > 0 } ?: part.length
                 val tmp = File(dir, "${part.md5}.part")
                 conn.inputStream.use { input ->
@@ -194,7 +196,7 @@ class FirmwareCloud(private val cacheDir: File) {
                     return@withContext bytes
                 }
                 tmp.delete()
-                if (attempt == 1) throw FirmwareCloudException("Downloaded file failed its MD5 check")
+                if (attempt == 1) throw FirmwareCloudException(tr(R.string.firmware_cloud_downloaded_file_failed_its))
             } finally {
                 conn.disconnect()
             }
@@ -256,7 +258,7 @@ class FirmwareCloud(private val cacheDir: File) {
 
         /** Parses the §1.2 response. Parts with only some fields set make the whole answer invalid. */
         fun parse(body: String): UpdateCheck {
-            val json = runCatching { JSONObject(body) }.getOrElse { throw FirmwareCloudException("Unexpected reply from the update server") }
+            val json = runCatching { JSONObject(body) }.getOrElse { throw FirmwareCloudException(tr(R.string.firmware_cloud_unexpected_reply_from_the)) }
             val parts = PREFIXES.mapNotNull { p ->
                 val url = json.optString("${p}Url")
                 val md5 = json.optString("${p}Md5")
@@ -264,7 +266,7 @@ class FirmwareCloud(private val cacheDir: File) {
                 val length = json.optLong("${p}Length", 0)
                 val any = url.isNotEmpty() || md5.isNotEmpty() || version.isNotEmpty() || length > 0
                 val all = url.isNotEmpty() && md5.isNotEmpty() && version.isNotEmpty() && length > 0
-                if (any && !all) throw FirmwareCloudException("The update server sent an incomplete $p entry")
+                if (any && !all) throw FirmwareCloudException(tr(R.string.firmware_cloud_the_update_server_sent, p))
                 if (all) FirmwarePart(p, url, md5, version, length, json.optInt("${p}Flag", -1)) else null
             }
             val ignore = json.optBoolean("ignore", false)

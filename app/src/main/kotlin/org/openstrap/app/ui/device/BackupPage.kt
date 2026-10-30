@@ -4,7 +4,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.BackupState
+import org.openstrap.app.tr
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowSwitch
@@ -36,21 +38,21 @@ fun BackupPage(
     val now = remember(state, backingUp) { System.currentTimeMillis() / 1000 }
     val toggle = { on: Boolean -> if (on) onTurnOn() else onTurnOff() }
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Backup", onBack) }
+        item { PageHeader(tr(R.string.main_activity_backup), onBack) }
         item {
             PageRows {
-                PageRow("Automatic backup", BackupCopy.status(state, now), onClick = { toggle(!state.on) }, below = true, divider = false, icon = AppIcons.ShieldCheck) {
+                PageRow(tr(R.string.backup_page_automatic_backup), BackupCopy.status(state, now), onClick = { toggle(!state.on) }, below = true, divider = false, icon = AppIcons.ShieldCheck) {
                     GlowSwitch(state.on, toggle)
                 }
                 if (state.on) {
-                    PageRow("Backup folder", BackupCopy.folder(state), onClick = onFolder, below = true, icon = AppIcons.FolderOpen)
+                    PageRow(tr(R.string.backup_page_backup_folder), BackupCopy.folder(state), onClick = onFolder, below = true, icon = AppIcons.FolderOpen)
                     PageRow(
-                        "Back up now", if (backingUp) "Backing up" else "Saves today's zip in that folder",
+                        tr(R.string.backup_page_back_up_now), if (backingUp) tr(R.string.backup_page_backing_up) else tr(R.string.backup_page_saves_todays_zip_in),
                         onClick = onBackUpNow, below = true, enabled = !backingUp, icon = AppIcons.CloudArrowDown,
                     )
                 }
-                PageRow("Restore", "Any OpenStrap zip. Fills in what this phone is missing", onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)
-                PageRow("Save a copy", "A zip saved where you choose, never cleared", onClick = onSaveCopy, below = true, icon = AppIcons.DownloadSimple)
+                PageRow(tr(R.string.backup_page_restore), tr(R.string.backup_page_any_openstrap_zip_fills), onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)
+                PageRow(tr(R.string.you_page_save_a_copy), tr(R.string.backup_page_a_zip_saved_where), onClick = onSaveCopy, below = true, icon = AppIcons.DownloadSimple)
             }
         }
     }

@@ -7,6 +7,8 @@ import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.ui.components.ChartPoint
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * The numbers and words of the Sleep tab's details (spec 5.2 and 6.1): the night-scoped vitals, the Sleep score, Sleep
@@ -103,23 +105,23 @@ internal object SleepCopy {
         val u = metric.unit
         val nightly = dailyIsNightly(metric)
         return when (range) {
-            Range.Day -> "$u, average asleep"
-            Range.Week -> "$u, average of the last 7 nights"
-            Range.Month -> if (nightly) "$u, last 30 nights" else "$u, last 30 days, day and night"
-            Range.Year -> if (nightly) "$u, nights of the last 12 months" else "$u, last 12 months, day and night"
+            Range.Day -> tr(R.string.sleep_copy_average_asleep, u)
+            Range.Week -> tr(R.string.sleep_copy_average_of_the_last, u)
+            Range.Month -> if (nightly) tr(R.string.sleep_copy_last_nights, u) else tr(R.string.sleep_copy_last_days_day_and, u)
+            Range.Year -> if (nightly) tr(R.string.sleep_copy_nights_of_the_last, u) else tr(R.string.sleep_copy_last_months_day_and, u)
         }
     }
 
     /** Under the state word when the night has no value of a vital. */
     fun nightNoValue(hasSleep: Boolean, today: Boolean): Pair<String, String> =
-        if (!hasSleep) "No sleep" to (if (today) "None recorded last night" else "None recorded that night")
-        else "No reading" to (if (today) "Not measured last night" else "Not measured that night")
+        if (!hasSleep) tr(R.string.common_no_sleep) to (if (today) tr(R.string.sleep_copy_none_recorded_last_night) else tr(R.string.sleep_copy_none_recorded_that_night))
+        else tr(R.string.common_no_reading) to (if (today) tr(R.string.sleep_copy_not_measured_last_night) else tr(R.string.sleep_copy_not_measured_that_night))
 
     /** The night's heart rate sentence: "Lowest 48 bpm at 03:10 last night, 55 on average while asleep." */
     fun nightHeart(lowest: Int?, at: String?, average: Int, today: Boolean): String {
-        val night = if (today) "last night" else "that night"
-        return if (lowest != null && at != null) "Lowest $lowest bpm at $at $night, $average on average while asleep."
-        else "$average bpm on average while asleep $night."
+        val night = if (today) tr(R.string.common_last_night) else tr(R.string.sleep_copy_that_night)
+        return if (lowest != null && at != null) tr(R.string.sleep_copy_lowest_bpm_at_on, lowest, at, night, average)
+        else tr(R.string.sleep_copy_bpm_on_average_while, average, night)
     }
 
     /**
@@ -130,20 +132,20 @@ internal object SleepCopy {
         val known = values.filterNotNull()
         return when (known.size) {
             0 -> null
-            1 -> "One night with an average heart rate in the last 7 so far."
-            else -> "Averaged ${Math.round(known.average())} bpm asleep over the last 7 nights, from ${known.min()} to ${known.max()}."
+            1 -> tr(R.string.sleep_copy_one_night_with_an)
+            else -> tr(R.string.sleep_copy_averaged_bpm_asleep_over, Math.round(known.average()), known.min(), known.max())
         }
     }
 
     /* -------------------------------------------- Sleep score ------------------------------------------- */
 
     /** The label under the score. */
-    fun scoreLabel(today: Boolean): String = if (today) "last night" else "that night"
+    fun scoreLabel(today: Boolean): String = if (today) tr(R.string.common_last_night) else tr(R.string.sleep_copy_that_night)
 
     /** The Sleep score's state with no score: no sleep at all, or a night the strap didn't score. */
     fun noScore(hasSleep: Boolean, today: Boolean): Pair<String, String> = when {
-        !hasSleep -> "No sleep" to (if (today) "None recorded last night" else "None recorded that night")
-        else -> "No score" to (if (today) "The strap didn't score last night" else "The strap didn't score that night")
+        !hasSleep -> tr(R.string.common_no_sleep) to (if (today) tr(R.string.sleep_copy_none_recorded_last_night) else tr(R.string.sleep_copy_none_recorded_that_night))
+        else -> tr(R.string.common_no_score) to (if (today) tr(R.string.sleep_copy_the_strap_didn_t) else tr(R.string.sleep_copy_the_strap_didn_t_2))
     }
 
     /** The night's sentence: what pulled it down or lifted it, then how long ("Short night. 5 h 50 asleep."). */
@@ -161,45 +163,45 @@ internal object SleepCopy {
     fun factors(contributors: List<Narrative.Contributor>, asleepSeconds: Long, needMinutes: Int, wasoMinutes: Int?): List<Factor> =
         contributors.map { c ->
             val detail = when (c.label) {
-                "Total sleep" -> "${TodayCopy.duration(asleepSeconds)} of ${TodayCopy.duration(needMinutes * 60L)}"
-                else -> "${TodayCopy.duration((wasoMinutes ?: 0) * 60L)} awake after falling asleep"
+                tr(R.string.narrative_total_sleep) -> tr(R.string.missed_n_of_max, TodayCopy.duration(asleepSeconds), TodayCopy.duration(needMinutes * 60L))
+                else -> tr(R.string.sleep_copy_awake_after_falling_asleep, TodayCopy.duration((wasoMinutes ?: 0) * 60L))
             }
-            val name = if (c.label == "Total sleep") "Time asleep" else "Staying asleep"
+            val name = if (c.label == "Total sleep") tr(R.string.common_time_asleep) else tr(R.string.sleep_copy_staying_asleep)
             Factor(name, detail, factorWord(c.rating), c.fraction, c.rating != Narrative.Rating.GOOD)
         }
 
     /** A factor's word, by its rating against sleep guidance. */
     fun factorWord(rating: Narrative.Rating): String = when (rating) {
-        Narrative.Rating.OPTIMAL -> "Helping"
-        Narrative.Rating.GOOD -> "Good"
-        Narrative.Rating.FAIR -> "Holding it back a little"
-        Narrative.Rating.LOW -> "Holding it back"
+        Narrative.Rating.OPTIMAL -> tr(R.string.common_helping)
+        Narrative.Rating.GOOD -> tr(R.string.common_good)
+        Narrative.Rating.FAIR -> tr(R.string.sleep_copy_holding_it_back_a)
+        Narrative.Rating.LOW -> tr(R.string.sleep_copy_holding_it_back)
     }
 
     /** The bedtime and wake figures' labels. */
-    const val FELL_ASLEEP = "Fell asleep"
-    const val WOKE = "Woke"
-    const val ASLEEP = "Asleep"
+    val FELL_ASLEEP: String get() = tr(R.string.sleep_copy_fell_asleep)
+    val WOKE: String get() = tr(R.string.sleep_copy_woke)
+    val ASLEEP: String get() = tr(R.string.common_asleep)
 
     /* --------------------------------------------- Regularity ------------------------------------------- */
 
     /** The label under the regularity number. */
-    const val REGULARITY_LABEL = "last 7 nights"
+    val REGULARITY_LABEL: String get() = tr(R.string.sleep_copy_last_nights_2)
 
     /** Regularity's state with no number: still learning, with what it needs or how the bedtimes moved. */
-    fun regularityState(reg: SleepRegularity.Result?): Pair<String, String> = "Learning" to TabCopy.regularity(reg)
+    fun regularityState(reg: SleepRegularity.Result?): Pair<String, String> = tr(R.string.common_learning) to TabCopy.regularity(reg)
 
     /** The week's sentence, by its band, or by how much the middle of your sleep moved while the full measure waits. */
     fun regularity(reg: SleepRegularity.Result?): String {
         val band = reg?.band
         val sd = reg?.midpointSdMinutes
         return when {
-            band == SleepRegularity.Band.VeryRegular -> "Very regular this week. Your days kept nearly the same sleep times."
-            band == SleepRegularity.Band.Regular -> "Regular this week. Most days kept similar sleep times."
-            band == SleepRegularity.Band.Fair -> "Fair this week. Your sleep times moved on some days."
-            band == SleepRegularity.Band.Irregular -> "Irregular this week. Your sleep times moved a lot from day to day."
-            sd != null -> "The middle of your sleep moved about ${TodayCopy.duration(sd.roundToInt() * 60L)} this week. The full measure needs more wear."
-            else -> "Regularity needs about 5 days of wear around the clock."
+            band == SleepRegularity.Band.VeryRegular -> tr(R.string.sleep_copy_very_regular_this_week)
+            band == SleepRegularity.Band.Regular -> tr(R.string.sleep_copy_regular_this_week_most)
+            band == SleepRegularity.Band.Fair -> tr(R.string.sleep_copy_fair_this_week_your)
+            band == SleepRegularity.Band.Irregular -> tr(R.string.sleep_copy_irregular_this_week_your)
+            sd != null -> tr(R.string.sleep_copy_the_middle_of_your, TodayCopy.duration(sd.roundToInt() * 60L))
+            else -> tr(R.string.sleep_copy_regularity_needs_about_days)
         }
     }
 
@@ -208,13 +210,13 @@ internal object SleepCopy {
      * woke at 07:05, 30 min later than usual." Within 20 minutes of your usual bedtime it says so.
      */
     fun regularityNight(bedMinutes: Int, wakeMinutes: Int, usualBed: Int?, today: Boolean): String {
-        val base = "${if (today) "Last night" else "That night"} you fell asleep at ${clock(bedMinutes)} and woke at ${clock(wakeMinutes)}"
+        val base = tr(R.string.sleep_copy_you_fell_asleep_at, if (today) tr(R.string.sleep_copy_you_fell_asleep_at__last_night) else tr(R.string.sleep_copy_you_fell_asleep_at__that_night), clock(bedMinutes), clock(wakeMinutes))
         usualBed ?: return "$base."
         val diff = Math.floorMod(bedMinutes - usualBed + 12 * 60, 24 * 60) - 12 * 60
         return when {
-            abs(diff) < USUAL_MINUTES -> "$base, close to your usual."
-            diff > 0 -> "$base, ${TodayCopy.duration(diff * 60L)} later than usual."
-            else -> "$base, ${TodayCopy.duration(-diff * 60L)} earlier than usual."
+            abs(diff) < USUAL_MINUTES -> tr(R.string.sleep_copy_close_to_your_usual, base)
+            diff > 0 -> tr(R.string.sleep_copy_later_than_usual, base, TodayCopy.duration(diff * 60L))
+            else -> tr(R.string.sleep_copy_earlier_than_usual, base, TodayCopy.duration(-diff * 60L))
         }
     }
 
@@ -222,25 +224,25 @@ internal object SleepCopy {
     const val USUAL_MINUTES = 20
 
     /** The night shown, without a sleep. */
-    fun noNight(today: Boolean): String = if (today) "No sleep recorded last night." else "No sleep recorded that night."
+    fun noNight(today: Boolean): String = if (today) tr(R.string.sleep_copy_no_sleep_recorded_last) else tr(R.string.common_no_sleep_recorded_that)
 
     private fun clock(m: Int) = Math.floorMod(m, 1440).let { "%02d:%02d".format(it / 60, it % 60) }
 
     /* ----------------------------------------------- Naps ----------------------------------------------- */
 
     /** The label under the time napped. */
-    fun napsLabel(today: Boolean): String = if (today) "napped today" else "napped that day"
+    fun napsLabel(today: Boolean): String = if (today) tr(R.string.sleep_copy_napped_today) else tr(R.string.sleep_copy_napped_that_day)
 
     /** The naps detail's state with none. */
-    fun noNaps(today: Boolean): Pair<String, String> = "No naps" to (if (today) "None recorded today" else "None recorded that day")
+    fun noNaps(today: Boolean): Pair<String, String> = tr(R.string.sleep_copy_no_naps) to (if (today) tr(R.string.sleep_copy_none_recorded_today) else tr(R.string.sleep_copy_none_recorded_that_day))
 
     /** The day's naps in a sentence: "One nap, 45 min." or "Two naps, 1 h 10 in all." */
     fun naps(count: Int, totalSeconds: Long): String =
-        if (count == 1) "One nap, ${TodayCopy.duration(totalSeconds)}." else "${DetailCopy.count(count, "nap").replaceFirstChar { it.uppercase() }}, ${TodayCopy.duration(totalSeconds)} in all."
+        if (count == 1) tr(R.string.sleep_copy_one_nap, TodayCopy.duration(totalSeconds)) else tr(R.string.sleep_copy_in_all, DetailCopy.count(count, tr(R.string.sleep_copy_in_all__nap)).replaceFirstChar { it.uppercase() }, TodayCopy.duration(totalSeconds))
 
     /** Under a nap's heart rate line. */
-    fun napHeart(lowest: Int, average: Int): String = "Lowest $lowest bpm, $average on average."
+    fun napHeart(lowest: Int, average: Int): String = tr(R.string.sleep_copy_lowest_bpm_on_average, lowest, average)
 
     /** A nap the strap recorded without stages. */
-    const val NAP_NO_STAGES = "The strap didn't record stages for this nap."
+    val NAP_NO_STAGES: String get() = tr(R.string.sleep_copy_the_strap_didn_t_3)
 }

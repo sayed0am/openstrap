@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * One set of shape and spacing rules for every card (spec 2.4), so their contents line up down the screen: one
@@ -479,7 +481,7 @@ internal fun TitleMark(marker: String?, tag: TitleTag?, modifier: Modifier = Mod
         Text(
             tag.text,
             modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
-                .let { if (onClick != null) it.clickable(onClickLabel = "About ${tag.text.lowercase()}", onClick = onClick) else it }
+                .let { if (onClick != null) it.clickable(onClickLabel = tr(R.string.glow_layout_about, tag.text.lowercase()), onClick = onClick) else it }
                 .padding(horizontal = 8.dp, vertical = 2.dp),
             color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
         )

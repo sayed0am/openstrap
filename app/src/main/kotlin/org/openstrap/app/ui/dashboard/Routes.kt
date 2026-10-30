@@ -4,17 +4,19 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.saveable.Saver
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.DailyMetric
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** A metric with its own detail screen: its title, unit, decimals shown, and the per-day series behind it. */
 enum class Metric(val title: String, val unit: String, val decimals: Int, val daily: DailyMetric) {
-    HeartRate("Heart rate", "bpm", 0, DailyMetric.HeartRate),
-    RestingHr("Resting heart rate", "bpm", 0, DailyMetric.RestingHr),
-    Hrv("HRV", "ms", 0, DailyMetric.Hrv),
-    Spo2("Blood oxygen", "%", 0, DailyMetric.Spo2),
-    Stress("Stress", "", 0, DailyMetric.Stress),
-    SkinTemperature("Skin temperature", "°C", 1, DailyMetric.SkinTemperature),
-    Breathing("Breathing rate", "br/min", 1, DailyMetric.Breathing),
-    Steps("Steps", "steps", 0, DailyMetric.Steps),
+    HeartRate(tr(R.string.common_heart_rate), "bpm", 0, DailyMetric.HeartRate),
+    RestingHr(tr(R.string.common_resting_heart_rate_2), "bpm", 0, DailyMetric.RestingHr),
+    Hrv(tr(R.string.common_hrv), "ms", 0, DailyMetric.Hrv),
+    Spo2(tr(R.string.common_blood_oxygen), "%", 0, DailyMetric.Spo2),
+    Stress(tr(R.string.common_stress), "", 0, DailyMetric.Stress),
+    SkinTemperature(tr(R.string.common_skin_temperature), "°C", 1, DailyMetric.SkinTemperature),
+    Breathing(tr(R.string.common_breathing_rate), tr(R.string.missed_unit_br_min), 1, DailyMetric.Breathing),
+    Steps(tr(R.string.common_steps), tr(R.string.missed_unit_steps), 0, DailyMetric.Steps),
     ;
 
     fun format(v: Float): String = if (this == Steps) "%,d".format(Math.round(v)) else "%.${decimals}f".format(v)
@@ -34,9 +36,9 @@ enum class Metric(val title: String, val unit: String, val decimals: Int, val da
  * the day has them.
  */
 enum class Score(val title: String) {
-    Recovery("Recovery"), Charge("Energy"), Sleep("Sleep score"), Regularity("Sleep regularity"), Naps("Naps"),
-    HeartPoints("Heart points"), ActiveMinutes("Active minutes"), Load("Load"), Vo2Max("VO2 max"),
-    Recover("Time to recover"), Energy("Calories"), Distance("Distance"),
+    Recovery(tr(R.string.common_recovery)), Charge(tr(R.string.common_energy)), Sleep(tr(R.string.common_sleep_score)), Regularity(tr(R.string.common_sleep_regularity)), Naps(tr(R.string.common_naps)),
+    HeartPoints(tr(R.string.common_heart_points)), ActiveMinutes(tr(R.string.common_active_minutes)), Load(tr(R.string.common_load)), Vo2Max(tr(R.string.common_vo_max)),
+    Recover(tr(R.string.common_time_to_recover)), Energy(tr(R.string.common_calories)), Distance(tr(R.string.common_distance)),
 }
 
 /** Your daily goals, provided once at the top of the app so every screen measures against the same ones. */

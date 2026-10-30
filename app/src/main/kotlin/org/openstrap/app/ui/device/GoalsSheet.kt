@@ -41,6 +41,8 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PageSheet
+import org.openstrap.app.R
+import org.openstrap.app.tr
 import org.openstrap.app.ui.glow.RoundButton
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -64,22 +66,22 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
         ?.takeIf { it in Goals.SLEEP_MINUTES }
     val activeValue = active.toIntOrNull()?.takeIf { it in Goals.ACTIVE_HOURS }
 
-    PageSheet(onDismiss, "Your goals", note = "What you aim for each day. Change them whenever they stop fitting.") {
-        NumberField(steps, { steps = it }, "Steps", "steps", stepsValue == null)
+    PageSheet(onDismiss, tr(R.string.goals_sheet_your_goals), note = tr(R.string.goals_sheet_what_you_aim_for)) {
+        NumberField(steps, { steps = it }, tr(R.string.common_steps), tr(R.string.missed_unit_steps), stepsValue == null)
         CalorieGoalField(calories, { calories = it }, suggestedCalories)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Sleep", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            Text(tr(R.string.common_sleep), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                NumberField(sleepH, { sleepH = it.take(2) }, "", "h", sleepValue == null, Modifier.weight(1f))
-                NumberField(sleepM, { sleepM = it.take(2) }, "", "min", sleepValue == null, Modifier.weight(1f))
+                NumberField(sleepH, { sleepH = it.take(2) }, "", tr(R.string.missed_unit_h), sleepValue == null, Modifier.weight(1f))
+                NumberField(sleepM, { sleepM = it.take(2) }, "", tr(R.string.missed_unit_min), sleepValue == null, Modifier.weight(1f))
             }
         }
-        NumberField(active, { active = it.take(2) }, "Active hours", "of 24", activeValue == null)
-        PageNote("An active hour is one with at least 250 steps.")
+        NumberField(active, { active = it.take(2) }, tr(R.string.goals_sheet_active_hours), tr(R.string.goals_sheet_of), activeValue == null)
+        PageNote(tr(R.string.goals_sheet_an_active_hour_is))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
+            PageButton(tr(R.string.common_cancel), onDismiss, Modifier.weight(1f))
             PageButton(
-                "Save", { onSave(Goals(stepsValue!!, sleepValue!!, activeValue!!, calories)) }, Modifier.weight(1f),
+                tr(R.string.common_save), { onSave(Goals(stepsValue!!, sleepValue!!, activeValue!!, calories)) }, Modifier.weight(1f),
                 enabled = stepsValue != null && sleepValue != null && activeValue != null, primary = true,
             )
         }
@@ -108,12 +110,12 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
         if (typed != null) onChange(typed)
     }
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Calories", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Text(tr(R.string.common_calories), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoundButton(AppIcons.Minus, "Lower the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) }, size = 44.dp)
+            RoundButton(AppIcons.Minus, tr(R.string.goals_sheet_lower_the_calorie_goal), { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) }, size = 44.dp)
             Box(
                 Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface)
-                    .let { if (typing) it else it.clickable(onClickLabel = "Type the calorie goal", role = Role.Button) { text = value.toString(); refused = false; typing = true } },
+                    .let { if (typing) it else it.clickable(onClickLabel = tr(R.string.goals_sheet_type_the_calorie_goal), role = Role.Button) { text = value.toString(); refused = false; typing = true } },
                 contentAlignment = Alignment.Center,
             ) {
                 if (typing) {
@@ -127,18 +129,18 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
                     )
                     LaunchedEffect(Unit) { focus.requestFocus() }
                 } else {
-                    Text("%,d active kcal".format(value), color = Color.White, style = GlowType.body, maxLines = 1)
+                    Text(tr(R.string.goals_sheet_active_kcal, value), color = Color.White, style = GlowType.body, maxLines = 1)
                 }
             }
-            RoundButton(AppIcons.Plus, "Raise the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) }, size = 44.dp)
+            RoundButton(AppIcons.Plus, tr(R.string.goals_sheet_raise_the_calorie_goal), { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) }, size = 44.dp)
         }
         if (refused) PageNote(CalorieGoal.OUT_OF_RANGE, MetricColors.warn)
         if (suggested != null) {
-            val line = "Suggested %,d, from your last 4 weeks".format(suggested)
-            if (suggested == value) PageNote("$line. Your strap's goal is set to match.")
+            val line = tr(R.string.goals_sheet_suggested_from_your_last, suggested)
+            if (suggested == value) PageNote(tr(R.string.goals_sheet_your_straps_goal_is, line))
             else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { PageNote(line) }
-                PageButton("Use", { typing = false; refused = false; onChange(suggested) })
+                PageButton(tr(R.string.goals_sheet_use), { typing = false; refused = false; onChange(suggested) })
             }
         }
     }

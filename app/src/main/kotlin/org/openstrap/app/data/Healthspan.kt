@@ -8,6 +8,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Healthspan age: how old your habits look, from data OpenStrap already has (docs/algorithms/healthspan.md). Each habit
@@ -208,12 +210,12 @@ object Healthspan {
     // ------------------------------------------------------------------------------------------------
 
     enum class Habit(val label: String, val fitness: Boolean) {
-        Strength("Strength training", false),
-        Vo2max("Fitness (VO2 max)", true),
-        Steps("Steps", true),
-        Regularity("Sleep regularity", false),
-        RestingHr("Resting heart rate", true),
-        TimeAsleep("Time asleep", false),
+        Strength(tr(R.string.common_strength_training), false),
+        Vo2max(tr(R.string.healthspan_fitness_vo_max), true),
+        Steps(tr(R.string.common_steps), true),
+        Regularity(tr(R.string.common_sleep_regularity), false),
+        RestingHr(tr(R.string.common_resting_heart_rate_2), true),
+        TimeAsleep(tr(R.string.common_time_asleep), false),
     }
 
     /** One window's averaged inputs; null where there isn't enough data for that habit, which scores as typical. */
@@ -316,15 +318,15 @@ object Healthspan {
      * isn't enough data yet, so the card starts at the user's own age.
      */
     enum class Withheld(val reason: String, val profile: Boolean = false, val learning: Boolean = false) {
-        NoAge("Add your birth year in your profile to start your estimate.", profile = true),
-        Age("Habit Age is for ages 20 to 79."),
-        Sex("Add your sex in your profile: the typical values differ for women and men.", profile = true),
-        Medication("Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn't reflect fitness then."),
-        Learning("Needs 30 days of wear before a first estimate.", learning = true),
-        RestingHr("Needs more nights of resting heart rate: about half the nights.", learning = true),
-        Steps("Needs more days worn for 10 hours or more: about half the days.", learning = true),
-        Regularity("Needs more weeks of sleep regularity.", learning = true),
-        Sleep("Needs more nights of sleep: about half the nights.", learning = true),
+        NoAge(tr(R.string.healthspan_add_your_birth_year), profile = true),
+        Age(tr(R.string.healthspan_habit_age_is_for)),
+        Sex(tr(R.string.healthspan_add_your_sex_in), profile = true),
+        Medication(tr(R.string.common_not_shown_while_taking)),
+        Learning(tr(R.string.healthspan_needs_days_of_wear), learning = true),
+        RestingHr(tr(R.string.healthspan_needs_more_nights_of), learning = true),
+        Steps(tr(R.string.healthspan_needs_more_days_worn), learning = true),
+        Regularity(tr(R.string.healthspan_needs_more_weeks_of), learning = true),
+        Sleep(tr(R.string.healthspan_needs_more_nights_of_2), learning = true),
     }
 
     /**

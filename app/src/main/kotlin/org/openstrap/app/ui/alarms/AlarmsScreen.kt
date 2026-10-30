@@ -43,24 +43,27 @@ import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.SettingsCodec
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
-private val DAY_LETTERS = listOf("M", "T", "W", "T", "F", "S", "S")
-private val DAY_NAMES = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+private val DAY_LETTERS: List<String> get() = trRaw(R.string.missed_day_letters).split(',')
+private val DAY_NAMES = listOf(tr(R.string.alarms_screen_mon), tr(R.string.alarms_screen_tue), tr(R.string.alarms_screen_wed), tr(R.string.alarms_screen_thu), tr(R.string.alarms_screen_fri), tr(R.string.alarms_screen_sat), tr(R.string.alarms_screen_sun))
 
 /** "Once", "Every day", "Weekdays", "Weekends" or "Mon, Wed, Fri". */
 fun daysLabel(days: Int): String = when (days) {
-    0 -> "Once"
-    Alarm.EVERY_DAY -> "Every day"
-    Alarm.WEEKDAYS -> "Weekdays"
-    Alarm.WEEKEND -> "Weekends"
-    Alarm.WORKDAYS -> "Workdays"
+    0 -> tr(R.string.alarms_screen_once)
+    Alarm.EVERY_DAY -> tr(R.string.alarms_screen_every_day)
+    Alarm.WEEKDAYS -> tr(R.string.alarms_screen_weekdays)
+    Alarm.WEEKEND -> tr(R.string.alarms_screen_weekends)
+    Alarm.WORKDAYS -> tr(R.string.alarms_screen_workdays)
     else -> DAY_NAMES.filterIndexed { i, _ -> days and (1 shl i) != 0 }.joinToString(", ")
 }
 
 private fun intervalLabel(v: Int) = when (v) {
-    0 -> "Off"
-    SettingsCodec.HR_CONTINUOUS -> "Continuous"
-    else -> "Every $v min"
+    0 -> tr(R.string.common_off)
+    SettingsCodec.HR_CONTINUOUS -> tr(R.string.alarms_screen_continuous)
+    else -> tr(R.string.alarms_screen_every_min, v)
 }
 
 /**
@@ -70,9 +73,9 @@ private fun intervalLabel(v: Int) = when (v) {
 fun alarmsSummary(state: AlarmsUiState): String? {
     if (state.caps == null) return null
     val on = state.alarms.filter { it.enabled }
-    val first = on.firstOrNull() ?: return if (state.alarms.isEmpty()) "None" else "All off"
+    val first = on.firstOrNull() ?: return if (state.alarms.isEmpty()) tr(R.string.common_none) else tr(R.string.alarms_screen_all_off)
     val text = "%02d:%02d %s".format(first.hour, first.minute, daysLabel(first.days).lowercase())
-    return if (on.size > 1) "$text and ${on.size - 1} more" else text
+    return if (on.size > 1) tr(R.string.alarms_screen_and_more, text, on.size - 1) else text
 }
 
 /**
@@ -88,12 +91,12 @@ fun healthAlertsSummary(state: AlarmsUiState): String? {
     val oxygen = on(SettingsCodec.KEY_LOW_SPO2_ALERT)
     val heart = high != null || low != null
     return when {
-        heart && oxygen != null -> "Heart rate and oxygen"
-        high != null && low != null -> "Over $high, under $low"
-        high != null -> "Over $high bpm"
-        low != null -> "Under $low bpm"
-        oxygen != null -> "Oxygen under $oxygen%"
-        else -> "Off"
+        heart && oxygen != null -> tr(R.string.alarms_screen_heart_rate_and_oxygen)
+        high != null && low != null -> tr(R.string.alarms_screen_over_under, high, low)
+        high != null -> tr(R.string.alarms_screen_over_bpm, high)
+        low != null -> tr(R.string.alarms_screen_under_bpm, low)
+        oxygen != null -> tr(R.string.alarms_screen_oxygen_under, oxygen)
+        else -> tr(R.string.common_off)
     }
 }
 
@@ -113,8 +116,8 @@ fun AlarmsScreen(
     var confirmDeleteAll by remember { mutableStateOf(false) }
     if (confirmDeleteAll) {
         PageConfirm(
-            "Delete all alarms?", "This removes every alarm from the strap.",
-            confirm = "Delete all", onConfirm = { vm.deleteAll(); confirmDeleteAll = false }, onDismiss = { confirmDeleteAll = false },
+            tr(R.string.alarms_screen_delete_all_alarms), tr(R.string.alarms_screen_this_removes_every_alarm),
+            confirm = tr(R.string.alarms_screen_delete_all), onConfirm = { vm.deleteAll(); confirmDeleteAll = false }, onDismiss = { confirmDeleteAll = false },
         )
     }
     editing?.let { (alarm, isNew) ->
@@ -126,10 +129,10 @@ fun AlarmsScreen(
         )
     }
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Alarms", onBack) }
+        item { PageHeader(tr(R.string.common_alarms), onBack) }
         state.error?.let { msg -> item { ErrorPanel(msg, state.busy, vm::refresh) } }
         if (state.loading) {
-            item { PagePanel { PageNote("Reading from the strap") } }
+            item { PagePanel { PageNote(tr(R.string.alarms_screen_reading_from_the_strap)) } }
             return@ScreenList
         }
         item {
@@ -145,10 +148,10 @@ fun AlarmsScreen(
 fun HealthAlertsScreen(vm: AlarmsViewModel, state: AlarmsUiState, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Health alerts", onBack) }
+        item { PageHeader(tr(R.string.common_health_alerts), onBack) }
         state.error?.let { msg -> item { ErrorPanel(msg, state.busy, vm::refresh) } }
         if (state.loading) {
-            item { PagePanel { PageNote("Reading from the strap") } }
+            item { PagePanel { PageNote(tr(R.string.alarms_screen_reading_from_the_strap)) } }
             return@ScreenList
         }
         state.health?.let { item { HeartAlertsPanel(state, vm) } }
@@ -159,7 +162,7 @@ fun HealthAlertsScreen(vm: AlarmsViewModel, state: AlarmsUiState, contentPadding
 private fun ErrorPanel(message: String, busy: Boolean, onRetry: () -> Unit) {
     PagePanel {
         PageNote(message, color = MetricColors.warn)
-        PageButton("Try again", onRetry, Modifier.fillMaxWidth(), enabled = !busy)
+        PageButton(tr(R.string.common_try_again), onRetry, Modifier.fillMaxWidth(), enabled = !busy)
     }
 }
 
@@ -171,8 +174,8 @@ private fun AlarmsPanel(
     onAdd: () -> Unit,
     onDeleteAll: () -> Unit,
 ) {
-    PagePanel(title = "On the strap", note = state.caps?.let { "${state.alarms.size} of ${it.maxCount}" }) {
-        if (state.alarms.isEmpty()) PageNote("No alarms on the strap.")
+    PagePanel(title = tr(R.string.common_on_the_strap), note = state.caps?.let { tr(R.string.missed_n_of_max, state.alarms.size, it.maxCount) }) {
+        if (state.alarms.isEmpty()) PageNote(tr(R.string.alarms_screen_no_alarms_on_the))
         state.alarms.forEach { a ->
             Row(Modifier.fillMaxWidth().clickable(enabled = !state.busy) { onEdit(a) }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
@@ -185,12 +188,12 @@ private fun AlarmsPanel(
                 org.openstrap.app.ui.glow.GlowSwitch(a.enabled, { onToggle(a, it) }, enabled = !state.busy)
             }
         }
-        if (state.canAdd) PageButton("Add alarm", onAdd, Modifier.fillMaxWidth(), enabled = !state.busy, primary = true)
+        if (state.canAdd) PageButton(tr(R.string.alarms_screen_add_alarm), onAdd, Modifier.fillMaxWidth(), enabled = !state.busy, primary = true)
         if (state.alarms.size > 1) {
-            PageTextButton("Delete all", onDeleteAll, Modifier.align(Alignment.CenterHorizontally), enabled = !state.busy, color = DestructiveInk)
+            PageTextButton(tr(R.string.alarms_screen_delete_all), onDeleteAll, Modifier.align(Alignment.CenterHorizontally), enabled = !state.busy, color = DestructiveInk)
         }
         // Zepp's tip for this strap (alarm_stuttgart_close_tips).
-        PageNote("The strap vibrates at the alarm time. To stop it, tap the front of the strap several times.")
+        PageNote(tr(R.string.alarms_screen_the_strap_vibrates_at))
     }
 }
 
@@ -199,38 +202,38 @@ private fun HeartAlertsPanel(state: AlarmsUiState, vm: AlarmsViewModel) {
     val g = state.health ?: return
     val alerts = state.alertsAvailable
     val off: (Int) -> Boolean = { it == 0 }
-    PagePanel(title = "Heart rate and blood oxygen") {
+    PagePanel(title = tr(R.string.alarms_screen_heart_rate_and_blood)) {
         // Rows with a menu each, in place of 21 chips; the measuring note only when it turns the heart rate alerts off.
         Column {
             var first = true
             fun divider() = !first.also { first = false }
             g[SettingsCodec.KEY_HR_INTERVAL]?.let { s ->
                 PageMenuRow(
-                    "Heart rate measuring", s.choices.orEmpty(), s.number?.toInt(), ::intervalLabel, { vm.setHrInterval(it) },
+                    tr(R.string.alarms_screen_heart_rate_measuring), s.choices.orEmpty(), s.number?.toInt(), ::intervalLabel, { vm.setHrInterval(it) },
                     divider = divider(), enabled = !state.busy, quiet = off,
-                    note = if (alerts) null else "Heart rate alerts need Continuous or every minute.",
+                    note = if (alerts) null else tr(R.string.alarms_screen_heart_rate_alerts_need_2),
                 )
             }
             g[SettingsCodec.KEY_HIGH_HR_ALERT]?.let { s ->
                 PageMenuRow(
-                    "High heart rate alert", s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) "Off" else "Above $it" },
+                    tr(R.string.alarms_screen_high_heart_rate_alert), s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) tr(R.string.common_off) else tr(R.string.alarms_screen_above, it) },
                     { vm.setEnum(SettingsCodec.KEY_HIGH_HR_ALERT, it) }, divider = divider(), enabled = !state.busy && alerts, quiet = off,
                 )
             }
             g[SettingsCodec.KEY_LOW_HR_ALERT]?.let { s ->
                 PageMenuRow(
-                    "Low heart rate alert", s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) "Off" else "Below $it" },
+                    tr(R.string.alarms_screen_low_heart_rate_alert), s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) tr(R.string.common_off) else tr(R.string.alarms_screen_below, it) },
                     { vm.setEnum(SettingsCodec.KEY_LOW_HR_ALERT, it) }, divider = divider(), enabled = !state.busy && alerts, quiet = off,
                 )
             }
             g[SettingsCodec.KEY_LOW_SPO2_ALERT]?.let { s ->
                 PageMenuRow(
-                    "Low blood oxygen alert", s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) "Off" else "Below $it%" },
+                    tr(R.string.alarms_screen_low_blood_oxygen_alert), s.choices.orEmpty(), s.number?.toInt(), { if (it == 0) tr(R.string.common_off) else tr(R.string.alarms_screen_below_4, it) },
                     { vm.setEnum(SettingsCodec.KEY_LOW_SPO2_ALERT, it) }, divider = divider(), enabled = !state.busy, quiet = off,
                 )
             }
         }
-        PageNote("The strap vibrates when an alert goes off. OpenStrap isn't a medical device.")
+        PageNote(tr(R.string.alarms_screen_the_strap_vibrates_when))
     }
 }
 
@@ -243,7 +246,7 @@ private fun HeartAlertsPanel(state: AlarmsUiState, vm: AlarmsViewModel) {
 private fun AlarmSheet(alarm: Alarm, isNew: Boolean, onSave: (Alarm) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
     val time = rememberTimePickerState(alarm.hour, alarm.minute, is24Hour = true)
     var days by remember { mutableIntStateOf(alarm.days) }
-    PageSheet(onDismiss, if (isNew) "New alarm" else "Edit alarm", note = daysLabel(days)) {
+    PageSheet(onDismiss, if (isNew) tr(R.string.alarms_screen_new_alarm) else tr(R.string.alarms_screen_edit_alarm), note = daysLabel(days)) {
         TimePicker(time, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
         FlowRow(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
             DAY_LETTERS.forEachIndexed { i, d ->
@@ -255,10 +258,10 @@ private fun AlarmSheet(alarm: Alarm, isNew: Boolean, onSave: (Alarm) -> Unit, on
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Save", { onSave(alarm.copy(hour = time.hour, minute = time.minute, days = days, enabled = true)) }, Modifier.weight(1f), primary = true)
+            PageButton(tr(R.string.common_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(tr(R.string.common_save), { onSave(alarm.copy(hour = time.hour, minute = time.minute, days = days, enabled = true)) }, Modifier.weight(1f), primary = true)
         }
-        if (!isNew) PageTextButton("Delete alarm", onDelete, Modifier.align(Alignment.CenterHorizontally), color = DestructiveInk)
+        if (!isNew) PageTextButton(tr(R.string.alarms_screen_delete_alarm), onDelete, Modifier.align(Alignment.CenterHorizontally), color = DestructiveInk)
     }
 }
 

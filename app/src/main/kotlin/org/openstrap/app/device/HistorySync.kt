@@ -82,6 +82,8 @@ import java.time.ZoneId
 import org.openstrap.app.data.db.StressSample as DbStress
 import org.openstrap.protocol.history.RestingHeartRate as StrapRestingHr
 import org.openstrap.protocol.history.StressSample as StrapStress
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Pulls history from the strap into Room using the GDSP fetch protocol (docs/protocol/02).
@@ -106,7 +108,7 @@ class HistorySync(
 
     /** Syncs every type, or only the codes in [only] (an on-demand sync after a data-available push). */
     suspend fun run(only: Set<Int>? = null) = coroutineScope {
-        state.value = SyncState.Running("Preparing…")
+        state.value = SyncState.Running(tr(R.string.missed_preparing))
         repairEarlierSyncs()
         val listeners = launch {
             launch { gatt.notifications.filter { it.characteristic == HISTORY_DATA }.collect { data.send(it.value) } }
@@ -123,13 +125,13 @@ class HistorySync(
 
             val version = client.queryVersion()
             val advertised = version?.supportedTypes()
-            log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + (only?.let { ", syncing $it" } ?: ""))
+            log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + (only?.let { tr(R.string.history_sync_syncing, it) } ?: ""))
 
             HistoryTypeSpecs.featureDisagreements(advertised, session.features).takeIf { it.isNotEmpty() }
                 ?.let { log("history: feature bits clear for advertised types $it; fetching them anyway") }
             val plan = HistoryTypeSpecs.plan(advertised, session.features).filter { it.parser != null && (only == null || it.code in only) }
             plan.forEachIndexed { i, spec ->
-                state.value = SyncState.Running("Syncing ${label(spec.type)} (${i + 1}/${plan.size})", i.toFloat() / plan.size)
+                state.value = SyncState.Running(tr(R.string.history_sync_syncing_2, label(spec.type), i + 1, plan.size), i.toFloat() / plan.size)
                 try {
                     if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec)
                 } catch (e: Exception) {
@@ -147,14 +149,14 @@ class HistorySync(
         } catch (e: FastRechargeModeException) {
             // Zepp ends the sync job at once in this mode (xyk.java:66-70); the data waits on the strap.
             log("history: strap is in fast-charge mode, sync stopped")
-            state.value = SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off.")
+            state.value = SyncState.Failed(tr(R.string.history_sync_the_strap_is_in))
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) throw e
             log("history failed: $e")
             // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for the card.
             // Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause is the link.
-            val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
-            state.value = SyncState.Failed(reason ?: "Sync failed")
+            val reason = if (!gatt.connected.value) tr(R.string.history_sync_the_link_to_the) else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
+            state.value = SyncState.Failed(reason ?: tr(R.string.history_sync_sync_failed))
         } finally {
             listeners.cancel()
         }
@@ -179,7 +181,7 @@ class HistorySync(
             val codes = only?.sorted() ?: version?.supportedTypes()?.sorted().orEmpty()
             log("dump: types $codes (strap offers ${version?.supportedTypes()?.sorted()})")
             for (code in codes) {
-                state.value = SyncState.Running("Dumping type $code")
+                state.value = SyncState.Running(tr(R.string.missed_dumping_type, code))
                 runCatching {
                     var cursor = fromEpoch
                     repeat(DUMP_CHUNKS) {

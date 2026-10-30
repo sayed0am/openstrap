@@ -3,6 +3,8 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.SleepStage
 import kotlin.math.abs
 import kotlin.math.sqrt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Sleep regularity and the sleep-health count (docs/algorithms/evidence-review.md, "Regularity" and "Sleep-health
@@ -35,7 +37,7 @@ object SleepRegularity {
      * not GGIR's, so treat a point or two either side of a cut as the same. Zepp's 60/80/90 bands belong to its own
      * night-overlap score, a different scale, and are not used.
      */
-    enum class Band(val label: String) { Irregular("Irregular"), Fair("Fair"), Regular("Regular"), VeryRegular("Very regular") }
+    enum class Band(val label: String) { Irregular(tr(R.string.sleep_regularity_irregular)), Fair(tr(R.string.common_fair)), Regular(tr(R.string.sleep_regularity_regular)), VeryRegular(tr(R.string.sleep_regularity_very_regular)) }
 
     fun band(sri: Float): Band = when {
         sri < 72f -> Band.Irregular

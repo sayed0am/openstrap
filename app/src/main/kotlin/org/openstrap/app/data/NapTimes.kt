@@ -3,9 +3,11 @@ package org.openstrap.app.data
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.abs
+import org.openstrap.app.R
 import org.openstrap.app.data.db.NapEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.tr
 
 /**
  * The user's own start and end for a nap the strap detected ([NapEdit]). The strap's row and stages stay as synced,
@@ -41,11 +43,11 @@ object NapTimes {
 
     /** Why [start] to [end] can't be saved for the strap's nap [strap], or null when it can. */
     fun problem(strap: SleepSession, start: Long, end: Long, now: Long): String? = when {
-        end <= start -> "Waking up has to come after falling asleep."
-        end - start < MIN_SECONDS -> "A nap needs at least 5 minutes."
-        end - start > MAX_SECONDS -> "A nap can be 4 hours at most."
-        end > now -> "That's later than now."
-        start < strap.start - MAX_SHIFT_SECONDS || end > strap.end + MAX_SHIFT_SECONDS -> "Keep it within 3 hours of what the strap saw."
+        end <= start -> tr(R.string.nap_times_waking_up_has_to)
+        end - start < MIN_SECONDS -> tr(R.string.nap_times_a_nap_needs_at)
+        end - start > MAX_SECONDS -> tr(R.string.nap_times_a_nap_can_be)
+        end > now -> tr(R.string.nap_times_thats_later_than_now)
+        start < strap.start - MAX_SHIFT_SECONDS || end > strap.end + MAX_SHIFT_SECONDS -> tr(R.string.nap_times_keep_it_within_3)
         else -> null
     }
 

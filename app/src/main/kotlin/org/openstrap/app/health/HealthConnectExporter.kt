@@ -33,6 +33,8 @@ import org.openstrap.app.data.db.SleepStage
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Pushes locally stored data into Android Health Connect, and reads it back. Each exported record carries a stable
@@ -94,7 +96,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
     suspend fun hasReadPermissions(): Boolean =
         client.permissionController.getGrantedPermissions().any { it in readPermissions }
 
-    private val device = Device(type = Device.TYPE_FITNESS_BAND, manufacturer = "Amazfit", model = "Helio Strap")
+    private val device = Device(type = Device.TYPE_FITNESS_BAND, manufacturer = tr(R.string.health_connect_exporter_amazfit), model = tr(R.string.common_helio_strap))
 
     private fun meta(id: String, version: Long = 1) = Metadata.autoRecorded(device = device, clientRecordId = "openstrap:$id", clientRecordVersion = version)
 

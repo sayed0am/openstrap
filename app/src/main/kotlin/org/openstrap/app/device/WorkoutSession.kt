@@ -31,6 +31,8 @@ import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.widget.WidgetKind
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 sealed interface WorkoutState {
     data object Idle : WorkoutState
@@ -498,7 +500,7 @@ class WorkoutSession(
                     _state.value = WorkoutState.Idle
                     // A toast, so it shows whether it ended in the app or from the notification.
                     context.mainExecutor.execute {
-                        android.widget.Toast.makeText(context, "Under a minute, so not saved", android.widget.Toast.LENGTH_SHORT).show()
+                        android.widget.Toast.makeText(context, tr(R.string.workout_session_under_a_minute_so), android.widget.Toast.LENGTH_SHORT).show()
                     }
                     return@withLock
                 }

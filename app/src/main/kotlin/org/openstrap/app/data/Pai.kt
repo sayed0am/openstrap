@@ -3,6 +3,8 @@ package org.openstrap.app.data
 import org.openstrap.app.data.settings.UserProfile
 import kotlin.math.exp
 import kotlin.math.ln
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The strap's PAI ring maths (native 08 §3.4, §3.7), so the app can say what leaves the 7-day total tomorrow.
@@ -64,7 +66,7 @@ object Pai {
      * empty. Today's own total is used when there is one, else the slots' total.
      */
     fun dropsOffTomorrow(week: List<Day?>, sex: UserProfile.Sex?): Double {
-        require(week.size == 7) { "need 7 days, got ${week.size}" }
+        require(week.size == 7) { tr(R.string.pai_need_days_got, week.size) }
         val slots = week.map { d -> d?.let { slot(it.daily, it.total, sex) } ?: 0.0 }
         val now = week.last()?.total?.toDouble() ?: total(slots, sex)
         return (now - total(slots.drop(1), sex)).coerceAtLeast(0.0)

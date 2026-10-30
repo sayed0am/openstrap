@@ -35,6 +35,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.workout.NotificationCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import androidx.compose.ui.graphics.toArgb
+import org.openstrap.app.tr
 
 /**
  * Keeps the process alive while connected so syncing and live HR survive the app being backgrounded, and for the
@@ -69,7 +70,7 @@ class StrapService : LifecycleService() {
             stopSelf()
             return START_NOT_STICKY
         }
-        val first = shown ?: notification("Helio Strap", "Connecting…")
+        val first = shown ?: notification(tr(R.string.common_helio_strap), tr(R.string.missed_connecting))
         if (intent?.action == ACTION_HIDE) hidden.value = Hidden(idleShown?.problem)
         // A GPS workout adds the location type, allowed because its start comes from the visible ready screen. After a
         // restart in the background Android refuses it; the workout carries on without GPS.
@@ -177,13 +178,13 @@ class StrapService : LifecycleService() {
         super.onCreate()
         running = true
         val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Strap connection", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.strap_service_strap_connection), NotificationManager.IMPORTANCE_LOW))
         // Left by the old Quiet switch: Android raises a foreground service's MIN channel to LOW anyway.
         nm.deleteNotificationChannel("strap_quiet")
-        nm.createNotificationChannel(NotificationChannel(SAVED_CHANNEL, "Workout saved", NotificationManager.IMPORTANCE_LOW))
+        nm.createNotificationChannel(NotificationChannel(SAVED_CHANNEL, tr(R.string.common_workout_saved), NotificationManager.IMPORTANCE_LOW))
         WorkoutNotification.createChannel(this)
         // Seen, not heard: the strap's buzz is the alert.
-        nm.createNotificationChannel(NotificationChannel(OFFER_CHANNEL, "Workout noticed", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        nm.createNotificationChannel(NotificationChannel(OFFER_CHANNEL, tr(R.string.strap_service_workout_noticed), NotificationManager.IMPORTANCE_DEFAULT).apply {
             setSound(null, null)
             enableVibration(false)
         })
@@ -221,19 +222,19 @@ class StrapService : LifecycleService() {
      * notification's time. Problems take the text: a failed connection (with Retry), a low battery, a sync under way.
      */
     private fun idleContent(c: ConnectionState, sync: SyncState, f: Figures?): IdleContent {
-        val title = f?.let { listOfNotNull(it.recovery?.let { r -> "Recovery $r" }, it.charge?.let { ch -> "Energy $ch" }).joinToString(", ") }
-            ?.ifEmpty { null } ?: "Helio Strap"
+        val title = f?.let { listOfNotNull(it.recovery?.let { r -> tr(R.string.strap_service_recovery, r) }, it.charge?.let { ch -> tr(R.string.strap_service_energy, ch) }).joinToString(", ") }
+            ?.ifEmpty { null } ?: tr(R.string.common_helio_strap)
         val connected = c as? ConnectionState.Connected
         val battery = connected?.batteryPercent
         val low = connected != null && !connected.charging && battery != null && battery <= LOW_BATTERY
         val text = when {
-            c is ConnectionState.Failed -> "Couldn't reach the strap"
-            c is ConnectionState.Connecting -> "Connecting…"
-            c is ConnectionState.Authenticating -> "Authenticating…"
-            connected == null -> "Strap not connected"
-            sync is SyncState.Running -> "Syncing, ${sync.step}"
-            low -> "Strap battery $battery%. Charge it tonight."
-            else -> listOfNotNull(if (connected.charging) "Strap charging" else "Strap connected", battery?.let { "battery $it%" }).joinToString(", ")
+            c is ConnectionState.Failed -> tr(R.string.strap_service_couldn_t_reach_the)
+            c is ConnectionState.Connecting -> tr(R.string.missed_connecting)
+            c is ConnectionState.Authenticating -> tr(R.string.missed_authenticating)
+            connected == null -> tr(R.string.common_strap_not_connected)
+            sync is SyncState.Running -> tr(R.string.missed_syncing_step, sync.step)
+            low -> tr(R.string.strap_service_strap_battery_charge_it, battery)
+            else -> listOfNotNull(if (connected.charging) tr(R.string.strap_service_strap_charging) else tr(R.string.common_strap_connected), battery?.let { tr(R.string.strap_service_battery, it) }).joinToString(", ")
         }
         return IdleContent(
             title, text, (sync as? SyncState.Done)?.atEpochSeconds ?: f?.syncedAt, (sync as? SyncState.Running)?.progress,
@@ -252,12 +253,12 @@ class StrapService : LifecycleService() {
             .setContentIntent(openApp())
             .setDeleteIntent(service(ACTION_HIDE))
         // The header shows how long ago it synced, and keeps counting on its own.
-        i.syncedAt?.let { b.setShowWhen(true).setWhen(it * 1000).setSubText("Synced") } ?: b.setShowWhen(false)
+        i.syncedAt?.let { b.setShowWhen(true).setWhen(it * 1000).setSubText(tr(R.string.strap_service_synced)) } ?: b.setShowWhen(false)
         if (i.syncing) b.setProgress(100, ((i.progress ?: 0f) * 100).roundToInt(), i.progress == null)
-        if (i.retry) b.addAction(NotificationCompat.Action(0, "Retry", service(ACTION_RETRY)))
+        if (i.retry) b.addAction(NotificationCompat.Action(0, tr(R.string.strap_service_retry), service(ACTION_RETRY)))
         if (i.connected) {
-            b.addAction(NotificationCompat.Action(0, "Start workout", startWorkout(i.sport)))
-            if (!i.syncing) b.addAction(NotificationCompat.Action(0, "Sync now", service(ACTION_SYNC)))
+            b.addAction(NotificationCompat.Action(0, tr(R.string.common_start_workout), startWorkout(i.sport)))
+            if (!i.syncing) b.addAction(NotificationCompat.Action(0, tr(R.string.common_sync_now), service(ACTION_SYNC)))
         }
         return b.build()
     }
@@ -347,7 +348,7 @@ class StrapService : LifecycleService() {
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setRequestPromotedOngoing(true)
-            .apply { if (r.paused) setShortCriticalText("Paused") }
+            .apply { if (r.paused) setShortCriticalText(tr(R.string.common_paused)) }
             // In the header, after the running time.
             .setSubText(card.kcal)
             .setContentIntent(openApp())
@@ -388,24 +389,24 @@ class StrapService : LifecycleService() {
         val facts = listOfNotNull(
             clock(duration),
             w.distanceMeters?.takeIf { it >= 10 }?.let { (if (w.distanceFromSteps) "≈ " else "") + org.openstrap.app.ui.glow.km(it) + if (it >= 1000) " km" else "" },
-            w.averageHeartRate?.let { "$it bpm avg" },
+            w.averageHeartRate?.let { tr(R.string.strap_service_bpm_avg, it) },
         ).joinToString(", ")
         val auto = w.endReason == org.openstrap.app.data.db.AppWorkout.END_AUTO || w.endReason == org.openstrap.app.data.db.AppWorkout.END_CAR
         val cut = w.recordedEnd?.let { it - end }?.takeIf { auto && it >= 60 }
         val time = java.time.Instant.ofEpochSecond(end).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
-        val text = if (cut != null) "$facts\nEnded at $time, when you'd stopped. The ${cut / 60} min after were left out." else facts
+        val text = if (cut != null) tr(R.string.strap_service_ended_at_when_you, facts, time, cut / 60) else facts
         val b = NotificationCompat.Builder(this, SAVED_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
-            .setContentTitle("${Workouts.sportName(w.sportType)} saved")
+            .setContentTitle(tr(R.string.missed_sport_saved, Workouts.sportName(w.sportType)))
             .setContentText(facts)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setAutoCancel(true)
             .setContentIntent(openApp())
-            .addAction(NotificationCompat.Action(0, "View", openApp()))
+            .addAction(NotificationCompat.Action(0, tr(R.string.strap_service_view), openApp()))
         if (cut != null) b.addAction(
             NotificationCompat.Action(
-                0, "Undo",
+                0, tr(R.string.common_undo),
                 PendingIntent.getService(
                     this, REQUEST_UNDO, Intent(this, StrapService::class.java).setAction(ACTION_UNDO).putExtra(EXTRA_START, w.start),
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
@@ -421,17 +422,17 @@ class StrapService : LifecycleService() {
         val done = r.sets.count { it.end != null }
         val until = r.restUntil
         val title = when {
-            r.inSet -> "Set ${r.sets.size}"
-            until != null -> "Resting after set $done"
-            done == 0 -> "${Workouts.sportName(r.workout.sportType)}, ready for set 1"
-            else -> "Rest over, set ${done + 1} next"
+            r.inSet -> tr(R.string.strap_service_set, r.sets.size)
+            until != null -> tr(R.string.strap_service_resting_after_set, done)
+            done == 0 -> tr(R.string.strap_service_ready_for_set, Workouts.sportName(r.workout.sportType))
+            else -> tr(R.string.strap_service_rest_over_set_next, done + 1)
         }
         val b = NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
             .setContentTitle(title)
             .setContentText(
-                if (!connected) "Still recording, reconnecting…"
-                else listOfNotNull(bpm?.let { "$it bpm" }, r.workout.setsTarget?.let { "$done of $it sets" }).joinToString(", "),
+                if (!connected) tr(R.string.strap_service_still_recording_reconnecting)
+                else listOfNotNull(bpm?.let { "$it bpm" }, r.workout.setsTarget?.let { tr(R.string.strap_service_of_sets, done, it) }).joinToString(", "),
             )
             .setColor(if (connected) (WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { ZONE_COLORS[it].toArgb() } ?: PAUSED_GREY) else PAUSED_GREY)
             .setOngoing(true)
@@ -446,15 +447,15 @@ class StrapService : LifecycleService() {
             // The rest counts down on its own; the bar fills toward its end.
             b.setUsesChronometer(true).setChronometerCountDown(true).setShowWhen(true).setWhen(until * 1000)
                 .setProgress((until - start).toInt().coerceAtLeast(1), (now / 1000 - start).toInt().coerceIn(0, (until - start).toInt()), false)
-            b.addAction(NotificationCompat.Action(0, "Start set ${r.sets.size + 1}", service(ACTION_START_SET)))
-            b.addAction(NotificationCompat.Action(0, "+30 s", service(ACTION_EXTEND)))
+            b.addAction(NotificationCompat.Action(0, tr(R.string.common_start_set, r.sets.size + 1), service(ACTION_START_SET)))
+            b.addAction(NotificationCompat.Action(0, tr(R.string.missed_plus_30_s), service(ACTION_EXTEND)))
         } else if (r.inSet) {
             b.setUsesChronometer(true).setShowWhen(true).setWhen(r.sets.last().start * 1000)
-            b.addAction(NotificationCompat.Action(0, "Set done", service(ACTION_SET_DONE)))
+            b.addAction(NotificationCompat.Action(0, tr(R.string.common_set_done), service(ACTION_SET_DONE)))
         } else {
-            b.addAction(NotificationCompat.Action(0, "Start set ${r.sets.size + 1}", service(ACTION_START_SET)))
+            b.addAction(NotificationCompat.Action(0, tr(R.string.common_start_set, r.sets.size + 1), service(ACTION_START_SET)))
         }
-        b.addAction(NotificationCompat.Action(0, "End", service(ACTION_END_ASK)))
+        b.addAction(NotificationCompat.Action(0, tr(R.string.common_end), service(ACTION_END_ASK)))
         return b.build()
     }
 
@@ -462,21 +463,21 @@ class StrapService : LifecycleService() {
     private fun stoppedNotification(r: WorkoutState.Recording, at: Long): Notification {
         val time = java.time.Instant.ofEpochSecond(at).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
         val sport = Workouts.sportName(r.workout.sportType).lowercase()
-        val text = if (r.inCar) "You last moved at $time. End the $sport there, so the drive isn't counted?"
-        else "Your heart rate has been back near resting since $time. End the $sport at $time?"
+        val text = if (r.inCar) tr(R.string.strap_service_you_last_moved_at, time, sport)
+        else tr(R.string.strap_service_your_heart_rate_has, time, sport, time)
         return NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
-            .setContentTitle(if (r.inCar) "Looks like you're in a car" else "Looks like you've stopped")
+            .setContentTitle(if (r.inCar) tr(R.string.common_looks_like_you_re) else tr(R.string.common_looks_like_you_ve))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setRequestPromotedOngoing(true)
-            .setShortCriticalText("End?")
+            .setShortCriticalText(tr(R.string.strap_service_end))
             .setContentIntent(openApp())
-            .addAction(NotificationCompat.Action(0, "End at $time", service(ACTION_END_AT)))
-            .addAction(NotificationCompat.Action(0, "Keep going", service(ACTION_KEEP)))
+            .addAction(NotificationCompat.Action(0, tr(R.string.strap_service_end_at, time), service(ACTION_END_AT)))
+            .addAction(NotificationCompat.Action(0, tr(R.string.common_keep_going), service(ACTION_KEEP)))
             .build()
     }
 
@@ -484,18 +485,18 @@ class StrapService : LifecycleService() {
     private fun offerNotification(o: org.openstrap.app.data.AutoStart.Offer): Notification {
         val time = java.time.Instant.ofEpochSecond(o.start).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
         val sport = Workouts.sportName(o.sportType).lowercase()
-        val text = "Your heart rate has been up since $time, ${o.averageHeartRate} bpm on average. Record a $sport from $time?"
+        val text = tr(R.string.strap_service_your_heart_rate_has_2, time, o.averageHeartRate, sport, time)
         return NotificationCompat.Builder(this, OFFER_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
-            .setContentTitle("Looks like a workout")
+            .setContentTitle(tr(R.string.common_looks_like_a_workout))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(openApp())
             .setDeleteIntent(service(ACTION_DECLINE))
-            .addAction(NotificationCompat.Action(0, "Record", service(ACTION_RECORD)))
-            .addAction(NotificationCompat.Action(0, "Not now", service(ACTION_DECLINE)))
+            .addAction(NotificationCompat.Action(0, tr(R.string.common_record), service(ACTION_RECORD)))
+            .addAction(NotificationCompat.Action(0, tr(R.string.common_not_now), service(ACTION_DECLINE)))
             .build()
     }
 
@@ -567,7 +568,7 @@ class StrapService : LifecycleService() {
         private const val REQUEST_OPEN = 2
 
         private fun zoneRange(zone: Int, maxHr: Int) =
-            if (zone == 0) "under ${60 * maxHr / 100} bpm" else "${(50 + zone * 10) * maxHr / 100}–${if (zone == 4) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+            if (zone == 0) tr(R.string.common_under_bpm, 60 * maxHr / 100) else tr(R.string.strap_service_bpm, (50 + zone * 10) * maxHr / 100, if (zone == 4) maxHr else (60 + zone * 10) * maxHr / 100 - 1)
 
         /** Whether the service is up; a start then needn't (and, once swiped away, mustn't) post its notification. */
         @Volatile private var running = false

@@ -13,6 +13,8 @@ import org.openstrap.protocol.services.AlarmCapabilities
 import org.openstrap.protocol.services.Setting
 import org.openstrap.protocol.services.SettingsCodec
 import org.openstrap.protocol.services.SettingsGroup
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 data class AlarmsUiState(
     val loading: Boolean = true,
@@ -82,7 +84,7 @@ class AlarmsViewModel(private val strap: StrapController) : ViewModel() {
     fun setEnum(key: Int, value: Int) = writeHealth { listOf(SettingsCodec.enumSetting(key, value)) }
 
     private fun writeHealth(build: (SettingsGroup) -> List<Setting>) = run {
-        val g = _state.value.health ?: throw StrapCommandException("Settings haven't loaded yet")
+        val g = _state.value.health ?: throw StrapCommandException(tr(R.string.alarms_view_model_settings_haven_t_loaded))
         strap.writeHealthSettings(g.version, build(g))
     }
 
@@ -104,7 +106,7 @@ class AlarmsViewModel(private val strap: StrapController) : ViewModel() {
             _state.update { s ->
                 read.fold(
                     { (caps, alarms, health) -> s.copy(loading = false, busy = false, error = error, caps = caps, alarms = alarms, health = health) },
-                    { e -> s.copy(loading = false, busy = false, error = error ?: e.message ?: "Couldn't read from the strap") },
+                    { e -> s.copy(loading = false, busy = false, error = error ?: e.message ?: tr(R.string.alarms_view_model_couldn_t_read_from)) },
                 )
             }
         }

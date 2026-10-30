@@ -5,6 +5,8 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * What the Ready and live workout screens say (spec 6.3), and the small rules behind what they show: the split line's
@@ -48,61 +50,55 @@ object WorkoutCopy {
     /** "Strap connected" and "Live from your strap.", with the battery when low; "Strap not connected" otherwise. */
     fun readyHero(connection: ConnectionState, bpm: Int?): ReadyHero = when (connection) {
         is ConnectionState.Connected -> ReadyHero(
-            "Strap connected",
+            tr(R.string.common_strap_connected),
             listOfNotNull(
-                if (bpm != null) "Live from your strap." else "Waiting for heart rate.",
-                connection.batteryPercent?.takeIf { it <= LOW_BATTERY && !connection.charging }?.let { "Battery $it%." },
+                if (bpm != null) tr(R.string.workout_copy_live_from_your_strap) else tr(R.string.workout_copy_waiting_for_heart_rate),
+                connection.batteryPercent?.takeIf { it <= LOW_BATTERY && !connection.charging }?.let { tr(R.string.workout_copy_battery, it) },
             ).joinToString(" "),
             live = true,
         )
-        ConnectionState.Connecting, ConnectionState.Authenticating -> ReadyHero("Connecting to the strap", ANYWAY, live = false)
-        ConnectionState.NotPaired -> ReadyHero("No strap paired", ANYWAY, live = false)
-        ConnectionState.Disconnected, is ConnectionState.Failed -> ReadyHero("Strap not connected", ANYWAY, live = false)
+        ConnectionState.Connecting, ConnectionState.Authenticating -> ReadyHero(tr(R.string.common_connecting_to_the_strap), ANYWAY, live = false)
+        ConnectionState.NotPaired -> ReadyHero(tr(R.string.common_no_strap_paired), ANYWAY, live = false)
+        ConnectionState.Disconnected, is ConnectionState.Failed -> ReadyHero(tr(R.string.common_strap_not_connected), ANYWAY, live = false)
     }
 
-    private const val ANYWAY = "You can start anyway."
+    private val ANYWAY: String get() = tr(R.string.workout_copy_you_can_start_anyway)
 
     /** Under GPS: what it gives, or what's missing without it. */
     fun gpsNote(on: Boolean, sportType: Int): String = when {
-        on -> "On. Distance, pace and the map."
-        sportType in Workouts.ON_FOOT -> "Off. Distance from the strap's steps, roughly."
-        else -> "Off. No distance without GPS."
+        on -> tr(R.string.workout_copy_on_distance_pace_and)
+        sportType in Workouts.ON_FOOT -> tr(R.string.workout_copy_off_distance_from_the)
+        else -> tr(R.string.workout_copy_off_no_distance_without)
     }
 
     /** The GPS row while the phone's location is off or not allowed. Start still works, without GPS. */
-    const val LOCATION_OFF = "Location is off"
-    const val LOCATION_OFF_NOTE = "Turn it on for distance and the map, or start without it."
+    val LOCATION_OFF: String get() = tr(R.string.workout_copy_location_is_off)
+    val LOCATION_OFF_NOTE: String get() = tr(R.string.workout_copy_turn_it_on_for)
 
     /** Under Keep the route. */
-    fun routeNote(on: Boolean): String = if (on) "On. Saved on this phone for the map." else "Off. Only the totals are kept."
+    fun routeNote(on: Boolean): String = if (on) tr(R.string.workout_copy_on_saved_on_this) else tr(R.string.workout_copy_off_only_the_totals)
 
     /** Start, naming the sport: "Start run", "Start HIIT", and "Start workout" for Other. */
     fun startLabel(sportType: Int): String = when (val name = Workouts.shortName(sportType)) {
-        "Other" -> "Start workout"
-        else -> "Start " + if (name.any { it.isLowerCase() }) name.lowercase() else name
+        tr(R.string.workouts_other) -> tr(R.string.common_start_workout)
+        else -> tr(R.string.workout_copy_start) + if (name.any { it.isLowerCase() }) name.lowercase() else name
     }
 
     /** The Ready info sheet's meaning. */
-    const val READY_MEANING = "Heart rate comes from the strap every second. GPS is on for outdoor workouts, and you can turn it off."
+    val READY_MEANING: String get() = tr(R.string.workout_copy_heart_rate_comes_from)
 
     /** The Ready info sheet's rows: the strap always, GPS and the route for an [outdoor] sport. */
     fun readyRows(outdoor: Boolean): List<Pair<String, String>> = listOfNotNull(
-        "Heart rate" to "The strap sends heart rate every second, with the phone's screen off too. If it drops out or " +
-            "isn't connected at the start, recording carries on, and the missing minutes are filled from the strap's own " +
-            "history after the next sync.",
-        ("GPS" to "Outdoors, GPS uses the phone's location during this workout only, for distance, pace and the map. " +
-            "Its switch turns it off for this workout. Map tiles come from OpenFreeMap, which sees roughly where the map " +
-            "is. Route only on the map loads no tiles. Without GPS, walks and runs get a distance from the strap's " +
-            "steps, marked ≈.").takeIf { outdoor },
-        ("Keep the route" to "With Keep the route on, the route is saved on this phone for the map. Off, only the " +
-            "totals are kept and the route is discarded when the workout ends.").takeIf { outdoor },
+        tr(R.string.common_heart_rate) to tr(R.string.workout_copy_the_strap_sends_heart),
+        (tr(R.string.common_gps) to tr(R.string.workout_copy_outdoors_gps_uses_the)).takeIf { outdoor },
+        (tr(R.string.common_keep_the_route) to tr(R.string.workout_copy_with_keep_the_route)).takeIf { outdoor },
     )
 
     /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
-    fun zoneTitle(zone: Int): Pair<String, String> = "Zone ${zone + 1}," to ZONE_NAMES[zone].lowercase()
+    fun zoneTitle(zone: Int): Pair<String, String> = tr(R.string.workout_copy_zone, zone + 1) to ZONE_NAMES[zone].lowercase()
 
     /** "9 min in this zone". */
-    fun zoneTime(seconds: Int): String = if (seconds < 60) "Under a minute in this zone" else "${seconds / 60} min in this zone"
+    fun zoneTime(seconds: Int): String = if (seconds < 60) tr(R.string.workout_copy_under_a_minute_in) else tr(R.string.workout_copy_min_in_this_zone, seconds / 60)
 
     /**
      * The line for the latest whole kilometre in [splits], for [SPLIT_LINE_S] after it ended, else null: "Km 3 in 5:42,
@@ -117,7 +113,7 @@ object WorkoutCopy {
         if (now - sp.endT >= SPLIT_LINE_S || sp.endT - now > SPLIT_LINE_S) return null
         val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
         val avg = averageOver(history, from, sp.endT)
-        return SplitLine(i, sp.endT, "Km ${i + 1} in ${workoutClock(sp.seconds)}" + (avg?.let { ", avg $it" } ?: ""))
+        return SplitLine(i, sp.endT, tr(R.string.workout_copy_km_in, i + 1, workoutClock(sp.seconds)) + (avg?.let { tr(R.string.workout_copy_avg, it) } ?: ""))
     }
 
     /** The average of the [readings] (time, bpm) from [from] to [to], whole bpm; null without any. */
@@ -168,8 +164,8 @@ object WorkoutCopy {
 
     /** The label over Ready's targets: what the strap does for the one chosen. */
     fun targetHint(target: WorkoutTarget?): String = when (target) {
-        is WorkoutTarget.Kcal -> "Target. The strap buzzes at ${target.kcal} active kcal."
-        else -> "Target. The strap buzzes if you drift out."
+        is WorkoutTarget.Kcal -> tr(R.string.workout_copy_target_the_strap_buzzes, target.kcal)
+        else -> tr(R.string.glow_workout_mode_target_the_strap_buzzes)
     }
 
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */

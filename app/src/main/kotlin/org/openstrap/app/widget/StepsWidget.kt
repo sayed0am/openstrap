@@ -47,6 +47,8 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The Steps widget (widgets spec 3.3): today's steps against the goal, glanceable all day. The Wide adds what's to go
@@ -226,7 +228,7 @@ private fun StepsLine(m: StepsWidgetModel, height: Float?, f: WidgetFrame) {
     }
     Image(
         ImageProvider(bitmap),
-        contentDescription = "Steps so far today, ${m.share}",
+        contentDescription = tr(R.string.steps_widget_steps_so_far_today, m.share),
         modifier = GlanceModifier.fillMaxWidth().height(height.dp),
         contentScale = ContentScale.FillBounds,
     )
@@ -256,7 +258,7 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
             Text(m.weekLine, style = WidgetType.secondary, maxLines = 1)
         }
         Spacer(GlanceModifier.height(StepsLayout.WEEK_LINE_GAP_DP.dp))
-        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), "Steps each day this week", m.week.map { it.letter to (it.state == StepsDay.Today) }, week.column)
+        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), tr(R.string.steps_widget_steps_each_day_this), m.week.map { it.letter to (it.state == StepsDay.Today) }, week.column)
     }
 }
 
@@ -265,7 +267,7 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
 /* ------------------------------------------------------------------------------------------------ */
 
 /** The route `open_metric` takes for the Steps detail ([org.openstrap.app.ui.dashboard.Detail.fromRoute]). */
-internal const val STEPS_ROUTE = "Steps"
+internal val STEPS_ROUTE: String get() = tr(R.string.common_steps)
 
 /** Room for the dots, the line, the bar and the week beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.35

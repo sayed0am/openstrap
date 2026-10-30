@@ -11,6 +11,9 @@ import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.sportNoun
 import org.openstrap.app.ui.glow.km
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * What the summary right after a workout says (spec 6.3, "Right after"): the heart rate drop as it happens and how it
@@ -45,14 +48,13 @@ object SummaryCopy {
     private const val MIN_EFFORT_PCT = 65
 
     /** The page title right after a workout, by the sport's short name: "Run saved" (spec 6.3). */
-    fun savedTitle(sportType: Int?): String = sportType?.let { "${Workouts.shortName(it)} saved" } ?: "Workout saved"
+    fun savedTitle(sportType: Int?): String = sportType?.let { tr(R.string.missed_sport_saved, Workouts.shortName(it)) } ?: tr(R.string.common_workout_saved)
 
     /** The (i) on the calm down hero. */
-    const val DROP_MEANING = "How far your heart rate falls in the first minute after you stop. A bigger drop usually " +
-        "means a fitter heart, and under 12 bpm is on the low side. It only says something after a hard effort."
+    val DROP_MEANING: String get() = tr(R.string.summary_copy_how_far_your_heart)
 
-    const val WATCHING = "Watching your heart rate come down."
-    const val NO_DROP_DATA = "No heart rate after the end, so no drop this time."
+    val WATCHING: String get() = tr(R.string.summary_copy_watching_your_heart_rate)
+    val NO_DROP_DATA: String get() = tr(R.string.summary_copy_no_heart_rate_after)
 
     /**
      * The hero's line from every reading around the end ([readings], time and bpm: the workout's, then what came
@@ -71,14 +73,14 @@ object SummaryCopy {
      */
     fun dropLine(drop: Int?, endBpm: Int?, maxHr: Int, usual: Int?): String {
         if (drop == null || endBpm == null) return NO_DROP_DATA
-        if (drop <= 0) return "No drop in the first minute."
-        val head = "Down $drop in the first minute"
-        if (endBpm * 100 < maxHr * MIN_EFFORT_PCT) return "$head, from an easy finish."
+        if (drop <= 0) return tr(R.string.summary_copy_no_drop_in_the)
+        val head = tr(R.string.summary_copy_down_in_the_first, drop)
+        if (endBpm * 100 < maxHr * MIN_EFFORT_PCT) return tr(R.string.summary_copy_from_an_easy_finish, head)
         return when {
             usual == null -> "$head."
-            drop >= usual + DROP_BAND -> "$head. A quick drop for you."
-            drop <= usual - DROP_BAND -> "$head. A slow drop for you."
-            else -> "$head. About usual for you."
+            drop >= usual + DROP_BAND -> tr(R.string.summary_copy_a_quick_drop_for, head)
+            drop <= usual - DROP_BAND -> tr(R.string.summary_copy_a_slow_drop_for, head)
+            else -> tr(R.string.summary_copy_about_usual_for_you, head)
         }
     }
 
@@ -92,14 +94,14 @@ object SummaryCopy {
 
     /** The Load card's line: against your [usual] workout Load ([Workouts.usualLoad]), with the band Today uses. */
     fun loadLine(load: Int, usual: Float?): String = when (TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        TodayCopy.LoadStatus.Above -> "Above your usual of ${Math.round(usual!!)}"
-        TodayCopy.LoadStatus.Below -> "Below your usual of ${Math.round(usual!!)}"
-        TodayCopy.LoadStatus.Usual, TodayCopy.LoadStatus.SoFar -> "About your usual"
-        null -> "Learning your usual"
+        TodayCopy.LoadStatus.Above -> tr(R.string.summary_copy_above_your_usual_of, Math.round(usual!!))
+        TodayCopy.LoadStatus.Below -> tr(R.string.summary_copy_below_your_usual_of, Math.round(usual!!))
+        TodayCopy.LoadStatus.Usual, TodayCopy.LoadStatus.SoFar -> tr(R.string.summary_copy_about_your_usual)
+        null -> tr(R.string.common_learning_your_usual)
     }
 
     /** The Load card's note, "From this run", or "this workout" where no short noun reads well. */
-    fun loadTitle(sportType: Int): String = "From this ${sportNoun(sportType) ?: "workout"}"
+    fun loadTitle(sportType: Int): String = tr(R.string.summary_copy_from_this, sportNoun(sportType) ?: tr(R.string.summary_copy_from_this__workout))
 
     /**
      * The Load card's recovery line, "Time to recover 14 h"; null without one. When what earlier workouts left runs an
@@ -108,7 +110,7 @@ object SummaryCopy {
      */
     fun timeToRecover(minutes: Int?, own: Int? = null, sportType: Int? = null): String? {
         val total = recoverSpan(minutes) ?: return null
-        return carriedOver(minutes, own, sportType)?.let { "Time to recover $it" } ?: "Time to recover $total"
+        return carriedOver(minutes, own, sportType)?.let { tr(R.string.summary_copy_time_to_recover, it) } ?: tr(R.string.summary_copy_time_to_recover, total)
     }
 
     /**
@@ -118,9 +120,9 @@ object SummaryCopy {
     fun carriedOver(minutes: Int?, own: Int?, sportType: Int?): String? {
         if (minutes == null || own == null || minutes - own < CARRIED_SHOWN_MIN) return null
         val total = recoverSpan(minutes) ?: return null
-        val noun = "this ${sportType?.let(::sportNoun) ?: "workout"}"
-        return recoverSpan(own)?.let { "$it from $noun, $total in all with what's left from earlier" }
-            ?: "nothing from $noun, $total left from earlier"
+        val noun = "this ${sportType?.let(::sportNoun) ?: tr(R.string.missed_unit_workout)}"
+        return recoverSpan(own)?.let { tr(R.string.summary_copy_from_in_all_with, it, noun, total) }
+            ?: tr(R.string.summary_copy_nothing_from_left_from, noun, total)
     }
 
     /** What earlier workouts left must run this far past a workout's own recovery before the line names both. */
@@ -129,7 +131,7 @@ object SummaryCopy {
     /** A time to recover on its own: "14 h", "40 min"; null without one. */
     fun recoverSpan(minutes: Int?): String? {
         val m = minutes?.takeIf { it > 0 } ?: return null
-        return if (m < 90) "$m min" else "${Math.round(m / 60.0)} h"
+        return if (m < 90) tr(R.string.missed_duration_min, m) else tr(R.string.missed_duration_h, Math.round(m / 60.0))
     }
 
     /**
@@ -139,17 +141,17 @@ object SummaryCopy {
     fun workoutLine(meters: Float?, fromSteps: Boolean, averageBpm: Int?, pausedSeconds: Long): String? {
         val parts = listOfNotNull(
             meters?.takeIf { it >= 10f }?.let { (if (fromSteps) "≈ " else "") + km(it) + if (it >= 1000) " km" else "" },
-            averageBpm?.takeIf { it > 0 }?.let { "average $it bpm" },
+            averageBpm?.takeIf { it > 0 }?.let { tr(R.string.summary_copy_average_bpm, it) },
         ).joinToString(", ").replaceFirstChar { it.uppercase() }
-        val paused = (pausedSeconds / 60).takeIf { it >= 1 }?.let { "Paused $it min." }
+        val paused = (pausedSeconds / 60).takeIf { it >= 1 }?.let { tr(R.string.summary_copy_paused_min, it) }
         return listOfNotNull(parts.takeIf { it.isNotEmpty() }?.let { "$it." }, paused).joinToString(" ").ifEmpty { null }
     }
 
     /** The workout card's calories, active first (calories spec 4.2): "486 active kcal, total 612"; null without them. */
     fun kcalLine(active: Int?, total: Int?, locale: java.util.Locale = java.util.Locale.getDefault()): String? = when {
         total == null || total <= 0 -> null
-        active == null || active == total -> "%,d kcal".format(locale, total)
-        else -> "%,d active kcal, total %,d".format(locale, active, total)
+        active == null || active == total -> trRaw(R.string.summary_copy_kcal).format(locale, total)
+        else -> trRaw(R.string.summary_copy_active_kcal_total).format(locale, active, total)
     }
 
     /**
@@ -161,17 +163,17 @@ object SummaryCopy {
         val k = WorkoutTarget.parse(target) as? WorkoutTarget.Kcal ?: return null
         val goal = "%,d".format(locale, k.kcal)
         return when {
-            reachedSeconds != null -> "Target $goal kcal, reached at ${workoutClock(reachedSeconds)}"
-            activeKcal != null && activeKcal >= k.kcal -> "Target $goal kcal, reached"
-            activeKcal != null -> "Target not reached, %,d of $goal kcal".format(locale, activeKcal)
-            else -> "Target $goal kcal, not reached"
+            reachedSeconds != null -> tr(R.string.summary_copy_target_kcal_reached_at, goal, workoutClock(reachedSeconds))
+            activeKcal != null && activeKcal >= k.kcal -> tr(R.string.summary_copy_target_kcal_reached, goal)
+            activeKcal != null -> trRaw(R.string.summary_copy_target_not_reached_of).format(locale, activeKcal, goal)
+            else -> tr(R.string.summary_copy_target_kcal_not_reached, goal)
         }
     }
 
     /** A lap's line on the list: "1.02 km, average 150 bpm"; null with neither. */
     fun lapLine(meters: Double?, averageBpm: Int?): String? = listOfNotNull(
         meters?.let { km(it.toFloat()) + if (it >= 1000) " km" else "" },
-        averageBpm?.let { "average $it bpm" },
+        averageBpm?.let { tr(R.string.summary_copy_average_bpm, it) },
     ).joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
 
     /** The trim panel's header: "18:02–18:40, 38:12". */
@@ -192,7 +194,7 @@ object SummaryCopy {
             if (!whole && (i != splits.lastIndex || sp.meters < PARTIAL_MIN_M)) return@mapIndexedNotNull null
             val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
             val last = totalMeters?.let { it - 1000f * i }?.takeIf { it > 0f } ?: sp.meters.toFloat()
-            SplitRow(if (whole) "Km ${i + 1}" else "Last ${km(last)}", workoutClock(sp.seconds), WorkoutCopy.averageOver(readings, from, sp.endT))
+            SplitRow(if (whole) tr(R.string.summary_copy_km, i + 1) else tr(R.string.summary_copy_last, km(last)), workoutClock(sp.seconds), WorkoutCopy.averageOver(readings, from, sp.endT))
         }
 
     /** A best counts once the last better one is at least this long ago. */
@@ -223,19 +225,19 @@ object SummaryCopy {
             val measured = before.filter { value(it) != null }
             val better = measured.filter { value(it)!! >= mine }.maxByOrNull { it.start }
             return when {
-                better == null -> "Your $word $noun yet.".takeIf { measured.size >= BEST_MIN_BEFORE }
-                w.start - better.start >= BEST_GAP_S && measured.count { it.start > better.start } >= BEST_MIN_BEATEN -> "${word.replaceFirstChar { it.uppercase() }} $noun since ${month(better.start, w.start, zone, locale)}."
+                better == null -> tr(R.string.summary_copy_your_yet, word, noun).takeIf { measured.size >= BEST_MIN_BEFORE }
+                w.start - better.start >= BEST_GAP_S && measured.count { it.start > better.start } >= BEST_MIN_BEATEN -> tr(R.string.summary_copy_since, word.replaceFirstChar { it.uppercase() }, noun, month(better.start, w.start, zone, locale))
                 else -> null
             }
         }
-        return best("farthest", { it.meters?.toDouble() }, BEST_MIN_M.toDouble())
-            ?: best("longest", { it.seconds.toDouble().takeIf { s -> s > 0 } }, BEST_MIN_S.toDouble())
+        return best(tr(R.string.missed_farthest), { it.meters?.toDouble() }, BEST_MIN_M.toDouble())
+            ?: best(tr(R.string.missed_longest), { it.seconds.toDouble().takeIf { s -> s > 0 } }, BEST_MIN_S.toDouble())
     }
 
     /** "March", or "March 2025" when [at] is in another year than [now]. */
     private fun month(at: Long, now: Long, zone: ZoneId, locale: Locale): String {
         val d = Instant.ofEpochSecond(at).atZone(zone)
-        val pattern = if (d.year == Instant.ofEpochSecond(now).atZone(zone).year) "MMMM" else "MMMM yyyy"
+        val pattern = if (d.year == Instant.ofEpochSecond(now).atZone(zone).year) "MMMM" else tr(R.string.summary_copy_mmmm_yyyy)
         return d.format(DateTimeFormatter.ofPattern(pattern, locale))
     }
 }

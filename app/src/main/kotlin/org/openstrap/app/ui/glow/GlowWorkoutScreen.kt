@@ -51,6 +51,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * The page of a past workout (spec 6.3, "Workout detail"), one for the strap's and the phone's: the sentence first on
@@ -63,8 +65,8 @@ import kotlin.math.roundToInt
 private const val HeartStep = 10L
 
 /** What deleting a strap workout does. */
-private const val STRAP_DELETE =
-    "Its heart rate and times are removed from OpenStrap, and the next sync won't bring it back. The strap's own history is kept."
+private val STRAP_DELETE: String get() =
+    tr(R.string.glow_workout_screen_its_heart_rate_and)
 
 /**
  * The workout [a]. A phone workout shows from its [summary] (route, laps, sets and the whole recording, for trimming),
@@ -105,7 +107,7 @@ fun GlowWorkoutDetailScreen(
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
                 PageHeader(
-                    (shown ?: a)?.sportName ?: "Workout", onBack,
+                    (shown ?: a)?.sportName ?: tr(R.string.common_workout), onBack,
                     trailing = if ((shown ?: a)?.startedByYou == false) ({ FoundTag() }) else null,
                 )
             }
@@ -199,16 +201,16 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val at = scrubbed?.let { i -> values.getOrNull(i)?.let { v -> first + i * HeartStep to v.roundToInt() } }
     EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle("Heart rate", if (a.heartRate.isNotEmpty()) "Coloured by zone" else null)
+        EdgeTitle(tr(R.string.common_heart_rate), if (a.heartRate.isNotEmpty()) tr(R.string.glow_workout_screen_coloured_by_zone) else null)
         if (at != null) {
-            EdgeValue(at.second.toString(), "bpm", if (at.first > a.end) "At ${clockAt(at.first)}, after the end" else "At ${clockAt(at.first)}")
+            EdgeValue(at.second.toString(), "bpm", if (at.first > a.end) tr(R.string.glow_workout_screen_at_after_the_end, clockAt(at.first)) else tr(R.string.glow_workout_screen_at, clockAt(at.first)))
         } else {
-            val range = listOfNotNull(w.maxHeartRate?.let { "Max $it" }, w.minHeartRate?.let { "lowest $it" }).joinToString(", ")
-            EdgeValue(w.averageHeartRate?.toString(), "bpm average", range.ifEmpty { null }?.let { "$it bpm" }, waiting = false)
+            val range = listOfNotNull(w.maxHeartRate?.let { tr(R.string.glow_workout_screen_max, it) }, w.minHeartRate?.let { tr(R.string.missed_lowest, it) }).joinToString(", ")
+            EdgeValue(w.averageHeartRate?.toString(), tr(R.string.glow_workout_screen_bpm_average), range.ifEmpty { null }?.let { "$it bpm" }, waiting = false)
         }
         if (a.heartRate.isEmpty()) {
             Text(
-                "The strap hasn't sent this workout's heart rate yet.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                tr(R.string.glow_workout_screen_the_strap_hasn_t), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                 style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
             )
             return@EdgeCard
@@ -217,10 +219,10 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
         Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
             Note(clockAt(first))
             Spacer(Modifier.weight(1f))
-            Note(if (last > a.end + HeartStep) "Drop after ${clockAt(a.end)}" else clockAt(a.end))
+            Note(if (last > a.end + HeartStep) tr(R.string.glow_workout_screen_drop_after, clockAt(a.end)) else clockAt(a.end))
         }
         if (a.historyRanges.isNotEmpty()) Text(
-            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clockAt(it.first)}–${clockAt(it.last + 1)}" } + " came from the strap's history.",
+            tr(R.string.glow_workout_screen_dimmed) + a.historyRanges.joinToString(", ") { "${clockAt(it.first)}–${clockAt(it.last + 1)}" } + tr(R.string.glow_workout_screen_came_from_the_strap),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
         )
     }
@@ -281,7 +283,7 @@ private fun ZoneHeartLine(
 @Composable
 private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
     EdgeCard(MetricColors.calories, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier, onClick = onOpen) {
-        EdgeTitle("In your day", null)
+        EdgeTitle(tr(R.string.glow_workout_screen_in_your_day), null)
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
     }
 }
@@ -289,18 +291,18 @@ private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
 /** The small facts ([WorkoutDetailCopy.facts]) as rows, and the map under them when the route was kept. */
 @Composable
 private fun FactsList(facts: List<WorkoutFact>, summary: PhoneSummary?) {
-    ListPanel(title = "The workout") {
+    ListPanel(title = tr(R.string.common_the_workout)) {
         facts.forEachIndexed { i, f ->
             val color = when (f.name) {
-                "Paused" -> PausedColor
-                "Calories", "Target" -> MetricColors.calories
+                tr(R.string.common_paused) -> PausedColor
+                tr(R.string.common_calories), "Target" -> MetricColors.calories
                 else -> MetricColors.steps
             }
             val icon = when (f.name) {
-                "Distance" -> Score.Distance.rowIcon()
-                "Paused" -> AppIcons.Hourglass
-                "Steps" -> Metric.Steps.rowIcon()
-                "Calories" -> Score.Energy.rowIcon()
+                tr(R.string.common_distance) -> Score.Distance.rowIcon()
+                tr(R.string.common_paused) -> AppIcons.Hourglass
+                tr(R.string.common_steps) -> Metric.Steps.rowIcon()
+                tr(R.string.common_calories) -> Score.Energy.rowIcon()
                 "Target" -> AppIcons.Target
                 else -> null
             }
@@ -342,11 +344,11 @@ fun GlowWorkoutsScreen(workouts: List<WorkoutAnalysis>, contentPadding: PaddingV
     val days = remember(workouts) { workouts.groupBy { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() }.toList() }
     val today = LocalDate.now()
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Workouts", onBack, subtitle = "${workouts.size} recorded") }
+        item { PageHeader(tr(R.string.common_workouts), onBack, subtitle = tr(R.string.missed_n_recorded, workouts.size)) }
         if (workouts.isEmpty()) {
             item {
                 ListPanel {
-                    ListRow("No workouts yet", MetricColors.heart, null, "Workouts you start in OpenStrap show up here, and the strap's own after a sync.", dash = false, divider = false)
+                    ListRow(tr(R.string.common_no_workouts_yet), MetricColors.heart, null, tr(R.string.glow_workout_screen_workouts_you_start_in), dash = false, divider = false)
                 }
             }
             return@ScreenList

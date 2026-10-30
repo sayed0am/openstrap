@@ -6,6 +6,8 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.glow.PausedColor
 import org.openstrap.app.ui.glow.km
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * What the ongoing workout notification shows (spec 6.3, patterns D4): the black card with the time, bpm in the zone
@@ -42,7 +44,7 @@ data class WorkoutCard(
 
 object NotificationCopy {
     /** The question while End waits for a second tap. */
-    const val END_QUESTION = "End the workout? Tap Yes, end to save it."
+    val END_QUESTION: String get() = tr(R.string.notification_copy_end_the_workout_tap)
 
     /** Grey for the bpm slot without a zone: the live screen's paused colour. */
     val MUTED = PausedColor
@@ -60,15 +62,15 @@ object NotificationCopy {
         val reading = bpm.takeIf { connected && !paused }
         val zone = WorkoutRecorder.liveZone(reading, maxHr)
         val slot = when {
-            paused -> "Paused"
-            !connected -> "Reconnecting"
-            reading == null -> "Waiting"
+            paused -> tr(R.string.common_paused)
+            !connected -> tr(R.string.common_reconnecting)
+            reading == null -> tr(R.string.common_waiting)
             else -> "$reading bpm"
         }
         val zoneLine = when {
             confirming -> END_QUESTION
             paused -> null
-            !connected -> "Still recording"
+            !connected -> tr(R.string.notification_copy_still_recording)
             else -> zone?.let { WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" } }
         }
         val detail = when {
@@ -76,10 +78,10 @@ object NotificationCopy {
             paused -> null
             target is WorkoutTarget.Zones -> {
                 val inTarget = zoneSeconds.withIndex().filter { it.index in target.low..target.high }.sumOf { it.value }
-                "${inTarget / 60} min in ${target.label}"
+                tr(R.string.notification_copy_min_in, inTarget / 60, target.label)
             }
-            target is WorkoutTarget.Time -> "Goal ${target.label}"
-            target is WorkoutTarget.Kcal -> "Goal ${target.label}"
+            target is WorkoutTarget.Time -> tr(R.string.notification_copy_goal, target.label)
+            target is WorkoutTarget.Kcal -> tr(R.string.notification_copy_goal, target.label)
             zone != null -> WorkoutCopy.zoneTime(zoneSeconds.getOrElse(zone) { 0 })
             else -> null
         }

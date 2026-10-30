@@ -54,6 +54,8 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.SportIcons
 import java.time.Instant
 import java.time.ZoneId
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The Moment widget (widgets spec 3.1): what matters now, following the day as Today's hero does, from the same
@@ -91,12 +93,12 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
                 default
             }
             val profile = container.settings.profile.first()
-            val rec = read("Recovery", null) { container.health.recovery(today, profile) }
+            val rec = read(tr(R.string.common_recovery), null) { container.health.recovery(today, profile) }
             val bedtime = rec?.usualBedtime ?: read("bedtime", null) { container.health.usualBedtime(today) }
             val inputs = widgetMomentInputs(container, bedtime, now, zone)
             val dayStart = DayWindow.of(today, zone).from
-            val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
-            val night = read("last night", null) {
+            val strapScore = read(tr(R.string.moment_widget_the_strap_s_score), null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
+            val night = read(tr(R.string.common_last_night), null) {
                 val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
                 val sessions = dao.sleepSessionsOnce(span.from, span.to)
                 SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(today, zone))?.let { main ->
@@ -105,7 +107,7 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
             }
             // Workouts over the usual workout time's look-back, as Today's usual sport reads them.
             val from = t - MomentResolver.USUAL_WORKOUT_DAYS * 86_400L
-            val phone = read("phone workouts", emptyList()) { dao.appWorkoutsOnce(from, t) }
+            val phone = read(tr(R.string.moment_widget_phone_workouts), emptyList()) { dao.appWorkoutsOnce(from, t) }
             // The strap's record of a phone workout is that workout, as in the lists ([Workouts.sameWorkout]).
             val strap = read("workouts", emptyList()) { dao.workoutsOnce(from, t) }.filter { Workouts.phoneTwin(it, phone, t) == null }
             val yours = strap.filter { it.subtype != Workouts.SUBTYPE_AUTO_DETECTED && it.sportType != Workouts.GENERIC_ACTIVITY }.map { it.sportType to it.start } +
@@ -119,10 +121,10 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
                 .filter { (start, sport) -> start in day.from..day.to && sport != Workouts.GENERIC_ACTIVITY }.sortedBy { it.first }.map { it.second }
             val recording = (container.workout.state.value as? WorkoutState.Recording)?.let { MomentRecordingInput(it.workout.sportType, it.workout.start) }
             val minutes = read("steps", emptyList()) { dao.activityOnce(day.from, day.to) }
-            val hr = read("heart rate", emptyList()) { dao.heartRateOnce(day.from, day.to) }
+            val hr = read(tr(R.string.moment_widget_heart_rate), emptyList()) { dao.heartRateOnce(day.from, day.to) }
             val series = Summaries.heartRateSeries(hr, minutes)
             val heart = Summaries.bucketAverage(series).map { ChartPoint(it.first, it.second.toFloat()) }
-            val resting = read("resting heart rate", null) { dao.restingHrOnce(day.from, day.to).firstOrNull()?.bpm }
+            val resting = read(tr(R.string.common_resting_heart_rate), null) { dao.restingHrOnce(day.from, day.to).firstOrNull()?.bpm }
                 ?: if (series.size >= RESTING_ESTIMATE_MINUTES) Summaries.estimateRestingHr(series) else null
             val input = MomentWidgetInput(
                 inputs = inputs,

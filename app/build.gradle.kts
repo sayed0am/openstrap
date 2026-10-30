@@ -30,6 +30,9 @@ android {
         ndk { abiFilters += "arm64-v8a" }
     }
 
+    // English and Simplified Chinese (res/xml/locales_config.xml): the libraries' other languages stay out.
+    androidResources { localeFilters += listOf("en", "zh-rCN") }
+
     signingConfigs {
         // The release key, when its env vars are set (CI sets them from secrets); see README "Releases".
         if (releaseKeystore != null) create("release") {
@@ -73,6 +76,8 @@ ksp {
 // The backtest harness (BacktestReplay, docs/algorithms/readiness-calibration.md):
 // ./gradlew testDebugUnitTest --tests '*BacktestReplay*' -Pbacktest=/path/openstrap.db [-PbacktestProfile=1990,Male]
 tasks.withType<Test>().configureEach {
+    // The English text for code that looks its words up outside an app (Texts.kt).
+    systemProperty("openstrap.strings", file("src/main/res/values/strings.xml").absolutePath)
     listOf("backtest", "backtestOut", "backtestProfile").forEach { name ->
         providers.gradleProperty(name).orNull?.let { systemProperty("openstrap.$name", it) }
     }

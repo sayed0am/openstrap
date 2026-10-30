@@ -13,6 +13,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.dashboard.TodayCard
 import org.openstrap.app.ui.dashboard.TodayEdits
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Edit Today (audit 3, Sheets): which cards Today shows, and up to two pinned under the hero, as a sheet of rows.
@@ -22,7 +24,7 @@ import org.openstrap.app.ui.dashboard.TodayEdits
 @Composable
 internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onDismiss: () -> Unit) {
     var e by remember { mutableStateOf(edits) }
-    PageSheet(onDismiss, "Edit Today", note = "Pin up to two cards under the top card, or hide the ones you don't need.") {
+    PageSheet(onDismiss, tr(R.string.common_edit_today), note = tr(R.string.edit_today_sheet_pin_up_to_two)) {
         PageRows {
             TodayCard.entries.filter { it.editable }.forEachIndexed { i, card ->
                 val shown = card !in e.hidden
@@ -30,7 +32,7 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (card.pinnable) {
                             val pinned = card in e.pinned
-                            PageChip(if (pinned) "Pinned" else "Pin", pinned, { e = e.togglePin(card) }, enabled = e.canPin(card))
+                            PageChip(if (pinned) tr(R.string.edit_today_sheet_pinned) else tr(R.string.edit_today_sheet_pin), pinned, { e = e.togglePin(card) }, enabled = e.canPin(card))
                         }
                         GlowSwitch(shown, { e = e.toggleHidden(card) })
                     }
@@ -38,8 +40,8 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Done", { onSave(e) }, Modifier.weight(1f), primary = true)
+            PageButton(tr(R.string.common_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(tr(R.string.common_done), { onSave(e) }, Modifier.weight(1f), primary = true)
         }
     }
 }

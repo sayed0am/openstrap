@@ -41,7 +41,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Outdoor run"
+                android:text="@string/widget_preview_start_outdoor_run"
                 android:textSize="15sp"
                 android:textColor="#FFFFFFFF"
                 android:fontFamily="sans-serif-medium"
@@ -50,7 +50,7 @@
                     <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Your usual"
+                android:text="@string/widget_preview_start_your_usual"
                 android:textSize="13sp"
                 android:textColor="#B8FFFFFF"
                 android:maxLines="1"

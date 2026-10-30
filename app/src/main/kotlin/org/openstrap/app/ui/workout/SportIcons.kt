@@ -2,6 +2,8 @@ package org.openstrap.app.ui.workout
 
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** Each sport's icon, and the few the workout screens use, all from [AppIcons] (Hugeicons); Icon() tints them. */
 internal object SportIcons {

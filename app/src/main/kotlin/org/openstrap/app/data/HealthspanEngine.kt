@@ -7,6 +7,8 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Loads six months of daily inputs for [Healthspan] and runs it. The estimate is weekly: as of local midnight of the
@@ -29,7 +31,7 @@ class HealthspanEngine(private val dao: HealthDao) {
         val age = profile.age(sunday)
         val d = daily(sunday, from, asOf, zone)
         val (result, withheld) = Healthspan.estimate(profile, age, d)
-        val missing = listOfNotNull("birth year".takeIf { profile.birthYear == null }, "sex".takeIf { profile.sex == null })
+        val missing = listOfNotNull(tr(R.string.healthspan_engine_birth_year).takeIf { profile.birthYear == null }, "sex".takeIf { profile.sex == null })
         // This week's result is kept as shown, so next week can compare with it. A past week is never written again:
         // looking back at a day must not replace what that Sunday showed.
         result?.takeIf { sunday == sundayOf(LocalDate.now(zone)) }?.let { dao.insertHabitAgeWeek(HabitAgeWeekRow(asOf, it.estimate, it.low, it.high, System.currentTimeMillis() / 1000)) }

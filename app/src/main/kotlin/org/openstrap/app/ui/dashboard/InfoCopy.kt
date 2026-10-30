@@ -4,6 +4,9 @@ import org.openstrap.app.data.Activity
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /*
  * What every detail's info sheet says (spec 6.2): a bold one-line meaning, the scale its value is read on, and three
@@ -23,16 +26,16 @@ data class Info(
 
 object InfoCopy {
     /** The scale of every value read against your normal, low to high. */
-    val NORMAL_SCALE = listOf("Below your normal", "Usual", "Above your normal")
+    val NORMAL_SCALE = listOf(tr(R.string.common_below_your_normal), tr(R.string.common_usual), tr(R.string.common_above_your_normal))
 
     /** Recovery's bands, low to high, in the words beside the score ([TodayCopy.recoveryWord]). */
-    val RECOVERY_SCALE = listOf("Take it easy", "Moderate", "Ready", "Ready for more")
+    val RECOVERY_SCALE = listOf(tr(R.string.common_take_it_easy), tr(R.string.common_moderate), tr(R.string.common_ready), tr(R.string.common_ready_for_more))
 
     /** Charge's bands, low to high. */
-    val CHARGE_SCALE = listOf("Running low", "Some left", "Good", "Full")
+    val CHARGE_SCALE = listOf(tr(R.string.info_copy_running_low), tr(R.string.info_copy_some_left), tr(R.string.common_good), tr(R.string.info_copy_full))
 
     /** The Sleep score's bands, low to high, in the words beside it ([TabCopy.sleepScoreWord]). */
-    val SLEEP_SCALE = listOf("Poor", "Fair", "Good", "Great")
+    val SLEEP_SCALE = listOf(tr(R.string.common_poor), tr(R.string.common_fair), tr(R.string.common_good), tr(R.string.common_great))
 
     /** Sleep regularity's bands, low to high ([SleepRegularity.Band]). */
     val REGULARITY_SCALE = SleepRegularity.Band.entries.map { it.label }
@@ -67,261 +70,180 @@ object InfoCopy {
      * far along it is.
      */
     fun normalLine(normal: History.Normal?, days: Int, format: (Float) -> String, unit: String, nightly: Boolean): String {
-        val word = if (nightly) "nights" else "days"
-        if (normal == null) return "Your normal shows after ${History.MIN_NORMAL_DAYS} $word with data. ${days.coerceAtMost(History.MIN_NORMAL_DAYS)} so far."
+        val word = tr(if (nightly) R.string.missed_unit_night else R.string.missed_unit_day) + trRaw(R.string.missed_plural)
+        if (normal == null) return tr(R.string.info_copy_your_normal_shows_after, History.MIN_NORMAL_DAYS, word, days.coerceAtMost(History.MIN_NORMAL_DAYS))
         val u = if (unit.isEmpty()) "" else if (unit.startsWith("%") || unit.startsWith("°")) unit else " $unit"
-        return "You are here. Your normal is ${format(normal.low)} to ${format(normal.high)}$u, from ${normal.days} $word."
+        return tr(R.string.info_copy_you_are_here_your, format(normal.low), format(normal.high), u, normal.days, word)
     }
 
     /** The line under Recovery's and Charge's scales. */
-    const val HERE = "You are here."
+    val HERE: String get() = tr(R.string.info_copy_you_are_here)
 
     fun of(metric: Metric): Info = when (metric) {
         Metric.HeartRate -> Info(
-            "Heart rate",
-            "How fast your heart beats, in beats per minute (bpm), read by the strap through the day and night.",
+            tr(R.string.common_heart_rate),
+            tr(R.string.info_copy_how_fast_your_heart),
             NORMAL_SCALE,
-            how = "The strap reads your pulse with light through the skin, about once a minute, and more often in a " +
-                "workout or while Live is on. The band behind the day's line is your resting range: your usual resting " +
-                "heart rate, give or take a usual spread, over the last 30 days.",
-            moves = "Movement, stress, caffeine and heat raise it. Rest and sleep bring it down.",
-            off = "A loose strap, cold hands or busy arm movement can make readings jump. Live readings come more often, " +
-                "so the line looks busier while it's on.",
+            how = tr(R.string.info_copy_the_strap_reads_your),
+            moves = tr(R.string.info_copy_movement_stress_caffeine_and),
+            off = tr(R.string.info_copy_a_loose_strap_cold),
         )
         Metric.RestingHr -> Info(
-            "Resting heart rate",
-            "Your heart rate at its calmest. Lower usually means a fitter, well rested heart.",
+            tr(R.string.common_resting_heart_rate_2),
+            tr(R.string.info_copy_your_heart_rate_at),
             NORMAL_SCALE,
-            how = "The strap works it out each day from your calmest stretch, usually in sleep. Your normal is the middle " +
-                "of your last 30 days, give or take a usual spread, once 7 of them have a value.",
-            moves = "It rises after hard training, late meals, alcohol, poor sleep or when your body is fighting " +
-                "something off, and falls as fitness builds.",
-            off = "A night with the strap loose or off gives it less to go on. One high day says less than a few in a row.",
+            how = tr(R.string.info_copy_the_strap_works_it),
+            moves = tr(R.string.info_copy_it_rises_after_hard),
+            off = tr(R.string.info_copy_a_night_with_the),
         )
         Metric.Hrv -> Info(
-            "HRV",
-            "Heart rate variability, the small changes in time between heartbeats. Higher than your usual means your body has recovered.",
+            tr(R.string.common_hrv),
+            tr(R.string.info_copy_heart_rate_variability_the),
             NORMAL_SCALE,
-            how = "The strap measures the time between beats, in milliseconds (ms), while you're still, mostly in " +
-                "sleep, and the day's value is the average of its readings. It's read against your own normal: " +
-                "the middle of your last 30 days, give or take a usual spread.",
-            moves = "Good sleep and rest raise it. Stress, hard training and alcohol lower it. Compare it with your own " +
-                "normal, not other people's.",
-            off = "Moving during a reading, a loose strap or a short night leave fewer clean readings. HRV swings a lot " +
-                "from day to day, so a few days in a row say more than one.",
+            how = tr(R.string.info_copy_the_strap_measures_the),
+            moves = tr(R.string.info_copy_good_sleep_and_rest),
+            off = tr(R.string.info_copy_moving_during_a_reading),
         )
         Metric.Spo2 -> Info(
-            "Blood oxygen",
-            "How much of your blood's capacity is carrying oxygen. Most people sit at 95 to 100%.",
+            tr(R.string.common_blood_oxygen),
+            tr(R.string.info_copy_how_much_of_your),
             NORMAL_SCALE,
-            how = "The strap shines red and infrared light through the skin and compares how much of each comes back. The " +
-                "day's value is the average of its readings.",
-            moves = "Altitude and pauses in breathing during sleep can lower it.",
-            off = "A loose strap, cold skin or moving during a reading can give low values. It's a wellness reading, not a " +
-                "medical one.",
+            how = tr(R.string.info_copy_the_strap_shines_red),
+            moves = tr(R.string.info_copy_altitude_and_pauses_in),
+            off = tr(R.string.info_copy_a_loose_strap_cold_2),
         )
         Metric.Stress -> Info(
-            "Stress",
-            "The strap's stress level from 0 to 100. Higher means your body is more on alert.",
+            tr(R.string.common_stress),
+            tr(R.string.info_copy_the_strap_s_stress),
             NORMAL_SCALE,
-            how = "The strap works it out from your heart rate and its variability while you're still. Readings during " +
-                "and just after a workout are left out, since exercise isn't stress.",
-            moves = "Pressure, caffeine and too little sleep raise it. Calm breathing, rest and time outdoors bring it down.",
-            off = "Excitement, heat and an illness look like stress to the strap. Small movements while sitting can push it up.",
+            how = tr(R.string.info_copy_the_strap_works_it_2),
+            moves = tr(R.string.info_copy_pressure_caffeine_and_too),
+            off = tr(R.string.info_copy_excitement_heat_and_an),
         )
         Metric.SkinTemperature -> Info(
-            "Skin temperature",
-            "The temperature of your skin under the strap. What matters is the change from your normal, not the level.",
+            tr(R.string.common_skin_temperature),
+            tr(R.string.info_copy_the_temperature_of_your),
             NORMAL_SCALE,
-            how = "The strap measures it against your skin. The level depends on fit and the room, so OpenStrap shows it " +
-                "as a change from your normal of the last 30 days.",
-            moves = "It moves with alcohol, a warm room, hard training, the menstrual cycle, or when your body is fighting " +
-                "something off.",
-            off = "A warm bed, a heavy duvet or the strap sitting loose all change it without your body changing.",
+            how = tr(R.string.info_copy_the_strap_measures_it),
+            moves = tr(R.string.info_copy_it_moves_with_alcohol),
+            off = tr(R.string.info_copy_a_warm_bed_a),
         )
         Metric.Breathing -> Info(
-            "Breathing rate",
-            "How many breaths you take a minute while asleep. It stays very steady for most people.",
+            tr(R.string.common_breathing_rate),
+            tr(R.string.info_copy_how_many_breaths_you),
             NORMAL_SCALE,
-            how = "The strap measures it during sleep, so there's one value a night, read against your normal of the last " +
-                "30 days.",
-            moves = "It can rise above your normal after a hard training day, in a warm, stuffy room, or when your body is " +
-                "fighting something off.",
-            off = "A restless night, or the strap off for part of it, leaves fewer readings to go on.",
+            how = tr(R.string.info_copy_the_strap_measures_it_2),
+            moves = tr(R.string.info_copy_it_can_rise_above),
+            off = tr(R.string.info_copy_a_restless_night_or),
         )
         Metric.Steps -> Info(
-            "Steps",
-            "Steps counted by the strap through the day.",
+            tr(R.string.common_steps),
+            tr(R.string.info_copy_steps_counted_by_the),
             NORMAL_SCALE,
-            how = "The strap counts them from your arm's movement and keeps them minute by minute. A day's steps are the " +
-                "total of its minutes.",
-            moves = "Short walks spread across the day add up. Most people aim for 7,000 to 10,000.",
-            off = "Pushing a pram or a trolley, or holding a rail, hides steps. Waving your arms about can add a few.",
+            how = tr(R.string.info_copy_the_strap_counts_them),
+            moves = tr(R.string.info_copy_short_walks_spread_across),
+            off = tr(R.string.info_copy_pushing_a_pram_or),
         )
     }
 
     fun of(score: Score): Info = when (score) {
         Score.Recovery -> Info(
-            "Recovery",
-            "How ready your body is for effort today, from 0 to 100, worked out each morning from your night.",
+            tr(R.string.common_recovery),
+            tr(R.string.info_copy_how_ready_your_body),
             RECOVERY_SCALE,
-            how = "Each morning OpenStrap compares your night with what's normal for you, not with other people: " +
-                "HRV (heart rate variability), resting heart rate, skin temperature, breathing rate and blood " +
-                "oxygen, last night's sleep and the past few nights, and how hard yesterday was. About half the " +
-                "score comes from HRV and resting heart rate, about a quarter from sleep. One signal far from " +
-                "your normal caps it, so good sleep can't fully make up for it. Everything is worked out on this " +
-                "phone from your strap's data.",
-            moves = "Good sleep, easy days and nights without alcohol lift it. Hard training, short nights, late meals, " +
-                "stress and illness hold it down.",
-            off = "It needs ${Recovery.SCORED_NIGHTS} good nights to start and settles over ${Recovery.SETTLED_NIGHTS}. A " +
-                "night with the strap loose or off, or too few clean HRV readings, gives it less to go on, and the " +
-                "strap's own readings may stand in.",
+            how = tr(R.string.info_copy_each_morning_openstrap_compares),
+            moves = tr(R.string.info_copy_good_sleep_easy_days),
+            off = tr(R.string.info_copy_it_needs_good_nights, Recovery.SCORED_NIGHTS, Recovery.SETTLED_NIGHTS),
         )
         Score.Charge -> Info(
-            "Energy",
-            "Your energy right now, from 0 to 100. Sleep fills it and the day uses it.",
+            tr(R.string.common_energy),
+            tr(R.string.info_copy_your_energy_right_now),
             CHARGE_SCALE,
-            how = "Think of it as a battery that runs all day. Sleep fills it, deep sleep most of all, and a calm, steady " +
-                "night fills it faster. Being awake uses a little every hour. Exercise and stress use it faster, while " +
-                "quiet, relaxed moments slow the drain. It's worked out on this phone from your heart rate, minute by " +
-                "minute, as a guide to plan your day, not medical advice.",
-            moves = "A long, calm night fills it more. Workouts, a stressful day and a late night use it up.",
-            off = "Energy starts after your first night. With the strap off overnight there's no sleep to fill it from, " +
-                "so the day starts from your usual Energy at waking, an estimate.",
+            how = tr(R.string.info_copy_think_of_it_as),
+            moves = tr(R.string.info_copy_a_long_calm_night),
+            off = tr(R.string.info_copy_energy_starts_after_your),
         )
         Score.Sleep -> Info(
-            "Sleep score",
-            "How well you slept, from 0 to 100, scored by the strap from the night.",
+            tr(R.string.common_sleep_score),
+            tr(R.string.info_copy_how_well_you_slept),
             SLEEP_SCALE,
-            how = "The score is the strap's own, from the length and the stages of the night, and it mostly " +
-                "follows how long you slept. The stages are light, deep and REM (rapid eye movement), when most " +
-                "dreams happen. What shaped the score rates the night against general sleep guidance: time asleep " +
-                "against your sleep need, and staying asleep, with under 30 minutes awake after falling asleep " +
-                "counting as settled. Too much sleep counts against it too, past 9½ hours. Stages aren't rated, " +
-                "since a strap reads them less surely than sleep from waking. It's a guide, not a medical " +
-                "assessment.",
-            moves = "Regular bedtimes, a dark, cool room and less caffeine and alcohol late in the day help. Late nights, " +
-                "a restless night and waking early pull it down.",
-            off = "Lying still awake can count as asleep, and light and deep sleep are hard to tell apart through the " +
-                "skin. A night with the strap off or loose may be missed or cut short.",
+            how = tr(R.string.info_copy_the_score_is_the),
+            moves = tr(R.string.info_copy_regular_bedtimes_a_dark),
+            off = tr(R.string.info_copy_lying_still_awake_can),
         )
         Score.Regularity -> Info(
-            "Sleep regularity",
-            "How alike your sleep and wake times are from one day to the next. 100 is the same every day.",
+            tr(R.string.common_sleep_regularity),
+            tr(R.string.info_copy_how_alike_your_sleep),
             REGULARITY_SCALE,
-            how = "OpenStrap works out the Sleep Regularity Index. It marks each minute of the day asleep or awake and " +
-                "counts how often a minute matches the same minute the day before, over the last 7 days. It needs " +
-                "${SleepRegularity.MIN_VALID_PAIRS / 60} h of wear compared day to day, about 5 days worn around the " +
-                "clock, and until then shows how much the middle of your sleep moved. The bands follow how UK Biobank " +
-                "adults scored, where half of them were between 74 and 86. Your usual times are the average " +
-                "of the last 7 nights.",
-            moves = "Going to bed and getting up at the same times, weekends too, raises it. Late nights, lie-ins and " +
-                "long naps lower it.",
-            off = "Minutes with the strap off aren't compared, so a week with little wear rests on fewer days. Lying " +
-                "awake in bed can count as asleep.",
+            how = tr(R.string.info_copy_openstrap_works_out_the, SleepRegularity.MIN_VALID_PAIRS / 60),
+            moves = tr(R.string.info_copy_going_to_bed_and),
+            off = tr(R.string.info_copy_minutes_with_the_strap),
         )
         Score.Naps -> Info(
-            "Naps",
-            "Sleep in the day, which the strap records apart from your night.",
+            tr(R.string.common_naps),
+            tr(R.string.info_copy_sleep_in_the_day),
             emptyList(),
-            how = "The strap tells a nap from your night itself, and records its stages when it's long enough. A nap " +
-                "belongs to the day it started on. Its heart rate comes from the day's readings, since the strap " +
-                "sends no average for a nap.",
-            moves = "A short nap early in the afternoon refreshes without taking much from the night. A long or late " +
-                "one can make it harder to fall asleep.",
-            off = "Lying still awake can look like a short nap, and a short nap may have no stages.",
+            how = tr(R.string.info_copy_the_strap_tells_a),
+            moves = tr(R.string.info_copy_a_short_nap_early),
+            off = tr(R.string.info_copy_lying_still_awake_can_2),
         )
         // The Activity tab's (spec 5.3). The method notes that sat on the old Activity panels (Paluch, Mifflin-St Jeor,
         // Jurca, FRIEND, acute:chronic, the strap's weekly EPOC range, training effect) live here now.
         Score.HeartPoints -> Info(
-            "Heart points",
-            "Points for the minutes your heart rate is raised, harder minutes earning more, over the last 7 days. Aim for ${ActivityCopy.HEART_POINTS_TARGET}.",
+            tr(R.string.common_heart_points),
+            tr(R.string.info_copy_points_for_the_minutes, ActivityCopy.HEART_POINTS_TARGET),
             emptyList(),
-            how = "Heart points are the strap's PAI, Personal Activity Intelligence. The strap works them out itself from " +
-                "how far your heart rate rises above resting, against your age and sex, and OpenStrap shows them as they " +
-                "come. Each day's points count for 7 days, then drop off, so the total always covers the last week.",
-            moves = "Anything that gets you out of breath adds the most. Brisk walking adds a little. A few hard sessions " +
-                "a week keep the total at ${ActivityCopy.HEART_POINTS_TARGET} or more.",
-            off = "The total updates when the strap syncs, so it can lag behind today's effort. A loose strap in a workout " +
-                "misses raised heart rate.",
+            how = tr(R.string.info_copy_heart_points_are_the),
+            moves = tr(R.string.info_copy_anything_that_gets_you, ActivityCopy.HEART_POINTS_TARGET),
+            off = tr(R.string.info_copy_the_total_updates_when),
         )
         Score.ActiveMinutes -> Info(
-            "Active minutes",
-            "Minutes of brisk movement or harder over the last 7 days, against the ${Activity.MVPA_WEEKLY_TARGET} a week health guidelines aim for.",
+            tr(R.string.common_active_minutes),
+            tr(R.string.info_copy_minutes_of_brisk_movement, Activity.MVPA_WEEKLY_TARGET),
             emptyList(),
-            how = "A minute at ${Activity.MODERATE_CADENCE} steps or more counts as moderate, and ${Activity.VIGOROUS_CADENCE} " +
-                "or more as vigorous, inside a run of at least ${Activity.CADENCE_RUN_MINUTES} such minutes. Effort " +
-                "without steps, like cycling or rowing, counts from heart rate after ${Activity.HR_RUN_MINUTES} minutes in " +
-                "a row at ${(Activity.HR_MODERATE_HRR * 100).toInt()}% of your heart rate reserve or more, vigorous from " +
-                "${(Activity.HR_VIGOROUS_HRR * 100).toInt()}%. A vigorous minute counts double, as in the World Health Organization's 2020 guidelines.",
-            moves = "Brisk walks of a few minutes or more, cycling, running and sport all count. Strolling and short bursts don't.",
-            off = "No study has checked a strap's step counts against walking pace, so brisk minutes near the line can be " +
-                "missed or counted. Pushing a trolley or holding a rail hides steps.",
+            how = tr(R.string.info_copy_a_minute_at_steps, Activity.MODERATE_CADENCE, Activity.VIGOROUS_CADENCE, Activity.CADENCE_RUN_MINUTES, Activity.HR_RUN_MINUTES, (Activity.HR_MODERATE_HRR * 100).toInt(), (Activity.HR_VIGOROUS_HRR * 100).toInt()),
+            moves = tr(R.string.info_copy_brisk_walks_of_a),
+            off = tr(R.string.info_copy_no_study_has_checked),
         )
         Score.Load -> Info(
-            "Load",
-            "How hard your heart worked today, from workouts and moving about, against your usual day.",
+            tr(R.string.common_load),
+            tr(R.string.info_copy_how_hard_your_heart),
             ActivityCopy.LOAD_SCALE,
-            how = "Each minute counts by how hard your heart works between resting and maximum, Banister's training " +
-                "impulse (TRIMP). Every workout minute counts. Outside workouts only moving minutes do, at 35% of your " +
-                "heart rate reserve or more, or brisk walking from 20%. Your usual is your fitness, a 42-day average of " +
-                "your daily Load. Building, Steady and Easing off compare the last 7 days with it, Steady within a " +
-                "quarter either side. Strain puts the day on a fixed curve from 0 to 21, where an hour at 60% of your " +
-                "reserve is about 7.",
-            moves = "Workouts add the most, longer and harder ones more. A day of walking about adds a little. Rest days " +
-                "bring the week's balance down.",
-            off = "Days the strap was mostly off are left out of your usual. A low maximum heart rate makes every minute " +
-                "count for more. Workouts also carry the strap's EPOC, its measure of what one workout took, on a " +
-                "different scale from Load.",
+            how = tr(R.string.info_copy_each_minute_counts_by),
+            moves = tr(R.string.info_copy_workouts_add_the_most),
+            off = tr(R.string.info_copy_days_the_strap_was),
         )
         Score.Vo2Max -> Info(
-            "VO2 max",
-            "The most oxygen your body can use in hard effort, a measure of fitness. Higher is fitter.",
+            tr(R.string.common_vo_max),
+            tr(R.string.info_copy_the_most_oxygen_your),
             emptyList(),
-            how = "It's measured in millilitres of oxygen per kilogram of body weight a minute (ml/kg/min). After a " +
-                "workout the strap can read it from, the number is the strap's own estimate from your heart rate and " +
-                "pace. Otherwise OpenStrap estimates it from your age, sex, body mass index, resting heart rate while " +
-                "asleep and how active you say you are (Jurca and others, 2005), updated weekly, and shows it as a " +
-                "range. Where you sit for your age and sex comes from treadmill tests of thousands of adults (FRIEND, 2022).",
-            moves = "Regular hard effort raises it over weeks. Weight, age and long breaks from training lower it.",
-            off = "The estimate from your profile is typically within about 5 either way. A resting heart rate thrown " +
-                "by a short night or illness moves it.",
+            how = tr(R.string.info_copy_it_s_measured_in),
+            moves = tr(R.string.info_copy_regular_hard_effort_raises),
+            off = tr(R.string.info_copy_the_estimate_from_your),
         )
         Score.Recover -> Info(
-            "Time to recover",
-            "How long your body needs after your last workout before it's ready for another hard one.",
+            tr(R.string.common_time_to_recover),
+            tr(R.string.info_copy_how_long_your_body),
             emptyList(),
-            how = "It's the strap's estimate, or OpenStrap's own for a workout recorded on the phone, from how hard the " +
-                "workout was: its EPOC, the extra oxygen your body uses afterwards to recover. The same EPOC gives each " +
-                "workout its training effect, from 0 to 5, for how much it builds your fitness.",
-            moves = "Longer and harder workouts need more time. Easy sessions need little.",
-            off = "It knows only the workout, not your sleep, stress or the rest of the day. Recovery here is time, not " +
-                "the morning's Recovery score.",
+            how = tr(R.string.info_copy_it_s_the_strap),
+            moves = tr(R.string.info_copy_longer_and_harder_workouts),
+            off = tr(R.string.info_copy_it_knows_only_the),
         )
         Score.Energy -> Info(
-            "Calories",
-            "Active kcal are what moving burned on top of your body's use at rest. The total adds that rest. Both are estimates, in kilocalories (kcal).",
+            tr(R.string.common_calories),
+            tr(R.string.info_copy_active_kcal_are_what),
             emptyList(),
-            how = "Your body's use at rest comes from your weight, height, age and sex (Mifflin-St Jeor). On top of it " +
-                "come your steps each minute and, for effort without steps, your heart rate. A workout recorded in " +
-                "OpenStrap counts its own minutes from your heart rate and steps, the same figure its page shows. A " +
-                "strap workout uses the strap's kcal. Sleep counts at a little under resting. Active is the total less " +
-                "your use at rest for each minute worn, never below zero, so sleep takes nothing away. Your goal is in " +
-                "active kcal, as the strap's is.",
-            moves = "Moving more raises it, most of all workouts. A heavier body uses more at rest and in motion.",
-            off = "Food digestion isn't included. It only covers the minutes the strap was worn, so a day with it off " +
-                "for hours reads low. A profile out of date throws the resting part.",
+            how = tr(R.string.info_copy_your_bodys_use_at),
+            moves = tr(R.string.info_copy_moving_more_raises_it),
+            off = tr(R.string.info_copy_food_digestion_isnt_included),
         )
         Score.Distance -> Info(
-            "Distance",
-            "How far you walked and ran today, estimated from your steps.",
+            tr(R.string.common_distance),
+            tr(R.string.info_copy_how_far_you_walked),
             emptyList(),
-            how = "Each minute's steps times a step length from your height: ${(Activity.WALK_STEP_FRACTION * 100).roundToIntString()}% " +
-                "of it at a walk, rising to ${(Activity.RUN_STEP_FRACTION * 100).roundToIntString()}% at 130 steps a " +
-                "minute and faster. Without a height the strap's own figure stands in.",
-            moves = "More steps, and faster ones, which are longer.",
-            off = "Step length varies from person to person and with hills, so it can be off by a tenth or more. A " +
-                "workout with GPS has its own distance.",
+            how = tr(R.string.info_copy_each_minute_s_steps, (Activity.WALK_STEP_FRACTION * 100).roundToIntString(), (Activity.RUN_STEP_FRACTION * 100).roundToIntString()),
+            moves = tr(R.string.info_copy_more_steps_and_faster),
+            off = tr(R.string.info_copy_step_length_varies_from),
         )
     }
 
@@ -329,66 +251,60 @@ object InfoCopy {
 
     /** What's particular about today's active minutes: how many came from heart rate. */
     fun activeNotes(fromHeartRate: Int, today: Boolean): List<String> = listOfNotNull(
-        "$fromHeartRate of ${if (today) "today's" else "that day's"} minutes came from heart rate.".takeIf { fromHeartRate > 0 },
+        tr(R.string.info_copy_of_minutes_came_from, fromHeartRate, if (today) tr(R.string.info_copy_of_minutes_came_from__today_s) else tr(R.string.info_copy_of_minutes_came_from__that_day_s)).takeIf { fromHeartRate > 0 },
     )
 
     /** What's particular about today's Load: the heart rates it's read between, and the contested ratio. */
     fun loadNotes(restingHr: Float, maxHr: Float, maxTested: Boolean, acwr: Float?): List<String> = listOfNotNull(
-        "Today it's read between ${restingHr.toInt()} bpm resting and ${maxHr.toInt()} bpm maximum" +
-            if (maxTested) ", from your test." else ".",
+        tr(R.string.info_copy_today_it_s_read, restingHr.toInt(), maxHr.toInt()) +
+            if (maxTested) tr(R.string.info_copy_from_your_test) else ".",
         acwr?.let {
-            "Your last 7 days against the last 4 weeks come to %.2f, the acute to chronic ratio. It's shown for ".format(it) +
-                "interest only, since the evidence for a safe ratio is disputed, and never enters Recovery."
+            trRaw(R.string.info_copy_your_last_days_against).format(it) +
+                tr(R.string.info_copy_interest_only_since_the)
         },
     )
 
     /** What's particular about the VO2 max estimate: the resting heart rate used, fitness age, or why it's withheld. */
     fun vo2Notes(estimate: org.openstrap.app.data.Vo2max.Estimate?, withheld: org.openstrap.app.data.Vo2max.Withheld?): List<String> = buildList {
         estimate?.let { e ->
-            add("This week's estimate uses a resting heart rate of ${e.restingHr.toInt()} bpm, while asleep.")
+            add(tr(R.string.info_copy_this_week_s_estimate, e.restingHr.toInt()))
             e.fitnessAge?.let { a ->
-                e.sex?.let { add("That's typical of a ${if (it == org.openstrap.app.data.settings.UserProfile.Sex.Male) "man" else "woman"} aged about ${a.first} to ${a.last}.") }
+                e.sex?.let { add(tr(R.string.info_copy_that_s_typical_of, if (it == org.openstrap.app.data.settings.UserProfile.Sex.Male) tr(R.string.info_copy_that_s_typical_of__man) else tr(R.string.info_copy_that_s_typical_of__woman), a.first, a.last)) }
             }
         }
-        withheld?.let { add("No estimate from your profile yet. ${it.reason}") }
+        withheld?.let { add(tr(R.string.info_copy_no_estimate_from_your, it.reason)) }
     }
 
     /** What's particular about the day's energy: part of the day worn, an unusual total, minutes from heart rate. */
     fun energyNotes(e: org.openstrap.app.data.EnergyExpenditure.Day?): List<String> = buildList {
         e ?: return@buildList
-        if (e.partial) add("It covers ${TodayCopy.duration(e.minutesWithData * 60L)} of wear, so it's part of the day.")
-        if (e.palImplausible) add("That's an unusual total for a full day. Check your profile and how the strap was worn.")
-        if (e.hrAssistedMinutes > 0) add("${e.hrAssistedMinutes} minutes came from heart rate rather than steps.")
+        if (e.partial) add(tr(R.string.info_copy_it_covers_of_wear, TodayCopy.duration(e.minutesWithData * 60L)))
+        if (e.palImplausible) add(tr(R.string.info_copy_that_s_an_unusual))
+        if (e.hrAssistedMinutes > 0) add(tr(R.string.info_copy_minutes_came_from_heart, e.hrAssistedMinutes))
     }
 
     /** Spec 6.2's sheet for a night vital opened from the Sleep tab: the metric's, saying where the night's numbers come from. */
     fun ofNight(metric: Metric): Info = of(metric).let { it.copy(how = it.how + " " + nightHow(metric)) }
 
     private fun nightHow(metric: Metric): String = when (metric) {
-        Metric.HeartRate -> "Opened from the night, it shows only your sleep: the line from falling asleep to waking, " +
-            "the lowest while asleep and the strap's average for the night. Month and Year are whole days."
-        Metric.Spo2 -> "Opened from the night, it shows the strap's readings in sleep, kept apart from the spot readings " +
-            "in the day, against your earlier nights."
-        Metric.Breathing -> "Opened from the night, it's that night's readings, against your earlier nights."
-        else -> "Opened from the night, it's the average of the readings taken while you slept, against your earlier " +
-            "nights. Month and Year are whole days, day and night."
+        Metric.HeartRate -> tr(R.string.info_copy_opened_from_the_night)
+        Metric.Spo2 -> tr(R.string.info_copy_opened_from_the_night_2)
+        Metric.Breathing -> tr(R.string.info_copy_opened_from_the_night_3)
+        else -> tr(R.string.info_copy_opened_from_the_night_4)
     }
 
     /** The breathing disturbances sheet: an early estimate, with no scale, since its only words would be apnea bands. */
     val BREATHING_DISTURBANCES = Info(
-        "Breathing disturbances",
-        "Dips in blood oxygen while you sleep, counted by the strap, as how many an hour. An early estimate.",
+        tr(R.string.common_breathing_disturbances),
+        tr(R.string.info_copy_dips_in_blood_oxygen),
         emptyList(),
-        how = "The strap counts each short drop in blood oxygen during sleep, and that's divided by the hours asleep. " +
-            "Your usual is the middle of your earlier nights, once there are ${Recovery.SCORED_NIGHTS} of them. They " +
-            "are fairly steady for each person, so they're shown with your sleep rather than in Recovery.",
-        moves = "Alcohol, a blocked nose, sleeping on your back and altitude can raise it.",
-        off = "The strap's units aren't confirmed on a real strap yet, so treat the number as an early estimate. A " +
-            "loose strap can read as a dip. ${org.openstrap.app.data.BodySignalsCopy.DISCLAIMER} It isn't a test for sleep apnea.",
+        how = tr(R.string.info_copy_the_strap_counts_each, Recovery.SCORED_NIGHTS),
+        moves = tr(R.string.info_copy_alcohol_a_blocked_nose),
+        off = tr(R.string.info_copy_the_strap_s_units, org.openstrap.app.data.BodySignalsCopy.DISCLAIMER),
     )
 
     /** Habit Age's bands, against your age: [habitAgeBar] says which one you're in. */
-    val HABIT_AGE_SCALE = listOf("Younger than you", "Your age", "Older than you")
+    val HABIT_AGE_SCALE = listOf(tr(R.string.info_copy_younger_than_you), tr(R.string.info_copy_your_age), tr(R.string.info_copy_older_than_you))
 
     /** Which bar of [HABIT_AGE_SCALE] an estimate [years] younger than your age is in. */
     fun habitAgeBar(years: Int): Int = when {
@@ -399,40 +315,31 @@ object InfoCopy {
 
     /** Habit Age's sheet, behind the (i) on its card (spec 5.4): the method, the pace of aging and what moves it. */
     val HABIT_AGE = Info(
-        "Habit Age",
-        "How old your habits make your body look, as a range of years, worked out each Sunday.",
+        tr(R.string.common_habit_age),
+        tr(R.string.info_copy_how_old_your_habits),
         HABIT_AGE_SCALE,
-        how = "Each habit is scored against the typical person your age and sex: resting heart rate, steps, sleep " +
-            "regularity, time asleep, strength training and fitness (VO2 max, the most oxygen your body can use in " +
-            "hard effort). Better than typical takes years off, worse adds them. The total is shrunk, because the " +
-            "habits overlap, and capped at 5 years either way. It looks back 6 months, 3 for fitness.",
-        moves = "Your habits over months, not a single day. The pace of aging compares your last 30 days with those 6 " +
-            "months: faster than 1x means the estimate is heading up, slower means it's coming down. The Habit Age " +
-            "page shows what each habit takes off or adds.",
-        off = "It updates once a week and is withheld until there's enough data. An estimate from under 6 months of " +
-            "data is early, so its range is wider. It's an estimate for personal insight, not a medical measurement, " +
-            "shown as a range because each habit's effect is uncertain.",
+        how = tr(R.string.info_copy_each_habit_is_scored),
+        moves = tr(R.string.info_copy_your_habits_over_months),
+        off = tr(R.string.info_copy_it_updates_once_a),
     )
 
     /** The week story's sheet: what each day's numbers are and how far back the comparisons reach. */
     val WEEK = Info(
-        "Your week",
-        "Last Monday to Sunday, day by day: how much you moved, trained and slept.",
+        tr(R.string.common_your_week),
+        tr(R.string.info_copy_last_monday_to_sunday),
         emptyList(),
-        how = "Steps are each day's total from the strap's minutes, and steps a day the average of the days with any. " +
-            "Active minutes are worked out as in their own sheet. A night belongs to the evening it started, so " +
-            "Sunday's is the night into Monday.",
-        moves = "Every walk, workout and early night shows here a week later.",
-        off = "Steps and workouts are compared with the week before. Active minutes and sleep only go back two weeks, " +
-            "so they're shown without a comparison. A day with the strap off reads low.",
+        how = tr(R.string.info_copy_steps_are_each_day),
+        moves = tr(R.string.info_copy_every_walk_workout_and),
+        off = tr(R.string.info_copy_steps_and_workouts_are),
     )
 
     /** Under the breathing disturbances sheet's title: the night against your usual, or how far the usual has got. */
     fun breathingLine(b: Recovery.BreathingDisturbances, today: Boolean): String {
-        val night = "${if (today) "Last night" else "That night"} %.1f an hour.".format(b.perHour)
+        val night = trRaw(R.string.info_copy_f_an_hour)
+            .format(tr(if (today) R.string.info_copy_f_an_hour__last_night else R.string.info_copy_f_an_hour__that_night), b.perHour)
         return when (val usual = b.usual) {
-            null -> "$night Learning your usual, ${b.nights.coerceAtMost(Recovery.SCORED_NIGHTS)} of ${Recovery.SCORED_NIGHTS} nights."
-            else -> "$night Your usual is %.1f.".format(usual)
+            null -> tr(R.string.info_copy_learning_your_usual_of, night, b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS)
+            else -> trRaw(R.string.info_copy_your_usual_is_f).format(night, usual)
         }
     }
 
@@ -440,15 +347,15 @@ object InfoCopy {
     fun regularityNotes(reg: SleepRegularity.Result?): List<String> = buildList {
         reg ?: return@buildList
         val hours = reg.validPairs / 60
-        if (reg.sri != null) add("This week compares $hours h of wear.")
+        if (reg.sri != null) add(tr(R.string.info_copy_this_week_compares_h, hours))
         else {
-            add("Not enough wear for the full measure yet: $hours h of the ${SleepRegularity.MIN_VALID_PAIRS / 60} h it needs.")
-            reg.midpointSdMinutes?.let { add("Meanwhile the middle of your sleep moved about ${TodayCopy.duration(Math.round(it) * 60L)} this week.") }
+            add(tr(R.string.info_copy_not_enough_wear_for, hours, SleepRegularity.MIN_VALID_PAIRS / 60))
+            reg.midpointSdMinutes?.let { add(tr(R.string.info_copy_meanwhile_the_middle_of, TodayCopy.duration(Math.round(it) * 60L))) }
         }
     }
 
     /** What's particular about the night's Sleep score: the sleep need the guidance measures against. */
-    fun sleepNotes(needMinutes: Int): List<String> = listOf("Your sleep need here is ${TodayCopy.duration(needMinutes * 60L)}, from your age or your own setting.")
+    fun sleepNotes(needMinutes: Int): List<String> = listOf(tr(R.string.info_copy_your_sleep_need_here, TodayCopy.duration(needMinutes * 60L)))
 
     /**
      * What's particular about today's Recovery, for its info sheet: the strap's own score beside ours, and anything that
@@ -456,18 +363,17 @@ object InfoCopy {
      */
     fun recoveryNotes(ready: Recovery.Readiness?, strapScore: Int?): List<String> = buildList {
         if (strapScore != null) add(
-            "The strap's own score today is $strapScore. It doesn't count sleep length, so after a short night it reads " +
-                "higher than OpenStrap's. It's kept for comparison and never enters OpenStrap's score.",
+            tr(R.string.info_copy_the_strap_s_own, strapScore),
         )
         ready ?: return@buildList
-        if (ready.capped) add("Today one body signal is far from your normal, so the score is capped.")
-        ready.fallbackHrv?.let { add("Last night's own HRV wasn't clean enough, so the strap's ${it.toInt()} ms stands in.") }
-        ready.fallbackRestingHr?.let { add("Last night's own resting heart rate wasn't clean enough, so the strap's ${it.toInt()} bpm stands in.") }
-        if (ready.hrvWeekThin) add("The week's HRV rests on ${ready.hrvWeekNights} of 7 nights, so it's less sure than usual.")
+        if (ready.capped) add(tr(R.string.info_copy_today_one_body_signal))
+        ready.fallbackHrv?.let { add(tr(R.string.info_copy_last_night_s_own, it.toInt())) }
+        ready.fallbackRestingHr?.let { add(tr(R.string.info_copy_last_night_s_own_2, it.toInt())) }
+        if (ready.hrvWeekThin) add(tr(R.string.info_copy_the_week_s_hrv, ready.hrvWeekNights))
     }
 
     /** What's particular about today's Charge: an estimated start after a night with the strap off. */
     fun chargeNotes(c: Recovery.ChargeDay?): List<String> = listOfNotNull(
-        "The strap was off overnight, so today started from an estimate.".takeIf { c?.strapOffOvernight == true },
+        tr(R.string.info_copy_the_strap_was_off).takeIf { c?.strapOffOvernight == true },
     )
 }

@@ -3,6 +3,8 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.SportEffectRow
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.db.WorkoutHeartRate
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** A workout with what the strap recorded around it, worked out for display. */
 data class WorkoutAnalysis(
@@ -223,7 +225,7 @@ object Workouts {
         hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm }.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
 
     /** Zepp's sport type ids (Type.type in the summary) for the sports a strap is likely to record. */
-    fun sportName(type: Int): String = SPORT_NAMES[type] ?: "Workout"
+    fun sportName(type: Int): String = SPORT_NAMES[type] ?: tr(R.string.common_workout)
 
     /**
      * [a]'s active kcal, rounded: a phone workout's saved figure; a strap workout's kcal less [bmrPerMinute] for each
@@ -261,11 +263,11 @@ object Workouts {
     }
 
     val SIDES = listOf(
-        Sides(1, 2, "Outdoor", "Treadmill"),
-        Sides(4, 8, "Outdoor", "Indoor"),
+        Sides(1, 2, tr(R.string.workouts_outdoor), tr(R.string.workouts_treadmill)),
+        Sides(4, 8, tr(R.string.workouts_outdoor), tr(R.string.workouts_indoor)),
         // Most swims are in a pool.
-        Sides(7, 6, "Open water", "Pool", indoorByDefault = true),
-        Sides(3, 40, "Outdoor", "Indoor"),
+        Sides(7, 6, tr(R.string.workouts_open_water), tr(R.string.workouts_pool), indoorByDefault = true),
+        Sides(3, 40, tr(R.string.workouts_outdoor), tr(R.string.workouts_indoor)),
     )
 
     /** The [Sides] [type] is one of, or null for a sport with one kind. */
@@ -301,8 +303,8 @@ object Workouts {
 
     /** The tiles' short names; a sport with two kinds has one name for both. */
     private val SHORT_NAMES = mapOf(
-        1 to "Run", 2 to "Run", 3 to "Walk", 40 to "Walk", 15 to "Hike", 4 to "Cycling", 8 to "Cycling", 7 to "Swim", 6 to "Swim",
-        52 to "Strength", 49 to "HIIT", 60 to "Yoga", 61 to "Pilates", 23 to "Rowing", 9 to "Elliptical", 5 to "Other",
+        1 to tr(R.string.common_run), 2 to tr(R.string.common_run), 3 to tr(R.string.common_walk), 40 to tr(R.string.common_walk), 15 to tr(R.string.workouts_hike), 4 to tr(R.string.common_cycling), 8 to tr(R.string.common_cycling), 7 to tr(R.string.workouts_swim), 6 to tr(R.string.workouts_swim),
+        52 to tr(R.string.common_strength), 49 to tr(R.string.workouts_hiit), 60 to tr(R.string.workouts_yoga), 61 to tr(R.string.workouts_pilates), 23 to tr(R.string.common_rowing), 9 to tr(R.string.workouts_elliptical), 5 to tr(R.string.workouts_other),
     )
 
     /** "Run" for an outdoor run or a treadmill: the picker's name, else the sport's full name. */
@@ -392,15 +394,15 @@ object Workouts {
     const val GENERIC_ACTIVITY = 223
 
     private val SPORT_NAMES = mapOf(
-        1 to "Outdoor run", 2 to "Treadmill", 3 to "Walk", 4 to "Outdoor cycling", 5 to "Free training",
-        6 to "Pool swim", 7 to "Open water swim", 8 to "Indoor cycling", 9 to "Elliptical", 10 to "Climbing",
-        11 to "Trail run", 12 to "Skiing", 15 to "Hiking", 16 to "Free training", 17 to "Tennis", 18 to "Soccer",
-        21 to "Jump rope", 23 to "Rowing machine", 24 to "Indoor fitness", 40 to "Indoor walk", 49 to "HIIT",
-        50 to "Core training", 51 to "Mixed aerobic", 52 to "Strength training", 53 to "Stretching",
-        55 to "Flexibility", 57 to "Step training", 58 to "Stair stepper", 60 to "Yoga", 61 to "Pilates",
-        70 to "Rock climbing", 76 to "Dance", 83 to "Golf", 85 to "Basketball", 88 to "Volleyball",
-        89 to "Table tennis", 92 to "Badminton", 97 to "Boxing", 108 to "Stair climbing", 109 to "Aerobics",
-        130 to "Cross-training", 143 to "Spinning", 204 to "Pickleball", 205 to "Padel", 215 to "Dog walking",
-        222 to "HYROX training", 223 to "Activity", 224 to "Mountain hike", 225 to "Rucking", 226 to "Hybrid training",
+        1 to tr(R.string.workouts_outdoor_run), 2 to tr(R.string.workouts_treadmill), 3 to tr(R.string.common_walk), 4 to tr(R.string.workouts_outdoor_cycling), 5 to tr(R.string.workouts_free_training),
+        6 to tr(R.string.workouts_pool_swim), 7 to tr(R.string.workouts_open_water_swim), 8 to tr(R.string.workouts_indoor_cycling), 9 to tr(R.string.workouts_elliptical), 10 to tr(R.string.workouts_climbing),
+        11 to tr(R.string.workouts_trail_run), 12 to tr(R.string.workouts_skiing), 15 to tr(R.string.common_hiking), 16 to tr(R.string.workouts_free_training), 17 to tr(R.string.workouts_tennis), 18 to tr(R.string.workouts_soccer),
+        21 to tr(R.string.workouts_jump_rope), 23 to tr(R.string.workouts_rowing_machine), 24 to tr(R.string.workouts_indoor_fitness), 40 to tr(R.string.workouts_indoor_walk), 49 to tr(R.string.workouts_hiit),
+        50 to tr(R.string.workouts_core_training), 51 to tr(R.string.workouts_mixed_aerobic), 52 to tr(R.string.common_strength_training), 53 to tr(R.string.workouts_stretching),
+        55 to tr(R.string.workouts_flexibility), 57 to tr(R.string.workouts_step_training), 58 to tr(R.string.workouts_stair_stepper), 60 to tr(R.string.workouts_yoga), 61 to tr(R.string.workouts_pilates),
+        70 to tr(R.string.workouts_rock_climbing), 76 to tr(R.string.workouts_dance), 83 to tr(R.string.workouts_golf), 85 to tr(R.string.workouts_basketball), 88 to tr(R.string.workouts_volleyball),
+        89 to tr(R.string.workouts_table_tennis), 92 to tr(R.string.workouts_badminton), 97 to tr(R.string.workouts_boxing), 108 to tr(R.string.workouts_stair_climbing), 109 to tr(R.string.workouts_aerobics),
+        130 to tr(R.string.workouts_cross_training), 143 to tr(R.string.workouts_spinning), 204 to tr(R.string.workouts_pickleball), 205 to tr(R.string.workouts_padel), 215 to tr(R.string.workouts_dog_walking),
+        222 to tr(R.string.workouts_hyrox_training), 223 to tr(R.string.common_activity), 224 to tr(R.string.workouts_mountain_hike), 225 to tr(R.string.workouts_rucking), 226 to tr(R.string.workouts_hybrid_training),
     )
 }

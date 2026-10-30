@@ -3,6 +3,8 @@ package org.openstrap.app.ui.dashboard
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.ui.components.formatDuration
 import kotlin.math.abs
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Plain-language headlines and ratings for the dashboard. The thresholds are general sleep and activity
@@ -11,10 +13,10 @@ import kotlin.math.abs
 object Narrative {
     /** A rating's word. No colour of its own: a value off your normal takes its metric's ink (spec 2.2). */
     enum class Rating(val label: String) {
-        OPTIMAL("Very good"),
-        GOOD("Good"),
-        FAIR("Fair"),
-        LOW("Low"),
+        OPTIMAL(tr(R.string.narrative_very_good)),
+        GOOD(tr(R.string.common_good)),
+        FAIR(tr(R.string.common_fair)),
+        LOW(tr(R.string.common_low)),
     }
 
     fun rate(value: Float, optimal: Float, good: Float, fair: Float): Rating = when {
@@ -58,13 +60,13 @@ object Narrative {
         val rem = session.remMinutes
         val light = deep != null && rem != null && asleepMin > 0 && (deep + rem) < LIGHT_SLEEP_SHARE * asleepMin
         return when {
-            short && broken -> "Short, broken night"
-            short -> "Short night"
-            broken -> "Broken sleep"
-            score >= 90 -> "Solid night"
-            score >= 80 -> "Good night"
-            light -> "Light sleep"
-            else -> "Okay night"
+            short && broken -> tr(R.string.narrative_short_broken_night)
+            short -> tr(R.string.narrative_short_night)
+            broken -> tr(R.string.narrative_broken_sleep)
+            score >= 90 -> tr(R.string.narrative_solid_night)
+            score >= 80 -> tr(R.string.narrative_good_night)
+            light -> tr(R.string.narrative_light_sleep)
+            else -> tr(R.string.narrative_okay_night)
         }
     }
 
@@ -84,10 +86,10 @@ object Narrative {
     ): List<Contributor> = buildList {
         val asleepMin = (asleepSeconds / 60).toInt()
         val duration = org.openstrap.app.data.Recovery.durationScore(asleepMin, needMinutes)
-        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), formatDuration(asleepSeconds) + " of ${formatDuration(needMinutes * 60L)}"))
+        add(Contributor(tr(R.string.narrative_total_sleep), totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), formatDuration(asleepSeconds) + tr(R.string.missed_of_need, formatDuration(needMinutes * 60L))))
         if (wasoMinutes != null && asleepMin > 0) {
             val c = org.openstrap.app.data.Recovery.continuityScore(wasoMinutes)
-            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, "${formatDuration(wasoMinutes * 60L)} awake after falling asleep"))
+            add(Contributor(tr(R.string.narrative_continuity), ratingFor(Math.round(c)), c / 100f, tr(R.string.narrative_awake_after_falling_asleep, formatDuration(wasoMinutes * 60L))))
         }
     }
 
@@ -127,9 +129,9 @@ object Narrative {
         val calm = t.calmLevel
         val left = org.openstrap.app.data.Recovery.MIN_STRESS_DAYS - t.days
         return when {
-            calm != null -> "Stress counts from ${t.value}: ${org.openstrap.app.data.Recovery.STRESS_MARGIN} above your calm level of $calm over the last ${t.days} days."
-            left > 0 -> "Stress counts from ${t.value} for now. After ${if (left == 1) "1 more day" else "$left more days"} of wear it adjusts to your own calm level."
-            else -> "Stress counts from ${t.value} for now, until there are enough calm readings to find your own level."
+            calm != null -> tr(R.string.narrative_stress_counts_from_above, t.value, org.openstrap.app.data.Recovery.STRESS_MARGIN, calm, t.days)
+            left > 0 -> tr(R.string.narrative_stress_counts_from_for, t.value, if (left == 1) tr(R.string.narrative_stress_counts_from_for__more_day) else tr(R.string.narrative_stress_counts_from_for__more_days, left))
+            else -> tr(R.string.narrative_stress_counts_from_for_2, t.value)
         }
     }
 }

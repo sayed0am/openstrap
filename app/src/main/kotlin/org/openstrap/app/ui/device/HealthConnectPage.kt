@@ -6,7 +6,9 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import androidx.health.connect.client.HealthConnectClient
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.HealthConnectAuto
+import org.openstrap.app.tr
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowSwitch
@@ -31,21 +33,21 @@ fun HealthConnectPage(
 ) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Health Connect", onBack) }
+        item { PageHeader(tr(R.string.you_page_health_connect), onBack) }
         item {
             PageRows {
                 val line = healthConnectLine(auto, System.currentTimeMillis() / 1000, java.time.ZoneId.systemDefault())
-                PageRow("Auto sync to Health Connect", line, onClick = { onAuto(!auto.on) }, below = true, divider = false, icon = AppIcons.Refresh04) {
+                PageRow(tr(R.string.health_connect_page_auto_sync_to_health), line, onClick = { onAuto(!auto.on) }, below = true, divider = false, icon = AppIcons.Refresh04) {
                     GlowSwitch(auto.on, onAuto)
                 }
             }
         }
-        item { PanelHeading("Any time") }
+        item { PanelHeading(tr(R.string.health_connect_page_any_time)) }
         item {
             PageRows {
-                PageRow("Copy now", "The last 30 days, to Android Health Connect", onClick = onCopyNow, below = true, divider = false, icon = AppIcons.Heartbeat)
-                PageRow("Restore", "Bring back what OpenStrap saved there", onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)
-                PageRow("Open Health Connect", "Permissions and data", onClick = onOpen, below = true, icon = AppIcons.SlidersHorizontal)
+                PageRow(tr(R.string.health_connect_page_copy_now), tr(R.string.health_connect_page_the_last_30_days), onClick = onCopyNow, below = true, divider = false, icon = AppIcons.Heartbeat)
+                PageRow(tr(R.string.backup_page_restore), tr(R.string.you_page_bring_back_what_openstrap), onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)
+                PageRow(tr(R.string.health_connect_page_open_health_connect), tr(R.string.health_connect_page_permissions_and_data), onClick = onOpen, below = true, icon = AppIcons.SlidersHorizontal)
             }
         }
     }

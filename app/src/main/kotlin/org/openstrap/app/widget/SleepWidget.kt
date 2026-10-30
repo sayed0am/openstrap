@@ -47,6 +47,8 @@ import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.edgeLight
 import org.openstrap.app.ui.glow.stageColor
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The Sleep widget (widgets spec 3.2): last night's score, time asleep and stages, as the Sleep tab's hero tells them.
@@ -335,7 +337,7 @@ private fun stageRowBar(r: SleepStageRow, widthDp: Float, density: Float): Bitma
 /* ------------------------------------------------------------------------------------------------ */
 
 /** The route `open_metric` takes for the Sleep screen, while there's no night to open the score of. */
-internal const val SLEEP_ROUTE = "Sleep"
+internal val SLEEP_ROUTE: String get() = tr(R.string.common_sleep)
 
 /** Room for the dots, the stage bar and the stage rows' bars beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.35

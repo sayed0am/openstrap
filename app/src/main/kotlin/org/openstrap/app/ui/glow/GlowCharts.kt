@@ -59,6 +59,8 @@ import org.openstrap.app.ui.glow.draw.lineChartGeometry
 import org.openstrap.app.ui.glow.draw.pillBar
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * Charts for glow cards. The card's colour carries the mood, so the marks are white: lines get a soft halo, and grids,
@@ -173,7 +175,7 @@ fun GlowLineChart(
         if (showAverage) {
             val y = g.averageY
             gridLine(y, Target)
-            text(m, "avg ${format(g.average)}", axisText.copy(color = Ink.copy(alpha = 0.8f)), size.width, y - 16.dp.toPx(), align = 1f)
+            text(m, tr(R.string.missed_avg, format(g.average)), axisText.copy(color = Ink.copy(alpha = 0.8f)), size.width, y - 16.dp.toPx(), align = 1f)
         }
 
         drawLineChartEnd(g, color)

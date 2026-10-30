@@ -34,6 +34,8 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * The Recovery widget (widgets spec 3.4): this morning's score and word in the same spot every day, with what's
@@ -203,7 +205,7 @@ private fun Week(week: List<RecoveryWeekDay>, column: Float, density: Float) {
     val width = WeekBarsLook.width(week.size, column)
     val bars = weekBars(RecoveryLayout.barValues(week), density, column)
     val bitmap = renderToBitmap(width * density, WeekBarsLook.HEIGHT_DP * density) { drawWeekBars(it, bars, week.indexOfFirst { d -> d.shown }, Ink) }
-    WeekChart(ImageProvider(bitmap), "Recovery each day for the last seven days", week.map { it.letter to it.shown }, column)
+    WeekChart(ImageProvider(bitmap), tr(R.string.recovery_widget_recovery_each_day_for), week.map { it.letter to it.shown }, column)
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -211,7 +213,7 @@ private fun Week(week: List<RecoveryWeekDay>, column: Float, density: Float) {
 /* ------------------------------------------------------------------------------------------------ */
 
 /** The route `open_metric` takes for the Recovery screen ([org.openstrap.app.ui.dashboard.Detail.fromRoute]). */
-internal const val RECOVERY_ROUTE = "Recovery"
+internal val RECOVERY_ROUTE: String get() = tr(R.string.common_recovery)
 
 /** Room for the dots and the week beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.25

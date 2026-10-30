@@ -65,6 +65,8 @@ import org.openstrap.app.ui.components.GlassSheet
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * The settings pages (the Strap page and what it opens, Profile, You) in the glow language's quiet tier: black, with
@@ -100,9 +102,9 @@ val PageHeaderHeight = 64.dp
 fun BackButton(onBack: () -> Unit, enabled: Boolean = true) {
     Box(
         Modifier.size(BackButtonSize).clip(CircleShape).background(ControlSurface).alpha(if (enabled) 1f else 0.4f)
-            .clickable(enabled = enabled, onClickLabel = "Back", role = Role.Button, onClick = onBack),
+            .clickable(enabled = enabled, onClickLabel = tr(R.string.page_parts_back), role = Role.Button, onClick = onBack),
         contentAlignment = Alignment.Center,
-    ) { Icon(AppIcons.ArrowLeft, "Back", Modifier.size(20.dp), tint = Color.White) }
+    ) { Icon(AppIcons.ArrowLeft, tr(R.string.page_parts_back), Modifier.size(20.dp), tint = Color.White) }
 }
 
 /**
@@ -125,7 +127,7 @@ fun PageHeader(
         Column(Modifier.weight(1f)) {
             Row(
                 Modifier.clip(RoundedCornerShape(8.dp))
-                    .let { if (onTitle != null) it.clickable(onClickLabel = "Switch", role = Role.Button, onClick = onTitle) else it },
+                    .let { if (onTitle != null) it.clickable(onClickLabel = tr(R.string.page_parts_switch), role = Role.Button, onClick = onTitle) else it },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(title, color = Color.White, style = GlowType.pageTitle, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
@@ -330,7 +332,7 @@ fun <T> PageMenuRow(
         Box(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth()
-                    .clickable(enabled = enabled, onClickLabel = "Change", role = Role.DropdownList) { open = true }
+                    .clickable(enabled = enabled, onClickLabel = tr(R.string.page_parts_change), role = Role.DropdownList) { open = true }
                     .alpha(if (enabled) 1f else 0.45f)
                     .padding(vertical = GlowLayout.RowPadding),
                 verticalAlignment = Alignment.CenterVertically,
@@ -547,7 +549,7 @@ fun PageConfirm(
     confirm: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    dismiss: String = "Cancel",
+    dismiss: String = tr(R.string.common_cancel),
     confirmEnabled: Boolean = true,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {

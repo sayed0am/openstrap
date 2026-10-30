@@ -78,6 +78,9 @@ import org.openstrap.app.ui.workout.SportIcons
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /** Heart points' weekly aim: 100 or more over the last seven days. */
 private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
@@ -149,14 +152,14 @@ fun GlowActivityScreen(
                     ActivityCard.Steps -> StepsGlow(state, usualSteps, partial) { onOpenMetric(Metric.Steps) }
                     ActivityCard.ActiveMinutes -> r?.activity.let { a ->
                         SmallCard(
-                            MetricColors.steps, "Active minutes", a?.weekEquivalent?.toString(), null,
-                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: "No reading yet", m,
+                            MetricColors.steps, tr(R.string.common_active_minutes), a?.weekEquivalent?.toString(), null,
+                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: tr(R.string.common_no_reading_yet), m,
                             onClick = { open(Score.ActiveMinutes) },
                         )
                     }
                     ActivityCard.HeartPoints -> SmallCard(
-                        MetricColors.heart, "Heart points", heartPoints?.roundToInt()?.toString(), null,
-                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: "After the strap's next sync", m,
+                        MetricColors.heart, tr(R.string.common_heart_points), heartPoints?.roundToInt()?.toString(), null,
+                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: tr(R.string.common_after_the_strap_s), m,
                         onClick = { open(Score.HeartPoints) },
                     )
                     ActivityCard.Load -> LoadCard(r) { open(Score.Load) }
@@ -184,7 +187,7 @@ fun GlowActivityScreen(
 private fun StartCard(sports: List<SportUse>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
     // Unlit (its look), with the heart-red light travelling round its border, as on Today.
     EdgeCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart), kind = EdgeKind.Value) {
-        EdgeTitle("Start a workout", null)
+        EdgeTitle(tr(R.string.common_start_a_workout), null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
         // Four even columns up to the phone's width, so the tiles keep together on an unfolded screen.
         Row(Modifier.widthIn(max = StartTilesWidth).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -193,7 +196,7 @@ private fun StartCard(sports: List<SportUse>, onStart: (Int) -> Unit, onAllSport
                     onStart(s.sportType)
                 }
             }
-            SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
+            SportTile(AppIcons.MoreHorizontalCircle01, tr(R.string.common_all_sports), outdoor = false, Modifier.weight(1f), onClick = onAllSports)
         }
     }
 }
@@ -250,7 +253,7 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, on
     var hour by remember(state.date, state.hourlySteps) { mutableStateOf<Int?>(null) }
     GlowCard(GlowStyle.level(MetricColors.steps, share), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
         Column {
-            GlowHeader("Steps", trailing = "Goal %,d".format(goal), tag = tag)
+            GlowHeader(tr(R.string.common_steps), trailing = trRaw(R.string.common_goal_d).format(goal), tag = tag)
             Spacer(Modifier.height(GlowLayout.TitleGap))
             HourPills(state.hourlySteps, hour) { hour = it }
             Spacer(Modifier.height(16.dp))
@@ -317,8 +320,8 @@ private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
         status = if (status == TodayCopy.LoadStatus.Above) EdgeStatus.Above else EdgeStatus.Usual,
         kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
     ) {
-        EdgeTitle("Load", TabCopy.loadBalance(r?.loadTrend))
-        EdgeValue(r?.load?.roundToInt()?.toString(), "today", if (r == null) "No reading yet" else TabCopy.loadUsual(usual))
+        EdgeTitle(tr(R.string.common_load), TabCopy.loadBalance(r?.loadTrend))
+        EdgeValue(r?.load?.roundToInt()?.toString(), tr(R.string.missed_today_small), if (r == null) tr(R.string.common_no_reading_yet) else TabCopy.loadUsual(usual))
     }
 }
 
@@ -334,20 +337,20 @@ private fun FactsList(
     /** The Partial day tag: energy and distance are the day's totals. */
     tag: TitleTag? = null,
 ) {
-    val waiting = "No reading yet"
-    ListPanel(title = "Today", note = if (isToday) "So far" else null, tag = tag) {
+    val waiting = tr(R.string.common_no_reading_yet)
+    ListPanel(title = tr(R.string.common_today), note = if (isToday) tr(R.string.glow_activity_screen_so_far) else null, tag = tag) {
         val a = r?.activity
         // The latest workout the strap read VO2 max from; the estimate from your profile otherwise.
         val fromWorkouts = workouts.sortedByDescending { it.workout.start }
             .firstNotNullOfOrNull { w -> (w.workout.vo2max ?: w.effect?.vo2max?.roundToInt())?.takeIf { it > 0 } }
         val est = r?.vo2max
         ListRow(
-            "VO2 max", MetricColors.heart,
+            tr(R.string.common_vo_max), MetricColors.heart,
             fromWorkouts?.toString() ?: est?.let { "${it.low}-${it.high}" },
             when {
-                fromWorkouts != null -> "From your workouts"
-                est != null -> est.band?.let { "${it.label} for your age" } ?: "Estimated from your profile"
-                else -> "After a workout the strap can read it from"
+                fromWorkouts != null -> tr(R.string.glow_activity_screen_from_your_workouts)
+                est != null -> est.band?.let { tr(R.string.glow_activity_screen_for_your_age, it.label) } ?: tr(R.string.glow_activity_screen_estimated_from_your_profile)
+                else -> tr(R.string.common_after_a_workout_the)
             },
             divider = false, onClick = { open(Score.Vo2Max) }, icon = Score.Vo2Max.rowIcon(),
         )
@@ -357,7 +360,7 @@ private fun FactsList(
         }
         // Recovered is the whole answer: no number, no dash.
         ListRow(
-            "Time to recover", MetricColors.load, recover?.first, recover?.second ?: "No recent workout", dash = recover?.first != null,
+            tr(R.string.common_time_to_recover), MetricColors.load, recover?.first, recover?.second ?: tr(R.string.glow_activity_screen_no_recent_workout), dash = recover?.first != null,
             onClick = { open(Score.Recover) }, icon = Score.Recover.rowIcon(),
         )
         // Active kcal leads, the total under it; the ring in the icon's place fills to the goal (calories spec 4.4).
@@ -365,15 +368,15 @@ private fun FactsList(
         val goal = LocalGoals.current.calories
         val active = e?.activeKcal?.roundToInt()
         ListRow(
-            "Calories", MetricColors.calories, active?.let { "%,d".format(it) },
-            e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) } ?: "Add age, weight and height to see it",
+            tr(R.string.common_calories), MetricColors.calories, active?.let { "%,d".format(it) },
+            e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) } ?: tr(R.string.glow_activity_screen_add_age_weight_and),
             onClick = if (e == null && r != null) onEditProfile else { { open(Score.Energy) } }, dash = e != null,
             icon = Score.Energy.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
         )
         // Ours from step length and height when we can; the strap's own figure otherwise. Always approximate.
         val distance = a?.distanceMeters ?: state.distanceMeters?.toFloat()
         ListRow(
-            "Distance", MetricColors.steps, distance?.let { "%.1f".format(it / 1000f) },
+            tr(R.string.common_distance), MetricColors.steps, distance?.let { "%.1f".format(it / 1000f) },
             if (distance == null) waiting else ActivityCopy.distanceSource(a?.distanceMeters != null),
             onClick = { open(Score.Distance) }, icon = Score.Distance.rowIcon(),
         )
@@ -400,11 +403,11 @@ private fun WorkoutsList(
     val shown = today + before.take((LISTED_WORKOUTS - today.size).coerceAtLeast(0))
     // From every workout (newest first), so a row glows the same here and in All workouts.
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
-    ListPanel(title = "Workouts", note = if (today.isNotEmpty()) "${today.size} this day" else null) {
+    ListPanel(title = tr(R.string.common_workouts), note = if (today.isNotEmpty()) tr(R.string.glow_activity_screen_this_day, today.size) else null) {
         var first = true
         fun divider() = !first.also { first = false }
         suggestion?.let { SuggestionRow(it, onSave, onDismiss, divider()) }
-        if (shown.isEmpty()) ListRow("No workouts yet", MetricColors.heart, null, "Workouts you record show up here", dash = false, divider = divider())
+        if (shown.isEmpty()) ListRow(tr(R.string.common_no_workouts_yet), MetricColors.heart, null, tr(R.string.glow_activity_screen_workouts_you_record_show), dash = false, divider = divider())
         var day: LocalDate? = null
         shown.forEach { a ->
             if (dayOf(a) != day) {
@@ -415,8 +418,8 @@ private fun WorkoutsList(
             }
             WorkoutRow(a, usual, divider()) { onOpen(a.workout.start) }
         }
-        LinkRow("Add a workout you didn't record", onAdd, divider = divider())
-        LinkRow("All workouts", onAll)
+        LinkRow(tr(R.string.glow_activity_screen_add_a_workout_you), onAdd, divider = divider())
+        LinkRow(tr(R.string.glow_activity_screen_all_workouts), onAll)
     }
 }
 
@@ -527,13 +530,13 @@ private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
 private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestion, onSave: () -> Unit, onDismiss: () -> Unit, divider: Boolean) {
     Column {
         ListRow(
-            "Looks like a workout", ZONE_COLORS[s.zone], null,
-            "${clockAt(s.start)}–${clockAt(s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average",
+            tr(R.string.common_looks_like_a_workout), ZONE_COLORS[s.zone], null,
+            tr(R.string.glow_activity_screen_mostly_zone_bpm_on, clockAt(s.start), clockAt(s.end), s.zone + 1, s.averageHeartRate),
             dash = false, divider = divider, icon = AppIcons.Heartbeat,
         )
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RowPill("Save", onSave, primary = true)
-            RowPill("Not a workout", onDismiss)
+            RowPill(tr(R.string.common_save), onSave, primary = true)
+            RowPill(tr(R.string.common_not_a_workout), onDismiss)
             Box(Modifier.weight(1f))
         }
     }

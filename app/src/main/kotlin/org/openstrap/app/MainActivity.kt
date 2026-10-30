@@ -244,7 +244,7 @@ class MainActivity : ComponentActivity() {
             kotlinx.coroutines.MainScope().launch {
                 DemoData.fill(container.database.healthDao())
                 if (container.settings.pairedDevice.first() == null) {
-                    container.settings.savePairedDevice(org.openstrap.app.data.settings.PairedDevice("00:00:00:00:00:00", "00", "Helio Strap"))
+                    container.settings.savePairedDevice(org.openstrap.app.data.settings.PairedDevice("00:00:00:00:00:00", "00", tr(R.string.common_helio_strap)))
                 }
             }
         }
@@ -261,7 +261,7 @@ class MainActivity : ComponentActivity() {
             val on = intent.getBooleanExtra("strap_sessions", false)
             intent.removeExtra("strap_sessions")
             kotlinx.coroutines.MainScope().launch { (application as OpenStrapApp).container.settings.setStrapSessions(on) }
-            Toast.makeText(this, "Strap sessions ${if (on) "on" else "off"}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, tr(R.string.main_activity_strap_sessions, if (on) tr(R.string.main_activity_strap_sessions__on) else tr(R.string.main_activity_strap_sessions__off)), Toast.LENGTH_SHORT).show()
         }
         // Debug: `--es buzz AboveTarget` plays a cue's pattern on the strap (a Cue name, Stop or Offer), to feel it.
         val buzz = intent.getStringExtra("buzz")
@@ -274,7 +274,7 @@ class MainActivity : ComponentActivity() {
             }
             val strap = (application as OpenStrapApp).container.strap
             if (pattern != null) kotlinx.coroutines.MainScope().launch {
-                runCatching { strap.buzz(pattern) }.onFailure { Toast.makeText(this@MainActivity, "Buzz failed: ${it.message}", Toast.LENGTH_SHORT).show() }
+                runCatching { strap.buzz(pattern) }.onFailure { Toast.makeText(this@MainActivity, tr(R.string.main_activity_buzz_failed, it.message), Toast.LENGTH_SHORT).show() }
             }
         }
         // Debug: `--es simulate_hr 140x120,80x600 --ei simulate_steps 0 --ei simulate_battery 80` plays heart rate as a connected strap (emulator).
@@ -331,7 +331,7 @@ class MainActivity : ComponentActivity() {
             kotlinx.coroutines.MainScope().launch {
                 val latest = container.database.healthDao().appWorkouts().first().filter { it.end != null }.maxByOrNull { it.start }
                 if (latest != null) container.workout.showSummary(latest.start)
-                else Toast.makeText(this@MainActivity, "No phone workout to show", Toast.LENGTH_SHORT).show()
+                else Toast.makeText(this@MainActivity, tr(R.string.main_activity_no_phone_workout_to), Toast.LENGTH_SHORT).show()
             }
         }
         // Debug: `--es workout_notification running` posts the workout notification with sample figures, built as a
@@ -359,10 +359,10 @@ private enum class Tab(
     /** The capsule's colour while this tab shows (spec 3.2). */
     val tint: androidx.compose.ui.graphics.Color,
 ) {
-    Today("Today", AppIcons.HouseSimple, AppIcons.HouseSimpleFill, androidx.compose.ui.graphics.Color.White),
-    Recovery("Recovery", AppIcons.Plant, AppIcons.PlantFill, org.openstrap.app.ui.theme.MetricColors.readiness),
-    Sleep("Sleep", AppIcons.Moon, AppIcons.MoonFill, org.openstrap.app.ui.theme.MetricColors.sleepDeep),
-    Activity("Activity", AppIcons.SneakerMove, AppIcons.SneakerMoveFill, org.openstrap.app.ui.theme.MetricColors.steps),
+    Today(tr(R.string.common_today), AppIcons.HouseSimple, AppIcons.HouseSimpleFill, androidx.compose.ui.graphics.Color.White),
+    Recovery(tr(R.string.common_recovery), AppIcons.Plant, AppIcons.PlantFill, org.openstrap.app.ui.theme.MetricColors.readiness),
+    Sleep(tr(R.string.common_sleep), AppIcons.Moon, AppIcons.MoonFill, org.openstrap.app.ui.theme.MetricColors.sleepDeep),
+    Activity(tr(R.string.common_activity), AppIcons.SneakerMove, AppIcons.SneakerMoveFill, org.openstrap.app.ui.theme.MetricColors.steps),
 }
 
 /**
@@ -373,8 +373,8 @@ private enum class Page(
     /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
     val row: String? = null,
 ) {
-    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), Updates("Updates"), Diagnostics("Diagnostics"),
-    Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
+    You, Profile(tr(R.string.common_profile)), HealthConnect(tr(R.string.you_page_health_connect)), Backup(tr(R.string.main_activity_backup)), Updates(tr(R.string.firmware_screen_updates)), Diagnostics(tr(R.string.common_diagnostics)),
+    Strap, Alarms(tr(R.string.common_alarms)), PhoneAlerts(tr(R.string.common_phone_alerts)), HealthAlerts(tr(R.string.common_health_alerts)), Firmware(tr(R.string.common_firmware)), ZeppAccount(tr(R.string.common_zepp_account)),
 }
 
 /** Keeps the open pages across process death, as their names ("Strap,Alarms"). */
@@ -697,14 +697,14 @@ private fun AppRoot(
     var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
     val btLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         val ok = result[Manifest.permission.BLUETOOTH_SCAN] == true && result[Manifest.permission.BLUETOOTH_CONNECT] == true
-        if (ok) pending?.invoke() else Toast.makeText(context, "Bluetooth permission is required.", Toast.LENGTH_LONG).show()
+        if (ok) pending?.invoke() else Toast.makeText(context, tr(R.string.main_activity_bluetooth_permission_is_required), Toast.LENGTH_LONG).show()
         pending = null
     }
     val requestBluetooth: (() -> Unit) -> Unit = { then -> pending = then; btLauncher.launch(BLUETOOTH_PERMISSIONS) }
     // Location for a GPS workout: asked only when GPS is turned on; the workout starts either way (steps without it).
     var afterLocation by remember { mutableStateOf<(() -> Unit)?>(null) }
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        if (result.values.none { it }) Toast.makeText(context, "Without location, distance comes from the strap's steps.", Toast.LENGTH_LONG).show()
+        if (result.values.none { it }) Toast.makeText(context, tr(R.string.main_activity_without_location_distance_comes), Toast.LENGTH_LONG).show()
         afterLocation?.invoke()
         afterLocation = null
     }
@@ -725,7 +725,7 @@ private fun AppRoot(
         scope.launch {
             // The needed ones may have been granted before, outside what this screen returns; the calorie ones may stay off.
             val ok = granted.containsAll(container.healthConnect.permissions) || runCatching { container.healthConnect.hasPermissions() }.getOrDefault(false)
-            if (!ok) Toast.makeText(context, "Health Connect permissions were not granted.", Toast.LENGTH_LONG).show()
+            if (!ok) Toast.makeText(context, tr(R.string.main_activity_health_connect_permissions_were), Toast.LENGTH_LONG).show()
             else if (auto) deviceVm.setAutoHealthConnect(true) else deviceVm.exportHealthConnect()
         }
     }
@@ -738,11 +738,11 @@ private fun AppRoot(
     }
     val hcReadLauncher = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
         if (granted.any { it in container.healthConnect.readPermissions }) deviceVm.importHealthConnect()
-        else Toast.makeText(context, "Health Connect permissions were not granted.", Toast.LENGTH_LONG).show()
+        else Toast.makeText(context, tr(R.string.main_activity_health_connect_permissions_were), Toast.LENGTH_LONG).show()
     }
     val importHealthConnect: () -> Unit = {
         if (!container.healthConnect.isAvailable()) {
-            Toast.makeText(context, "Health Connect isn't available on this phone.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, tr(R.string.main_activity_health_connect_isn_t), Toast.LENGTH_LONG).show()
         } else scope.launch {
             if (container.healthConnect.hasReadPermissions()) deviceVm.importHealthConnect()
             else hcReadLauncher.launch(container.healthConnect.readPermissions)
@@ -751,7 +751,7 @@ private fun AppRoot(
     // The manual copy, or turning auto sync on ([forAuto]): with the write permissions, asked for first when missing.
     val writeHealthConnect: (Boolean) -> Unit = { forAuto ->
         if (!container.healthConnect.isAvailable()) {
-            Toast.makeText(context, "Health Connect isn't available on this phone.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, tr(R.string.main_activity_health_connect_isn_t), Toast.LENGTH_LONG).show()
         } else scope.launch {
             // The calorie permissions are optional, but asked for again until granted: the launcher goes on with the
             // ones it needs.
@@ -951,7 +951,7 @@ private fun AppRoot(
                         androidx.activity.compose.BackHandler(onBack = pop)
                         org.openstrap.app.ui.glow.GlowRecoveryScreen(
                             day, recovery, history,
-                            header = { org.openstrap.app.ui.glow.PageHeader("Recovery", pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
+                            header = { org.openstrap.app.ui.glow.PageHeader(tr(R.string.common_recovery), pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
                             contentPadding = padding, onOpenMetric = { push(Detail.OfMetric(it)) },
                             onOpenScore = { push(Detail.OfScore(it)) }, strapScore = strapReadiness?.takeIf { it.day == day.dayStart }?.score,
                             healthspan = healthspan, onOpenHealthspan = { seeHabitAge(); push(Detail.Healthspan) }, onOpenProfile = { openPage(Page.Profile) },
@@ -962,7 +962,7 @@ private fun AppRoot(
                     Detail.Sleep -> {
                         androidx.activity.compose.BackHandler(onBack = pop)
                         org.openstrap.app.ui.glow.GlowSleepScreen(
-                            day, header = { org.openstrap.app.ui.glow.PageHeader("Sleep", pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
+                            day, header = { org.openstrap.app.ui.glow.PageHeader(tr(R.string.common_sleep), pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
                             contentPadding = padding, onOpen = push, recovery = recovery,
                         )
                     }
@@ -1135,7 +1135,7 @@ private fun AppRoot(
                                         onRestore = importHealthConnect,
                                         onOpen = {
                                             if (!org.openstrap.app.ui.device.openHealthConnect(context)) {
-                                                Toast.makeText(context, "Health Connect isn't available on this phone.", Toast.LENGTH_LONG).show()
+                                                Toast.makeText(context, tr(R.string.main_activity_health_connect_isn_t), Toast.LENGTH_LONG).show()
                                             }
                                         },
                                         onBack = onBack,

@@ -5,6 +5,8 @@ import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * After a history sync, fills the minutes each recent phone workout missed (a disconnect, a killed app) from what the
@@ -18,7 +20,7 @@ class WorkoutGapFill(private val dao: HealthDao, private val profile: suspend ()
     suspend fun run(now: Long = System.currentTimeMillis() / 1000): String? {
         var filled = 0
         for (w in dao.appWorkoutsOnce(now - LOOKBACK_S, now)) filled += fill(w, now)
-        return if (filled > 0) "workout gap fill: $filled minutes from the strap's history" else null
+        return if (filled > 0) tr(R.string.workout_gap_fill_workout_gap_fill_minutes, filled) else null
     }
 
     /** Fills [w]'s missing minutes from history; the number filled. Also builds a workout saved after the fact. */

@@ -43,6 +43,8 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.dashboard.Info
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /*
  * The info sheet (spec 6.2): what a number means, the scale it's read on with where you are, and how it's worked out,
@@ -82,9 +84,9 @@ fun InfoSheet(
                 Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowLayout.CardShape).padding(horizontal = 18.dp),
             ) {
                 val folds = rows ?: listOf(
-                    "How it's worked out" to info.how,
-                    "What moves it" to info.moves,
-                    "Why it might be off" to (listOf(info.off) + notes).joinToString("\n\n"),
+                    tr(R.string.info_sheet_how_it_s_worked) to info.how,
+                    tr(R.string.common_what_moves_it) to info.moves,
+                    tr(R.string.info_sheet_why_it_might_be) to (listOf(info.off) + notes).joinToString("\n\n"),
                 )
                 folds.forEachIndexed { i, (title, text) -> Fold(title, text, divider = i > 0) }
             }
@@ -144,7 +146,7 @@ private fun Fold(title: String, text: String, divider: Boolean = true) {
             .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
     ) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClickLabel = if (open) "Fold" else "Open") { open = !open }.padding(vertical = 16.dp),
+            Modifier.fillMaxWidth().clickable(onClickLabel = if (open) tr(R.string.info_sheet_fold) else tr(R.string.common_open)) { open = !open }.padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))

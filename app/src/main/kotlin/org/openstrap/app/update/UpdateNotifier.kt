@@ -8,6 +8,7 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
+import org.openstrap.app.tr
 import org.openstrap.app.ui.device.UpdateCopy
 
 /** Says a new OpenStrap is out, or that it was just installed. Either opens the Updates page. */
@@ -15,7 +16,7 @@ class UpdateNotifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, tr(R.string.update_notifier_app_updates), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     fun available(release: Release) = show(UpdateCopy.availableTitle(release), ReleaseNotes.lead(release.notes) ?: UpdateCopy.AVAILABLE_TEXT)

@@ -56,6 +56,9 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.zepp.ZeppSignInDialog
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
+import org.openstrap.app.R
+import org.openstrap.app.tr
+import org.openstrap.app.trRaw
 
 /**
  * The strap's firmware: what it runs, checking for and installing an update, or installing from a file. Opened from
@@ -78,15 +81,15 @@ fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack:
     confirm?.let { image -> ConfirmInstall(image, vm.blockers(), onDismiss = { confirm = null }, onInstall = { confirm = null; vm.install(image) }) }
 
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Firmware", { vm.reset(); onBack() }, backEnabled = !installing) }
+        item { PageHeader(tr(R.string.common_firmware), { vm.reset(); onBack() }, backEnabled = !installing) }
 
         item {
-            PagePanel(title = "This strap") {
+            PagePanel(title = tr(R.string.firmware_screen_this_strap)) {
                 val c = connection as? ConnectionState.Connected
-                InfoLine("Firmware", info?.firmware ?: c?.firmware ?: "Unknown")
-                info?.hardware?.let { InfoLine("Hardware", it) }
-                InfoLine("Battery", c?.batteryPercent?.let { "$it%" } ?: "Not connected")
-                InfoLine("Update service", when (info?.dfuAvailable) { true -> "Available"; false -> "Not found"; null -> "Connect to check" })
+                InfoLine(tr(R.string.common_firmware), info?.firmware ?: c?.firmware ?: tr(R.string.firmware_screen_unknown))
+                info?.hardware?.let { InfoLine(tr(R.string.firmware_screen_hardware), it) }
+                InfoLine(tr(R.string.firmware_screen_battery), c?.batteryPercent?.let { "$it%" } ?: tr(R.string.common_not_connected))
+                InfoLine(tr(R.string.firmware_screen_update_service), when (info?.dfuAvailable) { true -> tr(R.string.firmware_screen_available); false -> tr(R.string.firmware_screen_not_found); null -> tr(R.string.firmware_screen_connect_to_check) })
             }
         }
 
@@ -95,17 +98,17 @@ fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack:
         item {
             PageRows {
                 // Update checks need a signed-in Zepp account; its page is a row away, as on the Strap page.
-                PageRow("Zepp account", if (account != null) "Signed in" else "Not signed in", onClick = onZeppAccount, divider = false, enabled = !installing)
-                PageRow("Install from a file", "For an image you have", onClick = { pickFile.launch(arrayOf("*/*")) }, enabled = !installing)
+                PageRow(tr(R.string.common_zepp_account), if (account != null) tr(R.string.common_signed_in) else tr(R.string.common_not_signed_in), onClick = onZeppAccount, divider = false, enabled = !installing)
+                PageRow(tr(R.string.firmware_screen_install_from_a_file), tr(R.string.firmware_screen_for_an_image_you), onClick = { pickFile.launch(arrayOf("*/*")) }, enabled = !installing)
             }
         }
 
         item {
-            PagePanel(title = "Privacy and safety") {
+            PagePanel(title = tr(R.string.firmware_screen_privacy_and_safety)) {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    Point(AppIcons.Key, "Sign-in", "Happens on Zepp's own page. OpenStrap keeps only the app token and user ID, and fetches your device list once.")
-                    Point(AppIcons.CloudArrowDown, "Update check", "Sends the update server your token, user ID and the strap's firmware, hardware and serial number. Nothing else.")
-                    Point(AppIcons.CheckCircle, "Safe install", "Downloads are checked against the server's checksum, and the strap verifies the signature before installing.")
+                    Point(AppIcons.Key, tr(R.string.firmware_screen_sign_in), tr(R.string.firmware_screen_happens_on_zepp_s))
+                    Point(AppIcons.CloudArrowDown, tr(R.string.firmware_screen_update_check), tr(R.string.firmware_screen_sends_the_update_server))
+                    Point(AppIcons.CheckCircle, tr(R.string.firmware_screen_safe_install), tr(R.string.firmware_screen_downloads_are_checked_against))
                 }
             }
         }
@@ -117,44 +120,44 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
     PagePanel {
         when (step) {
             FirmwareStep.Idle -> {
-                Title("Updates")
-                Body("Ask Zepp's update server whether there's newer firmware for this strap.")
-                PageButton("Check for update", vm::check, Modifier.fillMaxWidth(), primary = true)
+                Title(tr(R.string.firmware_screen_updates))
+                Body(tr(R.string.firmware_screen_ask_zepp_s_update))
+                PageButton(tr(R.string.firmware_screen_check_for_update), vm::check, Modifier.fillMaxWidth(), primary = true)
             }
-            FirmwareStep.Checking -> Busy("Checking for updates…", null)
+            FirmwareStep.Checking -> Busy(tr(R.string.firmware_screen_checking_for_updates), null)
             is FirmwareStep.Checked -> CheckResult(step.result, vm)
-            is FirmwareStep.Downloading -> Busy("Downloading ${step.part.label} ${step.part.version}", step.fraction)
+            is FirmwareStep.Downloading -> Busy(tr(R.string.firmware_screen_downloading, step.part.label, step.part.version), step.fraction)
             is FirmwareStep.Ready -> {
                 val image = step.image
-                Title("Ready to install")
-                InfoLine("Image", image.title)
-                InfoLine("Size", "%,d bytes".format(image.bytes.size))
-                image.trailer?.let { InfoLine("Signed for", "product ${it.pnpId} v${it.pnpVersion}") }
+                Title(tr(R.string.firmware_screen_ready_to_install))
+                InfoLine(tr(R.string.firmware_screen_image), image.title)
+                InfoLine(tr(R.string.firmware_screen_size), trRaw(R.string.firmware_screen_d_bytes).format(image.bytes.size))
+                image.trailer?.let { InfoLine(tr(R.string.firmware_screen_signed_for), tr(R.string.firmware_screen_product_v, it.pnpId, it.pnpVersion)) }
                 image.warnings.forEach { Warning(it) }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PageButton("Cancel", vm::reset, Modifier.weight(1f))
-                    PageButton("Install", { onInstall(image) }, Modifier.weight(1f), primary = true)
+                    PageButton(tr(R.string.common_cancel), vm::reset, Modifier.weight(1f))
+                    PageButton(tr(R.string.firmware_screen_install), { onInstall(image) }, Modifier.weight(1f), primary = true)
                 }
             }
             is FirmwareStep.Installing -> {
                 Busy(step.label, step.fraction)
-                PageNote("Keep the strap close and this screen open. This can take several minutes.")
+                PageNote(tr(R.string.firmware_screen_keep_the_strap_close))
             }
             FirmwareStep.Installed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
-                    Title("Installed")
+                    Title(tr(R.string.firmware_screen_installed))
                 }
-                Body("The strap is restarting. OpenStrap reconnects by itself. Check again afterwards in case there are more parts to install.")
-                PageButton("Done", vm::reset, Modifier.fillMaxWidth())
+                Body(tr(R.string.firmware_screen_the_strap_is_restarting))
+                PageButton(tr(R.string.common_done), vm::reset, Modifier.fillMaxWidth())
             }
             is FirmwareStep.Failed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(AppIcons.WarningCircle, null, tint = MetricColors.warn)
-                    Title("Something went wrong")
+                    Title(tr(R.string.firmware_screen_something_went_wrong))
                 }
                 Body(step.message)
-                PageButton("OK", vm::reset, Modifier.fillMaxWidth())
+                PageButton(tr(R.string.common_ok), vm::reset, Modifier.fillMaxWidth())
             }
         }
     }
@@ -165,22 +168,22 @@ private fun CheckResult(result: UpdateCheck, vm: FirmwareViewModel) {
     if (result.upToDate) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
-            Title("Up to date")
+            Title(tr(R.string.firmware_screen_up_to_date))
         }
-        Body("The update server has nothing newer for this strap.")
-        PageButton("OK", vm::reset, Modifier.fillMaxWidth())
+        Body(tr(R.string.firmware_screen_the_update_server_has))
+        PageButton(tr(R.string.common_ok), vm::reset, Modifier.fillMaxWidth())
         return
     }
     val next = result.installOrder.firstOrNull()
-    Title(if (result.forced) "Required update" else "Update available")
-    result.parts.forEach { InfoLine(it.label, "${it.version}, ${"%,d".format(it.length / 1024)} KB") }
+    Title(if (result.forced) tr(R.string.firmware_screen_required_update) else tr(R.string.firmware_screen_update_available))
+    result.parts.forEach { InfoLine(it.label, tr(R.string.firmware_screen_kb, it.version, "%,d".format(it.length / 1024))) }
     result.changeLog?.let { PageNote(it.substringBefore("###summary###").trim()) }
     if (result.installOrder.size > 1) {
-        PageNote("Parts are installed one at a time. After the strap restarts, check again to install the next one.")
+        PageNote(tr(R.string.firmware_screen_parts_are_installed_one))
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        PageButton("Not now", vm::reset, Modifier.weight(1f))
-        PageButton(if (next == null) "Unsupported" else "Download", { next?.let(vm::download) }, Modifier.weight(1f), enabled = next != null, primary = true)
+        PageButton(tr(R.string.common_not_now), vm::reset, Modifier.weight(1f))
+        PageButton(if (next == null) tr(R.string.firmware_screen_unsupported) else tr(R.string.firmware_screen_download), { next?.let(vm::download) }, Modifier.weight(1f), enabled = next != null, primary = true)
     }
 }
 
@@ -194,7 +197,7 @@ fun ZeppAccountScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBa
     val account by vm.account.collectAsState()
     val installing = vm.step.collectAsState().value is FirmwareStep.Installing
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Zepp account", onBack) }
+        item { PageHeader(tr(R.string.common_zepp_account), onBack) }
         item { AccountPanel(account, enabled = !installing, onSave = vm::saveAccount, onClear = vm::clearAccount, onSignIn = vm::saveSignIn) }
     }
 }
@@ -212,7 +215,7 @@ private fun AccountPanel(
     if (signIn) {
         ZeppSignInDialog(
             preferredApiBase = account?.apiBase,
-            confirmLabel = "Save sign-in",
+            confirmLabel = tr(R.string.firmware_screen_save_sign_in),
             onDismiss = { signIn = false },
             onConfirm = { listing, strap -> signIn = false; onSignIn(listing, strap) },
         )
@@ -220,13 +223,13 @@ private fun AccountPanel(
     PagePanel {
         if (!editing) {
             Body(
-                if (account == null) "Zepp only answers update checks for signed-in users. Sign in, or paste your own app token and user ID. They're stored on this phone only."
-                else "Update checks use your saved token${if (account.userId.isNotEmpty()) " for user ${account.userId}" else ""} on ${account.apiBase}.",
+                if (account == null) tr(R.string.firmware_screen_zepp_only_answers_update)
+                else tr(R.string.firmware_screen_update_checks_use_your, if (account.userId.isNotEmpty()) tr(R.string.firmware_screen_update_checks_use_your__for_user, account.userId) else "", account.apiBase),
             )
-            PageButton(if (account == null) "Sign in with Zepp" else "Sign in again", { signIn = true }, Modifier.fillMaxWidth(), enabled = enabled, primary = true)
+            PageButton(if (account == null) tr(R.string.common_sign_in_with_zepp) else tr(R.string.common_sign_in_again), { signIn = true }, Modifier.fillMaxWidth(), enabled = enabled, primary = true)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PageButton(if (account == null) "Paste token" else "Edit", { editing = true }, Modifier.weight(1f), enabled = enabled)
-                if (account != null) PageButton("Remove", onClear, Modifier.weight(1f), enabled = enabled, color = DestructiveInk)
+                PageButton(if (account == null) tr(R.string.firmware_screen_paste_token) else tr(R.string.firmware_screen_edit), { editing = true }, Modifier.weight(1f), enabled = enabled)
+                if (account != null) PageButton(tr(R.string.firmware_screen_remove), onClear, Modifier.weight(1f), enabled = enabled, color = DestructiveInk)
             }
             return@PagePanel
         }
@@ -235,20 +238,20 @@ private fun AccountPanel(
         var api by rememberSaveable { mutableStateOf(account?.apiBase ?: ZeppAccount.DEFAULT_API_BASE) }
         var china by rememberSaveable { mutableStateOf(account?.china == true) }
         PageField(
-            token, { token = it }, "App token", Modifier.fillMaxWidth(),
-            placeholder = if (account != null) "Leave empty to keep the saved token" else null,
+            token, { token = it }, tr(R.string.firmware_screen_app_token), Modifier.fillMaxWidth(),
+            placeholder = if (account != null) tr(R.string.firmware_screen_leave_empty_to_keep) else null,
             visualTransformation = PasswordVisualTransformation(),
         )
         PageField(
-            user, { user = it }, "User ID", Modifier.fillMaxWidth(),
+            user, { user = it }, tr(R.string.firmware_screen_user_id), Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
-        PageField(api, { api = it }, "Server", Modifier.fillMaxWidth())
-        PageSwitchRow("Chinese-market strap", "Only if the strap was bought in mainland China", china, { china = it }, divider = false)
+        PageField(api, { api = it }, tr(R.string.firmware_screen_server), Modifier.fillMaxWidth())
+        PageSwitchRow(tr(R.string.firmware_screen_chinese_market_strap), tr(R.string.firmware_screen_only_if_the_strap), china, { china = it }, divider = false)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PageButton("Cancel", { editing = false }, Modifier.weight(1f))
+            PageButton(tr(R.string.common_cancel), { editing = false }, Modifier.weight(1f))
             PageButton(
-                "Save", { onSave(token.ifBlank { account?.appToken.orEmpty() }, user, api, china); editing = false }, Modifier.weight(1f),
+                tr(R.string.common_save), { onSave(token.ifBlank { account?.appToken.orEmpty() }, user, api, china); editing = false }, Modifier.weight(1f),
                 enabled = token.isNotBlank() || account != null, primary = true,
             )
         }
@@ -259,16 +262,16 @@ private fun AccountPanel(
 private fun ConfirmInstall(image: ReadyImage, blockers: List<String>, onDismiss: () -> Unit, onInstall: () -> Unit) {
     var accepted by remember { mutableStateOf(image.warnings.isEmpty()) }
     PageConfirm(
-        "Install ${image.title}?",
+        tr(R.string.firmware_screen_install_2, image.title),
         if (blockers.isNotEmpty()) null
-        else "The strap will receive the image, check it, install it and restart. Keep it near the phone and don't close OpenStrap until it's done.",
-        confirm = "Install", onConfirm = onInstall, onDismiss = onDismiss, confirmEnabled = blockers.isEmpty() && accepted,
+        else tr(R.string.firmware_screen_the_strap_will_receive),
+        confirm = tr(R.string.firmware_screen_install), onConfirm = onInstall, onDismiss = onDismiss, confirmEnabled = blockers.isEmpty() && accepted,
     ) {
         if (blockers.isNotEmpty()) {
             blockers.forEach { Warning(it) }
         } else {
             image.warnings.forEach { Warning(it) }
-            if (image.warnings.isNotEmpty()) PageSwitchRow("I understand and want to install it anyway", null, accepted, { accepted = it }, divider = false)
+            if (image.warnings.isNotEmpty()) PageSwitchRow(tr(R.string.firmware_screen_i_understand_and_want), null, accepted, { accepted = it }, divider = false)
         }
     }
 }

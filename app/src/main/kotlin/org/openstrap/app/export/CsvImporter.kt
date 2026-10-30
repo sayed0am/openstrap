@@ -6,6 +6,8 @@ import java.io.InputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.util.zip.ZipInputStream
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Restores a zip made by [CsvExporter] into what the phone is missing. Heart rate and activity minutes ([MINUTES]) come
@@ -71,7 +73,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         for ((table, lines) in deletable) count(table, table.backfill(lines, added, gone[table.key.table].orEmpty()))
         for ((table, lines) in children) count(table, table.backfill(lines, added))
         // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
-        if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
+        if (counts.isEmpty()) throw IllegalArgumentException(tr(R.string.csv_importer_this_isn_t_an))
         Result(counts, present, skipped, settings)
     }
 

@@ -68,6 +68,8 @@ import org.openstrap.protocol.services.TimeSync
 import org.openstrap.protocol.toHex
 import org.openstrap.protocol.u8
 import java.time.ZonedDateTime
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /**
  * Owns the connection to the strap: GATT, the channel session and everything built on it.
@@ -211,7 +213,7 @@ class StrapManager(
 
                 afterAuth(client, l, s)
                 // afterAuth swallows step failures, so a link that dropped during it would otherwise show as Connected.
-                if (!client.connected.value) throw GattException("Link lost during setup")
+                if (!client.connected.value) throw GattException(tr(R.string.strap_manager_link_lost_during_setup))
                 connection.value = ConnectionState.Connected(battery, firmware, charging)
                 watchBattery(s)
                 watchSteps(s)
@@ -236,7 +238,7 @@ class StrapManager(
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) throw e
                 log("connect failed: $e")
-                connection.value = ConnectionState.Failed(e.message ?: "Connection failed")
+                connection.value = ConnectionState.Failed(e.message ?: tr(R.string.strap_manager_connection_failed))
                 close()
                 scheduleReconnect()
             }
@@ -609,16 +611,16 @@ class StrapManager(
     @Volatile private var sportCaps: SportSession.Capabilities? = null
 
     override suspend fun sportSession(state: SportSession.State, sportType: Int, startTime: Long, elapsedSeconds: Long) {
-        val s = activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (!s.services.has(SportSession.ENDPOINT)) throw StrapCommandException("The strap has no sport module")
+        val s = activeSession ?: throw StrapCommandException(tr(R.string.common_the_strap_isn_t))
+        if (!s.services.has(SportSession.ENDPOINT)) throw StrapCommandException(tr(R.string.strap_manager_the_strap_has_no))
         suspend fun send(request: ByteArray): ByteArray {
             val reply = runCatching { s.request(SportSession.ENDPOINT, request, 8_000) { SportSession.isReplyTo(request, it) } }
-                .getOrElse { throw StrapCommandException("The strap didn't answer") }
+                .getOrElse { throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t)) }
             log("sport > ${request.toHex()} < ${reply.toHex()}")
-            if (!SportSession.isOk(reply)) throw StrapCommandException("The strap refused the workout command")
+            if (!SportSession.isOk(reply)) throw StrapCommandException(tr(R.string.strap_manager_the_strap_refused_the))
             return reply
         }
-        val caps = sportCaps ?: (SportSession.parseVersion(send(SportSession.versionRequest)) ?: throw StrapCommandException("Unknown sport module version"))
+        val caps = sportCaps ?: (SportSession.parseVersion(send(SportSession.versionRequest)) ?: throw StrapCommandException(tr(R.string.strap_manager_unknown_sport_module_version)))
             .also { sportCaps = it }
         if (state == SportSession.State.START) send(SportSession.config(sportType, caps))
         send(SportSession.state(state, startTime, elapsedSeconds, caps))
@@ -1022,11 +1024,11 @@ class StrapManager(
         timeoutMs: Long = 8_000,
         matches: (ByteArray) -> Boolean = { it.isNotEmpty() && it.u8(0) == request.u8(0) + 1 },
     ): ByteArray {
-        val s = activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
+        val s = activeSession ?: throw StrapCommandException(tr(R.string.common_the_strap_isn_t))
+        if (firmwareUpdating.value) throw StrapCommandException(tr(R.string.strap_manager_wait_for_the_firmware))
         val reply = runCatching {
             s.request(endpoint, request, timeoutMs, matches = matches)
-        }.getOrElse { throw StrapCommandException("The strap didn't answer") }
+        }.getOrElse { throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t)) }
         log("cmd %04x > %s < %s".format(endpoint, request.toHex(), reply.toHex()))
         return reply
     }
@@ -1035,30 +1037,30 @@ class StrapManager(
 
     private suspend fun alarmCaps(): AlarmCapabilities = alarmCaps ?: (
         AlarmCodec.parseVersion(command(Endpoints.ALARMS, AlarmCodec.versionRequest))
-            ?: throw StrapCommandException("The strap sent an unexpected alarm reply")
+            ?: throw StrapCommandException(tr(R.string.strap_manager_the_strap_sent_an))
         ).also { alarmCaps = it }
 
     override suspend fun readAlarms(): Pair<AlarmCapabilities, List<Alarm>> {
         val caps = alarmCaps()
         val list = AlarmCodec.parseList(command(Endpoints.ALARMS, AlarmCodec.listRequest), caps.titles)
-            ?: throw StrapCommandException("The strap sent an unexpected alarm list")
+            ?: throw StrapCommandException(tr(R.string.strap_manager_the_strap_sent_an_2))
         return caps to list
     }
 
     override suspend fun saveAlarm(alarm: Alarm, isNew: Boolean) {
         val caps = alarmCaps()
         val request = if (isNew) AlarmCodec.add(alarm, caps.titles, caps.workdaysSupported) else AlarmCodec.modify(alarm, caps.titles, caps.workdaysSupported)
-        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException("The strap didn't save the alarm")
+        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_2))
     }
 
     override suspend fun deleteAlarm(index: Int) {
         val request = AlarmCodec.delete(index)
-        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException("The strap didn't delete the alarm")
+        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_3))
     }
 
     override suspend fun clearAlarms() {
         val request = AlarmCodec.clearAllRequest
-        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException("The strap didn't delete the alarms")
+        if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_4))
     }
 
     /** Learned on connect; null until then or when the strap didn't answer (then replies are read as v1–3). */
@@ -1075,23 +1077,23 @@ class StrapManager(
     override suspend fun readHealthSettings(): SettingsGroup {
         val protocol = settingsProtocol()
         val reply = settingsQuery(SettingsCodec.GROUP_HEALTH)
-        return SettingsCodec.parse(reply, protocol?.version) ?: throw StrapCommandException("The strap couldn't read its settings (code ${SettingsCodec.replyCode(reply)})")
+        return SettingsCodec.parse(reply, protocol?.version) ?: throw StrapCommandException(tr(R.string.strap_manager_the_strap_couldn_t, SettingsCodec.replyCode(reply)))
     }
 
     override suspend fun writeHealthSettings(version: Int, settings: List<Setting>) {
         val reply = command(Endpoints.SETTINGS, SettingsCodec.write(SettingsCodec.GROUP_HEALTH, version, settings))
-        if (!SettingsCodec.isWriteSuccess(reply)) throw StrapCommandException("The strap didn't accept the setting (code ${reply.getOrNull(1)})")
+        if (!SettingsCodec.isWriteSuccess(reply)) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_5, reply.getOrNull(1)))
     }
 
     /** Writes GENERAL key 45 = true with the group version just read (07 §0). The strap may drop the link before its ack. */
     override suspend fun restartStrap() {
         val group = SettingsCodec.parse(settingsQuery(SettingsCodec.GROUP_GENERAL, listOf(SettingsCodec.KEY_RESTART), withOptions = false), settingsProtocol()?.version)
-            ?: throw StrapCommandException("The strap couldn't read its settings")
-        val request = SettingsCodec.restartFor(group) ?: throw StrapCommandException("This strap can't be restarted from the app")
+            ?: throw StrapCommandException(tr(R.string.strap_manager_the_strap_couldn_t_2))
+        val request = SettingsCodec.restartFor(group) ?: throw StrapCommandException(tr(R.string.strap_manager_this_strap_can_t))
         log("restart: asking the strap to restart")
         val reply = runCatching { command(Endpoints.SETTINGS, request) }
             .getOrElse { e -> if (activeSession == null) { log("restart: link dropped before the ack"); return } else throw e }
-        if (!SettingsCodec.isWriteSuccess(reply)) throw StrapCommandException("The strap didn't accept the restart (code ${reply.getOrNull(1)})")
+        if (!SettingsCodec.isWriteSuccess(reply)) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_6, reply.getOrNull(1)))
     }
 
     /**
@@ -1121,7 +1123,7 @@ class StrapManager(
     }
 
     private suspend fun playMotor(pattern: List<Int>) {
-        if (!MotorVibrate.isOk(command(Endpoints.MOTOR_VIBRATE, MotorVibrate.play(pattern)))) throw StrapCommandException("The strap didn't buzz")
+        if (!MotorVibrate.isOk(command(Endpoints.MOTOR_VIBRATE, MotorVibrate.play(pattern)))) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_7))
         motorBusyUntil = SystemClock.elapsedRealtime() + pattern.sum()
     }
 
@@ -1175,7 +1177,7 @@ class StrapManager(
             delay(BUZZ_RESET_MS)
             command(Endpoints.FIND_DEVICE, FindDevice.BUZZ, BUZZ_REPLY_MS)
         }
-        if (!FindDevice.isBuzzOk(reply)) throw StrapCommandException("The strap didn't buzz")
+        if (!FindDevice.isBuzzOk(reply)) throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t_7))
         findBuzzOn = true
     }
 
@@ -1237,11 +1239,11 @@ class StrapManager(
 
     /** STOP gets no reply (03 §3.16), so it is only sent. */
     private suspend fun sendFindDevice(request: ByteArray) {
-        val s = activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
+        val s = activeSession ?: throw StrapCommandException(tr(R.string.common_the_strap_isn_t))
+        if (firmwareUpdating.value) throw StrapCommandException(tr(R.string.strap_manager_wait_for_the_firmware))
         log("cmd %04x > %s".format(Endpoints.FIND_DEVICE, request.toHex()))
         if (request.contentEquals(FindDevice.STOP)) findBuzzOn = false
-        runCatching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException("The strap didn't answer") }
+        runCatching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException(tr(R.string.strap_manager_the_strap_didn_t)) }
     }
 
     /** GENERAL key 47; null when the strap doesn't report it. Zepp refuses OTA while it is on (07 §1.6). */
@@ -1252,17 +1254,17 @@ class StrapManager(
 
     override suspend fun installFirmware(file: ByteArray, type: Int, onProgress: (DfuProgress) -> Unit) {
         val client = gatt
-        if (client == null || connection.value !is ConnectionState.Connected) throw DfuException(-1, "The strap isn't connected")
-        if (sync.value is SyncState.Running) throw DfuException(-1, "Wait for the sync to finish first")
-        if (firmwareUpdating.value) throw DfuException(-1, "An update is already running")
-        if (session?.services?.has(Endpoints.SETTINGS) == true && fastRechargeOn() == true) throw DfuException(-1, "Turn off fast-charge mode on the strap first")
-        if (!firmwareUpdating.compareAndSet(false, true)) throw DfuException(-1, "An update is already running")
+        if (client == null || connection.value !is ConnectionState.Connected) throw DfuException(-1, tr(R.string.common_the_strap_isn_t))
+        if (sync.value is SyncState.Running) throw DfuException(-1, tr(R.string.strap_manager_wait_for_the_sync))
+        if (firmwareUpdating.value) throw DfuException(-1, tr(R.string.strap_manager_an_update_is_already))
+        if (session?.services?.has(Endpoints.SETTINGS) == true && fastRechargeOn() == true) throw DfuException(-1, tr(R.string.strap_manager_turn_off_fast_charge))
+        if (!firmwareUpdating.compareAndSet(false, true)) throw DfuException(-1, tr(R.string.strap_manager_an_update_is_already))
         val wake = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:firmware").apply { acquire(30 * 60_000L) }
         try {
             if (liveJob?.isActive == true) pauseLive()
             val link = GattDfuLink(client)
-            if (!link.available) throw DfuException(-1, "This strap doesn't offer the firmware update service")
+            if (!link.available) throw DfuException(-1, tr(R.string.strap_manager_this_strap_doesn_t))
             // Bigger ATT packets make the transfer several times faster; fall back to 20-byte writes if refused.
             runCatching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
             log("dfu: ${file.size} bytes, type ${"%02x".format(type)}, crc ${"%08x".format(crc32(file))}, att mtu ${client.mtu}")

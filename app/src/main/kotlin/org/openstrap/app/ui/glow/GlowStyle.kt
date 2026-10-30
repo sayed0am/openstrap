@@ -11,6 +11,8 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import org.openstrap.app.R
+import org.openstrap.app.tr
 
 /** Shape of the dark core: a rounded rectangle that follows the card, or a soft oval. */
 enum class CoreShape { Rounded, Radial }
@@ -161,7 +163,7 @@ data class GlowStyle(
             lightFrom = LightFrom.Bottom, glowSize = 34.dp,
         )
 
-        val presets = listOf("Bloom" to Bloom, "Midnight" to Midnight, "Ember" to Ember)
+        val presets = listOf(tr(R.string.glow_style_bloom) to Bloom, tr(R.string.glow_style_midnight) to Midnight, tr(R.string.glow_style_ember) to Ember)
     }
 }
 
