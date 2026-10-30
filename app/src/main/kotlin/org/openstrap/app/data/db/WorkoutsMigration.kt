@@ -5,7 +5,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 /**
  * Workouts, first release (workouts spec 4), in one migration: a workout's rounds or periods ([AppWorkout.structure]),
- * a strength set's log ([AppWorkoutSet.exercise], reps, weight), and the new tables for rounds, saved workouts, the
+ * a run's fastest stretches ([AppWorkout.stretches]), a strength set's log ([AppWorkoutSet.exercise], reps, weight), and the new tables for rounds, saved workouts, the
  * exercise list, personal bests, badges and weekly goal results. A named object rather than an auto migration, so it
  * can be renumbered on its own if another branch takes this version first. The SQL is Room's own, from the schema
  * exported for this version.
@@ -13,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 object WorkoutsMigration : Migration(24, 25) {
     override fun migrate(db: SupportSQLiteDatabase) {
         db.execSQL("ALTER TABLE `app_workout` ADD COLUMN `structure` TEXT")
+        db.execSQL("ALTER TABLE `app_workout` ADD COLUMN `stretches` TEXT")
         db.execSQL("ALTER TABLE `app_workout_set` ADD COLUMN `exercise` TEXT")
         db.execSQL("ALTER TABLE `app_workout_set` ADD COLUMN `reps` INTEGER")
         db.execSQL("ALTER TABLE `app_workout_set` ADD COLUMN `weightKg` REAL")

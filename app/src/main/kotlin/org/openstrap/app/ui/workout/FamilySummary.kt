@@ -32,8 +32,8 @@ data class RoundLine(val number: Int, val peak: Int?, val drop: Int?)
 /** One period of a game: its name, average heart rate and hard efforts. */
 data class PeriodLine(val name: String, val averageBpm: Int?, val hardEfforts: Int, val seconds: Long)
 
-/** A line under Earned: a new best, a badge, or the weekly goal ([met] when this workout met it). */
-data class EarnedLine(val kind: Kind, val text: String, val met: Boolean = false) {
+/** A row under Earned: a new best, a badge, or the weekly goal ([met] once this week's is). */
+data class EarnedLine(val kind: Kind, val text: String, val value: String? = null, val note: String? = null, val met: Boolean = false) {
     enum class Kind { Best, Badge, Goal }
 }
 

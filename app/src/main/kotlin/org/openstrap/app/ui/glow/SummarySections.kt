@@ -318,7 +318,7 @@ internal fun EarnedPanel(lines: List<EarnedLine>, underList: Boolean) {
                     EarnedLine.Kind.Badge -> AppIcons.CheckCircle to MetricColors.good
                     EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) MetricColors.good else Color.White
                 }
-                ListRow(l.text, color, null, null, divider = i > 0, dash = false, icon = icon)
+                ListRow(l.text, color, l.value, l.note, divider = i > 0, dash = false, icon = icon)
             }
         }
     }

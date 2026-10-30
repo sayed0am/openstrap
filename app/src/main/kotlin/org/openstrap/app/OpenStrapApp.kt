@@ -19,6 +19,7 @@ class AppContainer(val app: Application) {
     val database = OpenStrapDatabase.create(app)
     val settings = SettingsStore(app)
     val health = HealthRepository(database.healthDao())
+    val rewards = org.openstrap.app.data.RewardsKeeper(database.healthDao(), settings)
     val scanner = BleScanner(app)
     val csv = CsvExporter(database.healthDao())
     val healthConnect = HealthConnectExporter(app, database.healthDao())
@@ -55,5 +56,7 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         org.openstrap.app.device.WidgetUpdater.publishPreviews(this)
         // The daily check for a new OpenStrap, unless it was turned off on the Updates page.
         container.updater.start()
+        // Looks for the first morning of the week, for the weekly recap (workouts spec 3.4).
+        org.openstrap.app.device.WeeklyRecap.schedule(this)
     }
 }

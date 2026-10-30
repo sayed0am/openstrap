@@ -533,8 +533,10 @@ class WorkoutSession(
                     }
                     return@withLock
                 }
-                // The route is still in memory here, kept or not, so a run gets its VO2max either way.
-                dao.upsertAppWorkout(withEffect(ended, dao.appWorkoutHeartRateOnce(w.start), _route.value))
+                // The route is still in memory here, kept or not, so a run gets its VO2max and its fastest stretches
+                // (its bests, workouts spec 3.2) either way.
+                val stretches = org.openstrap.app.data.Rewards.Stretch.format(org.openstrap.app.data.Rewards.stretches(_route.value, ended.pauseRanges))
+                dao.upsertAppWorkout(withEffect(ended.copy(stretches = stretches), dao.appWorkoutHeartRateOnce(w.start), _route.value))
                 _state.value = WorkoutState.Ended(w.start)
                 watchCalmDown(w.start, recorded)
                 // Its days' energy rows take its kcal now, after the summary is up, so Health Connect gets them with it.

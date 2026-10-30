@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 25,
-    "identityHash": "df5b460829bdf94299235c3925778d01",
+    "identityHash": "ace63e2679dca503de1c3706a66be173",
     "entities": [
       {
         "tableName": "heart_rate",
@@ -1077,7 +1077,7 @@
       },
       {
         "tableName": "app_workout",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`start` INTEGER NOT NULL, `end` INTEGER, `sportType` INTEGER NOT NULL, `source` INTEGER NOT NULL, `pauses` TEXT NOT NULL, `pausedAt` INTEGER, `endReason` INTEGER, `averageHeartRate` INTEGER, `maxHeartRate` INTEGER, `askToEnd` INTEGER NOT NULL DEFAULT 1, `recordedEnd` INTEGER, `shownStart` INTEGER, `target` TEXT, `useGps` INTEGER NOT NULL DEFAULT 0, `keepRoute` INTEGER NOT NULL DEFAULT 0, `distanceMeters` REAL, `distanceFromSteps` INTEGER NOT NULL DEFAULT 0, `rest` TEXT, `setsTarget` INTEGER, `laps` TEXT NOT NULL DEFAULT '', `epoc` REAL, `aerobicTrainingEffect` REAL, `recoveryMinutes` INTEGER, `vo2max` REAL, `anaerobicTrainingEffect` REAL, `effectFromStrap` INTEGER NOT NULL DEFAULT 0, `ownRecoveryMinutes` INTEGER, `activeKcal` REAL, `totalKcal` REAL, `targetReachedAt` INTEGER, `structure` TEXT, PRIMARY KEY(`start`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`start` INTEGER NOT NULL, `end` INTEGER, `sportType` INTEGER NOT NULL, `source` INTEGER NOT NULL, `pauses` TEXT NOT NULL, `pausedAt` INTEGER, `endReason` INTEGER, `averageHeartRate` INTEGER, `maxHeartRate` INTEGER, `askToEnd` INTEGER NOT NULL DEFAULT 1, `recordedEnd` INTEGER, `shownStart` INTEGER, `target` TEXT, `useGps` INTEGER NOT NULL DEFAULT 0, `keepRoute` INTEGER NOT NULL DEFAULT 0, `distanceMeters` REAL, `distanceFromSteps` INTEGER NOT NULL DEFAULT 0, `rest` TEXT, `setsTarget` INTEGER, `laps` TEXT NOT NULL DEFAULT '', `epoc` REAL, `aerobicTrainingEffect` REAL, `recoveryMinutes` INTEGER, `vo2max` REAL, `anaerobicTrainingEffect` REAL, `effectFromStrap` INTEGER NOT NULL DEFAULT 0, `ownRecoveryMinutes` INTEGER, `activeKcal` REAL, `totalKcal` REAL, `targetReachedAt` INTEGER, `structure` TEXT, `stretches` TEXT, PRIMARY KEY(`start`))",
         "fields": [
           {
             "fieldPath": "start",
@@ -1248,6 +1248,11 @@
           {
             "fieldPath": "structure",
             "columnName": "structure",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "stretches",
+            "columnName": "stretches",
             "affinity": "TEXT"
           }
         ],
@@ -1874,7 +1879,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'df5b460829bdf94299235c3925778d01')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ace63e2679dca503de1c3706a66be173')"
     ]
   }
 }

@@ -88,6 +88,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import org.openstrap.app.ui.theme.OpenStrapTheme
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.GlowWorkoutSummaryScreen
+import org.openstrap.app.ui.workout.summary
+import org.openstrap.app.ui.workout.view
 
 class MainActivity : ComponentActivity() {
     /** The latest `open_metric` link, until the app root has opened it. */
@@ -162,6 +164,10 @@ class MainActivity : ComponentActivity() {
             intent.removeExtra(EXTRA_OPEN_STRAP)
             strapRequests.value = true
         }
+        if (intent.getBooleanExtra(EXTRA_OPEN_RECAP, false)) {
+            intent.removeExtra(EXTRA_OPEN_RECAP)
+            (application as OpenStrapApp).container.rewards.openRecap.value = true
+        }
         if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
             intent.removeExtra(EXTRA_OPEN_UPDATES)
             (application as OpenStrapApp).container.updater.openRequest.value = true
@@ -214,6 +220,9 @@ class MainActivity : ComponentActivity() {
 
         /** True opens the Strap page over the tab showing: a widget's status line while the strap isn't paired or is low. */
         const val EXTRA_OPEN_STRAP = "open_strap"
+
+        /** True opens last week's recap over the tab showing: the weekly recap notification's tap. */
+        const val EXTRA_OPEN_RECAP = "open_recap"
 
         /** True opens the Updates page over the tab showing: an update notification's tap. */
         const val EXTRA_OPEN_UPDATES = "open_updates"
@@ -374,6 +383,7 @@ private enum class Page(
     val row: String? = null,
 ) {
     You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), Updates("Updates"), Diagnostics("Diagnostics"),
+    GoalsAndBests("Goals and bests"), AllBadges, WeeklyRecap,
     Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
 }
 
@@ -583,6 +593,15 @@ private fun AppRoot(
             container.updater.openRequest.value = false
         }
     }
+    // The weekly recap's notification: the recap, over Goals and bests as its button opens it.
+    val recapRequest by container.rewards.openRecap.collectAsStateWithLifecycle()
+    LaunchedEffect(recapRequest) {
+        if (recapRequest) {
+            allMetricsOpen = false
+            if (pages.lastOrNull() != Page.WeeklyRecap && (pages.isEmpty() || closePages())) pages = listOf(Page.You, Page.GoalsAndBests, Page.WeeklyRecap)
+            container.rewards.openRecap.value = false
+        }
+    }
     // An auto-detected workout's notification: that workout, on the Activity tab, its home.
     val openRequest by container.workout.openRequest.collectAsStateWithLifecycle()
     LaunchedEffect(openRequest) {
@@ -657,6 +676,13 @@ private fun AppRoot(
     // Your usual workout time comes from workouts you started, not walks the strap noticed by itself.
     val workoutStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.workout.start } }
     val lastWorkout = remember(workouts) { workouts.maxByOrNull { it.end } }
+    // The weekly goal, bests and badges follow the workouts, worked out again on a new one, a trim or a delete
+    // (workouts spec 4), and on a new goal. The one recording isn't in it until it ends.
+    val recordingStart = (workoutState as? org.openstrap.app.device.WorkoutState.Recording)?.workout?.start
+    val rewardsKey = remember(workouts, recordingStart) { workouts.filter { it.workout.start != recordingStart }.map { Triple(it.workout.start, it.shownStart, it.end) } }
+    LaunchedEffect(rewardsKey, goals.workoutsPerWeek) {
+        runCatching { container.rewards.refresh(workouts.filter { it.workout.start != recordingStart }, goals.workoutsPerWeek) }
+    }
     val recording = workoutState is org.openstrap.app.device.WorkoutState.Recording
     // The moment is the clock's, whichever day is shown: browsing yesterday at night is still night (the mood follows
     // it), and only Today's layout goes back to waking for a past day. Today's wake and usual bedtime are kept from
@@ -1131,6 +1157,7 @@ private fun AppRoot(
                                 profile, goals, org.openstrap.app.data.Recovery.sleepNeed(profile.age(), profile.sleepNeedMinutes), log.size, padding,
                                 onProfile = { open(Page.Profile) },
                                 onGoals = { editGoals = true },
+                                onGoalsAndBests = { open(Page.GoalsAndBests) },
                                 healthConnectAuto = hcAuto,
                                 onHealthConnect = { open(Page.HealthConnect) },
                                 backup = backup,
@@ -1281,6 +1308,17 @@ private fun AppRoot(
             capsuleBottom = if (showBar) 104.dp else 16.dp,
             tabletop = hinge != null, bookHinge = bookHinge,
         )
+        // The badges past history earned, once, all on one screen (requests spec 7.2), when no workout is on screen.
+        val historyBadges by container.settings.historyBadgesWaiting.collectAsStateWithLifecycle(false)
+        if (historyBadges && workoutState is org.openstrap.app.device.WorkoutState.Idle && readySport == null && !choosing) {
+            val earned by remember { container.database.healthDao().badges() }.collectAsStateWithLifecycle(emptyList())
+            if (earned.isNotEmpty()) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                org.openstrap.app.ui.glow.HistoryBadgesScreen(
+                    earned.mapNotNull { org.openstrap.app.data.Rewards.badge(it.id) }, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
+                    onContinue = { scope.launch { container.settings.historyBadgesShown() } },
+                )
+            }
+        }
         org.openstrap.app.ui.components.GlassOverlay(glassHost, navGlass)
       }
       }
@@ -1366,6 +1404,7 @@ private fun OverPages(
             Page.Firmware -> FirmwareScreen(firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })
             Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)
             Page.HealthConnect, Page.Backup, Page.Updates -> dataPage(shown, close)
+            Page.GoalsAndBests, Page.AllBadges, Page.WeeklyRecap -> RewardsPage(shown, container, padding, open, close)
             Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close)
             Page.Diagnostics -> {
                 val log by container.strap.log.collectAsStateWithLifecycle()
@@ -1383,6 +1422,54 @@ private fun OverPages(
                 detail = { stack -> page(stack.lastOrNull(), null) },
             ) { page(root, pages) }
         } else org.openstrap.app.ui.components.PushContent(pages, depth = { it.size }) { stack -> page(stack.lastOrNull(), null) }
+    }
+}
+
+/**
+ * The Goals and bests page, All badges and the weekly recap (workouts spec 3.5), from what's stored and every workout,
+ * with the weekly goal and celebrations sheets they open.
+ */
+@Composable
+private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, open: (Page) -> Unit, close: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    // The app root's, already made.
+    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile) }
+    })
+    val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+    val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
+    val dao = container.database.healthDao()
+    val bests by remember { dao.personalBests() }.collectAsStateWithLifecycle(emptyList())
+    val earned by remember { dao.badges() }.collectAsStateWithLifecycle(emptyList())
+    val view by produceState<org.openstrap.app.ui.workout.RewardsView?>(null, workouts, goals.workoutsPerWeek, bests, earned) {
+        if (workouts.isNotEmpty()) value = runCatching { container.rewards.view(workouts, goals.workoutsPerWeek, bests, earned) }.getOrNull()
+    }
+    var editGoal by rememberSaveable { mutableStateOf(false) }
+    var celebrations by rememberSaveable { mutableStateOf(false) }
+    when (shown) {
+        Page.GoalsAndBests -> org.openstrap.app.ui.glow.GoalsAndBestsPage(
+            view, padding, onGoal = { editGoal = true }, onAllBadges = { open(Page.AllBadges) }, onRecap = { open(Page.WeeklyRecap) },
+            onCelebrations = { celebrations = true }, onBack = close,
+        )
+        Page.AllBadges -> org.openstrap.app.ui.glow.AllBadgesPage(view, padding, onBack = close)
+        else -> {
+            val first = view?.thisWeek?.minusWeeks(1) ?: org.openstrap.app.data.Rewards.weekStart(java.time.LocalDate.now(), container.rewards.firstDay).minusWeeks(1)
+            org.openstrap.app.ui.glow.WeeklyRecapPage(view, first, padding, onGoal = { editGoal = true }, onBack = close)
+        }
+    }
+    if (editGoal) org.openstrap.app.ui.glow.WeeklyGoalSheet(goals.workoutsPerWeek, onSave = { n ->
+        scope.launch { container.settings.saveGoals(goals.copy(workoutsPerWeek = n)) }
+        editGoal = false
+    }, onDismiss = { editGoal = false })
+    if (celebrations) {
+        val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
+        val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
+        org.openstrap.app.ui.glow.CelebrationsSheet(
+            goalMoment, weeklyRecap,
+            onGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
+            onWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
+            onDismiss = { celebrations = false },
+        )
     }
 }
 
@@ -1518,10 +1605,28 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             val route by session.route.collectAsStateWithLifecycle()
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val usualDrop by produceState<Int?>(null, state.start) { value = workoutsVm.usualDrop(state.start) }
+            // What it earned, from every workout and day (workouts spec 2.8), once the list holds it.
+            val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
+            val ended = workouts.firstOrNull { it.workout.start == state.start }
+            val rewards by produceState<org.openstrap.app.ui.workout.SummaryRewards?>(null, ended?.end, ended?.shownStart, goals.workoutsPerWeek) {
+                if (ended == null) return@produceState
+                value = runCatching { container.rewards.summary(state.start, workouts, goals.workoutsPerWeek) }.getOrNull()
+            }
+            val scope = rememberCoroutineScope()
+            val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
+            val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
+            val momentWeek by container.settings.goalMomentWeek.collectAsStateWithLifecycle(null)
             GlowWorkoutSummaryScreen(
                 summary, calmDown.takeIf { !state.preview }, if (state.preview) emptyList() else route, workouts, usualDrop, padding,
                 onDone = session::dismissSummary, onDelete = { session.discard(state.start) },
                 onTrim = { from, to -> session.trim(state.start, from, to) }, onUndoTrim = { session.undoTrim(state.start) },
+                rewards = rewards.takeIf { !state.preview },
+                celebrations = org.openstrap.app.ui.glow.Celebrations(
+                    goalMoment, weeklyRecap, momentWeek,
+                    setGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
+                    setWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
+                    markMoment = { week -> scope.launch { container.settings.setGoalMomentWeek(week) } },
+                ),
             )
         }
     }

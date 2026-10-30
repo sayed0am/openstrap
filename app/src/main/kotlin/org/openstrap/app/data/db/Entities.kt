@@ -241,6 +241,11 @@ data class AppWorkout(
      * game's periods ("p:2x2700/900"); null for an open workout. Added in version 25.
      */
     val structure: String? = null,
+    /**
+     * A GPS run's fastest stretches ([org.openstrap.app.data.Rewards.Stretch.code]), worked out from the route when it
+     * ends, kept or not, so its bests can be worked out again later. Null without GPS. Added in version 25.
+     */
+    val stretches: String? = null,
 ) {
     val lapMarks: List<Long> get() = laps.split(',').mapNotNull { it.toLongOrNull() }
 

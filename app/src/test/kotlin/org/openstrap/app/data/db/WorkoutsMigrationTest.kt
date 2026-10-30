@@ -47,6 +47,7 @@ class WorkoutsMigrationTest {
             val dao = room.healthDao()
             val w = dao.appWorkoutOnce(1000)!!
             assertNull(w.structure)
+            assertNull(w.stretches)
             val set = dao.setsOnce(1000).single()
             assertEquals(1060L, set.end)
             assertNull(set.exercise)

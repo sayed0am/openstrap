@@ -47,9 +47,9 @@ import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.BestCandidate
 import org.openstrap.app.ui.workout.CalmDownLine
 import org.openstrap.app.ui.workout.EarnedLine
+import org.openstrap.app.ui.workout.SummaryRewards
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
@@ -63,6 +63,9 @@ import org.openstrap.app.ui.workout.ZONE_NAMES
  * glow once, no modal. Past workouts open their own page ([GlowWorkoutDetailScreen]), which shares the Load card and
  * the lists.
  */
+
+/** Where Done has got to: the summary, a personal best's card, the goal moment. */
+private enum class SummaryStep { Summary, Best, Moment }
 
 /** How much higher the hero's light reaches at the top of a personal best's swell. */
 private const val SwellLevel = 0.25f
@@ -88,15 +91,43 @@ fun GlowWorkoutSummaryScreen(
     onDelete: () -> Unit,
     onTrim: (from: Long, to: Long) -> Unit,
     onUndoTrim: () -> Unit,
+    /** What it earned ([RewardsCopy.summary]), null while it's worked out. */
+    rewards: SummaryRewards? = null,
+    celebrations: Celebrations? = null,
 ) {
-    BackHandler(onBack = onDone)
     val a = summary?.analysis
+    // Done goes through the celebrations it earned (workouts spec 3.4): a personal best's card, then the goal moment
+    // once a week, then away.
+    var step by rememberSaveable { mutableStateOf(SummaryStep.Summary) }
+    var settings by rememberSaveable { mutableStateOf(false) }
+    val moment = rewards != null && celebrations != null && rewards.goalMet && celebrations.goalMoment && celebrations.momentWeek != rewards.weekStart
+    fun next(from: SummaryStep) {
+        step = when {
+            from < SummaryStep.Best && rewards?.best != null -> SummaryStep.Best
+            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations?.markMoment(rewards!!.weekStart) }
+            else -> { onDone(); return }
+        }
+    }
+    val done = { next(step) }
+    if (step == SummaryStep.Best && rewards?.best != null && a != null) {
+        BestCardScreen(rewards.best, a.sportName, contentPadding, onContinue = done)
+        return
+    }
+    if (step == SummaryStep.Moment && rewards != null) {
+        val starts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+        GoalMomentScreen(rewards.week.count, rewards.week.goal, rewards.inARow, starts, contentPadding, onSettings = { settings = true }, onContinue = done)
+        if (settings && celebrations != null) CelebrationsSheet(
+            celebrations.goalMoment, celebrations.weeklyRecap, celebrations.setGoalMoment, celebrations.setWeeklyRecap, onDismiss = { settings = false },
+        )
+        return
+    }
+    BackHandler(onBack = done)
     var info by rememberSaveable { mutableStateOf(false) }
     // Done stays on the bottom edge, Delete as quiet text under it; nothing to delete until the workout has loaded.
     // Share comes with the share screen (workouts spec 2.9), not yet.
     WorkoutPage(
         Color.Transparent, contentPadding,
-        pinned = { if (a != null) SummaryActions(justEnded = true, onDone = onDone, onDelete = onDelete) else WorkoutButton("Done", Color.White, Color.Black, onDone) },
+        pinned = { if (a != null) SummaryActions(justEnded = true, onDone = done, onDelete = onDelete) else WorkoutButton("Done", Color.White, Color.Black, onDone) },
     ) {
         // The sport, then when (board SummaryRun).
         Column(Modifier.padding(start = 4.dp, top = 12.dp)) {
@@ -113,14 +144,7 @@ fun GlowWorkoutSummaryScreen(
         val w = a.workout
         val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
         val usualLoad = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
-        val best = remember(a, others) {
-            fun of(x: WorkoutAnalysis) = BestCandidate(
-                x.workout.start, x.workout.sportType, x.activeSeconds,
-                x.distanceMeters?.takeIf { !x.distanceFromSteps },
-            )
-            SummaryCopy.personalBest(of(a), others.map(::of))
-        }
-        val earned = listOfNotNull(best?.let { EarnedLine(EarnedLine.Kind.Best, it.removeSuffix(".")) })
+        val earned = rewards?.earned.orEmpty()
         // A personal best ticks once and swells the hero's glow once; with animations off, only the tick.
         val haptics = rememberHaptics()
         val animationsOn = rememberAnimationsOn()
