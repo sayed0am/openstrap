@@ -14,16 +14,13 @@ import org.openstrap.app.data.settings.UserProfile
  */
 object WorkoutRecorder {
     /**
-     * The zone shown live, 0..4: below 60 % of max is zone 1 (anything slower is easy), then 10 % steps, as
+     * The zone shown live, 0..4: below zone 2 is zone 1 (anything slower is easy), then your zones, as
      * [Workouts.zoneOf]. Null for no reading.
      */
     fun liveZone(bpm: Int?, maxHr: Int): Int? = bpm?.let { Workouts.zoneOf(it, maxHr) ?: 0 }
 
-    /** Where [bpm] sits along the five zones, 0..1: 50 % of max at the left, each zone a fifth. */
-    fun zonePosition(bpm: Int, maxHr: Int): Float {
-        val pct = bpm * 100f / maxHr
-        return ((pct - 50f) / 50f).coerceIn(0f, 1f)
-    }
+    /** Where [bpm] sits along the five zones ([HeartZones.position]), 0..1: zone 1's start at the left, each zone a fifth. */
+    fun zonePosition(bpm: Int, maxHr: Int): Float = HeartZones.current.value.position(bpm, maxHr)
 
     /** Seconds in each live zone over [samples] (time, bpm, ascending); a gap counts up to [MAX_STEP_S]. */
     fun liveZoneSeconds(samples: List<Pair<Long, Int>>, maxHr: Int): IntArray {

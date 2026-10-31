@@ -3,6 +3,7 @@ package org.openstrap.app
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import kotlinx.coroutines.launch
 import org.openstrap.app.ble.BleScanner
 import org.openstrap.app.data.HealthRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
@@ -44,6 +45,10 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        // Your heart rate zones, kept in use for everything that reads a zone, a restored backup's included.
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
+            container.settings.heartZones.collect { org.openstrap.app.data.HeartZones.use(it) }
+        }
         container.companion.refresh()
         // A workout still recording when the process died carries on (the service restarts it too).
         container.workout.restore()

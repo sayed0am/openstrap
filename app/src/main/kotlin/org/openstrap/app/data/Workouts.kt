@@ -195,11 +195,8 @@ object Workouts {
         return e.takeIf { otherStarts.none { s -> s > w.start && s < e.end } }
     }
 
-    /** Zone 0..4 for 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below 50 %. */
-    fun zoneOf(bpm: Int, maxHr: Int): Int? {
-        val pct = bpm * 100 / maxHr
-        return if (pct < 50) null else ((pct - 50) / 10).coerceAtMost(ZONES - 1)
-    }
+    /** Zone 0..4 in your zones ([HeartZones.current]), by default 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below zone 1. */
+    fun zoneOf(bpm: Int, maxHr: Int): Int? = HeartZones.current.value.zoneOf(bpm, maxHr)
 
     /** HR drop from the end to [after] seconds later, each taken as a 5-second median to ride out noise. */
     private fun recovery(hr: List<WorkoutHeartRate>, end: Long, after: Long): Int? {

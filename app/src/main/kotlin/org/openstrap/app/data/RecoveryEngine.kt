@@ -6,6 +6,7 @@ import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlin.math.roundToInt
 
 /** Everything the Charge screens show for one day. */
 data class RecoveryResult(
@@ -385,14 +386,36 @@ class RecoveryEngine(private val dao: HealthDao) {
         return phone + strap
     }
 
-    private suspend fun maxHeartRate(profile: UserProfile, hrAll: List<Pair<Long, Int>>, strapMax: Int?, from: Long, to: Long, zone: ZoneId): Float {
-        // Each day's highest real heart rate (filtered per-minute HR, and the strap's daily exercise maximum when the
-        // minutes back it up); two separate days have to agree before it raises max HR, so one artefact can't.
+    private suspend fun maxHeartRate(profile: UserProfile, hrAll: List<Pair<Long, Int>>, strapMax: Int?, from: Long, to: Long, zone: ZoneId): Float =
+        Recovery.maxHeartRate(profile.age(), strapMax, Recovery.observedPeak(dailyMaxima(hrAll, from, to, zone).values.toList()), profile.maxHeartRate)
+
+    /**
+     * Each day's highest real heart rate (filtered per-minute HR, and the strap's daily exercise maximum when the
+     * minutes back it up); two separate days have to agree before it raises max HR, so one artefact can't.
+     */
+    private suspend fun dailyMaxima(hrAll: List<Pair<Long, Int>>, from: Long, to: Long, zone: ZoneId): Map<LocalDate, Int> {
         fun dayOf(t: Long) = Instant.ofEpochSecond(t).atZone(zone).toLocalDate()
         val minuteMax = hrAll.groupBy { dayOf(it.first) }.mapValues { (_, m) -> Recovery.filteredMax(m) }
         val strapDaily = dao.dailyMaxHrOnce(from, to).map { dayOf(it.day) to it.bpm }
-        val observedPeak = Recovery.observedPeak(Recovery.dailyMaxima(minuteMax, strapDaily))
-        return Recovery.maxHeartRate(profile.age(), strapMax, observedPeak, profile.maxHeartRate)
+        return Recovery.dailyMaximaByDay(minuteMax, strapDaily)
+    }
+
+    /**
+     * Max HR as [maxHeartRate] works it out, with where it comes from and, when your workouts raised it, the day
+     * they did: for the Heart rate zones page.
+     */
+    suspend fun maxHeartRateExplained(profile: UserProfile, date: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): MaxHeartRate {
+        val to = DayWindow.of(date, zone).to
+        val loadFrom = DayWindow.of(date.minusDays(LOAD_DAYS.toLong()), zone).from
+        val paiFrom = DayWindow.of(date.minusDays(Recovery.BASELINE_NIGHTS.toLong() + 1), zone).from
+        val strapMax = dao.paiOnce(paiFrom, to).lastOrNull()?.maxHeartRate
+        val tested = profile.maxHeartRate?.takeIf { it in 120..230 }
+        if (tested != null) return MaxHeartRate(tested, MaxHeartRate.Source.Set)
+        val maxima = dailyMaxima(minuteHeartRate(loadFrom, to), loadFrom, to, zone)
+        val peak = Recovery.observedPeak(maxima.values.toList())
+        val bpm = Recovery.maxHeartRate(profile.age(), strapMax, peak).roundToInt()
+        val source = Recovery.maxHeartRateSource(profile.age(), strapMax, peak)
+        return MaxHeartRate(bpm, source, Recovery.observedPeakDay(maxima).takeIf { source == MaxHeartRate.Source.Learned })
     }
 
     private fun night(

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.RecoveryEngine
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
@@ -71,30 +72,34 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
      * Zones fall back to the app's one max-HR rule (tested value, Tanaka, strap, raised by observed peaks) when a
      * workout has no sport effect of its own. Shared, so the 90-day read behind it runs once per profile change.
      */
-    private val fallbackMaxHr: Flow<Int> = profile
+    private val learnedMaxHr: Flow<Int> = profile
         .mapLatest { p -> RecoveryEngine(dao).maxHeartRate(p).roundToInt() }
         .flowOn(Dispatchers.Default)
         .stateIn<Int?>(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
         .filterNotNull()
+
+    /** [learnedMaxHr], and again whenever your zones move ([HeartZones.current]), so what reads zones reads them afresh. */
+    private val fallbackMaxHr: Flow<Int> = combine(learnedMaxHr, HeartZones.current) { maxHr, _ -> maxHr }
 
     private val zoneCache = ZoneCache<Pair<Boolean, Long>>()
 
     /**
      * Each listed workout's zone seconds, by (from the phone, start), worked out from its whole HR stream as its page
      * does, so the list and the page agree. Off the main thread, and only for workouts whose row, effect, max HR or
-     * stream changed ([ZoneCache]); empty at first, so the list shows before its zones fill in.
+     * stream, or your zones, changed ([ZoneCache]); empty at first, so the list shows before its zones fill in.
      */
     private val listZones: Flow<Map<Pair<Boolean, Long>, List<Int>>> =
         combine(
             dao.workouts(), dao.sportEffects(), dao.workoutHeartRateMarks(),
-            combine(dao.appWorkouts(), dao.appWorkoutHeartRateMarks()) { phone, marks -> phone to marks }, fallbackMaxHr,
-        ) { ws, effects, marks, (phone, phoneMarks), maxHr ->
+            combine(dao.appWorkouts(), dao.appWorkoutHeartRateMarks()) { phone, marks -> phone to marks },
+            combine(learnedMaxHr, HeartZones.current, ::Pair),
+        ) { ws, effects, marks, (phone, phoneMarks), (maxHr, zones) ->
             val strapMark = marks.associateBy { it.workoutStart }
             val phoneMark = phoneMarks.associateBy { it.workoutStart }
             val strapByStart = ws.associateBy { it.start }
             val phoneByStart = phone.associateBy { it.start }
-            val stamps = ws.associate { w -> (false to w.start) to listOf(w, Workouts.effectOf(w, effects), maxHr, strapMark[w.start]) } +
-                phone.associate { w -> (true to w.start) to listOf(w, maxHr, phoneMark[w.start]) }
+            val stamps = ws.associate { w -> (false to w.start) to listOf(w, Workouts.effectOf(w, effects), maxHr, zones, strapMark[w.start]) } +
+                phone.associate { w -> (true to w.start) to listOf(w, maxHr, zones, phoneMark[w.start]) }
             val work: suspend (Pair<Boolean, Long>) -> List<Int> = { (fromPhone, start) ->
                 if (fromPhone) WorkoutRecorder.analyse(phoneByStart.getValue(start), dao.appWorkoutHeartRateOnce(start), maxHr).zoneSeconds
                 else Workouts.analyse(strapByStart.getValue(start), dao.workoutHeartRateOnce(start), effects, maxHr).zoneSeconds
@@ -125,7 +130,7 @@ class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<Us
         dao.sportEffects().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The max heart rate zones are shares of, once worked out. */
-    val maxHeartRate: StateFlow<Int?> = fallbackMaxHr.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    val maxHeartRate: StateFlow<Int?> = learnedMaxHr.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** A day's heart rate a minute at a time, for adding a workout after the fact. */
     suspend fun dayMinuteHeartRate(date: java.time.LocalDate): List<Pair<Long, Int>> = kotlinx.coroutines.withContext(Dispatchers.Default) {

@@ -108,9 +108,11 @@ fun workoutColor(r: WorkoutState.Recording, liveHeartRate: Int?, connected: Bool
 internal fun workoutClock(seconds: Long): String =
     if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
 
-internal fun zoneRange(zone: Int, maxHr: Int) =
-    if (zone == 0) "under ${60 * maxHr / 100} bpm"
-    else "${(50 + zone * 10) * maxHr / 100} to ${if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+/** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
+internal fun zoneRange(zone: Int, maxHr: Int): String {
+    val zones = org.openstrap.app.data.HeartZones.current.value
+    return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
+}
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
