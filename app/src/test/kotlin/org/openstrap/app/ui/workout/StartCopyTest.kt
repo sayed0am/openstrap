@@ -263,4 +263,11 @@ class StartCopyTest {
         assertEquals(185, HeartZonesCopy.parseMax("185"))
         assertEquals(null, HeartZonesCopy.parseMax("100"))
     }
+
+    @Test
+    fun theRouteSwitchIsNamedForTheSport() {
+        assertEquals("Save a map of my run", StartCopy.keepRoute(1))
+        assertEquals("Save a map of my walk", StartCopy.keepRoute(3))
+        assertEquals("Save a map of my ride", StartCopy.keepRoute(4))
+    }
 }

@@ -244,7 +244,7 @@ object Workouts {
      * Sports kept for naming workouts already recorded (by the strap, Zepp or an import) but not offered for new ones:
      * each is another one under a second name, or the strap's own generic "Activity".
      */
-    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223)
+    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223, 215)
 
     /**
      * A sport offered once with an outdoor and an indoor kind (spec 6.3): Ready's switch picks one, and the workout is

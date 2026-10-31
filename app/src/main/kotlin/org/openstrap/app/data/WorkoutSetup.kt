@@ -19,7 +19,8 @@ data class SportSettings(
      * on wherever it's offered ([WorkoutSetup.plan]). Kept so older lines still read.
      */
     val gps: Boolean = true,
-    val keepRoute: Boolean = false,
+    /** Saving the GPS route for the map: on unless turned off. */
+    val keepRoute: Boolean = true,
     /** Strength: how rest ends ([Strength.Rest.code]) and the sets planned, null for open. */
     val rest: String? = null,
     val sets: Int? = null,
@@ -32,7 +33,8 @@ data class SportSettings(
         goal?.let { "g=$it" },
         "a=${bit(askToEnd)}",
         "p=${bit(gps)}",
-        "k=${bit(keepRoute)}",
+        // "m", not the old "k": every saved line had k=0 from when the route was off unless turned on, so those read as on now.
+        "m=${bit(keepRoute)}",
         rest?.let { "r=$it" },
         sets?.let { "s=$it" },
         "l=${bit(log)}",
@@ -55,7 +57,7 @@ data class SportSettings(
                 goal = fields["g"]?.takeIf { WorkoutTarget.parse(it) != null },
                 askToEnd = flag("a", d.askToEnd),
                 gps = flag("p", d.gps),
-                keepRoute = flag("k", d.keepRoute),
+                keepRoute = flag("m", d.keepRoute),
                 rest = fields["r"]?.takeIf { Strength.Rest.parse(it) != null },
                 sets = fields["s"]?.toIntOrNull()?.takeIf { it in Strength.SETS },
                 log = flag("l", d.log),

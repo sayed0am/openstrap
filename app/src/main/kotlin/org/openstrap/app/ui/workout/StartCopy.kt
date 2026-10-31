@@ -458,6 +458,16 @@ object StartCopy {
     /** Ready's switch rows, under the where row. */
     const val ASK_TO_END = "Ask to end when I stop"
     const val ASK_TO_END_NOTE = "The strap buzzes after 8 min still"
-    const val KEEP_ROUTE = "Keep the route"
+    /** The route switch, named for what it gives you: "Save a map of my run", "...of my walk", "...of my ride". */
+    fun keepRoute(type: Int): String {
+        val name = Workouts.shortName(type).lowercase()
+        val noun = when {
+            "cycl" in name || "bik" in name -> "ride"
+            name == "skiing" -> "ski"
+            name == "rucking" -> "ruck"
+            else -> name
+        }
+        return "Save a map of my $noun"
+    }
     const val TURN_ON_LOCATION = "Turn on location"
 }

@@ -134,7 +134,7 @@ private val HeartBase = Color(0xFF0A0A0B)
  * Where you are and the switch rows, on one quiet panel. For a sport with an indoor side ([sides]), its title is the
  * side you're on: outside with a green pin and the GPS line, or indoors with its amber icon and what you get without
  * GPS; its pill names the other side and switches to it ([onSwitch]). An outdoor sport whose location is off says so,
- * with Turn on location. Then Ask to end when I stop, and Keep the route where GPS is used ([keepRoute] not null).
+ * with Turn on location. Then Ask to end when I stop, and Save a map of my run where GPS is used ([keepRoute] not null).
  */
 @Composable
 internal fun ReadyWhere(
@@ -171,7 +171,7 @@ internal fun ReadyWhere(
             PageButton(StartCopy.TURN_ON_LOCATION, onTurnOnLocation, Modifier.fillMaxWidth().padding(bottom = 14.dp), icon = SportIconsLocation)
         }
         PageSwitchRow(StartCopy.ASK_TO_END, StartCopy.ASK_TO_END_NOTE, askToEnd, onAskToEnd, divider = rows > 0)
-        if (keepRoute != null) PageSwitchRow(StartCopy.KEEP_ROUTE, WorkoutCopy.routeNote(keepRoute), keepRoute, onKeepRoute)
+        if (keepRoute != null) PageSwitchRow(StartCopy.keepRoute(type), WorkoutCopy.routeNote(keepRoute), keepRoute, onKeepRoute)
     }
 }
 

@@ -66,7 +66,7 @@ object WorkoutCopy {
     const val LOCATION_OFF = "Location is off"
     const val LOCATION_OFF_NOTE = "Turn it on for distance and the map, or start without it."
 
-    /** Under Keep the route. */
+    /** Under Save a map of my run. */
     fun routeNote(on: Boolean): String = if (on) "On. Saved on this phone for the map." else "Off. Only the totals are kept."
 
     /** Start, naming the sport: "Start run", "Start HIIT", and "Start workout" for Other. */

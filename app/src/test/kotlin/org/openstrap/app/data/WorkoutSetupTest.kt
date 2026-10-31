@@ -50,6 +50,14 @@ class WorkoutSetupTest {
     }
 
     @Test
+    fun theRouteIsKeptUnlessTurnedOff() {
+        assertTrue(SportSettings().keepRoute)
+        // Lines saved before the map was on by default carry k=0, which no longer counts.
+        assertTrue(SportSettings.parse("a=1|p=1|k=0|l=0").keepRoute)
+        assertFalse(SportSettings.parse(SportSettings(keepRoute = false).encode()).keepRoute)
+    }
+
+    @Test
     fun unreadableSettingsFallBackToTheDefaults() {
         assertEquals(SportSettings(), SportSettings.parse(null))
         assertEquals(SportSettings(), SportSettings.parse("nonsense|g=x:1|s=99|r=bad|a=maybe"))
