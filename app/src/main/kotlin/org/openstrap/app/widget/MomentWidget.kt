@@ -177,8 +177,8 @@ internal fun openToday(context: Context): Intent =
 /* Layout                                                                                            */
 /* ------------------------------------------------------------------------------------------------ */
 
-/** The moment's name: Sans 500 at 60% (spec 3.1). */
-private val NameStyle = WidgetType.secondary.copy(color = ColorProvider(Color.White.copy(alpha = 0.60f)), fontWeight = FontWeight.Medium)
+/** The moment's name: every widget's title (spec 3.1). */
+private val NameStyle = WidgetType.title
 
 /** The sport's name while recording: Body 500 on the Small, the hero's light type on the Wide and Large. */
 private val SportStyle = WidgetType.body.copy(fontWeight = FontWeight.Medium)

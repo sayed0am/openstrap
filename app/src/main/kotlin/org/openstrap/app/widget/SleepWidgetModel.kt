@@ -267,11 +267,7 @@ object SleepLayout {
         val top: TopRow = TopRow(null, false, 0f), val spread: Spread = Spread(0f, 0),
     )
 
-    /** The Small's dots: the mockup's 3 dp (spec 3), growing to 7 on a tall cell before the gaps do. */
-    val SMALL_DOTS = listOf(3f, 3.6f, 4.5f, 5f, 5.5f, 6f, 6.5f, 7f)
 
-    /** The Wide's dots on a tall cell, from 3.6. */
-    val WIDE_GROWTH = listOf(4.5f, 5f, 5.5f, 6f)
 
     /**
      * The Small in [width] by [height]: the title and the score with its word always (the dots smaller for a long
@@ -300,10 +296,9 @@ object SleepLayout {
             listOfNotNull(note, asleep) to hasBar, listOfNotNull(note) to hasBar, listOfNotNull(note) to false, emptyList<SmallLine>() to false,
         )
         val base = tries.map { (lines, bar) -> at(row, lines, bar) }.firstOrNull { fits(it, height) } ?: return at(row, emptyList(), false)
-        // A tall cell grows the dots, never at the cost of the word.
-        val ladder = SMALL_DOTS.map { at(smallRow(m, width, fontScale, it), base.lines, base.bar) }.filter { it.row.word == base.row.word }
-        val fitting = (listOf(base) + ladder.filter { it.row.dot > base.row.dot }).distinct().filter { fits(it, height) }
-        return fitting.firstOrNull { it.spread.gap(height) <= Spread.TARGET_GAP_DP } ?: fitting.last()
+        // The number at the size every widget's takes here, never at the cost of the word.
+        return WidgetHero.ladder(WidgetSizes.Small, height).map { at(smallRow(m, width, fontScale, it), base.lines, base.bar) }
+            .firstOrNull { it.row.word == base.row.word && it.row.dot >= base.row.dot && fits(it, height) } ?: base
     }
 
     /** The Small's height as laid out with the least gaps, for the tests. */
@@ -352,12 +347,14 @@ object SleepLayout {
             val stages = if (bar) BAR_DP + (if (legend > 0) BAR_GAP_DP + legendHeight(legend, fontScale) else 0f) else null
             return Wide(top.note, row, bar, legend, top, Spread.of(top.height, row.height(fontScale), stages))
         }
-        val base = at(scoreRow(m, m.asleep, width, fontScale))
-        // A tall cell grows the dots, never at the cost of the word, what's on the right or the legend.
-        val grown = WIDE_GROWTH.map { at(scoreRow(m, m.asleep, width, fontScale, it)) }
-            .filter { it.row.word == base.row.word && it.row.right == base.row.right && it.legendRows == base.legendRows && it.row.dot > base.row.dot }
-        val fitting = (listOf(base) + grown).filter { wideHeight(it, fontScale) <= height + 0.01f }
-        return fitting.firstOrNull { it.spread.gap(height) <= Spread.TARGET_GAP_DP } ?: fitting.lastOrNull() ?: base
+        val base = at(scoreRow(m, m.asleep, width, fontScale, minOf(WIDE_DOT, WidgetHero.dot(WidgetSizes.Wide, height))))
+        // The number at the size every widget's takes here, never at the cost of the word, what's on the right or
+        // the legend.
+        return WidgetHero.ladder(WidgetSizes.Wide, height).map { at(scoreRow(m, m.asleep, width, fontScale, it)) }
+            .firstOrNull {
+                it.row.word == base.row.word && it.row.right == base.row.right && it.legendRows == base.legendRows &&
+                    it.row.dot >= base.row.dot && wideHeight(it, fontScale) <= height + 0.01f
+            } ?: base
     }
 
     /** The Wide's height as laid out with the least gaps, for the tests. */
@@ -385,17 +382,20 @@ object SleepLayout {
      */
     fun large(m: SleepWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Large {
         val top = TopRow.of(m.title, m.note, status, width, fontScale, withWords = true)
-        val row = scoreRow(m, m.largeRight, width, fontScale)
         val bar = m.totals.isNotEmpty()
         val lines = m.sentence?.let { WidgetText.lines(it, WidgetText.HERO_SP, width, fontScale) }?.takeIf { it <= SENTENCE_LINES } ?: 0
         val rowsFit = bar && width - STAGE_NAME_DP - STAGE_TIME_DP - 2 * STAGE_GAP_DP >= MIN_STAGE_TRACK_DP
         // Stage rows with the sentence, without it, then the bar with and without it.
         val tries = listOf(rowsFit to lines, rowsFit to 0, false to lines, false to 0).distinct()
-        for ((stages, sentence) in tries) {
+        // The number at the size every widget's takes here, then smaller before anything else goes.
+        val base = scoreRow(m, m.largeRight, width, fontScale)
+        val rows = WidgetHero.ladder(WidgetSizes.Large, height).map { scoreRow(m, m.largeRight, width, fontScale, it) }
+            .filter { it.word == base.word && it.right == base.right } + base
+        for ((stages, sentence) in tries) for (row in rows) {
             val l = Large(top.note, sentence, row, stages, bar, top)
             if (largeHeight(l, m.stages.size, fontScale) <= height) return l
         }
-        return Large(top.note, 0, row, false, bar, top)
+        return Large(top.note, 0, base, false, bar, top)
     }
 
     /** Everything on the Large with the least gaps between its blocks, [stageCount] rows when it shows them. */

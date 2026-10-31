@@ -3,3 +3,8 @@
 # the launcher's loading placeholder ("Could not create Input Merger" in logcat), in release builds only.
 -keep class * extends androidx.work.InputMerger { public <init>(); }
 -keep class * extends androidx.work.ListenableWorker { public <init>(android.content.Context, androidx.work.WorkerParameters); }
+
+# Glance finds a widget's placed instances by its class name (GlanceAppWidgetManager.getGlanceIds). R8 merged the
+# five widgets, which share LoadingWidget, into one class, so every widget answered to every kind's updateAll and
+# showed whichever updated last: Steps, which updates most. Each widget stays a class of its own.
+-keep class * extends androidx.glance.appwidget.GlanceAppWidget { <init>(); }
