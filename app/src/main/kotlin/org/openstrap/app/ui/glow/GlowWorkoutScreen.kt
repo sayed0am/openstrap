@@ -89,6 +89,14 @@ fun GlowWorkoutDetailScreen(
     onOpenDay: (() -> Unit)? = null,
 ) {
     BackHandler(onBack = onBack)
+    // A workout recorded on the phone opens as its summary did, per kind (workouts spec 2.8), with a back arrow.
+    if (a?.fromPhone == true && summary != null) {
+        PastSummary(
+            summary, workouts, contentPadding, onBack, onDelete, onTrim, onUndoTrim, dayActiveKcal, onOpenDay,
+            foundTag = !a.startedByYou,
+        )
+        return
+    }
     val shown = if (a?.fromPhone == true) summary?.analysis else a
     val phone = summary?.takeIf { a?.fromPhone == true }
     val list = rememberLazyListState()
@@ -157,6 +165,83 @@ fun GlowWorkoutDetailScreen(
         }
     }
     if (info && shown != null) EffectInfo(shown, usual, phone?.strapWorkouts.orEmpty(), phone?.effectFromStrap == true, onDismiss = { info = false })
+}
+
+/**
+ * A past phone workout (workouts spec 2.8, past): the summary's hero and the kind's own section, then everything this
+ * page always had: the heart rate line with the drop after the end, the facts and the map, In your day, Load with its
+ * (i), the zones and splits where the kind's section doesn't show them, Trim and Delete. No Done and nothing earned:
+ * that was said when it ended.
+ */
+@Composable
+private fun PastSummary(
+    summary: PhoneSummary,
+    workouts: List<WorkoutAnalysis>,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    onDelete: () -> Unit,
+    onTrim: (from: Long, to: Long) -> Unit,
+    onUndoTrim: () -> Unit,
+    dayActiveKcal: Float?,
+    onOpenDay: (() -> Unit)?,
+    foundTag: Boolean,
+) {
+    val a = summary.analysis
+    val w = a.workout
+    val list = rememberLazyListState()
+    var info by remember { mutableStateOf(false) }
+    val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
+    val usual = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
+    val family = org.openstrap.app.ui.workout.FamilySummary.familyOf(w.sportType, summary.structure)
+    val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+    CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
+        ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
+            item {
+                PageHeader(
+                    a.sportName, onBack, subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${clockAt(a.shownStart)} to ${clockAt(a.end)}",
+                    trailing = if (foundTag) ({ FoundTag() }) else null,
+                )
+            }
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
+                    // The page's sentence ("An easy 40 min walk") where the kind has none of its own.
+                    val hero = summaryHero(family, summary, usual).let { h ->
+                        if (h.sentence != null) h
+                        else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
+                    }
+                    SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual), 0f)
+                    FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
+                    if (a.heartRate.isNotEmpty() || w.averageHeartRate != null) HeartRateCard(a)
+                    val facts = WorkoutDetailCopy.facts(
+                        a.distanceMeters, a.distanceFromSteps, (a.durationSeconds - a.activeSeconds).coerceAtLeast(0), w.steps, w.calories,
+                        activeKcal = Workouts.activeKcal(a, null),
+                    ) + listOfNotNull(WorkoutDetailCopy.targetFact(a.target, a.targetReachedSeconds, a.activeKcal?.roundToInt()))
+                    // The map is in the route card for a run; any other kind with a kept route has it here.
+                    val map = family != Workouts.Family.Distance && summary.route.size >= 2
+                    if (facts.isNotEmpty() || map) FactsList(facts, summary.takeIf { map })
+                    val inDay = Workouts.activeKcal(a, null)?.let { k ->
+                        val date = Instant.ofEpochSecond(a.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()
+                        CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, LocalDate.now()), true)
+                    }
+                    if (inDay != null) InYourDayCard(inDay, onOpenDay)
+                    val drop = WorkoutDetailCopy.dropLine(a.recovery60, a.recoveryIsMeaningful, null)
+                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, best = null, drop = drop, onInfo = { info = true })
+                    // Zones and splits for the kinds whose section doesn't already show them.
+                    val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
+                    if (zonesShown) ZonesList(zones, a.maxHeartRate)
+                    if (family != Workouts.Family.Distance && family != Workouts.Family.Strength) {
+                        CompositionLocalProvider(LocalEdgeOverride provides if (zonesShown) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
+                            SplitsList(summary, liveRoute = emptyList())
+                        }
+                    }
+                    TrimSection(summary, onTrim, onUndoTrim)
+                    SummaryActions(justEnded = false, onDone = onBack, onDelete = onDelete)
+                }
+            }
+        }
+    }
+    if (info) EffectInfo(a, usual, summary.strapWorkouts, summary.effectFromStrap, onDismiss = { info = false })
 }
 
 /**

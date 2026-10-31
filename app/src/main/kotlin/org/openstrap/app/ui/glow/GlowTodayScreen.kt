@@ -82,6 +82,16 @@ import org.openstrap.app.ui.dashboard.pairSentence
 import org.openstrap.app.ui.dashboard.wakingLead
 import org.openstrap.app.ui.dashboard.todayCards
 import org.openstrap.app.ui.theme.MetricColors
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.background
 
 /*
  * Today (spec 4): one hero whose content follows the moment, then a stable set of cards for it ([todayCards]), with
@@ -149,7 +159,8 @@ fun GlowTodayScreen(
     /** A workout recording now: the hero during a workout leads back to it ([WorkoutShortcut]). */
     running: org.openstrap.app.device.WorkoutState.Recording? = null,
     onOpenRunning: () -> Unit = {},
-    onResumeRunning: () -> Unit = {},
+    /** The live workout's glance and what its hero does (workouts spec 2.10). */
+    liveHero: LiveHeroHooks = LiveHeroHooks(),
     /** Where the hero's light comes from for the moment ([org.openstrap.app.ui.dashboard.heroLightAngle]); null keeps its own. */
     heroLightAngle: Float? = null,
     strap: TodayStrap = TodayStrap(),
@@ -241,7 +252,7 @@ fun GlowTodayScreen(
                                     when (slot.card) {
                                         TodayCard.Hero -> Hero(
                                             ctx, strap, pairing, heroLightAngle, usualBedtime,
-                                            running, onOpenRunning, onResumeRunning, onStartSport, onOtherSport, onPair, onSyncNow,
+                                            running, onOpenRunning, liveHero, onStartSport, onOtherSport, onPair, onSyncNow,
                                             onOpenRecovery, onOpenWorkout, onRetryRecovery,
                                             onOpenScore = { onOpen(org.openstrap.app.ui.dashboard.Detail.OfScore(it)) },
                                             energyHidden = slots.none { it.card == TodayCard.Charge },
@@ -368,7 +379,7 @@ private class TodayContext(
 @Composable
 private fun Hero(
     ctx: TodayContext, strap: TodayStrap, pairing: PairStep?, lightAngle: Float?, bedtime: LocalTime?,
-    running: org.openstrap.app.device.WorkoutState.Recording?, onOpenRunning: () -> Unit, onResumeRunning: () -> Unit,
+    running: org.openstrap.app.device.WorkoutState.Recording?, onOpenRunning: () -> Unit, liveHero: LiveHeroHooks,
     onStartSport: (Int) -> Unit, onOtherSport: () -> Unit, onPair: () -> Unit, onSyncNow: () -> Unit,
     onOpenRecovery: () -> Unit, onOpenWorkout: (Long) -> Unit, onRetryRecovery: () -> Unit,
     /**
@@ -415,7 +426,7 @@ private fun Hero(
             HeroKind.Window -> WindowHero(ctx, lightAngle, onStartSport, onOtherSport, m)
             HeroKind.After -> AfterHero(ctx, lightAngle, onOpenWorkout, m)
             HeroKind.Evening -> EveningHero(ctx, lightAngle, bedtime, energyHidden, onOpenRecovery, m)
-            HeroKind.During -> (running ?: lastRunning.value)?.let { DuringHero(ctx, it, onOpenRunning, onResumeRunning, m) }
+            HeroKind.During -> (running ?: lastRunning.value)?.let { DuringHero(it, onOpenRunning, liveHero, m) }
         }
     }
 }
@@ -456,7 +467,7 @@ private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit
                 "Recovery", trailing = score?.let { org.openstrap.app.ui.dashboard.TabCopy.vsYesterday(it, before) },
                 tag = if (ctx.firstScore && score != null) TitleTag(FIRST_SCORE) else null,
             )
-            if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday))
+            if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday, deleted = ctx.state.deletedSleep != null))
             // A hero leaves out a figure it doesn't have rather than show a lone dash; the sentence says why.
             if (shown.value == null && atWake == null) return@Column
             Spacer(Modifier.height(24.dp))
@@ -507,7 +518,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
             HeroSentence(
                 when {
                     failed -> CHARGE_FAILED
-                    noSleep -> TodayCopy.NO_SLEEP
+                    noSleep -> if (ctx.state.deletedSleep != null) TodayCopy.deletedNight(ctx.isToday) else TodayCopy.NO_SLEEP
                     else -> TodayCopy.charge(now, c?.let { org.openstrap.app.ui.dashboard.TabCopy.drainedAmount(it.drainedExercise + it.drainedStress + it.drainedLiving).toInt() }, c?.anchored == true, LocalTime.now().hour)
                 },
             )
@@ -634,23 +645,46 @@ private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTim
 }
 
 /**
- * During a workout: the live heart rate, number first, and the way back to the live screen. Lit from below in the
- * current zone's colour, pulsing at the real bpm (spec 4.2).
+ * What the During hero needs from the workout (workouts spec 2.10): its [glance], read only here so Today doesn't
+ * recompose every second, what its buttons do ([onAction]), and whether it's on screen ([onShown]), so the floating
+ * bar can stay away while it is.
+ */
+class LiveHeroHooks(
+    val glance: () -> org.openstrap.app.ui.workout.LiveGlance? = { null },
+    val onAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = {},
+    val onShown: (Boolean) -> Unit = {},
+)
+
+/**
+ * During a workout: the workout at a glance ([LiveHero]), and under it, for a GPS workout, the last kilometre on a
+ * quiet strip, so the two never look alike. Says when it's on screen, for the floating bar.
  */
 @Composable
-private fun DuringHero(
-    ctx: TodayContext, r: org.openstrap.app.device.WorkoutState.Recording, onOpen: () -> Unit, onResume: () -> Unit, modifier: Modifier,
-) {
-    val live = ctx.live
-    val zone = live?.let { zoneColor(it, r.maxHeartRate) } ?: MetricColors.heart
-    val style = heroStyle(zone, LightAngle.Below).let { if (live != null) it.copy(motion = GlowMotion.Heartbeat(live)) else it }
-    GlowCard(style, modifier, onClick = onOpen) {
-        Column {
-            GlowHeader(Workouts.sportName(r.workout.sportType))
-            Spacer(Modifier.height(18.dp))
-            HeroFigure(live?.toString(), if (live != null) "bpm, live" else "Waiting for heart rate", big = true)
-            Spacer(Modifier.height(28.dp))
-            WorkoutShortcut(r, live, onOpen, onResume)
+private fun DuringHero(r: org.openstrap.app.device.WorkoutState.Recording, onOpen: () -> Unit, hooks: LiveHeroHooks, modifier: Modifier) {
+    val glance = hooks.glance() ?: return
+    val onShown by rememberUpdatedState(hooks.onShown)
+    DisposableEffect(Unit) { onDispose { onShown(false) } }
+    Column(
+        Modifier.onGloballyPositioned { c ->
+            // On screen while any of it is inside the window's height.
+            val b = c.boundsInWindow()
+            onShown(b.height > 0f && b.bottom > 0f)
+        },
+        verticalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap),
+    ) {
+        LiveHero(glance, r.workout.sportType, glance.clock, onOpen, hooks.onAction, modifier)
+        glance.split?.let { (title, line) ->
+            Row(
+                Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(Color(0xFF0F0F11)).padding(horizontal = 18.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Canvas(Modifier.size(8.dp)) { drawCircle(TrendGood) }
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text(title, color = Color.White, style = GlowType.body)
+                    line?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary) }
+                }
+            }
         }
     }
 }

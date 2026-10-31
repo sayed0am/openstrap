@@ -46,7 +46,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 
 /**
- * Steps, calories, sleep and active hours to aim for each day, in a sheet over the You page (spec 3.4, calories spec
+ * Steps, calories, sleep and active hours to aim for each day, and workouts a week, in a sheet over the You page (spec 3.4, calories spec
  * 4.6). Every goal ring and "goal met" uses these, and the calorie goal goes to the strap. [suggestedCalories] is the
  * calorie goal your last four weeks suggest ([CalorieGoal.suggested]), null while it loads or under a week of full days. Cancel, or pulling the
  * sheet down, leaves them as they were.
@@ -58,13 +58,14 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
     var sleepH by rememberSaveable { mutableStateOf((goals.sleepMinutes / 60).toString()) }
     var sleepM by rememberSaveable { mutableStateOf((goals.sleepMinutes % 60).toString()) }
     var active by rememberSaveable { mutableStateOf(goals.activeHours.toString()) }
+    var workouts by rememberSaveable { mutableIntStateOf(goals.workoutsPerWeek) }
 
     val stepsValue = steps.toIntOrNull()?.takeIf { it in Goals.STEPS }
     val sleepValue = sleepH.toIntOrNull()?.let { h -> sleepM.ifEmpty { "0" }.toIntOrNull()?.takeIf { it in 0..59 }?.let { h * 60 + it } }
         ?.takeIf { it in Goals.SLEEP_MINUTES }
     val activeValue = active.toIntOrNull()?.takeIf { it in Goals.ACTIVE_HOURS }
 
-    PageSheet(onDismiss, "Your goals", note = "What you aim for each day. Change them whenever they stop fitting.") {
+    PageSheet(onDismiss, "Your goals", note = "What you aim for each day and week. Change them whenever they stop fitting.") {
         NumberField(steps, { steps = it }, "Steps", "steps", stepsValue == null)
         CalorieGoalField(calories, { calories = it }, suggestedCalories)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -76,13 +77,30 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
         }
         NumberField(active, { active = it.take(2) }, "Active hours", "of 24", activeValue == null)
         PageNote("An active hour is one with at least 250 steps.")
+        WorkoutGoalField(workouts) { workouts = it }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PageButton("Cancel", onDismiss, Modifier.weight(1f))
             PageButton(
-                "Save", { onSave(Goals(stepsValue!!, sleepValue!!, activeValue!!, calories)) }, Modifier.weight(1f),
+                "Save", { onSave(goals.copy(steps = stepsValue!!, sleepMinutes = sleepValue!!, activeHours = activeValue!!, calories = calories, workoutsPerWeek = workouts)) }, Modifier.weight(1f),
                 enabled = stepsValue != null && sleepValue != null && activeValue != null, primary = true,
             )
         }
+    }
+}
+
+/** Workouts a week, between minus and plus (workouts spec 3.1). */
+@Composable
+internal fun WorkoutGoalField(value: Int, onChange: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            RoundButton(AppIcons.Minus, "Fewer workouts a week", { onChange((value - 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp)
+            Box(Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface), contentAlignment = Alignment.Center) {
+                Text("$value a week", color = Color.White, style = GlowType.body, maxLines = 1)
+            }
+            RoundButton(AppIcons.Plus, "More workouts a week", { onChange((value + 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp)
+        }
+        PageNote("Workouts of 10 minutes or more count, two a day at most.")
     }
 }
 

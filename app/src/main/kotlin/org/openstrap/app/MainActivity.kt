@@ -88,6 +88,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import org.openstrap.app.ui.theme.OpenStrapTheme
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.GlowWorkoutSummaryScreen
+import org.openstrap.app.ui.workout.summary
+import org.openstrap.app.ui.workout.view
 
 class MainActivity : ComponentActivity() {
     /** The latest `open_metric` link, until the app root has opened it. */
@@ -162,6 +164,10 @@ class MainActivity : ComponentActivity() {
             intent.removeExtra(EXTRA_OPEN_STRAP)
             strapRequests.value = true
         }
+        if (intent.getBooleanExtra(EXTRA_OPEN_RECAP, false)) {
+            intent.removeExtra(EXTRA_OPEN_RECAP)
+            (application as OpenStrapApp).container.rewards.openRecap.value = true
+        }
         if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
             intent.removeExtra(EXTRA_OPEN_UPDATES)
             (application as OpenStrapApp).container.updater.openRequest.value = true
@@ -214,6 +220,9 @@ class MainActivity : ComponentActivity() {
 
         /** True opens the Strap page over the tab showing: a widget's status line while the strap isn't paired or is low. */
         const val EXTRA_OPEN_STRAP = "open_strap"
+
+        /** True opens last week's recap over the tab showing: the weekly recap notification's tap. */
+        const val EXTRA_OPEN_RECAP = "open_recap"
 
         /** True opens the Updates page over the tab showing: an update notification's tap. */
         const val EXTRA_OPEN_UPDATES = "open_updates"
@@ -373,7 +382,8 @@ private enum class Page(
     /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
     val row: String? = null,
 ) {
-    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), Updates("Updates"), Diagnostics("Diagnostics"),
+    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), DeletedSleep("Deleted sleep"), Updates("Updates"), Diagnostics("Diagnostics"),
+    GoalsAndBests("Goals and bests"), AllBadges, WeeklyRecap,
     Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
 }
 
@@ -409,7 +419,7 @@ private fun AppRoot(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile) } })
+    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })
     val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })
 
     // Which tab shows and the one before it, for back; every tab keeps its own stack of details.
@@ -487,6 +497,29 @@ private fun AppRoot(
     // The ready screen's sport while it is open, and whether it opened on the sport list ("All sports").
     var readySport by rememberSaveable { mutableStateOf<Int?>(null) }
     var readyPicking by rememberSaveable { mutableStateOf(false) }
+    // Choose, the first screen of a workout (workouts spec 2.1), open under Ready while it shows.
+    var choosing by rememberSaveable { mutableStateOf(false) }
+    // The rounds Ready opens on when a saved workout was picked on Choose.
+    var readyStructure by rememberSaveable { mutableStateOf<String?>(null) }
+    // The workout at a glance for the Today hero and the floating bar (workouts spec 2.10). Its State is passed down,
+    // not read here, so only those two recompose as it ticks.
+    val liveGlance = remember { org.openstrap.app.ui.workout.liveGlance(container.workout, container.strap.liveHeartRate, container.strap.connection) }
+        .collectAsStateWithLifecycle(null)
+    // The Today hero shows the workout: the floating bar stays away meanwhile.
+    var liveHeroShown by remember { mutableStateOf(false) }
+    val onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = { a ->
+        when (a) {
+            org.openstrap.app.ui.workout.GlanceAction.Pause -> container.workout.pause()
+            org.openstrap.app.ui.workout.GlanceAction.Resume -> container.workout.resume()
+            org.openstrap.app.ui.workout.GlanceAction.KeepGoing -> container.workout.keepGoing()
+            org.openstrap.app.ui.workout.GlanceAction.SetDone -> container.workout.setDone()
+            org.openstrap.app.ui.workout.GlanceAction.StartSet -> container.workout.startSet()
+            org.openstrap.app.ui.workout.GlanceAction.AddRest -> container.workout.let { if ((it.state.value as? org.openstrap.app.device.WorkoutState.Recording)?.strength == true) it.extendRest() else it.addRest() }
+            org.openstrap.app.ui.workout.GlanceAction.Skip -> container.workout.skipPhase()
+            // Ending asks on the live screen, as it does there.
+            org.openstrap.app.ui.workout.GlanceAction.End, org.openstrap.app.ui.workout.GlanceAction.Open -> container.workout.minimized.value = false
+        }
+    }
     val suggestions by workoutsVm.suggestions.collectAsStateWithLifecycle()
     // Hidden while a workout records: the strap's history may show the one under way.
     val suggestion = suggestions.firstOrNull().takeIf { workoutState !is org.openstrap.app.device.WorkoutState.Recording }
@@ -518,13 +551,12 @@ private fun AppRoot(
             container.workout.readyRequest.value = null
         }
     }
-    // The Start widget's All sports: Ready on the sport picker, as the Activity tab's All sports opens it.
+    // The Start widget's All sports: Choose with every sport, as the Activity tab's All sports opens it.
     val readyPickRequest by container.workout.readyPickRequest.collectAsStateWithLifecycle()
     LaunchedEffect(readyPickRequest) {
         if (readyPickRequest) {
             if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) {
-                readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType
-                readyPicking = true
+                choosing = true
             }
             container.workout.readyPickRequest.value = false
         }
@@ -535,7 +567,7 @@ private fun AppRoot(
         if (todayRequest) {
             closePages()
             allMetricsOpen = false
-            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) readySport = null
+            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) { readySport = null; choosing = false }
             todayStack = emptyList()
             dayVm.select(java.time.LocalDate.now())
             nav = nav.select(Tab.Today.ordinal)
@@ -558,6 +590,15 @@ private fun AppRoot(
             allMetricsOpen = false
             if (pages.lastOrNull() != Page.Updates && (pages.isEmpty() || closePages())) pages = listOf(Page.You, Page.Updates)
             container.updater.openRequest.value = false
+        }
+    }
+    // The weekly recap's notification: the recap, over Goals and bests as its button opens it.
+    val recapRequest by container.rewards.openRecap.collectAsStateWithLifecycle()
+    LaunchedEffect(recapRequest) {
+        if (recapRequest) {
+            allMetricsOpen = false
+            if (pages.lastOrNull() != Page.WeeklyRecap && (pages.isEmpty() || closePages())) pages = listOf(Page.You, Page.GoalsAndBests, Page.WeeklyRecap)
+            container.rewards.openRecap.value = false
         }
     }
     // An auto-detected workout's notification: that workout, on the Activity tab, its home.
@@ -634,6 +675,13 @@ private fun AppRoot(
     // Your usual workout time comes from workouts you started, not walks the strap noticed by itself.
     val workoutStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.workout.start } }
     val lastWorkout = remember(workouts) { workouts.maxByOrNull { it.end } }
+    // The weekly goal, bests and badges follow the workouts, worked out again on a new one, a trim or a delete
+    // (workouts spec 4), and on a new goal. The one recording isn't in it until it ends.
+    val recordingStart = (workoutState as? org.openstrap.app.device.WorkoutState.Recording)?.workout?.start
+    val rewardsKey = remember(workouts, recordingStart) { workouts.filter { it.workout.start != recordingStart }.map { Triple(it.workout.start, it.shownStart, it.end) } }
+    LaunchedEffect(rewardsKey, goals.workoutsPerWeek) {
+        runCatching { container.rewards.refresh(workouts.filter { it.workout.start != recordingStart }, goals.workoutsPerWeek) }
+    }
     val recording = workoutState is org.openstrap.app.device.WorkoutState.Recording
     // The moment is the clock's, whichever day is shown: browsing yesterday at night is still night (the mood follows
     // it), and only Today's layout goes back to waking for a past day. Today's wake and usual bedtime are kept from
@@ -833,7 +881,7 @@ private fun AppRoot(
               val recent by container.workout.recent.collectAsStateWithLifecycle()
               val zoneSeconds by container.workout.zoneSeconds.collectAsStateWithLifecycle()
               val kcal by container.workout.kcal.collectAsStateWithLifecycle()
-              org.openstrap.app.ui.glow.GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, realConnection, top, kcal)
+              org.openstrap.app.ui.glow.live.GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, realConnection, top, kcal)
           } else org.openstrap.app.ui.glow.GlowTabletopHeart(
               day, live, liveEnabled.takeIf { realConnection is ConnectionState.Connected }, { container.strap.setLiveHeartRate(it) }, top,
           )
@@ -925,7 +973,7 @@ private fun AppRoot(
                         onOpen = push, onSwitch = { setStack(t, stack.dropLast(1) + it) }, onSelectDay = dayVm::select,
                         contentPadding = padding, onBack = pop,
                         workouts = workouts, paiHistory = paiHistory, onEditProfile = { openPage(Page.Profile) }, energyHistory = energyHistory,
-                        onSetNapTimes = dayVm::setNapTimes,
+                        sleepEditing = org.openstrap.app.ui.glow.SleepEditing(dayVm::setSleepTimes, dayVm::deleteSleep, dayVm::restoreSleep),
                     )
                     Detail.Week -> org.openstrap.app.ui.glow.WeekDetail(
                         org.openstrap.app.ui.glow.ActivityDetailContext(
@@ -963,7 +1011,7 @@ private fun AppRoot(
                         androidx.activity.compose.BackHandler(onBack = pop)
                         org.openstrap.app.ui.glow.GlowSleepScreen(
                             day, header = { org.openstrap.app.ui.glow.PageHeader("Sleep", pop, subtitle = org.openstrap.app.ui.glow.dayName(day.date)) },
-                            contentPadding = padding, onOpen = push, recovery = recovery,
+                            contentPadding = padding, onOpen = push, recovery = recovery, onRestore = dayVm::restoreSleep,
                         )
                     }
                 }
@@ -1016,15 +1064,15 @@ private fun AppRoot(
                                 suggestion = suggestion,
                                 onSaveSuggestion = { savingSuggestion = suggestion },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
-                                // The same way in as Activity's start card: the ready screen for the sport, or its sport list.
+                                // The same way in as Activity's start card: the ready screen for the sport, or Choose with every sport.
                                 onStartSport = { readySport = it; readyPicking = false },
-                                onOtherSport = { readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType; readyPicking = true },
+                                onOtherSport = { choosing = true },
                                 offer = offer,
                                 onRecordOffer = { container.workout.recordOffer() },
                                 onDeclineOffer = { container.workout.declineOffer() },
                                 running = workoutState as? org.openstrap.app.device.WorkoutState.Recording,
                                 onOpenRunning = { container.workout.minimized.value = false },
-                                onResumeRunning = container.workout::resume,
+                                liveHero = org.openstrap.app.ui.glow.LiveHeroHooks({ liveGlance.value }, onGlanceAction, { liveHeroShown = it }),
                                 heroLightAngle = todayMoment?.let { org.openstrap.app.ui.dashboard.heroLightAngle(it) },
                                 strap = org.openstrap.app.ui.glow.TodayStrap(
                                     paired = pairedKnown, pairing = pairing, stopped = syncStopped(pairedKnown, connection, sync), record = strapView.record,
@@ -1051,7 +1099,7 @@ private fun AppRoot(
                             )
                             Tab.Sleep -> org.openstrap.app.ui.glow.GlowSleepScreen(
                                 day, header = { header(Tab.Sleep) }, contentPadding = padding,
-                                onOpen = { sleepStack = listOf(it) },
+                                onOpen = { sleepStack = listOf(it) }, onRestore = dayVm::restoreSleep,
                                 recovery = recovery,
                             )
                             Tab.Activity -> org.openstrap.app.ui.glow.GlowActivityScreen(
@@ -1066,7 +1114,7 @@ private fun AppRoot(
                                 suggestion = suggestion,
                                 onSaveSuggestion = { savingSuggestion = suggestion },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
-                                onAllSports = { readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType; readyPicking = true },
+                                onAllSports = { choosing = true },
                                 onAddWorkout = { addingOn = day.date },
                                 liveHeartRate = live, history = history, wear = wear,
                             )
@@ -1102,16 +1150,20 @@ private fun AppRoot(
                             val backup by deviceVm.backup.collectAsStateWithLifecycle()
                             val updates by container.updater.state.collectAsStateWithLifecycle()
                             val updateWaiting by container.updater.waiting.collectAsStateWithLifecycle()
+                            val deletedSleep by dayVm.deletedSleep.collectAsStateWithLifecycle()
                             // Permissions can be taken back in Health Connect while away: the row says so on return.
                             androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { deviceVm.checkAutoHealthConnect(); onPauseOrDispose { } }
                             org.openstrap.app.ui.device.YouPage(
                                 profile, goals, org.openstrap.app.data.Recovery.sleepNeed(profile.age(), profile.sleepNeedMinutes), log.size, padding,
                                 onProfile = { open(Page.Profile) },
                                 onGoals = { editGoals = true },
+                                onGoalsAndBests = { open(Page.GoalsAndBests) },
                                 healthConnectAuto = hcAuto,
                                 onHealthConnect = { open(Page.HealthConnect) },
                                 backup = backup,
                                 onBackup = { open(Page.Backup) },
+                                deletedSleep = deletedSleep.size,
+                                onDeletedSleep = { open(Page.DeletedSleep) },
                                 updates = updates,
                                 installedVersion = container.updater.installed,
                                 updateWaiting = updateWaiting,
@@ -1185,6 +1237,10 @@ private fun AppRoot(
                                         onBack = { updater.dismissFailure(); onBack() },
                                     )
                                 }
+                                Page.DeletedSleep -> {
+                                    val deleted by dayVm.deletedSleep.collectAsStateWithLifecycle()
+                                    org.openstrap.app.ui.device.DeletedSleepPage(deleted, padding, onRestore = dayVm::restoreSleep, onBack = onBack)
+                                }
                                 else -> Unit
                             }
                         },
@@ -1247,10 +1303,33 @@ private fun AppRoot(
         WorkoutLayer(
             container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, requestBluetooth, requestLocation,
             onReadySport = { readySport = it },
-            onCloseReady = { readySport = null; readyPicking = false },
+            onCloseReady = { readySport = null; readyPicking = false; readyStructure = null },
+            choosing = choosing,
+            onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick; readyStructure = null },
+            readyStructure = readyStructure,
+            onOpenSaved = { sport, structure -> readySport = sport; readyPicking = false; readyStructure = structure },
+            onCloseChoose = { choosing = false },
+            glance = liveGlance, onGlanceAction = onGlanceAction,
+            capsuleHidden = liveHeroShown && tab == Tab.Today.ordinal && todayStack.isEmpty() && pages.isEmpty(),
             capsuleBottom = if (showBar) 104.dp else 16.dp,
             tabletop = hinge != null, bookHinge = bookHinge,
         )
+        // The badges past history earned, once, all on one screen (requests spec 7.2), when no workout is on screen.
+        val historyBadges by container.settings.historyBadgesWaiting.collectAsStateWithLifecycle(false)
+        if (historyBadges && workoutState is org.openstrap.app.device.WorkoutState.Idle && readySport == null && !choosing) {
+            val earned by remember { container.database.healthDao().badges() }.collectAsStateWithLifecycle(emptyList())
+            val weeks by remember { container.database.healthDao().weekResults() }.collectAsStateWithLifecycle(emptyList())
+            if (earned.isNotEmpty()) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+                org.openstrap.app.ui.glow.HistoryBadgesScreen(
+                    earned.mapNotNull { org.openstrap.app.data.Rewards.badge(it.id) }, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
+                    onContinue = { scope.launch { container.settings.historyBadgesShown() } },
+                    face = { b ->
+                        val goal = earned.firstOrNull { it.id == b.id }?.let { org.openstrap.app.data.Rewards.goalAt(it, weeks, container.rewards.firstDay, java.time.ZoneId.systemDefault()) }
+                        org.openstrap.app.ui.workout.RewardsCopy.face(b, goal)
+                    },
+                )
+            }
+        }
         org.openstrap.app.ui.components.GlassOverlay(glassHost, navGlass)
       }
       }
@@ -1335,7 +1414,8 @@ private fun OverPages(
             Page.PhoneAlerts -> org.openstrap.app.ui.alarms.PhoneAlertsScreen(container.phoneAlerts, container.settings, padding, onBack = close)
             Page.Firmware -> FirmwareScreen(firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })
             Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)
-            Page.HealthConnect, Page.Backup, Page.Updates -> dataPage(shown, close)
+            Page.HealthConnect, Page.Backup, Page.DeletedSleep, Page.Updates -> dataPage(shown, close)
+            Page.GoalsAndBests, Page.AllBadges, Page.WeeklyRecap -> RewardsPage(shown, container, padding, open, close)
             Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close)
             Page.Diagnostics -> {
                 val log by container.strap.log.collectAsStateWithLifecycle()
@@ -1353,6 +1433,54 @@ private fun OverPages(
                 detail = { stack -> page(stack.lastOrNull(), null) },
             ) { page(root, pages) }
         } else org.openstrap.app.ui.components.PushContent(pages, depth = { it.size }) { stack -> page(stack.lastOrNull(), null) }
+    }
+}
+
+/**
+ * The Goals and bests page, All badges and the weekly recap (workouts spec 3.5), from what's stored and every workout,
+ * with the weekly goal and celebrations sheets they open.
+ */
+@Composable
+private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, open: (Page) -> Unit, close: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    // The app root's, already made.
+    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile) }
+    })
+    val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+    val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
+    val dao = container.database.healthDao()
+    val bests by remember { dao.personalBests() }.collectAsStateWithLifecycle(emptyList())
+    val earned by remember { dao.badges() }.collectAsStateWithLifecycle(emptyList())
+    val view by produceState<org.openstrap.app.ui.workout.RewardsView?>(null, workouts, goals.workoutsPerWeek, bests, earned) {
+        if (workouts.isNotEmpty()) value = runCatching { container.rewards.view(workouts, goals.workoutsPerWeek, bests, earned) }.getOrNull()
+    }
+    var editGoal by rememberSaveable { mutableStateOf(false) }
+    var celebrations by rememberSaveable { mutableStateOf(false) }
+    when (shown) {
+        Page.GoalsAndBests -> org.openstrap.app.ui.glow.GoalsAndBestsPage(
+            view, padding, onGoal = { editGoal = true }, onAllBadges = { open(Page.AllBadges) }, onRecap = { open(Page.WeeklyRecap) },
+            onCelebrations = { celebrations = true }, onBack = close,
+        )
+        Page.AllBadges -> org.openstrap.app.ui.glow.AllBadgesPage(view, padding, onBack = close)
+        else -> {
+            val first = view?.thisWeek?.minusWeeks(1) ?: org.openstrap.app.data.Rewards.weekStart(java.time.LocalDate.now(), container.rewards.firstDay).minusWeeks(1)
+            org.openstrap.app.ui.glow.WeeklyRecapPage(view, first, padding, onGoal = { editGoal = true }, onBack = close)
+        }
+    }
+    if (editGoal) org.openstrap.app.ui.glow.WeeklyGoalSheet(goals.workoutsPerWeek, onSave = { n ->
+        scope.launch { container.settings.saveGoals(goals.copy(workoutsPerWeek = n)) }
+        editGoal = false
+    }, onDismiss = { editGoal = false })
+    if (celebrations) {
+        val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
+        val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
+        org.openstrap.app.ui.glow.CelebrationsSheet(
+            goalMoment, weeklyRecap,
+            onGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
+            onWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
+            onDismiss = { celebrations = false },
+        )
     }
 }
 
@@ -1391,13 +1519,46 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     capsuleBottom: androidx.compose.ui.unit.Dp,
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
+    choosing: Boolean = false,
+    /** Opens Ready over Choose for a sport, or on its sport picker ([pick]). */
+    onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
+    onCloseChoose: () -> Unit = {},
+    /** The rounds Ready opens on, from a saved workout picked on Choose; null for last time's. */
+    readyStructure: String? = null,
+    onOpenSaved: (sport: Int, structure: String) -> Unit = { s, _ -> onReadySport(s) },
+    /** The workout at a glance, for the floating bar, read only there. */
+    glance: androidx.compose.runtime.State<org.openstrap.app.ui.workout.LiveGlance?> = androidx.compose.runtime.mutableStateOf(null),
+    onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = {},
+    /** The Today hero is showing the workout, so the bar stays away. */
+    capsuleHidden: Boolean = false,
 ) {
     val session = container.workout
+    val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
+    val saved by remember { session.savedWorkouts() }.collectAsStateWithLifecycle(emptyList())
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val viewScope = rememberCoroutineScope()
+    /**
+     * Starts [plan] once Bluetooth (and location, for GPS) may be used, then closes Ready and Choose. [saved] is what
+     * Ready opens on next time for the sport; Choose's Start on your usual saves nothing new.
+     */
+    val startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit = { plan, saved ->
+        val start = {
+            session.start(
+                plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
+                logSets = plan.logSets, structure = plan.structure,
+            )
+            saved?.let { s -> viewScope.launch { container.settings.setSportSettings(plan.sportType, s) } }
+            onCloseReady()
+            onCloseChoose()
+        }
+        val granted = container.app.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        val withBluetooth = { if (granted) start() else requestBluetooth(start) }
+        if (plan.useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) requestLocation(withBluetooth) else withBluetooth()
+    }
     // Read here, ahead of a workout, so the live screen usually opens on the right view at once.
     val liveView by container.settings.workoutLiveView.collectAsStateWithLifecycle(null)
     val kcal by session.kcal.collectAsStateWithLifecycle()
     val profile by container.settings.profile.collectAsStateWithLifecycle(null)
-    val viewScope = rememberCoroutineScope()
     val padding = androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues()
     val full = androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
     when {
@@ -1410,11 +1571,12 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 val zoneSeconds by session.zoneSeconds.collectAsStateWithLifecycle()
                 val route by session.route.collectAsStateWithLifecycle()
                 val history by session.history.collectAsStateWithLifecycle()
+                val exercises by remember { session.exercises() }.collectAsStateWithLifecycle(emptyList())
                 // Folded, the heart card has the standing half: above the fold (drawn with the tabletop heart) or,
                 // stood up like a book, the left half here.
                 val liveScreen: @Composable (androidx.compose.ui.Modifier) -> Unit = { modifier ->
                     androidx.compose.foundation.layout.Box(modifier) {
-                        org.openstrap.app.ui.glow.GlowWorkoutLiveScreen(
+                        org.openstrap.app.ui.glow.live.GlowWorkoutLiveScreen(
                             state, live, recent, stats, zoneSeconds, connection, padding,
                             onPause = session::pause, onResume = session::resume, onEnd = session::end,
                             onMinimize = { session.minimized.value = true },
@@ -1422,6 +1584,8 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                             route = route, history = history,
                             onStartSet = session::startSet, onSetDone = session::setDone, onExtendRest = session::extendRest,
                             onLap = session::lap,
+                            exercises = exercises, onExercise = session::setExercise, onLogSet = session::logSet,
+                            onSkip = session::skipPhase, onAddRest = session::addRest,
                             split = tabletop || bookHinge != null,
                             liveView = liveView, onLiveView = { v -> viewScope.launch { container.settings.setWorkoutLiveView(v) } },
                             kcal = kcal,
@@ -1431,7 +1595,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 if (bookHinge != null) {
                     val density = androidx.compose.ui.platform.LocalDensity.current
                     androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxSize()) {
-                        org.openstrap.app.ui.glow.GlowWorkoutGlance(
+                        org.openstrap.app.ui.glow.live.GlowWorkoutGlance(
                             state, live, recent, zoneSeconds, connection,
                             androidx.compose.ui.Modifier.width(with(density) { bookHinge.bounds.left.toDp() }).fillMaxHeight(), kcal,
                         )
@@ -1441,11 +1605,9 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 } else liveScreen(androidx.compose.ui.Modifier.fillMaxSize())
             },
             capsule = { place ->
-                org.openstrap.app.ui.glow.WorkoutCapsule(
-                    state, live, connection is ConnectionState.Connected, onClick = { session.minimized.value = false },
-                    onPause = session::pause, onResume = session::resume, modifier = place, kcal = kcal,
-                )
+                glance.value?.let { g -> org.openstrap.app.ui.glow.WorkoutCapsule(g, onClick = { session.minimized.value = false }, onAction = onGlanceAction, modifier = place) }
             },
+            capsuleHidden = capsuleHidden,
         )
         state is org.openstrap.app.device.WorkoutState.Ended -> androidx.compose.foundation.layout.Box(full) {
             // A debug preview of a stored workout writes nothing just by opening, so no effect is worked out for it.
@@ -1454,20 +1616,76 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             val route by session.route.collectAsStateWithLifecycle()
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val usualDrop by produceState<Int?>(null, state.start) { value = workoutsVm.usualDrop(state.start) }
+            // What it earned, from every workout and day (workouts spec 2.8), once the list holds it.
+            val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
+            val ended = workouts.firstOrNull { it.workout.start == state.start }
+            val rewards by produceState<org.openstrap.app.ui.workout.SummaryRewards?>(null, ended?.end, ended?.shownStart, goals.workoutsPerWeek) {
+                if (ended == null) return@produceState
+                value = runCatching { container.rewards.summary(state.start, workouts, goals.workoutsPerWeek) }.getOrNull()
+            }
+            val scope = rememberCoroutineScope()
+            val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
+            val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
+            val momentWeek by container.settings.goalMomentWeek.collectAsStateWithLifecycle(null)
             GlowWorkoutSummaryScreen(
                 summary, calmDown.takeIf { !state.preview }, if (state.preview) emptyList() else route, workouts, usualDrop, padding,
                 onDone = session::dismissSummary, onDelete = { session.discard(state.start) },
                 onTrim = { from, to -> session.trim(state.start, from, to) }, onUndoTrim = { session.undoTrim(state.start) },
+                rewards = rewards.takeIf { !state.preview },
+                celebrations = org.openstrap.app.ui.glow.Celebrations(
+                    goalMoment, weeklyRecap, momentWeek,
+                    setGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
+                    setWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
+                    markMoment = { week -> scope.launch { container.settings.setGoalMomentWeek(week) } },
+                ),
             )
         }
     }
     // The ready screen comes and goes like any other screen; a workout starting replaces it at once.
     val recording = state is org.openstrap.app.device.WorkoutState.Recording || state is org.openstrap.app.device.WorkoutState.Ended
+    // Choose sits under Ready, so closing Ready comes back to it.
+    org.openstrap.app.ui.glow.PushOverlay(choosing.takeIf { it && !recording }, cut = recording) {
+        androidx.compose.foundation.layout.Box(full) {
+            val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+            val (_, sides) = pickerSports(container, workoutsVm)
+            val zone = java.time.ZoneId.systemDefault()
+            val mine = remember(workouts) { workouts.filter { it.startedByYou }.sortedByDescending { it.workout.start } }
+            val sports = remember(mine) { org.openstrap.app.data.WorkoutSetup.choose(mine.map { it.workout.sportType to it.workout.start }, System.currentTimeMillis() / 1000) }
+            val today = java.time.LocalDate.now(zone)
+            val usual = sports.usual?.let { type ->
+                val last = mine.firstOrNull { org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == type }
+                org.openstrap.app.ui.glow.ChooseSport(type, last?.let { org.openstrap.app.ui.workout.StartCopy.lastTime(it, today, zone) } ?: "")
+            }
+            val recent = remember(sports, saved) { org.openstrap.app.data.WorkoutSetup.recentChips(sports.recent, saved) }
+            org.openstrap.app.ui.glow.GlowChooseScreen(
+                usual, recent, connection, live, padding,
+                onStartUsual = { type ->
+                    val settings = sportSettings[type] ?: org.openstrap.app.data.SportSettings()
+                    startPlan(org.openstrap.app.data.WorkoutSetup.plan(type, settings, sides, org.openstrap.app.ui.glow.locationAvailable(context)), null)
+                },
+                onReady = { onOpenReady(it, false) },
+                onSaved = { w -> onOpenSaved(w.sport, w.structure) },
+                onBack = onCloseChoose,
+            )
+        }
+    }
     org.openstrap.app.ui.glow.PushOverlay(readySport.takeIf { !recording }, cut = recording) { sport ->
         androidx.compose.foundation.layout.Box(full) {
             val (recentSports, sides) = pickerSports(container, workoutsVm)
+            val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+            val key = org.openstrap.app.data.Workouts.tileType(sport)
+            // The sport's two most used goals, from the phone workouts that had one, newest first.
+            val goalChips = remember(workouts, key) {
+                org.openstrap.app.data.WorkoutSetup.goalChips(
+                    org.openstrap.app.data.Workouts.family(sport),
+                    workouts.filter { it.fromPhone && org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == key }
+                        .sortedByDescending { it.workout.start }.map { it.target },
+                )
+            }
             org.openstrap.app.ui.glow.GlowWorkoutReadyScreen(
                 sport, readyPicking, connection, live, padding,
+                settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(), goalChips = goalChips,
+                saved = saved, onSaveIntervals = { name, code -> session.saveWorkout(name, sport, code) }, structure = readyStructure,
                 recentSports = recentSports, sides = sides,
                 kcalTargets = profile?.let { org.openstrap.app.data.EnergyExpenditure.bmrPerMinute(it, it.age()) } != null,
                 onSide = { s, indoor ->
@@ -1479,12 +1697,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 },
                 onTurnOnLocation = requestLocation,
                 onSport = onReadySport,
-                onStart = { sport, askToEnd, target, useGps, keepRoute, rest, setsTarget ->
-                    val start = { session.start(sport, askToEnd, target, useGps, keepRoute, rest, setsTarget); onCloseReady() }
-                    val granted = container.app.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
-                    val withBluetooth = { if (granted) start() else requestBluetooth(start) }
-                    if (useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) requestLocation(withBluetooth) else withBluetooth()
-                },
+                onStart = startPlan,
                 onBack = onCloseReady,
             )
         }

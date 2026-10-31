@@ -249,6 +249,22 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    /**
+     * What Ready was set to the last time each sport started (workouts spec 4), by the sport's tile
+     * ([org.openstrap.app.data.Workouts.tileType]). Sports never started aren't in it.
+     */
+    val sportSettings: Flow<Map<Int, org.openstrap.app.data.SportSettings>> = context.dataStore.data.map { prefs ->
+        prefs.asMap().mapNotNull { (key, value) ->
+            val sport = key.name.removePrefix(SPORT_SETTINGS_PREFIX).takeIf { key.name.startsWith(SPORT_SETTINGS_PREFIX) }?.toIntOrNull()
+            if (sport == null || value !is String) null else sport to org.openstrap.app.data.SportSettings.parse(value)
+        }.toMap()
+    }
+
+    suspend fun setSportSettings(sport: Int, settings: org.openstrap.app.data.SportSettings) {
+        val key = stringPreferencesKey(SPORT_SETTINGS_PREFIX + org.openstrap.app.data.Workouts.tileType(sport))
+        context.dataStore.edit { it[key] = settings.encode() }
+    }
+
     private val birthYear = androidx.datastore.preferences.core.intPreferencesKey("profile_birth_year")
     private val sex = stringPreferencesKey("profile_sex")
     private val weight = androidx.datastore.preferences.core.floatPreferencesKey("profile_weight_kg")
@@ -300,6 +316,7 @@ class SettingsStore(private val context: Context) {
     private val sleepGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_sleep_minutes")
     private val activeGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_active_hours")
     private val calorieGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_calories")
+    private val workoutGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_workouts_week")
 
     val goals: Flow<Goals> = context.dataStore.data.map { prefs ->
         Goals(
@@ -307,6 +324,7 @@ class SettingsStore(private val context: Context) {
             prefs[sleepGoal] ?: Goals.DEFAULT_SLEEP_MINUTES,
             prefs[activeGoal] ?: Goals.DEFAULT_ACTIVE_HOURS,
             prefs[calorieGoal] ?: Goals.DEFAULT_CALORIES,
+            prefs[workoutGoal] ?: org.openstrap.app.data.Rewards.DEFAULT_GOAL,
         )
     }
 
@@ -316,6 +334,7 @@ class SettingsStore(private val context: Context) {
             it[sleepGoal] = g.sleepMinutes
             it[activeGoal] = g.activeHours
             it[calorieGoal] = g.calories
+            it[workoutGoal] = g.workoutsPerWeek
         }
     }
 
@@ -325,6 +344,58 @@ class SettingsStore(private val context: Context) {
     /** Edit Today's choices: the cards hidden and the ones pinned under the hero, by name. Null until first edited. */
     val todayHiddenNames: Flow<List<String>?> = context.dataStore.data.map { prefs -> prefs[todayHidden]?.split(',')?.filter { it.isNotEmpty() } }
     val todayPinnedNames: Flow<List<String>?> = context.dataStore.data.map { prefs -> prefs[todayPinned]?.split(',')?.filter { it.isNotEmpty() } }
+
+    private val goalMomentKey = androidx.datastore.preferences.core.booleanPreferencesKey("celebrate_goal")
+    private val weeklyRecapKey = androidx.datastore.preferences.core.booleanPreferencesKey("weekly_recap")
+    private val goalMomentWeekKey = longPreferencesKey("goal_moment_week")
+    private val recapWeekKey = longPreferencesKey("recap_week")
+    private val rewardsStartedKey = androidx.datastore.preferences.core.booleanPreferencesKey("rewards_started")
+    private val historyBadgesKey = androidx.datastore.preferences.core.booleanPreferencesKey("history_badges_waiting")
+
+    /** Celebrations (workouts spec 3.4): the full screen goal moment, once a week. On by default. */
+    val goalMoment: Flow<Boolean> = context.dataStore.data.map { it[goalMomentKey] ?: true }
+
+    suspend fun setGoalMoment(on: Boolean) {
+        context.dataStore.edit { it[goalMomentKey] = on }
+    }
+
+    /** Celebrations: the Monday morning recap notification. On by default. */
+    val weeklyRecap: Flow<Boolean> = context.dataStore.data.map { it[weeklyRecapKey] ?: true }
+
+    suspend fun setWeeklyRecap(on: Boolean) {
+        context.dataStore.edit { it[weeklyRecapKey] = on }
+    }
+
+    /** The week (epoch day of its first day) the goal moment last showed for, so it shows once a week; null before. */
+    val goalMomentWeek: Flow<Long?> = context.dataStore.data.map { it[goalMomentWeekKey] }
+
+    suspend fun setGoalMomentWeek(week: Long) {
+        context.dataStore.edit { it[goalMomentWeekKey] = week }
+    }
+
+    /** The week (epoch day of its first day) the last recap was about, so each week gets one; null before. */
+    val recapWeek: Flow<Long?> = context.dataStore.data.map { it[recapWeekKey] }
+
+    suspend fun setRecapWeek(week: Long) {
+        context.dataStore.edit { it[recapWeekKey] = week }
+    }
+
+    /** Rewards were worked out once already: later badges are new, not past history. */
+    val rewardsStarted: Flow<Boolean> = context.dataStore.data.map { it[rewardsStartedKey] ?: false }
+
+    /** The badges earned for past history on first launch wait to be shown once, all on one screen. */
+    val historyBadgesWaiting: Flow<Boolean> = context.dataStore.data.map { it[historyBadgesKey] ?: false }
+
+    suspend fun startRewards(historyBadges: Boolean) {
+        context.dataStore.edit {
+            it[rewardsStartedKey] = true
+            it[historyBadgesKey] = historyBadges
+        }
+    }
+
+    suspend fun historyBadgesShown() {
+        context.dataStore.edit { it[historyBadgesKey] = false }
+    }
 
     private val habitAgeSeen = longPreferencesKey("habit_age_seen")
 
@@ -627,3 +698,6 @@ class SettingsStore(private val context: Context) {
         return written
     }
 }
+
+/** The key each sport's [SportSettings][org.openstrap.app.data.SportSettings] is stored under, before the sport's id. */
+private const val SPORT_SETTINGS_PREFIX = "sport_settings_"

@@ -103,6 +103,8 @@ data class MomentWidgetInput(
     val restingHr: Int?,
     val steps: Int,
     val stepGoal: Int,
+    /** No [night] because the user deleted it: the sentences say so rather than ask whether the strap was on. */
+    val nightDeleted: Boolean = false,
 )
 
 /** How the Large's chart is drawn. */
@@ -279,7 +281,7 @@ data class MomentWidgetModel(
                 words = listOfNotNull(word),
                 shortWords = listOfNotNull(word),
                 figures = listOfNotNull(energy?.atWake?.let { "Energy at waking $it" }),
-                sentences = shorter(TodayCopy.waking(input.night?.asleepSeconds, input.score, input.alert, input.noScore, input.firstNights, isToday = true)),
+                sentences = shorter(TodayCopy.waking(input.night?.asleepSeconds, input.score, input.alert, input.noScore, input.firstNights, isToday = true, deleted = input.nightDeleted)),
                 waiting = null, start = null, startLabel = null, recording = null,
                 chart = stagesChart(),
                 light = MomentLight(MetricColors.readiness, LightAngle.LowerLeft),
@@ -323,7 +325,7 @@ data class MomentWidgetModel(
             val e = energy
             val left = e?.now
             val drained = e?.let { TabCopy.drainedAmount(it.drained) }
-            val sentence = if (noSleep) TodayCopy.NO_SLEEP
+            val sentence = if (noSleep) (if (input.nightDeleted) TodayCopy.deletedNight(true) else TodayCopy.NO_SLEEP)
             else TodayCopy.charge(left, e?.let { TabCopy.drainedAmount(it.drained).toInt() }, e?.anchored == true, now.atZone(zone).hour)
             return energyModel(
                 lead, name, mood,

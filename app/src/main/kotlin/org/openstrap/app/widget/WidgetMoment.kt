@@ -35,7 +35,7 @@ suspend fun widgetMomentInputs(
     val lastEnd = (strap.map { it.end } + phone.mapNotNull { it.end }).filter { it <= t }.maxOrNull()
     // Today's main sleep, as Today picks it: the longest non-nap session that ended in the night window.
     val night = DayWindow.nightEndingOn(today, zone)
-    val sleepEnd = dao.sleepSessionsOnce(night.from, night.to).filter { !it.nap }.maxByOrNull { it.end - it.start }?.end
+    val sleepEnd = org.openstrap.app.data.SleepSource(dao).sessionsOnce(night.from, night.to).filter { !it.nap }.maxByOrNull { it.end - it.start }?.end
     return MomentInputs(
         day = today,
         recording = container.workout.state.value is WorkoutState.Recording,

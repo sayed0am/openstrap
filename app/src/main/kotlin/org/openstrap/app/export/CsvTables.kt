@@ -26,6 +26,7 @@ import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.RecoveryHeartRateRow
 import org.openstrap.app.data.db.RestingHeartRate
 import org.openstrap.app.data.db.SkinTemperature
+import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepSpo2Sample
 import org.openstrap.app.data.db.SleepStage
@@ -139,6 +140,17 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { listOf(it.sessionStart, iso(it.start), iso(it.end), CsvExporter.stageName(it.stage)) },
         { SleepStage(it.instant("start"), it.instant("end"), it.long("session_start_epoch"), stageCode(it.string("stage"))) },
         { d, r -> d.insertSleepStages(r) }),
+    // The user's own times for a sleep or nap, and the ones they deleted. The strap re-sends its sessions, so a restore
+    // without these would bring deleted ones back. The sessions above are the strap's, as synced.
+    CsvTable("sleep_edit.csv", "strap_start_epoch,nap,start_epoch,end_epoch,deleted,edited_epoch",
+        Key("sleep_edit", "strapStart", "strap_start_epoch"),
+        { d, f, t -> d.sleepEditsOnce().filter { it.strapStart in f..t } },
+        { listOf(it.strapStart, it.nap, it.start, it.end, it.deleted, it.editedAt) },
+        {
+            SleepEdit(it.long("strap_start_epoch"), it.bool("nap"), it.longOrNull("start_epoch"), it.longOrNull("end_epoch"),
+                it.bool("deleted"), it.longOrNull("edited_epoch") ?: 0)
+        },
+        { d, r -> d.insertSleepEdits(r) }),
     CsvTable("spo2.csv", "time,epoch,percent",
         Key("spo2", "timestamp", "epoch"),
         { d, f, t -> d.spo2Once(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
@@ -197,13 +209,13 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
     // Workouts recorded on the phone; one still recording is left out until it ends.
     CsvTable("app_workout.csv",
         "start,start_epoch,end_epoch,sport_type,source,pauses,end_reason,avg_hr,max_hr,ask_to_end,recorded_end_epoch,shown_start_epoch,target," +
-            "use_gps,keep_route,distance_m,distance_from_steps,rest,sets_target,laps,epoc,aerobic_te,recovery_minutes,vo2max,active_kcal,total_kcal,target_reached_epoch",
+            "use_gps,keep_route,distance_m,distance_from_steps,rest,sets_target,laps,epoc,aerobic_te,recovery_minutes,vo2max,active_kcal,total_kcal,target_reached_epoch,structure,stretches",
         Key("app_workout", "start", "start_epoch", span = Span("`end`", "end_epoch")),
         { d, f, t -> d.appWorkoutsAll().filter { it.start in f..t } },
         {
             listOf(iso(it.start), it.start, it.end, it.sportType, it.source, it.pauses, it.endReason, it.averageHeartRate, it.maxHeartRate,
                 it.askToEnd, it.recordedEnd, it.shownStart, it.target, it.useGps, it.keepRoute, it.distanceMeters, it.distanceFromSteps,
-                it.rest, it.setsTarget, it.laps, it.epoc, it.aerobicTrainingEffect, it.recoveryMinutes, it.vo2max, it.activeKcal, it.totalKcal, it.targetReachedAt)
+                it.rest, it.setsTarget, it.laps, it.epoc, it.aerobicTrainingEffect, it.recoveryMinutes, it.vo2max, it.activeKcal, it.totalKcal, it.targetReachedAt, it.structure, it.stretches)
         },
         {
             AppWorkout(it.long("start_epoch"), it.long("end_epoch"), it.int("sport_type"), it.intOrNull("source") ?: AppWorkout.SOURCE_APP,
@@ -216,7 +228,8 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 laps = if (it.has("laps")) it.string("laps") else "", epoc = it.floatOrNull("epoc"),
                 aerobicTrainingEffect = it.floatOrNull("aerobic_te"), recoveryMinutes = it.intOrNull("recovery_minutes"), vo2max = it.floatOrNull("vo2max"),
                 activeKcal = it.floatOrNull("active_kcal"), totalKcal = it.floatOrNull("total_kcal"),
-                targetReachedAt = it.longOrNull("target_reached_epoch"))
+                targetReachedAt = it.longOrNull("target_reached_epoch"), structure = if (it.has("structure")) it.string("structure") else null,
+                stretches = if (it.has("stretches")) it.string("stretches") else null)
         },
         { d, r -> d.insertAppWorkouts(r) }),
     CsvTable("app_workout_hr.csv", "workout_start_epoch,epoch,bpm,from_history",
@@ -235,10 +248,13 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 it.floatOrNull("speed_accuracy_ms"), it.floatOrNull("bearing_accuracy_deg"))
         },
         { d, r -> d.insertRoutePoints(r) }),
-    CsvTable("app_workout_set.csv", "workout_start_epoch,set_index,start_epoch,end_epoch,rest_end_epoch",
+    CsvTable("app_workout_set.csv", "workout_start_epoch,set_index,start_epoch,end_epoch,rest_end_epoch,exercise,reps,weight_kg",
         Key("app_workout_set", "workoutStart", "workout_start_epoch", parent = "app_workout"),
-        { d, f, t -> d.setsAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, it.index, it.start, it.end, it.restEnd) },
-        { AppWorkoutSet(it.long("workout_start_epoch"), it.int("set_index"), it.long("start_epoch"), it.longOrNull("end_epoch"), it.longOrNull("rest_end_epoch")) },
+        { d, f, t -> d.setsAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, it.index, it.start, it.end, it.restEnd, it.exercise, it.reps, it.weightKg) },
+        {
+            AppWorkoutSet(it.long("workout_start_epoch"), it.int("set_index"), it.long("start_epoch"), it.longOrNull("end_epoch"), it.longOrNull("rest_end_epoch"),
+                if (it.has("exercise")) it.string("exercise") else null, it.intOrNull("reps"), it.floatOrNull("weight_kg"))
+        },
         { d, r -> d.upsertSets(r) }),
     CsvTable("app_workout_dismissed.csv", "start_epoch,end_epoch",
         Key("app_workout_dismissed", "start", "start_epoch"),

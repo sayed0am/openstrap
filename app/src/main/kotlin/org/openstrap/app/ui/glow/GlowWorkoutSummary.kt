@@ -38,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
-import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.CalmDown
 import org.openstrap.app.device.WorkoutSession
@@ -49,19 +48,25 @@ import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.BestCandidate
 import org.openstrap.app.ui.workout.CalmDownLine
+import org.openstrap.app.ui.workout.EarnedLine
+import org.openstrap.app.ui.workout.SummaryRewards
+import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
 
 /*
- * The summary right after a workout (spec 6.3, "Right after"): it leads with the calm down, the heart rate drop drawing
- * as it happens on a toned-down glow, then the workout, its Load against your usual, time in zones and the splits. A
- * personal best is one line on the Load card and a short swell of the glow, no modal. Past workouts open their own
- * page ([GlowWorkoutDetailScreen]), which shares the Load card and the lists.
+ * The summary right after a workout (workouts spec 2.8): the sport and when, a hero with the one number that matters for
+ * that kind of workout and three figures, then its own section ([FamilySection]), then what it earned. Under them the
+ * heart rate drop, drawing as it happens, and Load against your usual. A personal best ticks and swells the hero's
+ * glow once, no modal. Past workouts open their own page ([GlowWorkoutDetailScreen]), which shares the Load card and
+ * the lists.
  */
+
+/** Where Done has got to: the summary, a personal best's card, the goal moment. */
+private enum class SummaryStep { Summary, Best, Moment }
 
 /** How much higher the hero's light reaches at the top of a personal best's swell. */
 private const val SwellLevel = 0.25f
@@ -73,7 +78,7 @@ private const val BeforeS = 60L
  * The summary right after [summary]'s workout ended. [calmDown] is the heart rate the strap sent since, for this
  * workout or another (then ignored), null when nothing is live (a debug preview). [liveRoute] is the route still in
  * memory, so a GPS workout whose route wasn't kept still gets its splits. [workouts] are all of them, for your usual
- * Load and a personal best; [usualDrop] your usual heart rate drop.
+ * Load, the last time and this week; [usualDrop] your usual heart rate drop.
  */
 @Composable
 fun GlowWorkoutSummaryScreen(
@@ -87,20 +92,52 @@ fun GlowWorkoutSummaryScreen(
     onDelete: () -> Unit,
     onTrim: (from: Long, to: Long) -> Unit,
     onUndoTrim: () -> Unit,
+    /** What it earned ([RewardsCopy.summary]), null while it's worked out. */
+    rewards: SummaryRewards? = null,
+    celebrations: Celebrations? = null,
 ) {
-    BackHandler(onBack = onDone)
     val a = summary?.analysis
+    // Done goes through the celebrations it earned (workouts spec 3.4): a personal best's card, then the goal moment
+    // once a week, then away.
+    var step by rememberSaveable { mutableStateOf(SummaryStep.Summary) }
+    var settings by rememberSaveable { mutableStateOf(false) }
+    val moment = rewards != null && celebrations != null && rewards.goalMet && celebrations.goalMoment && celebrations.momentWeek != rewards.weekStart
+    fun next(from: SummaryStep) {
+        step = when {
+            from < SummaryStep.Best && rewards?.best != null -> SummaryStep.Best
+            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations?.markMoment(rewards!!.weekStart) }
+            else -> { onDone(); return }
+        }
+    }
+    val done = { next(step) }
+    if (step == SummaryStep.Best && rewards?.best != null && a != null) {
+        BestCardScreen(rewards.best, a.sportName, contentPadding, onContinue = done)
+        return
+    }
+    if (step == SummaryStep.Moment && rewards != null) {
+        val starts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+        GoalMomentScreen(rewards.week.count, rewards.week.goal, rewards.inARow, starts, contentPadding, onSettings = { settings = true }, onContinue = done)
+        if (settings && celebrations != null) CelebrationsSheet(
+            celebrations.goalMoment, celebrations.weeklyRecap, celebrations.setGoalMoment, celebrations.setWeeklyRecap, onDismiss = { settings = false },
+        )
+        return
+    }
+    BackHandler(onBack = done)
     var info by rememberSaveable { mutableStateOf(false) }
     // Done stays on the bottom edge, Delete as quiet text under it; nothing to delete until the workout has loaded.
+    // Share comes with the share screen (workouts spec 2.9), not yet.
     WorkoutPage(
         Color.Transparent, contentPadding,
-        pinned = { if (a != null) SummaryActions(justEnded = true, onDone = onDone, onDelete = onDelete) else WorkoutButton("Done", Color.White, Color.Black, onDone) },
+        pinned = { if (a != null) SummaryActions(justEnded = true, onDone = done, onDelete = onDelete) else WorkoutButton("Done", Color.White, Color.Black, onDone) },
     ) {
-        // The page title, "Run saved": the sport's short name (spec 6.3).
-        Text(
-            SummaryCopy.savedTitle(a?.workout?.sportType), color = Color.White, style = GlowType.pageTitle, maxLines = 1,
-            modifier = Modifier.padding(start = 4.dp, top = 12.dp),
-        )
+        // The sport, then when (board SummaryRun).
+        Column(Modifier.padding(start = 4.dp, top = 12.dp)) {
+            Text(a?.sportName ?: "Workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+            if (a != null) Text(
+                FamilySummary.whenLine(a.shownStart, System.currentTimeMillis() / 1000), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp),
+            )
+        }
         if (summary == null || a == null) {
             Note("Loading…")
             return@WorkoutPage
@@ -108,20 +145,15 @@ fun GlowWorkoutSummaryScreen(
         val w = a.workout
         val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
         val usualLoad = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
-        val best = remember(a, others) {
-            fun of(x: WorkoutAnalysis) = BestCandidate(
-                x.workout.start, x.workout.sportType, x.activeSeconds,
-                x.distanceMeters?.takeIf { !x.distanceFromSteps },
-            )
-            SummaryCopy.personalBest(of(a), others.map(::of))
-        }
+        val earned = rewards?.earned.orEmpty()
         // A personal best ticks once and swells the hero's glow once; with animations off, only the tick.
         val haptics = rememberHaptics()
         val animationsOn = rememberAnimationsOn()
         val swell = remember { Animatable(0f) }
         var swelled by rememberSaveable(w.start) { mutableStateOf(false) }
-        LaunchedEffect(best) {
-            if (best == null || swelled) return@LaunchedEffect
+        val anyBest = earned.any { it.kind == EarnedLine.Kind.Best }
+        LaunchedEffect(anyBest) {
+            if (!anyBest || swelled) return@LaunchedEffect
             swelled = true
             haptics.perform(HapticEvent.PersonalBest)
             if (animationsOn) {
@@ -129,14 +161,20 @@ fun GlowWorkoutSummaryScreen(
                 swell.animateTo(0f, tween(900))
             }
         }
-        CalmDownHero(summary, calmDown?.takeIf { it.start == w.start }, usualDrop, Workouts.effort(w.trainingLoad, usualLoad), swell.value) { info = true }
-        WorkoutCard(summary)
-        LoadCard(a, usualLoad, best)
-        val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
-        if (zones.sum() > 0) ZonesList(zones, a.maxHeartRate)
-        // Right under the zones it would look the same, so it sits on a neutral edge card instead (spec 2.4).
-        CompositionLocalProvider(LocalEdgeOverride provides if (zones.sum() > 0) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-            SplitsList(summary, liveRoute)
+        val family = FamilySummary.familyOf(w.sportType, summary.structure)
+        val effort = Workouts.effort(w.trainingLoad, usualLoad)
+        SummaryHeroCard(summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
+        val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+        val underList = FamilySection(family, summary, liveRoute, others, weekStarts)
+        EarnedPanel(earned, underList)
+        // The drop only with heart rate to show: recorded in the workout, or arriving live after it.
+        val live = calmDown?.takeIf { it.start == w.start }
+        val dropShown = summary.recorded.isNotEmpty() || !live?.readings.isNullOrEmpty()
+        if (dropShown) CalmDownHero(summary, live, usualDrop, effort, 0f) { info = true }
+        // Load is lit from the left: what comes before it (the hero, the drop, Earned on an edge card) is lit from
+        // below, so two cards in a row never look the same.
+        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left)) {
+            LoadCard(a, usualLoad, best = null)
         }
         TrimSection(summary, onTrim, onUndoTrim)
     }
@@ -144,6 +182,27 @@ fun GlowWorkoutSummaryScreen(
         Info("Heart rate drop", SummaryCopy.DROP_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
         onDismiss = { info = false },
     )
+}
+
+/**
+ * The summary's hero (workouts spec 2.8): a glow in the workout's [color] lit from below as high as its [effort], the
+ * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
+ */
+@Composable
+internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: Float) {
+    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell).coerceAtMost(1f))
+    GlowCard(style, Modifier.fillMaxWidth()) {
+        Column {
+            Row(verticalAlignment = Alignment.Bottom) {
+                DotMatrixText(hero.value, dot = DotSize.Hero)
+                // The word after a number (spec 2.3).
+                Text(hero.unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
+            }
+            hero.sentence?.let { HeroSentence(it) }
+            hero.line?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp)) }
+            if (hero.figures.isNotEmpty()) SummaryFigures(hero.figures, Modifier.padding(top = 18.dp))
+        }
+    }
 }
 
 /**
@@ -228,30 +287,6 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
     }
 }
 
-/** The workout: active time, distance and the average, its calories and kcal target, and the map when the route was kept. Lit from the left, about earlier. */
-@Composable
-private fun WorkoutCard(summary: PhoneSummary) {
-    val a = summary.analysis
-    val w = a.workout
-    val active = a.activeSeconds
-    EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle(a.sportName, "${clockAt(a.shownStart)}–${clockAt(a.end)}")
-        EdgeValue(
-            workoutClock(active), null,
-            SummaryCopy.workoutLine(summary.distanceMeters, summary.distanceFromSteps, w.averageHeartRate, (a.durationSeconds - active).coerceAtLeast(0)),
-        )
-        // Its calories, active first, under the line (calories spec 4.2).
-        SummaryCopy.kcalLine(a.activeKcal?.let(Math::round), w.calories)?.let {
-            Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
-        }
-        // A kcal target says whether it was reached, and when (calories spec 4.2).
-        SummaryCopy.targetLine(a.target, a.targetReachedSeconds, a.activeKcal?.let(Math::round))?.let {
-            Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
-        }
-        RouteMap(summary, Modifier.padding(top = 14.dp))
-    }
-}
-
 /** The kept route in its zones' colours; nothing without a route. */
 @Composable
 internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
@@ -298,8 +333,8 @@ internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, best: String?, drop: St
 
 /** Time in zones: the zone bar, then each zone with time in it, hardest first. */
 @Composable
-internal fun ZonesList(zones: IntArray, maxHr: Int) {
-    ListPanel(title = "Time in zones", note = "Max $maxHr bpm") {
+internal fun ZonesList(zones: IntArray, maxHr: Int, note: String = "Max $maxHr bpm") {
+    ListPanel(title = "Time in zones", note = note) {
         ZoneBar(zones.toList(), ZONE_COLORS, Modifier.padding(top = 2.dp, bottom = 6.dp))
         var first = true
         for (z in Workouts.ZONES - 1 downTo 0) {
@@ -316,10 +351,11 @@ internal fun ZonesList(zones: IntArray, maxHr: Int) {
 
 /**
  * Splits for a GPS workout (each kilometre's time and average heart rate), with the laps under them when any were
- * marked; laps alone without GPS; sets for strength. Nothing without any of them.
+ * marked; laps alone without GPS; sets for strength. Nothing without any of them. With [markFastest] the fastest
+ * kilometre is named in the note and its row lit (workouts spec 2.8). Returns whether it showed anything.
  */
 @Composable
-internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>) {
+internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, markFastest: Boolean = false): Boolean {
     val a = summary.analysis
     val maxHr = a.maxHeartRate
     val route = summary.route.ifEmpty { liveRoute.filter { it.t in a.shownStart..a.end } }
@@ -330,12 +366,18 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>) {
     val sets = summary.sets.filter { it.end != null }
     // Each row's heart takes the zone its average heart rate sat in.
     fun dot(bpm: Int?) = bpm?.let { zoneColor(it, maxHr) } ?: EdgeNeutral
+    val fastest = if (markFastest) FamilySummary.fastestSplit(rows) else null
     when {
         rows.isNotEmpty() || laps.isNotEmpty() -> ListPanel(
             title = if (rows.isNotEmpty()) "Splits" else "Laps",
-            note = if (rows.isNotEmpty()) summary.distanceMeters?.let { km(it) + if (it >= 1000) " km" else "" } else "${laps.size}",
+            note = if (rows.isNotEmpty()) fastest?.let { "Fastest: ${rows[it].name.lowercase()}" } ?: summary.distanceMeters?.let { km(it) + if (it >= 1000) " km" else "" } else "${laps.size}",
         ) {
-            rows.forEachIndexed { i, r -> ListRow(r.name, dot(r.averageBpm), r.time, r.averageBpm?.let { "Average $it bpm" }, divider = i > 0, icon = AppIcons.Heart) }
+            rows.forEachIndexed { i, r ->
+                ListRow(
+                    r.name, dot(r.averageBpm), r.time, if (i == fastest) "Fastest" + (r.averageBpm?.let { ", average $it bpm" } ?: "") else r.averageBpm?.let { "Average $it bpm" },
+                    divider = i > 0, icon = AppIcons.Heart, offNormal = i == fastest,
+                )
+            }
             if (rows.isNotEmpty() && laps.isNotEmpty()) WorkoutDayHeader("Laps")
             laps.forEachIndexed { i, lap ->
                 ListRow(
@@ -352,5 +394,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>) {
                 )
             }
         }
+        else -> return false
     }
+    return true
 }

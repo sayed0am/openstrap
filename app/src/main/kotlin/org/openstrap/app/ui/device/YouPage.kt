@@ -86,12 +86,17 @@ fun YouPage(
     contentPadding: PaddingValues,
     onProfile: () -> Unit,
     onGoals: () -> Unit,
+    /** The weekly goal, personal bests and badges (workouts spec 3.5). */
+    onGoalsAndBests: () -> Unit,
     /** Auto sync to Health Connect, said on its row; the row opens the Health Connect page. */
     healthConnectAuto: HealthConnectAuto,
     onHealthConnect: () -> Unit,
     /** Automatic backup, said on its row; the row opens the Backup page. */
     backup: BackupState,
     onBackup: () -> Unit,
+    /** Sleep and naps deleted in the last 7 days; the Deleted sleep row shows only when there are any. */
+    deletedSleep: Int,
+    onDeletedSleep: () -> Unit,
     /** New versions from GitHub, said on its row; the row opens the Updates page. */
     updates: org.openstrap.app.update.UpdateState,
     installedVersion: String,
@@ -112,6 +117,10 @@ fun YouPage(
                 PageRow("Profile", profile.summary(), onClick = onProfile, below = true, divider = false, icon = AppIcons.User, selected = selected == "Profile")
                 PageRow("Goals", goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
                 PageRow("Sleep goal", sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true, icon = AppIcons.Moon)
+                PageRow(
+                    "Goals and bests", "${goals.workoutsPerWeek} workouts a week, personal bests and badges", onClick = onGoalsAndBests, below = true,
+                    icon = AppIcons.FlagCheckered, selected = selected == "Goals and bests",
+                )
             }
         }
         item { PanelHeading("Your data") }
@@ -125,6 +134,10 @@ fun YouPage(
                     icon = AppIcons.Heartbeat, selected = selected == "Health Connect",
                 )
                 PageRow("Backup", BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true, icon = AppIcons.ShieldCheck, selected = selected == "Backup")
+                if (deletedSleep > 0) PageRow(
+                    "Deleted sleep", org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep), onClick = onDeletedSleep, below = true,
+                    icon = AppIcons.Trash, selected = selected == "Deleted sleep",
+                )
             }
         }
         item { PanelHeading("Help") }

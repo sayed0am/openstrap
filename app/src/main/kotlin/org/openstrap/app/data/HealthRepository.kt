@@ -50,6 +50,8 @@ data class DayWindow(val from: Long, val to: Long) {
 class HealthRepository(private val dao: HealthDao) {
     private val recoveryEngine = RecoveryEngine(dao)
     private val healthspanEngine = HealthspanEngine(dao)
+    /** The one reader of sleep for everything shown ([SleepSource]). */
+    val sleep = SleepSource(dao)
 
     /**
      * Readiness and charge for [date]; heavy, so call it off the main thread. Also logs the night's own inputs next to
@@ -91,7 +93,7 @@ class HealthRepository(private val dao: HealthDao) {
      */
     fun changes(): Flow<Unit> = kotlinx.coroutines.flow.combine(
         dao.latestHeartRateTime(), dao.latestStressTime(), dao.latestSleepEnd(), dao.workoutCountFlow().distinctUntilChanged(),
-        dao.napEdits().distinctUntilChanged(),
+        dao.sleepEdits().distinctUntilChanged(),
     ) { _, _, _, _, _ -> }
 
     /** Local days that have any heart rate, steps or sleep, for the calendar. */
@@ -101,15 +103,38 @@ class HealthRepository(private val dao: HealthDao) {
 
     fun heartRate(w: DayWindow): Flow<List<HeartRateSample>> = dao.heartRate(w.from, w.to)
     fun activity(w: DayWindow): Flow<List<ActivityMinute>> = dao.activity(w.from, w.to)
-    fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = dao.sleepSessions(w.from, w.to)
-    fun sleepStages(sessionStart: Long): Flow<List<SleepStage>> = dao.sleepStages(sessionStart)
-    fun napEdits(): Flow<List<org.openstrap.app.data.db.NapEdit>> = dao.napEdits()
+    /** Sleep and naps as shown, ending in [w]: with the user's times, deleted ones left out ([SleepSource]). */
+    fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = sleep.sessions(w.from, w.to)
+    /** Each strap session ending in [w] with its edit, deleted ones too, for the screens that change them. */
+    fun sleepResolved(w: DayWindow): Flow<List<SleepEdits.Resolved>> = sleep.resolved(w.from, w.to)
+    /** [r]'s stages as shown. */
+    fun sleepStages(r: SleepEdits.Resolved): Flow<List<SleepStage>> = sleep.stages(r)
+    /** The strap's own stages for its session [strap], unclipped. */
+    fun strapStages(strap: SleepSession): Flow<List<SleepStage>> = sleep.strapStages(strap)
+    fun sleepEdits(): Flow<List<org.openstrap.app.data.db.SleepEdit>> = dao.sleepEdits()
 
-    /** Keeps [start] to [end] as the strap's nap [strap]'s times; its own times again drop the edit. */
-    suspend fun setNapTimes(strap: SleepSession, start: Long, end: Long) {
-        val e = NapTimes.edit(strap, start, end)
-        if (e == null) dao.deleteNapEdit(strap.start) else dao.upsertNapEdit(e)
+    /** Keeps [start] to [end] as the strap's session [strap]'s times; its own times again drop the edit. */
+    suspend fun setSleepTimes(strap: SleepSession, start: Long, end: Long) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        val e = SleepEdits.edit(strap, start, end, current, System.currentTimeMillis() / 1000)
+        if (e == null) dao.deleteSleepEdit(current?.strapStart ?: strap.start) else dao.upsertSleepEdit(e)
     }
+
+    /** Deletes the strap's session [strap], keeping any times the user gave it, so [restoreSleep] brings back exactly that. */
+    suspend fun deleteSleep(strap: SleepSession) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        dao.upsertSleepEdit(SleepEdits.delete(strap, current, System.currentTimeMillis() / 1000))
+    }
+
+    /** Brings back the strap's deleted session [strap], with the times it had: Undo and Restore. */
+    suspend fun restoreSleep(strap: SleepSession) {
+        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit ?: return
+        val restored = SleepEdits.restore(current, System.currentTimeMillis() / 1000)
+        if (restored == null) dao.deleteSleepEdit(current.strapStart) else dao.upsertSleepEdit(restored)
+    }
+
+    /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first, for You, Your data, Deleted sleep. */
+    fun deletedSleep(): Flow<List<SleepEdits.Resolved>> = sleep.deleted { System.currentTimeMillis() / 1000 }
     fun spo2(w: DayWindow): Flow<List<Spo2Sample>> = dao.spo2(w.from, w.to)
     /**
      * The day's stress readings that count as daily stress: those outside the exclusion around workouts

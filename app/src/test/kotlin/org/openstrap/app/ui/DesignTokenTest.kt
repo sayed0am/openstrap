@@ -250,7 +250,7 @@ class DesignTokenTest {
             "glow/AllMetricsScreen.kt" to 1,
             "glow/GlowActivityScreen.kt" to 2,
             "glow/GlowCharts.kt" to 5,
-            "glow/GlowWorkoutMode.kt" to 2,
+            "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,
         )
     }

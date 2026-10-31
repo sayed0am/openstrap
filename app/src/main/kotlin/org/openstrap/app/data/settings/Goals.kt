@@ -7,6 +7,8 @@ data class Goals(
     val activeHours: Int = DEFAULT_ACTIVE_HOURS,
     /** Active kcal a day, sent to the strap as its calorie target (HEALTH key 0x53). */
     val calories: Int = DEFAULT_CALORIES,
+    /** Workouts a week (workouts spec 3.1), [WORKOUTS_PER_WEEK]. */
+    val workoutsPerWeek: Int = org.openstrap.app.data.Rewards.DEFAULT_GOAL,
 ) {
     val sleepSeconds: Long get() = sleepMinutes * 60L
 
@@ -27,6 +29,7 @@ data class Goals(
         val STEPS = 1000..50000
         val SLEEP_MINUTES = 4 * 60..12 * 60
         val ACTIVE_HOURS = 1..18
+        val WORKOUTS_PER_WEEK = org.openstrap.app.data.Rewards.GOALS
         /** The strap's own range for its calorie target. */
         val CALORIES = 200..3000
         /** What the minus and plus buttons move the calorie goal by. */

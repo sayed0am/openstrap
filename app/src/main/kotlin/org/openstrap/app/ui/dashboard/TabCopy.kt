@@ -81,6 +81,9 @@ object TabCopy {
     /** The Recovery hero with no sleep recorded last night: no night to score (spec 4.3). */
     const val NO_SLEEP_SCORE = "No sleep recorded last night, so there's no score today."
 
+    /** The same when the user deleted last night's sleep. */
+    const val DELETED_SLEEP_SCORE = "You deleted last night's sleep, so there's no score today."
+
     /** A contributor's status word, by the score's own bands. */
     fun contributorWord(score: Int): String = when {
         score >= 85 -> "Helping"
@@ -152,7 +155,9 @@ object TabCopy {
     /** The Sleep tab's night before the strap has seen one (spec 4.3). */
     const val FIRST_NIGHT_SLEEP = "Your first night with the strap shows here in the morning."
 
-    fun noNight(naps: Boolean, isToday: Boolean): String = when {
+    /** [deleted]: the user deleted the night, so it says so rather than ask whether the strap was on. */
+    fun noNight(naps: Boolean, isToday: Boolean, deleted: Boolean = false): String = when {
+        deleted -> TodayCopy.deletedNight(isToday)
         naps -> "No night sleep recorded, only naps."
         isToday -> TodayCopy.NO_SLEEP
         else -> "No sleep recorded that night."
