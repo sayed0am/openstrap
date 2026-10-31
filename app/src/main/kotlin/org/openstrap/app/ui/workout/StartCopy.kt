@@ -34,13 +34,56 @@ object StartCopy {
         else -> "Just go"
     }
 
-    /** Mind and body's length chip for none. */
+    /** No plan: strength's open sets, or mind and body with no length. */
     const val OPEN = "Open"
 
-    /** Above the goal chips, or the length chips for mind and body. */
-    fun goalTitle(family: Workouts.Family): String = if (family == Workouts.Family.MindBody) "Length" else "Goal"
+    /** Above Ready's plan card, by family: "Goal", "Plan", "Length", "Match". */
+    fun planTitle(family: Workouts.Family): String = when (family) {
+        Workouts.Family.Distance, Workouts.Family.IndoorCardio -> "Goal"
+        Workouts.Family.Strength, Workouts.Family.Intervals -> "Plan"
+        Workouts.Family.MindBody -> "Length"
+        Workouts.Family.Games -> "Match"
+    }
 
+    /** The plan pill's sheet title, and what the pill says it does to a screen reader. */
+    fun planSheet(family: Workouts.Family): String = if (family == Workouts.Family.Games) "Free play or periods" else "Choose a ${planTitle(family).lowercase()}"
+    fun planHint(family: Workouts.Family): String = "Change the ${planTitle(family).lowercase()}"
+
+    /** A typed number in [range]; null for anything else. */
+    fun parseNumber(text: String, range: LongRange): Long? = text.trim().toLongOrNull()?.takeIf { it in range }
+
+    /* -------------------------------------------- Strength's plan ------------------------------------------- */
+
+    const val PLAN = "Plan"
     const val STRENGTH_STATUS = "The strap buzzes when rest is over, so the phone can stay on the bench."
+    const val OPEN_SETS_KIND_NOTE = "As many sets as you like, rest after each"
+    const val PLAN_KIND_NOTE = "A number of sets with rest between"
+    const val OPEN_SETS_NOTE = "As many sets as you like. The strap buzzes when rest is over."
+    const val STRENGTH_TYPING = "How many sets, then the rest in seconds"
+
+    /** The sets presets under the plan. */
+    val SET_PRESETS: List<Pair<Int, String>> = (3..6).map { it to "$it sets" }
+
+    /** What the plan opens on when there's none from last time. */
+    const val DEFAULT_SETS = 5
+
+    /** Typed sets, within [Strength.SETS]. */
+    fun parseSets(text: String): Int? = parseNumber(text, Strength.SETS.first.toLong()..Strength.SETS.last.toLong())?.toInt()
+
+    /** Typed rest in seconds, within [Strength.Rest.RANGE_S]. */
+    fun parseSetRest(text: String): Long? = parseNumber(text, Strength.Rest.RANGE_S)
+
+    const val END_REST_EARLY = "End rest early"
+
+    /** End rest early's note, with the level it ends at: "Once you're under 110 bpm". */
+    fun endRestNote(bpm: Int): String = "Once you're under $bpm bpm"
+
+    /** The level End rest early turns on at when none was chosen before. */
+    const val DEFAULT_BELOW = 110
+
+    const val LOG_SETS = "Log reps and weight"
+    const val LOG_SETS_NOTE = "A quick card after each set"
+
     const val GAMES_STATUS = "Phone in your bag? That's fine."
 
     /** The GPS line on Ready for an outdoor sport: finding a fix with its accuracy, then ready with it ("GPS ready, 6 m"). */
@@ -53,12 +96,6 @@ object StartCopy {
     /** Whether [gpsStatus] says ready. */
     fun gpsReady(accuracy: Float?): Boolean = accuracy != null && accuracy <= Route.MAX_ACCURACY_M
 
-    /** Strength's plan in one line: "5 sets, 90 s rest, or sooner once you're under 110 bpm". */
-    fun plan(sets: Int?, rest: Strength.Rest): String = listOfNotNull(
-        sets?.let { "$it sets" } ?: "Open sets",
-        "${restText(rest.seconds)} rest",
-    ).joinToString(", ") + (rest.belowBpm?.let { ", or sooner once you're under $it bpm" } ?: "")
-
     /** Under two minutes in seconds ("90 s"), then minutes: "2 min", "2 min 30 s". */
     fun restText(seconds: Long): String = when {
         seconds < 120 -> "$seconds s"
@@ -66,19 +103,48 @@ object StartCopy {
         else -> "${seconds / 60} min ${seconds % 60} s"
     }
 
-    /** The sets stepper's value: the count, or Open for no plan. */
-    fun setsValue(sets: Int?): String = sets?.toString() ?: "Open"
-
-    /** HIIT's presets on Ready, null for Free: their names and what each is. */
+    /** HIIT's presets on Ready, null for Free: their names and what each is, in the plan pill's sheet. */
     val PRESETS: List<Triple<org.openstrap.app.data.Structure?, String, String>> = listOf(
         Triple(org.openstrap.app.data.Structure.TABATA, "Tabata", "20 s on, 10 off, 8 rounds"),
         Triple(org.openstrap.app.data.Structure.FORTY_TWENTY, "40 / 20", "10 rounds"),
         Triple(org.openstrap.app.data.Structure.EVERY_MINUTE, "Every minute", "12 rounds, rest is what's left"),
-        Triple(null, "Free", "No timer, heart rate only"),
+        Triple(null, "Free", "No timer, laps mark the rounds"),
     )
 
     const val INTERVALS_STATUS = "The strap buzzes at every switch, so the phone can stay on the floor."
+    const val HIIT_FREE_NOTE = "No timer. Laps mark the rounds."
+    const val HIIT_TYPING = "Work, then rest, then how many rounds"
+    const val EVERY_TYPING = "Each round's time, then how many rounds"
+    const val WARM_UP = "Warm up first"
     const val WARM_UP_NOTE = "No timer until you start the rounds."
+
+    /** HIIT's plan in its pill: a preset's name, else what it is ("30 / 15", "Every 90 s"). */
+    fun hiitName(s: org.openstrap.app.data.Structure): String {
+        PRESETS.firstOrNull { it.first?.code == s.warm(false).code }?.let { return it.second }
+        return when (s) {
+            is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}"
+            is org.openstrap.app.data.Structure.EveryMinute -> if (s.period == 60L) "Every minute" else "Every ${restText(s.period)}"
+            else -> structureName(s)
+        }
+    }
+
+    /** All of a timed structure's time, in a line beside its rounds: "4:00 in all"; null where it has none. */
+    fun totalLine(s: org.openstrap.app.data.Structure): String? = totalTime(s)?.let { "${org.openstrap.app.ui.glow.workoutClock(it)} in all" }
+
+    /** Typed work, rest and rounds over [s]: work 5 s to 10 min, rest up to 10 min, 1 to [MAX_ROUNDS]; what doesn't read stays. */
+    fun typedTimed(s: org.openstrap.app.data.Structure.Timed, typed: List<String>): org.openstrap.app.data.Structure.Timed = s.copy(
+        work = parseNumber(typed[0], 5L..600L) ?: s.work,
+        rest = parseNumber(typed[1], 0L..600L) ?: s.rest,
+        rounds = parseNumber(typed[2], 1L..MAX_ROUNDS.toLong())?.toInt() ?: s.rounds,
+    )
+
+    /** Typed round time and rounds over [s]: 10 s to 10 min a round, 1 to [MAX_ROUNDS]; what doesn't read stays. */
+    fun typedEveryMinute(s: org.openstrap.app.data.Structure.EveryMinute, typed: List<String>): org.openstrap.app.data.Structure.EveryMinute = s.copy(
+        period = parseNumber(typed[0], 10L..600L) ?: s.period,
+        rounds = parseNumber(typed[1], 1L..MAX_ROUNDS.toLong())?.toInt() ?: s.rounds,
+    )
+
+    const val MAX_ROUNDS = 50
 
     /** A structure's name: a preset's ("Tabata"), else what it is ("6 × 400 m", "8 × 2 min", "30 / 15, 6 rounds"). */
     fun structureName(s: org.openstrap.app.data.Structure): String {
@@ -118,11 +184,35 @@ object StartCopy {
     /** What the break between periods is called. */
     fun breakName(of: Int): String = if (of == 2) "Half time" else "Break"
 
-    /** Mind and body's line on Ready (workouts spec 2.2). */
+    /** Mind and body's line on Ready (workouts spec 2.2), with a length and without one. */
     const val MIND_STATUS = "Quiet strap and a dim screen. One soft buzz at the end."
+    const val MIND_OPEN_NOTE = "Quiet strap and a dim screen. End it when you're ready."
+    const val MIND_OPEN_KIND_NOTE = "No length, end it yourself"
+    const val MIND_TIME_KIND_NOTE = "One soft buzz when the time is up"
 
-    /** A game's choice on Ready, no label: free play or its periods. */
+    /** Mind and body's length presets: 15, 30 and 45 min and 1 h. */
+    val MIND_PRESETS: List<Pair<Long, String>> = org.openstrap.app.data.WorkoutSetup.LENGTHS.map { it.seconds to timeValue(it.seconds) }
+
+    /** A game's choice on Ready: free play or its periods. */
     const val FREE_PLAY = "Free play"
+    const val FREE_PLAY_KIND_NOTE = "No periods, the clock just runs"
+    const val HALVES_KIND_NOTE = "Two halves with half time between"
+    const val QUARTERS_KIND_NOTE = "Four quarters with a break between each"
+    const val GAMES_TYPING = "How many, how long, then the break"
+
+    /** What a game's strap does: "...The strap buzzes at the end of each half and break.", or nothing in free play. */
+    fun gamesNote(p: org.openstrap.app.data.Structure.Periods?): String {
+        p ?: return GAMES_STATUS
+        val each = when (p.rounds) { 2 -> "half"; 4 -> "quarter"; else -> "period" }
+        return "$GAMES_STATUS The strap buzzes at the end of each $each" + if (p.rest > 0 && p.rounds > 1) " and break." else "."
+    }
+
+    /** Typed periods, minutes long and break minutes over [p]: 2 to 8 periods of 1 to 90 min, a break up to 30 min. */
+    fun typedPeriods(p: org.openstrap.app.data.Structure.Periods, typed: List<String>): org.openstrap.app.data.Structure.Periods = p.copy(
+        rounds = parseNumber(typed[0], 2L..8L)?.toInt() ?: p.rounds,
+        length = parseNumber(typed[1], 1L..90L)?.let { it * 60 } ?: p.length,
+        rest = parseNumber(typed[2], 0L..30L)?.let { it * 60 } ?: p.rest,
+    )
 
     /** All of a timed structure's time, rounds of work and the rests between, for Ready: "4:00". */
     fun totalTime(s: org.openstrap.app.data.Structure): Long? = when (s) {
@@ -205,9 +295,7 @@ object StartCopy {
 
     const val TAP_TO_TYPE = "Tap to type"
 
-    /** The goal pill's sheet: its title, and under each kind what the strap does with it. */
-    const val GOAL_SHEET = "Choose a goal"
-    const val GOAL_PILL_HINT = "Change the goal"
+    /** Under each goal kind in the pill's sheet, what the strap does with it. */
     const val DISTANCE_KIND_NOTE = "A buzz at halfway and at the goal"
     const val TIME_KIND_NOTE = "A buzz when the time is up"
     const val ZONE_KIND_NOTE = "A buzz when you leave your zone"

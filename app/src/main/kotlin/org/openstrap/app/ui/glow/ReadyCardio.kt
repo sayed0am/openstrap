@@ -8,6 +8,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -86,11 +87,12 @@ import java.time.LocalTime
  */
 
 /**
- * Ready's heart: the live bpm in dots on a card lit heart red from below, as Today's hero, "bpm, live from your strap"
- * beside it. While the strap is away, what's wrong and that you can start anyway, on a dimmer light.
+ * Ready's heart: the live bpm in dots on a card lit from below in [color] (heart red, or the family's colour), as
+ * Today's hero, "bpm, live from your strap" beside it. While the strap is away, what's wrong and that you can start
+ * anyway, on a dimmer light.
  */
 @Composable
-internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?) {
+internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, color: Color = MetricColors.heart) {
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
     val light = if (bpm != null) 1f else 0.4f
@@ -103,14 +105,14 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?) {
                 scale(size.width * 1.2f / ry, 1f, c) {
                     drawCircle(
                         Brush.radialGradient(
-                            0f to MetricColors.heart.copy(alpha = 0.7f * light), 0.5f to MetricColors.heart.copy(alpha = 0.18f * light),
+                            0f to color.copy(alpha = 0.7f * light), 0.5f to color.copy(alpha = 0.18f * light),
                             1f to Color.Transparent, center = c, radius = ry,
                         ),
                         ry, c,
                     )
                 }
             }
-            .border(1.dp, MetricColors.heart.copy(alpha = 0.3f), GlowLayout.CardShape)
+            .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)
             .padding(horizontal = 20.dp, vertical = 18.dp),
         verticalAlignment = Alignment.Bottom,
     ) {
@@ -231,7 +233,7 @@ internal data class GoalDraft(
 )
 
 /**
- * The goal (board ReadyFinal): the kinds as chips ([kinds]; Just go named for the sport), and under them the chosen
+ * The goal (board ReadyFinal): the kinds in one pill ([kinds]; Just go named for the sport), and under it the chosen
  * kind's value with what the strap will do. A value is typed in place on the number keyboard; [typing] says when, so
  * Start can make way for the keyboard. Intervals save by name ([onSave]) and open a saved one ([saved]).
  */
@@ -250,8 +252,43 @@ internal fun ReadyGoal(
     saved: List<SavedWorkout>,
     onSave: (String, Structure.Reps) -> Unit,
 ) {
-    Text(StartCopy.goalTitle(Workouts.family(type)), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))
-    // While typing, the whole card scrolls up over the keyboard, presets and note too.
+    val options = kinds.map { PlanOption(kindIcon(it, type), kindName(it, type), kindNote(it, hasDistance)) }
+    val at = kinds.indexOf(draft.kind)
+    ReadyPlanCard(
+        Workouts.family(type), options, options.getOrElse(at) { options[0] }, at.takeIf { it >= 0 }, { onDraft(draft.copy(kind = kinds[it])) },
+        typing, onTyping,
+    ) {
+        when (draft.kind) {
+            GoalKind.None -> GoalNote(StartCopy.noGoalNote(hasDistance))
+            GoalKind.Distance -> DistanceGoal(draft.meters, { onDraft(draft.copy(meters = it)) }, typing, onTyping)
+            GoalKind.Time -> TimeGoal(draft.seconds, { onDraft(draft.copy(seconds = it)) }, typing, onTyping)
+            GoalKind.Zone -> ZoneGoal(draft.zones, { onDraft(draft.copy(zones = it)) }, zones, maxHr, onYourZones)
+            GoalKind.Intervals -> IntervalsGoal(draft.reps, { onDraft(draft.copy(reps = it)) }, typing, onTyping, saved, onSave)
+        }
+    }
+}
+
+/** One choice in a plan card's pill and its sheet: its icon, its name, and what the strap does with it. */
+internal class PlanOption(val icon: ImageVector, val name: String, val note: String)
+
+/**
+ * The one plan card every Ready has (boards ReadyFinal, ReadyKindPill, ReadyKindSheet): the family's label over it
+ * ([StartCopy.planTitle]), then the choice in one pill ([shown], which may be none of [options] once a value is typed),
+ * opening a sheet of every option with what each does, the one [chosen] ticked; then [content], the chosen one's
+ * value. While typing ([typing]) the whole card scrolls up over the keyboard, presets and note too.
+ */
+@Composable
+internal fun ReadyPlanCard(
+    family: Workouts.Family,
+    options: List<PlanOption>,
+    shown: PlanOption,
+    chosen: Int?,
+    onChoose: (Int) -> Unit,
+    typing: Boolean,
+    onTyping: (Boolean) -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Text(StartCopy.planTitle(family), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))
     val inView = remember { BringIntoViewRequester() }
     val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
     // Once the keyboard has stopped moving: each frame of it rising starts this again.
@@ -261,23 +298,19 @@ internal fun ReadyGoal(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         var choosing by rememberSaveable { mutableStateOf(false) }
-        KindPill(kindIcon(draft.kind, type), kindName(draft.kind, type)) { onTyping(false); choosing = true }
-        if (choosing) PageSheet({ choosing = false }, StartCopy.GOAL_SHEET) {
+        KindPill(shown.icon, shown.name, StartCopy.planHint(family)) { onTyping(false); choosing = true }
+        if (choosing) PageSheet({ choosing = false }, StartCopy.planSheet(family)) {
             Column {
-                kinds.forEachIndexed { i, k ->
-                    KindRow(kindIcon(k, type), kindName(k, type), kindNote(k, hasDistance), k == draft.kind, divider = i > 0) {
-                        onDraft(draft.copy(kind = k)); choosing = false
+                options.forEachIndexed { i, o ->
+                    KindRow(o.icon, o.name, o.note, i == chosen, divider = i > 0) {
+                        // The one already chosen keeps what was typed into it.
+                        if (i != chosen) onChoose(i)
+                        choosing = false
                     }
                 }
             }
         }
-        when (draft.kind) {
-            GoalKind.None -> GoalNote(StartCopy.noGoalNote(hasDistance))
-            GoalKind.Distance -> DistanceGoal(draft.meters, { onDraft(draft.copy(meters = it)) }, typing, onTyping)
-            GoalKind.Time -> TimeGoal(draft.seconds, { onDraft(draft.copy(seconds = it)) }, typing, onTyping)
-            GoalKind.Zone -> ZoneGoal(draft.zones, { onDraft(draft.copy(zones = it)) }, zones, maxHr, onYourZones)
-            GoalKind.Intervals -> IntervalsGoal(draft.reps, { onDraft(draft.copy(reps = it)) }, typing, onTyping, saved, onSave)
-        }
+        content()
     }
 }
 
@@ -305,13 +338,13 @@ private fun kindNote(k: GoalKind, hasDistance: Boolean): String = when (k) {
     GoalKind.Intervals -> StartCopy.INTERVALS_KIND_NOTE
 }
 
-/** The goal kind in one pill (board ReadyKindPill): its icon in lime, its name and a caret, opening the kinds' sheet. */
+/** The plan's choice in one pill (board ReadyKindPill): its icon in lime, its name and a caret, opening the kinds' sheet. */
 @Composable
-private fun KindPill(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun KindPill(icon: ImageVector, label: String, hint: String, onClick: () -> Unit) {
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Row(
             Modifier.height(40.dp).clip(CircleShape).background(Raised)
-                .pressClickable(onClick, CircleShape).semantics { role = Role.Button; contentDescription = "$label. ${StartCopy.GOAL_PILL_HINT}" }
+                .pressClickable(onClick, CircleShape).semantics { role = Role.Button; contentDescription = "$label. $hint" }
                 .padding(start = 12.dp, end = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -323,7 +356,7 @@ private fun KindPill(icon: ImageVector, label: String, onClick: () -> Unit) {
     }
 }
 
-/** A goal kind in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
+/** A plan's choice in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
 @Composable
 private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean, divider: Boolean, onClick: () -> Unit) {
     Row(
@@ -347,12 +380,12 @@ private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean,
 
 /** The line under a goal: what the strap will do. */
 @Composable
-private fun GoalNote(text: String) =
+internal fun GoalNote(text: String) =
     Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
 /** A row of presets under a value, each as wide as the others, on a hairline; the one matching the value ([on]) in white. */
 @Composable
-private fun <T> Presets(presets: List<Pair<T, String>>, on: T?, onPick: (T) -> Unit) {
+internal fun <T> Presets(presets: List<Pair<T, String>>, on: T?, onPick: (T) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         presets.forEach { (v, label) ->
             val chosen = v == on
@@ -416,9 +449,10 @@ private fun TypedNumber(
     ime: ImeAction,
     onIme: () -> Unit,
     style: TextStyle = GlowType.goalValue,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        Modifier.drawBehind {
+        modifier.drawBehind {
             val y = size.height - 1.dp.toPx()
             drawLine(if (focused) TypingLime else Color.White.copy(alpha = 0.2f), Offset(0f, y), Offset(size.width, y), 2.dp.toPx())
         }.padding(start = 6.dp, end = 6.dp, bottom = 6.dp),
@@ -490,10 +524,17 @@ private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, 
 
 /**
  * Time: minus and plus by 5 minutes, the value in hours and minutes to tap and type (hours, then on to the minutes by
- * itself), the presets, and when it would end if you started now.
+ * itself), the [presets], and when it would end if you started now, or [note] in its place (mind and body's length).
  */
 @Composable
-private fun TimeGoal(seconds: Long, onSeconds: (Long) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
+internal fun TimeGoal(
+    seconds: Long,
+    onSeconds: (Long) -> Unit,
+    typing: Boolean,
+    onTyping: (Boolean) -> Unit,
+    presets: List<Pair<Long, String>> = StartCopy.TIME_PRESETS,
+    note: String? = null,
+) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
     var hours by remember { mutableStateOf(TextFieldValue()) }
@@ -534,12 +575,12 @@ private fun TimeGoal(seconds: Long, onSeconds: (Long) -> Unit, typing: Boolean, 
             hours = selected("${seconds / 3600}"); minutes = selected("${seconds / 60 % 60}"); everFocused = false; hoursDone = false; onTyping(true)
         }
     }
-    Presets(StartCopy.TIME_PRESETS, seconds.takeIf { !typing }) { stop(); onSeconds(it) }
+    Presets(presets, seconds.takeIf { !typing }) { stop(); onSeconds(it) }
     val shown = if (typing) StartCopy.parseTime(hours.text, minutes.text) ?: seconds else seconds
     // Ticks with the clock, so the end time stays right while Ready shows.
     val now by produceState(LocalTime.now()) { while (true) { kotlinx.coroutines.delay(15_000); value = LocalTime.now() } }
     val ends = StartCopy.endsNear(now, shown, android.text.format.DateFormat.is24HourFormat(context))
-    GoalNote(if (typing) StartCopy.timeTypingNote(ends) else ends)
+    GoalNote(if (typing) StartCopy.timeTypingNote(ends) else note ?: ends)
 }
 
 /** The text a field's change would leave selected, to tell a key typed from the selection only moving. */
@@ -596,88 +637,48 @@ private fun IntervalsGoal(
     saved: List<SavedWorkout>,
     onSave: (String, Structure.Reps) -> Unit,
 ) {
-    val focusManager = LocalFocusManager.current
-    var count by remember { mutableStateOf(TextFieldValue()) }
-    var rep by remember { mutableStateOf(TextFieldValue()) }
-    var rest by remember { mutableStateOf(TextFieldValue()) }
     var unit by remember { mutableStateOf(StartCopy.repUnit(reps)) }
-    var focused by remember { mutableStateOf<Int?>(null) }
-    var everFocused by remember { mutableStateOf(false) }
-    var first by remember { mutableStateOf(0) }
-    val focus = remember { List(3) { FocusRequester() } }
     var sheet by rememberSaveable { mutableStateOf<Int?>(null) }
-    fun typed(): Structure.Reps {
-        val withCount = StartCopy.parseCount(count.text)?.let { reps.copy(rounds = it) } ?: reps
-        val withRep = StartCopy.parseRep(rep.text, unit, withCount) ?: withCount
-        return StartCopy.parseRest(rest.text)?.let { withRep.copy(rest = it) } ?: withRep
+    fun typed(t: List<String>): Structure.Reps {
+        val withCount = StartCopy.parseCount(t[0])?.let { reps.copy(rounds = it) } ?: reps
+        val withRep = StartCopy.parseRep(t[1], unit, withCount) ?: withCount
+        return StartCopy.parseRest(t[2])?.let { withRep.copy(rest = it) } ?: withRep
     }
-    fun finish() {
-        if (!typing) return
-        onReps(typed())
-        onTyping(false)
-    }
-    fun start(field: Int) {
-        count = selected("${reps.rounds}")
-        rep = selected(StartCopy.repParts(reps).first)
-        rest = selected("${reps.rest}")
-        unit = StartCopy.repUnit(reps)
-        first = field; everFocused = false; onTyping(true)
-    }
-    EndTyping(typing, focused, everFocused) { finish() }
-    val shown = if (typing) typed() else reps
-    if (typing) {
-        LaunchedEffect(Unit) { focus[first].requestFocus() }
-        fun Modifier.tracked(i: Int) = focusRequester(focus[i]).onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null }
-        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                TypedNumber(count, { v -> count = v.copy(text = v.text.filter { it.isDigit() }.take(2)) }, null, focused == 0, Modifier.tracked(0), KeyboardType.Number, ImeAction.Next, { focus[1].requestFocus() })
-                Text("×", color = Color.White.copy(alpha = 0.5f), style = GlowType.goalValueMinor, modifier = Modifier.padding(horizontal = 10.dp))
-                TypedNumber(
-                    rep, { v -> rep = v.copy(text = v.text.filter { it.isDigit() || it == '.' || it == ',' }.take(5)) }, unit.label, focused == 1, Modifier.tracked(1),
-                    KeyboardType.Decimal, ImeAction.Next, { focus[2].requestFocus() },
-                )
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("with", color = Color.White.copy(alpha = 0.7f), style = GlowType.body)
-                Spacer(Modifier.width(6.dp))
-                TypedNumber(
-                    rest, { v -> rest = v.copy(text = v.text.filter { it.isDigit() }.take(3)) }, "s", focused == 2, Modifier.tracked(2),
-                    KeyboardType.Number, ImeAction.Done, { focusManager.clearFocus() }, style = GlowType.goalValueMinor,
-                )
-                Spacer(Modifier.width(6.dp))
-                Text("rest between", color = Color.White.copy(alpha = 0.7f), style = GlowType.body)
-            }
+    val (n, u) = StartCopy.repParts(reps)
+    val (restN, restU) = StartCopy.restParts(reps.rest)
+    TypedValue(
+        listOf(
+            NumberField("${reps.rounds}", null, length = 2),
+            NumberField(n, u, editUnit = unit.label, length = 5, decimal = true),
+            NumberField(restN, restU, edit = "${reps.rest}", editUnit = "s", style = GlowType.goalValueMinor),
+        ),
+        typing, onTyping, onDone = { onReps(typed(it)) }, onStart = { unit = StartCopy.repUnit(reps) },
+    ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Number(0)
+            Times()
+            Number(1)
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            ValueWords("with")
+            Number(2)
+            ValueWords("rest between")
         }
         if (focused == 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Text(StartCopy.EACH_REP_IN, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
             Spacer(Modifier.width(10.dp))
-            StartCopy.RepUnit.entries.forEach { u ->
-                UnitChip(u.label, u == unit) { unit = u }
+            StartCopy.RepUnit.entries.forEach { e ->
+                UnitChip(e.label, e == unit) { unit = e }
                 Spacer(Modifier.width(6.dp))
             }
         }
+    }
+    if (typing) {
         GoalNote(StartCopy.INTERVALS_TYPING)
         return
     }
-    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Row {
-            val (n, u) = StartCopy.repParts(shown)
-            TapNumber("${shown.rounds}", null, GlowType.goalValue) { start(0) }
-            Text("×", color = Color.White.copy(alpha = 0.5f), style = GlowType.goalValueMinor, modifier = Modifier.alignByBaseline().padding(horizontal = 10.dp))
-            TapNumber(n, u, GlowType.goalValue) { start(1) }
-        }
-        Row {
-            val (n, u) = StartCopy.restParts(shown.rest)
-            Text("with", color = Color.White.copy(alpha = 0.7f), style = GlowType.body, modifier = Modifier.alignByBaseline())
-            Spacer(Modifier.width(6.dp))
-            TapNumber(n, u, GlowType.goalValueMinor) { start(2) }
-            Spacer(Modifier.width(6.dp))
-            Text("rest between", color = Color.White.copy(alpha = 0.7f), style = GlowType.body, modifier = Modifier.alignByBaseline())
-        }
-        Text(StartCopy.TAP_A_NUMBER, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption)
-    }
     Presets(StartCopy.INTERVAL_PRESETS.map { it to StartCopy.structureName(it) }, reps.copy(warmUp = false)) { onReps(it.warm(reps.warmUp)) }
-    GoalNote(StartCopy.intervalsNote(shown))
+    GoalNote(StartCopy.intervalsNote(reps))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
         PageButton(StartCopy.SAVE_INTERVALS, { sheet = SAVE }, icon = AppIcons.Plus)
         if (saved.isNotEmpty()) PageButton(StartCopy.SAVED_INTERVALS, { sheet = SAVED }, icon = AppIcons.FolderOpen)
@@ -695,12 +696,94 @@ private fun IntervalsGoal(
     }
 }
 
+/**
+ * One number of a value typed in place: as it shows ([shown] and its [unit]) and as it's typed ([edit] in
+ * [editUnit], the rest typed in seconds where it shows "2 min"), in [style], up to [length] figures, with a decimal
+ * point when [decimal].
+ */
+internal data class NumberField(
+    val shown: String,
+    val unit: String?,
+    val edit: String = shown,
+    val editUnit: String? = unit,
+    val style: TextStyle = GlowType.goalValue,
+    val length: Int = 3,
+    val decimal: Boolean = false,
+)
+
+/** What a [TypedValue]'s lines have: its numbers ([Number]), what's typed so far ([typed], null at rest), the number being typed ([focused]). */
+internal class TypedValueScope(val typed: List<String>?, val focused: Int?, private val number: @Composable RowScope.(Int) -> Unit) {
+    @Composable
+    fun RowScope.Number(i: Int) = number(i)
+}
+
+/**
+ * A value of several numbers, each typed in place (board ReadyFinalReps): [lines] lay out its numbers ([NumberField],
+ * by index) among words. Any number taps to type ([onStart] first), then Next goes on to the next; once none has
+ * focus, [onDone] reads what was typed, each number as text. "Tap a number to type it" ([hint]) under it at rest.
+ */
+@Composable
+internal fun TypedValue(
+    fields: List<NumberField>,
+    typing: Boolean,
+    onTyping: (Boolean) -> Unit,
+    onDone: (List<String>) -> Unit,
+    onStart: () -> Unit = {},
+    hint: String? = StartCopy.TAP_A_NUMBER,
+    lines: @Composable TypedValueScope.() -> Unit,
+) {
+    val focusManager = LocalFocusManager.current
+    var texts by remember(fields.size) { mutableStateOf(List(fields.size) { TextFieldValue() }) }
+    var focused by remember { mutableStateOf<Int?>(null) }
+    var everFocused by remember { mutableStateOf(false) }
+    var first by remember { mutableStateOf(0) }
+    val focus = remember(fields.size) { List(fields.size) { FocusRequester() } }
+    EndTyping(typing, focused, everFocused) {
+        if (typing) {
+            onDone(texts.map { it.text })
+            onTyping(false)
+        }
+    }
+    if (typing) LaunchedEffect(Unit) { focus[first].requestFocus() }
+    val number: @Composable RowScope.(Int) -> Unit = { i ->
+        val f = fields[i]
+        val last = i == fields.lastIndex
+        if (typing) TypedNumber(
+            texts[i], { v -> texts = texts.toMutableList().also { it[i] = v.copy(text = v.text.filter { c -> c.isDigit() || f.decimal && (c == '.' || c == ',') }.take(f.length)) } },
+            f.editUnit, focused == i,
+            Modifier.focusRequester(focus[i]).onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null },
+            if (f.decimal) KeyboardType.Decimal else KeyboardType.Number, if (last) ImeAction.Done else ImeAction.Next,
+            { if (last) focusManager.clearFocus() else focus[i + 1].requestFocus() },
+            style = f.style, modifier = Modifier.alignByBaseline(),
+        ) else TapNumber(f.shown, f.unit, f.style) {
+            texts = fields.map { selected(it.edit) }
+            first = i; everFocused = false
+            onStart()
+            onTyping(true)
+        }
+    }
+    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(if (typing) 10.dp else 8.dp)) {
+        TypedValueScope(texts.map { it.text }.takeIf { typing }, focused.takeIf { typing }, number).lines()
+        if (!typing && hint != null) Text(hint, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption)
+    }
+}
+
+/** Words between a typed value's numbers, on their baseline. */
+@Composable
+internal fun RowScope.ValueWords(text: String) =
+    Text(text, color = Color.White.copy(alpha = 0.7f), style = GlowType.body, modifier = Modifier.alignByBaseline())
+
+/** The × between a count and what's counted: "6 × 400 m". */
+@Composable
+internal fun RowScope.Times() =
+    Text("×", color = Color.White.copy(alpha = 0.5f), style = GlowType.goalValueMinor, modifier = Modifier.alignByBaseline().padding(horizontal = 4.dp))
+
 private const val SAVE = 0
 private const val SAVED = 1
 
 /** One number of the intervals to tap and type, with its [unit] after it, on the shared baseline. */
 @Composable
-private fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onClick: () -> Unit) {
+internal fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onClick: () -> Unit) {
     Row(Modifier.alignByBaseline().clip(RoundedCornerShape(10.dp)).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 4.dp)) {
         Text(n, color = Color.White, style = style, modifier = Modifier.alignByBaseline())
         if (unit != null) {

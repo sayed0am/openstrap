@@ -92,16 +92,6 @@ object WorkoutCopy {
     /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
     fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
 
-    /** The Ready info sheet's meaning, behind the settings of a sport with no GPS (strength, HIIT, games, mind and body). */
-    const val READY_MEANING = "Heart rate comes from the strap every second, with the phone's screen off too."
-
-    /** The Ready info sheet's rows: the strap. */
-    fun readyRows(): List<Pair<String, String>> = listOf(
-        "Heart rate" to "The strap sends heart rate every second, with the phone's screen off too. If it drops out or " +
-            "isn't connected at the start, recording carries on, and the missing minutes are filled from the strap's own " +
-            "history after the next sync.",
-    )
-
     /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
     fun zoneTitle(zone: Int): Pair<String, String> = "Zone ${zone + 1}," to ZONE_NAMES[zone].lowercase()
 

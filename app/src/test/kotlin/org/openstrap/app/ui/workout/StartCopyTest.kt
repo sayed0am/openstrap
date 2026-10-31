@@ -6,6 +6,7 @@ import org.junit.Test
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.device.ConnectionState
 import java.time.LocalDate
@@ -29,10 +30,66 @@ class StartCopyTest {
         assertEquals("Just go", StartCopy.noGoal(9))
     }
 
-    @Test fun `strength's plan says sets and rest`() {
-        assertEquals("5 sets, 90 s rest, or sooner once you're under 110 bpm", StartCopy.plan(5, Strength.Rest(90, 110)))
-        assertEquals("Open sets, 2 min rest", StartCopy.plan(null, Strength.Rest(120, null)))
+    @Test fun `each family's plan card has its label and sheet`() {
+        assertEquals("Goal", StartCopy.planTitle(Workouts.Family.Distance))
+        assertEquals("Plan", StartCopy.planTitle(Workouts.Family.Strength))
+        assertEquals("Plan", StartCopy.planTitle(Workouts.Family.Intervals))
+        assertEquals("Length", StartCopy.planTitle(Workouts.Family.MindBody))
+        assertEquals("Match", StartCopy.planTitle(Workouts.Family.Games))
+        assertEquals("Choose a goal", StartCopy.planSheet(Workouts.Family.IndoorCardio))
+        assertEquals("Choose a length", StartCopy.planSheet(Workouts.Family.MindBody))
+        assertEquals("Free play or periods", StartCopy.planSheet(Workouts.Family.Games))
+        assertEquals("Change the plan", StartCopy.planHint(Workouts.Family.Strength))
+    }
+
+    @Test fun `strength's sets and rest parse within their ranges`() {
+        assertEquals(5, StartCopy.parseSets("5"))
+        assertEquals(10, StartCopy.parseSets(" 10 "))
+        assertEquals(null, StartCopy.parseSets("0"))
+        assertEquals(null, StartCopy.parseSets("11"))
+        assertEquals(null, StartCopy.parseSets(""))
+        assertEquals(90L, StartCopy.parseSetRest("90"))
+        assertEquals(300L, StartCopy.parseSetRest("300"))
+        assertEquals(null, StartCopy.parseSetRest("20"))
+        assertEquals(null, StartCopy.parseSetRest("301"))
+        assertEquals("Once you're under 110 bpm", StartCopy.endRestNote(110))
+        assertEquals(listOf("3 sets", "4 sets", "5 sets", "6 sets"), StartCopy.SET_PRESETS.map { it.second })
+        // End rest early turns on at a level the recorder knows.
+        assertEquals(true, StartCopy.DEFAULT_BELOW in Strength.Rest.LEVELS)
+        assertEquals(true, StartCopy.DEFAULT_SETS in Strength.SETS)
         assertEquals("2 min 15 s", StartCopy.restText(135))
+    }
+
+    @Test fun `HIIT's pill names a preset, else what the rounds are, and typed numbers change only what reads`() {
+        val tabata = org.openstrap.app.data.Structure.TABATA
+        assertEquals("Tabata", StartCopy.hiitName(tabata.warm(true)))
+        assertEquals("30 / 15", StartCopy.hiitName(tabata.copy(work = 30, rest = 15)))
+        assertEquals("20 / 10", StartCopy.hiitName(tabata.copy(rounds = 10)))
+        assertEquals("Every minute", StartCopy.hiitName(org.openstrap.app.data.Structure.EVERY_MINUTE))
+        assertEquals("Every minute", StartCopy.hiitName(org.openstrap.app.data.Structure.EveryMinute(60, 10)))
+        assertEquals("Every 90 s", StartCopy.hiitName(org.openstrap.app.data.Structure.EveryMinute(90, 10)))
+        assertEquals("3:50 in all", StartCopy.totalLine(tabata))
+        assertEquals("12:00 in all", StartCopy.totalLine(org.openstrap.app.data.Structure.EVERY_MINUTE))
+        assertEquals(tabata.copy(work = 30, rest = 15, rounds = 6), StartCopy.typedTimed(tabata, listOf("30", "15", "6")))
+        assertEquals(tabata.copy(rest = 0), StartCopy.typedTimed(tabata, listOf("", "0", "99")))
+        assertEquals(tabata.warm(true).copy(work = 45), StartCopy.typedTimed(tabata.warm(true), listOf("45", "10", "8")))
+        val every = org.openstrap.app.data.Structure.EVERY_MINUTE
+        assertEquals(every.copy(period = 90, rounds = 10), StartCopy.typedEveryMinute(every, listOf("90", "10")))
+        assertEquals(every, StartCopy.typedEveryMinute(every, listOf("5", "0")))
+    }
+
+    @Test fun `a game's note says what the strap does, and typed periods are in minutes`() {
+        assertEquals("Phone in your bag? That's fine.", StartCopy.gamesNote(null))
+        assertEquals("Phone in your bag? That's fine. The strap buzzes at the end of each half and break.", StartCopy.gamesNote(org.openstrap.app.data.Structure.HALVES))
+        assertEquals(
+            "Phone in your bag? That's fine. The strap buzzes at the end of each quarter.",
+            StartCopy.gamesNote(org.openstrap.app.data.Structure.QUARTERS.copy(rest = 0)),
+        )
+        val halves = org.openstrap.app.data.Structure.HALVES
+        assertEquals(halves.copy(length = 45 * 60, rest = 15 * 60), StartCopy.typedPeriods(halves, listOf("2", "45", "15")))
+        assertEquals(org.openstrap.app.data.Structure.Periods(3, 30 * 60, 0), StartCopy.typedPeriods(halves, listOf("3", "30", "0")))
+        assertEquals(halves, StartCopy.typedPeriods(halves, listOf("1", "0", "31")))
+        assertEquals(listOf("15 min", "30 min", "45 min", "1 h"), StartCopy.MIND_PRESETS.map { it.second })
     }
 
     @Test fun `last time says what and when`() {
@@ -82,7 +139,12 @@ class StartCopyTest {
             StartCopy.INTERVALS_TYPING, StartCopy.ASK_TO_END_NOTE, StartCopy.SAVE_NOTE, StartCopy.indoorNote(8),
             HeartZonesCopy.NOTE, HeartZonesCopy.SET_NOTE, HeartZonesCopy.edgesNote(0), HeartZonesCopy.edgesNote(4),
             HeartZonesCopy.source(org.openstrap.app.data.MaxHeartRate(190, org.openstrap.app.data.MaxHeartRate.Source.Guess)),
-        )
+            StartCopy.OPEN_SETS_KIND_NOTE, StartCopy.PLAN_KIND_NOTE, StartCopy.OPEN_SETS_NOTE, StartCopy.STRENGTH_TYPING,
+            StartCopy.endRestNote(110), StartCopy.LOG_SETS_NOTE, StartCopy.INTERVALS_STATUS, StartCopy.HIIT_FREE_NOTE, StartCopy.HIIT_TYPING,
+            StartCopy.EVERY_TYPING, StartCopy.WARM_UP_NOTE, StartCopy.MIND_STATUS, StartCopy.MIND_OPEN_NOTE, StartCopy.MIND_OPEN_KIND_NOTE,
+            StartCopy.MIND_TIME_KIND_NOTE, StartCopy.FREE_PLAY_KIND_NOTE, StartCopy.HALVES_KIND_NOTE, StartCopy.QUARTERS_KIND_NOTE,
+            StartCopy.GAMES_TYPING, StartCopy.gamesNote(org.openstrap.app.data.Structure.QUARTERS), StartCopy.planSheet(org.openstrap.app.data.Workouts.Family.Games),
+        ) + StartCopy.PRESETS.flatMap { listOf(it.second, it.third) }
         all.forEach { s -> assertFalse(s, s.any { it in "·;—–" }) }
     }
 
