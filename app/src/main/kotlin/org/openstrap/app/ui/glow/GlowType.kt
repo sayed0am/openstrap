@@ -18,6 +18,12 @@ object GlowType {
     /** You, Strap, every detail and settings page: Display 400, 24 on 28. */
     val pageTitle = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Normal, fontSize = 24.sp, lineHeight = 28.sp)
 
+    /** HIIT's phase word over the seconds, WORK or REST (boards HiitWork, HiitRest): Display 500, 30 on 34, spaced out. */
+    val phaseWord = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = 0.14.em)
+
+    /** The moving time on the map's panel, beside its two figures (board RunMap): Display 300, 38 on 42, tabular. */
+    val mapClock = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 38.sp, letterSpacing = (-0.02).em, lineHeight = 42.sp, fontFeatureSettings = "tnum")
+
     /** The date in the moment header: Display 500, 20 on 24. */
     val headerDate = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 24.sp)
 

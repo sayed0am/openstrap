@@ -114,6 +114,20 @@ object WorkoutCopy {
         return SplitLine(i, sp.endT, "Km ${i + 1} in ${workoutClock(sp.seconds)}" + (avg?.let { ", avg $it" } ?: ""))
     }
 
+    /**
+     * The map page's line for the latest whole kilometre, kept until the next: "Km 4 in 5:55, avg 146" and how long
+     * ago it ended, "just now" or "3 min ago". Null before the first.
+     */
+    fun lastSplit(splits: List<Route.Split>, history: List<Pair<Long, Int>>, firstT: Long?, now: Long): Pair<String, String>? {
+        val i = splits.indexOfLast { it.meters >= KM }
+        if (i < 0) return null
+        val sp = splits[i]
+        val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
+        val avg = averageOver(history, from, sp.endT)
+        val ago = (now - sp.endT).coerceAtLeast(0) / 60
+        return "Km ${i + 1} in ${workoutClock(sp.seconds)}" + (avg?.let { ", avg $it" } ?: "") to if (ago < 1) "just now" else "$ago min ago"
+    }
+
     /** The average of the [readings] (time, bpm) from [from] to [to], whole bpm; null without any. */
     fun averageOver(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? =
         readings.filter { it.first in from..to }.takeIf { it.isNotEmpty() }?.map { it.second }?.average()?.toInt()

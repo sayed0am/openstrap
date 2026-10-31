@@ -147,6 +147,14 @@ object AppIcons {
     val Refresh04: ImageVector by lazy { line("Refresh04", "M3.05493 13C3.01863 12.6717 3 12.338 3 12C3 7.02944 7.02944 3 12 3C14.8273 3 17.35 4.30367 19 6.34267M20.9451 11C20.9814 11.3283 21 11.662 21 12C21 16.9706 16.9706 21 12 21C9.17273 21 6.64996 19.6963 5 17.6573", "M16 7H17C18.4142 7 19.1213 7 19.5607 6.56066C20 6.12132 20 5.41421 20 4V3", "M8 17H7C5.58579 17 4.87868 17 4.43934 17.4393C4 17.8787 4 18.5858 4 20V21") }
     /** Find strap on the Strap page. */
     val SearchArea: ImageVector by lazy { line("SearchArea", "M18.5016 18.5L21 21M20 14.5C20 11.4624 17.5376 9 14.5 9C11.4624 9 9 11.4624 9 14.5C9 17.5376 11.4624 20 14.5 20C17.5376 20 20 17.5376 20 14.5Z", "M10 3H14M3 10V14M6.5 21C4.567 21 3 19.433 3 17.5M17.5 3C19.433 3 21 4.567 21 6.5M3 6.5C3 4.567 4.567 3 6.5 3") }
+
+    /** The live map's route-only switch: a folded map. */
+    val MapFold: ImageVector by lazy { line("MapFold", "M3 6L9 4L15 6L21 4V18L15 20L9 18L3 20Z", "M9 4V18", "M15 6V20") }
+
+    /** The live map's follow-me button: an arrow pointing the way. */
+    val NavigationArrow: ImageVector by lazy { solid("NavigationArrow", "M12 2L19 21L12 17L5 21Z") }
+    /** Skip: a play triangle against a bar, for moving on to the next phase. */
+    val SkipFill: ImageVector by lazy { solid("SkipFill", "M5 6.2C5 4.7 6.6 3.8 7.9 4.6L15.6 10.3C16.8 11.1 16.8 12.9 15.6 13.7L7.9 19.4C6.6 20.2 5 19.3 5 17.8Z", "M17.5 5.5C17.5 4.7 18.1 4 19 4C19.9 4 20.5 4.7 20.5 5.5V18.5C20.5 19.3 19.9 20 19 20C18.1 20 17.5 19.3 17.5 18.5Z") }
     /** All sports: three dots in a circle, "more" at the end of the sport tiles, apart from All metrics' grid. */
     val MoreHorizontalCircle01: ImageVector by lazy { line("MoreHorizontalCircle01", "M21 12C21 11.1716 20.3284 10.5 19.5 10.5C18.6716 10.5 18 11.1716 18 12C18 12.8284 18.6716 13.5 19.5 13.5C20.3284 13.5 21 12.8284 21 12Z", "M13.5 12C13.5 11.1716 12.8284 10.5 12 10.5C11.1716 10.5 10.5 11.1716 10.5 12C10.5 12.8284 11.1716 13.5 12 13.5C12.8284 13.5 13.5 12.8284 13.5 12Z", "M6 12C6 11.1716 5.32843 10.5 4.5 10.5C3.67157 10.5 3 11.1716 3 12C3 12.8284 3.67157 13.5 4.5 13.5C5.32843 13.5 6 12.8284 6 12Z") }
 }

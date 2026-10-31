@@ -173,13 +173,15 @@ internal fun WorkoutButton(
 internal fun WorkoutPage(
     glow: Color, contentPadding: PaddingValues, scroll: Boolean = true,
     pinned: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Painted over the whole screen in place of the top glow (HIIT's phase light). */
+    backdrop: Brush? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val width = constraints.maxWidth.toFloat()
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
-        Box(
+        if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop)) else Box(
             Modifier.fillMaxWidth().height(420.dp).background(
                 Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = width * 0.9f),
             ),

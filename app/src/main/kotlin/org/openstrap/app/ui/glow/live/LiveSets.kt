@@ -21,6 +21,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.geometry.Size
+import androidx.compose.foundation.border
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -124,7 +127,7 @@ internal fun LiveStrengthScreen(
     val skipped = rememberSaveable(r.workout.start) { mutableStateListOf<Int>() }
     val unlogged = r.sets.lastOrNull { it.end != null }?.takeIf { r.logSets && it.reps == null && it.index !in skipped && !r.inSet }
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = activeSeconds(r), smallTime = true,
+        r, color, connected, contentPadding, controls, time = activeSeconds(r), smallTime = true, pillControls = true, fill = true,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, history, listOf(
             moment.done.toString() to if (moment.done == 1) "Set done" else "Sets done",
             Strength.kgLifted(r.sets)?.let { Strength.kgText(it) } to "kg lifted",
@@ -140,10 +143,10 @@ internal fun LiveStrengthScreen(
         DoneSets(r.sets, history)
         Spacer(Modifier.weight(1f))
         when {
-            r.inSet -> WorkoutButton("Set done", Color.White, Color.Black, { haptics.perform(HapticEvent.SetDone); onSetDone() }, icon = AppIcons.Tick02, height = 64.dp)
-            else -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (r.resting) Box(Modifier.width(110.dp)) { WorkoutButton("+30 s", Raised, Color.White, onExtendRest, height = 64.dp) }
-                Box(Modifier.weight(1f)) { WorkoutButton("Start set ${moment.setNumber}", Color.White, Color.Black, onStartSet, icon = AppIcons.PlayFill, height = 64.dp) }
+            r.inSet -> WorkoutButton("Set done", Color.White, Color.Black, { haptics.perform(HapticEvent.SetDone); onSetDone() }, icon = AppIcons.Tick02, height = 72.dp)
+            else -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (r.resting) Box(Modifier.width(108.dp)) { WorkoutButton("+30 s", Raised, Color.White, onExtendRest, height = 72.dp) }
+                Box(Modifier.weight(1f)) { WorkoutButton("Start set ${moment.setNumber}", Color.White, Color.Black, onStartSet, icon = AppIcons.PlayFill, height = 72.dp) }
             }
         }
         val target = r.workout.setsTarget
@@ -170,15 +173,13 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: 
                 Text(WorkoutCopy.setOf(number, r.workout.setsTarget), color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
                 ExercisePill(r.exercise, onName)
             }
-            Spacer(Modifier.height(18.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                DotMatrixText(workoutClock(seconds), dot = DotSize.Detail)
-                Spacer(Modifier.width(10.dp))
-                Text("in this set", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
+            Column(Modifier.fillMaxWidth().padding(top = 34.dp, bottom = 26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                DotMatrixText(workoutClock(seconds), dot = DotSize.Live)
+                Spacer(Modifier.height(14.dp))
+                Text("in this set", color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
             }
-            Spacer(Modifier.height(16.dp))
-            SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = true)
-            Spacer(Modifier.height(14.dp))
+            SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = true, Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(22.dp))
             HeartLine(bpm, r.maxHeartRate)
         }
     }
@@ -195,7 +196,7 @@ private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onNa
         Spacer(Modifier.height(10.dp))
         Text(WorkoutCopy.setOf(number, r.workout.setsTarget) + " next. Tap Start when you pick up the weight.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Spacer(Modifier.height(14.dp))
-        SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = false)
+        SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = false, Modifier.align(Alignment.CenterHorizontally))
     }
 }
 
@@ -206,33 +207,57 @@ private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onNa
 @Composable
 private fun RestCard(r: WorkoutState.Recording, left: Long, done: Int, bpm: Int?, drop: Int?, history: List<Pair<Long, Int>>) {
     val rule = Strength.Rest.parse(r.workout.rest) ?: Strength.Rest.DEFAULT
-    EdgeCard(RestGreen, Modifier.fillMaxWidth()) {
+    // Outlined, not lit: the set's card glows, the rest's counts down in its ring.
+    Column(
+        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowLayout.CardShape).padding(20.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Row {
             Text("Rest", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
             Text("after " + WorkoutCopy.setOf(done, r.workout.setsTarget).lowercase(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            DotMatrixText(workoutClock(left.coerceAtLeast(0)), dot = DotSize.Detail)
-            Spacer(Modifier.width(10.dp))
-            Text("left", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-        }
-        val since = r.sets.lastOrNull()?.end
-        if (since != null) {
-            Spacer(Modifier.height(12.dp))
-            FallingHeart(history.filter { it.first >= since - 10 }, rule.belowBpm)
-        }
         Spacer(Modifier.height(10.dp))
-        if (bpm != null) Text("$bpm bpm" + (drop?.takeIf { it > 0 }?.let { ", down $it" } ?: ""), color = Color.White, style = GlowType.sentence)
-        Text(WorkoutCopy.restRule(rule.belowBpm), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        val total = (r.restUntil ?: 0) - (r.sets.lastOrNull()?.end ?: r.restUntil ?: 0)
+        RestRing(left.coerceAtLeast(0), total.coerceAtLeast(1))
+        Spacer(Modifier.height(4.dp))
+        Column(Modifier.fillMaxWidth()) {
+            val since = r.sets.lastOrNull()?.end
+            if (since != null) {
+                Spacer(Modifier.height(10.dp))
+                FallingHeart(history.filter { it.first >= since - 10 }, rule.belowBpm)
+            }
+            Spacer(Modifier.height(6.dp))
+            if (bpm != null) Text("$bpm bpm" + (drop?.takeIf { it > 0 }?.let { ", down $it" } ?: ""), color = Color.White, style = GlowType.sentence)
+            Spacer(Modifier.height(4.dp))
+            Text(WorkoutCopy.restRule(rule.belowBpm), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        }
+    }
+}
+
+/** The rest left in dots inside a ring in rest green that empties as it runs down. */
+@Composable
+private fun RestRing(left: Long, total: Long) {
+    Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.fillMaxSize().padding(4.dp)) {
+            val w = 8.dp.toPx()
+            val inset = Offset(w / 2, w / 2)
+            val arc = Size(size.width - w, size.height - w)
+            drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, inset, arc, style = Stroke(w))
+            drawArc(RestGreen, -90f, 360f * (left.toFloat() / total).coerceIn(0f, 1f), false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            DotMatrixText(workoutClock(left), dot = DotSize.Detail)
+            Spacer(Modifier.height(10.dp))
+            Text("left", color = Color.White.copy(alpha = 0.75f), style = GlowType.body)
+        }
     }
 }
 
 /** What follows the rest: "Set 4, bench press 10 × 60 kg". */
 @Composable
 private fun NextLine(number: Int, exercise: String?, load: String?) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
-        Text("Next", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.width(56.dp))
+    Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp)) {
+        Text("Next", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.weight(1f))
         Text(
             listOfNotNull("Set $number", exercise?.lowercase()?.let { e -> listOfNotNull(e, load).joinToString(" ") }).joinToString(", "),
             color = Color.White, style = GlowType.body,
@@ -255,21 +280,26 @@ private fun FallingHeart(readings: List<Pair<Long, Int>>, level: Int?) {
         val path = Path().apply {
             readings.forEachIndexed { i, (t, v) -> if (i == 0) moveTo(x(t), y(v)) else lineTo(x(t), y(v)) }
         }
-        drawPath(path, Color.White, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+        drawPath(path, EndRed, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
     }
 }
 
 /** The sets as dots: done ones white, the one under way white too, those to go dark. */
 @Composable
-private fun SetDots(done: Int, target: Int?, inSet: Boolean) {
+private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier = Modifier) {
     val total = maxOf(target ?: 0, done + if (inSet) 1 else 0)
     if (total == 0) return
     Row(
-        Modifier.semantics { contentDescription = "$done sets done" + (target?.let { ", ${(it - done).coerceAtLeast(0)} to go" } ?: "") },
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier.semantics { contentDescription = "$done sets done" + (target?.let { ", ${(it - done).coerceAtLeast(0)} to go" } ?: "") },
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         repeat(total) { i ->
-            Box(Modifier.size(10.dp).clip(CircleShape).background(if (i < done || (inSet && i == done)) Color.White else Color.Black.copy(alpha = 0.35f)))
+            val now = inSet && i == done
+            // The set under way has a soft ring round it.
+            Box(Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+                if (now) Box(Modifier.size(22.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f)))
+                Box(Modifier.size(14.dp).clip(CircleShape).background(if (i < done || now) Color.White else Color.Black.copy(alpha = 0.35f)))
+            }
         }
     }
 }
@@ -306,15 +336,21 @@ private fun ExercisePill(name: String?, onClick: () -> Unit) {
 private fun DoneSets(sets: List<AppWorkoutSet>, history: List<Pair<Long, Int>>) {
     val done = sets.filter { it.end != null }.asReversed()
     if (done.isEmpty()) return
-    Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(Modifier.fillMaxWidth()) {
         done.take(4).forEach { s ->
-            Row {
-                Text("Set ${s.index + 1}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.width(56.dp))
-                Text(WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)), color = Color.White, style = GlowType.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            SetRule()
+            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp)) {
+                Text("Set ${s.index + 1}", color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
+                Text(WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)), color = Color.White.copy(alpha = 0.72f), style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
+        SetRule()
     }
 }
+
+/** The line between the rows under the card, plain enough to read as a break between sets. */
+@Composable
+private fun SetRule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.18f)))
 
 /**
  * The log card after a set (board StrengthLog): the set done with its time and peak, its exercise, reps and kg

@@ -1,6 +1,12 @@
 package org.openstrap.app.ui.glow
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,11 +47,23 @@ private const val BLANK_STYLE = """{"version":8,"sources":{},"layers":[{"id":"bg
 /**
  * A workout's route on a map, each stretch in its heart-rate zone's colour ([Route.byZone]), with a white dot where
  * you are (or ended): [here] when given, so it shows before there's a line (standing still makes none), else the
- * line's end. [routeOnly] loads no map tiles: the tile server never learns where the map is. The camera fits the
- * whole route as it grows, or centres on the dot until then.
+ * line's end, ringed in [hereColor] when given; the start is a hollow dot. [routeOnly] loads no map tiles: the tile
+ * server never learns where the map is. While [follow], the camera fits the whole route as it grows inside
+ * [fitPadding] (clear of what's drawn over the map), or centres on the dot until then; a drag on the map calls
+ * [onPanned], so the caller can stop following.
  */
 @Composable
-fun WorkoutMap(stretches: List<Pair<List<Route.Point>, Int>>, routeOnly: Boolean, modifier: Modifier = Modifier, here: Route.Point? = null) {
+fun WorkoutMap(
+    stretches: List<Pair<List<Route.Point>, Int>>, routeOnly: Boolean, modifier: Modifier = Modifier, here: Route.Point? = null,
+    fitPadding: PaddingValues = PaddingValues(horizontal = 28.dp, vertical = 24.dp),
+    /** How far up from the map's bottom edge the OpenStreetMap credit sits, clear of a panel drawn over it. */
+    creditBottom: Dp = 18.dp,
+    hereColor: Color? = null,
+    follow: Boolean = true,
+    onPanned: () -> Unit = {},
+) {
+    val panned by rememberUpdatedState(onPanned)
+    val density = LocalDensity.current
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var map by remember { mutableStateOf<MapLibreMap?>(null) }
@@ -58,12 +76,17 @@ fun WorkoutMap(stretches: List<Pair<List<Route.Point>, Int>>, routeOnly: Boolean
                 m.uiSettings.isRotateGesturesEnabled = false
                 m.uiSettings.isTiltGesturesEnabled = false
                 m.uiSettings.isCompassEnabled = false
+                // Fitting a route only metres long would zoom to single buildings; streets stay in view.
+                m.setMaxZoomPreference(MAX_ZOOM)
                 // MapLibre's licence doesn't ask for its logo; the ⓘ stays, for the OpenStreetMap credit the tiles need.
                 m.uiSettings.isLogoEnabled = false
                 // In the bottom-right corner, inset to clear the card's rounded edge.
                 val inset = (18 * context.resources.displayMetrics.density).toInt()
                 m.uiSettings.attributionGravity = android.view.Gravity.BOTTOM or android.view.Gravity.END
-                m.uiSettings.setAttributionMargins(0, 0, inset, inset)
+                m.uiSettings.setAttributionMargins(0, 0, inset, with(density) { creditBottom.roundToPx() })
+                m.addOnCameraMoveStartedListener { reason ->
+                    if (reason == MapLibreMap.OnCameraMoveStartedListener.REASON_API_GESTURE) panned()
+                }
                 map = m
             }
         }
@@ -91,12 +114,28 @@ fun WorkoutMap(stretches: List<Pair<List<Route.Point>, Int>>, routeOnly: Boolean
         m.setStyle(builder) { s ->
             s.addSource(GeoJsonSource(SOURCE, geoJson(emptyList())))
             s.addSource(GeoJsonSource(HERE, geoJson(emptyList())))
+            s.addSource(GeoJsonSource(START, geoJson(emptyList())))
+            s.addLayer(
+                CircleLayer(START_DOT, START).withProperties(
+                    PropertyFactory.circleRadius(5f),
+                    PropertyFactory.circleColor(0xFF121316.toInt()),
+                    PropertyFactory.circleStrokeWidth(2f),
+                    PropertyFactory.circleStrokeColor(Color.White.toArgb()),
+                ),
+            )
             s.addLayer(
                 LineLayer(LINE, SOURCE).withProperties(
                     PropertyFactory.lineColor(Expression.get("color")),
                     PropertyFactory.lineWidth(5f),
                     PropertyFactory.lineCap(Property.LINE_CAP_ROUND),
                     PropertyFactory.lineJoin(Property.LINE_JOIN_ROUND),
+                ),
+            )
+            s.addLayer(
+                CircleLayer(HALO, HERE).withProperties(
+                    PropertyFactory.circleRadius(18f),
+                    PropertyFactory.circleOpacity(0.25f),
+                    PropertyFactory.visibility(Property.NONE),
                 ),
             )
             s.addLayer(
@@ -110,29 +149,48 @@ fun WorkoutMap(stretches: List<Pair<List<Route.Point>, Int>>, routeOnly: Boolean
             style = s
         }
     }
-    LaunchedEffect(style, stretches, here) {
+    LaunchedEffect(style, hereColor) {
+        style?.getLayerAs<CircleLayer>(HALO)?.setProperties(
+            *listOfNotNull(
+                PropertyFactory.visibility(if (hereColor != null) Property.VISIBLE else Property.NONE),
+                hereColor?.let { PropertyFactory.circleColor(it.toArgb()) },
+            ).toTypedArray(),
+        )
+    }
+    LaunchedEffect(style, stretches, here, follow) {
         val s = style ?: return@LaunchedEffect
         s.getSourceAs<GeoJsonSource>(SOURCE)?.setGeoJson(geoJson(stretches))
         val last = here ?: stretches.lastOrNull()?.first?.lastOrNull()
-        s.getSourceAs<GeoJsonSource>(HERE)?.setGeoJson(
-            last?.let { """{"type":"Feature","geometry":{"type":"Point","coordinates":[${coord(it)}]},"properties":{}}""" }
-                ?: """{"type":"FeatureCollection","features":[]}""",
-        )
+        s.getSourceAs<GeoJsonSource>(HERE)?.setGeoJson(point(last))
         val all = stretches.flatMap { it.first }
+        s.getSourceAs<GeoJsonSource>(START)?.setGeoJson(point(all.firstOrNull()?.takeIf { all.size >= 2 }))
+        if (!follow) return@LaunchedEffect
         if (all.size >= 2) {
             val bounds = LatLngBounds.Builder().includes(all.map { LatLng(it.lat, it.lon) }).build()
-            runCatching { map?.easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, 80)) }
+            val px = with(density) { listOf(fitPadding.calculateLeftPadding(LayoutDirection.Ltr), fitPadding.calculateTopPadding(), fitPadding.calculateRightPadding(LayoutDirection.Ltr), fitPadding.calculateBottomPadding()).map { it.roundToPx() } }
+            runCatching { map?.easeCamera(CameraUpdateFactory.newLatLngBounds(bounds, px[0], px[1], px[2], px[3])) }
         } else if (last != null) {
-            map?.easeCamera(CameraUpdateFactory.newLatLngZoom(LatLng(last.lat, last.lon), 16.0))
+            map?.easeCamera(CameraUpdateFactory.newLatLngZoom(LatLng(last.lat, last.lon), MAX_ZOOM))
         }
     }
     AndroidView({ view }, modifier)
 }
 
+/** Close enough to read the streets, far enough to see where they go. */
+private const val MAX_ZOOM = 16.5
+
 private const val SOURCE = "route"
 private const val HERE = "here"
 private const val LINE = "route-line"
 private const val DOT = "here-dot"
+private const val HALO = "here-halo"
+private const val START = "start"
+private const val START_DOT = "start-dot"
+
+/** One point as GeoJSON, or nothing. */
+private fun point(p: Route.Point?): String =
+    p?.let { """{"type":"Feature","geometry":{"type":"Point","coordinates":[${coord(it)}]},"properties":{}}""" }
+        ?: """{"type":"FeatureCollection","features":[]}"""
 
 private fun coord(p: Route.Point) = String.format(Locale.ROOT, "%.7f,%.7f", p.lon, p.lat)
 

@@ -245,7 +245,11 @@ fun GlowWorkoutLiveScreen(
  * the screen opened have had theirs.
  */
 @Composable
-internal fun KmSplitLine(route: List<Route.Point>, readings: List<Pair<Long, Int>>, pauses: List<LongRange>) {
+internal fun KmSplitLine(
+    route: List<Route.Point>, readings: List<Pair<Long, Int>>, pauses: List<LongRange>,
+    /** Its line's height is kept while there's none, so views filling the screen don't shrink when it shows. */
+    keepRoom: Boolean = false,
+) {
     val splits = remember(route.size, pauses) { Route.splits(route, pauses) }
     val now by produceState(System.currentTimeMillis() / 1000) {
         while (true) {
@@ -262,8 +266,8 @@ internal fun KmSplitLine(route: List<Route.Point>, readings: List<Pair<Long, Int
             ticked = line.index
         }
     }
-    if (line != null) Text(
-        line.text, color = Color.White, style = MediumBody.copy(fontFeatureSettings = "tnum"),
+    if (line != null || keepRoom) Text(
+        line?.text.orEmpty(), color = Color.White, style = MediumBody.copy(fontFeatureSettings = "tnum"),
         modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
     )
 }
