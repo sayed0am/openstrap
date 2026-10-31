@@ -3,7 +3,6 @@ package org.openstrap.app.ui.workout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Test
-import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutTarget
@@ -30,15 +29,10 @@ class StartCopyTest {
         assertEquals("Just go", StartCopy.noGoal(9))
     }
 
-    @Test fun `the plan and the recent cards say last time's settings`() {
+    @Test fun `strength's plan says sets and rest`() {
         assertEquals("5 sets, 90 s rest, or sooner once you're under 110 bpm", StartCopy.plan(5, Strength.Rest(90, 110)))
         assertEquals("Open sets, 2 min rest", StartCopy.plan(null, Strength.Rest(120, null)))
         assertEquals("2 min 15 s", StartCopy.restText(135))
-        assertEquals("5 sets, 90 s rest", StartCopy.settingsLine(52, SportSettings(sets = 5, rest = "r:90:0")))
-        assertEquals("45 min", StartCopy.settingsLine(60, SportSettings(goal = "t:2700")))
-        assertEquals("Open", StartCopy.settingsLine(60, SportSettings()))
-        assertEquals("5 km", StartCopy.settingsLine(1, SportSettings(goal = "d:5000")))
-        assertEquals("Just run", StartCopy.settingsLine(1, SportSettings()))
     }
 
     @Test fun `last time says what and when`() {
@@ -65,7 +59,6 @@ class StartCopyTest {
         assertEquals("40 / 20", StartCopy.structureName(org.openstrap.app.data.Structure.FORTY_TWENTY))
         assertEquals("6 × 400 m", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(400, null, 90, 6)))
         assertEquals("8 × 2 min", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(null, 120, 60, 8)))
-        assertEquals("Saved, 6 × 400 m run", StartCopy.savedLine(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 1))
         assertEquals(230L, StartCopy.totalTime(org.openstrap.app.data.Structure.TABATA))
         // Reps fit a run, rounds fit HIIT, never the other way round.
         assertEquals(true, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 2))

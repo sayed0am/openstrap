@@ -551,13 +551,12 @@ private fun AppRoot(
             container.workout.readyRequest.value = null
         }
     }
-    // The Start widget's All sports: Ready on the sport picker, as the Activity tab's All sports opens it.
+    // The Start widget's All sports: Choose with every sport, as the Activity tab's All sports opens it.
     val readyPickRequest by container.workout.readyPickRequest.collectAsStateWithLifecycle()
     LaunchedEffect(readyPickRequest) {
         if (readyPickRequest) {
             if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) {
-                readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType
-                readyPicking = true
+                choosing = true
             }
             container.workout.readyPickRequest.value = false
         }
