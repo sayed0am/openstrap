@@ -177,7 +177,7 @@ fun GlowActivityScreen(
 /**
  * Start a workout (spec 5.3): a Wide edge card in the neutral light from below, its title, then your three most used
  * sports as 64 dp tiles with their names under them and All sports after them. Words with the icons, since an icon
- * alone doesn't say "start". A sport opens Ready with it chosen ([onStart]); All sports opens Choose a sport. The
+ * alone doesn't say "start". A sport opens Ready with it chosen ([onStart]); All sports opens Choose with every sport. The
  * tiles are the buttons, so the card itself opens nothing and has no caret. Today only.
  */
 @Composable

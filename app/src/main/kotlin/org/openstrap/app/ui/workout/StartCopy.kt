@@ -1,7 +1,6 @@
 package org.openstrap.app.ui.workout
 
 import org.openstrap.app.data.Route
-import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutTarget
@@ -134,24 +133,12 @@ object StartCopy {
     /** A game's choice on Ready, no label: free play or its periods. */
     const val FREE_PLAY = "Free play"
 
-    /** A saved workout on Choose: "Saved, 6 × 400 m run". */
-    fun savedLine(s: org.openstrap.app.data.Structure, sport: Int): String = "Saved, ${structureName(s)} ${Workouts.shortName(sport).lowercase()}"
-
     /** All of a timed structure's time, rounds of work and the rests between, for Ready: "4:00". */
     fun totalTime(s: org.openstrap.app.data.Structure): Long? = when (s) {
         is org.openstrap.app.data.Structure.Timed -> s.rounds * s.work + (s.rounds - 1) * s.rest
         is org.openstrap.app.data.Structure.EveryMinute -> s.rounds * s.period
         is org.openstrap.app.data.Structure.Reps -> null
         is org.openstrap.app.data.Structure.Periods -> s.rounds * s.length + (s.rounds - 1) * s.rest
-    }
-
-    /** A recent sport's card on Choose: last time's settings in one line ("5 sets, 90 s rest", "45 min", "Just run"). */
-    fun settingsLine(type: Int, s: SportSettings): String {
-        if (Workouts.family(type) == Workouts.Family.Strength) {
-            val rest = Strength.Rest.parse(s.rest) ?: Strength.Rest.DEFAULT
-            return listOfNotNull(s.sets?.let { "$it sets" }, "${restText(rest.seconds)} rest").joinToString(", ")
-        }
-        return WorkoutTarget.parse(s.goal)?.let(::goalLabel) ?: if (Workouts.family(type) == Workouts.Family.MindBody) OPEN else noGoal(type)
     }
 
     /** A goal on a chip: "5 km", "30 min", "Zone 2", "300 kcal". */

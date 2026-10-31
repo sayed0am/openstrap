@@ -551,13 +551,12 @@ private fun AppRoot(
             container.workout.readyRequest.value = null
         }
     }
-    // The Start widget's All sports: Ready on the sport picker, as the Activity tab's All sports opens it.
+    // The Start widget's All sports: Choose with every sport, as the Activity tab's All sports opens it.
     val readyPickRequest by container.workout.readyPickRequest.collectAsStateWithLifecycle()
     LaunchedEffect(readyPickRequest) {
         if (readyPickRequest) {
             if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) {
-                readySport = readySport ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType
-                readyPicking = true
+                choosing = true
             }
             container.workout.readyPickRequest.value = false
         }
@@ -1065,7 +1064,7 @@ private fun AppRoot(
                                 suggestion = suggestion,
                                 onSaveSuggestion = { savingSuggestion = suggestion },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
-                                // The same way in as Activity's start card: the ready screen for the sport, or its sport list.
+                                // The same way in as Activity's start card: the ready screen for the sport, or Choose with every sport.
                                 onStartSport = { readySport = it; readyPicking = false },
                                 onOtherSport = { choosing = true },
                                 offer = offer,
@@ -1521,7 +1520,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
     choosing: Boolean = false,
-    /** Opens Ready over Choose for a sport, or on the sport picker ([pick], All sports). */
+    /** Opens Ready over Choose for a sport, or on its sport picker ([pick]). */
     onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
     onCloseChoose: () -> Unit = {},
     /** The rounds Ready opens on, from a saved workout picked on Choose; null for last time's. */
@@ -1657,9 +1656,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 val last = mine.firstOrNull { org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == type }
                 org.openstrap.app.ui.glow.ChooseSport(type, last?.let { org.openstrap.app.ui.workout.StartCopy.lastTime(it, today, zone) } ?: "")
             }
-            val recent = sports.recent.map { type ->
-                org.openstrap.app.ui.glow.ChooseSport(type, org.openstrap.app.ui.workout.StartCopy.settingsLine(type, sportSettings[type] ?: org.openstrap.app.data.SportSettings()))
-            }
+            val recent = remember(sports, saved) { org.openstrap.app.data.WorkoutSetup.recentChips(sports.recent, saved) }
             org.openstrap.app.ui.glow.GlowChooseScreen(
                 usual, recent, connection, live, padding,
                 onStartUsual = { type ->
@@ -1667,11 +1664,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                     startPlan(org.openstrap.app.data.WorkoutSetup.plan(type, settings, sides, org.openstrap.app.ui.glow.locationAvailable(context)), null)
                 },
                 onReady = { onOpenReady(it, false) },
-                onAllSports = { onOpenReady(sports.usual ?: org.openstrap.app.ui.glow.topSports(workouts).first().sportType, true) },
-                saved = saved.firstOrNull()?.let { w ->
-                    org.openstrap.app.data.Structure.parse(w.structure)?.let { s -> org.openstrap.app.ui.glow.ChooseSaved(w.name, org.openstrap.app.ui.workout.StartCopy.savedLine(s, w.sport)) }
-                },
-                onSaved = { saved.firstOrNull()?.let { w -> onOpenSaved(w.sport, w.structure) } },
+                onSaved = { w -> onOpenSaved(w.sport, w.structure) },
                 onBack = onCloseChoose,
             )
         }

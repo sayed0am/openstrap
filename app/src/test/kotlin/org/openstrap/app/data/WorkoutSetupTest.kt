@@ -91,6 +91,21 @@ class WorkoutSetupTest {
     }
 
     @Test
+    fun recentChipsAreTheSportsThenTheNewestSavedWorkouts() {
+        fun saved(name: String, structure: String) = org.openstrap.app.data.db.SavedWorkout(name = name, sport = 1, structure = structure, createdAt = 0)
+        val chips = WorkoutSetup.recentChips(
+            listOf(52, 60),
+            // Newest first; one whose rounds no longer read is left out.
+            listOf(saved("Tuesday intervals", "r:400m/90x6"), saved("Broken", "nonsense"), saved("Hills", "r:200m/60x8"), saved("Oldest", "r:1000m/120x4")),
+        )
+        assertEquals(
+            listOf(RecentChip.Sport(52), RecentChip.Sport(60), RecentChip.Saved("Tuesday intervals", 1, "r:400m/90x6"), RecentChip.Saved("Hills", 1, "r:200m/60x8")),
+            chips,
+        )
+        assertEquals(listOf(RecentChip.Sport(1)), WorkoutSetup.recentChips(listOf(1), emptyList()))
+    }
+
+    @Test
     fun aNewUserGetsRunWalkAndStrength() {
         val c = WorkoutSetup.choose(emptyList(), 0)
         assertNull(c.usual)
