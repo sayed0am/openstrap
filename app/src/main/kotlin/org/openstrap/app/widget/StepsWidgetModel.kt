@@ -197,8 +197,6 @@ object StepsLayout {
         val top: TopRow = TopRow(null, false, 0f), val spread: Spread = Spread(0f, 0),
     )
 
-    /** The Small's dots: the mockup's 3 dp (spec 3), growing to 7 on a tall cell before the gaps do. */
-    val SMALL_DOTS = listOf(3f, 3.6f, 4.5f, 5f, 5.5f, 6f, 6.5f, 7f)
 
     /**
      * The Small in [width] by [height] dp: the top row (the title, with the strap [status] button when it shows), the
@@ -220,8 +218,7 @@ object StepsLayout {
             if (withShare && !shareFits) continue
             val base = at(SMALL_DOT, word, withShare)
             if (!base.spread.fits(height, gap)) continue
-            val ladder = SMALL_DOTS.map { at(it, word, withShare) }.distinct()
-            return Spread.grow(ladder, height, gap) { it.spread }
+            return WidgetHero.ladder(WidgetSizes.Small, height).map { at(it, word, withShare) }.firstOrNull { it.spread.fits(height, gap) } ?: base
         }
         return at(SMALL_DOT, word = false, withShare = false)
     }
@@ -236,12 +233,12 @@ object StepsLayout {
      * The number with "today" and [toGo] on the right, in [width] dp: at 3.6 dp dots when all fit, the dots smaller
      * down to the Small's 3 dp to keep "today", then without "today" at up to 3.6 dp.
      */
-    fun numberRow(stepsText: String, toGo: String, width: Float, fontScale: Float): NumberRow {
+    fun numberRow(stepsText: String, toGo: String, width: Float, fontScale: Float, maxDot: Float = WIDE_DOT): NumberRow {
         val right = SIDE_GAP_DP + WidgetText.width(toGo, WidgetText.SECONDARY_SP, fontScale)
         val word = WORD_GAP_DP + WidgetText.width(StepsWidgetModel.TODAY, WidgetText.BODY_SP, fontScale)
-        val withWord = fitDot(stepsText, width - right - word, WIDE_DOT)
+        val withWord = fitDot(stepsText, width - right - word, maxDot)
         if (withWord >= SMALL_DOT) return NumberRow(withWord, word = true)
-        return NumberRow(fitDot(stepsText, width - right, WIDE_DOT), word = false)
+        return NumberRow(fitDot(stepsText, width - right, maxDot), word = false)
     }
 
     /**
@@ -295,9 +292,13 @@ object StepsLayout {
 
     private fun fit(m: StepsWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine?, large: Boolean): Fit {
         val top = TopRow.of(m.title, m.goalNote, status, width, fontScale, withWords = true)
-        val row = numberRow(m.stepsText, m.toGo, width, fontScale)
         val week = if (large) week(m.weekLine, width, fontScale, m.week.size) else null
         val inner = if (large) 3 else 2
+        // The number at the size every widget's takes here, smaller while the rest doesn't fit with the line's least.
+        val rows = WidgetHero.ladder(if (large) WidgetSizes.Large else WidgetSizes.Wide, height).map { numberRow(m.stepsText, m.toGo, width, fontScale, it) }
+        val row = rows.firstOrNull { r ->
+            height - top.height - r.height(fontScale) - (week?.height ?: 0f) - inner * MIN_GAP_DP >= (if (m.showLine) MIN_LINE_DP else BAR_DP)
+        } ?: rows.last()
         val fixed = top.height + row.height(fontScale) + (week?.height ?: 0f)
         val room = height - fixed - inner * MIN_GAP_DP
         val line = if (!m.showLine) null else lineIn(room)?.let { l ->

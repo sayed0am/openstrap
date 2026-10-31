@@ -550,8 +550,8 @@ data class MomentWidgetModel(
  * gap above the first and below the last, as the padding already frames them.
  */
 object MomentLayout {
-    /** The moment's name: Sans 500 13 at 60% (spec 3.1), Caption size when it won't fit. */
-    val NAME_SIZES = listOf(WidgetText.SECONDARY_SP, WidgetText.CAPTION_SP)
+    /** The moment's name: the title every widget has (spec 3.1), stepping down as theirs do when it won't fit. */
+    val NAME_SIZES = TopRow.TITLE_SIZES + WidgetText.CAPTION_SP
 
     /** The word under or beside the number: Body, then Secondary. */
     val WORD_SIZES = listOf(WidgetText.BODY_SP, WidgetText.SECONDARY_SP)
@@ -566,12 +566,13 @@ object MomentLayout {
     val SENTENCE_GROWTH = listOf(22f, 24f)
     const val SENTENCE_LINES = 2
 
-    /** The number's dots: the Small's from the mockup's 3.6 up, the Wide's and Large's 4.5 (spec 3). */
+    /**
+     * The number's dots when room is short: the Small's mockup 3.6, then 3; the Wide's and Large's 4.5 (spec 3).
+     * Room to spare takes [WidgetHero]'s, the size every widget's number has in the cell.
+     */
     const val SMALL_DOT = 3.6f
     const val SMALL_MIN_DOT = 3f
-    val SMALL_DOT_GROWTH = listOf(4.5f, 5f, 5.5f, 6f, 6.5f, 7f)
     const val DOT = 4.5f
-    val DOT_GROWTH = listOf(5f, 5.5f, 6f, 6.5f, 7f)
 
     /** Between the dots and their word, and the word and the figure. */
     const val WORD_GAP_DP = 8f
@@ -746,11 +747,12 @@ object MomentLayout {
             val content = top + row + (word?.height(fontScale) ?: 0f)
             return Fit(name, dot = dot, word = word, play = play, content = content, inner = if (word != null) 2 else 1, top = statusTop)
         }
-        // Growing never costs the Small its word or its Start button.
-        val ladder = (listOf(SMALL_DOT) + SMALL_DOT_GROWTH).mapNotNull(::at).let { l ->
-            l.filter { it.word == l.firstOrNull()?.word && it.play == l.firstOrNull()?.play }
-        }
-        return pick(listOf(ladder, listOfNotNull(at(SMALL_MIN_DOT))), height)
+        // The number at the size every widget's takes here, never at the cost of the Small's word or its Start button.
+        val base = at(SMALL_DOT)
+        WidgetHero.ladder(WidgetSizes.Small, height).mapNotNull(::at)
+            .firstOrNull { base != null && it.word == base.word && it.play == base.play && it.dot >= SMALL_DOT && it.fits(height) }
+            ?.let { return it }
+        return pick(listOf(listOfNotNull(base), listOfNotNull(at(SMALL_MIN_DOT))), height)
     }
 
     /** The Small during a workout: the name, the sport's tile, its name, "Recording since 17:42". */
@@ -778,19 +780,32 @@ object MomentLayout {
      */
     fun wide(m: MomentWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Fit =
         if (m.recording != null) recordingWide(m, m.recording, width, height, fontScale, large = false)
-        else pick(ladders(m, width, fontScale, large = false, status), height)
+        else titled(m, height) { sizes -> pick(ladders(m, width, fontScale, large = false, status, maxOf(DOT, WidgetHero.dot(WidgetSizes.Wide, height)), sizes), height) }
 
     /** The Large: the Wide plus the moment's chart, with its times under it. */
     fun large(m: MomentWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Fit =
         if (m.recording != null) recordingWide(m, m.recording, width, height, fontScale, large = true)
-        else pick(ladders(m, width, fontScale, large = true, status), height)
+        else titled(m, height) { sizes -> pick(ladders(m, width, fontScale, large = true, status, maxOf(DOT, WidgetHero.dot(WidgetSizes.Large, height)), sizes), height) }
+
+    /**
+     * [layout] with the name at the title's size, or a size down when only that keeps the sentence: on a short cell
+     * the sentence matters more than the name's size.
+     */
+    private fun titled(m: MomentWidgetModel, height: Float, layout: (List<Float>) -> Fit): Fit {
+        val full = layout(NAME_SIZES)
+        if (full.sentence != null || m.sentences.isEmpty()) return full
+        return layout(NAME_SIZES.drop(1)).takeIf { it.sentence != null && it.fits(height) } ?: full
+    }
 
     /** A chart's block: the chart [h] dp high and its times under it. */
     fun chartBlock(h: Float, fontScale: Float): Float = if (h <= 0f) 0f else h + CHART_LABEL_GAP_DP + WidgetText.line(WidgetText.CAPTION_SP, fontScale)
 
-    private fun ladders(m: MomentWidgetModel, width: Float, fontScale: Float, large: Boolean, status: StatusLine?): List<List<Fit>> {
+    /** [lead] is the number's dot every widget's takes in this cell ([WidgetHero]), at least [DOT]. */
+    private fun ladders(
+        m: MomentWidgetModel, width: Float, fontScale: Float, large: Boolean, status: StatusLine?, lead: Float, nameSizes: List<Float> = NAME_SIZES,
+    ): List<List<Fit>> {
         val statusTop = statusRow(m, status, width, fontScale, withWords = true)
-        val name = nameIn(m, statusTop, width, fontScale)
+        val name = statusTop?.let { Line(m.name, it.titleSp) } ?: (line(listOf(m.name), nameSizes, width, fontScale) ?: Line(m.name, nameSizes.last()))
         val top = topHeight(name, statusTop, fontScale)
         val stages = m.chart?.kind == MomentChartKind.Stages
         val chartBase = when {
@@ -816,30 +831,28 @@ object MomentLayout {
         fun ladder(text: String?, sp: Float, chart: Float, dot: Float): List<Fit> {
             val s = text?.let { sentence(it, sp, width, fontScale) ?: return emptyList() }
             val base = fit(s, dot, chart) ?: return emptyList()
-            if (dot != DOT || (chart > 0f && chart != chartBase.first())) return listOf(base)
+            if (dot != lead || (chart > 0f && chart != chartBase.first())) return listOf(base)
             val chartSeq = if (chart > 0f) listOf(chart) + chartGrowth else listOf(0f)
             val spSeq = if (text != null && sp == SENTENCE_SIZES.first()) listOf(sp) + SENTENCE_GROWTH else listOf(sp)
             val grown = mutableListOf(base)
             var shown = s
             for (i in 1 until maxOf(chartSeq.size, spSeq.size)) {
                 shown = text?.let { sentence(it, spSeq[minOf(i, spSeq.lastIndex)], width, fontScale) } ?: shown
-                fit(shown, DOT, chartSeq[minOf(i, chartSeq.lastIndex)])?.let { grown += it }
+                fit(shown, lead, chartSeq[minOf(i, chartSeq.lastIndex)])?.let { grown += it }
             }
-            val last = grown.last()
-            for (d in DOT_GROWTH) fit(last.sentence, d, last.chart)?.let { grown += it }
             // Growing never costs the number row its word, figure or Start: those stay as the base has them.
             return grown.filter { it.row?.copy(dot = 0f, height = 0f) == base.row?.copy(dot = 0f, height = 0f) }.distinct()
         }
         val charts = if (chartBase.isEmpty()) listOf(0f) else chartBase
         val options = m.sentences
         // The sentence's size and the dots step down before the sentence gives way to a shorter wording.
-        val steps = listOf(SENTENCE_SIZES[0] to DOT, SENTENCE_SIZES[1] to DOT, SENTENCE_SIZES[0] to SMALL_DOT, SENTENCE_SIZES[1] to SMALL_DOT)
+        val steps = listOf(lead, DOT, SMALL_DOT).distinct().flatMap { d -> listOf(SENTENCE_SIZES[0] to d, SENTENCE_SIZES[1] to d) }
         val out = mutableListOf<List<Fit>>()
         // The whole sentence before a shorter one, the chart (stepping down) before a smaller size; then without
         // the chart; then without the sentence.
         for (text in options) for ((sp, dot) in steps) for (ch in charts) out += ladder(text, sp, ch, dot)
         if (chartBase.isNotEmpty()) for (text in options) for ((sp, dot) in steps) out += ladder(text, sp, 0f, dot)
-        for (dot in listOf(DOT, SMALL_DOT)) {
+        for (dot in listOf(lead, DOT, SMALL_DOT).distinct()) {
             for (ch in charts) out += ladder(null, SENTENCE_SIZES.first(), ch, dot)
             out += ladder(null, SENTENCE_SIZES.first(), 0f, dot)
         }

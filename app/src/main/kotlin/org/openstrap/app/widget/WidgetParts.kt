@@ -25,6 +25,7 @@ import androidx.glance.GlanceModifier
 import androidx.glance.Image
 import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
+import androidx.glance.LocalGlanceId
 import androidx.glance.LocalSize
 import androidx.glance.action.Action
 import androidx.glance.action.clickable
@@ -102,7 +103,7 @@ import java.time.ZoneId
  * A widget that loads its [T] once per Glance session, outside the content Glance composes once per size, and again
  * each time its [kind]'s version moves on ([WidgetRefresh]). Every widget has the three sizes ([WidgetSizes]).
  */
-abstract class LoadingWidget<T>(private val kind: WidgetKind) : GlanceAppWidget() {
+abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(WidgetSizes.all)
 
     /** The picker's generated preview (spec 6.4, Android 15 and later) has the three sizes too. */
@@ -127,6 +128,7 @@ abstract class LoadingWidget<T>(private val kind: WidgetKind) : GlanceAppWidget(
     override suspend fun provideGlance(context: Context, id: GlanceId) = coroutineScope {
         val shown = MutableStateFlow(loadShown(context))
         val status = MutableStateFlow(loadStatusLine(context))
+        val resized = WidgetRefresh.resized(kind)
         launch {
             WidgetRefresh.version(kind).drop(1).collectLatest {
                 shown.value = loadShown(context)
@@ -136,10 +138,17 @@ abstract class LoadingWidget<T>(private val kind: WidgetKind) : GlanceAppWidget(
         provideContent {
             val data by shown.collectAsState()
             val line by status.collectAsState()
-            CompositionLocalProvider(LocalStatusLine provides line) { Content(data) }
+            val sizes by resized.collectAsState()
+            CompositionLocalProvider(LocalStatusLine provides line, LocalResized provides sizes) { Content(data) }
         }
     }
 }
+
+/**
+ * How many times the launcher has resized this kind of widget ([WidgetRefresh.resized]). The card reads it so a new size
+ * lays the widget out again, since the session's own options can stay at the empty ones it started with.
+ */
+internal val LocalResized = staticCompositionLocalOf { 0 }
 
 /** The strap status line every widget's frame reads ([WidgetFrame.status]), null while all is well. */
 internal val LocalStatusLine = staticCompositionLocalOf<StatusLine?> { null }
@@ -182,6 +191,16 @@ abstract class PlacedWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onDisabled(context: Context) {
         super.onDisabled(context)
         placedChanged(context)
+    }
+
+    /**
+     * A new cell size: lay the widget out again. One UI places a widget before it tells it its size, and Glance's
+     * session can keep the empty size it started with, laying out the smallest cell its size class allows (found on
+     * the Fold 2026-10-31: tile captions drifting off their tiles, every layout stretched with empty bands).
+     */
+    override fun onAppWidgetOptionsChanged(context: Context, appWidgetManager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        super.onAppWidgetOptionsChanged(context, appWidgetManager, appWidgetId, newOptions)
+        (glanceAppWidget as? LoadingWidget<*>)?.let { WidgetRefresh.resize(it.kind) }
     }
 
     private fun placedChanged(context: Context) = WidgetUpdater.placedChanged(context)
@@ -301,7 +320,8 @@ private fun CardWidget(
     val size = LocalSize.current
     val bucket = WidgetSizes.bucket(size.width.value, size.height.value)
     val metrics = context.resources.displayMetrics
-    val reported = reportedSizes(LocalAppWidgetOptions.current, context)
+    LocalResized.current
+    val reported = cellSizes(LocalAppWidgetOptions.current, LocalGlanceId.current, context)
     val (w, h) = WidgetSizes.drawSize(bucket, reported)
     val (fitW, fitH) = WidgetSizes.fitSize(bucket, reported)
     val allPixels = WidgetSizes.all.sumOf { (it.width.value * it.height.value).toDouble() } * bitmapExtra * metrics.density * metrics.density
@@ -373,6 +393,20 @@ internal fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Flo
 private fun systemCorner(context: Context): Float? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     runCatching { context.resources.getDimension(android.R.dimen.system_app_widget_background_radius) / context.resources.displayMetrics.density }.getOrNull()
 } else null
+
+/**
+ * The cell sizes the launcher gave the widget, dp ([reportedSizes]): the launcher's own now, or the session's
+ * [options] when it can't be asked (the picker's preview has no widget). The session's alone can be stale: a session
+ * started before the launcher set them keeps them empty.
+ */
+private fun cellSizes(options: Bundle, id: GlanceId, context: Context): List<Pair<Float, Float>> {
+    fun real(sizes: List<Pair<Float, Float>>) = sizes.filter { (w, h) -> w > 0f && h > 0f }
+    val now = runCatching {
+        val appWidgetId = androidx.glance.appwidget.GlanceAppWidgetManager(context).getAppWidgetId(id)
+        AppWidgetManager.getInstance(context).getAppWidgetOptions(appWidgetId)
+    }.getOrNull()
+    return now?.let { real(reportedSizes(it, context)) }?.takeIf { it.isNotEmpty() } ?: real(reportedSizes(options, context))
+}
 
 /**
  * The sizes the launcher says the widget has, dp, the one for the current orientation first: Android 12's list, or
