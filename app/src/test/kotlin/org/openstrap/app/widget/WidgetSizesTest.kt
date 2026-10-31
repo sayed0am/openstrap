@@ -17,7 +17,7 @@ class WidgetSizesTest {
     private val android = "http://schemas.android.com/apk/res/android"
 
     @Test fun `the three sizes are the spec's`() {
-        assertEquals(listOf(150f to 150f, 300f to 160f, 300f to 260f), WidgetSizes.all.map { it.width.value to it.height.value })
+        assertEquals(listOf(150f to 150f, 280f to 160f, 280f to 260f), WidgetSizes.all.map { it.width.value to it.height.value })
         assertEquals(WidgetSizes.Small, WidgetSizes.all.first())
         assertEquals(WidgetSizes.Large, WidgetSizes.all.last())
     }
@@ -102,8 +102,8 @@ class WidgetSizesTest {
 
     @Test fun `bitmaps are drawn at the cell's real size when the launcher reports it`() {
         assertEquals(390f to 190f, WidgetSizes.drawSize(WidgetSizes.Wide, listOf(180f to 400f, 390f to 190f)))
-        assertEquals(300f to 160f, WidgetSizes.drawSize(WidgetSizes.Wide, emptyList()))
-        assertEquals(300f to 160f, WidgetSizes.drawSize(WidgetSizes.Wide, listOf(0f to 0f)))
+        assertEquals(280f to 160f, WidgetSizes.drawSize(WidgetSizes.Wide, emptyList()))
+        assertEquals(280f to 160f, WidgetSizes.drawSize(WidgetSizes.Wide, listOf(0f to 0f)))
     }
 
     @Test fun `content fits the smallest real cell of its layout`() {

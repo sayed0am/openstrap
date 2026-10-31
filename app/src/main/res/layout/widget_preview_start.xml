@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The Start a workout widget in the launcher's picker on Android 12 and later (widgets spec 6.4), a Small with the
-  mockups' sample: outdoor runs as your usual, with play. RemoteViews' own views only, so the number is plain text
+  mockups' sample: outdoor runs as your usual, play beside the tile so the name has the width (One UI's picker
+  shows it in a cell about 136 x 150 dp). RemoteViews' own views only, so the number is plain text
   where the widget draws dots. Android 15 and later show the generated preview from the real layout instead
   (WidgetUpdater.publishPreviews).
 -->
@@ -13,53 +14,28 @@
     android:orientation="vertical"
     android:padding="20dp"
     tools:ignore="HardcodedText">
-    <FrameLayout
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:background="@drawable/widget_preview_tile">
-        <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
-            android:layout_gravity="center"
-            android:contentDescription="@null"
-            android:src="@drawable/widget_preview_run" />
-    </FrameLayout>
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center_vertical"
         android:orientation="horizontal">
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Outdoor run"
-                android:textSize="15sp"
-                android:textColor="#FFFFFFFF"
-                android:fontFamily="sans-serif-medium"
-                android:maxLines="1"
-                android:includeFontPadding="true" />
-                    <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Your usual"
-                android:textSize="13sp"
-                android:textColor="#B8FFFFFF"
-                android:maxLines="1"
-                android:includeFontPadding="true" />
-        </LinearLayout>
         <FrameLayout
             android:layout_width="44dp"
             android:layout_height="44dp"
-            android:layout_marginStart="8dp"
+            android:background="@drawable/widget_preview_tile">
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="@null"
+                android:src="@drawable/widget_preview_run" />
+        </FrameLayout>
+        <FrameLayout
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+        <FrameLayout
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:background="@drawable/widget_preview_play_bg">
             <ImageView
                 android:layout_width="18dp"
@@ -69,4 +45,25 @@
                 android:src="@drawable/widget_preview_play" />
         </FrameLayout>
     </LinearLayout>
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Outdoor run"
+        android:textSize="15sp"
+        android:textColor="#FFFFFFFF"
+        android:fontFamily="sans-serif-medium"
+        android:maxLines="1"
+        android:includeFontPadding="true" />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Your usual"
+        android:textSize="13sp"
+        android:textColor="#B8FFFFFF"
+        android:maxLines="1"
+        android:includeFontPadding="true" />
 </LinearLayout>

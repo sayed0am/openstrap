@@ -162,13 +162,12 @@ object RecoveryLayout {
     /** The least gap between blocks. */
     const val MIN_GAP_DP = 4f
 
-    /** The Small's dots: the mockup's 3 dp (spec 3), growing to 7 on a tall cell before the gaps do. */
-    val SMALL_DOTS = listOf(3f, 3.6f, 4.5f, 5f, 5.5f, 6f, 6.5f, 7f)
+    /** The Small's dots when even the smallest of [WidgetHero]'s leaves no room for the word: the mockup's 3 dp. */
+    const val SMALL_DOT = 3f
 
-    /** The Wide's and Large's dots: 3.6, the Small's 3 when short of room, up to 6 on a tall cell. */
+    /** The Wide's and Large's dots short of room: 3.6, then the Small's 3. Room to spare takes [WidgetHero]'s. */
     const val WIDE_DOT = 3.6f
     const val SHORT_DOT = 3f
-    val WIDE_GROWTH = listOf(4.5f, 5f, 5.5f, 6f)
 
     /** The Large's sentence: Display 300 20 on at most three lines, growing to 22 and 24 sp on a tall cell. */
     const val SENTENCE_LINES = 3
@@ -206,9 +205,8 @@ object RecoveryLayout {
             val w = withWord && wordSp != null
             return Fit(top, d, w, Spread.of(top.height, WidgetDots.height(d), if (w) WidgetText.line(wordSp, fontScale) else null), wordSp = wordSp ?: WORD_SP)
         }
-        val ladder = SMALL_DOTS.map { at(it, true) }.distinct()
-        if (ladder.first().spread.fits(height, MIN_GAP_DP)) return Spread.grow(ladder, height, MIN_GAP_DP) { it.spread }
-        return at(SMALL_DOTS.first(), false)
+        WidgetHero.ladder(WidgetSizes.Small, height).map { at(it, true) }.firstOrNull { it.spread.fits(height, MIN_GAP_DP) }?.let { return it }
+        return at(SMALL_DOT, false)
     }
 
     /** The score row's width at [dot]: the dots and the word beside them. */
@@ -228,8 +226,7 @@ object RecoveryLayout {
             val row = maxOf(WidgetDots.height(d), WidgetText.line(WORD_SP, fontScale))
             return Fit(top, d, m.word != null, Spread.of(top.height, row, if (figures) figuresHeight(fontScale) else null), figures = figures)
         }
-        val ladder = (listOf(WIDE_DOT) + WIDE_GROWTH).map { at(it, true) }.distinct()
-        if (ladder.first().spread.fits(height, MIN_GAP_DP)) return Spread.grow(ladder, height, MIN_GAP_DP) { it.spread }
+        WidgetHero.ladder(WidgetSizes.Wide, height).map { at(it, true) }.firstOrNull { it.spread.fits(height, MIN_GAP_DP) }?.let { return it }
         return listOf(at(SHORT_DOT, true), at(SHORT_DOT, false)).firstOrNull { it.spread.fits(height, MIN_GAP_DP) } ?: at(SHORT_DOT, false)
     }
 
@@ -253,13 +250,13 @@ object RecoveryLayout {
             return Fit(top, d, m.word != null, spread, lines, sp, figures, week, column)
         }
         val hasSentence = m.sentence != null
-        val base = at(WIDE_DOT, SENTENCE_SIZES.first(), hasSentence, true)
-        if (base != null && base.spread.fits(height, MIN_GAP_DP)) {
-            // Growing never costs the week its place beside the score.
-            val dots = WIDE_GROWTH.mapNotNull { at(it, SENTENCE_SIZES.first(), hasSentence, true) }.filter { it.week == base.week }
-            val last = dots.lastOrNull()?.dot ?: WIDE_DOT
-            val sentences = SENTENCE_SIZES.drop(1).mapNotNull { at(last, it, hasSentence, true) }
-            return Spread.grow((listOf(base) + dots + sentences).distinct(), height, MIN_GAP_DP) { it.spread }
+        // The number at the size every widget's takes here, smaller only when everything else doesn't fit, then the
+        // sentence grows into what's left.
+        val base = WidgetHero.ladder(WidgetSizes.Large, height).mapNotNull { at(it, SENTENCE_SIZES.first(), hasSentence, true) }
+            .firstOrNull { it.spread.fits(height, MIN_GAP_DP) }
+        if (base != null) {
+            val sentences = SENTENCE_SIZES.drop(1).mapNotNull { at(base.dot, it, hasSentence, true) }
+            return Spread.grow((listOf(base) + sentences).distinct(), height, MIN_GAP_DP) { it.spread }
         }
         val tries = listOfNotNull(
             at(WIDE_DOT, SENTENCE_SIZES.first(), false, true), at(SHORT_DOT, SENTENCE_SIZES.first(), hasSentence, true),

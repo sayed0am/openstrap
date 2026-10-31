@@ -36,8 +36,8 @@ size. So each widget has a layout for each of the same three sizes, and they res
 | Size | Cells | Picked from | Drawn at in the mockups | Holds |
 |---|---|---|---|---|
 | Small | 2 × 2 | Any cell (the smallest) | 173 × 176 dp | A number and a word, or the one action |
-| Wide | 4 × 2 | 300 × 160 dp | 358 × 176 dp | The Small plus one more thing: figures, a chart or a row of choices |
-| Large | 4 × 3 | 300 × 260 dp | 358 × 272 dp | Everything the widget has |
+| Wide | 4 × 2 | 280 × 160 dp | 358 × 176 dp | The Small plus one more thing: figures, a chart or a row of choices |
+| Large | 4 × 3 | 280 × 260 dp | 358 × 272 dp | Everything the widget has |
 
 - No 4 × 1. One row of text loses too much on Sleep and Start, and stacks of strips are rare.
 - "Picked from" is the smallest cell each layout needs (`WidgetSizes`): Glance shows the largest that fits. Launcher
@@ -81,7 +81,7 @@ Uses `MomentResolver` exactly as Today does. The hero's colour, light angle and 
 
 | Size | Content |
 |---|---|
-| Small | The moment's name ("Midday") in Sans 500 13 at 60%. Its number and word: "62", "Energy left" |
+| Small | The moment's name ("Midday") as every widget's title. Its number and word: "62", "Energy left" |
 | Wide | The name, the hero sentence (Display 300 20, two lines at most), the number and word, one figure as Secondary on the right ("Drained 60, recharged 38") |
 | Large | The Wide plus the moment's chart, solid, with times as Captions under it |
 
@@ -362,6 +362,14 @@ weighted views). `previewImage`, for launchers before Android 12, is a PNG of ea
 (dots included, Helvetica Neue standing in for Roboto).
 
 ### 6.5 Spare height (decided in step 6)
+
+**Changed 2026-10-31, after the unfolded Fold.** Every widget's dotted number takes one size in a cell, the same for
+every widget (`WidgetHero`): the largest dot whose height is within 36% of the content's height on a Small, 28% on a
+Wide, 22% on a Large. A widget goes smaller only when the number and what sits beside it don't fit the width, or the
+rest doesn't fit the height. Wide and Large are picked from 280 dp wide, so the unfolded Fold's 3 columns (288 dp)
+get them rather than a stretched Small. Every widget reads its cell from the launcher at layout and lays out again on
+each resize: One UI places a widget before telling it its size, and the session kept the empty size it started with.
+The rest of this section was the rule before.
 
 Every layout shares its spare height as Moment's and Start's do: half a gap above and below, a gap between blocks,
 and on a tall cell the parts grow first so no gap passes 32 dp on One UI's cells. Recovery's Small has three blocks

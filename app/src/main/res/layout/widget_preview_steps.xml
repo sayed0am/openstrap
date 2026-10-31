@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The Steps widget in the launcher's picker on Android 12 and later (widgets spec 6.4), a Small with the mockups'
-  sample: 8,432 today, 84% of the goal. RemoteViews' own views only, so the number is plain text where the widget
+  sample: 8,432 today, the bar at 84% of the goal. The share's words are left out: One UI's picker shows it in a
+  cell about 136 x 150 dp, too short for them. RemoteViews' own views only, so the number is plain text where the widget
   draws dots. Android 15 and later show the generated preview from the real layout instead
   (WidgetUpdater.publishPreviews).
 -->
@@ -51,13 +52,4 @@
         android:max="100"
         android:progress="84"
         android:progressDrawable="@drawable/widget_preview_goal" />
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="84% of your goal"
-        android:textSize="13sp"
-        android:textColor="#B8FFFFFF"
-        android:maxLines="1"
-        android:includeFontPadding="true"
-        android:layout_marginTop="6dp" />
 </LinearLayout>

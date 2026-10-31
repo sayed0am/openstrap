@@ -25,6 +25,7 @@ android {
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
+        manifestPlaceholders["appLabel"] = "@string/app_name"
         // 64-bit ARM only: every phone from the last several years, and the emulator on Apple silicon. Each other CPU
         // type would add its own ~13 MB copy of the map engine (libmaplibre.so).
         ndk { abiFilters += "arm64-v8a" }
@@ -43,8 +44,14 @@ android {
     buildTypes {
         // `-PdemoApp` builds a debug app that installs beside the real one (org.openstrap.app.demo), so sample data
         // for screenshots never touches a phone's own data.
+        // `-PdevApp` builds a debug app that also installs beside it (org.openstrap.app.dev), named with its version,
+        // to try a branch on a phone with its own data while the release stays as it is.
         debug {
             if (providers.gradleProperty("demoApp").isPresent) applicationIdSuffix = ".demo"
+            if (providers.gradleProperty("devApp").isPresent) {
+                applicationIdSuffix = ".dev"
+                manifestPlaceholders["appLabel"] = "OpenStrap ${appVersionName.removeSuffix(".0")}"
+            }
         }
         release {
             isMinifyEnabled = true

@@ -197,7 +197,7 @@ class SleepWidgetModelTest {
     @Test fun `the Small keeps everything at the default font and fits at every size`() {
         val m = model()
         val normal = SleepLayout.small(m, small.first, small.second, 1f)
-        assertEquals(SleepLayout.SMALL_DOT, normal.row.dot, 0f)
+        assertEquals(WidgetHero.dot(WidgetSizes.Small, small.second), normal.row.dot, 0f)
         assertEquals("Good", normal.row.word)
         assertEquals(listOf(SleepLayout.SmallLine("7 h 40 asleep")), normal.lines)
         assertTrue(normal.bar)
@@ -223,7 +223,7 @@ class SleepWidgetModelTest {
         assertTrue(hundred.row.width("100", 1f, SleepLayout.SMALL_WORD_GAP_DP) <= small.first + 1e-3f)
         val big = SleepLayout.small(m.copy(score = "100", word = "Great"), small.first, small.second, 1.3f)
         assertNull(big.row.word)
-        assertEquals(SleepLayout.SMALL_DOT, big.row.dot, 0f)
+        assertEquals(WidgetHero.dot(WidgetSizes.Small, small.second), big.row.dot, 0f)
     }
 
     @Test fun `the Wide fits its width and height at every size, dropping the legend before clipping`() {
@@ -234,7 +234,8 @@ class SleepWidgetModelTest {
             assertTrue("height at $s: ${SleepLayout.wideHeight(f, s)}", SleepLayout.wideHeight(f, s) <= wide.second + 1e-3f)
             assertTrue(f.row.dot >= SleepLayout.SMALL_DOT)
             assertEquals("7 h 40 asleep", f.row.right)
-            assertTrue(f.note)
+            // The minimum's width holds the note beside the title up to the phones' 1.08.
+            assertTrue(f.note || s > 1.08f)
             assertTrue(f.bar)
         }
         // The default font at the minimum: the short word keeps time asleep, the legend on two rows.
@@ -243,7 +244,7 @@ class SleepWidgetModelTest {
         assertEquals(2, normal.legendRows)
         // A real 4 x 2 (One UI's, 353 dp) has room for the tab's words.
         assertEquals("Sleep score, good", SleepLayout.wide(m, 353f - 40f, 161f, 1.08f).row.word)
-        assertEquals(SleepLayout.WIDE_DOT, SleepLayout.wide(m, 353f - 40f, 161f, 1f).row.dot, 0f)
+        assertEquals(WidgetHero.dot(WidgetSizes.Wide, 161f), SleepLayout.wide(m, 353f - 40f, 161f, 1f).row.dot, 0f)
         // At 1.3 on the minimum, no room for the legend: it goes, the bar stays.
         assertEquals(0, SleepLayout.wide(m, wide.first, wide.second, 1.3f).legendRows)
     }
