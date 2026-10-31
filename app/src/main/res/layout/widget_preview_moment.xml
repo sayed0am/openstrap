@@ -16,8 +16,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Midday"
-        android:textSize="13sp"
-        android:textColor="#99FFFFFF"
+        android:textSize="17sp"
+        android:textColor="#FFFFFFFF"
         android:fontFamily="sans-serif-medium"
         android:maxLines="1"
         android:includeFontPadding="true" />
