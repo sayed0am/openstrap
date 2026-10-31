@@ -197,13 +197,21 @@ object StartCopy {
 
     /* -------------------------------------------- Ready's goal ---------------------------------------------- */
 
-    /** The goal kind chips' names after the sport's [noGoal]. */
+    /** The goal kinds' names after the sport's [noGoal], in the goal pill and its sheet. */
     const val DISTANCE = "Distance"
     const val TIME = "Time"
     const val ZONE = "Zone"
     const val INTERVALS = "Intervals"
 
     const val TAP_TO_TYPE = "Tap to type"
+
+    /** The goal pill's sheet: its title, and under each kind what the strap does with it. */
+    const val GOAL_SHEET = "Choose a goal"
+    const val GOAL_PILL_HINT = "Change the goal"
+    const val DISTANCE_KIND_NOTE = "A buzz at halfway and at the goal"
+    const val TIME_KIND_NOTE = "A buzz when the time is up"
+    const val ZONE_KIND_NOTE = "A buzz when you leave your zone"
+    const val INTERVALS_KIND_NOTE = "Repeats with rest between, a buzz at each switch"
 
     /** No goal's note: what's recorded, the distance only where there is one. */
     fun noGoalNote(hasDistance: Boolean): String = if (hasDistance) "No goal. Time, distance and your heart." else "No goal. Time and your heart."

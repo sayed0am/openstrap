@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -190,9 +191,10 @@ internal fun WorkoutPage(
         val padTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
         val padBottom = contentPadding.calculateBottomPadding()
         val end = if (pinned != null) (PinnedFade.listClearance(pinnedHeight) - padBottom).coerceAtLeast(16.dp) else 16.dp
-        // The live screen fits the screen instead (scroll = false): its controls never move.
+        // The live screen fits the screen instead (scroll = false): its controls never move. A scrolling page ends at
+        // the keyboard, so what's typed can scroll above it.
         Column(
-            Modifier.fillMaxSize().then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()
+            Modifier.fillMaxSize().then(if (scroll) Modifier.imePadding().verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()
                 .padding(contentPadding).padding(start = side, end = side, top = 8.dp, bottom = end)
                 // At least the screen's height, so the controls sit at the bottom without the page scrolling.
                 .then(if (scroll) Modifier.heightIn(min = (maxHeight - padTop - padBottom - end).coerceAtLeast(0.dp)) else Modifier),

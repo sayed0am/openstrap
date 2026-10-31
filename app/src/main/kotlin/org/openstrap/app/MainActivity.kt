@@ -1310,6 +1310,7 @@ private fun AppRoot(
             choosing = choosing,
             onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick; readyStructure = null },
             readyStructure = readyStructure,
+            glass = navGlass,
             onOpenSaved = { sport, structure -> readySport = sport; readyPicking = false; readyStructure = structure },
             onCloseChoose = { choosing = false },
             glance = liveGlance, onGlanceAction = onGlanceAction,
@@ -1526,6 +1527,8 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
     choosing: Boolean = false,
+    /** What popups blur: Choose, Ready and the zones page join it over the pages, so a sheet blurs the screen it opened from. */
+    glass: dev.chrisbanes.haze.HazeState? = null,
     /** Opens Ready over Choose for a sport, or on its sport picker ([pick]). */
     onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
     onCloseChoose: () -> Unit = {},
@@ -1568,6 +1571,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     val kcal by session.kcal.collectAsStateWithLifecycle()
     val padding = androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues()
     val full = androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    fun over(z: Float) = if (glass != null) full.hazeSource(glass, zIndex = z) else full
     when {
         // Minimizing morphs the live screen into the capsule above the tab bar, and tapping the capsule back.
         state is org.openstrap.app.device.WorkoutState.Recording -> org.openstrap.app.ui.glow.WorkoutMorph(
@@ -1652,7 +1656,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     val recording = state is org.openstrap.app.device.WorkoutState.Recording || state is org.openstrap.app.device.WorkoutState.Ended
     // Choose sits under Ready, so closing Ready comes back to it.
     org.openstrap.app.ui.glow.PushOverlay(choosing.takeIf { it && !recording }, cut = recording) {
-        androidx.compose.foundation.layout.Box(full) {
+        androidx.compose.foundation.layout.Box(over(2f)) {
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val (_, sides) = pickerSports(container, workoutsVm)
             val zone = java.time.ZoneId.systemDefault()
@@ -1677,7 +1681,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
         }
     }
     org.openstrap.app.ui.glow.PushOverlay(readySport.takeIf { !recording }, cut = recording) { sport ->
-        androidx.compose.foundation.layout.Box(full) {
+        androidx.compose.foundation.layout.Box(over(2.5f)) {
             val (recentSports, sides) = pickerSports(container, workoutsVm)
             val key = org.openstrap.app.data.Workouts.tileType(sport)
             val maxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
@@ -1701,7 +1705,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             )
             // Your zones, over Ready; back comes back to it.
             org.openstrap.app.ui.glow.PushOverlay(Unit.takeIf { zonesOpen }, cut = false) {
-                androidx.compose.foundation.layout.Box(full) { HeartZonesPage(container, padding, onBack = { zonesOpen = false }) }
+                androidx.compose.foundation.layout.Box(over(3f)) { HeartZonesPage(container, padding, onBack = { zonesOpen = false }) }
             }
         }
     }

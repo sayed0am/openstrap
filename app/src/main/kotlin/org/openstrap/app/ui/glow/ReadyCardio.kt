@@ -2,15 +2,18 @@ package org.openstrap.app.ui.glow
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,6 +49,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -247,13 +251,24 @@ internal fun ReadyGoal(
     onSave: (String, Structure.Reps) -> Unit,
 ) {
     Text(StartCopy.goalTitle(Workouts.family(type)), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))
+    // While typing, the whole card scrolls up over the keyboard, presets and note too.
+    val inView = remember { BringIntoViewRequester() }
+    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
+    // Once the keyboard has stopped moving: each frame of it rising starts this again.
+    LaunchedEffect(typing, keyboard) { if (typing && keyboard > 0) { kotlinx.coroutines.delay(80); inView.bringIntoView() } }
     Column(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp),
+        Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            kinds.forEach { k ->
-                KindChip(kindName(k, type), k == draft.kind) { onTyping(false); onDraft(draft.copy(kind = k)) }
+        var choosing by rememberSaveable { mutableStateOf(false) }
+        KindPill(kindIcon(draft.kind, type), kindName(draft.kind, type)) { onTyping(false); choosing = true }
+        if (choosing) PageSheet({ choosing = false }, StartCopy.GOAL_SHEET) {
+            Column {
+                kinds.forEachIndexed { i, k ->
+                    KindRow(kindIcon(k, type), kindName(k, type), kindNote(k, hasDistance), k == draft.kind, divider = i > 0) {
+                        onDraft(draft.copy(kind = k)); choosing = false
+                    }
+                }
             }
         }
         when (draft.kind) {
@@ -274,18 +289,59 @@ private fun kindName(k: GoalKind, type: Int): String = when (k) {
     GoalKind.Intervals -> StartCopy.INTERVALS
 }
 
-/** A goal kind's chip: white when chosen, on the Control surface otherwise. */
+private fun kindIcon(k: GoalKind, type: Int): ImageVector = when (k) {
+    GoalKind.None -> org.openstrap.app.ui.workout.SportIcons.of(type)
+    GoalKind.Distance -> AppIcons.Route01
+    GoalKind.Time -> AppIcons.Timer
+    GoalKind.Zone -> AppIcons.Pulse01
+    GoalKind.Intervals -> AppIcons.ChartBar
+}
+
+private fun kindNote(k: GoalKind, hasDistance: Boolean): String = when (k) {
+    GoalKind.None -> StartCopy.noGoalNote(hasDistance)
+    GoalKind.Distance -> StartCopy.DISTANCE_KIND_NOTE
+    GoalKind.Time -> StartCopy.TIME_KIND_NOTE
+    GoalKind.Zone -> StartCopy.ZONE_KIND_NOTE
+    GoalKind.Intervals -> StartCopy.INTERVALS_KIND_NOTE
+}
+
+/** The goal kind in one pill (board ReadyKindPill): its icon in lime, its name and a caret, opening the kinds' sheet. */
 @Composable
-private fun KindChip(label: String, on: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier.height(36.dp).clip(CircleShape).background(if (on) Color.White else Raised)
-            .pressClickable(onClick, CircleShape).semantics { selected = on; role = Role.Tab }.padding(horizontal = 12.dp),
-        contentAlignment = Alignment.Center,
+private fun KindPill(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Row(
+            Modifier.height(40.dp).clip(CircleShape).background(Raised)
+                .pressClickable(onClick, CircleShape).semantics { role = Role.Button; contentDescription = "$label. ${StartCopy.GOAL_PILL_HINT}" }
+                .padding(start = 12.dp, end = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(icon, null, tint = TypingLime, modifier = Modifier.size(18.dp))
+            Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
+            Icon(AppIcons.CaretDown, null, tint = Color.White, modifier = Modifier.size(14.dp))
+        }
+    }
+}
+
+/** A goal kind in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
+@Composable
+private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean, divider: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth()
+            .then(if (divider) Modifier.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else Modifier)
+            .clickable(onClick = onClick).semantics { selected = on }.padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Text(
-            label, color = if (on) Color.Black else Color.White.copy(alpha = 0.85f),
-            style = GlowType.secondary.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal), maxLines = 1,
-        )
+        Box(
+            Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(if (on) TypingLime.copy(alpha = 0.14f) else Raised),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, null, tint = if (on) TypingLime else Color.White, modifier = Modifier.size(20.dp)) }
+        Column(Modifier.weight(1f)) {
+            Text(label, color = Color.White, style = GlowType.body)
+            Text(note, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp))
+        }
+        if (on) Icon(AppIcons.CheckCircle, null, tint = TypingLime, modifier = Modifier.size(20.dp))
     }
 }
 
@@ -294,16 +350,17 @@ private fun KindChip(label: String, on: Boolean, onClick: () -> Unit) {
 private fun GoalNote(text: String) =
     Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
 
-/** A row of presets under a value, each as wide as the others, on a hairline. */
+/** A row of presets under a value, each as wide as the others, on a hairline; the one matching the value ([on]) in white. */
 @Composable
-private fun <T> Presets(presets: List<Pair<T, String>>, onPick: (T) -> Unit) {
+private fun <T> Presets(presets: List<Pair<T, String>>, on: T?, onPick: (T) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         presets.forEach { (v, label) ->
+            val chosen = v == on
             Box(
-                Modifier.weight(1f).height(34.dp).clip(CircleShape).border(1.dp, Color.White.copy(alpha = 0.15f), CircleShape)
-                    .pressClickable({ onPick(v) }, CircleShape).semantics { role = Role.Button },
+                Modifier.weight(1f).height(34.dp).clip(CircleShape).border(1.dp, if (chosen) Color.White else Color.White.copy(alpha = 0.15f), CircleShape)
+                    .pressClickable({ onPick(v) }, CircleShape).semantics { role = Role.Button; selected = chosen },
                 contentAlignment = Alignment.Center,
-            ) { Text(label, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1) }
+            ) { Text(label, color = if (chosen) Color.White else Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1) }
         }
     }
 }
@@ -427,7 +484,7 @@ private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, 
             text = selected(StartCopy.distanceValue(meters)); everFocused = false; onTyping(true)
         }
     }
-    Presets(StartCopy.DISTANCE_PRESETS) { stop(); onMeters(it) }
+    Presets(StartCopy.DISTANCE_PRESETS, meters.takeIf { !typing }) { stop(); onMeters(it) }
     GoalNote(StartCopy.distanceNote(if (typing) StartCopy.parseDistance(text.text) ?: meters else meters))
 }
 
@@ -443,6 +500,8 @@ private fun TimeGoal(seconds: Long, onSeconds: (Long) -> Unit, typing: Boolean, 
     var minutes by remember { mutableStateOf(TextFieldValue()) }
     var focused by remember { mutableStateOf<Int?>(null) }
     var everFocused by remember { mutableStateOf(false) }
+    // Set once the hour is typed and the minutes have focus, until the minutes let it go.
+    var hoursDone by remember { mutableStateOf(false) }
     val hoursFocus = remember { FocusRequester() }
     val minutesFocus = remember { FocusRequester() }
     fun finish() {
@@ -458,21 +517,24 @@ private fun TimeGoal(seconds: Long, onSeconds: (Long) -> Unit, typing: Boolean, 
             fun Modifier.tracked(i: Int) = onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null }
             TypedNumber(
                 hours, { v ->
-                    hours = v.copy(text = v.text.filter { it.isDigit() }.take(1))
+                    // Once on to the minutes, the hours field can still send its old figure as it lets go: ignored.
+                    if (hoursDone) return@TypedNumber
+                    // The figure just typed, whether the keyboard replaced the selected hour or added after it.
+                    hours = v.copy(text = v.text.filter { it.isDigit() }.takeLast(1), selection = TextRange(1).takeIf { v.text.length > 1 } ?: v.selection)
                     // One figure of hours, then on to the minutes.
-                    if (hours.text.length == 1 && v.text != selectedText(v)) minutesFocus.requestFocus()
+                    if (hours.text.length == 1 && v.text != selectedText(v)) { hoursDone = true; minutesFocus.requestFocus() }
                 }, "h", focused == 0, Modifier.focusRequester(hoursFocus).tracked(0), KeyboardType.Number, ImeAction.Next, { minutesFocus.requestFocus() },
             )
             Spacer(Modifier.width(10.dp))
             TypedNumber(
                 minutes, { v -> minutes = v.copy(text = v.text.filter { it.isDigit() }.take(3)) }, "min", focused == 1,
-                Modifier.focusRequester(minutesFocus).tracked(1), KeyboardType.Number, ImeAction.Done, { focusManager.clearFocus() },
+                Modifier.focusRequester(minutesFocus).tracked(1).onFocusChanged { if (!it.isFocused) hoursDone = false }, KeyboardType.Number, ImeAction.Done, { focusManager.clearFocus() },
             )
         } else TapValue(StartCopy.timeParts(seconds), StartCopy.TAP_TO_TYPE) {
-            hours = selected("${seconds / 3600}"); minutes = selected("${seconds / 60 % 60}"); everFocused = false; onTyping(true)
+            hours = selected("${seconds / 3600}"); minutes = selected("${seconds / 60 % 60}"); everFocused = false; hoursDone = false; onTyping(true)
         }
     }
-    Presets(StartCopy.TIME_PRESETS) { stop(); onSeconds(it) }
+    Presets(StartCopy.TIME_PRESETS, seconds.takeIf { !typing }) { stop(); onSeconds(it) }
     val shown = if (typing) StartCopy.parseTime(hours.text, minutes.text) ?: seconds else seconds
     // Ticks with the clock, so the end time stays right while Ready shows.
     val now by produceState(LocalTime.now()) { while (true) { kotlinx.coroutines.delay(15_000); value = LocalTime.now() } }
@@ -614,7 +676,7 @@ private fun IntervalsGoal(
         }
         Text(StartCopy.TAP_A_NUMBER, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption)
     }
-    Presets(StartCopy.INTERVAL_PRESETS.map { it to StartCopy.structureName(it) }) { onReps(it.warm(reps.warmUp)) }
+    Presets(StartCopy.INTERVAL_PRESETS.map { it to StartCopy.structureName(it) }, reps.copy(warmUp = false)) { onReps(it.warm(reps.warmUp)) }
     GoalNote(StartCopy.intervalsNote(shown))
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally)) {
         PageButton(StartCopy.SAVE_INTERVALS, { sheet = SAVE }, icon = AppIcons.Plus)
