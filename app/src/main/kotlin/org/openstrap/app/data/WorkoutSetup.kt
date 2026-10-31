@@ -1,5 +1,7 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.data.db.SavedWorkout
+
 /**
  * What Ready was set to the last time a sport was started (workouts spec 2.2, 4): Ready opens on it, and Start on
  * Choose's usual card starts with it, skipping Ready. Kept per sport by its tile ([Workouts.tileType]), so a run and
@@ -81,6 +83,14 @@ data class WorkoutPlan(
 /** Choose's sports (workouts spec 2.1): [usual] gets the big card with Start, [recent] the small ones, by tile. */
 data class ChooseSports(val usual: Int?, val recent: List<Int>)
 
+/** One of Choose's Recent chips: a sport by its tile, or a saved workout by its name. */
+sealed interface RecentChip {
+    data class Sport(val type: Int) : RecentChip
+
+    /** A saved workout: Ready opens on its [structure]. */
+    data class Saved(val name: String, val sport: Int, val structure: String) : RecentChip
+}
+
 /** Ready's choices worked out from what you did before (workouts spec 2.2). Pure, so it's tested without the screen. */
 object WorkoutSetup {
     /** Your usual is the sport you started most in this many days. */
@@ -100,6 +110,17 @@ object WorkoutSetup {
         if (usual != null) return ChooseSports(usual, recent.take(2))
         return ChooseSports(null, (recent + Workouts.DEFAULT_SPORTS.filter { it !in recent }).take(3))
     }
+
+    /** How many saved workouts Choose's Recent row shows. */
+    const val SAVED_CHIPS = 2
+
+    /**
+     * Choose's Recent row (workouts spec 2.1): the [recent] sports, then the newest [SAVED_CHIPS] of the [saved]
+     * workouts (newest first) whose rounds still read.
+     */
+    fun recentChips(recent: List<Int>, saved: List<SavedWorkout>): List<RecentChip> =
+        recent.map { RecentChip.Sport(it) } +
+            saved.filter { Structure.parse(it.structure) != null }.take(SAVED_CHIPS).map { RecentChip.Saved(it.name, it.sport, it.structure) }
 
     /**
      * Choose's Start on your usual (workouts spec 2.1): a plan from last time's [settings] for [type], skipping Ready.
