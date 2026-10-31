@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
@@ -260,15 +261,18 @@ private fun MoreSportsRow(onClick: () -> Unit) = ListPanel {
     PageRow("More sports", "Tennis, padel, dance and the rest", below = true, divider = false, onClick = onClick)
 }
 
-/** What the search finds, as tiles, or that nothing matches [query]. */
+/** What the search finds, as tiles, or that nothing matches [query]. Picking one puts the keyboard away. */
 @Composable
 private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
     val found = remember(query) { Workouts.search(query) }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = LocalFocusManager.current
+    val pick: (Int) -> Unit = { keyboard?.hide(); focus.clearFocus(); onPick(it) }
     if (found.isEmpty()) Text(
         "No sport matches \"${query.trim()}\".", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
         style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp, top = 8.dp),
     )
-    else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, onPick)
+    else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, pick)
 }
 
 /** A section of sport tiles, four to a row, under its Caption [title]. */
