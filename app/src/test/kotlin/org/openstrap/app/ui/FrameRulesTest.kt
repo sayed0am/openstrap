@@ -254,7 +254,6 @@ class FrameRulesTest {
         assertTrue("PageRow no longer squeezes its value beside the name", "widthIn(max = 160.dp)" !in row)
         assertTrue("PageSwitchRow keeps its name on one line", "RowName(title)" in parts.substringAfter("fun PageSwitchRow("))
         assertTrue("ListRow keeps its name on one line", "RowName(name)" in source("ui/glow/GlowList.kt").substringAfter("fun ListRow("))
-        assertTrue("SettingRow keeps its name on one line", "RowName(title)" in source("ui/glow/ReadyScreen.kt").substringAfter("fun SettingRow("))
     }
 
     /* --------------------------------- A fade under pinned buttons (spec 3.2) --------------------------------- */

@@ -28,6 +28,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -41,6 +42,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -50,6 +52,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutPlan
@@ -72,19 +75,23 @@ import org.openstrap.app.data.Structure
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
-/** What opens over Ready. */
-private enum class ReadySheet { Settings, More, About }
+/** What opens over Ready: strength's, HIIT's, a game's and mind and body's settings, and what they say about recording. */
+private enum class ReadySheet { Settings, About }
 
 /**
- * Ready (workouts spec 2.2): the same frame for every sport. Close, the sport as a pill (tap to change it), the
- * settings; the live heart rate large, one status line saying what the strap or phone will do, the sport's one choice,
- * and Start named for the sport. Recording starts even when the strap is away; the strap's history fills in after it
- * syncs.
+ * Ready (workouts spec 2.2): the same frame for every sport. Close and the sport as a pill (tap to change it); the
+ * live heart rate, what the strap or phone will do, the sport's one choice, and Start named for the sport. Recording
+ * starts even when the strap is away; the strap's history fills in after it syncs.
  *
  * Everything opens on what was chosen last time for the sport ([settings]); Ready never asks what it can answer
- * itself. The Outdoor or Indoor switch picks the sport type saved ([Workouts.Sides]) and opens on the side last chosen
- * ([sides], saved through [onSide]). An outdoor sport warms GPS up while Ready shows and says how close the fix is; Start
- * never waits for it. The goal chips are the sport's two most used goals ([goalChips]), More has the rest.
+ * itself. A sport with an outdoor and an indoor side saves the type of the side chosen ([Workouts.Sides]) and opens
+ * on the side last chosen ([sides], saved through [onSide]). An outdoor sport warms GPS up while Ready shows; Start
+ * never waits for it.
+ *
+ * A distance or cardio sport (board ReadyFinal) has no settings sheet: the heart on its own card, where you are with
+ * Ask to end when I stop, then the goal, typed in place ([ReadyGoal]); a zone goal reads your zones ([maxHeartRate],
+ * [HeartZones.current]) and Your zones opens them ([onYourZones]). Run intervals save by name ([saved],
+ * [onSaveIntervals]) and open on rounds picked on Choose ([structure]).
  *
  * Strength shows its plan and steppers instead of the heart rate: the sets, the rest, and the level that ends rest
  * sooner. [onStart] gets the workout to record and the settings to open on next time.
@@ -100,14 +107,14 @@ fun GlowWorkoutReadyScreen(
     onStart: (WorkoutPlan, SportSettings) -> Unit,
     onBack: () -> Unit,
     settings: SportSettings = SportSettings(),
-    goalChips: List<WorkoutTarget> = WorkoutSetup.defaultGoals(Workouts.family(sportType)),
     recentSports: List<Int> = emptyList(),
     sides: Map<Int, Boolean> = emptyMap(),
     onSide: (sport: Int, indoor: Boolean) -> Unit = { _, _ -> },
     onTurnOnLocation: (then: () -> Unit) -> Unit = { it() },
-    /** kcal goals are offered: there's a profile to work kcal out from. */
-    kcalTargets: Boolean = false,
-    /** Run intervals saved by name, for More, and saving one ([onSaveIntervals], its name and code). */
+    /** The max heart rate zones are shares of, once worked out, for a zone goal's heart rates. */
+    maxHeartRate: Int? = null,
+    onYourZones: () -> Unit = {},
+    /** Run intervals saved by name, and saving one ([onSaveIntervals], its name and code). */
     saved: List<org.openstrap.app.data.db.SavedWorkout> = emptyList(),
     onSaveIntervals: (name: String, structure: String) -> Unit = { _, _ -> },
     /** Rounds to open on instead of last time's, from a saved workout picked on Choose. */
@@ -120,21 +127,24 @@ fun GlowWorkoutReadyScreen(
     val indoor = chosenIndoor ?: Workouts.indoorSide(sportType, sides)
     val type = pair?.type(indoor == true) ?: sportType
     val family = Workouts.family(type)
+    val cardio = family == Workouts.Family.Distance || family == Workouts.Family.IndoorCardio
     // Last time's settings until changed here. Keyed on them too: the stored ones load a moment after the screen opens.
     val key = Workouts.tileType(sportType)
     var goalCode by rememberSaveable(key, settings) { mutableStateOf(settings.goal) }
     var askToEnd by rememberSaveable(key, settings) { mutableStateOf(settings.askToEnd) }
-    var gpsOn by rememberSaveable(key, settings) { mutableStateOf(settings.gps) }
     var keepRoute by rememberSaveable(key, settings) { mutableStateOf(settings.keepRoute) }
     val lastRest = Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT
     var sets by rememberSaveable(key, settings) { mutableStateOf(settings.sets) }
     var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }
     var restBelow by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm) }
     var log by rememberSaveable(key, settings) { mutableStateOf(settings.log) }
-    // HIIT's rounds (Tabata unless last time was another), or a run's reps; null is Free, or no reps.
+    // HIIT's rounds (Tabata unless last time was another), or a game's periods; null is Free, or free play.
     var structureCode by rememberSaveable(key, settings, structure) {
         mutableStateOf(structure ?: settings.structure ?: Structure.TABATA.code.takeIf { family == Workouts.Family.Intervals })
     }
+    // A cardio sport's goal: the kind chosen and each kind's value, from last time's goal or reps.
+    var draft by rememberSaveable(key, settings, structure, stateSaver = GoalDraftSaver) { mutableStateOf(goalDraft(settings, structure)) }
+    var typing by remember { mutableStateOf(false) }
     var sheet by rememberSaveable { mutableStateOf<ReadySheet?>(null) }
     val context = LocalContext.current
     var locationOn by remember { mutableStateOf(locationAvailable(context)) }
@@ -143,12 +153,22 @@ fun GlowWorkoutReadyScreen(
         onPauseOrDispose { }
     }
     val outdoor = Workouts.gpsOffered(sportType, indoor)
-    val useGps = outdoor && gpsOn && locationOn
+    // GPS wherever it's offered and the phone's location can be used; the indoor side is the way without it.
+    val useGps = outdoor && locationOn
     val strength = family == Workouts.Family.Strength
-    // A distance only where there is one; a kcal goal picked before the profile went is dropped with its chip.
-    // Rounds only where they fit: HIIT, and reps for a run.
-    val rounds = Structure.parse(structureCode)?.takeIf { Structure.fits(it, type) }
-    val goal = WorkoutTarget.parse(goalCode)?.takeIf { rounds == null && WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
+    val hasDistance = useGps || type in Workouts.ON_FOOT
+    val kinds = WorkoutSetup.goalKinds(type, hasDistance)
+    // A kind that doesn't fit the side now (a distance indoors on a bike) shows as no goal.
+    val kind = draft.kind.takeIf { it in kinds } ?: WorkoutSetup.GoalKind.None
+    // Rounds only where they fit: HIIT, a game's periods, and reps for a run (from the goal card).
+    val rounds = if (cardio) draft.reps.takeIf { kind == WorkoutSetup.GoalKind.Intervals && Structure.fits(it, type) }
+        else Structure.parse(structureCode)?.takeIf { Structure.fits(it, type) }
+    val goal = if (cardio) when (kind) {
+        WorkoutSetup.GoalKind.Distance -> WorkoutTarget.Distance(draft.meters)
+        WorkoutSetup.GoalKind.Time -> WorkoutTarget.Time(draft.seconds)
+        WorkoutSetup.GoalKind.Zone -> draft.zones
+        else -> null
+    } else WorkoutTarget.parse(goalCode)?.takeIf { rounds == null && WorkoutSetup.offered(it, hasDistance, kcal = false) }
     // GPS warms up while Ready shows, so the fix is often there by Start.
     var accuracy by remember(useGps) { mutableStateOf<Float?>(null) }
     if (useGps) DisposableEffect(Unit) {
@@ -162,6 +182,9 @@ fun GlowWorkoutReadyScreen(
         return
     }
     BackHandler(onBack = onBack)
+    val focusManager = LocalFocusManager.current
+    // Back while typing puts the keyboard and the caret away first.
+    BackHandler(enabled = typing) { focusManager.clearFocus() }
     val start = {
         haptics.perform(HapticEvent.WorkoutStart)
         val rest = Strength.Rest(restSeconds, restBelow)
@@ -171,7 +194,7 @@ fun GlowWorkoutReadyScreen(
                 rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log, structure = rounds?.code,
             ),
             settings.copy(
-                goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = gpsOn, keepRoute = keepRoute,
+                goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = true, keepRoute = keepRoute,
                 rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
                 log = if (strength) log else settings.log, structure = rounds?.code,
             ),
@@ -179,17 +202,37 @@ fun GlowWorkoutReadyScreen(
     }
     WorkoutPage(
         Color.Transparent, contentPadding,
-        pinned = { WorkoutButton(WorkoutCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) },
+        // While a goal is typed the keyboard has the bottom of the screen.
+        pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
     ) {
         Box(Modifier.fillMaxWidth()) {
             RoundIcon(AppIcons.X, "Close", onBack, Modifier.align(Alignment.CenterStart))
             Box(Modifier.align(Alignment.Center)) { Pill(Workouts.shortName(type), null, onClick = { picking = true }, caret = true) }
-            RoundIcon(AppIcons.SlidersHorizontal, "${Workouts.shortName(type)} settings", { sheet = ReadySheet.Settings }, Modifier.align(Alignment.CenterEnd))
+            if (!cardio) RoundIcon(AppIcons.SlidersHorizontal, "${Workouts.shortName(type)} settings", { sheet = ReadySheet.Settings }, Modifier.align(Alignment.CenterEnd))
         }
-        // Outdoor or indoor is a switch, not a second sport.
-        if (pair != null) SideSwitch(listOf(pair.outdoorName, pair.indoorName), if (indoor == true) 1 else 0) { i ->
-            chosenIndoor = i == 1
-            onSide(pair.outdoor, i == 1)
+        if (cardio) {
+            ReadyHeartCard(connection, liveHeartRate)
+            ReadyWhere(
+                type, pair, indoor == true, outdoor, locationOn, StartCopy.gpsStatus(accuracy),
+                onSwitch = {
+                    val next = indoor != true
+                    chosenIndoor = next
+                    onSide(pair!!.outdoor, next)
+                },
+                onTurnOnLocation = {
+                    if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
+                    else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                },
+                askToEnd = askToEnd, onAskToEnd = { askToEnd = it },
+                keepRoute = keepRoute.takeIf { useGps }, onKeepRoute = { keepRoute = it },
+            )
+            val zones by HeartZones.current.collectAsState()
+            ReadyGoal(
+                type, kinds, hasDistance, draft.copy(kind = kind), { draft = it }, typing, { typing = it }, zones, maxHeartRate, onYourZones,
+                saved.filter { Workouts.tileType(it.sport) == key },
+                onSave = { name, reps -> onSaveIntervals(name, reps.code) },
+            )
+            return@WorkoutPage
         }
         if (strength) {
             StrapLine(connection, liveHeartRate)
@@ -202,82 +245,63 @@ fun GlowWorkoutReadyScreen(
             return@WorkoutPage
         }
         ReadyHeart(connection, liveHeartRate)
-        // The one status line: GPS for an outdoor sport, else what the strap will do.
+        // The one status line: what the strap will do.
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            when {
-                outdoor && !locationOn -> StatusPill(WorkoutCopy.LOCATION_OFF, TrendBad) {
-                    SmallPill("Turn on") {
-                        if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
-                        else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                    }
-                }
-                outdoor && !gpsOn -> StatusPill(StartCopy.GPS_OFF, null)
-                outdoor -> StatusPill(StartCopy.gpsStatus(accuracy), if (StartCopy.gpsReady(accuracy)) TrendGood else TrendBad)
-                family == Workouts.Family.Games -> StatusText(StartCopy.GAMES_STATUS)
-                family == Workouts.Family.MindBody -> StatusText(StartCopy.MIND_STATUS)
-                rounds != null -> StatusText(StartCopy.INTERVALS_STATUS)
-                else -> StatusText(StartCopy.goalStatus(goal))
-            }
+            StatusText(if (family == Workouts.Family.Games) StartCopy.GAMES_STATUS else StartCopy.MIND_STATUS)
         }
         // A game: free play, halves or quarters, with no label (workouts spec 2.2), then their length and break.
         if (family == Workouts.Family.Games) {
             GamePlan(rounds as? Structure.Periods) { structureCode = it?.code; goalCode = null }
             return@WorkoutPage
         }
+        // Mind and body: Open or a length.
         Column(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             ChipLabel(StartCopy.goalTitle(family))
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val chips = if (family == Workouts.Family.MindBody) WorkoutSetup.LENGTHS
-                    else (goalChips.filter { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) } + listOfNotNull(goal)).distinct()
-                Chip(if (family == Workouts.Family.MindBody) StartCopy.OPEN else StartCopy.noGoal(type), goal == null && rounds == null, Color.White) {
-                    goalCode = null; structureCode = null
-                }
-                chips.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; structureCode = null } }
-                // Run reps chosen in More show as a chip of their own.
-                rounds?.let { Chip(StartCopy.structureName(it), true, Color.White) { sheet = ReadySheet.More } }
-                if (family != Workouts.Family.MindBody) Chip("More", false, Color.White) { sheet = ReadySheet.More }
+                Chip(StartCopy.OPEN, goal == null, Color.White) { goalCode = null }
+                WorkoutSetup.LENGTHS.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code } }
             }
         }
     }
     when (sheet) {
         ReadySheet.Settings -> PageSheet({ sheet = null }, "${Workouts.shortName(type)} settings") {
-            Column {
-                if (outdoor) {
-                    PageSwitchRow("GPS", WorkoutCopy.gpsNote(gpsOn, type), gpsOn, { gpsOn = it }, divider = false)
-                    if (gpsOn) PageSwitchRow("Keep the route", WorkoutCopy.routeNote(keepRoute), keepRoute, { keepRoute = it })
-                }
-                PageSwitchRow(
-                    "Ask to end when I stop", "After 8 min near resting heart rate and no steps, the strap buzzes and asks.",
-                    askToEnd, { askToEnd = it }, divider = outdoor,
-                )
-            }
-            PageButton("About recording", { sheet = ReadySheet.About }, icon = AppIcons.Info)
-        }
-        ReadySheet.More -> PageSheet({ sheet = null }, "Goal", note = StartCopy.goalStatus(goal)) {
-            WorkoutSetup.moreGoals(kcalTargets).forEach { (kind, goals) ->
-                val shown = goals.filter { WorkoutSetup.offered(it, useGps || type in Workouts.ON_FOOT, kcalTargets) }
-                if (shown.isEmpty()) return@forEach
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    ChipLabel(kind)
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        shown.forEach { g -> Chip(StartCopy.goalLabel(g), g == goal, Color.White) { goalCode = g.code; structureCode = null; sheet = null } }
-                    }
-                }
-            }
-            // A run can be reps instead: of a distance with GPS or on foot, or of a time.
-            if (type in Workouts.RUNS) RunIntervals(
-                rounds as? Structure.Reps, saved.filter { Workouts.tileType(it.sport) == key },
-                onUse = { structureCode = it.code; goalCode = null; sheet = null },
-                onSave = { name, s -> onSaveIntervals(name, s.code); structureCode = s.code; goalCode = null; sheet = null },
+            PageSwitchRow(
+                "Ask to end when I stop", "After 8 min near resting heart rate and no steps, the strap buzzes and asks.",
+                askToEnd, { askToEnd = it }, divider = false,
             )
+            PageButton("About recording", { sheet = ReadySheet.About }, icon = AppIcons.Info)
         }
         ReadySheet.About -> InfoSheet(
             Info("Recording", WorkoutCopy.READY_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
-            onDismiss = { sheet = null }, rows = WorkoutCopy.readyRows(outdoor),
+            onDismiss = { sheet = null }, rows = WorkoutCopy.readyRows(),
         )
         null -> Unit
     }
 }
+
+/** What a cardio sport's goal card opens on: last time's goal or reps ([structure] first, from Choose), each kind's default else. */
+private fun goalDraft(settings: SportSettings, structure: String?): GoalDraft {
+    val goal = WorkoutTarget.parse(settings.goal)
+    val reps = Structure.parse(structure ?: settings.structure) as? Structure.Reps
+    return GoalDraft(
+        WorkoutSetup.goalKind(goal, reps),
+        (goal as? WorkoutTarget.Distance)?.meters ?: WorkoutSetup.DEFAULT_DISTANCE.meters,
+        (goal as? WorkoutTarget.Time)?.seconds ?: WorkoutSetup.DEFAULT_TIME.seconds,
+        goal as? WorkoutTarget.Zones ?: WorkoutSetup.DEFAULT_ZONES,
+        reps ?: StartCopy.DEFAULT_INTERVALS,
+    )
+}
+
+/** Keeps the goal card's draft across process death, as the kind, the values and the reps' code. */
+private val GoalDraftSaver = androidx.compose.runtime.saveable.listSaver<GoalDraft, Any>(
+    save = { d -> listOf(d.kind.ordinal, d.meters, d.seconds, d.zones.low, d.zones.high, d.reps.code) },
+    restore = { v ->
+        GoalDraft(
+            WorkoutSetup.GoalKind.entries[v[0] as Int], v[1] as Int, v[2] as Long, WorkoutTarget.Zones(v[3] as Int, v[4] as Int),
+            Structure.parse(v[5] as String) as? Structure.Reps ?: StartCopy.DEFAULT_INTERVALS,
+        )
+    },
+)
 
 /** Whether the phone's location can be used now: allowed, and turned on. */
 internal fun locationAvailable(context: Context): Boolean =
@@ -329,25 +353,6 @@ internal fun StrapLine(connection: ConnectionState, liveHeartRate: Int?) {
         Canvas(Modifier.size(6.dp)) { drawCircle(if (connection is ConnectionState.Connected) TrendGood else TrendBad) }
         Spacer(Modifier.width(8.dp))
         Text(StartCopy.strapLine(connection, liveHeartRate), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-    }
-}
-
-/** Ready's status line as a quiet pill, with a [dot] for GPS and an optional [action] at its end. */
-@Composable
-private fun StatusPill(text: String, dot: Color?, action: (@Composable () -> Unit)? = null) {
-    Row(
-        Modifier.heightIn(min = 40.dp).clip(RoundedCornerShape(50)).background(QuietSurface).padding(start = 14.dp, end = if (action != null) 4.dp else 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (dot != null) {
-            Canvas(Modifier.size(8.dp)) { drawCircle(dot) }
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(text, color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(vertical = 8.dp))
-        if (action != null) {
-            Spacer(Modifier.width(10.dp))
-            action()
-        }
     }
 }
 
@@ -403,67 +408,6 @@ private fun Stepper(label: String, value: String, less: String, more: String, on
         Text(value, color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.width(96.dp))
         RoundIcon(AppIcons.Plus, more, onMore)
     }
-}
-
-/** The Outdoor or Indoor switch: two halves on a Control pill, the chosen one white. */
-@Composable
-private fun SideSwitch(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(Modifier.fillMaxWidth().clip(CircleShape).background(Raised).padding(4.dp)) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).clip(CircleShape).background(if (on) Color.White else Color.Transparent)
-                    .pressClickable({ if (!on) onSelect(i) }, CircleShape, scale = 0.97f)
-                    .semantics { this.selected = on; role = Role.Tab }
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    label, color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                    style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
-                )
-            }
-        }
-    }
-}
-
-/**
- * A settings row in a list (spec 2.5, Grouped list): an optional white [icon], the [title] in Body with its [note]
- * under it in Secondary, and [trailing] (a switch) on the right. The whole row toggles through [onClick].
- */
-@Composable
-internal fun SettingRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector?, title: String, note: String, divider: Boolean = true,
-    onClick: () -> Unit, trailing: @Composable () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
-            .padding(vertical = GlowLayout.RowPadding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (icon != null) {
-            Icon(icon, null, tint = SportIconTint, modifier = Modifier.size(RowIcon))
-            Spacer(Modifier.width(RowIconGap))
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            RowName(title)
-            Text(note, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-        }
-        Spacer(Modifier.width(12.dp))
-        trailing()
-    }
-}
-
-/** A small white pill button at the end of a row ("Turn on"). */
-@Composable
-private fun SmallPill(label: String, onClick: () -> Unit) {
-    Text(
-        label, color = Color.Black, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
-        modifier = Modifier.clip(CircleShape).background(Color.White).pressClickable(onClick, CircleShape)
-            .semantics { role = Role.Button; contentDescription = label }
-            .padding(horizontal = 14.dp, vertical = 8.dp),
-    )
 }
 
 /** The label over a row of chips, in Caption. */
@@ -575,56 +519,6 @@ private fun RoundsStrip(s: Structure.Timed) {
         repeat(s.rounds) { i ->
             Box(Modifier.weight(s.work.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.heart))
             if (i < s.rounds - 1 && s.rest > 0) Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.sleepDeep))
-        }
-    }
-}
-
-/**
- * Run intervals in More (workouts spec 2.5): reps of a distance or a time, the rest between, how many; Use them, or
- * Save them by name to find on Choose and here. Up to ten are kept.
- */
-@Composable
-private fun RunIntervals(current: Structure.Reps?, saved: List<org.openstrap.app.data.db.SavedWorkout>, onUse: (Structure.Reps) -> Unit, onSave: (String, Structure.Reps) -> Unit) {
-    val reps = listOf<Pair<Int?, Long?>>(400 to null, 800 to null, 1000 to null, null to 120L, null to 180L)
-    var rep by rememberSaveable { mutableStateOf(reps.indexOfFirst { it.first == current?.meters && it.second == current?.seconds }.takeIf { it >= 0 } ?: 0) }
-    var rest by rememberSaveable { mutableStateOf(current?.rest ?: 90L) }
-    var count by rememberSaveable { mutableStateOf(current?.rounds ?: 6) }
-    var name by rememberSaveable { mutableStateOf("") }
-    val built = Structure.Reps(reps[rep].first, reps[rep].second, rest, count)
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        ChipLabel("Intervals")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            reps.forEachIndexed { i, (m, s) ->
-                Chip(m?.let { if (it >= 1000) "${it / 1000} km" else "$it m" } ?: StartCopy.restText(s ?: 0), i == rep, Color.White) { rep = i }
-            }
-        }
-        ChipLabel("Rest between")
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            listOf(60L, 90L, 120L).forEach { s -> Chip(StartCopy.restText(s), s == rest, Color.White) { rest = s } }
-        }
-        Stepper("Reps", "$count", "Fewer reps", "More reps", { count = (count - 1).coerceAtLeast(2) }, { count = (count + 1).coerceAtMost(20) })
-        PageButton("Use ${StartCopy.structureName(built)}", { onUse(built) }, Modifier.fillMaxWidth(), primary = true, icon = AppIcons.PlayFill)
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            androidx.compose.foundation.text.BasicTextField(
-                name, { name = it.take(40) }, Modifier.weight(1f), singleLine = true,
-                textStyle = GlowType.body.copy(color = Color.White), cursorBrush = androidx.compose.ui.graphics.SolidColor(Color.White),
-                decorationBox = { field ->
-                    Box(Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised).padding(horizontal = 16.dp), contentAlignment = Alignment.CenterStart) {
-                        if (name.isEmpty()) Text("Name, like Tuesday intervals", color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body, maxLines = 1)
-                        field()
-                    }
-                },
-            )
-            PageButton("Save", { onSave(name.trim(), built) }, enabled = name.isNotBlank(), icon = AppIcons.Plus)
-        }
-        if (saved.isNotEmpty()) {
-            ChipLabel("Saved")
-            Column {
-                saved.forEachIndexed { i, w ->
-                    val s = Structure.parse(w.structure) as? Structure.Reps ?: return@forEachIndexed
-                    PageRow(w.name, value = StartCopy.structureName(s), divider = i > 0, onClick = { onUse(s) })
-                }
-            }
         }
     }
 }

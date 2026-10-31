@@ -62,13 +62,6 @@ object WorkoutCopy {
 
     private const val ANYWAY = "You can start anyway."
 
-    /** Under GPS: what it gives, or what's missing without it. */
-    fun gpsNote(on: Boolean, sportType: Int): String = when {
-        on -> "On. Distance, pace and the map."
-        sportType in Workouts.ON_FOOT -> "Off. Distance from the strap's steps, roughly."
-        else -> "Off. No distance without GPS."
-    }
-
     /** The GPS row while the phone's location is off or not allowed. Start still works, without GPS. */
     const val LOCATION_OFF = "Location is off"
     const val LOCATION_OFF_NOTE = "Turn it on for distance and the map, or start without it."
@@ -99,20 +92,14 @@ object WorkoutCopy {
     /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
     fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
 
-    /** The Ready info sheet's meaning. */
-    const val READY_MEANING = "Heart rate comes from the strap every second. GPS is on for outdoor workouts, and you can turn it off."
+    /** The Ready info sheet's meaning, behind the settings of a sport with no GPS (strength, HIIT, games, mind and body). */
+    const val READY_MEANING = "Heart rate comes from the strap every second, with the phone's screen off too."
 
-    /** The Ready info sheet's rows: the strap always, GPS and the route for an [outdoor] sport. */
-    fun readyRows(outdoor: Boolean): List<Pair<String, String>> = listOfNotNull(
+    /** The Ready info sheet's rows: the strap. */
+    fun readyRows(): List<Pair<String, String>> = listOf(
         "Heart rate" to "The strap sends heart rate every second, with the phone's screen off too. If it drops out or " +
             "isn't connected at the start, recording carries on, and the missing minutes are filled from the strap's own " +
             "history after the next sync.",
-        ("GPS" to "Outdoors, GPS uses the phone's location during this workout only, for distance, pace and the map. " +
-            "Its switch turns it off for this workout. Map tiles come from OpenFreeMap, which sees roughly where the map " +
-            "is. Route only on the map loads no tiles. Without GPS, walks and runs get a distance from the strap's " +
-            "steps, marked ≈.").takeIf { outdoor },
-        ("Keep the route" to "With Keep the route on, the route is saved on this phone for the map. Off, only the " +
-            "totals are kept and the route is discarded when the workout ends.").takeIf { outdoor },
     )
 
     /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
