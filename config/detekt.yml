@@ -1,0 +1,104 @@
+# detekt rules for OpenStrap, on top of detekt's defaults (buildUponDefaultConfig).
+# Each rule here guards a finding from docs/audits/2026-11-01-code-quality.md section 10.
+# Old findings live in each module's detekt baseline. Add nothing to a baseline, fix the code instead.
+
+complexity:
+  LargeClass:
+    active: true
+    allowedLines: 600
+  LongMethod:
+    active: true
+    allowedLines: 80
+    # Composables are long by nature. Tighten once the screens are split (audit section 2).
+    ignoreAnnotated: ['Composable']
+  LongParameterList:
+    active: true
+    allowedFunctionParameters: 8
+    allowedConstructorParameters: 8
+    ignoreAnnotated: ['Composable']
+  CyclomaticComplexMethod:
+    active: true
+    allowedComplexity: 20
+
+coroutines:
+  # C1, C2, C6: runCatching or a broad catch in suspend code eats CancellationException.
+  SuspendFunSwallowedCancellation:
+    active: true
+  # C3: scopes nobody owns.
+  GlobalCoroutineUsage:
+    active: true
+  # C7: hardcoded dispatchers.
+  InjectDispatcher:
+    active: true
+
+empty-blocks:
+  # E9: silent catches.
+  EmptyCatchBlock:
+    active: true
+
+potential-bugs:
+  # D1, D4, E8: String.format and "...".format without a Locale follow the phone's locale. This is detekt's
+  # own rule for kotlin.text.format without a locale, so no ForbiddenMethodCall entry is needed for it.
+  ImplicitDefaultLocale:
+    active: true
+
+exceptions:
+  TooGenericExceptionCaught:
+    active: true
+  SwallowedException:
+    active: true
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ['Composable']
+
+style:
+  # D9, D10: magic thresholds and sport ids. Named constants and properties are the fix, so they are allowed.
+  MagicNumber:
+    active: true
+    ignorePropertyDeclaration: true
+    ignoreCompanionObjectPropertyDeclaration: true
+    ignoreConstantDeclaration: true
+  # Matches .editorconfig, so detekt and ktlint agree on the limit.
+  MaxLineLength:
+    maxLineLength: 140
+  # K12: collectAsState ignores the lifecycle. Use collectAsStateWithLifecycle. Glance widgets have no lifecycle owner.
+  ForbiddenMethodCall/collectAsState:
+    active: true
+    excludes: ['**/widget/**']
+    methods:
+      - reason: 'Keeps collecting in the background. Use collectAsStateWithLifecycle.'
+        value: 'androidx.compose.runtime.collectAsState'
+  # C10: the clock read once in composition freezes time on screen. Take the time from the view model or a ticker.
+  ForbiddenMethodCall/uiClock:
+    active: true
+    includes: ['**/ui/**']
+    methods:
+      - reason: 'Time read in composition goes stale. Take it from the view model.'
+        value: 'java.time.LocalDate.now'
+      - reason: 'Time read in composition goes stale. Take it from the view model.'
+        value: 'java.time.Instant.now'
+      - reason: 'Time read in composition goes stale. Take it from the view model.'
+        value: 'java.lang.System.currentTimeMillis'
+  UnusedParameter:
+    active: true
+  UnusedPrivateFunction:
+    active: true
+  UnusedPrivateProperty:
+    active: true
+
+# K3, K6, K8, K10, K11: the Compose rules (io.nlopez.compose.rules), all on, unstable collections included.
+Compose:
+  active: true
+  ComposableParamOrder:
+    active: true
+  CompositionLocalAllowlist:
+    active: true
+  ModifierMissing:
+    active: true
+  MutableParams:
+    active: true
+  RememberMissing:
+    active: true
+  UnstableCollections:
+    active: true

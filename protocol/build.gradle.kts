@@ -2,6 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 java {
@@ -12,7 +14,24 @@ java {
 kotlin {
     jvmToolchain(21)
     // Bytecode level matches the Android app module.
-    compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+        // The module is small and clean, so a new warning fails the build here (audit section 10, step 5).
+        allWarningsAsErrors.set(true)
+    }
+}
+
+// Same rules as :app (config/detekt.yml). Old findings live in detekt-baseline-main.xml.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+}
+
+// Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.
+ktlint {
+    version = libs.versions.ktlint.get()
+    baseline = file("ktlint-baseline.xml")
 }
 
 dependencies {
@@ -21,4 +40,6 @@ dependencies {
     testImplementation(libs.coroutines.test)
     // Only used to cross-check our B-163 implementation in tests; not shipped.
     testImplementation(libs.bouncycastle)
+
+    detektPlugins(libs.compose.rules.detekt)
 }

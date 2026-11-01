@@ -1,7 +1,11 @@
+import java.util.Locale
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 fun env(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
@@ -21,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "org.openstrap.app"
-        minSdk = 28
+        minSdk = 36
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
@@ -71,6 +75,39 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // Android lint. Old findings live in the baseline (refresh with ./gradlew :app:updateLintBaseline), new ones fail
+    // the build. SARIF reports are always written on AGP 9. The extra error ids are the Compose and dead resource checks from the November 2026 audit.
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkDependencies = true
+        error += listOf(
+            "StateFlowValueCalledInComposition", "FlowOperatorInvokedInComposition",
+            "CoroutineCreationDuringComposition", "ComposeModifierMissing",
+            "ComposeParameterOrder", "ComposeUnstableCollections", "UnusedResources",
+        )
+    }
+}
+
+// Stability reports, so recomposition problems are visible rather than guessed (build/compose_compiler).
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
+// detekt with the Compose rules. Old findings live in detekt-baseline-debug.xml and detekt-baseline-release.xml
+// (./gradlew :app:detektBaselineMain). detektMain is the type resolved run the coroutine rules need.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+}
+
+// Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.
+ktlint {
+    version = libs.versions.ktlint.get()
+    baseline = file("ktlint-baseline.xml")
 }
 
 ksp {
@@ -79,7 +116,19 @@ ksp {
 
 // The backtest harness (BacktestReplay, docs/algorithms/readiness-calibration.md):
 // ./gradlew testDebugUnitTest --tests '*BacktestReplay*' -Pbacktest=/path/openstrap.db [-PbacktestProfile=1990,Male]
+// Source scan tests read app/src/main from here, so they do not depend on the working directory.
+// `-PtestLocale=de-DE` runs the suite under that locale and a zone with a non whole hour offset, which flushes out
+// formatting that ignores the locale and dates that assume a whole hour offset.
+val appSrcMain = layout.projectDirectory.dir("src/main").asFile.absolutePath
+val testLocale = providers.gradleProperty("testLocale").orNull
 tasks.withType<Test>().configureEach {
+    systemProperty("openstrap.srcRoot", appSrcMain)
+    testLocale?.let { tag ->
+        val locale = Locale.forLanguageTag(tag)
+        systemProperty("user.language", locale.language)
+        systemProperty("user.country", locale.country)
+        systemProperty("user.timezone", "Asia/Kathmandu")
+    }
     listOf("backtest", "backtestOut", "backtestProfile").forEach { name ->
         providers.gradleProperty(name).orNull?.let { systemProperty("openstrap.$name", it) }
     }
@@ -125,4 +174,9 @@ dependencies {
     // A real Room database in unit tests (CSV restore).
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // Migration tests (MigrationTestHelper).
+    testImplementation(libs.room.testing)
+
+    lintChecks(libs.slack.compose.lint)
+    detektPlugins(libs.compose.rules.detekt)
 }
