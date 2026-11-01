@@ -73,7 +73,7 @@ import org.openstrap.app.ui.theme.AppIcons
  */
 
 private val PanelShape = GlowLayout.CardShape
-private val PanelSurface = Color(0xFF0F0F11)
+private val PanelSurface = ListSurface
 /** The Control surface (spec 2.2): buttons, chips, pills and text fields on a page. */
 internal val ControlSurface = Color(0xFF1F1F22)
 private val Hairline = Color.White.copy(alpha = 0.05f)

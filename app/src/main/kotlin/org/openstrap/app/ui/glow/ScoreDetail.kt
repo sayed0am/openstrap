@@ -297,16 +297,8 @@ private fun ChargeDetail(
 }
 
 /** Averages charge samples into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun bucket(points: List<Recovery.ChargePoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.t - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.value; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
-}
+private fun bucket(points: List<Recovery.ChargePoint>, range: LongRange, seconds: Long): List<Float?> =
+    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.t }, { it.value })
 
 /* ---------------------------------------------- Related --------------------------------------------- */
 

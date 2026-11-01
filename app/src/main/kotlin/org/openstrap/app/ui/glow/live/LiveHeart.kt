@@ -29,7 +29,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -55,7 +54,6 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.Route
@@ -118,7 +116,10 @@ fun GlowWorkoutLiveScreen(
     onSkip: () -> Unit = {},
     onAddRest: () -> Unit = {},
 ) {
-    val controls = LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
+    // Kept across the once-a-second recompositions, so what takes the controls can skip them.
+    val controls = remember(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing) {
+        LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
+    }
     // Each kind of workout has its own screen (workouts spec 2.3); the rest keep this one until theirs is built. Split
     // across a fold, this one keeps the figures while the other half shows the heart card.
     val family = Workouts.family(r.workout.sportType)
@@ -251,12 +252,7 @@ internal fun KmSplitLine(
     keepRoom: Boolean = false,
 ) {
     val splits = remember(route.size, pauses) { Route.splits(route, pauses) }
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            delay(1000 - System.currentTimeMillis() % 1000)
-            value = System.currentTimeMillis() / 1000
-        }
-    }
+    val now = nowTicking()
     val line = WorkoutCopy.splitLine(splits, readings, route.firstOrNull()?.t, now)
     val haptics = rememberHaptics()
     var ticked by remember { mutableIntStateOf(WorkoutCopy.wholeKms(splits)) }
@@ -448,13 +444,6 @@ private const val WINDOW_S = 600L
 
 /** The last ten minutes in five-second averages, oldest first; gaps stay null and break the line. */
 internal fun bucketRecent(recent: List<Pair<Long, Int>>, now: Long): List<Float?> {
-    val n = (WINDOW_S / BUCKET_S).toInt()
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
     val from = now - WINDOW_S + 1
-    recent.forEach { (t, bpm) ->
-        val i = ((t - from) / BUCKET_S).toInt()
-        if (i in 0 until n) { sums[i] += bpm.toFloat(); counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    return org.openstrap.app.data.Summaries.bucketMeans(recent, (WINDOW_S / BUCKET_S).toInt(), { ((it.first - from) / BUCKET_S).toInt() }, { it.second.toFloat() })
 }

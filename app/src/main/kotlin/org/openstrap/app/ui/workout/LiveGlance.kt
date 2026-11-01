@@ -314,7 +314,7 @@ object Glance {
             val second = listOfNotNull(clock, toGoShort(i) ?: state ?: zone?.let { "zone ${it + 1}" }).joinToString(", ")
             return base.copy(line1 = first, line2 = second, bpm = bpm, actionLabel = "Pause")
         }
-        val zoneLine = zone?.let { WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" } }
+        val zoneLine = zone?.let { WorkoutCopy.zoneLine(it) }
         return base.copy(
             line1 = "$sport, $clock", line2 = listOfNotNull(state ?: zoneLine, toGoShort(i)).joinToString(", ").ifEmpty { null },
             bpm = bpm,

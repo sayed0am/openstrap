@@ -596,16 +596,8 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
 }
 
 /** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.x - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.y; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
-}
+private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
+    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })
 
 /** A name inside a sentence: lower case, unless it's an acronym like HRV. */
 internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()

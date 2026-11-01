@@ -27,7 +27,6 @@ import androidx.compose.foundation.border
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -46,7 +45,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.db.AppWorkoutSet
@@ -110,12 +108,7 @@ internal fun LiveStrengthScreen(
     onExercise: (String?) -> Unit,
     onLog: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit,
 ) {
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            value = System.currentTimeMillis() / 1000
-            delay(1000 - System.currentTimeMillis() % 1000)
-        }
-    }
+    val now = nowTicking()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
@@ -314,7 +307,7 @@ private fun HeartLine(bpm: Int?, maxHr: Int) {
             Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             Spacer(Modifier.weight(1f))
             WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
-                Text(WorkoutCopy.zoneTitle(z).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary, maxLines = 1)
+                Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary, maxLines = 1)
             }
         }
     }
@@ -388,7 +381,7 @@ private fun LogCard(
 /** A log card stepper: its label, the value large, and minus and plus. */
 @Composable
 private fun LogStepper(label: String, value: String, less: String, more: String, modifier: Modifier, onLess: () -> Unit, onMore: () -> Unit) {
-    Column(modifier.clip(GlowLayout.CardShape).background(Color(0xFF0F0F11)).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(modifier.clip(GlowLayout.CardShape).background(org.openstrap.app.ui.glow.ListSurface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.Minus, less, onLess)

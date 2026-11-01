@@ -83,10 +83,15 @@ object Route {
      * §5.1); a stretch of standing still ([still]) is left as its first fix, so a phone's wander adds nothing.
      */
     fun track(points: List<Point>): List<Point> {
+        // A live workout's route is one list per fix, read by the screen, the map, the splits and the glance alike:
+        // the last one's track is kept, so a fix is smoothed once, not once for each of them.
+        lastTrack?.let { (from, track) -> if (from === points) return track }
         val smoothed = smooth(clean(points))
         val still = still(smoothed)
-        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }
+        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }.also { lastTrack = points to it }
     }
+
+    @Volatile private var lastTrack: Pair<List<Point>, List<Point>>? = null
 
     /**
      * Process noise (white acceleration, m/s^1.5) when fixes carry Doppler velocity: Zepp's q (native 02 §3.7), free
@@ -363,7 +368,7 @@ object Route {
     fun currentPace(points: List<Point>, windowS: Long = 30): Double? {
         val clean = track(points)
         val last = clean.lastOrNull() ?: return null
-        val recent = clean.filter { it.t >= last.t - windowS }
+        val recent = clean.takeLastWhile { it.t >= last.t - windowS }
         val m = recent.zipWithNext().sumOf { (a, b) -> meters(a, b) }
         val s = recent.last().t - recent.first().t
         return if (m < 10 || s <= 0) null else s / (m / 1000)

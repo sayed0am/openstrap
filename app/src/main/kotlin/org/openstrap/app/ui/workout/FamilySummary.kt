@@ -245,10 +245,7 @@ object FamilySummary {
         if (readings.isEmpty() || points < 2) return List(points.coerceAtLeast(0)) { null }
         val first = readings.first().first
         val span = (readings.last().first - first).coerceAtLeast(1)
-        val sums = FloatArray(points)
-        val counts = IntArray(points)
-        readings.forEach { (t, v) -> val i = ((t - first) * (points - 1) / span).toInt().coerceIn(0, points - 1); sums[i] += v.toFloat(); counts[i]++ }
-        val raw = List(points) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        val raw = org.openstrap.app.data.Summaries.bucketMeans(readings, points, { ((it.first - first) * (points - 1) / span).toInt().coerceIn(0, points - 1) }, { it.second.toFloat() })
         val half = window / 2
         return raw.indices.map { i ->
             if (raw[i] == null) null

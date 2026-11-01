@@ -152,7 +152,8 @@ object StartCopy {
         return when (s) {
             is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}, ${s.rounds} rounds"
             is org.openstrap.app.data.Structure.EveryMinute -> "Every ${restText(s.period)}, ${s.rounds} rounds"
-            is org.openstrap.app.data.Structure.Reps -> "${s.rounds} × " + (s.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: restText(s.seconds ?: 0))
+            // As Ready's rep field and note say it ([repParts]): "6 × 1.5 km", "8 × 1 min".
+            is org.openstrap.app.data.Structure.Reps -> repParts(s).let { (n, unit) -> "${s.rounds} × $n $unit" }
             is org.openstrap.app.data.Structure.Periods -> periodsName(s)
         }
     }

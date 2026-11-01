@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Games
 import org.openstrap.app.data.Phase
 import org.openstrap.app.data.Structure
@@ -64,12 +62,7 @@ internal fun LiveGameScreen(
     kcal: WorkoutRecorder.Kcal?,
     onHalfTime: () -> Unit,
 ) {
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            value = System.currentTimeMillis() / 1000
-            delay(1000 - System.currentTimeMillis() % 1000)
-        }
-    }
+    val now = nowTicking()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
@@ -112,7 +105,7 @@ internal fun LiveGameScreen(
                     }
                     Spacer(Modifier.weight(1f))
                     WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { z ->
-                        Text(WorkoutCopy.zoneTitle(z).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary)
+                        Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
                     }
                 }
                 EffortBar(effort)

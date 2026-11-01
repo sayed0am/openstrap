@@ -91,7 +91,7 @@ import java.time.format.DateTimeFormatter
 internal val PausedColor = Color(0xFF9AA0B4)
 
 /** The Control surface (spec 2.2): round buttons, chips, pills, tiles and fields on the workout pages. */
-internal val Raised = Color(0xFF1F1F22)
+internal val Raised = ControlSurface
 
 /** A button's label: Body (spec 2.3), a step heavier so it reads as the thing to press. */
 private val ButtonText = GlowType.body.copy(fontWeight = FontWeight.SemiBold)
@@ -508,13 +508,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
     val step = 10L
     val points = remember(summary) {
         val n = ((last - first) / step + 1).toInt().coerceAtLeast(2)
-        val sums = FloatArray(n)
-        val counts = IntArray(n)
-        summary.recorded.forEach { s ->
-            val i = ((s.timestamp - first) / step).toInt()
-            if (i in 0 until n) { sums[i] += s.bpm.toFloat(); counts[i]++ }
-        }
-        List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        org.openstrap.app.data.Summaries.bucketMeans(summary.recorded, n, { ((it.timestamp - first) / step).toInt() }, { it.bpm.toFloat() })
     }
     QuietPanel {
         PanelTitle("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))

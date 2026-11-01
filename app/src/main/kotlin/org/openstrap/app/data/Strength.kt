@@ -76,8 +76,26 @@ object Strength {
         return if (logged.isEmpty()) null else logged.sumOf { it.reps!! * it.weightKg!!.toDouble() }.toFloat()
     }
 
-    /** The highest heart rate of [readings] (time, bpm) from [from] to [to]; null without any. */
-    fun peak(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? = readings.filter { it.first in from..to }.maxOfOrNull { it.second }
+    /**
+     * The highest heart rate of [readings] (time, bpm, oldest first, as every workout's are) from [from] to [to]; null
+     * without any. Found by a binary search and a scan of just that stretch: it's asked once per set row and round.
+     */
+    fun peak(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? {
+        var lo = 0
+        var hi = readings.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (readings[mid].first < from) lo = mid + 1 else hi = mid
+        }
+        var best: Int? = null
+        var i = lo
+        while (i < readings.size && readings[i].first <= to) {
+            val bpm = readings[i].second
+            if (best == null || bpm > best) best = bpm
+            i++
+        }
+        return best
+    }
 
     /** "60", or "62.5" kg. */
     fun kgText(kg: Float): String = if (kg % 1f == 0f) kg.toInt().toString() else String.format(java.util.Locale.ROOT, "%.1f", kg)

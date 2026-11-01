@@ -23,7 +23,6 @@ import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.device.WorkoutState
-import kotlinx.coroutines.delay
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
@@ -31,7 +30,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.material3.Icon
@@ -68,7 +66,8 @@ internal fun LiveMapPage(
     modifier: Modifier,
     onRouteOnly: (Boolean) -> Unit,
 ) {
-    val stretches = remember(route.size, history.size) { Route.byZone(route, history, maxHr) }
+    // A reading comes every second: the zone colours follow every tenth, the line every fix.
+    val stretches = remember(route.size, history.size / 10) { Route.byZone(route, history, maxHr) }
     // The whole page is the map; what its tiles reveal is said in the ready screen's (i).
     Box(modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(Raised)) {
         // Where you are now, from the latest fix good enough to count, even while standing still.
@@ -129,7 +128,8 @@ internal fun LiveMapScreen(
     var panel by remember { mutableStateOf(344.dp) }
     var routeOnly by rememberSaveable { mutableStateOf(false) }
     var follow by rememberSaveable { mutableStateOf(true) }
-    val stretches = remember(route.size, readings.size) { Route.byZone(route, readings, r.maxHeartRate) }
+    // A reading comes every second: the zone colours follow every tenth, the line every fix.
+    val stretches = remember(route.size, readings.size / 10) { Route.byZone(route, readings, r.maxHeartRate) }
     val here = route.lastOrNull { it.accuracy <= Route.MAX_ACCURACY_M }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
     Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -221,12 +221,7 @@ private fun MapButton(icon: androidx.compose.ui.graphics.vector.ImageVector, lab
 @Composable
 private fun LastSplit(route: List<Route.Point>, readings: List<Pair<Long, Int>>, pauses: List<LongRange>) {
     val splits = remember(route.size, pauses) { Route.splits(route, pauses) }
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            delay(1000 - System.currentTimeMillis() % 1000)
-            value = System.currentTimeMillis() / 1000
-        }
-    }
+    val now = nowTicking()
     val (line, ago) = WorkoutCopy.lastSplit(splits, readings, route.firstOrNull()?.t, now) ?: return
     Row(
         Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(14.dp)).background(Raised).padding(horizontal = 14.dp),

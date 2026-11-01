@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.produceState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -70,6 +72,7 @@ internal val LiveClock = GlowType.sentence.copy(fontSize = 46.sp, lineHeight = 5
 internal val LiveFigure = GlowType.sentence.copy(fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
 
 /** What every live screen can do to the workout, passed down as one. */
+@androidx.compose.runtime.Immutable
 internal class LiveControls(
     val onPause: () -> Unit,
     val onResume: () -> Unit,
@@ -438,3 +441,12 @@ internal fun HoldToEnd(onEnd: () -> Unit) {
 
 internal val EndRed = MetricColors.heart
 private const val HOLD_MS = 2000
+
+/** Now in epoch seconds, ticking on each whole second: the clock every live screen counts from. */
+@Composable
+internal fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
+    while (true) {
+        value = System.currentTimeMillis() / 1000
+        delay(1000 - System.currentTimeMillis() % 1000)
+    }
+}.value

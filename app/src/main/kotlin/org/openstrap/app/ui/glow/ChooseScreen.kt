@@ -171,7 +171,7 @@ private fun RecentChipButton(sport: Int, name: String, onClick: () -> Unit) {
 }
 
 /** Choose's quiet chips, a step off black so the usual's glow stays the one lit thing. */
-private val QuietCard = Color(0xFF0F0F11)
+private val QuietCard = ListSurface
 
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 

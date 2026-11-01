@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,7 +33,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Phase
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutRecorder
@@ -60,15 +58,6 @@ import org.openstrap.app.ui.workout.intervalMoment
 /** Work red and rest green, the intervals' two colours. */
 private val WorkRed = MetricColors.heart
 private val RestGreen = ZONE_COLORS[1]
-
-/** The seconds a phase's clock is ticked from, for the screen. */
-@Composable
-internal fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
-    while (true) {
-        value = System.currentTimeMillis() / 1000
-        delay(1000 - System.currentTimeMillis() % 1000)
-    }
-}.value
 
 /**
  * HIIT (workouts spec 2.5, boards HiitWork and HiitRest), with the total small on top and the screen in the phase's
@@ -116,8 +105,8 @@ internal fun LiveIntervalsScreen(
         title = listOfNotNull(org.openstrap.app.data.Workouts.sportName(r.workout.sportType), plan).joinToString(", "),
         backdrop = when {
             r.paused -> null
-            m.phase is Phase.Work -> phaseGlow(WorkRed, fromTop = false)
-            m.phase is Phase.Rest -> phaseGlow(RestGreen, fromTop = true)
+            m.phase is Phase.Work -> WorkGlow
+            m.phase is Phase.Rest -> RestGlow
             else -> null
         },
     ) {
@@ -157,6 +146,10 @@ private val OverGlow = Color.White.copy(alpha = 0.16f)
  * The phase's light over the whole screen (boards HiitWork and HiitRest): work rises from the bottom, rest falls from
  * the top, strongest at the edge and gone by the middle, so the seconds stay on black.
  */
+// Made once: a new brush each second would draw the backdrop again.
+private val WorkGlow by lazy { phaseGlow(WorkRed, fromTop = false) }
+private val RestGlow by lazy { phaseGlow(RestGreen, fromTop = true) }
+
 private fun phaseGlow(color: Color, fromTop: Boolean) = object : ShaderBrush() {
     override fun createShader(size: Size) = RadialGradientShader(
         Offset(size.width / 2f, if (fromTop) -size.height * 0.08f else size.height * 1.08f),
@@ -234,7 +227,7 @@ private fun HeartStripDark(bpm: Int?, maxHr: Int, modifier: Modifier = Modifier)
         Canvas(Modifier.size(8.dp)) { drawCircle(zone?.let { ZONE_COLORS[it] } ?: Color.White) }
         Spacer(Modifier.width(10.dp))
         Text(bpm?.let { "$it bpm" } ?: "No heart rate yet", color = Color.White, style = GlowType.body)
-        zone?.let { Spacer(Modifier.width(16.dp)); Text(WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary, maxLines = 1) }
+        zone?.let { Spacer(Modifier.width(16.dp)); Text(WorkoutCopy.zoneLine(it), color = Color.White, style = GlowType.secondary, maxLines = 1) }
     }
 }
 

@@ -567,6 +567,9 @@ data class SetCount(val workoutStart: Long, val sets: Int)
 data class HrStreamMark(val workoutStart: Long, val lastSample: Long, val samples: Int, val bpmSum: Long)
 
 /** One local day of a sampled metric: its average (or total, for steps), lowest, highest and sample count. */
+/** A table's row count and latest time ([HealthDao.activityStampOnce]). */
+data class TableStamp(val rowCount: Long, val latest: Long?)
+
 data class DailyAggregate(
     /** The local date as SQLite prints it, `yyyy-MM-dd`. */
     val day: String,

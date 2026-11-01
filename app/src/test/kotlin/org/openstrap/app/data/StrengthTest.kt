@@ -83,5 +83,9 @@ class StrengthTest {
         assertEquals("60", Strength.kgText(60f))
         assertEquals("62.5", Strength.kgText(62.5f))
         assertEquals(148, Strength.peak(listOf(10L to 120, 20L to 148, 50L to 160), 0, 40))
+        // Both ends count; nothing in the span, or nothing at all, is no peak.
+        assertEquals(160, Strength.peak(listOf(10L to 120, 20L to 148, 50L to 160), 20, 50))
+        assertEquals(null, Strength.peak(listOf(10L to 120, 50L to 160), 20, 40))
+        assertEquals(null, Strength.peak(emptyList(), 0, 40))
     }
 }

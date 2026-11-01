@@ -116,6 +116,8 @@ class StartCopyTest {
         assertEquals("40 / 20", StartCopy.structureName(org.openstrap.app.data.Structure.FORTY_TWENTY))
         assertEquals("6 × 400 m", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(400, null, 90, 6)))
         assertEquals("8 × 2 min", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(null, 120, 60, 8)))
+        // As the rep field under it says it, not "1500 m".
+        assertEquals("6 × 1.5 km", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(1500, null, 90, 6)))
         assertEquals(230L, StartCopy.totalTime(org.openstrap.app.data.Structure.TABATA))
         // Reps fit a run, rounds fit HIIT, never the other way round.
         assertEquals(true, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 2))

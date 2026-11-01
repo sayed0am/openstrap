@@ -73,7 +73,7 @@ import org.openstrap.app.ui.workout.familyColor
  * The hero: its one number in dots and its word, then a sentence or three figures in text. A figure's value is null
  * when it's missing (no heart rate, no profile for kcal): it shows the waiting dash.
  */
-internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null)
+internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null, val pace: String? = null)
 
 /**
  * What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. When the kind's own number is missing
@@ -100,6 +100,7 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
                 else -> SummaryHero(
                     if (m < 1000) m.toInt().toString() else km(m), if (m < 1000) "m" else "km",
                     listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
+                    pace = pace,
                 )
             }
         }

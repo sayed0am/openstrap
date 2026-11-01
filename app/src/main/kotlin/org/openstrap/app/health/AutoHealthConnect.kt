@@ -129,7 +129,7 @@ class HealthConnectAutoSync(
         scope.launch {
             guarded("sleep $strapStart") {
                 val (from, to) = AutoHealthConnect.sleepRange(strapStart, System.currentTimeMillis() / 1000)
-                val n = exporter.export(from, to)
+                val n = exporter.exportSleep(from, to)
                 Log.i(TAG, "health connect: wrote the sleep at $strapStart again, $n records")
             }
         }

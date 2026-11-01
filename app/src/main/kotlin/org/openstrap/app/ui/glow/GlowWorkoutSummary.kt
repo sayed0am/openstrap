@@ -187,7 +187,7 @@ fun GlowWorkoutSummaryScreen(
         }
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
+        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort) { swell.value }
         val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
         val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
         EarnedChips(earned)
@@ -214,8 +214,9 @@ fun GlowWorkoutSummaryScreen(
  * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
  */
 @Composable
-internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: Float) {
-    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell).coerceAtMost(1f))
+internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f }) {
+    // Read here, so a best's swell composes only the hero each frame, not the whole summary.
+    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell()).coerceAtMost(1f))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {

@@ -211,7 +211,7 @@ private fun PastSummary(
                         if (h.sentence != null) h
                         else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
                     }
-                    SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual), 0f)
+                    SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual))
                     val sectionOnEdge = FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
                     // The heart rate card is lit from the left; under the section's own edge card it takes the bottom.
                     if (a.heartRate.isNotEmpty() || w.averageHeartRate != null) {
@@ -279,13 +279,7 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
     val last = (a.heartRate.maxOfOrNull { it.timestamp } ?: a.end).coerceIn(a.end, a.end + Workouts.RECOVERY_TAIL_S)
     val values = remember(a) {
         val n = ((last - first) / HeartStep + 1).toInt().coerceAtLeast(2)
-        val sums = FloatArray(n)
-        val counts = IntArray(n)
-        a.heartRate.forEach { s ->
-            val i = ((s.timestamp - first) / HeartStep).toInt()
-            if (i in 0 until n) { sums[i] += s.bpm.toFloat(); counts[i]++ }
-        }
-        List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        org.openstrap.app.data.Summaries.bucketMeans(a.heartRate, n, { ((it.timestamp - first) / HeartStep).toInt() }, { it.bpm.toFloat() })
     }
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val at = scrubbed?.let { i -> values.getOrNull(i)?.let { v -> first + i * HeartStep to v.roundToInt() } }

@@ -38,6 +38,24 @@ object Summaries {
         return byTime.map { it.key to it.value }
     }
 
+    /**
+     * [items] averaged into [n] buckets, each into the one [index] gives it (those outside left out); an empty bucket
+     * is null, a gap in the chart's line. Every chart's evenly spaced line is made here.
+     */
+    inline fun <T> bucketMeans(items: Iterable<T>, n: Int, index: (T) -> Int, value: (T) -> Float): List<Float?> {
+        val sums = FloatArray(n)
+        val counts = IntArray(n)
+        for (item in items) {
+            val i = index(item)
+            if (i in 0 until n) { sums[i] += value(item); counts[i]++ }
+        }
+        return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    }
+
+    /** [items] averaged into [seconds]-wide buckets across [range] by their [time], at least two ([bucketMeans]). */
+    inline fun <T> evenly(items: Iterable<T>, range: LongRange, seconds: Long, time: (T) -> Long, value: (T) -> Float): List<Float?> =
+        bucketMeans(items, ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2), { ((time(it) - range.first) / seconds).toInt() }, value)
+
     /** Averages a series into fixed buckets (e.g. 5 minutes) for a calmer chart line. */
     fun bucketAverage(series: List<Pair<Long, Int>>, bucketSeconds: Long = 300): List<Pair<Long, Int>> =
         series.groupBy { it.first / bucketSeconds * bucketSeconds }

@@ -675,7 +675,7 @@ private fun DuringHero(r: org.openstrap.app.device.WorkoutState.Recording, onOpe
         LiveHero(glance, r.workout.sportType, glance.clock, onOpen, hooks.onAction, modifier)
         glance.split?.let { (title, line) ->
             Row(
-                Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(Color(0xFF0F0F11)).padding(horizontal = 18.dp, vertical = 14.dp),
+                Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(ListSurface).padding(horizontal = 18.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Canvas(Modifier.size(8.dp)) { drawCircle(TrendGood) }
@@ -843,21 +843,9 @@ private fun TodayRow(
 /** The day's Charge in quarter hours across [day], up to [now]; the quarters still to come are null. */
 internal fun chargeSoFar(points: List<Recovery.ChargePoint>, day: LongRange, now: Long): List<Float?> {
     val step = 15 * 60L
-    val n = ((day.last - day.first + 1) / step).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach { val i = ((it.t - day.first) / step).toInt(); if (i in 0 until n && it.t <= now) { sums[i] += it.value; counts[i]++ } }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    return org.openstrap.app.data.Summaries.evenly(points.filter { it.t <= now }, day, step, { it.t }, { it.value })
 }
 
 /** Averages timed points into evenly spaced buckets across [range]; empty buckets are null (gaps). */
-internal fun bucket(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.x - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.y; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
-}
+internal fun bucket(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
+    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })

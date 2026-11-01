@@ -12,14 +12,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Strength
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.*
@@ -30,7 +28,7 @@ import org.openstrap.app.ui.glow.*
  */
 @Composable
 internal fun SetsPanel(r: WorkoutState.Recording, color: Color, onStartSet: () -> Unit, onSetDone: () -> Unit, onExtend: () -> Unit) {
-    val now by produceState(System.currentTimeMillis() / 1000) { while (true) { value = System.currentTimeMillis() / 1000; delay(1000 - System.currentTimeMillis() % 1000) } }
+    val now = nowTicking()
     val done = r.sets.count { it.end != null }
     val target = r.workout.setsTarget
     QuietPanel {

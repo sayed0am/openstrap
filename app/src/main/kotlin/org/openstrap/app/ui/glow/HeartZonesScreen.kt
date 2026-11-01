@@ -108,7 +108,7 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
 }
 
 /** The hero's dark base under its light. */
-private val HeroBase = Color(0xFF0A0A0B)
+private val HeroBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /** A zone on the list: its colour as a short bar, its number and name, and its heart rates. */
 @Composable

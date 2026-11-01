@@ -145,7 +145,7 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters?.takeIf { it > 0f }
-            val pace = hero.figures.firstOrNull { it.second == "Avg pace" }?.first
+            val pace = hero.pace
             val stats = if (m != null) listOfNotNull(
                 StoryStat(hero.value, hero.unit, "Distance"),
                 StoryStat(workoutClock(active), null, "Time"),
@@ -224,13 +224,7 @@ internal fun exerciseRows(sets: List<org.openstrap.app.data.db.AppWorkoutSet>): 
 /** [readings] as 40 averages, for a calm card's heart line; empty under ten readings. */
 private fun heartLine(readings: List<Pair<Long, Int>>): List<Float?> {
     if (readings.size < 10) return emptyList()
-    val first = readings.first().first
-    val span = (readings.last().first - first).coerceAtLeast(1)
-    val n = 40
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    readings.forEach { (t, v) -> val i = ((t - first) * (n - 1) / span).toInt(); sums[i] += v.toFloat(); counts[i]++ }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    return FamilySummary.heartLine(readings, 40)
 }
 
 /** How a run's route shows on its card. Map, the route over a map, is to come. */
@@ -316,7 +310,7 @@ private fun storyColor(card: StoryCard): Color = when (card) {
 }
 
 /** The card's black, a touch off pure so a dark photo's edge still shows. */
-private val StoryBlack = Color(0xFF0A0A0B)
+private val StoryBlack = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /**
  * The board's light from below: an ellipse wider than the card centred under its foot, from [strength] of [color] to

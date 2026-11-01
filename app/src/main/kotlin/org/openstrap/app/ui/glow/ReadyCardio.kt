@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -128,7 +129,7 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
 }
 
 /** The heart card's dark base under its light. */
-private val HeartBase = Color(0xFF0A0A0B)
+private val HeartBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /**
  * Where you are and the switch rows, on one quiet panel. For a sport with an indoor side ([sides]), its title is the
@@ -290,9 +291,16 @@ internal fun ReadyPlanCard(
 ) {
     Text(StartCopy.planTitle(family), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))
     val inView = remember { BringIntoViewRequester() }
-    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
-    // Once the keyboard has stopped moving: each frame of it rising starts this again.
-    LaunchedEffect(typing, keyboard) { if (typing && keyboard > 0) { kotlinx.coroutines.delay(80); inView.bringIntoView() } }
+    val ime = WindowInsets.ime
+    val density = LocalDensity.current
+    // Once the keyboard has stopped moving. Its height is read in the effect, not in composition, so the card isn't
+    // composed again for every frame of the keyboard rising.
+    LaunchedEffect(typing) {
+        if (!typing) return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow { ime.getBottom(density) }.collectLatest { keyboard ->
+            if (keyboard > 0) { kotlinx.coroutines.delay(80); inView.bringIntoView() }
+        }
+    }
     Column(
         Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),

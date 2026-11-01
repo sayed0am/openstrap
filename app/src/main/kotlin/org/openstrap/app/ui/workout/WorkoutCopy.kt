@@ -95,6 +95,9 @@ object WorkoutCopy {
     /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
     fun zoneTitle(zone: Int): Pair<String, String> = "Zone ${zone + 1}," to ZONE_NAMES[zone].lowercase()
 
+    /** [zoneTitle] as one line: "Zone 3, aerobic". */
+    fun zoneLine(zone: Int): String = zoneTitle(zone).let { (name, word) -> "$name $word" }
+
     /** "9 min in this zone". */
     fun zoneTime(seconds: Int): String = if (seconds < 60) "Under a minute in this zone" else "${seconds / 60} min in this zone"
 

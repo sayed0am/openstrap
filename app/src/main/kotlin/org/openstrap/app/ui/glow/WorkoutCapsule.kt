@@ -31,7 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.onClick
@@ -244,9 +244,10 @@ fun PulseDot(color: Color, bpm: Int?, size: Dp) {
             1f, 1f,
             infiniteRepeatable(keyframes { durationMillis = period; 1.5f at period * 15 / 100; 1f at period * 40 / 100 }, RepeatMode.Restart),
             label = "dot",
-        ).value
-    } else 1f
-    Canvas(Modifier.size(size).scale(beat)) { drawCircle(color) }
+        )
+    } else null
+    // Read while drawing, so the beat doesn't compose the dot again every frame.
+    Canvas(Modifier.size(size).graphicsLayer { val s = beat?.value ?: 1f; scaleX = s; scaleY = s }) { drawCircle(color) }
 }
 
 /**

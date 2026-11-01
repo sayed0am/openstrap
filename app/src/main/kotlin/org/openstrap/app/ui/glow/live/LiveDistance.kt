@@ -114,7 +114,7 @@ internal fun LiveDistanceScreen(
     val splits = remember(route.size, r.workout.pauseRanges) { Route.splits(route, r.workout.pauseRanges) }
     val climb = remember(route.size) { Route.climb(route) }
     val speed = Workouts.tileType(r.workout.sportType) !in Workouts.ON_FOOT
-    val pace = Route.currentPace(route)
+    val pace = remember(route) { Route.currentPace(route) }
     val active = activeSeconds(r)
     val averagePace = if (distance >= 50) active / (distance / 1000.0) else null
     val accuracy = route.lastOrNull()?.accuracy
@@ -199,7 +199,7 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
     val now = nowTicking()
     val m = org.openstrap.app.ui.workout.intervalMoment(r, now, bpm, readings, route) ?: return
     val structure = r.structure as? org.openstrap.app.data.Structure.Reps ?: return
-    val repName = structure.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: org.openstrap.app.ui.workout.StartCopy.restText(structure.seconds ?: 0)
+    val repName = org.openstrap.app.ui.workout.StartCopy.repParts(structure).let { (n, unit) -> "$n $unit" }
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
             "${org.openstrap.app.ui.workout.StartCopy.structureName(structure)}, ${org.openstrap.app.ui.workout.StartCopy.restText(structure.rest)} rest",
@@ -404,7 +404,7 @@ private fun HeartStrip(bpm: Int?, maxHr: Int, color: Color, paused: Boolean) {
         Text("bpm", color = Color.Black, style = MediumBody)
         Spacer(Modifier.weight(1f))
         WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
-            Text(WorkoutCopy.zoneTitle(z).let { (a, b) -> "$a $b" }, color = Color.Black, style = MediumBody, maxLines = 1)
+            Text(WorkoutCopy.zoneLine(z), color = Color.Black, style = MediumBody, maxLines = 1)
         }
     }
 }

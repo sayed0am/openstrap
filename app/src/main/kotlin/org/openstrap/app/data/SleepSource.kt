@@ -40,6 +40,10 @@ class SleepSource(private val dao: HealthDao) {
         return SleepEdits.clip(dao.sleepStagesOnce(strap), session.start, session.end)
     }
 
+    /** The stages of [r] as shown: the strap's, clipped to the user's times when moved. */
+    suspend fun stagesOnce(r: SleepEdits.Resolved): List<SleepStage> =
+        dao.sleepStagesOnce(r.strap.start).let { if (r.moved) SleepEdits.clip(it, r.start, r.end) else it }
+
     /** The stages of [r] as shown, as they change: the strap's, clipped to the user's times when moved. */
     fun stages(r: SleepEdits.Resolved): Flow<List<SleepStage>> =
         dao.sleepStages(r.strap.start).map { if (r.moved) SleepEdits.clip(it, r.start, r.end) else it }
