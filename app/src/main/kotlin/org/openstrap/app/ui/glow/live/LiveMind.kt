@@ -44,6 +44,7 @@ import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.gestures.detectTapGestures
+import org.openstrap.app.ui.workout.WorkoutCopy
 
 /** The screen dims this long after the last touch. */
 private const val DIM_AFTER_MS = 10_000L
@@ -96,7 +97,7 @@ internal fun LiveMindScreen(
             Text(
                 bpm?.let { b ->
                     "Heart rate $b, settling" + (first?.minus(b)?.takeIf { it > 0 }?.let { ", down $it since you started" } ?: "")
-                } ?: if (r.paused) "Paused" else "Waiting for heart rate",
+                } ?: WorkoutCopy.noHeartRate(r.paused, connected),
                 color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )

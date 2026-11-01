@@ -92,6 +92,13 @@ object WorkoutCopy {
     /** [zoneTitle] as one line: "Zone 3, aerobic". */
     fun zoneLine(zone: Int): String = zoneTitle(zone).let { (name, word) -> "$name $word" }
 
+    /** What a live screen says where the heart rate goes and there's none: the same words on every screen. */
+    fun noHeartRate(paused: Boolean, connected: Boolean = true): String = when {
+        paused -> "Paused"
+        !connected -> "Waiting for the strap"
+        else -> "Waiting for heart rate"
+    }
+
     /** "9 min in this zone". */
     fun zoneTime(seconds: Int): String = if (seconds < 60) "Under a minute in this zone" else "${seconds / 60} min in this zone"
 

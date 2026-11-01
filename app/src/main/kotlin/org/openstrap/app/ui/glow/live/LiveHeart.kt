@@ -228,7 +228,7 @@ internal fun WorkoutHeartCard(
                         Spacer(Modifier.height(8.dp))
                         Text("bpm, last 10 min behind", color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
                     } else Text(
-                        when { r.paused -> "Paused"; !connected -> "Waiting for the strap"; else -> "Waiting for heart rate" },
+                        WorkoutCopy.noHeartRate(r.paused, connected),
                         color = Color.White, style = GlowType.sentence,
                     )
                 }

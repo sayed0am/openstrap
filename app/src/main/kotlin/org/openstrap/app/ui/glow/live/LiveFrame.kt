@@ -62,6 +62,9 @@ import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.data.WorkoutRecorder
 
 /**
  * The live stats row's figures, unchanged from before spec 6.3 ("Stats row unchanged"): the moving time large in the
@@ -461,5 +464,33 @@ internal fun nowTickingState(): androidx.compose.runtime.State<Long> = produceSt
     while (true) {
         value = System.currentTimeMillis() / 1000
         delay(1000 - System.currentTimeMillis() % 1000)
+    }
+}
+
+/**
+ * The live heart rate on a pill lit in the zone's [color] (pattern D5): a dot beating at it, the bpm in small dots and
+ * the zone named when [maxHr] is given, all in black on the colour. The pace page's strip and the map's chip, [height]
+ * apart. Paused or without a reading, it says so.
+ */
+@Composable
+internal fun LitHeartPill(bpm: Int?, maxHr: Int?, color: Color, paused: Boolean, height: Dp, modifier: Modifier = Modifier) {
+    Row(
+        modifier.height(height).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (bpm == null) {
+            Text(WorkoutCopy.noHeartRate(paused), color = Color.Black, style = MediumBody)
+            return@Row
+        }
+        org.openstrap.app.ui.glow.PulseDot(Color.Black, bpm, 8.dp)
+        Spacer(Modifier.width(10.dp))
+        DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
+        Spacer(Modifier.width(6.dp))
+        Text("bpm", color = Color.Black, style = MediumBody)
+        if (maxHr == null) return@Row
+        Spacer(Modifier.weight(1f))
+        WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
+            Text(WorkoutCopy.zoneLine(z), color = Color.Black, style = MediumBody, maxLines = 1)
+        }
     }
 }

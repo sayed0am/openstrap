@@ -89,7 +89,7 @@ internal fun LiveGameScreen(
         if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text("Waiting for heart rate", color = Color.White, style = GlowType.sentence)
+                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                     if (bpm != null) {
                         Spacer(Modifier.width(8.dp))
                         Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)

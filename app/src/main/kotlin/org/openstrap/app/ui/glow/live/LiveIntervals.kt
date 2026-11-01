@@ -133,7 +133,7 @@ internal fun LiveIntervalsScreen(
             Phase.Done -> PhaseFigure("All ${m.rounds} rounds done", "Hold the square to end, or keep going", "Done", null, "")
         }
         if (m.phase is Phase.Rest || m.phase == Phase.Done) RoundPeaks(r.rounds, m.rounds)
-        if (m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate, Modifier.align(Alignment.CenterHorizontally))
+        if (m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate, r.paused, Modifier.align(Alignment.CenterHorizontally))
         when (m.phase) {
             Phase.WarmUp -> WorkoutButton("Start rounds", Color.White, Color.Black, onSkip, icon = AppIcons.PlayFill, height = 64.dp)
             // A pill as high as the heart rate strip and, like it, no wider than its words need.
@@ -223,7 +223,7 @@ private fun ColumnScope.PhaseFigure(where: String, next: String, word: String, s
 
 /** The heart rate on a black pill as wide as its words, with the zone's dot and name: the phase's colour is all around it. */
 @Composable
-private fun HeartStripDark(bpm: Int?, maxHr: Int, modifier: Modifier = Modifier) {
+private fun HeartStripDark(bpm: Int?, maxHr: Int, paused: Boolean, modifier: Modifier = Modifier) {
     Row(
         modifier.height(52.dp).clip(CircleShape).background(Color.Black).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -231,7 +231,7 @@ private fun HeartStripDark(bpm: Int?, maxHr: Int, modifier: Modifier = Modifier)
         val zone = WorkoutRecorder.liveZone(bpm, maxHr)
         Canvas(Modifier.size(8.dp)) { drawCircle(zone?.let { ZONE_COLORS[it] } ?: Color.White) }
         Spacer(Modifier.width(10.dp))
-        Text(bpm?.let { "$it bpm" } ?: "No heart rate yet", color = Color.White, style = GlowType.body)
+        Text(bpm?.let { "$it bpm" } ?: WorkoutCopy.noHeartRate(paused), color = Color.White, style = GlowType.body)
         zone?.let { Spacer(Modifier.width(16.dp)); Text(WorkoutCopy.zoneLine(it), color = Color.White, style = GlowType.secondary, maxLines = 1) }
     }
 }

@@ -176,7 +176,7 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: 
             }
             SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = true, Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(22.dp))
-            HeartLine(bpm, r.maxHeartRate)
+            HeartLine(bpm, r.maxHeartRate, r.paused)
         }
     }
 }
@@ -302,9 +302,9 @@ private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier 
 
 /** The heart rate in plain figures with its zone named: the set's clock is the card's dotted number. */
 @Composable
-private fun HeartLine(bpm: Int?, maxHr: Int) {
+private fun HeartLine(bpm: Int?, maxHr: Int, paused: Boolean) {
     Row(verticalAlignment = Alignment.Bottom) {
-        Text(bpm?.toString() ?: "No heart rate yet", color = Color.White, style = GlowType.sentence)
+        Text(bpm?.toString() ?: WorkoutCopy.noHeartRate(paused), color = Color.White, style = GlowType.sentence)
         if (bpm != null) {
             Spacer(Modifier.width(6.dp))
             Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)

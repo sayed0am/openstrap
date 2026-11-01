@@ -49,23 +49,6 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
 import org.openstrap.app.ui.glow.*
 
-/** The live heart rate on the map: a pill in the zone's [color], a dot beating at it, the number in dots. */
-@Composable
-internal fun BpmChip(bpm: Int?, color: Color, paused: Boolean, modifier: Modifier) {
-    Row(
-        modifier.height(44.dp).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (bpm != null) {
-            PulseDot(Color.Black, bpm, 8.dp)
-            Spacer(Modifier.width(10.dp))
-            DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
-            Spacer(Modifier.width(6.dp))
-            Text("bpm", color = Color.Black, style = MediumBody)
-        } else Text(if (paused) "Paused" else "No heart rate yet", color = Color.Black, style = MediumBody)
-    }
-}
-
 /**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
  * in its zone's [color] and the GPS over it, route only and follow me on the right; under it a black panel with the
@@ -118,7 +101,7 @@ internal fun LiveMapScreen(
                     Modifier.size(44.dp).clip(CircleShape).background(OverMap).pressClickable(controls.onMinimize, CircleShape),
                     contentAlignment = Alignment.Center,
                 ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
-                BpmChip(bpm, color, r.paused, Modifier)
+                LitHeartPill(bpm, null, color, r.paused, 44.dp)
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
                 Row(

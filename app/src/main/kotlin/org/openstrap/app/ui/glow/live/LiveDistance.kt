@@ -162,7 +162,7 @@ internal fun LiveDistanceScreen(
                 ) {
                     Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PaceCard(pace, averagePace(), splits, speed, Modifier.weight(1f))
-                        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+                        LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
                             Glance.kmFigure(distance) to "km",
                             climb?.toInt()?.toString() to "Climb m",
@@ -256,7 +256,7 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
             }
             if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
-        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+        LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
         val done = r.rounds.filter { it.workEnd != null }
         if (done.isNotEmpty()) Row(
             Modifier.fillMaxWidth().horizontalScroll(rememberScrollState(Int.MAX_VALUE)),
@@ -383,29 +383,3 @@ private const val SPLIT_SLOTS = 5
 
 /** Room left beside the pace for "km/h" and its gap, in dp. */
 private const val UNIT_ROOM = 56f
-
-/**
- * The heart rate on a strip in its zone's [color]: a dot beating at it, the bpm in small dots and the zone named, in
- * black on the colour. Paused or without a reading, it says so.
- */
-@Composable
-private fun HeartStrip(bpm: Int?, maxHr: Int, color: Color, paused: Boolean) {
-    Row(
-        Modifier.fillMaxWidth().height(56.dp).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (bpm == null) {
-            Text(if (paused) "Paused" else "Waiting for heart rate", color = Color.Black, style = MediumBody)
-            return@Row
-        }
-        org.openstrap.app.ui.glow.PulseDot(Color.Black, bpm, 8.dp)
-        Spacer(Modifier.width(10.dp))
-        DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
-        Spacer(Modifier.width(6.dp))
-        Text("bpm", color = Color.Black, style = MediumBody)
-        Spacer(Modifier.weight(1f))
-        WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
-            Text(WorkoutCopy.zoneLine(z), color = Color.Black, style = MediumBody, maxLines = 1)
-        }
-    }
-}
