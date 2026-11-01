@@ -212,8 +212,13 @@ private fun PastSummary(
                         else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
                     }
                     SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual), 0f)
-                    FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
-                    if (a.heartRate.isNotEmpty() || w.averageHeartRate != null) HeartRateCard(a)
+                    val sectionOnEdge = FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
+                    // The heart rate card is lit from the left; under the section's own edge card it takes the bottom.
+                    if (a.heartRate.isNotEmpty() || w.averageHeartRate != null) {
+                        CompositionLocalProvider(LocalEdgeOverride provides if (sectionOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
+                            HeartRateCard(a)
+                        }
+                    }
                     val facts = WorkoutDetailCopy.facts(
                         a.distanceMeters, a.distanceFromSteps, (a.durationSeconds - a.activeSeconds).coerceAtLeast(0), w.steps, w.calories,
                         activeKcal = Workouts.activeKcal(a, null),
@@ -230,7 +235,7 @@ private fun PastSummary(
                     if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, best = null, drop = drop, onInfo = { info = true })
                     // Zones and splits for the kinds whose section doesn't already show them.
                     val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
-                    if (zonesShown) ZonesList(zones, a.maxHeartRate)
+                    if (zonesShown) ZoneStripPanel(zones)
                     if (family != Workouts.Family.Distance && family != Workouts.Family.Strength) {
                         CompositionLocalProvider(LocalEdgeOverride provides if (zonesShown) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
                             SplitsList(summary, liveRoute = emptyList())

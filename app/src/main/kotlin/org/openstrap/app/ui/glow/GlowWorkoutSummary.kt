@@ -188,15 +188,15 @@ fun GlowWorkoutSummaryScreen(
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
         SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
         val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
-        FamilySection(family, summary, liveRoute, others, weekStarts)
+        val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
         EarnedChips(earned)
         // The drop only with heart rate to show: recorded in the workout, or arriving live after it.
         val live = calmDown?.takeIf { it.start == w.start }
         val dropShown = summary.recorded.isNotEmpty() || !live?.readings.isNullOrEmpty()
         if (dropShown) CalmDownHero(summary, live, usualDrop, effort, 0f) { info = true }
-        // Load is lit from the left: what comes before it (the hero, the drop, Earned on an edge card) is lit from
-        // below, so two cards in a row never look the same.
-        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left)) {
+        // Load is lit from the left: what comes before it (the hero, the drop) is lit from below, so two cards in a row
+        // never look the same. Under the section's own edge card, lit from the left or right, Load takes the bottom.
+        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = if (sectionOnEdge && !dropShown) Edge.Bottom else Edge.Left)) {
             LoadCard(a, usualLoad, best = null)
         }
         TrimSection(summary, onTrim, onUndoTrim)
