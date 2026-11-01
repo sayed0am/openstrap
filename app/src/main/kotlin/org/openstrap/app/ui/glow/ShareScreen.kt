@@ -1,16 +1,12 @@
 package org.openstrap.app.ui.glow
 
-import android.Manifest
 import android.content.ClipData
 import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.ImageDecoder
-import android.media.MediaScannerConnection
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
@@ -67,7 +63,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import java.io.File
 import kotlinx.coroutines.CompletableDeferred
@@ -162,14 +157,8 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
     var saved by remember { mutableStateOf<Boolean?>(null) }
     val layer = rememberGraphicsLayer()
     val recorded = remember(export) { CompletableDeferred<Unit>() }
-    // Before Android 10 the gallery needs the storage permission to take a picture.
-    val storage = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) export = Export.Save else saved = false
-    }
     fun save() {
-        val asks = Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
-            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
-        if (asks) storage.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE) else export = Export.Save
+        export = Export.Save
     }
     LaunchedEffect(export) {
         val doing = export ?: return@LaunchedEffect
@@ -317,31 +306,23 @@ internal object StoryFiles {
     /** The FileProvider's authority after the package name, as in the manifest. */
     const val AUTHORITY_SUFFIX = ".share"
 
-    /** Writes [bitmap] as a PNG named [name] to Pictures/OpenStrap; true once it's there. Below Android 10 it needs the storage permission. */
+    /** Writes [bitmap] as a PNG named [name] to Pictures/OpenStrap, and true once it's there. */
     fun saveToGallery(context: Context, bitmap: Bitmap, name: String): Boolean = runCatching {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val resolver = context.contentResolver
-            val values = ContentValues().apply {
-                put(MediaStore.Images.Media.DISPLAY_NAME, name)
-                put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/" + FOLDER)
-                put(MediaStore.Images.Media.IS_PENDING, 1)
-            }
-            val uri = resolver.insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values) ?: return false
-            try {
-                val written = resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } == true
-                check(written) { "nothing written" }
-                resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
-            } catch (e: Exception) {
-                resolver.delete(uri, null, null)
-                throw e
-            }
-        } else {
-            @Suppress("DEPRECATION")
-            val dir = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), FOLDER).apply { mkdirs() }
-            val file = File(dir, name)
-            file.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            MediaScannerConnection.scanFile(context, arrayOf(file.path), arrayOf("image/png"), null)
+        val resolver = context.contentResolver
+        val values = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, name)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/" + FOLDER)
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+        val uri = resolver.insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values) ?: return false
+        try {
+            val written = resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } == true
+            check(written) { "nothing written" }
+            resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
+        } catch (e: Exception) {
+            resolver.delete(uri, null, null)
+            throw e
         }
         true
     }.onFailure { Log.w(TAG, "saving the card failed", it) }.getOrDefault(false)

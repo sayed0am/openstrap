@@ -11,6 +11,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -34,6 +35,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.StrapService
 import org.openstrap.app.ui.dashboard.DayPicker
@@ -110,6 +112,9 @@ class MainActivity : ComponentActivity() {
     /** Debug: the data state previewed by the `data_state` extra, null for the real one. */
     private val dataPreview = kotlinx.coroutines.flow.MutableStateFlow<DataPreview?>(null)
 
+    /** A Strap page action waiting on the Bluetooth answer, kept across a fold or a rotation. */
+    private val pendingStrap: PendingStrapAction by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Dark bars (light icons) whatever the system mode, to match the always-dark theme.
@@ -118,7 +123,11 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         val container = (application as OpenStrapApp).container
-        setContent { OpenStrapTheme { AppRoot(container, metricRequests, todayRequests, strapRequests, forcedMoment, strapPreview, dataPreview) } }
+        setContent {
+            OpenStrapTheme {
+                AppRoot(container, metricRequests, todayRequests, strapRequests, forcedMoment, strapPreview, dataPreview, pendingStrap)
+            }
+        }
     }
 
     override fun onStart() {
@@ -134,8 +143,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // Reconnect to a paired strap whenever the app comes to the front (sync follows on connect).
-        val granted = checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        if (granted) (application as OpenStrapApp).container.strap.autoConnect()
+        if (BlePermissions.granted(this)) (application as OpenStrapApp).container.strap.autoConnect()
         // The association or battery setting may have changed in system settings meanwhile.
         (application as OpenStrapApp).container.companion.refresh()
         handleDebugIntent()
@@ -396,12 +404,6 @@ private val PagesSaver: androidx.compose.runtime.saveable.Saver<List<Page>, Stri
 /** What an `open_metric` link asked for: the screen and the day to show it for. */
 internal data class MetricRequest(val route: String, val day: java.time.LocalDate?)
 
-private val BLUETOOTH_PERMISSIONS = arrayOf(
-    Manifest.permission.BLUETOOTH_SCAN,
-    Manifest.permission.BLUETOOTH_CONNECT,
-    Manifest.permission.POST_NOTIFICATIONS,
-)
-
 private fun epochNow() = System.currentTimeMillis() / 1000
 
 /** The first score's day before the settings store has answered: nothing is decided until it has. */
@@ -416,6 +418,7 @@ private fun AppRoot(
     forcedMoment: kotlinx.coroutines.flow.StateFlow<org.openstrap.app.data.Moment?>,
     strapPreview: kotlinx.coroutines.flow.StateFlow<StrapPreview?>,
     dataPreviews: kotlinx.coroutines.flow.StateFlow<DataPreview?>,
+    pendingStrap: PendingStrapAction,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -741,24 +744,59 @@ private fun AppRoot(
         message?.let { Toast.makeText(context, it, Toast.LENGTH_LONG).show(); deviceVm.clearMessage() }
     }
 
-    // Bluetooth permission gate: remember what to run once granted.
-    var pending by remember { mutableStateOf<(() -> Unit)?>(null) }
-    val btLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
-        val ok = result[Manifest.permission.BLUETOOTH_SCAN] == true && result[Manifest.permission.BLUETOOTH_CONNECT] == true
-        if (ok) pending?.invoke() else Toast.makeText(context, "Bluetooth permission is required.", Toast.LENGTH_LONG).show()
-        pending = null
+    // Starting a workout once Bluetooth (and location, for GPS) may be used, then closing Ready and Choose. [saved] is
+    // what Ready opens on next time for the sport. Choose's Start on your usual saves nothing new.
+    val startWorkout: (PendingAction.StartPlan) -> Unit = { (plan, saved) ->
+        container.workout.start(
+            plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
+            logSets = plan.logSets, structure = plan.structure,
+        )
+        saved?.let { s -> scope.launch { container.settings.setSportSettings(plan.sportType, s) } }
+        readySport = null; readyPicking = false; readyStructure = null
+        choosing = false
     }
-    val requestBluetooth: (() -> Unit) -> Unit = { then -> pending = then; btLauncher.launch(BLUETOOTH_PERMISSIONS) }
+    // Bluetooth permission gate. A workout waits here as saveable data, so the answer still starts it after the
+    // activity was recreated behind the dialog. A Strap page action waits in [pendingStrap], which outlives a fold.
+    var pending by rememberSaveable(stateSaver = PendingAction.Saver) { mutableStateOf<PendingAction?>(null) }
+    // Turned down for good: Android shows no dialog any more, so the app offers its settings page instead.
+    var bluetoothBlocked by rememberSaveable { mutableStateOf(false) }
+    val activity = androidx.activity.compose.LocalActivity.current
+    val btLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
+        val waiting = pending as? PendingAction.StartPlan
+        val strapAction = pendingStrap.action
+        pending = null
+        pendingStrap.action = null
+        when {
+            BlePermissions.granted(result) -> waiting?.let(startWorkout) ?: strapAction?.invoke()
+            activity != null && BlePermissions.turnedDownForGood(activity, BlePermissions.bluetooth) -> bluetoothBlocked = true
+            else -> Toast.makeText(context, "Bluetooth permission is required.", Toast.LENGTH_LONG).show()
+        }
+    }
+    val requestBluetooth: (() -> Unit) -> Unit = { then -> pendingStrap.action = then; btLauncher.launch(BlePermissions.required()) }
+    val withBluetooth: (PendingAction.StartPlan) -> Unit = { action ->
+        if (BlePermissions.granted(context)) startWorkout(action) else { pending = action; btLauncher.launch(BlePermissions.required()) }
+    }
     // Location for a GPS workout: asked only when GPS is turned on; the workout starts either way (steps without it).
+    // Ready's "Turn on location" hands over a closure that only refreshes Ready, so that one isn't saved.
     var afterLocation by remember { mutableStateOf<(() -> Unit)?>(null) }
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result.values.none { it }) Toast.makeText(context, "Without location, distance comes from the strap's steps.", Toast.LENGTH_LONG).show()
+        val waiting = pending as? PendingAction.StartPlan
+        if (waiting != null) { pending = null; withBluetooth(waiting) }
         afterLocation?.invoke()
         afterLocation = null
     }
+    val locationPermissions = arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
     val requestLocation: (() -> Unit) -> Unit = { then ->
         afterLocation = then
-        locationLauncher.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        locationLauncher.launch(locationPermissions)
+    }
+    val startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit = { plan, saved ->
+        val action = PendingAction.StartPlan(plan, saved)
+        if (plan.useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) {
+            pending = action
+            locationLauncher.launch(locationPermissions)
+        } else withBluetooth(action)
     }
 
     val csvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
@@ -857,7 +895,6 @@ private fun AppRoot(
     val glassHost = remember { org.openstrap.app.ui.components.GlassHost() }
     // Half-open on a table, the fold level: heart rate fills the standing top half, the app carries on below the fold.
     // During a workout the top half is the workout's heart card instead, and the controls stay below.
-    val activity = androidx.activity.compose.LocalActivity.current
     val windowLayout by remember(activity) {
         activity?.let { androidx.window.layout.WindowInfoTracker.getOrCreate(it).windowLayoutInfo(it) } ?: kotlinx.coroutines.flow.emptyFlow()
     }.collectAsStateWithLifecycle(null)
@@ -1220,10 +1257,18 @@ private fun AppRoot(
                                     // Seen: the dots on the avatar and the Updates row go, and again for a release found while it's open.
                                     LaunchedEffect(org.openstrap.app.update.Releases.newer(updates.releases, updater.installed).firstOrNull()?.tag) { updater.markSeen() }
                                     // Back from Android's "Install unknown apps" switch: on, the install goes ahead.
-                                    var waiting by remember { mutableStateOf<org.openstrap.app.update.Release?>(null) }
+                                    // Kept by its tag, so it still installs after the activity was recreated in Settings.
+                                    var waiting by rememberSaveable(stateSaver = PendingAction.Saver) {
+                                        mutableStateOf<PendingAction?>(null)
+                                    }
                                     val allowLauncher = rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()) {
-                                        waiting?.let { r -> if (updater.canInstall()) updater.install(r) }
+                                        (waiting as? PendingAction.Install)?.let { install -> waiting = install.copy(answered = true) }
+                                    }
+                                    LaunchedEffect(waiting, updates.releases) {
+                                        val install = (waiting as? PendingAction.Install)?.takeIf { it.answered } ?: return@LaunchedEffect
+                                        val release = updates.releases.firstOrNull { it.tag == install.tag } ?: return@LaunchedEffect
                                         waiting = null
+                                        if (updater.canInstall()) updater.install(release)
                                     }
                                     val uri = androidx.compose.ui.platform.LocalUriHandler.current
                                     org.openstrap.app.ui.device.UpdatesPage(
@@ -1232,7 +1277,10 @@ private fun AppRoot(
                                             when {
                                                 r.apk == null -> uri.openUri(r.page)
                                                 updater.canInstall() -> updater.install(r)
-                                                else -> { waiting = r; allowLauncher.launch(updater.allowInstalls) }
+                                                else -> {
+                                                    waiting = PendingAction.Install(r.tag)
+                                                    allowLauncher.launch(updater.allowInstalls)
+                                                }
                                             }
                                         },
                                         onCheck = updater::checkNow,
@@ -1305,7 +1353,7 @@ private fun AppRoot(
             }
         }
         WorkoutLayer(
-            container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, requestBluetooth, requestLocation,
+            container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, startPlan, requestLocation,
             onReadySport = { readySport = it },
             onCloseReady = { readySport = null; readyPicking = false; readyStructure = null },
             choosing = choosing,
@@ -1334,6 +1382,29 @@ private fun AppRoot(
                     },
                 )
             }
+        }
+        if (bluetoothBlocked) {
+            org.openstrap.app.ui.components.GlassAlertDialog(
+                onDismissRequest = { bluetoothBlocked = false },
+                title = { androidx.compose.material3.Text("Allow Nearby devices") },
+                text = {
+                    androidx.compose.material3.Text(
+                        "OpenStrap needs Nearby devices to find and connect to your strap. Android won't ask again, " +
+                            "so turn it on in OpenStrap's settings, under Permissions.",
+                    )
+                },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = {
+                        bluetoothBlocked = false
+                        context.startActivity(BlePermissions.settingsIntent(context))
+                    }) { androidx.compose.material3.Text("Open settings") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { bluetoothBlocked = false }) {
+                        androidx.compose.material3.Text("Not now")
+                    }
+                },
+            )
         }
         org.openstrap.app.ui.components.GlassOverlay(glassHost, navGlass)
       }
@@ -1520,7 +1591,8 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     live: Int?,
     connection: ConnectionState,
     workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel,
-    requestBluetooth: (() -> Unit) -> Unit,
+    /** Starts a plan once Bluetooth (and location, for GPS) may be used, then closes Ready and Choose. */
+    startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit,
     requestLocation: (() -> Unit) -> Unit,
     onReadySport: (Int) -> Unit,
     onCloseReady: () -> Unit,
@@ -1549,24 +1621,6 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     val saved by remember { session.savedWorkouts() }.collectAsStateWithLifecycle(emptyList())
     val context = androidx.compose.ui.platform.LocalContext.current
     val viewScope = rememberCoroutineScope()
-    /**
-     * Starts [plan] once Bluetooth (and location, for GPS) may be used, then closes Ready and Choose. [saved] is what
-     * Ready opens on next time for the sport; Choose's Start on your usual saves nothing new.
-     */
-    val startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit = { plan, saved ->
-        val start = {
-            session.start(
-                plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
-                logSets = plan.logSets, structure = plan.structure,
-            )
-            saved?.let { s -> viewScope.launch { container.settings.setSportSettings(plan.sportType, s) } }
-            onCloseReady()
-            onCloseChoose()
-        }
-        val granted = container.app.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == android.content.pm.PackageManager.PERMISSION_GRANTED
-        val withBluetooth = { if (granted) start() else requestBluetooth(start) }
-        if (plan.useGps && !org.openstrap.app.device.WorkoutLocation.granted(container.app)) requestLocation(withBluetooth) else withBluetooth()
-    }
     // Read here, ahead of a workout, so the live screen usually opens on the right view at once.
     val liveView by container.settings.workoutLiveView.collectAsStateWithLifecycle(null)
     val kcal by session.kcal.collectAsStateWithLifecycle()

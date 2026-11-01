@@ -75,6 +75,27 @@ class ReleasesTest {
         assert(!Releases.waiting(emptyList(), "2.1.0", seen = null))
     }
 
+    @Test fun `a release that asks for a newer Android than the phone's is skipped, one at or below it kept`() {
+        // The JSON escape for a newline, as GitHub sends the body.
+        val nl = "\\n"
+        val json = "[${release("v3.1.0", body = "Notes$nl<!-- minSdk: 37 -->")}, ${release("v3.0.0", body = "Notes$nl$nl<!-- minSdk: 36 -->")}, " +
+            "${release("v2.2.2", body = "minSdk: 35")}, ${release("v2.2.1")}]"
+        val onSixteen = Releases.parse(json, sdk = 36)
+        assertEquals(listOf("v3.0.0", "v2.2.2", "v2.2.1"), onSixteen.map { it.tag })
+        assertEquals(36, onSixteen.first().minSdk)
+        assertNull(onSixteen.last().minSdk)
+        assertEquals(listOf("v3.1.0", "v3.0.0", "v2.2.2", "v2.2.1"), Releases.parse(json, sdk = 37).map { it.tag })
+        // So the Updates page never offers what the installer would turn down.
+        assertEquals(listOf("v3.0.0"), Releases.newer(onSixteen, "2.2.2").map { it.tag })
+    }
+
+    @Test fun `the minimum SDK marker reads as a hidden comment or a plain line, and nowhere else`() {
+        assertEquals(36, Releases.minSdk("Fixes\n\n<!-- minSdk: 36 -->\n"))
+        assertEquals(37, Releases.minSdk("minSdk: 37"))
+        assertNull(Releases.minSdk("Needs minSdk: 36 or newer, said in a sentence."))
+        assertNull(Releases.minSdk("Android 16 or newer."))
+    }
+
     @Test fun `a SHA256SUMS line gives the APK's hash`() {
         val sums = "CFB8B129  OpenStrap-v2.1.0.apk\nffff  other.apk\n"
         assertEquals("cfb8b129", Releases.sumFor(sums, "OpenStrap-v2.1.0.apk"))

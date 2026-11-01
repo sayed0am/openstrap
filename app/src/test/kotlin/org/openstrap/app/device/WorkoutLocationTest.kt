@@ -23,14 +23,7 @@ class WorkoutLocationTest {
         latitude = 51.5
         longitude = -0.1
         accuracy = 5f
-        if (mock) markMock()
-    }
-
-    // `setIsFromMockProvider` is hidden below API 31, so set it the way the system does.
-    @Suppress("DEPRECATION")
-    private fun Location.markMock() {
-        if (android.os.Build.VERSION.SDK_INT >= 31) isMock = true
-        else Location::class.java.getMethod("setIsFromMockProvider", Boolean::class.java).invoke(this, true)
+        isMock = mock
     }
 
     private fun received(vararg fixes: Location): List<Route.Point> {
@@ -46,12 +39,6 @@ class WorkoutLocationTest {
         val kept = received(fix(mock = false), fix(mock = true), fix(mock = false))
         assertEquals(2, kept.size)
         assertEquals(Route.Point(1_000, 51.5, -0.1, 5f), kept.first())
-    }
-
-    @Test
-    @Config(sdk = [28])
-    fun mockFixesAreDroppedBeforeApi31() {
-        assertEquals(1, received(fix(mock = true), fix(mock = false)).size)
     }
 
     private fun started(fused: Boolean): WorkoutLocation {
