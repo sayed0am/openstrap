@@ -78,6 +78,7 @@ import org.openstrap.app.ui.workout.SportIcons
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
+import androidx.compose.foundation.layout.BoxWithConstraints
 
 /** Heart points' weekly aim: 100 or more over the last seven days. */
 private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
@@ -129,7 +130,15 @@ fun GlowActivityScreen(
     val open = { s: Score -> onOpen(Detail.OfScore(s)) }
     val list = rememberLazyListState()
     val isToday = state.date == LocalDate.now()
-    val sports = remember(workouts) { topSports(workouts) }
+    // Your three most used first, as on a phone; a wider card goes on with the rest you use, then the everyday sports,
+    // one tile per sport whichever kind.
+    val sports = remember(workouts) {
+        val shown = topSports(workouts).map { it.sportType }.toMutableList()
+        (topSports(workouts, MORE_BY_USE).map { it.sportType } + Workouts.EVERYDAY).forEach { t ->
+            if (shown.none { Workouts.tileType(it) == Workouts.tileType(t) }) shown += t
+        }
+        shown.toList()
+    }
     val stored = remember(state.date) { paiHistory(state.date, state.date) }.collectAsState(emptyMap()).value
     val heartPoints = state.pai?.total ?: stored[state.date]?.total
     val r = recovery?.takeIf { it.date == state.date }
@@ -177,29 +186,41 @@ fun GlowActivityScreen(
 /**
  * Start a workout (spec 5.3): a Wide edge card in the neutral light from below, its title, then your three most used
  * sports as 64 dp tiles with their names under them and All sports after them. Words with the icons, since an icon
- * alone doesn't say "start". A sport opens Ready with it chosen ([onStart]); All sports opens Choose with every sport. The
- * tiles are the buttons, so the card itself opens nothing and has no caret. Today only.
+ * alone doesn't say "start". On a wider card (unfolded) as many more tiles as fit at a phone's spacing, your other
+ * sports and then the everyday ones ([sports] in that order). A sport opens Ready with it chosen ([onStart]); All
+ * sports opens Choose with every sport. The tiles are the buttons, so the card itself opens nothing and has no caret.
+ * Today only.
  */
 @Composable
-private fun StartCard(sports: List<SportUse>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
+private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
     // Unlit (its look), with the heart-red light travelling round its border, as on Today.
     EdgeCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart), kind = EdgeKind.Value) {
         EdgeTitle("Start a workout", null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
-        // Four even columns up to the phone's width, so the tiles keep together on an unfolded screen.
-        Row(Modifier.widthIn(max = StartTilesWidth).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            sports.take(3).forEach { s ->
-                SportTile(SportIcons.of(s.sportType), Workouts.sportName(s.sportType), outdoor = s.sportType in Workouts.OUTDOOR, Modifier.weight(1f)) {
-                    onStart(s.sportType)
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            // Four on a phone; wider, as many as fit at a phone's column, so the tiles never spread apart.
+            val columns = maxOf(4, ((maxWidth + StartTileGap) / (StartTileColumn + StartTileGap)).toInt())
+            Row(
+                Modifier.widthIn(max = StartTileColumn * columns + StartTileGap * (columns - 1)).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(StartTileGap),
+            ) {
+                sports.take(columns - 1).forEach { type ->
+                    SportTile(SportIcons.of(type), Workouts.sportName(type), outdoor = type in Workouts.OUTDOOR, Modifier.weight(1f)) {
+                        onStart(type)
+                    }
                 }
+                SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
             }
-            SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
         }
     }
 }
 
-/** Four tiles and their gaps at most: a phone's width inside the card. */
-private val StartTilesWidth = 344.dp
+/** A tile's column on a phone: four tiles and their gaps in 344 dp. */
+private val StartTileColumn = 80.dp
+private val StartTileGap = 8.dp
+
+/** How many sports by use a wide Start card offers before the everyday ones pad it. */
+private const val MORE_BY_USE = 8
 
 private val SportTileSize = 64.dp
 private val SportTileShape = RoundedCornerShape(GlowLayout.TileCorner)
