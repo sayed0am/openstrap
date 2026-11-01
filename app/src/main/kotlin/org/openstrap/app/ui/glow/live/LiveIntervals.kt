@@ -45,7 +45,7 @@ import org.openstrap.app.ui.glow.EdgeCard
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.Raised
 import org.openstrap.app.ui.glow.WorkoutButton
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -76,26 +76,30 @@ internal fun LiveIntervalsScreen(
     onSkip: () -> Unit,
     onAddRest: () -> Unit,
 ) {
-    val now = nowTicking()
+    val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
-    val m = intervalMoment(r, now, bpm, readings, emptyList()) ?: return
+    // The phase alone colours the screen and names the left button; the seconds left are read under it ([intervalMoment]
+    // in the content), so the screen holds still between seconds.
+    val phase = androidx.compose.runtime.remember(r) { androidx.compose.runtime.derivedStateOf { r.phase(now.value) } }.value
+    if (r.structure == null || phase == null) return
     val color = when {
         r.paused -> org.openstrap.app.ui.glow.PausedColor
-        m.phase is Phase.Work -> WorkRed
-        m.phase is Phase.Rest -> RestGreen
+        phase is Phase.Work -> WorkRed
+        phase is Phase.Rest -> RestGreen
         else -> org.openstrap.app.ui.glow.workoutColor(r, liveHeartRate, connected)
     }
-    val skipLabel = when (m.phase) {
-        is Phase.Work -> if (m.everyMinute) "Done" else "Skip"
+    val skipLabel = when (phase) {
+        is Phase.Work -> if (r.structure is org.openstrap.app.data.Structure.EveryMinute) "Done" else "Skip"
         is Phase.Rest -> "Skip rest"
         else -> null
     }
     val structure = org.openstrap.app.data.Structure.parse(r.workout.structure)
     val plan = structure?.let { StartCopy.structureName(it) }
+    val active = activeSecondsState(r)
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = activeSeconds(r), smallTime = true,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true,
         lap = skipLabel?.takeIf { !r.paused }?.let { label -> { SkipButton(label, onSkip) } },
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, readings, listOf(
             "${org.openstrap.app.data.Phases.roundsDone(r.rounds)}" to "Rounds done",
@@ -105,11 +109,12 @@ internal fun LiveIntervalsScreen(
         title = listOfNotNull(org.openstrap.app.data.Workouts.sportName(r.workout.sportType), plan).joinToString(", "),
         backdrop = when {
             r.paused -> null
-            m.phase is Phase.Work -> WorkGlow
-            m.phase is Phase.Rest -> RestGlow
+            phase is Phase.Work -> WorkGlow
+            phase is Phase.Rest -> RestGlow
             else -> null
         },
     ) {
+        val m = intervalMoment(r, now.value, bpm, readings, emptyList()) ?: return@LiveFrame
         RoundBar(m, when (structure) {
             is org.openstrap.app.data.Structure.Timed -> structure.work
             is org.openstrap.app.data.Structure.EveryMinute -> structure.period

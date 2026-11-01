@@ -40,7 +40,7 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -65,7 +65,7 @@ internal fun LiveMindScreen(
 ) {
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
-    val active = activeSeconds(r)
+    val active = activeSecondsState(r)
     val length = (WorkoutTarget.parse(r.workout.target) as? WorkoutTarget.Time)?.seconds
     var touched by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var dim by remember { mutableStateOf(false) }
@@ -87,7 +87,7 @@ internal fun LiveMindScreen(
     ) {
         LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true) {
             Spacer(Modifier.weight(0.6f))
-            MindRing(active, length)
+            MindRing({ active.value }, length)
             Spacer(Modifier.weight(0.5f))
             val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
             val values = remember(recent) { bucketRecent(recent, now) }
@@ -115,7 +115,9 @@ internal fun LiveMindScreen(
  * faint track.
  */
 @Composable
-private fun MindRing(active: Long, length: Long?) {
+private fun MindRing(time: () -> Long, length: Long?) {
+    // Read here, so the second composes the ring again and not the screen.
+    val active = time()
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Canvas(Modifier.size(280.dp)) {
             // The strength rest ring's line and track, so the app's rings read as one.
