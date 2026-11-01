@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,15 +25,12 @@ import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.device.WorkoutState
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.statusBars
@@ -49,38 +48,6 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
 import org.openstrap.app.ui.glow.*
-
-/**
- * The live route in zone colours with the heart rate on a chip in the zone's colour, so it's never hidden (pattern
- * D5), then the GPS accuracy and "route only" (no tiles).
- */
-@Composable
-internal fun LiveMapPage(
-    route: List<Route.Point>,
-    history: List<Pair<Long, Int>>,
-    maxHr: Int,
-    routeOnly: Boolean,
-    bpm: Int?,
-    color: Color,
-    paused: Boolean,
-    modifier: Modifier,
-    onRouteOnly: (Boolean) -> Unit,
-) {
-    // A reading comes every second: the zone colours follow every tenth, the line every fix.
-    val stretches = remember(route.size, history.size / 10) { Route.byZone(route, history, maxHr) }
-    // The whole page is the map; what its tiles reveal is said in the ready screen's (i).
-    Box(modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(Raised)) {
-        // Where you are now, from the latest fix good enough to count, even while standing still.
-        val here = route.lastOrNull { it.accuracy <= Route.MAX_ACCURACY_M }
-        WorkoutMap(stretches, routeOnly, Modifier.fillMaxSize(), here, fitPadding = PaddingValues(horizontal = 28.dp, vertical = 76.dp))
-        BpmChip(bpm, color, paused, Modifier.align(Alignment.TopStart).padding(16.dp))
-        Row(Modifier.align(Alignment.BottomStart).padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val acc = route.lastOrNull()?.accuracy
-            Pill(if (acc == null || acc > 1000) "Finding GPS…" else "GPS ±${acc.toInt()} m", if (acc != null && acc <= Route.MAX_ACCURACY_M) TrendGood else TrendBad)
-            Pill(if (routeOnly) "Route only" else "Map", null, onClick = { onRouteOnly(!routeOnly) })
-        }
-    }
-}
 
 /** The live heart rate on the map: a pill in the zone's [color], a dot beating at it, the number in dots. */
 @Composable

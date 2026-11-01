@@ -41,6 +41,8 @@ internal fun LiveIndoorScreen(
     controls: LiveControls,
     onLap: () -> Unit,
     kcal: WorkoutRecorder.Kcal?,
+    /** Split across a fold: the heart card is on the other half, so this one keeps the time in zones. */
+    split: Boolean = false,
 ) {
     val connected = connection is ConnectionState.Connected
     val color = workoutColor(r, liveHeartRate, connected)
@@ -63,7 +65,8 @@ internal fun LiveIndoorScreen(
     ) {
         // Time reps on the treadmill side: the rep above the heart.
         if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
-        WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
+        if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(liveHeartRate.takeIf { connected && !r.paused }, r.maxHeartRate))
+        else WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
         LiveFigures(figures, Modifier.padding(top = 4.dp))
     }
 }

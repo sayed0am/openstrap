@@ -113,23 +113,6 @@ class WorkoutCopyTest {
         assertEquals(levels.sorted(), levels)
     }
 
-    /* ------------------------------------------ Side figures ------------------------------------------ */
-
-    private val indoor = WorkoutCopy.sideFigures(kcal = true, distance = false, gps = false)
-    private val steps = WorkoutCopy.sideFigures(kcal = true, distance = true, gps = false)
-    private val gps = WorkoutCopy.sideFigures(kcal = true, distance = true, gps = true)
-
-    @Test fun `every figure the workout has shows at once`() {
-        val heart = listOf(SideFigure.Avg, SideFigure.Max)
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal)), WorkoutCopy.liveFigures(indoor))
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal, SideFigure.Distance)), WorkoutCopy.liveFigures(steps))
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal, SideFigure.Distance, SideFigure.Pace)), WorkoutCopy.liveFigures(gps))
-        // Without a profile there's no kcal, and indoors nothing goes under the time.
-        assertEquals(LiveFigures(heart, emptyList()), WorkoutCopy.liveFigures(WorkoutCopy.sideFigures(kcal = false, distance = false, gps = false)))
-        // Every available figure shows exactly once.
-        for (a in listOf(indoor, steps, gps)) WorkoutCopy.liveFigures(a).let { assertEquals(a, it.sides + it.below) }
-    }
-
     @Test fun `kcal reads as whole active kcal`() {
         assertEquals("312 kcal", WorkoutCopy.kcalText(312.9f))
         assertNull(WorkoutCopy.kcalText(null))

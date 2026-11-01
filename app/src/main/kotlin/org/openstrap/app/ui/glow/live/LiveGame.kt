@@ -61,6 +61,8 @@ internal fun LiveGameScreen(
     controls: LiveControls,
     kcal: WorkoutRecorder.Kcal?,
     onHalfTime: () -> Unit,
+    /** Split across a fold: the heart rate is on the other half, so only the effort is left of the card. */
+    split: Boolean = false,
 ) {
     val now = nowTicking()
     val connected = connection is ConnectionState.Connected
@@ -95,7 +97,7 @@ internal fun LiveGameScreen(
             }
         }
         val style = heroStyle(color, LightAngle.Below).let { s -> bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
-        GlowCard(style, Modifier.fillMaxWidth()) {
+        if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
                     if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text("Waiting for heart rate", color = Color.White, style = GlowType.sentence)
