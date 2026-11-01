@@ -6,9 +6,9 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.openstrap.app.testing.assertCleanCopy
 import org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus
 
 /** Today's hero sentences and small facts (spec 4.2, 4.3, 7). */
@@ -159,7 +159,7 @@ class TodayCopyTest {
             TodayCopy.WEEK_FIRST, TodayCopy.recoverText(5000, at(10), zone).second, TodayCopy.charge(50, 30, true, 10),
             TodayCopy.window("run", 50), TodayCopy.after(80, 50), TodayCopy.evening(listOf("run"), 9000, 8000, LoadStatus.Usual, Locale.UK),
         )
-        all.forEach { s -> listOf("·", ";", "—").forEach { assertFalse("$s has $it", it in s) } }
+        assertCleanCopy(all)
     }
 
     @Test fun `values read against your normal`() {
@@ -194,7 +194,7 @@ class TodayCopyTest {
             TodayCopy.heartLineNote(true), TodayCopy.heartLineNote(false), TodayCopy.loadWord(null),
             TodayCopy.recoverShort(3600L * 30, 0, zone).second, TodayCopy.heartAt(false, "07:00"),
         )
-        lines.forEach { l -> listOf("·", ";", "—").forEach { assertFalse("$l has $it", l.contains(it)) } }
+        assertCleanCopy(lines)
     }
 
     @Test
