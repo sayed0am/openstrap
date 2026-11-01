@@ -151,7 +151,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
     val photo by produceState<ImageBitmap?>(null, photoUri) { value = photoUri?.let { decodePhoto(context, it) } }
     var routeMode by rememberSaveable { mutableStateOf(StoryRoute.Line) }
     var hideEnds by rememberSaveable { mutableStateOf(true) }
-    val hasRoute = card is StoryCard.Run && route.size >= 2
+    val hasRoute = card is StoryCard.Run && Route.mappable(route)
     val shown = remember(route, hasRoute, routeMode, hideEnds) {
         if (!hasRoute || routeMode == StoryRoute.Off) emptyList() else if (hideEnds) StoryRouteShape.trimEnds(route) else route
     }

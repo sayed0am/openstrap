@@ -300,6 +300,13 @@ object Route {
     /** How far two fixes can lie apart from GPS error alone. */
     private fun noise(a: Point, b: Point): Double = maxOf(MIN_MOVE_M, (a.accuracy + b.accuracy).toDouble())
 
+    /** Least spread for a route to be worth a map: standing still gives a dot, and the map would zoom out to the world. */
+    const val MAPPABLE_M = 25.0
+
+    /** Whether [points] spread at least [MAPPABLE_M] from the first one, so a map of them shows somewhere. */
+    fun mappable(points: List<Point>): Boolean =
+        points.size >= 2 && points.any { meters(points[0], it) >= MAPPABLE_M }
+
     /** Metres covered by [points] along [track], leaving out stretches that overlap [pauses]. */
     fun distance(points: List<Point>, pauses: List<LongRange> = emptyList()): Double =
         track(points).zipWithNext().sumOf { (a, b) -> if (paused(a, b, pauses)) 0.0 else meters(a, b) }

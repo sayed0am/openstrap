@@ -238,10 +238,10 @@ internal fun FamilySection(
     }
 }
 
-/** The kept route in its zones' colours with the climb; nothing without a route. */
+/** The kept route in its zones' colours with the climb; nothing without a route that goes somewhere. */
 @Composable
 private fun RouteCard(summary: PhoneSummary) {
-    if (summary.route.size < 2) return
+    if (!Route.mappable(summary.route)) return
     EdgeCard(MetricColors.steps, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         EdgeTitle("Route", Route.climb(summary.route)?.let { "Climb ${Math.round(it)} m" })
         RouteMap(summary, Modifier.padding(top = 12.dp))

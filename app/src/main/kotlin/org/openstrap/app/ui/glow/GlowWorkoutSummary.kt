@@ -313,10 +313,10 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
     }
 }
 
-/** The kept route in its zones' colours; nothing without a route. */
+/** The kept route in its zones' colours; nothing without a route that goes somewhere. */
 @Composable
 internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
-    if (summary.route.size < 2) return
+    if (!Route.mappable(summary.route)) return
     val stretches = remember(summary) { Route.byZone(summary.route, summary.history, summary.analysis.maxHeartRate) }
     Box(modifier.fillMaxWidth().height(170.dp).clip(GlowLayout.TileShape).background(Raised)) {
         WorkoutMap(stretches, routeOnly = false, Modifier.fillMaxSize())
