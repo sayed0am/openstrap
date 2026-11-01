@@ -3,11 +3,14 @@ package org.openstrap.app.device
 import android.content.Context
 import android.os.SystemClock
 import android.util.Log
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,7 +27,9 @@ import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.GattException
 import org.openstrap.app.ble.GattStrapLink
+import org.openstrap.app.ble.GattUnusableException
 import org.openstrap.app.ble.StrapUuids
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.WearEventRow
@@ -77,8 +82,21 @@ class StrapManager(
     private val context: Context,
     private val settings: SettingsStore,
     private val dao: HealthDao,
+    // Its own scope until AppContainer passes appScope in. Tests pass theirs.
+    @Suppress("InjectDispatcher")
+    private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : StrapController {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    /**
+     * The one lane that changes the connection's fields ([connectJob], [reconnectJob], [wantConnected], [retries],
+     * [gatt], [session], [link], [battery], [charging]). The connect job runs on it too, so two connects can't
+     * interleave and leave a second GATT client open (audit C5). Others only read those fields.
+     */
+    @Suppress("InjectDispatcher")
+    private val lane = ((scope.coroutineContext[kotlin.coroutines.ContinuationInterceptor] as? CoroutineDispatcher) ?: Dispatchers.Default)
+        .limitedParallelism(1)
+
+    private fun onLane(block: suspend CoroutineScope.() -> Unit) = scope.launch(lane, block = block)
+
     private val healthAlerts = HealthAlertNotifier(context)
     private val autoDetected = AutoDetectNotifier(context)
     private val wearNotifier = WearNotifier(context)
@@ -101,19 +119,22 @@ class StrapManager(
     @Volatile private var refreshGattOnConnect = false
     override val log = MutableStateFlow<List<String>>(emptyList())
 
-    private var connectJob: Job? = null
-    private var reconnectJob: Job? = null
+    // Written on [lane] only. Volatile, as other threads read them.
+    @Volatile private var connectJob: Job? = null
+    @Volatile private var reconnectJob: Job? = null
     /** True while the user wants the strap connected; cleared by [disconnect]. */
-    private var wantConnected = false
+    @Volatile private var wantConnected = false
     private var retries = 0
+    /** Set when a connect failed in a way retrying can't fix (no permission, a bad address): presence events don't retry. */
+    @Volatile private var unusable = false
     private var lastAutoSync = 0L
     private var liveJob: Job? = null
-    private var gatt: GattClient? = null
-    private var session: ChannelSession? = null
-    private var link: GattStrapLink? = null
-    private var battery: Int? = null
-    private var charging = false
-    private var firmware: String? = null
+    @Volatile private var gatt: GattClient? = null
+    @Volatile private var session: ChannelSession? = null
+    @Volatile private var link: GattStrapLink? = null
+    @Volatile private var battery: Int? = null
+    @Volatile private var charging = false
+    @Volatile private var firmware: String? = null
 
     /** The connected session, for features such as history sync and firmware update. */
     val activeSession: ChannelSession? get() = session?.takeIf { connection.value is ConnectionState.Connected }
@@ -125,16 +146,18 @@ class StrapManager(
     }
 
     /** Connect if a strap is paired and nothing is connected or in progress. Safe to call often. */
-    // Synchronized, and checking connectJob: callers race at process start (app start-up, the companion presence
+    // On the lane, and checking connectJob: callers race at process start (app start-up, the companion presence
     // service, phone alerts), before the connect coroutine has moved the state off Disconnected.
-    @Synchronized
     override fun autoConnect() {
-        when (connection.value) {
-            is ConnectionState.Connected, ConnectionState.Connecting, ConnectionState.Authenticating -> return
-            else -> Unit
+        onLane {
+            when (connection.value) {
+                is ConnectionState.Connected, ConnectionState.Connecting, ConnectionState.Authenticating -> return@onLane
+                else -> Unit
+            }
+            if (reconnectJob?.isActive == true || connectJob?.isActive == true) return@onLane
+            hold(false)
+            wantConnection()
         }
-        if (reconnectJob?.isActive == true || connectJob?.isActive == true) return
-        connect()
     }
 
     /** The user's Disconnect, kept across process restarts; null until read from settings. See [backgroundConnect]. */
@@ -152,17 +175,26 @@ class StrapManager(
         scope.launch {
             // Presence events repeat every few seconds while the strap advertises, so a skip isn't logged.
             if (held ?: settings.heldDisconnected.first().also { held = it }) return@launch
+            // Every try would fail the same way until the user acts (grants the permission, pairs again).
+            if (unusable) return@launch
             autoConnect()
         }
     }
 
     override fun connect() {
         hold(false)
+        onLane { wantConnection() }
+    }
+
+    /** On the lane. */
+    private fun wantConnection() {
         wantConnected = true
+        unusable = false
         reconnectJob?.cancel()
         startConnect()
     }
 
+    /** On the lane. */
     private fun scheduleReconnect() {
         if (!wantConnected) return
         // Every attempt would fail at once; Bluetooth coming back on reconnects (see bluetoothChanged), as Zepp waits too.
@@ -175,25 +207,28 @@ class StrapManager(
         retries++
         log("reconnecting in ${wait}s")
         reconnectJob?.cancel()
-        reconnectJob = scope.launch {
+        reconnectJob = onLane {
             delay(wait * 1000L)
             startConnect()
         }
     }
 
+    /** On the lane, so the cancel and the new job are one step that nothing else can come between. */
+    // The catch-all rethrows whenever this job is cancelled, by asking the job rather than the exception's type (C1).
+    @Suppress("SuspendFunSwallowedCancellation")
     private fun startConnect() {
         connectJob?.cancel()
-        connectJob = scope.launch {
+        connectJob = onLane {
             val device = settings.pairedDevice.first()
             if (device == null) {
                 connection.value = ConnectionState.NotPaired
-                return@launch
+                return@onLane
             }
-            runCatching { StrapService.start(context) }.onFailure { log("service start failed: $it") }
+            catching { StrapService.start(context) }.onFailure { log("service start failed: $it") }
             connection.value = ConnectionState.Connecting
             // A client left over from a lost link still holds one of Android's few GATT client slots.
             gatt?.close()
-            val client = GattClient(context, device.address).also { gatt = it }
+            val client = GattClient(context, device.address, ::log).also { gatt = it }
             try {
                 log("connecting to ${device.address}")
                 client.connect(refreshCache = refreshGattOnConnect)
@@ -234,101 +269,114 @@ class StrapManager(
                 connection.value = PairingErrors.authFailure(e)
                 close()
             } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
+                // Asks the coroutine, not the exception: a timeout is a failure to report, only a cancelled job unwinds.
+                if (!currentCoroutineContext().isActive) {
+                    // Whoever cancelled this (Disconnect, a newer connect, the lost link) owns the state now. A client
+                    // it didn't take over is closed here, so it can't keep a GATT slot.
+                    if (gatt !== client) client.close()
+                    throw e
+                }
                 log("connect failed: $e")
-                connection.value = ConnectionState.Failed(e.message ?: "Connection failed")
+                connection.value = ConnectionState.Failed(ConnectErrors.reason(e))
                 close()
-                scheduleReconnect()
+                if (ConnectErrors.isFinal(e)) {
+                    unusable = true
+                    log("not retrying: ${e.message}")
+                } else {
+                    scheduleReconnect()
+                }
             }
         }
     }
 
+    private suspend inline fun <T> step(name: String, block: () -> T): T? = setupStep(name, { log(it) }, block)
+
     private suspend fun afterAuth(client: GattClient, l: GattStrapLink, s: ChannelSession) {
         // Payload MTU reported by the strap (§1.3).
         if (s.services.has(Endpoints.CONNECT)) {
-            runCatching {
+            step("mtu query") {
                 val r = s.request(Endpoints.CONNECT, byteArrayOf(1), 5_000) { it.u8(0) == 0x02 }
                 val n = r.u8(1) or (r.u8(2) shl 8)
                 if (n + 3 in 23..247) l.payloadMtu = n
                 log("strap payload mtu=$n")
-            }.onFailure { log("mtu query failed: $it") }
+            }
         }
 
         // The settings protocol version decides how query replies are framed (03 §3.6), so learn it first.
         settingsProtocol = null
         if (s.services.has(Endpoints.SETTINGS)) {
-            runCatching {
+            step("settings version query") {
                 val r = s.request(Endpoints.SETTINGS, SettingsCodec.versionRequest, 5_000) { it.isNotEmpty() && it.u8(0) == SettingsCodec.VERSION + 1 }
                 settingsProtocol = SettingsCodec.parseVersion(r)
                 log("settings protocol ${settingsProtocol?.version} groups ${settingsProtocol?.groups} (${r.toHex()})")
-            }.onFailure { log("settings version query failed: $it") }
+            }
         }
 
         // Resource versions for the firmware check, read once per connect as Zepp does with `03 00 00 00` (codemap 07
         // §1.4). Nobody has seen the strap's values yet, so log them raw.
         var deviceInformation: SettingsGroup? = null
         if (s.services.has(Endpoints.SETTINGS)) {
-            runCatching {
+            step("device information query") {
                 val group = SettingsCodec.GROUP_DEVICE_INFORMATION
                 val r = s.request(Endpoints.SETTINGS, SettingsCodec.query(group, withOptions = false), 5_000) { SettingsCodec.isReplyTo(group, it) }
                 deviceInformation = SettingsCodec.parse(r, settingsProtocol?.version)
                 val keys = deviceInformation?.settings?.values?.joinToString(" ") { "${it.key}=${it.text ?: it.number ?: it.raw.toHex()}" }
                 log("device information ${r.toHex()} -> ${keys ?: "unparsed"}")
-            }.onFailure { log("device information query failed: $it") }
+            }
         }
 
         // Runtime feature bitmap: history gates on it (01 §3). Nobody has seen the strap's reply yet, so log it raw.
         if (s.services.has(DeviceFeatures.ENDPOINT)) {
-            runCatching {
+            step("device features query") {
                 val r = s.request(DeviceFeatures.ENDPOINT, DeviceFeatures.request, 5_000) { it.isNotEmpty() && it.u8(0) == DeviceFeatures.REPLY }
                 s.features = DeviceFeatures.parseMessage(r)
                 log("device features ${r.toHex()} -> ${s.features?.let { "mask %02x g2 %s alg %s".format(it.mask, it.group2?.toHex(), it.algorithm) } ?: "unparsed"}")
-            }.onFailure { log("device features query failed: $it") }
+            }
         }
 
-        firmware = runCatching {
+        firmware = step("firmware read") {
             client.read(StrapUuids.DEVICE_INFO_SERVICE, StrapUuids.SOFTWARE_REVISION).toString(Charsets.UTF_8).trimEnd('\u0000')
-        }.getOrNull()
+        }
         log("firmware=$firmware")
-        val hardware = runCatching {
+        val hardware = step("hardware read") {
             client.read(StrapUuids.DEVICE_INFO_SERVICE, StrapUuids.HARDWARE_REVISION).toString(Charsets.UTF_8).trimEnd('\u0000')
-        }.getOrNull()
-        val serial = runCatching {
+        }
+        val serial = step("serial read") {
             client.read(StrapUuids.DEVICE_INFO_SERVICE, StrapUuids.SERIAL_NUMBER).toString(Charsets.UTF_8).trimEnd('\u0000')
-        }.getOrNull()
+        }
         val dfu = GattDfuLink(client).available
         info.value = StrapInfo(firmware, hardware, serial, dfu, s.services.has(Endpoints.FIND_DEVICE), deviceInformation)
         log("hardware=$hardware dfu=$dfu")
 
         // GENERAL key 45 restarts the strap; like Zepp, offer Restart only when the strap reports it (03 §5.2, 07 §0).
         if (s.services.has(Endpoints.SETTINGS)) {
-            runCatching {
+            step("restart key query") {
                 val group = SettingsCodec.GROUP_GENERAL
                 val r = s.request(Endpoints.SETTINGS, SettingsCodec.query(group, listOf(SettingsCodec.KEY_RESTART), withOptions = false), 5_000) { SettingsCodec.isReplyTo(group, it) }
                 val restart = SettingsCodec.parse(r, settingsProtocol?.version)?.get(SettingsCodec.KEY_RESTART)
                 log("general key 45 ${r.toHex()} -> ${restart?.let { "reported" } ?: "not reported"}")
                 info.value = info.value?.copy(canRestart = restart != null)
-            }.onFailure { log("restart key query failed: $it") }
+            }
         }
 
         // Vibration strength: Zepp keeps it in SOUND key 4. Nobody knows yet whether the strap has the group, so read
         // it whole (read-only) and log the reply; a strap without it answers with an error code.
         if (s.services.has(Endpoints.SETTINGS)) {
-            runCatching {
+            step("sound group query") {
                 val group = SettingsCodec.GROUP_SOUND
                 val r = s.request(Endpoints.SETTINGS, SettingsCodec.query(group), 5_000) { SettingsCodec.isReplyTo(group, it) }
                 val keys = SettingsCodec.parse(r, settingsProtocol?.version)?.settings?.values?.joinToString(" ") { "${it.key}=${it.text ?: it.number ?: it.raw.toHex()}" }
                 log("sound group ${r.toHex()} -> ${keys ?: "unparsed (code ${SettingsCodec.replyCode(r)})"}")
-            }.onFailure { log("sound group query failed: $it") }
+            }
         }
 
-        runCatching {
+        step("battery read") {
             if (s.services.has(Endpoints.BATTERY)) {
                 BatteryInfo.parseChannel(s.request(Endpoints.BATTERY, BatteryInfo.GET) { it.u8(0) == 0x04 })
             } else {
                 BatteryInfo.parse(client.read(StrapUuids.MAIN_SERVICE, StrapUuids.BATTERY))
             }
-        }.onFailure { log("battery read failed: $it") }.getOrNull()?.let {
+        }?.let {
             battery = it.level
             charging = it.charging == true
         }
@@ -336,9 +384,9 @@ class StrapManager(
 
         timeProtocol = null
         if (s.services.has(Endpoints.TIME)) {
-            timeProtocol = runCatching {
+            timeProtocol = step("time version query") {
                 TimeSync.parseVersion(s.request(Endpoints.TIME, TimeSync.versionRequest, 5_000) { it.isNotEmpty() && it.u8(0) == TimeSync.VERSION + 1 })
-            }.onFailure { log("time version query failed: $it") }.getOrNull()
+            }
             log("time protocol $timeProtocol")
         }
         syncTime(s, client)
@@ -360,7 +408,7 @@ class StrapManager(
     /** Sets the strap's clock and time zone, and tells it when DST next changes, as Zepp does on connect and on every change. */
     private suspend fun syncTime(s: ChannelSession, client: GattClient) {
         val now = ZonedDateTime.now()
-        runCatching {
+        step("time sync") {
             if (s.services.has(Endpoints.TIME)) {
                 val r = s.request(Endpoints.TIME, TimeSync.setRequest(now)) { it.u8(0) == 0x06 }
                 log("time set: ${r.toHex()}")
@@ -368,12 +416,12 @@ class StrapManager(
                 client.write(StrapUuids.MAIN_SERVICE, StrapUuids.CURRENT_TIME, TimeSync.struct(now), withResponse = true)
                 log("time set via 2A2B")
             }
-        }.onFailure { log("time sync failed: $it") }
-        if ((timeProtocol ?: 0) >= 2) runCatching {
+        }
+        if ((timeProtocol ?: 0) >= 2) step("dst hint") {
             val request = TimeSync.nextDstRequest(now)
             val r = s.request(Endpoints.TIME, request) { it.isNotEmpty() && it.u8(0) == TimeSync.NEXT_DST + 1 }
             log("next dst ${request.toHex()}: ${r.toHex()}")
-        }.onFailure { log("dst hint failed: $it") }
+        }
     }
 
     /** The phone's clock or time zone changed (travel, DST, a manual change): pass it on while connected. */
@@ -398,8 +446,8 @@ class StrapManager(
                     log("bluetooth turned off")
                     client.lost()
                 }
-                android.bluetooth.BluetoothAdapter.STATE_ON -> scope.launch {
-                    if (!wantConnected || connection.value is ConnectionState.Connected || connectJob?.isActive == true) return@launch
+                android.bluetooth.BluetoothAdapter.STATE_ON -> onLane {
+                    if (!wantConnected || connection.value is ConnectionState.Connected || connectJob?.isActive == true) return@onLane
                     log("bluetooth back on, reconnecting")
                     retries = 0
                     reconnectJob?.cancel()
@@ -429,7 +477,7 @@ class StrapManager(
                 syncRecord.update { it.next(previous, s, System.currentTimeMillis() / 1000) }
                 // A sync starting while the widgets say the last one is old: their line turns to Syncing (widgets spec 5).
                 if (s is SyncState.Running && previous !is SyncState.Running) launch {
-                    val done = runCatching { settings.strapSnapshot.first().lastSyncDone }.getOrNull()
+                    val done = catching { settings.strapSnapshot.first().lastSyncDone }.getOrNull()
                     if (syncStale(done, System.currentTimeMillis() / 1000)) WidgetUpdater.changedAll(context)
                 }
                 previous = s
@@ -439,7 +487,7 @@ class StrapManager(
         scope.launch {
             connection.mapNotNull { c -> (c as? ConnectionState.Connected)?.let { it.batteryPercent?.let { b -> b to it.charging } } }
                 .distinctUntilChanged()
-                .collect { (b, ch) -> runCatching { settings.setStrapBattery(b, ch) }.onFailure { log("strap battery not kept: $it") } }
+                .collect { (b, ch) -> catching { settings.setStrapBattery(b, ch) }.onFailure { log("strap battery not kept: $it") } }
         }
         // And the widgets told when that line could change: pairing, the low battery edge, charging (widgets spec 7).
         scope.launch {
@@ -462,7 +510,7 @@ class StrapManager(
         if (!s.services.has(Endpoints.USER_INFO)) return@launch
         settings.profile.map { it.toStrapProfile() }.distinctUntilChanged().collect { p ->
             val payload = p.channelPayload() ?: return@collect
-            runCatching {
+            catching {
                 val r = s.request(Endpoints.USER_INFO, payload, 5_000) { it.isNotEmpty() && it.u8(0) == StrapUserProfile.SET + 1 }
                 log("profile sent: ${r.toHex()}")
             }.onFailure { log("profile send failed: $it") }
@@ -477,11 +525,11 @@ class StrapManager(
     private fun CoroutineScope.watchCalorieGoal(s: ChannelSession) = launch {
         if (!s.services.has(Endpoints.SETTINGS)) return@launch
         settings.goals.map { it.calories }.distinctUntilChanged().collect { kcal ->
-            runCatching {
+            catching {
                 val group = SettingsCodec.parse(
                     settingsQuery(SettingsCodec.GROUP_HEALTH, listOf(SettingsCodec.KEY_CALORIE_TARGET), withOptions = false), settingsProtocol()?.version,
-                ) ?: return@runCatching
-                val write = SettingsCodec.calorieTargetFor(group, kcal) ?: return@runCatching
+                ) ?: return@catching
+                val write = SettingsCodec.calorieTargetFor(group, kcal) ?: return@catching
                 val ack = command(Endpoints.SETTINGS, write)
                 log(if (SettingsCodec.isWriteSuccess(ack)) "calorie goal sent: $kcal" else "calorie goal refused: ${ack.toHex()}")
             }.onFailure { log("calorie goal send failed: $it") }
@@ -497,7 +545,7 @@ class StrapManager(
             alert ?: return@collect
             healthAlerts.show(alert)
             // Kept so Today can list the day's alerts; a failed write mustn't stop the watcher.
-            runCatching { dao.insertHealthAlerts(listOf(HealthAlertRow(alert.timestamp, alert.type.code, alert.value))) }
+            catching { dao.insertHealthAlerts(listOf(HealthAlertRow(alert.timestamp, alert.type.code, alert.value))) }
                 .onFailure { log("health alert not stored: $it") }
         }
     }
@@ -545,7 +593,7 @@ class StrapManager(
                 delay(WEAR_POLL_MS)
                 if (firmwareUpdating.value) continue
                 wearPolling = true
-                runCatching {
+                catching {
                     val reply = settingsQuery(SettingsCodec.GROUP_DEVICE_INFORMATION, listOf(SettingsCodec.KEY_WEAR_STATUS), withOptions = false)
                     SettingsCodec.parse(reply, settingsProtocol?.version)?.let(SettingsCodec::wearStatus)?.let { onWear(it) }
                 }.onFailure { log("wear status poll failed: $it") }
@@ -557,11 +605,11 @@ class StrapManager(
     }
 
     /** GENERAL key 44 on, written only when the strap doesn't already report it on. */
-    private suspend fun enableWearAlert() = runCatching {
+    private suspend fun enableWearAlert() = catching {
         val key = SettingsCodec.KEY_WEAR_STATUS_ALERT
         val reply = settingsQuery(SettingsCodec.GROUP_GENERAL, listOf(key), withOptions = false)
         val group = SettingsCodec.parse(reply, settingsProtocol()?.version) ?: throw StrapCommandException("unparsed ${reply.toHex()}")
-        if (group[key]?.bool == true) return@runCatching
+        if (group[key]?.bool == true) return@catching
         // Written even when the strap doesn't list the key, so the reply shows whether it takes it.
         val ack = command(Endpoints.SETTINGS, SettingsCodec.write(SettingsCodec.GROUP_GENERAL, group.version, listOf(SettingsCodec.boolSetting(key, true))))
         log("wear reminder on (was ${group[key]?.bool ?: "not reported"}): ${if (SettingsCodec.isWriteSuccess(ack)) "ok" else "refused"}")
@@ -612,7 +660,7 @@ class StrapManager(
         val s = activeSession ?: throw StrapCommandException("The strap isn't connected")
         if (!s.services.has(SportSession.ENDPOINT)) throw StrapCommandException("The strap has no sport module")
         suspend fun send(request: ByteArray): ByteArray {
-            val reply = runCatching { s.request(SportSession.ENDPOINT, request, 8_000) { SportSession.isReplyTo(request, it) } }
+            val reply = catching { s.request(SportSession.ENDPOINT, request, 8_000) { SportSession.isReplyTo(request, it) } }
                 .getOrElse { throw StrapCommandException("The strap didn't answer") }
             log("sport > ${request.toHex()} < ${reply.toHex()}")
             if (!SportSession.isOk(reply)) throw StrapCommandException("The strap refused the workout command")
@@ -626,7 +674,7 @@ class StrapManager(
 
     override suspend fun sportSessionKeepAlive() {
         val s = activeSession ?: return
-        runCatching { s.send(SportSession.ENDPOINT, SportSession.pauseKeepAlive) }
+        catching { s.send(SportSession.ENDPOINT, SportSession.pauseKeepAlive) }
     }
 
     /** The strap's `07` once buzzing has stopped; it also ends Find strap. */
@@ -655,8 +703,9 @@ class StrapManager(
                 battery = info.level
                 charging = info.charging == true
                 log("battery update ${info.level}% charging=$charging")
-                (connection.value as? ConnectionState.Connected)?.let {
-                    connection.value = it.copy(batteryPercent = info.level, charging = charging)
+                // One atomic change, so a Disconnect landing meanwhile isn't overwritten with Connected.
+                connection.update {
+                    (it as? ConnectionState.Connected)?.copy(batteryPercent = info.level, charging = info.charging == true) ?: it
                 }
             }
         }
@@ -677,10 +726,12 @@ class StrapManager(
                 }
             }
         }
-        runCatching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.NOTIFY_ON) }.onFailure { log("steps notify failed: $it") }
+        catching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.NOTIFY_ON) }.onFailure { log("steps notify failed: $it") }
         // Pushes may only come while walking; poll as a fallback.
         while (isActive && session === s) {
-            if (!firmwareUpdating.value) runCatching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.QUERY) }.onFailure { log("steps query failed: $it") }
+            if (!firmwareUpdating.value) {
+                catching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.QUERY) }.onFailure { log("steps query failed: $it") }
+            }
             delay(60_000)
         }
     }
@@ -718,7 +769,7 @@ class StrapManager(
         }
     }
 
-    private fun watchDisconnect(client: GattClient) = scope.launch {
+    private fun watchDisconnect(client: GattClient) = onLane {
         client.connected.filter { !it }.first()
         if (gatt === client) {
             log("link lost")
@@ -744,17 +795,20 @@ class StrapManager(
 
     override fun disconnect() {
         hold(true)
-        wantConnected = false
-        reconnectJob?.cancel()
-        connectJob?.cancel()
-        liveJob?.cancel()
-        endFind()
-        onWear(null)
-        close()
-        liveHeartRate.value = null
-        connection.value = ConnectionState.Disconnected
+        onLane {
+            wantConnected = false
+            reconnectJob?.cancel()
+            connectJob?.cancel()
+            liveJob?.cancel()
+            endFind()
+            onWear(null)
+            close()
+            liveHeartRate.value = null
+            connection.value = ConnectionState.Disconnected
+        }
     }
 
+    /** On the lane. */
     private fun close() {
         session?.stop()
         session = null
@@ -790,12 +844,15 @@ class StrapManager(
                     val only = takeNext()
                     if (only != null && only.isEmpty()) break
                     HistorySync(s, client, dao, settings, sync, ::log, autoDetected::show).run(only)
-                    (sync.value as? SyncState.Done)?.let { d -> runCatching { settings.setLastSyncDone(d.atEpochSeconds) }.onFailure { log("sync time not kept: $it") } }
+                    (sync.value as? SyncState.Done)?.let { d ->
+                        catching { settings.setLastSyncDone(d.atEpochSeconds) }.onFailure { log("sync time not kept: $it") }
+                    }
                 }
-                runCatching { notifyBodySignals() }.onFailure { log("body signals: $it") }
-                runCatching { WorkoutGapFill(dao) { settings.profile.first() }.run()?.let { log(it) } }.onFailure { log("workout gap fill: $it") }
-                runCatching { updateEffectModel() }.onFailure { log("workout effect: $it") }
-                runCatching { updateDailyEnergy() }.onFailure { log("daily energy: $it") }
+                catching { notifyBodySignals() }.onFailure { log("body signals: $it") }
+                catching { WorkoutGapFill(dao) { settings.profile.first() }.run()?.let { log(it) } }
+                    .onFailure { log("workout gap fill: $it") }
+                catching { updateEffectModel() }.onFailure { log("workout effect: $it") }
+                catching { updateDailyEnergy() }.onFailure { log("daily energy: $it") }
                 // Everything a widget shows may have moved (widgets spec 7).
                 WidgetUpdater.changedAll(context)
                 syncEnded.tryEmit(Unit)
@@ -870,7 +927,7 @@ class StrapManager(
             // Device-side chunk ACKs on 0016 carry transport errors (e.g. status 5 = unknown endpoint).
             val acks = link?.let { l -> launch { l.controlNotifications.collect { log("probe %04x ack < %s".format(endpoint, it.toHex())) } } }
             log("probe %04x > %s".format(endpoint, payload.toHex()))
-            runCatching { s.send(endpoint, payload) }.onFailure { log("probe failed: $it") }
+            catching { s.send(endpoint, payload) }.onFailure { log("probe failed: $it") }
             delay(5_000)
             listener.cancel()
             acks?.cancel()
@@ -885,11 +942,13 @@ class StrapManager(
         scope.launch {
             log("simulating a strap: $script, $stepsPerMinute steps/min")
             // No strap is paired on the emulator: a reconnect loop would knock the fake one offline.
-            reconnectJob?.cancel()
-            connectJob?.cancel()
+            withContext(lane) {
+                reconnectJob?.cancel()
+                connectJob?.cancel()
+            }
             connection.value = ConnectionState.Connected(battery, "simulated")
             // As a real connection does: the service carries the notifications.
-            runCatching { StrapService.start(context) }.onFailure { log("service start failed: $it") }
+            catching { StrapService.start(context) }.onFailure { log("service start failed: $it") }
             var steps = 1_000
             var second = 0
             for ((bpm, seconds) in script) repeat(seconds) {
@@ -980,7 +1039,7 @@ class StrapManager(
                             LiveHeartRate.parseMeasurement(n.value)?.let { onLiveHr(it) }
                         }
                 }
-                runCatching { client.enableNotifications(StrapUuids.HEART_RATE_SERVICE, StrapUuids.HR_MEASUREMENT) }
+                catching { client.enableNotifications(StrapUuids.HEART_RATE_SERVICE, StrapUuids.HR_MEASUREMENT) }
                     .onFailure { log("2A37 subscribe failed: $it") }
 
                 val channel = s.services.has(Endpoints.HEART_RATE)
@@ -1005,7 +1064,7 @@ class StrapManager(
     }
 
     private suspend fun stopLive(s: ChannelSession?, client: GattClient?) {
-        runCatching {
+        catching {
             if (s != null && s.services.has(Endpoints.HEART_RATE)) {
                 s.send(Endpoints.OPEN_APP, LiveHeartRate.CLOSE)
                 s.send(Endpoints.HEART_RATE, LiveHeartRate.UNSUBSCRIBE)
@@ -1024,7 +1083,7 @@ class StrapManager(
     ): ByteArray {
         val s = activeSession ?: throw StrapCommandException("The strap isn't connected")
         if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
-        val reply = runCatching {
+        val reply = catching {
             s.request(endpoint, request, timeoutMs, matches = matches)
         }.getOrElse { throw StrapCommandException("The strap didn't answer") }
         log("cmd %04x > %s < %s".format(endpoint, request.toHex(), reply.toHex()))
@@ -1065,7 +1124,7 @@ class StrapManager(
     @Volatile private var settingsProtocol: SettingsProtocol? = null
 
     private suspend fun settingsProtocol(): SettingsProtocol? = settingsProtocol
-        ?: runCatching { SettingsCodec.parseVersion(command(Endpoints.SETTINGS, SettingsCodec.versionRequest)) }.getOrNull()
+        ?: catching { SettingsCodec.parseVersion(command(Endpoints.SETTINGS, SettingsCodec.versionRequest)) }.getOrNull()
             ?.also { settingsProtocol = it }
 
     /** A settings query; a `04` push for another group arriving meanwhile isn't taken as its reply (03 §3.6.1). */
@@ -1089,7 +1148,7 @@ class StrapManager(
             ?: throw StrapCommandException("The strap couldn't read its settings")
         val request = SettingsCodec.restartFor(group) ?: throw StrapCommandException("This strap can't be restarted from the app")
         log("restart: asking the strap to restart")
-        val reply = runCatching { command(Endpoints.SETTINGS, request) }
+        val reply = catching { command(Endpoints.SETTINGS, request) }
             .getOrElse { e -> if (activeSession == null) { log("restart: link dropped before the ack"); return } else throw e }
         if (!SettingsCodec.isWriteSuccess(reply)) throw StrapCommandException("The strap didn't accept the restart (code ${reply.getOrNull(1)})")
     }
@@ -1169,7 +1228,7 @@ class StrapManager(
      * `03` until it got a `06` (fw 3.25, 2026-10-28). Waiting the usual 8 s for it held up every buzz behind it.
      */
     private suspend fun findBuzz() {
-        val reply = runCatching { command(Endpoints.FIND_DEVICE, FindDevice.BUZZ, BUZZ_REPLY_MS) }.getOrElse {
+        val reply = catching { command(Endpoints.FIND_DEVICE, FindDevice.BUZZ, BUZZ_REPLY_MS) }.getOrElse {
             log("buzz: no answer to 03, sending 06 and trying again")
             sendFindDevice(FindDevice.STOP)
             delay(BUZZ_RESET_MS)
@@ -1183,7 +1242,7 @@ class StrapManager(
         val start = SystemClock.elapsedRealtime()
         var n = 0L
         while (callHold) {
-            buzzLock.withLock { if (callHold) runCatching { playMotor(CALL_PULSE) }.onFailure { if (callHold) log("call pulse failed: $it") } }
+            buzzLock.withLock { if (callHold) catching { playMotor(CALL_PULSE) }.onFailure { if (callHold) log("call pulse failed: $it") } }
             n++
             delay((start + n * CALL_PULSE_PERIOD_MS - SystemClock.elapsedRealtime()).coerceAtLeast(0))
         }
@@ -1223,7 +1282,7 @@ class StrapManager(
             log("find strap: timed out")
             // Cleared first, so stopBuzzing's endFind doesn't cancel this job before the STOP goes out.
             findJob = null
-            runCatching { stopBuzzing() }
+            catching { stopBuzzing() }
         }
     }
 
@@ -1241,22 +1300,37 @@ class StrapManager(
         if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
         log("cmd %04x > %s".format(Endpoints.FIND_DEVICE, request.toHex()))
         if (request.contentEquals(FindDevice.STOP)) findBuzzOn = false
-        runCatching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException("The strap didn't answer") }
+        catching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException("The strap didn't answer") }
     }
 
-    /** GENERAL key 47; null when the strap doesn't report it. Zepp refuses OTA while it is on (07 §1.6). */
-    private suspend fun fastRechargeOn(): Boolean? = runCatching {
-        val reply = settingsQuery(SettingsCodec.GROUP_GENERAL, listOf(SettingsCodec.KEY_FAST_RECHARGE), withOptions = false)
-        SettingsCodec.parse(reply, settingsProtocol()?.version)?.get(SettingsCodec.KEY_FAST_RECHARGE)?.bool
+    /**
+     * GENERAL key 47, null when the strap doesn't report it. Zepp refuses OTA while it is on (07 §1.6). Asked straight
+     * on the session, as [installFirmware] has set [firmwareUpdating] by then and [command] refuses while it is set.
+     */
+    private suspend fun fastRechargeOn(s: ChannelSession): Boolean? = catching {
+        val group = SettingsCodec.GROUP_GENERAL
+        val request = SettingsCodec.query(group, listOf(SettingsCodec.KEY_FAST_RECHARGE), withOptions = false)
+        val reply = s.request(Endpoints.SETTINGS, request, 8_000) { SettingsCodec.isReplyTo(group, it) }
+        SettingsCodec.parse(reply, settingsProtocol?.version)?.get(SettingsCodec.KEY_FAST_RECHARGE)?.bool
     }.onFailure { log("fast-charge query failed: $it") }.getOrNull()
 
     override suspend fun installFirmware(file: ByteArray, type: Int, onProgress: (DfuProgress) -> Unit) {
         val client = gatt
         if (client == null || connection.value !is ConnectionState.Connected) throw DfuException(-1, "The strap isn't connected")
-        if (sync.value is SyncState.Running) throw DfuException(-1, "Wait for the sync to finish first")
-        if (firmwareUpdating.value) throw DfuException(-1, "An update is already running")
-        if (session?.services?.has(Endpoints.SETTINGS) == true && fastRechargeOn() == true) throw DfuException(-1, "Turn off fast-charge mode on the strap first")
+        // Claimed first, so a sync can't start between the check below and the claim: startSync gives way to it.
         if (!firmwareUpdating.compareAndSet(false, true)) throw DfuException(-1, "An update is already running")
+        // Given back on a refusal, and when the caller is cancelled during the fast-charge query.
+        var claimed = false
+        try {
+            if (sync.value is SyncState.Running || syncLock.isLocked) throw DfuException(-1, "Wait for the sync to finish first")
+            val s = session
+            if (s != null && s.services.has(Endpoints.SETTINGS) && fastRechargeOn(s) == true) {
+                throw DfuException(-1, "Turn off fast-charge mode on the strap first")
+            }
+            claimed = true
+        } finally {
+            if (!claimed) firmwareUpdating.value = false
+        }
         val wake = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:firmware").apply { acquire(30 * 60_000L) }
         try {
@@ -1264,7 +1338,7 @@ class StrapManager(
             val link = GattDfuLink(client)
             if (!link.available) throw DfuException(-1, "This strap doesn't offer the firmware update service")
             // Bigger ATT packets make the transfer several times faster; fall back to 20-byte writes if refused.
-            runCatching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
+            catching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
             log("dfu: ${file.size} bytes, type ${"%02x".format(type)}, crc ${"%08x".format(crc32(file))}, att mtu ${client.mtu}")
             link.enable()
             refreshGattOnConnect = true
