@@ -150,10 +150,12 @@ internal fun LiveFrame(
                 if (time != null && smallTime) {
                     // The total, small, where a set or a round's clock is the screen's number.
                     Text(workoutClock(time), color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    // Under it, the GPS where there is one (run reps), else that it's the total.
+                    val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Total", color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                        Text(under, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
                         Spacer(Modifier.width(8.dp))
-                        Canvas(Modifier.size(6.dp)) { drawCircle(if (connected) TrendGood else TrendBad) }
+                        Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
                     }
                 } else (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -261,7 +263,7 @@ private fun Labelled(label: String, show: Boolean, button: @Composable () -> Uni
 @Composable
 internal fun LapButton(onLap: () -> Unit, label: Boolean = false, text: String = "Lap") = Labelled(text, label) {
     FlatButton(Raised, 64.dp, onClick = onLap) {
-        Icon(if (text == "Lap") SportIcons.Lap else AppIcons.PlayFill, text, tint = Color.White, modifier = Modifier.size(22.dp))
+        Icon(if (text == "Lap") SportIcons.Lap else AppIcons.SkipFill, text, tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }
 

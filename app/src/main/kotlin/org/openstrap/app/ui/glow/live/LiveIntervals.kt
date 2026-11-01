@@ -63,7 +63,7 @@ private val RestGreen = ZONE_COLORS[1]
 
 /** The seconds a phase's clock is ticked from, for the screen. */
 @Composable
-private fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
+internal fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
     while (true) {
         value = System.currentTimeMillis() / 1000
         delay(1000 - System.currentTimeMillis() % 1000)
@@ -180,16 +180,20 @@ private fun SkipButton(label: String, onSkip: () -> Unit) {
     }
 }
 
-/** The rounds as a segmented bar: done white, the one under way filling as its [workLength] passes, those to go faint. */
+/**
+ * The rounds as a segmented bar: done white, the one under way filling as its [workLength] passes (or by [underWay],
+ * a run rep's share of its metres), those to go faint.
+ */
 @Composable
-private fun RoundBar(m: IntervalMoment, workLength: Long?) {
+internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = null) {
     val done = when (m.phase) {
         is Phase.Work, is Phase.Rest -> m.round - 1
         Phase.Done -> m.rounds
         Phase.WarmUp -> 0
     }
     // How far into the round under way: the work's seconds gone of [workLength], when it runs on a clock.
-    val under = if (m.phase is Phase.Work && m.left != null && workLength != null && workLength > 0) {
+    val under = if (m.phase is Phase.Work && underWay != null) underWay.coerceIn(0f, 1f)
+    else if (m.phase is Phase.Work && m.left != null && workLength != null && workLength > 0) {
         (1f - m.left.toFloat() / workLength).coerceIn(0f, 1f)
     } else 0f
     Canvas(Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = "$done of ${m.rounds} rounds done" }) {

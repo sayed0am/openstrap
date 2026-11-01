@@ -207,11 +207,15 @@ internal fun FamilySection(
         Workouts.Family.Intervals -> {
             val reps = summary.structure is Structure.Reps
             val lines = remember(summary) { FamilySummary.rounds(summary.rounds, readings) }
-            if (lines.isNotEmpty()) RoundsCard(lines, if (reps) "Each rep" else "Each round", a.maxHeartRate)
+            // Without a heart rate the peaks are empty: a run's reps show their times instead, timed rounds nothing.
+            val peaks = lines.any { it.peak != null }
+            val times = summary.rounds.mapNotNull { r -> r.workEnd?.let { it - r.workStart } }
+            if (peaks) RoundsCard(lines, if (reps) "Each rep" else "Each round", a.maxHeartRate)
+            else if (reps && times.isNotEmpty()) RepTimesCard(times)
             val rest = (summary.structure as? Structure.Timed)?.rest ?: (summary.structure as? Structure.Reps)?.rest
             val line = FamilySummary.roundsLine(lines, rest)
             if (line != null) SentenceCard("Recovery", line)
-            return lines.isNotEmpty() && line == null
+            return (peaks || (reps && times.isNotEmpty())) && line == null
         }
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
@@ -332,6 +336,41 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+/**
+ * A run's reps without a heart rate: each rep's time as a column, the fastest full height, bright and outlined, the
+ * rest as tall as the fastest against them, with the time under each.
+ */
+@Composable
+private fun RepTimesCard(times: List<Long>) {
+    val fastest = times.filter { it > 0 }.minOrNull() ?: return
+    val best = times.indexOf(fastest)
+    val labelled = times.size <= LabelledRounds
+    val gap = if (labelled) 6.dp else 3.dp
+    val shape = RoundedCornerShape(5.dp)
+    val color = familyColor(Workouts.Family.Intervals)
+    EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+        EdgeTitle("Each rep", "Time")
+        Row(Modifier.fillMaxWidth().height(RoundColumnHeight + 14.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
+            times.forEachIndexed { i, t ->
+                val share = if (t > 0) (fastest.toFloat() / t).coerceIn(0.3f, 1f) else 0.3f
+                Box(
+                    Modifier.weight(1f).height(RoundColumnHeight * share).clip(shape).background(if (i == best) color else color.copy(alpha = 0.45f))
+                        .let { if (i == best) it.border(2.dp, Color.White, shape) else it },
+                )
+            }
+        }
+        if (labelled) Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(gap)) {
+            times.forEachIndexed { i, t ->
+                Text(
+                    workoutClock(t), color = if (i == best) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), maxLines = 1,
+                    style = if (i == best) GlowType.caption.copy(fontWeight = FontWeight.SemiBold) else GlowType.caption,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, modifier = Modifier.weight(1f),
+                )
             }
         }
     }

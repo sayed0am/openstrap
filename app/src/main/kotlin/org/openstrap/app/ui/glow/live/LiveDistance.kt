@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -147,13 +149,18 @@ internal fun LiveDistanceScreen(
     Box(Modifier.fillMaxSize()) {
         HorizontalPager(pager, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
             when (LiveView.entries[page]) {
-                LiveView.Heart -> LiveFrame(
+                // Reps (board RunIntervals): the total small on top, the rep the screen's number.
+                LiveView.Heart -> if (reps) LiveFrame(
+                    r, color, connected, contentPadding, controls, lap, time = active, smallTime = true, battery = battery, status = listOf(gps),
+                    fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
+                ) {
+                    RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
+                } else LiveFrame(
                     r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps), fill = true,
                     bottomRoom = bar,
                 ) {
                     Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        if (reps) RepCard(r, route, readings, bpm)
-                        else PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
+                        PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
                         HeartStrip(bpm, r.maxHeartRate, color, r.paused)
                         LiveFigures(listOf(
                             Glance.kmFigure(distance) to "km",
@@ -179,6 +186,92 @@ internal fun LiveDistanceScreen(
             r, connected, contentPadding, controls, lap, pager.currentPage + pager.currentPageOffsetFraction, LiveView.entries.size, onPage,
             onHeight = { if (it != bar) bar = it }, modifier = Modifier.align(Alignment.BottomCenter),
         )
+    }
+}
+
+/**
+ * A run's reps (workouts spec 2.5, board RunIntervals): the plan and a bar of the reps, rep N of M and the rest after
+ * it, the metres to go in the screen's one dotted number (the seconds of a time rep) with the rep's own pace, the heart
+ * rate strip, then each rep done with its time. A rest shows its seconds left and the rep after it.
+ */
+@Composable
+private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {
+    val now = nowTicking()
+    val m = org.openstrap.app.ui.workout.intervalMoment(r, now, bpm, readings, route) ?: return
+    val structure = r.structure as? org.openstrap.app.data.Structure.Reps ?: return
+    val repName = structure.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: org.openstrap.app.ui.workout.StartCopy.restText(structure.seconds ?: 0)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(
+            "${org.openstrap.app.ui.workout.StartCopy.structureName(structure)}, ${org.openstrap.app.ui.workout.StartCopy.restText(structure.rest)} rest",
+            color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1,
+        )
+        val underWay = structure.meters?.let { meters -> m.metersLeft?.let { 1f - it / meters } }
+        RoundBar(m, structure.seconds, underWay)
+        Row(Modifier.fillMaxWidth()) {
+            Text(
+                when (m.phase) {
+                    is org.openstrap.app.data.Phase.Work -> "Rep ${m.round} of ${m.rounds}"
+                    is org.openstrap.app.data.Phase.Rest -> "${m.round - 1} of ${m.rounds} done"
+                    org.openstrap.app.data.Phase.WarmUp -> "Warm up"
+                    org.openstrap.app.data.Phase.Done -> "All ${m.rounds} reps done"
+                },
+                color = Color.White, style = MediumBody, maxLines = 1, modifier = Modifier.weight(1f),
+            )
+            val next = when (m.phase) {
+                is org.openstrap.app.data.Phase.Work -> m.nextRest?.let { "Then rest ${org.openstrap.app.ui.workout.StartCopy.restText(it)}" } ?: "Last rep"
+                is org.openstrap.app.data.Phase.Rest -> "Rep ${m.round} next"
+                org.openstrap.app.data.Phase.WarmUp -> "${m.rounds} reps after it"
+                org.openstrap.app.data.Phase.Done -> ""
+            }
+            Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+        }
+        Column(
+            Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        ) {
+            val work = m.phase is org.openstrap.app.data.Phase.Work
+            val rest = m.phase is org.openstrap.app.data.Phase.Rest
+            Text(
+                when { work -> "$repName rep"; rest -> "Rest"; m.phase == org.openstrap.app.data.Phase.WarmUp -> "Warming up"; else -> "Done" },
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+            )
+            val (value, unit) = when {
+                work && m.metersLeft != null -> "${m.metersLeft.toInt()}" to "m to go"
+                m.left != null -> workoutClock(m.left) to if (rest) "rest left" else "left"
+                else -> null to ""
+            }
+            if (value != null) {
+                DotMatrixText(value, dot = DotSize.Live, scale = 1.2f)
+                Text(unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
+            }
+            val line = when {
+                work -> Route.currentPace(route)?.let { pace ->
+                    structure.meters?.let { "Pace ${workoutClock((pace * it / 1000).toLong())} per $repName" }
+                        ?: org.openstrap.app.ui.workout.Glance.paceClock(pace)?.let { "Pace $it /km" }
+                }
+                m.phase == org.openstrap.app.data.Phase.WarmUp -> "Skip starts the reps when you're ready"
+                m.phase == org.openstrap.app.data.Phase.Done -> "Hold the square to end, or keep going"
+                else -> null
+            }
+            if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+        val done = r.rounds.filter { it.workEnd != null }
+        if (done.isNotEmpty()) Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState(Int.MAX_VALUE)),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            done.forEach { round ->
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Rep ${round.index + 1}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                    Spacer(Modifier.width(8.dp))
+                    Text(workoutClock(round.workEnd!! - round.workStart), color = Color.White, style = MediumBody, maxLines = 1)
+                }
+            }
+        }
     }
 }
 
