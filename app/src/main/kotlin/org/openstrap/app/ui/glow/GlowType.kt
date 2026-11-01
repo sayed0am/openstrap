@@ -27,6 +27,15 @@ object GlowType {
     /** The moving time on the map's panel, beside its two figures (board RunMap): Display 300, 38 on 42, tabular. */
     val mapClock = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 38.sp, letterSpacing = (-0.02).em, lineHeight = 42.sp, fontFeatureSettings = "tnum")
 
+    /** A run's distance, time and pace on its share card (board ShareRun): Display 300, 30 on 33, tabular. */
+    val storyStat = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 30.sp, letterSpacing = (-0.01).em, lineHeight = 33.sp, fontFeatureSettings = "tnum")
+
+    /** The sport at the top of a share card ("Push day", boards ShareStrength, ShareHiit): Display 500, 30 on 34. */
+    val storyTitle = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 30.sp, lineHeight = 34.sp)
+
+    /** "OpenStrap" on a share card: Display 500, 14 on 18, spaced out a little. */
+    val storyBrand = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 18.sp, letterSpacing = 0.04.em)
+
     /** The date in the moment header: Display 500, 20 on 24. */
     val headerDate = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 24.sp)
 
