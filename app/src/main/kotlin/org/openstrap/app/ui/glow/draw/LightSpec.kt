@@ -122,7 +122,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
     val rims = mutableListOf<InsetShadow>()
     if (light.rim > 0f) {
         light.level?.let { level ->
-            val dark = levelEdge(level) * (if (light.across) w else h) - LEVEL_STEP.value * density
+            val dark = levelEdge(level) * (if (light.across) w else h) - levelStep(if (light.across) w else h, density)
             rimClip = when {
                 light.across -> Rect(0f, 0f, w - dark, h)
                 light.fromAbove -> Rect(0f, 0f, w, h - dark)
@@ -156,7 +156,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
         // unlit part and there's never a hard edge.
         // Measured from the unlit side: the top, the bottom when lit from above, the right when lit from the left.
         val edge = levelEdge(level) * (if (light.across) w else h)
-        val step = LEVEL_STEP.value * density
+        val step = levelStep(if (light.across) w else h, density)
         val (y0, y1) = when {
             light.across -> w + margin to -margin
             light.fromAbove -> h + margin to -margin
@@ -227,6 +227,15 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
         outlineWidth = OUTLINE_WIDTH_DP * density,
     )
 }
+
+/**
+ * How far a level card's light fades into the dark, px, along a card [length] px long: [LEVEL_STEP], or on a tall card
+ * (half a folded phone) a share of it, so the fade stays soft instead of reading as a line.
+ */
+internal fun levelStep(length: Float, density: Float): Float = maxOf(LEVEL_STEP.value * density, length * LEVEL_STEP_SHARE)
+
+/** The least share of a level card's length its light fades over. */
+private const val LEVEL_STEP_SHARE = 0.08f
 
 /**
  * The card's base fill: the light colour at the lit edge melting into the mid (body) colour along the light's angle,

@@ -74,7 +74,7 @@ import org.openstrap.app.ui.glow.workoutClock
  * under way growing; the heart rate on a strip in its zone's colour; then distance, climb and active kcal. Map: the
  * route in zone colours with the heart rate on it, then distance, pace and the last split. Opens on the view used last
  * ([liveView], saved through [onLiveView]). A ride shows its speed instead of a pace. With [split] the heart rate is on
- * the other half of a folded phone, so the map leaves out its own; [compact] (a short half) keeps the moving time small
+ * the other half of a folded phone, so both views leave out their own; [compact] (a short half) keeps the moving time small
  * on top and the distance, pace and kcal in one row.
  */
 @Composable
@@ -171,7 +171,7 @@ internal fun LiveDistanceScreen(
                         ))
                     } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PaceCard(pace, averagePace(), splits, speed, Modifier.weight(1f))
-                        LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
+                        if (!split) LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
                             Glance.kmFigure(distance) to "km",
                             climb?.toInt()?.toString() to "Climb m",
