@@ -118,13 +118,10 @@ class WorkoutCopyTest {
         assertNull(WorkoutCopy.kcalText(null))
     }
 
-    @Test fun `a kcal target says when the strap buzzes and how far the workout is`() {
-        assertEquals("Target. The strap buzzes at 300 active kcal.", WorkoutCopy.targetHint(WorkoutTarget.Kcal(300)))
-        assertEquals("Target. The strap buzzes if you drift out.", WorkoutCopy.targetHint(WorkoutTarget.Zones(1, 2)))
-        assertEquals("Target. The strap buzzes if you drift out.", WorkoutCopy.targetHint(null))
+    @Test fun `a kcal target says how far the workout is`() {
         assertEquals("212 of 300 kcal", WorkoutCopy.kcalProgress(212.8f, WorkoutTarget.Kcal(300)))
         assertEquals("0 of 500 kcal", WorkoutCopy.kcalProgress(null, WorkoutTarget.Kcal(500)))
-        listOf(WorkoutCopy.targetHint(WorkoutTarget.Kcal(800)), WorkoutCopy.kcalProgress(1f, WorkoutTarget.Kcal(800)))
+        listOf(WorkoutCopy.kcalProgress(1f, WorkoutTarget.Kcal(800)))
             .forEach { l -> listOf("·", ";", "—").forEach { b -> assertFalse("$l has $b", l.contains(b)) } }
     }
 }

@@ -33,9 +33,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.em
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -61,13 +59,11 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.math.min
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutSuggestions
-import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.data.db.AppWorkout
@@ -83,7 +79,6 @@ import org.openstrap.app.ui.workout.SummaryCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
@@ -133,26 +128,6 @@ internal fun activeSecondsState(r: WorkoutState.Recording): androidx.compose.run
         if (r.paused) break
         delay(1000 - System.currentTimeMillis() % 1000)
     }
-}
-
-/**
- * A target's colour: the top zone it aims for, a calm blue for a time, Calories' gold for kcal, Steps' lime for a
- * distance, white for none.
- */
-internal fun targetColor(t: WorkoutTarget?): Color = when (t) {
-    is WorkoutTarget.Zones -> ZONE_COLORS[t.high]
-    is WorkoutTarget.Time -> ZONE_COLORS[0]
-    is WorkoutTarget.Kcal -> MetricColors.calories
-    is WorkoutTarget.Distance -> MetricColors.steps
-    null -> Color.White
-}
-
-internal fun targetLabel(t: WorkoutTarget?): String = when (t) {
-    is WorkoutTarget.Zones -> t.label
-    is WorkoutTarget.Time -> t.label
-    is WorkoutTarget.Kcal -> t.label
-    is WorkoutTarget.Distance -> t.label
-    null -> "None"
 }
 
 /** A full-width pill button, 56 dp like Start and Done (spec 6.3). */

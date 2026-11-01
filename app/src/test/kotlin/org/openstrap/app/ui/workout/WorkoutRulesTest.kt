@@ -119,14 +119,11 @@ class WorkoutRulesTest {
         assertEquals(emptyList<Int>(), Workouts.recentSports(listOf(Workouts.GENERIC_ACTIVITY)))
     }
 
-    @Test fun `Start names the sport and the end page says it was saved`() {
+    @Test fun `Start names the sport`() {
         assertEquals("Start run", WorkoutCopy.startLabel(2))
         assertEquals("Start HIIT", WorkoutCopy.startLabel(49))
         assertEquals("Start workout", WorkoutCopy.startLabel(5))
         assertEquals("Start tennis", WorkoutCopy.startLabel(17))
-        assertEquals("Run saved", SummaryCopy.savedTitle(1))
-        assertEquals("Run saved", SummaryCopy.savedTitle(2))
-        assertEquals("Workout saved", SummaryCopy.savedTitle(null))
     }
 
     @Test fun `no workout text uses an interpunct, semicolon or em dash`() {

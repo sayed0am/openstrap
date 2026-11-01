@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -96,12 +95,6 @@ fun Modifier.glass(shape: Shape, onClick: (() -> Unit)? = null, scale: Float = 0
 
 /** The shape of a glass row inside a quiet panel. */
 val GlassRowShape = GlowLayout.TileShape
-
-/** A quiet rule between blocks in a panel: a solid 1 dp hairline, as between list rows. */
-@Composable
-fun PanelDivider(modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxWidth().height(1.dp).background(RowHairline))
-}
 
 internal val TrendGood = Color(0xFF3DDC97)
 internal val TrendBad = Color(0xFFFFB547)

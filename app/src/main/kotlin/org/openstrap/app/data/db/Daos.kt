@@ -676,9 +676,6 @@ interface HealthDao {
     @Query("DELETE FROM day_tag WHERE day = :day AND tag = :tag")
     suspend fun deleteDayTag(day: Long, tag: String)
 
-    @Query("SELECT * FROM day_tag WHERE day = :day ORDER BY tag")
-    fun dayTags(day: Long): Flow<List<DayTagRow>>
-
     @Query("SELECT * FROM day_tag WHERE day BETWEEN :from AND :to ORDER BY day, tag")
     suspend fun dayTagsOnce(from: Long, to: Long): List<DayTagRow>
 

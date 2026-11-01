@@ -95,9 +95,6 @@ object StartCopy {
         else -> "GPS ready, ${accuracy.roundToInt().coerceAtLeast(1)} m"
     }
 
-    /** Whether [gpsStatus] says ready. */
-    fun gpsReady(accuracy: Float?): Boolean = accuracy != null && accuracy <= Route.MAX_ACCURACY_M
-
     /** Under two minutes in seconds ("90 s"), then minutes: "2 min", "2 min 30 s". */
     fun restText(seconds: Long): String = when {
         seconds < 120 -> "$seconds s"
@@ -229,14 +226,6 @@ object StartCopy {
         is org.openstrap.app.data.Structure.EveryMinute -> s.rounds * s.period
         is org.openstrap.app.data.Structure.Reps -> null
         is org.openstrap.app.data.Structure.Periods -> s.rounds * s.length + (s.rounds - 1) * s.rest
-    }
-
-    /** A goal on a chip: "5 km", "30 min", "Zone 2", "300 kcal". */
-    fun goalLabel(goal: WorkoutTarget): String = when (goal) {
-        is WorkoutTarget.Zones -> goal.label
-        is WorkoutTarget.Time -> goal.label
-        is WorkoutTarget.Kcal -> goal.label
-        is WorkoutTarget.Distance -> goal.label
     }
 
     /**

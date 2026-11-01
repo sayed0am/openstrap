@@ -67,10 +67,10 @@ class RewardsKeeper(
         val onlyNewer = kept != null && last != null && kept.zone == zone && now - kept.at < FULL_READ_S &&
             stamp.rowCount == kept.stamp.rowCount + dao.activityCountAfterOnce(last)
         val days = if (onlyNewer) {
-            val from = java.time.Instant.ofEpochSecond(last!!).atZone(zone).toLocalDate()
-            kept!!.days.filter { it.date < from } + readDays(from.atStartOfDay(zone).toEpochSecond())
+            val from = java.time.Instant.ofEpochSecond(last).atZone(zone).toLocalDate()
+            kept.days.filter { it.date < from } + readDays(from.atStartOfDay(zone).toEpochSecond())
         } else readDays(0)
-        daysRead = DaysRead(stamp, zone, if (onlyNewer) kept!!.at else now, days)
+        daysRead = DaysRead(stamp, zone, if (onlyNewer) kept.at else now, days)
         days
     }
 

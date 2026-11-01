@@ -381,13 +381,6 @@ object Route {
         return if (m < 10 || s <= 0) null else s / (m / 1000)
     }
 
-    /** "5′42″" per kilometre, or null with no pace to show. */
-    fun formatPace(secondsPerKm: Double?): String? {
-        if (secondsPerKm == null || secondsPerKm <= 0 || secondsPerKm > 3600) return null
-        val s = Math.round(secondsPerKm)
-        return "%d′%02d″".format(s / 60, s % 60)
-    }
-
     /**
      * The route cut into stretches of one zone each, for drawing it in zone colours: each fix takes the zone of the
      * nearest heart rate within [MAX_HR_GAP_S] (time, bpm, ascending), else none (−1, drawn grey).

@@ -163,18 +163,6 @@ class WorkoutSetupTest {
         assertNull(Coach(WorkoutTarget.Distance(5000), reachedAt = 5).distance(10, 6000f))
     }
 
-    @Test
-    fun strengthSteppers() {
-        assertEquals(1, Strength.stepSets(null, 1))
-        assertNull(Strength.stepSets(null, -1))
-        assertNull(Strength.stepSets(1, -1))
-        assertEquals(6, Strength.stepSets(5, 1))
-        assertEquals(10, Strength.stepSets(10, 1))
-        assertEquals(105L, Strength.stepRest(90, 1))
-        assertEquals(30L, Strength.stepRest(30, -1))
-        assertEquals(300L, Strength.stepRest(300, 1))
-    }
-
     @Test fun `Ready's goal kinds, a distance where there is one, intervals for a run`() {
         val k = WorkoutSetup.GoalKind.entries
         assertEquals(k, WorkoutSetup.goalKinds(1, hasDistance = true))

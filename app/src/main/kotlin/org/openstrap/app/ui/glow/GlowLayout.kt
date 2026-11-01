@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -67,8 +65,6 @@ object GlowLayout {
 
     /** Title row to the hero number. */
     val TitleGap = 14.dp
-    /** Hero number (or the last line of text) to the chart. */
-    val ChartGap = 20.dp
     /** Every chart in a card has the same height, axis labels included. */
     val ChartHeight = 116.dp
     /** From this width (an unfolded foldable, a tablet, a phone on its side) the dashboards use two columns. */
@@ -432,27 +428,6 @@ fun GlowHeader(
 @Composable
 internal fun NoteText(text: String) =
     Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
-
-/**
- * The hero number of a card in dot-matrix, its unit beside it, and up to two short facts on the right
- * (text, or [side] for anything richer). Sits [GlowLayout.TitleGap] under the title.
- */
-@Composable
-fun GlowHeroNumber(value: String, unit: String, facts: List<String> = emptyList(), side: (@Composable () -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(top = GlowLayout.TitleGap), verticalAlignment = Alignment.Bottom) {
-        DotMatrixText(value, dot = DotSize.Hero)
-        // The word after a number (spec 2.3).
-        Text(unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp).weight(1f))
-        if (facts.isNotEmpty()) Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            facts.forEach { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary) }
-        }
-        side?.invoke()
-    }
-}
-
-/** The gap above a card's chart. */
-@Composable
-fun GlowChartGap() = Spacer(Modifier.padding(top = GlowLayout.ChartGap))
 
 /**
  * A small sync marker next to a card's title, "Up to 09:40" (spec 4.3): amber, as the strap chip, since it's about

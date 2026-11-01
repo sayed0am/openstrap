@@ -483,7 +483,6 @@ object Glance {
             }
             is WorkoutTarget.Time -> minutesToGo((t.seconds - i.activeSeconds).toDouble())
             is WorkoutTarget.Kcal -> "${(t.kcal - (i.activeKcal ?: 0f)).toInt().coerceAtLeast(0)} kcal to go"
-            else -> null
         }
         return "Goal $label" to left
     }

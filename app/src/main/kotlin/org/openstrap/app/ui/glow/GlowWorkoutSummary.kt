@@ -113,7 +113,7 @@ fun GlowWorkoutSummaryScreen(
     fun next(from: SummaryStep) {
         step = when {
             from < SummaryStep.Best && rewards?.best != null -> SummaryStep.Best
-            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations?.markMoment(rewards!!.weekStart) }
+            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations.markMoment(rewards.weekStart) }
             else -> { onDone(); return }
         }
     }

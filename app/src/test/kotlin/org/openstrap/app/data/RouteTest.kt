@@ -75,10 +75,8 @@ class RouteTest {
     }
 
     @Test
-    fun paceAndItsFormat() {
+    fun currentPace() {
         assertEquals(333.0, Route.currentPace(run(100))!!, 2.0)
-        assertEquals("5′33″", Route.formatPace(333.0))
-        assertNull(Route.formatPace(null))
     }
 
     /**

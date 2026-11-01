@@ -32,6 +32,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
@@ -224,7 +225,7 @@ private fun PastSummary(
                         activeKcal = Workouts.activeKcal(a, null),
                     ) + listOfNotNull(WorkoutDetailCopy.targetFact(a.target, a.targetReachedSeconds, a.activeKcal?.roundToInt()))
                     // The map is in the route card for a run; any other kind with a kept route has it here.
-                    val map = family != Workouts.Family.Distance && summary.route.size >= 2
+                    val map = family != Workouts.Family.Distance && Route.mappable(summary.route)
                     if (facts.isNotEmpty() || map) FactsList(facts, summary.takeIf { map })
                     val inDay = Workouts.activeKcal(a, null)?.let { k ->
                         val date = Instant.ofEpochSecond(a.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()

@@ -193,8 +193,6 @@ object Rewards {
         fun fastestMeters(kind: String): Int? = kind.removePrefix(FASTEST).takeIf { kind.startsWith(FASTEST) }?.toIntOrNull()
         fun lift(exercise: String) = LIFT + exercise.trim()
         fun liftName(kind: String): String? = kind.removePrefix(LIFT).takeIf { kind.startsWith(LIFT) }
-        /** Lower is better only for the fastest stretches. */
-        fun lowerIsBetter(kind: String) = fastestMeters(kind) != null
     }
 
     /**

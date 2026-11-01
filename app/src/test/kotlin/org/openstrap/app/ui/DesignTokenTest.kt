@@ -113,7 +113,7 @@ class DesignTokenTest {
         // Spec 2.3 and audit 2.8: one number in dots a card; the rest is text. Each card is a function of its own. A
         // call that passes no number (EdgeValue(null, ...)) draws none.
         val found = mutableListOf<String>()
-        val dotted = Regex("""\b(HeroNumber|HeroFigure|DotMatrixText|EdgeValue|FigureRow|GlowHeroNumber)\((?!\s*null\b)""")
+        val dotted = Regex("""\b(HeroNumber|HeroFigure|DotMatrixText|EdgeValue|FigureRow)\((?!\s*null\b)""")
         fun cards(vararg names: String) = Regex("""fun (${names.joinToString("|")})\(""")
         listOf(
             "glow/GlowTodayScreen.kt" to Regex("""private fun (\w+Hero)\("""),

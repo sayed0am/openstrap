@@ -154,12 +154,6 @@ object WorkoutCopy {
     /** Whether going from zone [previous] to [current] ticks: a change between two readings, not the first one. */
     fun zoneTick(previous: Int?, current: Int?): Boolean = previous != null && current != null && previous != current
 
-    /** The label over Ready's targets: what the strap does for the one chosen. */
-    fun targetHint(target: WorkoutTarget?): String = when (target) {
-        is WorkoutTarget.Kcal -> "Target. The strap buzzes at ${target.kcal} active kcal."
-        else -> "Target. The strap buzzes if you drift out."
-    }
-
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */
     fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal): String = "${activeKcal?.toInt() ?: 0} of ${target.label}"
 

@@ -1,16 +1,13 @@
 package org.openstrap.app.ui.glow
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,29 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.theme.AppIcons
 
 /** The Healthspan card's orchid, used for the glow: warm enough to stay clear of Sleep's blue. */
 private val Orchid = MetricColors.habitAge
-
-/** The same recipe as the Heart rate and Activity cards, in orchid. */
-internal val HealthspanGlow = GlowStyle.chart(Orchid)
-
-/** "3 years younger", "1 year older" or "Right on your age" for an [estimate] against [age], in whole years. */
-internal fun healthspanVerdict(age: Int, estimate: Float): String {
-    val years = age - estimate.roundToInt()
-    return when {
-        years > 0 -> "$years ${if (years == 1) "year" else "years"} younger"
-        years < 0 -> "${-years} ${if (-years == 1) "year" else "years"} older"
-        else -> "Right on your age"
-    }
-}
 
 /** "Steady" at 1x, "Slower" below, "Faster" above; "Learning" until there's enough history. */
 internal fun paceLabel(pace: Float?): String = when {
@@ -95,14 +77,6 @@ internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day
 /** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
 internal fun profileReminder(missing: List<String>): String =
     "Add your ${missing.joinToString(" and ")} in your profile to see your Habit Age."
-
-/** The starting state's line under your age: when a first estimate is due, or what it's still waiting for. */
-internal fun learningText(o: Healthspan.Outcome): String = when {
-    // The date's line is kept whole, so "First estimate:" never ends up apart from its date.
-    o.firstEstimate != null -> "Starts at your age.\nFirst\u00A0estimate:\u00A0${sundayText(o.firstEstimate)}."
-    o.withheld == Healthspan.Withheld.Learning -> "Starts at your age. Wear the strap for 30 days for a first estimate."
-    else -> "Starts at your age. ${o.withheld?.reason.orEmpty()}"
-}
 
 /** The local date of [epoch] (a local midnight). */
 private fun dateOf(epoch: Long) = java.time.Instant.ofEpochSecond(epoch).atZone(java.time.ZoneId.systemDefault()).toLocalDate()

@@ -202,7 +202,7 @@ internal fun FamilySection(
             val below = summary.restBelow
             val rest = remember(summary) { FamilySummary.restRecovery(summary.sets, readings, below) }
             val restShown = below != null && rest != null
-            if (restShown) SentenceCard("Rest", FamilySummary.restLine(rest!!, below!!, summary.restBefore))
+            if (restShown) SentenceCard("Rest", FamilySummary.restLine(rest, below, summary.restBefore))
             return groups.isNotEmpty() && !restShown
         }
         Workouts.Family.Intervals -> {
