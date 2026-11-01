@@ -38,7 +38,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -174,12 +173,12 @@ internal fun LiveDistanceScreen(
                     KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = true)
                 }
                 LiveView.Map -> LiveMapScreen(
-                    r, route, readings, bpm, color, connected, contentPadding, controls, lap,
+                    r, route, readings, bpm, color, contentPadding, controls,
                     figures = listOf(
                         Glance.kmFigure(distance) to "km",
                         (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
                     ),
-                    time = { active.value }, page = 1, onPage = onPage, bottomRoom = bar,
+                    time = { active.value }, bottomRoom = bar,
                 )
             }
         }

@@ -18,20 +18,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.layout.Column
 import org.openstrap.app.ui.workout.WorkoutCopy
-import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.device.WorkoutState
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -52,8 +47,8 @@ import org.openstrap.app.ui.glow.*
 /**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
  * in its zone's [color] and the GPS over it, route only and follow me on the right; under it a black panel with the
- * distance, the moving time and the pace (a ride's speed), the latest kilometre, the page dots and the controls. A
- * drag on the map pans it and stops following; follow me fits the route again.
+ * distance, the moving time and the pace (a ride's speed) and the latest kilometre, above the bar shared with the
+ * pace page ([LiveBottomBar]). A drag on the map pans it and stops following; follow me fits the route again.
  */
 @Composable
 internal fun LiveMapScreen(
@@ -62,17 +57,13 @@ internal fun LiveMapScreen(
     readings: List<Pair<Long, Int>>,
     bpm: Int?,
     color: Color,
-    connected: Boolean,
     contentPadding: PaddingValues,
     controls: LiveControls,
-    lap: (@Composable () -> Unit)?,
     figures: List<Pair<String?, String>>,
     /** The moving time, read by its own text so the page isn't composed again each second. */
     time: () -> Long,
-    page: Int,
-    onPage: (Int) -> Unit,
-    /** Under a bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
-    bottomRoom: Dp? = null,
+    /** The height of the bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
+    bottomRoom: Dp,
 ) {
     BackHandler(onBack = controls.onMinimize)
     val density = LocalDensity.current
@@ -122,7 +113,7 @@ internal fun LiveMapScreen(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .onSizeChanged { panel = with(density) { it.height.toDp() } }
                 .clip(org.openstrap.app.ui.glow.GlowLayout.SheetShape).background(Color.Black)
-                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding() + if (bottomRoom != null) 0.dp else 20.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // The moving time in the middle and larger: on this page it isn't above the views.
@@ -134,16 +125,7 @@ internal fun LiveMapScreen(
                 LiveStat(figures[1].second, Modifier.weight(1f)) { LiveValue(figures[1].first) }
             }
             LastSplit(route, readings, r.workout.pauseRanges)
-            if (bottomRoom != null) {
-                Spacer(Modifier.height(bottomRoom))
-                return@Column
-            }
-            if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
-            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${page + 1} of 2" }) {
-                PageDots(page, LiveView.entries.size, onSelect = onPage)
-            }
-            ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(bottomRoom))
         }
     }
 }
@@ -153,8 +135,6 @@ private val PANEL_OVERLAP = 28.dp
 
 /** Buttons and pills drawn over the map: near black, a little see-through. */
 private val OverMap = Color(0xD9141416)
-
-/** The moving time between the map page's figures. */
 
 /** A round button over the map, white while what it does is on ([lit]). */
 @Composable

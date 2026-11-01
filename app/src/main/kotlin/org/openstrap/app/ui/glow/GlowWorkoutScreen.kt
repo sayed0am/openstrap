@@ -25,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -99,18 +98,12 @@ fun GlowWorkoutDetailScreen(
         )
         return
     }
-    val shown = if (a?.fromPhone == true) summary?.analysis else a
-    val phone = summary?.takeIf { a?.fromPhone == true }
+    // A phone workout whose summary hasn't loaded yet shows only its header.
+    val shown = a?.takeIf { !it.fromPhone }
     val list = rememberLazyListState()
     var info by remember { mutableStateOf(false) }
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
-    // Each kind keeps the zone figures its page always had: a phone workout's live zones, the strap's from its stream.
-    val zones = remember(shown) {
-        shown?.let { s ->
-            if (s.fromPhone) WorkoutRecorder.liveZoneSeconds(s.heartRate.filter { it.timestamp <= s.end }.map { it.timestamp to it.bpm }, s.maxHeartRate).toList()
-            else s.zoneSeconds
-        }.orEmpty()
-    }
+    val zones = shown?.zoneSeconds.orEmpty()
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
@@ -126,16 +119,16 @@ fun GlowWorkoutDetailScreen(
             val activeKcal = Workouts.activeKcal(shown, bmrPerMinute)
             val facts = WorkoutDetailCopy.facts(
                 shown.distanceMeters, shown.distanceFromSteps,
-                if (shown.fromPhone) (shown.durationSeconds - shown.activeSeconds).coerceAtLeast(0) else 0L, w.steps, w.calories,
-                activeKcal = activeKcal.takeIf { shown.fromPhone || bmrPerMinute != null },
+                0L, w.steps, w.calories,
+                activeKcal = activeKcal.takeIf { bmrPerMinute != null },
             ) + listOfNotNull(WorkoutDetailCopy.targetFact(shown.target, shown.targetReachedSeconds, shown.activeKcal?.roundToInt()))
-            val factsShown = facts.isNotEmpty() || (phone?.route?.size ?: 0) >= 2
-            if (factsShown) item { FactsList(facts, phone) }
+            val factsShown = facts.isNotEmpty()
+            if (factsShown) item { FactsList(facts, null) }
             // The workout's share of its day, right under its kcal (calories spec 4.2).
             val today = LocalDate.now()
             val inDay = activeKcal?.let { k ->
                 val date = Instant.ofEpochSecond(shown.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()
-                CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, today), shown.fromPhone)
+                CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, today), false)
             }
             if (inDay != null) item { InYourDayCard(inDay, onOpenDay) }
             val drop = WorkoutDetailCopy.dropLine(shown.recovery60, shown.recoveryIsMeaningful, usualDrop)
@@ -146,27 +139,15 @@ fun GlowWorkoutDetailScreen(
             val zonesShown = zones.sum() > 0
             val factsRightAbove = factsShown && inDay == null && !loadShown
             val zonesOnEdge = zonesShown && factsRightAbove
-            val listAbove = if (zonesShown) !zonesOnEdge else factsRightAbove
             if (zonesShown) item {
                 CompositionLocalProvider(LocalEdgeOverride provides if (zonesOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
                     ZonesList(zones.toIntArray(), shown.maxHeartRate)
                 }
             }
-            if (phone != null) item {
-                CompositionLocalProvider(LocalEdgeOverride provides if (listAbove) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-                    SplitsList(phone, liveRoute = emptyList())
-                }
-            }
-            if (phone != null) item { TrimSection(phone, onTrim, onUndoTrim) }
-            item {
-                Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    if (phone != null) SummaryActions(justEnded = false, onDone = onBack, onDelete = onDelete)
-                    else DeleteWorkout(STRAP_DELETE, onDelete, Modifier.align(Alignment.CenterHorizontally))
-                }
-            }
+            item { DeleteWorkout(STRAP_DELETE, onDelete) }
         }
     }
-    if (info && shown != null) EffectInfo(shown, usual, phone?.strapWorkouts.orEmpty(), phone?.effectFromStrap == true, onDismiss = { info = false })
+    if (info && shown != null) EffectInfo(shown, usual, emptyList(), false, onDismiss = { info = false })
 }
 
 /**
