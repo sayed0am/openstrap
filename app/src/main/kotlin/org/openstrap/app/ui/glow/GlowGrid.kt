@@ -50,9 +50,6 @@ object GlowGrid {
 
     val StripHeight = 68.dp
 
-    /** One unit's width on a screen [screenWidth] wide: (width minus both gutters minus the gap) / 2. */
-    fun unitWidth(screenWidth: Dp): Dp = (screenWidth - Gutter * 2 - Gap) / 2
-
     /** One unit's width inside a column already [width] wide (the gutters already taken off). */
     fun unitWidthIn(width: Dp): Dp = (width - Gap) / 2
 
