@@ -45,6 +45,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.EffectFigures
 import org.openstrap.app.ui.workout.PhoneSummary
+import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.workout.WorkoutDetailCopy
 import org.openstrap.app.ui.workout.WorkoutFact
 import java.time.Instant

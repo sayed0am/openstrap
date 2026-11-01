@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,10 +14,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -41,16 +43,6 @@ import org.openstrap.app.ui.workout.ZONE_COLORS
  * one number and three figures, then each kind's own section. Cards alternate their look down the page (a list never
  * sits under a list), so each section says whether it ended on a list for the Earned list under it.
  */
-
-/** The hero's colour for each kind of workout. */
-internal fun familyColor(f: Workouts.Family): Color = when (f) {
-    Workouts.Family.Distance -> MetricColors.steps
-    Workouts.Family.IndoorCardio -> MetricColors.heart
-    Workouts.Family.Strength -> MetricColors.load
-    Workouts.Family.Intervals -> MetricColors.heart
-    Workouts.Family.MindBody -> MetricColors.evening
-    Workouts.Family.Games -> MetricColors.charge
-}
 
 /**
  * The hero: its one number in dots and its word, then a sentence or three figures in text. A figure's value is null
@@ -328,21 +320,32 @@ internal fun WeekDots(days: List<Pair<String, Boolean>>, color: Color = Color.Wh
 }
 
 /**
- * What this workout earned (workouts spec 2.8): new bests, badges, and the weekly goal line last. A list; under
- * another list ([underList]) it sits on an edge card instead.
+ * What this workout earned (workouts spec 2.8, boards SummaryRun to SummaryGame): "Earned", then each new best, badge
+ * and the weekly goal as a chip, its icon in its colour.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun EarnedPanel(lines: List<EarnedLine>, underList: Boolean) {
+internal fun EarnedChips(lines: List<EarnedLine>) {
     if (lines.isEmpty()) return
-    CompositionLocalProvider(LocalEdgeOverride provides if (underList) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-        ListPanel(title = "Earned") {
-            lines.forEachIndexed { i, l ->
+    Column(Modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Text("Earned", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            lines.forEach { l ->
                 val (icon, color) = when (l.kind) {
                     EarnedLine.Kind.Best -> AppIcons.FlagCheckered to MetricColors.calories
                     EarnedLine.Kind.Badge -> AppIcons.CheckCircle to MetricColors.good
                     EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) MetricColors.good else Color.White
                 }
-                ListRow(l.text, color, l.value, l.note, divider = i > 0, dash = false, icon = icon)
+                Row(
+                    Modifier.clip(CircleShape).background(Raised).padding(horizontal = 14.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+                    Text(
+                        listOfNotNull(l.text, l.value).joinToString(", "), color = Color.White, style = GlowType.secondary, maxLines = 1,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
             }
         }
     }
