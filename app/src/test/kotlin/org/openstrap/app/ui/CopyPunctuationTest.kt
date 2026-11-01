@@ -3,6 +3,7 @@ package org.openstrap.app.ui
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import org.openstrap.app.testing.SourceTree
 import java.io.File
 
 /**
@@ -18,8 +19,8 @@ class CopyPunctuationTest {
         ("ui/zepp/ZeppSignIn.kt" to "; ") to "Joins cookies into the Cookie header sent to Zepp, never shown",
     )
 
-    private val root: File = listOf(File("src/main"), File("app/src/main")).first { it.isDirectory }
-    private val kotlinRoot = File(root, "kotlin/org/openstrap/app")
+    private val root: File = SourceTree.root
+    private val kotlinRoot = SourceTree.kotlin
 
     /** Everything under ui/ and widget/, every *Copy*.kt, the notification text in StrapService and data the UI shows as is. */
     private fun sources(): List<File> {

@@ -3,6 +3,11 @@ package org.openstrap.app
 import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
+import android.util.Log
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.openstrap.app.ble.BleScanner
 import org.openstrap.app.data.HealthRepository
@@ -17,6 +22,16 @@ import org.openstrap.app.health.HealthConnectExporter
 
 /** Hand-wired dependencies; small enough not to need a DI framework. */
 class AppContainer(val app: Application) {
+    /**
+     * The one scope for work that lives as long as the app. With a [SupervisorJob], an exception nobody caught goes to
+     * the thread's default handler, which kills the process, so this handler logs it instead (audit C3). Classes get it
+     * passed in rather than building their own.
+     */
+    // This is where the dispatcher is injected from, so there is nothing to inject it into.
+    @Suppress("InjectDispatcher")
+    val appScope = CoroutineScope(
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.e("OpenStrap", "app scope: uncaught $e", e) },
+    )
     val database = OpenStrapDatabase.create(app)
     val settings = SettingsStore(app)
     val health = HealthRepository(database.healthDao())
