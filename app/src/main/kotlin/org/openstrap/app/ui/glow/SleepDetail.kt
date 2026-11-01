@@ -247,7 +247,7 @@ internal fun SleepScoreDetail(
         notes = listOfNotNull(SleepCopy.SCORE_FROM_YOUR_TIMES.takeIf { ownScore }) + InfoCopy.sleepNotes(r?.sleepNeed ?: Recovery.SLEEP_NEED_MINUTES),
     )
     if (adjusting && session != null && detected != null) SleepTimesSheet(
-        session, detected, state.sleepHeartRate, state.naps,
+        session, detected, state.sleepHeartRate, state.sleepNeighbours.filter { it.nap || it.start != session.start },
         onSave = { from, to -> adjusting = false; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = false },
     )
     if (deleting && session != null && detected != null) DeleteSleepSheet(
@@ -604,7 +604,7 @@ internal fun NapsDetail(
         val detected = state.napsAsDetected[start]
         if (nap == null || detected == null) adjusting = null
         else SleepTimesSheet(
-            nap, detected, state.heartRate, listOfNotNull(state.sleep) + naps.filter { it.start != start },
+            nap, detected, state.heartRate, state.sleepNeighbours.filter { !it.nap || it.start != start },
             onSave = { from, to -> adjusting = null; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = null },
         )
     }

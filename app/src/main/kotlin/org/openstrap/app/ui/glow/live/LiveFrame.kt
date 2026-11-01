@@ -195,9 +195,11 @@ internal fun LiveFrame(
         }
         if (quiet) {
             Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
-                Labelled("Pause", true) {
-                    FlatButton(Raised, 64.dp, onClick = controls.onPause) {
-                        Icon(AppIcons.PauseFill, "Pause", tint = Color.White, modifier = Modifier.size(20.dp))
+                // With no [paused] view, a paused quiet screen keeps this row, so it turns into Resume.
+                val label = if (r.paused) "Resume" else "Pause"
+                Labelled(label, true) {
+                    FlatButton(Raised, 64.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
+                        Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, label, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
                 Labelled("Hold to end", true) { HoldToEnd(controls.onEnd) }

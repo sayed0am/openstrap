@@ -38,6 +38,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -110,8 +111,10 @@ internal fun workoutClock(seconds: Long): String =
     if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
 
 /** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
+// Collected, so it reads again when the zones are moved on the Heart rate zones page.
+@Composable
 internal fun zoneRange(zone: Int, maxHr: Int): String {
-    val zones = org.openstrap.app.data.HeartZones.current.value
+    val zones = org.openstrap.app.data.HeartZones.current.collectAsState().value
     return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
 }
 

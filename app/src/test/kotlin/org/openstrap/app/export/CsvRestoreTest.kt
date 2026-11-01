@@ -13,6 +13,11 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.db.AppWorkout
+import org.openstrap.app.data.db.AppWorkoutRound
+import org.openstrap.app.data.db.BadgeRow
+import org.openstrap.app.data.db.ExerciseRow
+import org.openstrap.app.data.db.SavedWorkout
+import org.openstrap.app.data.db.WeekResult
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.DeletedWorkout
 import org.openstrap.app.data.db.HealthDao
@@ -241,5 +246,28 @@ class CsvRestoreTest {
         assertEquals(old.healthDao().dailyEnergyOnce(0, day - 1), phone.healthDao().dailyEnergyOnce(0, day - 1))
         assertEquals(24, phone.healthDao().dailyEnergyOnce(day - 86_400, day - 86_400).single().hourlyKcal.size)
         assertEquals(listOf(w), phone.healthDao().appWorkoutsAll())
+    }
+    @Test fun `badges, past weeks, saved workouts, exercises and rounds come back, once`() = runTest {
+        val d = old.healthDao()
+        val w = AppWorkout(day - 86_400 + 17 * 3600, day - 86_400 + 18 * 3600, 30)
+        d.insertAppWorkouts(listOf(w))
+        d.upsertRounds(listOf(AppWorkoutRound(w.start, 0, w.start, w.start + 60, w.start + 90, 168), AppWorkoutRound(w.start, 1, w.start + 90, w.start + 150, null, 172)))
+        d.insertBadges(listOf(BadgeRow("first_workout", w.end!!, workoutStart = w.start), BadgeRow("steps_10k", day - 3 * 86_400, day = 20_740)))
+        d.upsertWeekResults(listOf(WeekResult(20_733, 3, 4, true), WeekResult(20_740, 5, 2, false)))
+        d.upsertSavedWorkout(SavedWorkout(name = "Tuesday intervals", sport = 30, structure = "i:6x60/30", createdAt = day - 5 * 86_400))
+        d.upsertExercise(ExerciseRow("Bench press", 8, 60f, w.end!!))
+        // The phone already logged the bench press since: it keeps its own last reps and weight.
+        phone.healthDao().upsertExercise(ExerciseRow("Bench press", 5, 70f, day))
+        val zip = backup(old)
+        restore(zip)
+        val p = phone.healthDao()
+        assertEquals(d.badgesOnce(), p.badgesOnce())
+        assertEquals(d.weekResultsOnce(), p.weekResultsOnce())
+        assertEquals(d.roundsOnce(w.start), p.roundsOnce(w.start))
+        assertEquals(listOf("Tuesday intervals"), p.savedWorkoutsOnce().map { it.name })
+        assertEquals(listOf(ExerciseRow("Bench press", 5, 70f, day)), p.exercisesOnce())
+        val once = contents(phone)
+        restore(zip)
+        assertEquals(once, contents(phone))
     }
 }

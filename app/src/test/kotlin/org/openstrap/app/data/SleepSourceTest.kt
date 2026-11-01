@@ -129,4 +129,16 @@ class SleepSourceTest {
         assertEquals(101 * h, m.start)
         assertEquals(listOf(101 * h to 108 * h), source.stagesOnce(m).map { it.start to it.end })
     }
+    @Test fun `deleting a nap leaves the edit of a nap next to it alone`() = runTest {
+        // Two naps ten minutes apart; the first was moved. The second has no edit of its own to find.
+        val first = SleepSession(114 * h, 115 * h, nap = true)
+        val second = SleepSession(114 * h + 600, 115 * h + 600, nap = true)
+        dao.insertSleepSessions(listOf(first, second))
+        val moved = SleepEdit(first.start, nap = true, start = 114 * h + 300, end = 115 * h, editedAt = 1)
+        dao.upsertSleepEdit(moved)
+        HealthRepository(dao).deleteSleep(second)
+        val edits = dao.sleepEditsOnce().associateBy { it.strapStart }
+        assertEquals(moved, edits[first.start])
+        assertTrue(edits.getValue(second.start).deleted)
+    }
 }

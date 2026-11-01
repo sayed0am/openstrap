@@ -87,6 +87,8 @@ data class DayUiState(
     val strapSleepStages: List<StageSpan> = emptyList(),
     /** The night's main sleep the user deleted, when there's no other ([sleep] is null then), for its Restore. */
     val deletedSleep: SleepEdits.Resolved? = null,
+    /** Every sleep and nap as shown around the day, from the night before to tonight: what an edit mustn't run into. */
+    val sleepNeighbours: List<SleepSession> = emptyList(),
     val sleepBreakdown: Summaries.SleepBreakdown? = null,
     val spo2: List<ChartPoint> = emptyList(),
     val stress: List<ChartPoint> = emptyList(),
@@ -281,7 +283,12 @@ class DayViewModel(
         val vitals = combine(repo.spo2(day), repo.stress(day), repo.hrv(day)) { spo2, stress, hrv -> Triple(spo2, stress, hrv) }
         // Sessions ending from the start of the night into early tomorrow, so tonight's evening naps are included too.
         val nightBefore = DayWindow.nightEndingOn(date.minusDays(1))
-        val sleep = repo.sleepResolved(DayWindow(nightBefore.from, day.to + 12 * 3600)).flatMapLatest { all ->
+        val sleepWindow = DayWindow(nightBefore.from, day.to + 12 * 3600)
+        val span = DayWindow(DayWindow.nightEndingOn(date.minusDays(SLEEP_NIGHTS - 1L), zone).from, night.to)
+        // One read for the night and the strip of nights, so a delete or a move changes both in the same state.
+        val sleep = repo.sleepResolved(DayWindow(minOf(span.from, sleepWindow.from), sleepWindow.to)).flatMapLatest { every ->
+            val spanSessions = repo.sleepShown(every.filter { it.end in span.from..span.to })
+            val all = every.filter { it.end in sleepWindow.from..sleepWindow.to }
             val shown = all.filter { !it.deleted }
             // Main sleep = the longest non-nap session that ended in the night window, as shown.
             fun mainIn(w: DayWindow) = shown.filter { !it.strap.nap && it.end in w.from..w.to }.maxByOrNull { it.end - it.start }
@@ -304,7 +311,7 @@ class DayViewModel(
                 val st = if (main?.moved == true) SleepEdits.clip(whole, main.start, main.end) else whole
                 // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
                 val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, whole) else it }
-                SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList(), deleted)
+                SleepParts(session, st, naps, ns, before?.score, asDetected, main?.strap, if (main?.moved == true) whole else emptyList(), deleted, shown.mapNotNull { it.shown }) to spanSessions
             }
         }
         val extras = combine(repo.skinTemperature(day), repo.breathRate(night), repo.latestPai(day.to)) { skin, breath, pai ->
@@ -343,7 +350,6 @@ class DayViewModel(
                 breathRate = breath.map { it.perMinute }.mean(),
             )
         }
-        val sleepAndExtras = combine(sleep, extras, baselines) { s, e, b -> Triple(s, e, b) }
         val more = combine(
             combine(repo.sleepSpo2(night), repo.hrvSdnn(day), repo.osaEvents(night)) { a, b, c -> Triple(a, b, c) },
             repo.osaResult(date),
@@ -363,13 +369,12 @@ class DayViewModel(
             )
         }
 
-        val span = DayWindow(DayWindow.nightEndingOn(date.minusDays(SLEEP_NIGHTS - 1L), zone).from, night.to)
-        val nights = combine(
-            repo.sleepSessions(span),
+        val sleepAndNights = combine(
+            sleep,
             combine(repo.hrv(span), repo.skinTemperature(span)) { h, s -> h to s },
             combine(repo.sleepSpo2(span), repo.breathRate(span)) { o, b -> o to b },
             repo.heartRate(night),
-        ) { sessions, (hrv, skin), (spo2, breath), hr ->
+        ) { (parts, sessions), (hrv, skin), (spo2, breath), hr ->
             val main = SleepHistory.mainSleeps(sessions, zone)
             val list = (SLEEP_NIGHTS - 1 downTo 0).map { ago ->
                 val d = date.minusDays(ago.toLong())
@@ -390,21 +395,21 @@ class DayViewModel(
             val tonight = main[date]
             val sleepHrv = tonight?.let { w -> hrv.filter { it.timestamp in w.start..w.end }.map { ChartPoint(it.timestamp, it.milliseconds.toFloat()) } }.orEmpty()
             val sleepSkin = tonight?.let { w -> skin.filter { it.timestamp in w.start..w.end }.map { ChartPoint(it.timestamp, it.celsius) } }.orEmpty()
-            NightParts(
+            parts to NightParts(
                 list, Summaries.bucketAverage(Summaries.heartRateSeries(hr, emptyList())).map { ChartPoint(it.first, it.second.toFloat()) },
                 sleepHrv, sleepSkin,
             )
         }
-        val moreAndNights = combine(more, nights) { m, n ->
-            m.copy(nights = n.nights, sleepHeartRate = n.heartRate, sleepHrv = n.hrv, sleepSkinTemperature = n.skinTemperature)
-        }
+        val sleepAndExtras = combine(sleepAndNights, extras, baselines) { s, e, b -> Triple(s, e, b) }
 
         // The strap's own running total covers steps whose minute records were already taken by another app.
         val liveSteps = if (date == LocalDate.now()) strapSteps else flowOf(null)
         val liveCounter = LiveSteps()
         val actAndLive = combine(activityAndHr, liveSteps) { a, live -> a to live }
 
-        return combine(actAndLive, vitals, sleepAndExtras, weekly, moreAndNights) { (ah, live), (spo2, stress, hrv), (sleepParts, extraParts, base), (restingWithFlag, hrvTrend), m ->
+        return combine(actAndLive, vitals, sleepAndExtras, weekly, more) { (ah, live), (spo2, stress, hrv), (sleepAndNight, extraParts, base), (restingWithFlag, hrvTrend), moreParts ->
+            val (sleepParts, n) = sleepAndNight
+            val m = moreParts.copy(nights = n.nights, sleepHeartRate = n.heartRate, sleepHrv = n.hrv, sleepSkinTemperature = n.skinTemperature)
             val (session, stages, naps, napStages) = sleepParts
             val (skin, breath, pai) = extraParts
             val restingTrend = restingWithFlag.map { it.first }
@@ -433,6 +438,7 @@ class DayViewModel(
                 sleepAsDetected = sleepParts.mainAsDetected,
                 strapSleepStages = sleepParts.strapStages.map { StageSpan(it.start, it.end, it.stage) },
                 deletedSleep = sleepParts.deletedMain,
+                sleepNeighbours = sleepParts.neighbours,
                 sleepStages = stages.map { StageSpan(it.start, it.end, it.stage) },
                 sleepBreakdown = if (stages.isEmpty()) null else Summaries.sleepBreakdown(stages),
                 spo2 = spo2.map { ChartPoint(it.timestamp, it.percent.toFloat()) },
@@ -484,6 +490,7 @@ private data class SleepParts(
     /** The strap's whole stages for a main sleep the user moved; empty otherwise. */
     val strapStages: List<SleepStage> = emptyList(),
     val deletedMain: SleepEdits.Resolved? = null,
+    val neighbours: List<SleepSession> = emptyList(),
 )
 
 private data class MoreParts(

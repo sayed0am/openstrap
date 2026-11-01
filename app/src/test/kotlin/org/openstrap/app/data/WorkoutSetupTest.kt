@@ -120,6 +120,8 @@ class WorkoutSetupTest {
         assertFalse(WorkoutSetup.plan(1, run, emptyMap(), location = false).useGps)
         // A ride without GPS has no distance to aim for.
         assertNull(WorkoutSetup.plan(4, run, emptyMap(), location = false).target)
+        // A kcal goal from before isn't one Ready offers, so it isn't started either.
+        assertNull(WorkoutSetup.plan(1, SportSettings(goal = "k:300"), emptyMap(), location = true).target)
         // Strength takes its rest and sets.
         val lift = WorkoutSetup.plan(52, SportSettings(rest = "r:120:110", sets = 4), emptyMap(), location = true)
         assertEquals(Strength.Rest(120, 110), lift.rest)

@@ -225,10 +225,12 @@ internal fun FamilySection(
             return false
         }
         Workouts.Family.Games -> {
-            val periods = remember(summary) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate) }
+            // Named out of the periods it was set up with, not the ones played, so ending early doesn't rename them.
+            val of = (summary.structure as? org.openstrap.app.data.Structure.Periods)?.rounds ?: summary.rounds.count { it.workEnd != null }
+            val periods = remember(summary) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate, of) }
             val read = FamilySummary.gameRead(readings, a.shownStart, a.end)
             val periodsShown = periods.isNotEmpty() || read != null
-            if (periodsShown) PeriodsCard(periods, read)
+            if (periodsShown) PeriodsCard(periods, of, read)
             if (zones.sum() > 0) ZoneStripPanel(zones)
             return periodsShown && zones.sum() <= 0
         }
@@ -385,11 +387,11 @@ private val RoundColumnHeight = 52.dp
  * how the game went.
  */
 @Composable
-private fun PeriodsCard(periods: List<PeriodLine>, read: String?) {
+private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
     val color = familyColor(Workouts.Family.Games)
     val shares = remember(periods) { FamilySummary.peakShares(periods.map { it.averageBpm }) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle(if (periods.size == 2) "Each half" else "Each period", null)
+        EdgeTitle(when (of) { 2 -> "Each half"; 4 -> "Each quarter"; else -> "Each period" }, null)
         periods.forEachIndexed { i, p ->
             Column(Modifier.fillMaxWidth().padding(top = if (i == 0) 14.dp else 12.dp)) {
                 Row(Modifier.fillMaxWidth()) {

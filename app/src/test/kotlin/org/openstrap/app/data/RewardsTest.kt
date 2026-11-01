@@ -131,6 +131,17 @@ class RewardsTest {
     }
 
     @Test
+    fun aLiftTypedInAnotherCaseStillBeatsItsBest() {
+        fun lift(date: String, name: String, kg: Float) =
+            workout(date, 7).let { w -> w.copy(sets = listOf(AppWorkoutSet(w.start, 0, w.start, w.start + 60, null, name, 10, kg))) }
+        val first = lift("2026-10-20", "Bench press", 60f)
+        val second = lift("2026-10-27", "bench press", 65f)
+        val new = Rewards.newBests(second, listOf(first, second), emptyList(), utc).single { it.best.kind.startsWith("lift:") }
+        assertEquals(60.0, new.before.value, 0.0)
+        assertEquals(65.0, new.best.value, 0.0)
+    }
+
+    @Test
     fun firstLaunchEarnsBadgesForPastHistoryWhenTheyWereEarned() {
         // Three weeks of three workouts, a run of 5 km among them, and a big day of steps.
         val ws = (0 until 3).flatMap { wk ->

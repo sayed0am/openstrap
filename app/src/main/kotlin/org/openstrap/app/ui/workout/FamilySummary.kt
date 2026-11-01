@@ -193,17 +193,14 @@ object FamilySummary {
     fun settledLine(from: Int, to: Int): String = if (from - to >= 3) "Your heart settled from $from to $to." else "Your heart held near $to."
 
     /**
-     * A game's [periods] from its rounds: "1st half" and "2nd half" for two, "Quarter 1" for four, else "Period 1",
-     * with the average of [readings] and the hard efforts ([Games.hardEfforts]) in each.
+     * A game's [periods] from its rounds, named as the live screen names them out of the [of] it was set up with
+     * ([StartCopy.periodName]: "1st half", "3rd quarter", "Period 2"), so a game ended early keeps its periods' names.
+     * With the average of [readings] and the hard efforts ([Games.hardEfforts]) in each.
      */
-    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int): List<PeriodLine> {
+    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int, of: Int): List<PeriodLine> {
         val done = rounds.filter { it.workEnd != null }
         return done.map { r ->
-            val name = when (done.size) {
-                2 -> if (r.index == 0) "1st half" else "2nd half"
-                4 -> "Quarter ${r.index + 1}"
-                else -> "Period ${r.index + 1}"
-            }
+            val name = StartCopy.periodName(r.index, of)
             val workEnd = r.workEnd!!
             val inside = readings.filter { it.first in r.workStart..workEnd }
             PeriodLine(name, WorkoutCopy.averageOver(readings, r.workStart, workEnd), Games.hardEfforts(inside, maxHr), workEnd - r.workStart)

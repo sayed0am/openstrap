@@ -160,8 +160,15 @@ class FamilySummaryTest {
     fun periodsAreHalvesOrQuarters() {
         val readings = (0L..6000L step 5).map { it to 150 }
         val halves = listOf(AppWorkoutRound(0, 0, 0, 2400, 3000), AppWorkoutRound(0, 1, 3000, 5400, 5400))
-        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190).map { it.name })
-        assertEquals(150, FamilySummary.periods(halves, readings, 190)[0].averageBpm)
+        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190, 2).map { it.name })
+        assertEquals(150, FamilySummary.periods(halves, readings, 190, 2)[0].averageBpm)
+    }
+
+    @Test
+    fun aQuartersGameEndedEarlyKeepsItsQuarters() {
+        val readings = (0L..6000L step 5).map { it to 150 }
+        val two = listOf(AppWorkoutRound(0, 0, 0, 900, 1000), AppWorkoutRound(0, 1, 1000, 1900, null))
+        assertEquals(listOf("1st quarter", "2nd quarter"), FamilySummary.periods(two, readings, 190, 4).map { it.name })
     }
 
     @Test

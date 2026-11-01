@@ -234,9 +234,10 @@ object Rewards {
      */
     fun newBests(w: Done, workouts: List<Done>, days: List<Day>, zone: ZoneId): List<NewBest> {
         val others = workouts.filter { it.start != w.start }
-        val before = bests(others, emptyList(), zone).associateBy { it.kind }
+        // A lift's kind is spelled as its heaviest set was ([bests] groups them ignoring case), so match ignoring it too.
+        val before = bests(others, emptyList(), zone).associateBy { it.kind.lowercase() }
         return bests(others + w, emptyList(), zone).filter { it.workoutStart == w.start }
-            .mapNotNull { b -> before[b.kind]?.let { NewBest(b, it) } }
+            .mapNotNull { b -> before[b.kind.lowercase()]?.let { NewBest(b, it) } }
     }
 
     /* -------------------------------------------- Badges -------------------------------------------- */

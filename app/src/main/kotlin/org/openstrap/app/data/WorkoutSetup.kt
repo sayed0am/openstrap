@@ -137,7 +137,8 @@ object WorkoutSetup {
         val sport = Workouts.sidesOf(type)?.type(indoor == true) ?: type
         val gps = Workouts.gpsOffered(type, indoor) && location
         val strength = sport in Strength.SPORTS
-        val goal = WorkoutTarget.parse(settings.goal)?.takeIf { it !is WorkoutTarget.Distance || gps || sport in Workouts.ON_FOOT }
+        // Only a goal Ready would offer now: a distance where there is one, and no kcal goal (Ready has none to show).
+        val goal = WorkoutTarget.parse(settings.goal)?.takeIf { offered(it, hasDistance = gps || sport in Workouts.ON_FOOT, kcal = false) }
         return WorkoutPlan(
             sportType = sport, askToEnd = settings.askToEnd, target = goal, useGps = gps, keepRoute = gps && settings.keepRoute,
             rest = (Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT).takeIf { strength },

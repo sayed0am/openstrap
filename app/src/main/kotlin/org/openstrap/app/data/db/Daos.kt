@@ -298,6 +298,17 @@ interface HealthDao {
     @Query("DELETE FROM app_workout_round WHERE workoutStart = :start")
     suspend fun deleteRounds(start: Long)
 
+    @Query("SELECT * FROM app_workout_round ORDER BY workoutStart, `index`")
+    suspend fun roundsAll(): List<AppWorkoutRound>
+
+    /** For a restore: an exercise the phone already has keeps its own last reps and weight. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertExercises(e: List<ExerciseRow>)
+
+    /** For a restore, each with a new id. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSavedWorkouts(w: List<SavedWorkout>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertExercise(e: ExerciseRow)
 
