@@ -31,6 +31,26 @@ jobs:
       - name: Test
         run: ./gradlew :protocol:test :app:testDebugUnitTest
 
+      # Android lint and detekt fail on any finding not in their baselines (app/lint-baseline.xml, */detekt-baseline-*.xml).
+      - name: Lint and static analysis
+        run: ./gradlew :app:lintDebug detektMain
+
+      # ktlint's baseline pins findings by line and column, so any edit that moves lines brings old findings back.
+      # It reports here without failing the build until the code is formatted once.
+      - name: Formatting
+        continue-on-error: true
+        run: ./gradlew ktlintCheck
+
+      # A German locale and a zone with a 45 minute offset. Expected to fail until the locale fixes land (wave 3).
+      - name: Tests under a German locale
+        continue-on-error: true
+        run: ./gradlew :app:testDebugUnitTest -PtestLocale=de-DE
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: app/build/reports/lint-results-debug.sarif
+
       - name: Build debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: ./gradlew :app:assembleDebug
@@ -70,3 +90,5 @@ jobs:
 
 permissions:
   contents: write
+  # SARIF upload of the lint report.
+  security-events: write
