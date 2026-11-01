@@ -59,7 +59,7 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.TrendBad
 import org.openstrap.app.ui.glow.TrendGood
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.glow.draw.dotLayout
@@ -115,8 +115,9 @@ internal fun LiveDistanceScreen(
     val climb = remember(route.size) { Route.climb(route) }
     val speed = Workouts.tileType(r.workout.sportType) !in Workouts.ON_FOOT
     val pace = remember(route) { Route.currentPace(route) }
-    val active = activeSeconds(r)
-    val averagePace = if (distance >= 50) active / (distance / 1000.0) else null
+    val active = activeSecondsState(r)
+    // Read where it shows, so the screen holds still between seconds.
+    val averagePace = { if (distance >= 50) active.value / (distance / 1000.0) else null }
     val accuracy = route.lastOrNull()?.accuracy
     val reps = r.structure is org.openstrap.app.data.Structure.Reps
     val gps = WorkoutCopy.gpsPill(accuracy) to if (accuracy != null && accuracy <= Route.MAX_ACCURACY_M) TrendGood else TrendBad
@@ -130,11 +131,11 @@ internal fun LiveDistanceScreen(
     val battery = (connection as? ConnectionState.Connected)?.batteryPercent
     if (r.paused) {
         LiveFrame(
-            r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps),
+            r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = listOf(gps),
             paused = {
                 LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
                     Glance.kmFigure(distance) to "km",
-                    (if (speed) speedText(averagePace) else Glance.paceClock(averagePace)) to if (speed) "Avg km/h" else "Avg pace",
+                    (if (speed) speedText(averagePace()) else Glance.paceClock(averagePace())) to if (speed) "Avg km/h" else "Avg pace",
                     stats?.average?.toString() to "Avg bpm",
                 ))
             },
@@ -151,16 +152,16 @@ internal fun LiveDistanceScreen(
             when (LiveView.entries[page]) {
                 // Reps (board RunIntervals): the total small on top, the rep the screen's number.
                 LiveView.Heart -> if (reps) LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = active, smallTime = true, battery = battery, status = listOf(gps),
+                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = true, battery = battery, status = listOf(gps),
                     fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
                 ) {
                     RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
                 } else LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps), fill = true,
+                    r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = listOf(gps), fill = true,
                     bottomRoom = bar,
                 ) {
                     Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
+                        PaceCard(pace, averagePace(), splits, speed, Modifier.weight(1f))
                         HeartStrip(bpm, r.maxHeartRate, color, r.paused)
                         LiveFigures(listOf(
                             Glance.kmFigure(distance) to "km",
@@ -178,12 +179,12 @@ internal fun LiveDistanceScreen(
                         Glance.kmFigure(distance) to "km",
                         (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
                     ),
-                    time = active, page = 1, onPage = onPage, bottomRoom = bar,
+                    time = { active.value }, page = 1, onPage = onPage, bottomRoom = bar,
                 )
             }
         }
         LiveBottomBar(
-            r, connected, contentPadding, controls, lap, pager.currentPage + pager.currentPageOffsetFraction, LiveView.entries.size, onPage,
+            r, connected, contentPadding, controls, lap, { pager.currentPage + pager.currentPageOffsetFraction }, LiveView.entries.size, onPage,
             onHeight = { if (it != bar) bar = it }, modifier = Modifier.align(Alignment.BottomCenter),
         )
     }

@@ -253,11 +253,9 @@ internal fun ReadyGoal(
     saved: List<SavedWorkout>,
     onSave: (String, Structure.Reps) -> Unit,
 ) {
-    val options = kinds.map { PlanOption(kindIcon(it, type), kindName(it, type), kindNote(it, hasDistance)) }
-    val at = kinds.indexOf(draft.kind)
-    ReadyPlanCard(
-        Workouts.family(type), options, options.getOrElse(at) { options[0] }, at.takeIf { it >= 0 }, { onDraft(draft.copy(kind = kinds[it])) },
-        typing, onTyping,
+    PlanChoice(
+        Workouts.family(type), kinds.map { it to PlanOption(kindIcon(it, type), kindName(it, type), kindNote(it, hasDistance)) },
+        { it == draft.kind }, { onDraft(draft.copy(kind = it)) }, typing, onTyping,
     ) {
         when (draft.kind) {
             GoalKind.None -> GoalNote(StartCopy.noGoalNote(hasDistance))
@@ -273,13 +271,33 @@ internal fun ReadyGoal(
 internal class PlanOption(val icon: ImageVector, val name: String, val note: String)
 
 /**
+ * [ReadyPlanCard] over values rather than places: each of [choices] is what it sets and how it reads, the first that
+ * [isChosen] is ticked and shown, and picking one hands its value to [onChoose]. Where none is chosen (a value typed
+ * that's no preset) the pill shows [other], the first choice unless said.
+ */
+@Composable
+internal fun <T> PlanChoice(
+    family: Workouts.Family,
+    choices: List<Pair<T, PlanOption>>,
+    isChosen: (T) -> Boolean,
+    onChoose: (T) -> Unit,
+    typing: Boolean,
+    onTyping: (Boolean) -> Unit,
+    other: () -> PlanOption = { choices[0].second },
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val at = choices.indexOfFirst { isChosen(it.first) }.takeIf { it >= 0 }
+    ReadyPlanCard(family, choices.map { it.second }, at?.let { choices[it].second } ?: other(), at, { onChoose(choices[it].first) }, typing, onTyping, content)
+}
+
+/**
  * The one plan card every Ready has (boards ReadyFinal, ReadyKindPill, ReadyKindSheet): the family's label over it
  * ([StartCopy.planTitle]), then the choice in one pill ([shown], which may be none of [options] once a value is typed),
  * opening a sheet of every option with what each does, the one [chosen] ticked; then [content], the chosen one's
  * value. While typing ([typing]) the whole card scrolls up over the keyboard, presets and note too.
  */
 @Composable
-internal fun ReadyPlanCard(
+private fun ReadyPlanCard(
     family: Workouts.Family,
     options: List<PlanOption>,
     shown: PlanOption,

@@ -100,7 +100,8 @@ internal fun LiveFrame(
     contentPadding: PaddingValues,
     controls: LiveControls,
     lap: (@Composable () -> Unit)? = null,
-    time: Long? = null,
+    /** The total time, read by its own text so only the clock is composed again each second. */
+    time: (() -> Long)? = null,
     /** The total time small on the top right instead of large under it (strength, intervals). */
     smallTime: Boolean = false,
     battery: Int? = null,
@@ -152,7 +153,7 @@ internal fun LiveFrame(
                 }
                 if (time != null && smallTime) {
                     // The total, small, where a set or a round's clock is the screen's number.
-                    Text(workoutClock(time), color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    ClockText(time, GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
                     // Under it, the GPS where there is one (run reps), else that it's the total.
                     val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -171,7 +172,7 @@ internal fun LiveFrame(
         }
         if (time != null && !smallTime) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             // Plain digits: the screen's one dot-matrix number is further down.
-            Text(workoutClock(time), color = Color.White, style = LiveClock)
+            ClockText(time, LiveClock)
             Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
         }
         if (r.paused && paused != null) paused() else content()
@@ -318,7 +319,8 @@ private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.syst
 @Composable
 internal fun LiveBottomBar(
     r: WorkoutState.Recording, connected: Boolean, contentPadding: PaddingValues, controls: LiveControls, lap: (@Composable () -> Unit)?,
-    position: Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
+    /** The pager's page plus how far it's swiped, read here so a swipe composes only the bar again. */
+    position: () -> Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -331,8 +333,9 @@ internal fun LiveBottomBar(
         ) {
             if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(position).toInt() + 1} of $count" }) {
-                PageDots(kotlin.math.round(position).toInt(), count, position, onPage)
+            val at = position()
+            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {
+                PageDots(kotlin.math.round(at).toInt(), count, at, onPage)
             }
             ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
         }
@@ -442,11 +445,21 @@ internal fun HoldToEnd(onEnd: () -> Unit) {
 internal val EndRed = MetricColors.heart
 private const val HOLD_MS = 2000
 
+/** A live clock in white, its own scope: the second it reads composes it again, not the screen around it. */
+@Composable
+internal fun ClockText(time: () -> Long, style: androidx.compose.ui.text.TextStyle, maxLines: Int = Int.MAX_VALUE) {
+    Text(workoutClock(time()), color = Color.White, style = style, maxLines = maxLines)
+}
+
 /** Now in epoch seconds, ticking on each whole second: the clock every live screen counts from. */
 @Composable
-internal fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
+internal fun nowTicking(): Long = nowTickingState().value
+
+/** [nowTicking] as state, read only where the second shows, so what holds it isn't composed again each second. */
+@Composable
+internal fun nowTickingState(): androidx.compose.runtime.State<Long> = produceState(System.currentTimeMillis() / 1000) {
     while (true) {
         value = System.currentTimeMillis() / 1000
         delay(1000 - System.currentTimeMillis() % 1000)
     }
-}.value
+}

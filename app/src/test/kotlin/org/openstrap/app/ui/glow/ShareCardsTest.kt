@@ -81,6 +81,25 @@ class ShareCardsTest {
         assertEquals("Fastest 5 km", run.chip?.text)
     }
 
+    @Test fun `a calm card and a game card say what their summaries say, shorter`() {
+        // Half an hour coming down from 96 to 66.
+        val w = AppWorkout(start, start + 1800, 74, averageHeartRate = 80)
+        val hr = (0L..1800L step 5).map { AppWorkoutHeartRate(start, start + it, (96 - it * 30 / 1800).toInt(), false) }
+        val recorded = hr.map { org.openstrap.app.data.db.WorkoutHeartRate(start, it.timestamp, it.bpm) }
+        val calm = PhoneSummary(WorkoutRecorder.analyse(w, hr, 190), recorded, start, start + 1800, null)
+        val readings = recorded.map { it.timestamp to it.bpm }
+        assertEquals(readings, org.openstrap.app.ui.workout.FamilySummary.readings(calm))
+        val (from, to) = org.openstrap.app.ui.workout.FamilySummary.settled(readings, start, start + 1800)!!
+        val card = storyCard(Workouts.Family.MindBody, calm, summaryHero(Workouts.Family.MindBody, calm, null), emptyList(), null, start) as StoryCard.Calm
+        assertEquals("Heart settled $from to $to", card.line)
+        assertEquals("Your heart settled from $from to $to.", summaryHero(Workouts.Family.MindBody, calm, null).sentence)
+
+        val played = PhoneSummary(WorkoutRecorder.analyse(w.copy(epoc = 130f), hr, 190), recorded, start, start + 1800, null)
+        val game = storyCard(Workouts.Family.Games, played, summaryHero(Workouts.Family.Games, played, 100f), emptyList(), 100f, start) as StoryCard.Game
+        assertEquals("Load 130, hard", game.load)
+        assertEquals("Peak 96", game.peak)
+    }
+
     @Test fun `no card text uses an interpunct, semicolon or dash`() {
         val s = summary(1800, 2, 120)
         Workouts.Family.entries.forEach { f ->

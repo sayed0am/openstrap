@@ -14,18 +14,18 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.HeartZones
-import org.openstrap.app.data.RecoveryEngine
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.UserProfile
-import kotlin.math.roundToInt
 
 /**
  * What a phone workout's summary shows: [analysis] over its shown range, [recorded] every sample from
@@ -67,16 +67,17 @@ data class PhoneSummary(
 
 /** Workouts list (newest first) and the one open in detail. */
 @OptIn(ExperimentalCoroutinesApi::class)
-class WorkoutsViewModel(private val dao: HealthDao, private val profile: Flow<UserProfile>) : ViewModel() {
+class WorkoutsViewModel(
+    private val dao: HealthDao,
+    private val profile: Flow<UserProfile>,
+    maxHeartRates: org.openstrap.app.data.MaxHeartRates,
+) : ViewModel() {
     /**
      * Zones fall back to the app's one max-HR rule (tested value, Tanaka, strap, raised by observed peaks) when a
-     * workout has no sport effect of its own. Shared, so the 90-day read behind it runs once per profile change.
+     * workout has no sport effect of its own. The app's shared one ([org.openstrap.app.AppContainer.maxHeartRates]),
+     * so the 90-day read behind it runs once per profile change for every screen.
      */
-    private val learnedMaxHr: Flow<Int> = profile
-        .mapLatest { p -> RecoveryEngine(dao).maxHeartRate(p).roundToInt() }
-        .flowOn(Dispatchers.Default)
-        .stateIn<Int?>(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-        .filterNotNull()
+    private val learnedMaxHr: Flow<Int> = maxHeartRates.current.filterNotNull().map { it.bpm }.distinctUntilChanged()
 
     /** [learnedMaxHr], and again whenever your zones move ([HeartZones.current]), so what reads zones reads them afresh. */
     private val fallbackMaxHr: Flow<Int> = combine(learnedMaxHr, HeartZones.current) { maxHr, _ -> maxHr }

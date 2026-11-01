@@ -70,7 +70,7 @@ import org.openstrap.app.ui.glow.QuietPanel
 import org.openstrap.app.ui.glow.Raised
 import org.openstrap.app.ui.glow.RoundIcon
 import org.openstrap.app.ui.glow.WorkoutButton
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.heroStyle
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.workoutColor
@@ -108,25 +108,28 @@ internal fun LiveStrengthScreen(
     onExercise: (String?) -> Unit,
     onLog: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit,
 ) {
-    val now = nowTicking()
+    val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
     val color = if (r.resting && !r.paused) RestGreen else workoutColor(r, liveHeartRate, connected)
-    val moment = strengthMoment(r, now, bpm, history)
+    // Read where it shows (the cards, the paused figures, the log card), so the screen holds still between seconds.
+    val momentNow = { strengthMoment(r, now.value, bpm, history) }
     val haptics = rememberHaptics()
     var naming by rememberSaveable { mutableStateOf(false) }
     // Sets whose log card was skipped, so it doesn't come back.
     val skipped = rememberSaveable(r.workout.start) { mutableStateListOf<Int>() }
     val unlogged = r.sets.lastOrNull { it.end != null }?.takeIf { r.logSets && it.reps == null && it.index !in skipped && !r.inSet }
+    val active = activeSecondsState(r)
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = activeSeconds(r), smallTime = true, pillControls = true, fill = true,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true, pillControls = true, fill = true,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, history, listOf(
-            moment.done.toString() to if (moment.done == 1) "Set done" else "Sets done",
+            momentNow().done.let { done -> done.toString() to if (done == 1) "Set done" else "Sets done" },
             Strength.kgLifted(r.sets)?.let { Strength.kgText(it) } to "kg lifted",
             r.workout.maxHeartRate?.toString() to "Peak bpm",
         )) },
     ) {
+        val moment = momentNow()
         when {
             r.inSet -> SetCard(r, moment.setNumber, moment.setSeconds, bpm, color) { naming = true }
             r.resting -> RestCard(r, moment.restLeft ?: 0, moment.done, bpm, moment.drop, history)
@@ -148,7 +151,7 @@ internal fun LiveStrengthScreen(
         }
     }
     if (unlogged != null) LogCard(
-        unlogged, r.sets, exercises, history, restLeft = moment.restLeft,
+        unlogged, r.sets, exercises, history, restLeft = { momentNow().restLeft },
         onSave = { exercise, reps, kg -> onLog(unlogged.index, exercise, reps, kg) },
         onSkip = { skipped += unlogged.index },
         onNextExercise = { skipped += unlogged.index; naming = true },
@@ -351,7 +354,7 @@ private fun SetRule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Colo
  */
 @Composable
 private fun LogCard(
-    set: AppWorkoutSet, sets: List<AppWorkoutSet>, exercises: List<ExerciseRow>, history: List<Pair<Long, Int>>, restLeft: Long?,
+    set: AppWorkoutSet, sets: List<AppWorkoutSet>, exercises: List<ExerciseRow>, history: List<Pair<Long, Int>>, restLeft: () -> Long?,
     onSave: (exercise: String?, reps: Int, kg: Float) -> Unit, onSkip: () -> Unit, onNextExercise: () -> Unit,
 ) {
     val row = exercises.firstOrNull { it.name.equals(set.exercise, ignoreCase = true) }
@@ -362,7 +365,7 @@ private fun LogCard(
     PageSheet(
         onSkip, "Set ${set.index + 1} done",
         note = listOfNotNull(workoutClock((set.end ?: set.start) - set.start), peak?.let { "peak $it bpm" }).joinToString(", ") +
-            (restLeft?.let { ". Rest is running, ${workoutClock(it.coerceAtLeast(0))} left." } ?: "."),
+            (restLeft()?.let { ". Rest is running, ${workoutClock(it.coerceAtLeast(0))} left." } ?: "."),
     ) {
         Text(set.exercise ?: "Numbered set", color = Color.White, style = GlowType.body)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

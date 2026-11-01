@@ -175,8 +175,20 @@ object FamilySummary {
     /** Work time over the finished rounds. */
     fun workSeconds(rounds: List<AppWorkoutRound>): Long = rounds.sumOf { r -> r.workEnd?.let { it - r.workStart } ?: 0L }
 
+    /**
+     * [summary]'s heart rate over its shown range, as (epoch seconds, bpm): what its hero, its sections and its share
+     * card all read.
+     */
+    fun readings(summary: PhoneSummary): List<Pair<Long, Int>> {
+        val a = summary.analysis
+        return summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    }
+
     /** How long to average over at each end, for the heart settling. */
     const val SETTLE_S = 120L
+
+    /** How far the heart has to come down over a calm session before it reads as settled rather than held. */
+    const val SETTLED_BPM = 3
 
     /**
      * The heart settling over a calm session: the average of [readings] over its first [SETTLE_S] and over its last.
@@ -189,8 +201,14 @@ object FamilySummary {
         return first to last
     }
 
+    /** How far the heart came down from [from] to [to], null under [SETTLED_BPM]: the summary's and the card's rule. */
+    fun settledDrop(from: Int, to: Int): Int? = (from - to).takeIf { it >= SETTLED_BPM }
+
     /** "Your heart settled from 96 to 66.", or when it didn't come down, "Your heart held near 72." */
-    fun settledLine(from: Int, to: Int): String = if (from - to >= 3) "Your heart settled from $from to $to." else "Your heart held near $to."
+    fun settledLine(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Your heart settled from $from to $to." else "Your heart held near $to."
+
+    /** [settledLine] as the share card says it: "Heart settled 96 to 66", or "Heart held near 72". */
+    fun settledShort(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Heart settled $from to $to" else "Heart held near $to"
 
     /**
      * A game's [periods] from its rounds, named as the live screen names them out of the [of] it was set up with
@@ -303,10 +321,16 @@ object FamilySummary {
     }
 
     /** "Load, hard" style label for the game hero's figure: Load and how it compares with your usual. */
-    fun loadLabel(load: Int, usual: Float?): String = when (org.openstrap.app.ui.dashboard.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Above -> "Load, hard"
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Below -> "Load, light"
-        else -> "Load"
+    fun loadLabel(load: Int, usual: Float?): String = "Load" + loadWord(load, usual)
+
+    /** The game's share card line, the number in: "Load 120, hard", "Load 80". */
+    fun loadLine(load: Int, usual: Float?): String = "Load $load" + loadWord(load, usual)
+
+    /** How [load] compares with your [usual], as the Load labels end: ", hard", ", light", or nothing. */
+    private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.ui.dashboard.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
+        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Above -> ", hard"
+        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Below -> ", light"
+        else -> ""
     }
 
     /** Whether [a] is a run whose distance came from GPS, the only one whose pace means something. */

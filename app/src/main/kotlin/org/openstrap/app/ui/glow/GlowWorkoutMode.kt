@@ -120,13 +120,20 @@ internal fun zoneRange(zone: Int, maxHr: Int): String {
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
-internal fun activeSeconds(r: WorkoutState.Recording): Long = produceState(WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000), r.workout) {
+internal fun activeSeconds(r: WorkoutState.Recording): Long = activeSecondsState(r).value
+
+/**
+ * [activeSeconds] as state, for a live screen to hand on as `{ active.value }`: only what shows the time reads it, so
+ * the screen itself isn't composed again each second.
+ */
+@Composable
+internal fun activeSecondsState(r: WorkoutState.Recording): androidx.compose.runtime.State<Long> = produceState(WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000), r.workout) {
     while (true) {
         value = WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000)
         if (r.paused) break
         delay(1000 - System.currentTimeMillis() % 1000)
     }
-}.value
+}
 
 /**
  * A target's colour: the top zone it aims for, a calm blue for a time, Calories' gold for kcal, Steps' lime for a

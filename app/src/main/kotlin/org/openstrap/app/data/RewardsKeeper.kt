@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlin.math.roundToInt
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 
@@ -18,7 +17,11 @@ import org.openstrap.app.data.settings.SettingsStore
  * everything whenever the list of workouts or the weekly goal changes (a new workout, a trim, a delete), and stores
  * them. The first time, the badges past history earned wait to be shown once, all together.
  */
-class RewardsKeeper(private val dao: HealthDao, private val settings: SettingsStore) {
+class RewardsKeeper(
+    private val dao: HealthDao,
+    private val settings: SettingsStore,
+    private val maxHeartRates: MaxHeartRates = MaxHeartRates(dao, settings.profile),
+) {
     /** Everything the rewards read: the workouts as [Rewards.Done], the days' steps, the weeks stored. */
     data class Facts(val workouts: List<Rewards.Done>, val days: List<Rewards.Day>, val firstDay: DayOfWeek, val zone: ZoneId)
 
@@ -108,11 +111,11 @@ class RewardsKeeper(private val dao: HealthDao, private val settings: SettingsSt
 
     /**
      * The merged list as [org.openstrap.app.ui.workout.WorkoutsViewModel.workouts] has it, read once: the strap's
-     * workouts and the phone's ([Workouts.listed]) against the same learned max HR. Without the list's zone seconds,
-     * which no reward reads.
+     * workouts and the phone's ([Workouts.listed]) against the shared max heart rate ([MaxHeartRates]). Without the
+     * list's zone seconds, which no reward reads.
      */
     suspend fun listedOnce(): List<WorkoutAnalysis> = withContext(Dispatchers.IO) {
-        val maxHr = RecoveryEngine(dao).maxHeartRate(settings.profile.first()).roundToInt()
+        val maxHr = maxHeartRates.now().bpm
         Workouts.listed(
             dao.workouts().first(), dao.sportEffects().first(), dao.lastWorkoutHeartRates().first(), dao.appWorkouts().first(),
             dao.setCounts().first().associate { it.workoutStart to it.sets }, maxHr,

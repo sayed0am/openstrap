@@ -69,7 +69,8 @@ class WorkoutListZonesTest {
         dao.insertAppWorkouts(listOf(phone))
         dao.insertAppWorkoutHeartRate(phoneHr)
 
-        val vm = WorkoutsViewModel(dao, flowOf(UserProfile(maxHeartRate = maxHr)))
+        val profile = flowOf(UserProfile(maxHeartRate = maxHr))
+        val vm = WorkoutsViewModel(dao, profile, org.openstrap.app.data.MaxHeartRates(dao, profile))
         val list = withTimeout(10_000) { vm.workouts.first { l -> l.size == 3 && l.count { it.zoneSeconds.sum() > 0 } == 2 } }
 
         val strapRow = list.single { !it.fromPhone && it.workout.start == hard.start }

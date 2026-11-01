@@ -60,6 +60,13 @@ class StartCopyTest {
         assertEquals("2 min 15 s", StartCopy.restText(135))
     }
 
+    @Test fun `every HIIT preset carries its own icon, and only Free takes the sport's`() {
+        val icons = org.openstrap.app.ui.theme.AppIcons
+        assertEquals(listOf(icons.Timer, icons.Hourglass, icons.Alarm, null), StartCopy.PRESETS.map { it.icon })
+        // Free is the one without rounds, and the last.
+        assertEquals(listOf(false, false, false, true), StartCopy.PRESETS.map { it.rounds == null })
+    }
+
     @Test fun `HIIT's pill names a preset, else what the rounds are, and typed numbers change only what reads`() {
         val tabata = org.openstrap.app.data.Structure.TABATA
         assertEquals("Tabata", StartCopy.hiitName(tabata.warm(true)))
@@ -146,7 +153,7 @@ class StartCopyTest {
             StartCopy.EVERY_TYPING, StartCopy.WARM_UP_NOTE, StartCopy.MIND_STATUS, StartCopy.MIND_OPEN_NOTE, StartCopy.MIND_OPEN_KIND_NOTE,
             StartCopy.MIND_TIME_KIND_NOTE, StartCopy.FREE_PLAY_KIND_NOTE, StartCopy.HALVES_KIND_NOTE, StartCopy.QUARTERS_KIND_NOTE,
             StartCopy.GAMES_TYPING, StartCopy.gamesNote(org.openstrap.app.data.Structure.QUARTERS), StartCopy.planSheet(org.openstrap.app.data.Workouts.Family.Games),
-        ) + StartCopy.PRESETS.flatMap { listOf(it.second, it.third) }
+        ) + StartCopy.PRESETS.flatMap { listOf(it.name, it.note) }
         all.forEach { s -> assertFalse(s, s.any { it in "·;—–" }) }
     }
 

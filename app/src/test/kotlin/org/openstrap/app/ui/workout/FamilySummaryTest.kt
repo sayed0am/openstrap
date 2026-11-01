@@ -142,6 +142,23 @@ class FamilySummaryTest {
         assertEquals("Your heart settled from 96 to 66.", FamilySummary.settledLine(96, 66))
         assertEquals("Your heart held near 72.", FamilySummary.settledLine(73, 72))
         assertNull(FamilySummary.settled(readings, 0, 300))
+        // The share card's short form, by the same 3 bpm rule.
+        assertEquals("Heart settled 96 to 66", FamilySummary.settledShort(96, 66))
+        assertEquals("Heart settled 75 to 72", FamilySummary.settledShort(75, 72))
+        assertEquals("Heart held near 72", FamilySummary.settledShort(74, 72))
+        assertEquals(3, FamilySummary.settledDrop(75, 72))
+        assertNull(FamilySummary.settledDrop(74, 72))
+    }
+
+    @Test
+    fun aGamesLoadReadsTheSameOnTheSummaryAndTheCard() {
+        assertEquals("Load, hard", FamilySummary.loadLabel(130, 100f))
+        assertEquals("Load 130, hard", FamilySummary.loadLine(130, 100f))
+        assertEquals("Load, light", FamilySummary.loadLabel(60, 100f))
+        assertEquals("Load 60, light", FamilySummary.loadLine(60, 100f))
+        assertEquals("Load", FamilySummary.loadLabel(100, 100f))
+        assertEquals("Load 100", FamilySummary.loadLine(100, 100f))
+        assertEquals("Load 80", FamilySummary.loadLine(80, null))
     }
 
     @Test

@@ -84,7 +84,8 @@ internal fun LiveMapScreen(
     controls: LiveControls,
     lap: (@Composable () -> Unit)?,
     figures: List<Pair<String?, String>>,
-    time: Long,
+    /** The moving time, read by its own text so the page isn't composed again each second. */
+    time: () -> Long,
     page: Int,
     onPage: (Int) -> Unit,
     /** Under a bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
@@ -148,7 +149,7 @@ internal fun LiveMapScreen(
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.Bottom) {
                 LiveStat(figures[0].second, Modifier.weight(1f)) { LiveValue(figures[0].first) }
                 StatRule()
-                LiveStat("Moving time", Modifier.weight(1.3f)) { Text(workoutClock(time), color = Color.White, style = GlowType.mapClock, maxLines = 1) }
+                LiveStat("Moving time", Modifier.weight(1.3f)) { ClockText(time, GlowType.mapClock, maxLines = 1) }
                 StatRule()
                 LiveStat(figures[1].second, Modifier.weight(1f)) { LiveValue(figures[1].first) }
             }
