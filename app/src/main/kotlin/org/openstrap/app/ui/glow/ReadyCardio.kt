@@ -81,6 +81,7 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
+import androidx.compose.runtime.SideEffect
 
 /*
  * Ready for distance and cardio sports (board ReadyFinal): the heart, where you are, then the goal, typed in place.
@@ -516,36 +517,26 @@ private fun EndTyping(typing: Boolean, focused: Int?, everFocused: Boolean, onDo
     }
 }
 
-/** Distance: minus and plus by half a km, the value in km to tap and type, the presets, and its note. */
+/** Distance: minus and plus by half a km, the value in km to tap and type ([TypedValue]), the presets, and its note. */
 @Composable
 private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
     val focusManager = LocalFocusManager.current
-    var text by remember { mutableStateOf(TextFieldValue()) }
-    var focused by remember { mutableStateOf<Int?>(null) }
-    var everFocused by remember { mutableStateOf(false) }
-    val focus = remember { FocusRequester() }
-    fun finish() {
-        if (!typing) return
-        StartCopy.parseDistance(text.text)?.let(onMeters)
-        onTyping(false)
-    }
+    // What's typed so far, for the note while typing.
+    var typed by remember { mutableStateOf<String?>(null) }
     // A step or preset while typing drops what was typed.
     fun stop() { onTyping(false); focusManager.clearFocus() }
-    EndTyping(typing, focused, everFocused) { finish() }
     ValueStepper("Shorter", "Longer", { stop(); onMeters(StartCopy.stepDistance(meters, up = false)) }, { stop(); onMeters(StartCopy.stepDistance(meters, up = true)) }) {
-        if (typing) {
-            LaunchedEffect(Unit) { focus.requestFocus() }
-            TypedNumber(
-                text, { v -> text = v.copy(text = v.text.filter { it.isDigit() || it == '.' || it == ',' }.take(6)) }, "km", focused == 0,
-                Modifier.focusRequester(focus).onFocusChanged { if (it.isFocused) { focused = 0; everFocused = true } else if (focused == 0) focused = null },
-                KeyboardType.Decimal, ImeAction.Done, { focusManager.clearFocus() },
-            )
-        } else TapValue(listOf(StartCopy.distanceValue(meters) to "km"), StartCopy.TAP_TO_TYPE) {
-            text = selected(StartCopy.distanceValue(meters)); everFocused = false; onTyping(true)
+        TypedValue(
+            listOf(NumberField(StartCopy.distanceValue(meters), "km", length = 6, decimal = true)), typing, onTyping,
+            onDone = { t -> StartCopy.parseDistance(t[0])?.let(onMeters) }, hint = StartCopy.TAP_TO_TYPE,
+        ) {
+            val now = this.typed?.firstOrNull()
+            SideEffect { if (typed != now) typed = now }
+            Row { Number(0) }
         }
     }
     Presets(StartCopy.DISTANCE_PRESETS, meters.takeIf { !typing }) { stop(); onMeters(it) }
-    GoalNote(StartCopy.distanceNote(if (typing) StartCopy.parseDistance(text.text) ?: meters else meters))
+    GoalNote(StartCopy.distanceNote(if (typing) typed?.let(StartCopy::parseDistance) ?: meters else meters))
 }
 
 /**
