@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.ui.graphics.asAndroidPath
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -343,9 +346,17 @@ private fun RouteLine(route: List<Route.Point>, modifier: Modifier) {
         val points = StoryRouteShape.fit(route, size.width, size.height)
         if (points.size < 2) return@Canvas
         val path = Path().apply { moveTo(points[0].x, points[0].y); points.drop(1).forEach { lineTo(it.x, it.y) } }
-        // The glow: wider, fainter strokes under the line.
-        listOf(14.dp to 0.08f, 9.dp to 0.16f, 6.dp to 0.3f).forEach { (w, alpha) ->
-            drawPath(path, Color.White.copy(alpha = alpha), style = Stroke(w.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        // The glow: one blurred stroke under the line, so it fades smoothly instead of in steps.
+        drawIntoCanvas { canvas ->
+            val glow = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 8.dp.toPx()
+                strokeCap = android.graphics.Paint.Cap.ROUND
+                strokeJoin = android.graphics.Paint.Join.ROUND
+                color = android.graphics.Color.argb(150, 255, 255, 255)
+                maskFilter = android.graphics.BlurMaskFilter(8.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+            }
+            canvas.nativeCanvas.drawPath(path.asAndroidPath(), glow)
         }
         drawPath(path, Color.White, style = Stroke(4.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
