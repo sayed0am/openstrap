@@ -250,7 +250,7 @@ class ActivityPaddingTest {
         val payload = "702300500d00000070430a5005000000ffffffffffffffffffffffffffffffff".hexToBytes()
         val r = HistoryParsers.activity.parse(payload, ParseContext(1000, activityRecordSize = 8)) as ParseResult.Success
         org.junit.Assert.assertEquals(2, r.records.size)
-        org.junit.Assert.assertEquals(listOf(0, 10), r.records.map { (it as ActivitySample).steps })
+        org.junit.Assert.assertEquals(listOf(0, 10), r.records.map { it.steps })
         org.junit.Assert.assertEquals(1000 + 120L, r.nextCursor)
     }
 
@@ -259,7 +259,7 @@ class ActivityPaddingTest {
         // Captured shape: real minutes, unwritten 0xFF slots, then stale non-0xFF slots.
         val payload = ("603300500500000060431a5207000000" + "ff".repeat(16) + "7300000005000000".repeat(3)).hexToBytes()
         val r = HistoryParsers.activity.parse(payload, ParseContext(1000, activityRecordSize = 8)) as ParseResult.Success
-        org.junit.Assert.assertEquals(listOf(0, 26), r.records.map { (it as ActivitySample).steps })
+        org.junit.Assert.assertEquals(listOf(0, 26), r.records.map { it.steps })
         org.junit.Assert.assertEquals(1000 + 120L, r.nextCursor)
     }
 

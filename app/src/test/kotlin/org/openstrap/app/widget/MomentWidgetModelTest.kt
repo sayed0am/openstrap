@@ -606,7 +606,7 @@ class MomentWidgetModelTest {
         val wide = MomentLayout.wide(m, 313f, 180f, 1f, l)
         assertEquals(m.name, wide.name.text)
         assertEquals(StatusButton.SIZE_DP, wide.top!!.height, 0f)
-        assertNotNull(wide.top!!.words)
+        assertNotNull(wide.top.words)
         assertTrue(wide.fits(180f))
         assertNull(MomentLayout.small(m, 140f, 180f, 1f, l).top!!.words)
         assertNull(MomentLayout.wide(m, 313f, 180f, 1f).top)

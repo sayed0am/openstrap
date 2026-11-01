@@ -19,6 +19,15 @@ object WidgetRefresh {
         versions.getValue(kind).value++
     }
 
+    private val resizes = WidgetKind.entries.associateWith { MutableStateFlow(0) }
+
+    /** Moves on each time the launcher gives a [kind] widget a new size, so its sessions lay out again. */
+    fun resized(kind: WidgetKind): StateFlow<Int> = resizes.getValue(kind)
+
+    fun resize(kind: WidgetKind) {
+        resizes.getValue(kind).value++
+    }
+
     /**
      * Debug builds: the mood to light widgets in instead of the moment's, for the widget gallery; null follows the
      * moment. Release builds never read it.

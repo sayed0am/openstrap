@@ -433,7 +433,7 @@ class RecoveryTest {
         assertTrue("lowest ${r.lowest}", r.lowest!! > 45f)
         // Treated as awake (the old rule) the same night would leave the day far lower.
         val asAwake = minutes.map { if (it.offWrist) it.copy(hr = 66, offWrist = false) else it }
-        assertTrue(Recovery.charge(asAwake, p, window, start = 50f).lowest!! < r.lowest!! - 15f)
+        assertTrue(Recovery.charge(asAwake, p, window, start = 50f).lowest!! < r.lowest - 15f)
         // The day before isn't flagged: its evening just stops when the strap comes off.
         val before = Recovery.charge(minutes, p, 1440 * 60L until 2880 * 60L, start = 50f)
         assertTrue(!before.strapOffOvernight)

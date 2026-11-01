@@ -24,7 +24,6 @@
     <string name="widget_preview_start_outdoor_run">"户外跑"</string>
     <string name="widget_preview_start_your_usual">"你平时"</string>
     <string name="widget_preview_steps_today">"今日"</string>
-    <string name="widget_preview_steps_of_your_goal" formatted="false">"已达成目标的 84%"</string>
     <string name="common_on_the_week_before">"比上一周 %1$s。"</string>
     <string name="common_set">"1 组"</string>
     <string name="common_above_your_normal">"高于你的常态"</string>

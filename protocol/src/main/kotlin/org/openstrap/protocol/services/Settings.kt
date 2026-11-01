@@ -254,5 +254,5 @@ object SettingsCodec {
 
     fun isWriteSuccess(reply: ByteArray): Boolean = reply.size == 2 && reply.u8(0) == WRITE + 1 && reply.u8(1) == 1
 
-    private fun cString(r: ByteReader) { while (r.u8() != 0) Unit }
+    private fun cString(r: ByteReader) { while (r.u8() != 0) {} }
 }

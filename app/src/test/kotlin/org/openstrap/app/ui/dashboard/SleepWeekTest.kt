@@ -38,7 +38,7 @@ class SleepWeekTest {
         assertTrue(InfoCopy.regularityNotes(result).single().startsWith("This week compares"))
         // Usual times still come from the nights.
         assertEquals("23:30", minutesClock(w.usual!!.bedtime))
-        assertEquals("07:00", minutesClock(w.usual!!.wake))
+        assertEquals("07:00", minutesClock(w.usual.wake))
     }
 
     @Test fun `withheld SRI shows no score and says why`() {

@@ -51,7 +51,7 @@ class WorkoutEffectTest {
         val e = effect(easy)
         val i = effect(intervals)
         assertTrue("EPOC ${i.epoc} vs ${e.epoc}", i.epoc!! > 3 * e.epoc!!)
-        assertTrue("TE ${i.aerobicTe}", i.aerobicTe!! >= 3.3f && i.aerobicTe!! < 5f)
+        assertTrue("TE ${i.aerobicTe}", i.aerobicTe!! >= 3.3f && i.aerobicTe < 5f)
         assertTrue(i.recoveryMinutes!! > e.recoveryMinutes!!)
     }
 

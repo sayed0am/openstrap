@@ -37,8 +37,8 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         private set
 
     /** WorkManager as Glance's widget sessions need it: rendering on their own thread ([WidgetWork]). */
-    override fun getWorkManagerConfiguration(): androidx.work.Configuration =
-        androidx.work.Configuration.Builder().setWorkerFactory(org.openstrap.app.widget.WidgetWork).build()
+    override val workManagerConfiguration: androidx.work.Configuration
+        get() = androidx.work.Configuration.Builder().setWorkerFactory(org.openstrap.app.widget.WidgetWork).build()
 
     /** The words before anything else runs: content providers start before [onCreate]. */
     override fun attachBaseContext(base: android.content.Context) {

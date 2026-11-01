@@ -187,7 +187,7 @@ fun AllMetricsSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(tr(R.string.common_all_metrics), color = Color.White, style = GlowType.label.copy(fontSize = 20.sp, lineHeight = 26.sp))
+                Text(tr(R.string.common_all_metrics), color = Color.White, style = GlowType.cardTitle.copy(fontSize = 20.sp, lineHeight = 26.sp), maxLines = 1)
                 Text(dayName(date), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             }
             groups.forEach { group ->

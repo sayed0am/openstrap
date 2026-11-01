@@ -117,7 +117,7 @@ private class SimulatedStrap(private val authKey: ByteArray) : StrapLink {
             val sid = deviceSession++ and 0xFF
             val c = cipher
             val encrypt = c != null && endpoint == Endpoints.BATTERY
-            val body = if (encrypt) c!!.encrypt(sid, payload) else payload
+            val body = if (encrypt) c.encrypt(sid, payload) else payload
             buildChunks(endpoint, sid, body, payload.size, encrypt, payloadMtu).forEach { dataNotifications.emit(it) }
         }
     }

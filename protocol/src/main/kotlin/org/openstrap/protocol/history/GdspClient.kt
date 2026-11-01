@@ -180,7 +180,7 @@ class GdspClient(
 
     /** TRANSFER, then collect indexed packets until `10 02`. Returns the payload without index bytes and the CRC. */
     suspend fun transfer(): Pair<ByteArray, Long?>? {
-        while (data.tryReceive().isSuccess) Unit // drop stale packets
+        while (data.tryReceive().isSuccess) {} // drop stale packets
         val out = java.io.ByteArrayOutputStream()
         var lastIndex = -1
         send(FetchCodec.transfer())

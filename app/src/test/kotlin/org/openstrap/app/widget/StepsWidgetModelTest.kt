@@ -166,7 +166,7 @@ class StepsWidgetModelTest {
             assertTrue("$steps $toGo at $scale: $need", need <= wide.first + 1e-3f)
             assertTrue(row.dot >= StepsLayout.SMALL_DOT || !row.word)
         }
-        assertEquals(StepsLayout.NumberRow(StepsLayout.WIDE_DOT, word = true), StepsLayout.numberRow("8,432", "1,568 to go", wide.first, 1f))
+        assertEquals(StepsLayout.NumberRow(StepsLayout.WIDE_DOT, word = true), StepsLayout.numberRow("8,432", "1,568 to go", 353f - 40f, 1f))
     }
 
     @Test fun `the Wide's line fits its height at both font sizes`() {

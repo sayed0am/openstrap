@@ -233,7 +233,7 @@ private fun ChargeDetail(
         else -> DetailHeadline(
             now.toString(),
             when {
-                stale -> tr(R.string.missed_at_time, clockAt(lastAt!!))
+                stale -> tr(R.string.missed_at_time, clockAt(lastAt))
                 isToday -> tr(R.string.missed_now)
                 else -> tr(R.string.score_detail_at_the_end_of)
             },

@@ -24,7 +24,6 @@
     <string name="widget_preview_start_outdoor_run">"Outdoor run"</string>
     <string name="widget_preview_start_your_usual">"Your usual"</string>
     <string name="widget_preview_steps_today">"today"</string>
-    <string name="widget_preview_steps_of_your_goal" formatted="false">"84% of your goal"</string>
     <string name="common_on_the_week_before">"%1$s on the week before."</string>
     <string name="common_set">"1 set"</string>
     <string name="common_above_your_normal">"Above your normal"</string>

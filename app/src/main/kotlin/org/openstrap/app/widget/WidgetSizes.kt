@@ -14,11 +14,14 @@ object WidgetSizes {
     /** 2 × 2: a number and a word, or the one action. */
     val Small = DpSize(150.dp, 150.dp)
 
-    /** 4 × 2: the Small plus one more thing. */
-    val Wide = DpSize(300.dp, 160.dp)
+    /**
+     * 4 × 2: the Small plus one more thing. From 280 dp wide, so the unfolded Fold's 3 columns (288 dp) take it rather
+     * than a Small stretched across them.
+     */
+    val Wide = DpSize(280.dp, 160.dp)
 
-    /** 4 × 3: everything the widget has. */
-    val Large = DpSize(300.dp, 260.dp)
+    /** 4 × 3: everything the widget has. From 280 dp wide, as the Wide. */
+    val Large = DpSize(280.dp, 260.dp)
 
     /**
      * `minWidth`, `minHeight` and their resize limits, dp: two cells by the old formula (70 × 2 − 30), which One UI
@@ -180,4 +183,33 @@ object WidgetDots {
 
     /** The dot that fits [text] into [room] dp, at most [dot]. */
     fun fit(text: String, room: Float, dot: Float): Float = minOf(dot, room / width(text, 1f)).coerceAtLeast(0.5f)
+}
+
+/**
+ * The dotted number every widget leads with (spec 3), one size for every widget in the same cell: a share of the
+ * content's height by size class, so a Small's 90 and a Small's 57 match, and a tall cell grows them all alike. A
+ * widget goes smaller only when its number and what must sit beside it don't fit the width, or its other blocks
+ * don't fit the height.
+ */
+object WidgetHero {
+    /** The dots a number can take, smallest first. */
+    val DOTS = listOf(3f, 3.6f, 4.5f, 5f, 5.5f, 6f, 6.5f, 7f)
+
+    /** The share of the content's height the number may take: most on a Small, which is the number. */
+    const val SMALL_SHARE = 0.36f
+    const val WIDE_SHARE = 0.28f
+    const val LARGE_SHARE = 0.22f
+
+    /** The number's dot in a [bucket] cell whose content is [height] dp high. */
+    fun dot(bucket: DpSize, height: Float): Float {
+        val share = when (bucket) {
+            WidgetSizes.Small -> SMALL_SHARE
+            WidgetSizes.Wide -> WIDE_SHARE
+            else -> LARGE_SHARE
+        }
+        return DOTS.lastOrNull { WidgetDots.height(it) <= height * share } ?: DOTS.first()
+    }
+
+    /** The dots to try in that cell, largest first, never past [dot]'s: what a widget falls back through. */
+    fun ladder(bucket: DpSize, height: Float): List<Float> = DOTS.filter { it <= dot(bucket, height) }.reversed()
 }
