@@ -5,8 +5,6 @@
     <!-- INTERNET is used only for Zepp sign-in (device list), strap firmware checks and downloads, map tiles, and the
          daily check for a new OpenStrap on GitHub and its download. Health data is never uploaded. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Saving a share card to the gallery: Android 10 and later need no permission for the app's own pictures. -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <!-- Installing a new OpenStrap downloaded from its GitHub releases (update/AppUpdater.kt). Android asks the user to
          allow it the first time. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -15,14 +13,10 @@
     <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
 
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN"
-        android:usesPermissionFlags="neverForLocation"
-        tools:targetApi="s" />
+        android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- Android 11 and older need these for BLE. -->
-    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
-    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
-    <!-- Android 11 and older need it for BLE; on any version, GPS for an outdoor workout when the wearer turns it on.
-         Never in the background: a workout's foreground service is started while the app is visible. -->
+    <!-- GPS for an outdoor workout when the wearer turns it on. Never in the background: a workout's foreground
+         service is started while the app is visible. -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
@@ -70,13 +64,9 @@
     <uses-permission android:name="android.permission.health.READ_HEALTH_DATA_HISTORY" />
 
     <queries>
-        <package android:name="com.google.android.apps.healthdata" />
-        <!-- Open Health Connect on the You page: its screen for OpenStrap's data, on Android 14 and up and before. -->
+        <!-- Open Health Connect on the You page: its screen for OpenStrap's data. -->
         <intent>
             <action android:name="android.health.connect.action.MANAGE_HEALTH_DATA" />
-        </intent>
-        <intent>
-            <action android:name="androidx.health.ACTION_MANAGE_HEALTH_DATA" />
         </intent>
     </queries>
 
@@ -96,15 +86,11 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- Health Connect permission rationale (Android 13 and older). -->
-            <intent-filter>
-                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
-            </intent-filter>
             <!-- Long-press the icon: "Start run", "Start strength". -->
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
         </activity>
 
-        <!-- Health Connect permission rationale (Android 14+). -->
+        <!-- Health Connect permission rationale. -->
         <activity-alias
             android:name="ViewPermissionUsageActivity"
             android:exported="true"
@@ -223,7 +209,7 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
-            <!-- Android 12+: only notifications that alert (sound or vibration) and conversations reach OpenStrap.
+            <!-- Only notifications that alert (sound or vibration) and conversations reach OpenStrap.
                  Silent and ongoing ones are off, and the user can narrow it further, or leave out apps, in system settings. -->
             <meta-data
                 android:name="android.service.notification.default_filter_types"

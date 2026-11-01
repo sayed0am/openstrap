@@ -3,7 +3,6 @@ package org.openstrap.app.ui.alarms
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,6 +20,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -32,6 +32,7 @@ import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.data.settings.SettingsStore
+import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.PhoneAlerts
 import org.openstrap.app.device.StrapNotificationListener
 import androidx.activity.compose.BackHandler
@@ -90,20 +91,27 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
     // Which end of the quiet hours is being picked: true for From, false for To.
     var pickingFrom by remember { mutableStateOf<Boolean?>(null) }
 
-    // The user may grant access in system settings and come back.
-    LifecycleResumeEffect(Unit) { alerts.refresh(); onPauseOrDispose { } }
 
+    // Phone access turned down for good: Android shows no dialog any more, so the switch offers settings instead (audit E5).
+    val activity = androidx.activity.compose.LocalActivity.current
+    var phoneBlocked by rememberSaveable { mutableStateOf(false) }
     val askPhone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         alerts.refresh()
         if (granted) scope.launch { settings.setBuzzOnCalls(true) }
+        phoneBlocked = !granted && activity != null &&
+            BlePermissions.turnedDownForGood(activity, listOf(Manifest.permission.READ_PHONE_STATE))
+    }
+    val openAppSettings = { context.startActivity(BlePermissions.settingsIntent(context)) }
+    // The user may grant access in system settings and come back. Phone access turned on there counts afresh, so a
+    // later turn-down asks again before it counts as for good.
+    LifecycleResumeEffect(Unit) {
+        alerts.refresh()
+        if (alerts.hasCallPermission()) phoneBlocked = false
+        onPauseOrDispose { }
     }
     val openNotificationAccess = {
-        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
-                .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, ComponentName(context, StrapNotificationListener::class.java).flattenToString())
-        } else {
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-        }
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+            .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, ComponentName(context, StrapNotificationListener::class.java).flattenToString())
         runCatching { context.startActivity(intent) }
             .onFailure { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
         Unit
@@ -120,11 +128,16 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
                         when {
                             !on -> scope.launch { settings.setBuzzOnCalls(false) }
                             callPermission -> scope.launch { settings.setBuzzOnCalls(true) }
+                            phoneBlocked -> openAppSettings()
                             else -> askPhone.launch(Manifest.permission.READ_PHONE_STATE)
                         }
                     },
                     divider = false,
                 )
+                if (phoneBlocked && !callPermission) {
+                    PageNote("Needs phone access. Android won't ask again, so turn it on under Permissions.", color = MetricColors.warn)
+                    PageButton("Open settings", openAppSettings, Modifier.fillMaxWidth())
+                }
                 if (calls && callPermission) {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Call buzz", style = GlowType.body, color = Color.White)

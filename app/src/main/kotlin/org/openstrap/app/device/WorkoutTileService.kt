@@ -2,7 +2,6 @@ package org.openstrap.app.device
 
 import android.app.PendingIntent
 import android.content.Intent
-import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import kotlinx.coroutines.CoroutineScope
@@ -32,12 +31,10 @@ class WorkoutTileService : TileService() {
                     val r = state as? WorkoutState.Recording
                     tile.state = if (r != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
                     tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else "Start workout"
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        tile.subtitle = when {
-                            r?.paused == true -> "Paused"
-                            r != null -> "Recording"
-                            else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
-                        }
+                    tile.subtitle = when {
+                        r?.paused == true -> "Paused"
+                        r != null -> "Recording"
+                        else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
                     }
                     tile.updateTile()
                 }
@@ -62,8 +59,7 @@ class WorkoutTileService : TileService() {
             intent.putExtra(MainActivity.EXTRA_READY_SPORT, last ?: Workouts.DEFAULT_SPORTS.first())
         }
         val pending = PendingIntent.getActivity(this, REQUEST_TILE, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
-        if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(pending)
-        else @Suppress("DEPRECATION") startActivityAndCollapse(intent)
+        startActivityAndCollapse(pending)
     }
 
     private companion object {

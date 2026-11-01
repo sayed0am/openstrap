@@ -1,8 +1,6 @@
 package org.openstrap.app
 
-import android.Manifest
 import android.app.Application
-import android.content.pm.PackageManager
 import android.util.Log
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -13,6 +11,7 @@ import org.openstrap.app.ble.BleScanner
 import org.openstrap.app.data.HealthRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.settings.SettingsStore
+import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.CompanionLink
 import org.openstrap.app.device.PhoneAlerts
 import org.openstrap.app.device.StrapController
@@ -63,7 +62,7 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         super.onCreate()
         container = AppContainer(this)
         // Your heart rate zones, kept in use for everything that reads a zone, a restored backup's included.
-        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Default).launch {
+        container.appScope.launch {
             container.settings.heartZones.collect { org.openstrap.app.data.HeartZones.use(it) }
         }
         container.companion.refresh()
@@ -71,10 +70,10 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         container.workout.restore()
         // Android restarts the process on its own (companion presence, a reboot): reconnect without the screen.
         // A no-op when nothing is paired, a connection is already up, or the user tapped Disconnect.
-        if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) container.strap.backgroundConnect()
+        if (BlePermissions.granted(this)) container.strap.backgroundConnect()
         // Widgets turn the day over at midnight; alarms don't survive a reboot or an update, so set it on each start.
         org.openstrap.app.device.WidgetUpdater.scheduleMidnight(this)
-        // Android 15 and later: the widget picker's previews, from the real layouts (spec 6.4).
+        // The widget picker's previews, from the real layouts (spec 6.4).
         org.openstrap.app.device.WidgetUpdater.publishPreviews(this)
         // The daily check for a new OpenStrap, unless it was turned off on the Updates page.
         container.updater.start()
