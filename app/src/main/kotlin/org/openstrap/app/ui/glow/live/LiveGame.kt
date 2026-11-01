@@ -63,6 +63,8 @@ internal fun LiveGameScreen(
     onHalfTime: () -> Unit,
     /** Split across a fold: the heart rate is on the other half, so only the effort is left of the card. */
     split: Boolean = false,
+    /** A short half: the total small on top, so the controls keep their labels. */
+    compact: Boolean = false,
 ) {
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
@@ -81,7 +83,7 @@ internal fun LiveGameScreen(
         hard.toString() to "Hard efforts",
     )
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = periods != null,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = compact || periods != null,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, readings, figures) },
     ) {
         if (periods != null && phase != null) PeriodRow(r, periods, phase, { now.value }, { active.value })

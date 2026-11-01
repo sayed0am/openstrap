@@ -64,6 +64,8 @@ internal fun LiveMapScreen(
     time: () -> Long,
     /** The height of the bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
     bottomRoom: Dp,
+    /** False when the heart rate is on the other half of a folded phone. */
+    heartPill: Boolean = true,
 ) {
     BackHandler(onBack = controls.onMinimize)
     val density = LocalDensity.current
@@ -89,7 +91,7 @@ internal fun LiveMapScreen(
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize, surface = OverMap)
-                LitHeartPill(bpm, null, color, r.paused, 44.dp)
+                if (heartPill) LitHeartPill(bpm, null, color, r.paused, 44.dp)
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
                 Row(

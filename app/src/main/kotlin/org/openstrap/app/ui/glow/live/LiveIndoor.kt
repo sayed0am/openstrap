@@ -43,6 +43,8 @@ internal fun LiveIndoorScreen(
     kcal: WorkoutRecorder.Kcal?,
     /** Split across a fold: the heart card is on the other half, so this one keeps the time in zones. */
     split: Boolean = false,
+    /** A short half: the total small on top, so the controls keep their labels. */
+    compact: Boolean = false,
 ) {
     val connected = connection is ConnectionState.Connected
     val color = workoutColor(r, liveHeartRate, connected)
@@ -60,7 +62,7 @@ internal fun LiveIndoorScreen(
     LiveFrame(
         r, color, connected, contentPadding, controls,
         lap = if (!r.paused) ({ LapButton(onLap, label = true) }) else null,
-        time = { active.value }, battery = (connection as? ConnectionState.Connected)?.batteryPercent,
+        time = { active.value }, smallTime = compact, battery = (connection as? ConnectionState.Connected)?.batteryPercent,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, recent, figures) },
     ) {
         // Time reps on the treadmill side: the rep above the heart.

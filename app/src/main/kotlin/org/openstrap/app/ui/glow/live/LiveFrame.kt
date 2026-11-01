@@ -119,6 +119,8 @@ internal fun LiveFrame(
     backdrop: androidx.compose.ui.graphics.Brush? = null,
     /** Mind and body (board LiveMind): the sport's name plain and centred, no strap status, and two dark buttons. */
     quiet: Boolean = false,
+    /** Under a quiet screen's buttons, the line saying a tap lights it; left out where there's no room for it. */
+    tapHint: Boolean = true,
     /**
      * A page under a bar shared by the pages ([LiveBottomBar]): the note, the prompt and the controls are drawn once
      * under the pager, so the page only leaves this much room for them.
@@ -208,7 +210,7 @@ internal fun LiveFrame(
                 }
                 Labelled("Hold to end", true) { HoldToEnd(controls.onEnd) }
             }
-            Text(
+            if (tapHint) Text(
                 "Tap anywhere to light the screen", color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )

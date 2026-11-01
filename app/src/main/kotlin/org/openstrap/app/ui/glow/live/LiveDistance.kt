@@ -73,7 +73,9 @@ import org.openstrap.app.ui.glow.workoutClock
  * the pace now large on a card lit in the distance lime, the average beside its title and a bar per kilometre, the one
  * under way growing; the heart rate on a strip in its zone's colour; then distance, climb and active kcal. Map: the
  * route in zone colours with the heart rate on it, then distance, pace and the last split. Opens on the view used last
- * ([liveView], saved through [onLiveView]). A ride shows its speed instead of a pace.
+ * ([liveView], saved through [onLiveView]). A ride shows its speed instead of a pace. With [split] the heart rate is on
+ * the other half of a folded phone, so the map leaves out its own; [compact] (a short half) keeps the moving time small
+ * on top and the distance, pace and kcal in one row.
  */
 @Composable
 internal fun LiveDistanceScreen(
@@ -92,6 +94,8 @@ internal fun LiveDistanceScreen(
     kcal: WorkoutRecorder.Kcal?,
     /** Run reps: Skip the rep or the rest, or start the reps after a warm up. */
     onSkip: () -> Unit = {},
+    split: Boolean = false,
+    compact: Boolean = false,
 ) {
     val pager = rememberPagerState(initialPage = LiveView.of(liveView).ordinal) { LiveView.entries.size }
     var viewApplied by rememberSaveable { mutableStateOf(false) }
@@ -156,10 +160,16 @@ internal fun LiveDistanceScreen(
                 ) {
                     RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
                 } else LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = listOf(gps), fill = true,
-                    bottomRoom = bar,
+                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
+                    status = listOf(gps), fill = true, bottomRoom = bar,
                 ) {
-                    Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                    if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        LiveFigures(listOf(
+                            Glance.kmFigure(distance) to "km",
+                            (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
+                            kcal?.active?.toInt()?.toString() to "Active kcal",
+                        ))
+                    } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PaceCard(pace, averagePace(), splits, speed, Modifier.weight(1f))
                         LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
@@ -170,7 +180,7 @@ internal fun LiveDistanceScreen(
                     }
                     // Each kilometre gets a line for a few seconds, with one tick. This page stays composed beside the
                     // map, so the tick comes on either.
-                    KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = true)
+                    KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = !compact)
                 }
                 LiveView.Map -> LiveMapScreen(
                     r, route, readings, bpm, color, contentPadding, controls,
@@ -178,7 +188,7 @@ internal fun LiveDistanceScreen(
                         Glance.kmFigure(distance) to "km",
                         (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
                     ),
-                    time = { active.value }, bottomRoom = bar,
+                    time = { active.value }, bottomRoom = bar, heartPill = !split,
                 )
             }
         }

@@ -93,6 +93,9 @@ private val RestGreen = ZONE_COLORS[1]
  *
  * With logging on ([WorkoutState.Recording.logSets]), the log card follows each set while rest runs underneath: reps
  * and kg filled from the last set of the exercise ([Strength.prefill]), Skip or Save, and Next exercise.
+ *
+ * [compact] (half a phone stood like a laptop, the heart rate on the other half): each card is one row with its clock,
+ * and the sets done and what's next are left out, so the buttons stay on screen.
  */
 @Composable
 internal fun LiveStrengthScreen(
@@ -108,6 +111,7 @@ internal fun LiveStrengthScreen(
     onExtendRest: () -> Unit,
     onExercise: (String?) -> Unit,
     onLog: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit,
+    compact: Boolean = false,
 ) {
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
@@ -131,23 +135,24 @@ internal fun LiveStrengthScreen(
         )) },
     ) {
         val moment = momentNow()
-        when {
+        val tall = if (compact) 56.dp else 72.dp
+        if (compact) CompactCard(r, moment, color, onName = { naming = true }) else when {
             r.inSet -> SetCard(r, moment.setNumber, moment.setSeconds, bpm, color) { naming = true }
             r.resting -> RestCard(r, moment.restLeft ?: 0, moment.done, bpm, moment.drop, history)
             else -> ReadyCard(r, moment.setNumber, color) { naming = true }
         }
-        if (r.resting && !r.inSet) NextLine(moment.setNumber, r.exercise, moment.nextLoad)
-        DoneSets(r.sets, history)
+        if (!compact && r.resting && !r.inSet) NextLine(moment.setNumber, r.exercise, moment.nextLoad)
+        if (!compact) DoneSets(r.sets, history)
         Spacer(Modifier.weight(1f))
         when {
-            r.inSet -> WorkoutButton("Set done", Color.White, Color.Black, { haptics.perform(HapticEvent.SetDone); onSetDone() }, icon = AppIcons.Tick02, height = 72.dp)
+            r.inSet -> WorkoutButton("Set done", Color.White, Color.Black, { haptics.perform(HapticEvent.SetDone); onSetDone() }, icon = AppIcons.Tick02, height = tall)
             else -> Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                if (r.resting) Box(Modifier.width(108.dp)) { WorkoutButton("+30 s", Raised, Color.White, onExtendRest, height = 72.dp) }
-                Box(Modifier.weight(1f)) { WorkoutButton("Start set ${moment.setNumber}", Color.White, Color.Black, onStartSet, icon = AppIcons.PlayFill, height = 72.dp) }
+                if (r.resting) Box(Modifier.width(108.dp)) { WorkoutButton("+30 s", Raised, Color.White, onExtendRest, height = tall) }
+                Box(Modifier.weight(1f)) { WorkoutButton("Start set ${moment.setNumber}", Color.White, Color.Black, onStartSet, icon = AppIcons.PlayFill, height = tall) }
             }
         }
         val target = r.workout.setsTarget
-        if (target != null && moment.done >= target && !r.inSet) {
+        if (!compact && target != null && moment.done >= target && !r.inSet) {
             Text("All $target sets done. Hold the square to end, or keep going.", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)
         }
     }
@@ -178,6 +183,28 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: 
             SetDots(r.sets.count { it.end != null }, r.workout.setsTarget, inSet = true, Modifier.align(Alignment.CenterHorizontally))
             Spacer(Modifier.height(22.dp))
             HeartLine(bpm, r.maxHeartRate, r.paused)
+        }
+    }
+}
+
+/**
+ * The set, the rest or the next set on one row (half a folded phone): what it is and its exercise, and the set's clock
+ * or the rest left in dots, on an edge card in the screen's colour.
+ */
+@Composable
+private fun CompactCard(r: WorkoutState.Recording, moment: org.openstrap.app.ui.workout.StrengthMoment, color: Color, onName: () -> Unit) {
+    val (title, clock) = when {
+        r.inSet -> WorkoutCopy.setOf(moment.setNumber, r.workout.setsTarget) to workoutClock(moment.setSeconds)
+        r.resting -> "Rest after " + WorkoutCopy.setOf(moment.done, r.workout.setsTarget).lowercase() to workoutClock((moment.restLeft ?: 0).coerceAtLeast(0))
+        else -> (if (moment.setNumber == 1) "Ready for set 1" else "Rest over") to null
+    }
+    EdgeCard(color, Modifier.fillMaxWidth()) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                ExercisePill(r.exercise, onName)
+            }
+            if (clock != null) DotMatrixText(clock, dot = DotSize.Detail)
         }
     }
 }

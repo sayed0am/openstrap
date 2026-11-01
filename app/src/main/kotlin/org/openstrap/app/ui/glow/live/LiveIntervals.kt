@@ -63,7 +63,9 @@ private val RestGreen = ZONE_COLORS[1]
  * HIIT (workouts spec 2.5, boards HiitWork and HiitRest), with the total small on top and the screen in the phase's
  * colour. Work: round N of M as dots, what's next, the seconds left large in dots, the heart rate and zone; Skip on the
  * left moves to rest (Done, every minute). Rest: what's done and next, the seconds left, the heart rate and its drop
- * since work ended, each round's peak so far, and +10 s. A warm up waits for Start rounds.
+ * since work ended, each round's peak so far, and +10 s. A warm up waits for Start rounds. With [split] the heart rate
+ * is on the other half of a folded phone, so this half leaves it out, and [compact] (a short half) puts the seconds
+ * left on one row with the phase and +10 s.
  */
 @Composable
 internal fun LiveIntervalsScreen(
@@ -75,6 +77,8 @@ internal fun LiveIntervalsScreen(
     controls: LiveControls,
     onSkip: () -> Unit,
     onAddRest: () -> Unit,
+    split: Boolean = false,
+    compact: Boolean = false,
 ) {
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
@@ -123,22 +127,25 @@ internal fun LiveIntervalsScreen(
         when (m.phase) {
             is Phase.Work -> PhaseFigure(
                 "Round ${m.round} of ${m.rounds}", m.nextRest?.let { "Then rest ${StartCopy.restText(it)}" } ?: "Last round",
-                "Work", m.left?.let { "%02d".format(it) }, if (m.everyMinute) "seconds left in the minute" else "seconds left",
+                "Work", m.left?.let { "%02d".format(it) }, if (m.everyMinute) "seconds left in the minute" else "seconds left", compact,
             )
             is Phase.Rest -> PhaseFigure(
                 "${m.round - 1} of ${m.rounds} done", "Round ${m.round} next", "Rest", m.left?.let { "%02d".format(it) },
-                bpm?.let { b -> "Heart rate $b" + (m.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") } ?: "seconds left",
+                bpm?.let { b -> "Heart rate $b" + (m.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") } ?: "seconds left", compact,
+                // Folded, +10 s sits beside the seconds: the half has no room for a row of its own.
+                action = { WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.width(120.dp), height = 44.dp) },
             )
-            Phase.WarmUp -> PhaseFigure("Warm up", "${m.rounds} rounds after it", "Warming up", null, "Start the rounds when you're ready")
-            Phase.Done -> PhaseFigure("All ${m.rounds} rounds done", "Hold the square to end, or keep going", "Done", null, "")
+            Phase.WarmUp -> PhaseFigure("Warm up", "${m.rounds} rounds after it", "Warming up", null, "Start the rounds when you're ready", compact)
+            Phase.Done -> PhaseFigure("All ${m.rounds} rounds done", "Hold the square to end, or keep going", "Done", null, "", compact)
         }
-        if (m.phase is Phase.Rest || m.phase == Phase.Done) RoundPeaks(r.rounds, m.rounds)
-        if (m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate, r.paused, Modifier.align(Alignment.CenterHorizontally))
+        if (!split && (m.phase is Phase.Rest || m.phase == Phase.Done)) RoundPeaks(r.rounds, m.rounds)
+        if (!split && m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate, r.paused, Modifier.align(Alignment.CenterHorizontally))
+        val tall = if (compact) 48.dp else 64.dp
         when (m.phase) {
-            Phase.WarmUp -> WorkoutButton("Start rounds", Color.White, Color.Black, onSkip, icon = AppIcons.PlayFill, height = 64.dp)
+            Phase.WarmUp -> WorkoutButton("Start rounds", Color.White, Color.Black, onSkip, icon = AppIcons.PlayFill, height = tall)
             // A pill as high as the heart rate strip and, like it, no wider than its words need.
-            is Phase.Rest -> WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.align(Alignment.CenterHorizontally).width(140.dp), height = 52.dp)
-            is Phase.Work -> if (m.everyMinute) WorkoutButton("Done", Color.White, Color.Black, onSkip, icon = AppIcons.Tick02, height = 64.dp)
+            is Phase.Rest -> if (!compact) WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.align(Alignment.CenterHorizontally).width(140.dp), height = 52.dp)
+            is Phase.Work -> if (m.everyMinute) WorkoutButton("Done", Color.White, Color.Black, onSkip, icon = AppIcons.Tick02, height = tall)
             Phase.Done -> Unit
         }
     }
@@ -207,12 +214,26 @@ internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = n
     }
 }
 
-/** A phase: where you are and what's next, its word large, the seconds in the screen's one dotted number, a line under. */
+/**
+ * A phase: where you are and what's next, its word large, the seconds in the screen's one dotted number, a line under.
+ * [compact] (half a folded phone) puts the word, the seconds and the phase's [action] side by side, smaller, with no
+ * line.
+ */
 @Composable
-private fun ColumnScope.PhaseFigure(where: String, next: String, word: String, seconds: String?, line: String) {
+private fun ColumnScope.PhaseFigure(
+    where: String, next: String, word: String, seconds: String?, line: String, compact: Boolean = false, action: (@Composable () -> Unit)? = null,
+) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
         Text(where, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
         Text(next, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary)
+    }
+    if (compact) {
+        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+            Text(word.uppercase(), color = Color.White, style = GlowType.phaseWord, maxLines = 1)
+            if (seconds != null) DotMatrixText(seconds, dot = DotSize.Detail)
+            action?.invoke()
+        }
+        return
     }
     Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
         Text(word.uppercase(), color = Color.White, style = GlowType.phaseWord)

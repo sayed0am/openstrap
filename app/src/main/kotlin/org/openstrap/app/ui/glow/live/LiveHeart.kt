@@ -99,23 +99,30 @@ fun GlowWorkoutLiveScreen(
     // the log card stay on the half under your hand. Only the screens whose hero is the heart rate leave it to the
     // other half.
     val family = Workouts.family(r.workout.sportType)
-    when {
-        family == Workouts.Family.Distance && r.workout.useGps ->
-            LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip)
-        family == Workouts.Family.Strength -> LiveStrengthScreen(
-            r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, exercises,
-            onStartSet, onSetDone, onExtendRest, onExercise, onLogSet,
-        )
-        family == Workouts.Family.Intervals && r.structure != null ->
-            LiveIntervalsScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, onSkip, onAddRest)
-        family == Workouts.Family.MindBody -> LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls)
-        family == Workouts.Family.Games ->
-            LiveGameScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), stats, zoneSeconds, connection, contentPadding, controls, kcal, onSkip, split)
-        // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
-        // the rounds.
-        else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal, split)
+    // Under the fold of a phone stood like a laptop the half is short: the screens with a large figure fit a compact one.
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val compact = maxHeight < CompactHeight
+        when {
+            family == Workouts.Family.Distance && r.workout.useGps ->
+                LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)
+            family == Workouts.Family.Strength -> LiveStrengthScreen(
+                r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, exercises,
+                onStartSet, onSetDone, onExtendRest, onExercise, onLogSet, compact,
+            )
+            family == Workouts.Family.Intervals && r.structure != null ->
+                LiveIntervalsScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, onSkip, onAddRest, split, compact)
+            family == Workouts.Family.MindBody -> LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls, split, compact)
+            family == Workouts.Family.Games ->
+                LiveGameScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), stats, zoneSeconds, connection, contentPadding, controls, kcal, onSkip, split, compact)
+            // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
+            // the rounds.
+            else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal, split, compact)
+        }
     }
 }
+
+/** Below this height (half a phone stood like a laptop) a live screen shows its figures compact. */
+private val CompactHeight = 480.dp
 
 /**
  * "Km 3 in 5:42, avg 152" under the stats for ten seconds after each kilometre, with one tick. Kilometres done before
