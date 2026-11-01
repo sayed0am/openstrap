@@ -134,7 +134,7 @@ internal class StoryStat(val value: String, val unit: String?, val label: String
 internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, usualLoad: Float?, now: Long, zone: ZoneId = ZoneId.systemDefault()): StoryCard {
     val a = summary.analysis
     val active = a.activeSeconds
-    val readings = summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    val readings = FamilySummary.readings(summary)
     val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
     val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
     val avg = a.workout.averageHeartRate
@@ -189,14 +189,14 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             StoryCard.Calm(
                 a.sportName, whenLine, minutes, minUnit,
-                settled?.let { (f, t) -> if (f - t >= 3) "Heart settled $f to $t" else "Heart held near $t" }, heartLine(readings),
+                settled?.let { (f, t) -> FamilySummary.settledShort(f, t) }, heartLine(readings),
             )
         }
         Workouts.Family.Games -> {
             val load = a.workout.trainingLoad
             StoryCard.Game(
                 a.sportName, minutes, minUnit,
-                load?.let { "Load $it" + FamilySummary.loadLabel(it, usualLoad).removePrefix("Load") },
+                load?.let { FamilySummary.loadLine(it, usualLoad) },
                 readings.maxOfOrNull { it.second }?.let { "Peak $it" },
             )
         }

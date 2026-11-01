@@ -82,7 +82,7 @@ internal class SummaryHero(val value: String, val unit: String, val figures: Lis
 internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLoad: Float?): SummaryHero {
     val a = summary.analysis
     val active = a.activeSeconds
-    val readings = summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    val readings = FamilySummary.readings(summary)
     val peak = readings.maxOfOrNull { it.second }?.toString()
     val avg = a.workout.averageHeartRate?.toString()
     val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) }
@@ -176,7 +176,7 @@ internal fun FamilySection(
     week: Rewards.WeekLine? = null,
 ): Boolean {
     val a = summary.analysis
-    val readings = remember(summary) { summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm } }
+    val readings = remember(summary) { FamilySummary.readings(summary) }
     val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
     when (family) {
         Workouts.Family.Distance -> {
@@ -570,7 +570,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
     if (readings.size < 10 || (!chart && settled == null)) return
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 9) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        val drop = settled?.let { it.first - it.second }?.takeIf { it >= 3 }
+        val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
         EdgeTitle("Heart rate", drop?.let { "down $it" } ?: "${readings.minOf { it.second }} to ${readings.maxOf { it.second }}")
         if (chart) SmoothLine(values, color, Modifier.padding(top = 14.dp), height = 74.dp, ends = true)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
