@@ -99,8 +99,9 @@ class DailyEnergyHistory(private val dao: HealthDao) {
 
         /**
          * What in the profile moves a day's energy: weight, height, age, sex and a tested max HR. When it differs from
-         * the one the rows were written with, every row is written again.
+         * the one the rows were written with, every row is written again. Built from a string, whose hash is the same
+         * in every process, as it is stored and compared after the app restarts. An enum's own hash is not.
          */
-        fun profileKey(p: UserProfile): Long = listOf(p.weightKg, p.heightCm, p.age(), p.sex, p.maxHeartRate).hashCode().toLong()
+        fun profileKey(p: UserProfile): Long = "${p.weightKg}|${p.heightCm}|${p.age()}|${p.sex?.name}|${p.maxHeartRate}".hashCode().toLong()
     }
 }

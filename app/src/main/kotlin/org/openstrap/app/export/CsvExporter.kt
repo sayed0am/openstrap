@@ -8,7 +8,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 /**
- * Writes every table as a CSV file inside one zip ([CSV_TABLES]). Timestamps are ISO-8601 UTC plus raw epoch seconds.
+ * Writes each table of user data ([CSV_TABLES]) as a CSV file inside one zip. Timestamps are ISO-8601 UTC plus raw epoch seconds.
  * [settings], when given, goes in beside them as [SettingsBackup.FILE]. [CsvImporter] reads the zip back.
  */
 class CsvExporter(private val dao: HealthDao) {
@@ -48,7 +48,11 @@ class CsvExporter(private val dao: HealthDao) {
             }
         }
 
+        /** Quotes a cell that holds a comma, a quote or a line break, as [CsvReader] reads it back. */
         private fun escape(s: String): String =
-            if (s.any { it == ',' || it == '"' || it == '\n' }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+            if (s.any { it in SPECIAL }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+
+        /** The characters that make a cell need quotes. */
+        private const val SPECIAL = ",\"\n\r"
     }
 }

@@ -1,11 +1,14 @@
 package org.openstrap.app.data.settings
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -127,35 +130,41 @@ data class QuietHours(val on: Boolean = false, val from: Int = 22 * 60, val to: 
     }
 }
 
-class SettingsStore(private val context: Context) {
-    private val address = stringPreferencesKey("device_address")
-    private val authKey = stringPreferencesKey("device_auth_key")
-    private val name = stringPreferencesKey("device_name")
+/** The app's settings. Tests keep them in a store of their own ([of]). */
+class SettingsStore private constructor(private val store: DataStore<Preferences>) {
+    constructor(context: Context) : this(context.dataStore)
 
-    val pairedDevice: Flow<PairedDevice?> = context.dataStore.data.map { prefs ->
-        val a = prefs[address] ?: return@map null
-        val k = prefs[authKey] ?: return@map null
+    /** [f] of the settings, only when it changes: every write re-emits the whole store, whatever key it touched. */
+    private fun <T> read(f: (Preferences) -> T): Flow<T> = store.data.map(f).distinctUntilChanged()
+
+    private val address = stringPreferencesKey(SettingsKeys.DEVICE_ADDRESS)
+    private val authKey = stringPreferencesKey(SettingsKeys.DEVICE_AUTH_KEY)
+    private val name = stringPreferencesKey(SettingsKeys.DEVICE_NAME)
+
+    val pairedDevice: Flow<PairedDevice?> = read { prefs ->
+        val a = prefs[address] ?: return@read null
+        val k = prefs[authKey] ?: return@read null
         PairedDevice(a, k, prefs[name] ?: "Helio Strap")
     }
 
     suspend fun savePairedDevice(device: PairedDevice) {
-        context.dataStore.edit {
+        store.edit {
             it[address] = device.address
             it[authKey] = device.authKeyHex
             it[name] = device.name
         }
     }
 
-    private val zeppToken = stringPreferencesKey("zepp_app_token")
-    private val zeppUser = stringPreferencesKey("zepp_user_id")
-    private val zeppApi = stringPreferencesKey("zepp_api_base")
-    private val zeppChina = androidx.datastore.preferences.core.booleanPreferencesKey("zepp_china")
-    private val zeppLoginToken = stringPreferencesKey("zepp_login_token")
-    private val zeppAppTokenAt = androidx.datastore.preferences.core.longPreferencesKey("zepp_app_token_at")
-    private val zeppAppTtl = androidx.datastore.preferences.core.longPreferencesKey("zepp_app_ttl")
+    private val zeppToken = stringPreferencesKey(SettingsKeys.ZEPP_APP_TOKEN)
+    private val zeppUser = stringPreferencesKey(SettingsKeys.ZEPP_USER_ID)
+    private val zeppApi = stringPreferencesKey(SettingsKeys.ZEPP_API_BASE)
+    private val zeppChina = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.ZEPP_CHINA)
+    private val zeppLoginToken = stringPreferencesKey(SettingsKeys.ZEPP_LOGIN_TOKEN)
+    private val zeppAppTokenAt = androidx.datastore.preferences.core.longPreferencesKey(SettingsKeys.ZEPP_APP_TOKEN_AT)
+    private val zeppAppTtl = androidx.datastore.preferences.core.longPreferencesKey(SettingsKeys.ZEPP_APP_TTL)
 
-    val zeppAccount: Flow<ZeppAccount?> = context.dataStore.data.map { prefs ->
-        val t = prefs[zeppToken] ?: return@map null
+    val zeppAccount: Flow<ZeppAccount?> = read { prefs ->
+        val t = prefs[zeppToken] ?: return@read null
         ZeppAccount(
             t, prefs[zeppUser].orEmpty(), prefs[zeppApi] ?: ZeppAccount.DEFAULT_API_BASE, prefs[zeppChina] == true,
             prefs[zeppLoginToken], prefs[zeppAppTokenAt], prefs[zeppAppTtl],
@@ -164,7 +173,7 @@ class SettingsStore(private val context: Context) {
 
     /** Replaces the whole sign-in, so a typed-in token drops the login token of an earlier sign-in. */
     suspend fun saveZeppAccount(account: ZeppAccount) {
-        context.dataStore.edit {
+        store.edit {
             it[zeppToken] = account.appToken
             it[zeppUser] = account.userId
             it[zeppApi] = account.apiBase
@@ -176,74 +185,74 @@ class SettingsStore(private val context: Context) {
     }
 
     suspend fun clearZeppAccount() {
-        context.dataStore.edit {
+        store.edit {
             it.remove(zeppToken); it.remove(zeppUser); it.remove(zeppApi); it.remove(zeppChina)
             it.remove(zeppLoginToken); it.remove(zeppAppTokenAt); it.remove(zeppAppTtl)
         }
     }
 
-    private val liveHr = androidx.datastore.preferences.core.booleanPreferencesKey("live_hr")
+    private val liveHr = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.LIVE_HR)
 
     /** Whether live heart rate starts automatically on connect. On by default. */
-    val liveHeartRate: Flow<Boolean> = context.dataStore.data.map { it[liveHr] ?: true }
+    val liveHeartRate: Flow<Boolean> = read { it[liveHr] ?: true }
 
     suspend fun setLiveHeartRate(enabled: Boolean) {
-        context.dataStore.edit { it[liveHr] = enabled }
+        store.edit { it[liveHr] = enabled }
     }
 
-    private val autoStartKey = androidx.datastore.preferences.core.booleanPreferencesKey("auto_start_workouts")
+    private val autoStartKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.AUTO_START_WORKOUTS)
 
     /** Notice a workout as it starts and offer to record it from where it began ([org.openstrap.app.data.AutoStart]). On by default. */
-    val autoStartWorkouts: Flow<Boolean> = context.dataStore.data.map { it[autoStartKey] ?: true }
+    val autoStartWorkouts: Flow<Boolean> = read { it[autoStartKey] ?: true }
 
     suspend fun setAutoStartWorkouts(enabled: Boolean) {
-        context.dataStore.edit { it[autoStartKey] = enabled }
+        store.edit { it[autoStartKey] = enabled }
     }
 
-    private val wearReminderKey = androidx.datastore.preferences.core.booleanPreferencesKey("wear_reminder")
+    private val wearReminderKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.WEAR_REMINDER)
 
     /**
      * Off-body reminder, as Zepp has for the strap (codemap 07 §4 N5): turns on the strap's wear reminder (GENERAL
      * key 44) on connect and shows a notification while the strap reports it is off-body. On by default.
      */
-    val wearReminder: Flow<Boolean> = context.dataStore.data.map { it[wearReminderKey] ?: true }
+    val wearReminder: Flow<Boolean> = read { it[wearReminderKey] ?: true }
 
     suspend fun setWearReminder(enabled: Boolean) {
-        context.dataStore.edit { it[wearReminderKey] = enabled }
+        store.edit { it[wearReminderKey] = enabled }
     }
 
-    private val strapSessionsKey = androidx.datastore.preferences.core.booleanPreferencesKey("strap_sessions")
+    private val strapSessionsKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.STRAP_SESSIONS)
 
     /**
      * On by default: a phone workout also runs a session on the strap (0x0019), so the strap keeps its own record of
      * it, whose heart rate and effect the workout then takes (verified on the strap 2026-10-30, codemap 05 §5.11). A
      * debug intent turns it off, to compare the live stream without one.
      */
-    val strapSessions: Flow<Boolean> = context.dataStore.data.map { it[strapSessionsKey] ?: true }
+    val strapSessions: Flow<Boolean> = read { it[strapSessionsKey] ?: true }
 
     suspend fun setStrapSessions(enabled: Boolean) {
-        context.dataStore.edit { it[strapSessionsKey] = enabled }
+        store.edit { it[strapSessionsKey] = enabled }
     }
 
-    private val workoutLiveViewKey = androidx.datastore.preferences.core.intPreferencesKey("workout_live_view")
+    private val workoutLiveViewKey = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.WORKOUT_LIVE_VIEW)
 
     /** The live view a GPS workout was left on, Heart (0) or Map (1); the next one opens on it. Heart by default. */
-    val workoutLiveView: Flow<Int> = context.dataStore.data.map { it[workoutLiveViewKey] ?: 0 }
+    val workoutLiveView: Flow<Int> = read { it[workoutLiveViewKey] ?: 0 }
 
     suspend fun setWorkoutLiveView(view: Int) {
-        context.dataStore.edit { it[workoutLiveViewKey] = view }
+        store.edit { it[workoutLiveViewKey] = view }
     }
 
-    private val workoutSidesKey = stringPreferencesKey("workout_sides")
+    private val workoutSidesKey = stringPreferencesKey(SettingsKeys.WORKOUT_SIDES)
 
     /**
      * The side of Ready's Outdoor or Indoor switch you last chose, per sport (spec 6.3), by the sport's key
      * ([org.openstrap.app.data.Workouts.Sides.outdoor]), true for indoor. Sports never switched aren't in it.
      */
-    val workoutSides: Flow<Map<Int, Boolean>> = context.dataStore.data.map { org.openstrap.app.data.Workouts.parseSides(it[workoutSidesKey]) }
+    val workoutSides: Flow<Map<Int, Boolean>> = read { org.openstrap.app.data.Workouts.parseSides(it[workoutSidesKey]) }
 
     suspend fun setWorkoutSide(sport: Int, indoor: Boolean) {
-        context.dataStore.edit {
+        store.edit {
             val sides = org.openstrap.app.data.Workouts.parseSides(it[workoutSidesKey]) + (sport to indoor)
             it[workoutSidesKey] = org.openstrap.app.data.Workouts.formatSides(sides)
         }
@@ -253,32 +262,33 @@ class SettingsStore(private val context: Context) {
      * What Ready was set to the last time each sport started (workouts spec 4), by the sport's tile
      * ([org.openstrap.app.data.Workouts.tileType]). Sports never started aren't in it.
      */
-    val sportSettings: Flow<Map<Int, org.openstrap.app.data.SportSettings>> = context.dataStore.data.map { prefs ->
+    val sportSettings: Flow<Map<Int, org.openstrap.app.data.SportSettings>> = read { prefs ->
         prefs.asMap().mapNotNull { (key, value) ->
-            val sport = key.name.removePrefix(SPORT_SETTINGS_PREFIX).takeIf { key.name.startsWith(SPORT_SETTINGS_PREFIX) }?.toIntOrNull()
+            val prefix = SettingsKeys.SPORT_SETTINGS_PREFIX
+            val sport = key.name.removePrefix(prefix).takeIf { key.name.startsWith(prefix) }?.toIntOrNull()
             if (sport == null || value !is String) null else sport to org.openstrap.app.data.SportSettings.parse(value)
         }.toMap()
     }
 
     suspend fun setSportSettings(sport: Int, settings: org.openstrap.app.data.SportSettings) {
-        val key = stringPreferencesKey(SPORT_SETTINGS_PREFIX + org.openstrap.app.data.Workouts.tileType(sport))
-        context.dataStore.edit { it[key] = settings.encode() }
+        val key = stringPreferencesKey(SettingsKeys.SPORT_SETTINGS_PREFIX + org.openstrap.app.data.Workouts.tileType(sport))
+        store.edit { it[key] = settings.encode() }
     }
 
-    private val birthYear = androidx.datastore.preferences.core.intPreferencesKey("profile_birth_year")
-    private val sex = stringPreferencesKey("profile_sex")
-    private val weight = androidx.datastore.preferences.core.floatPreferencesKey("profile_weight_kg")
-    private val height = androidx.datastore.preferences.core.intPreferencesKey("profile_height_cm")
-    private val imperial = androidx.datastore.preferences.core.booleanPreferencesKey("profile_imperial")
-    private val sleepNeed = androidx.datastore.preferences.core.intPreferencesKey("profile_sleep_need_minutes")
-    private val maxHr = androidx.datastore.preferences.core.intPreferencesKey("profile_max_hr")
-    private val activityLevel = androidx.datastore.preferences.core.intPreferencesKey("profile_activity_level")
-    private val activityAt = longPreferencesKey("profile_activity_answered_at")
-    private val bodyAt = longPreferencesKey("profile_body_measured_at")
-    private val betaBlocker = androidx.datastore.preferences.core.booleanPreferencesKey("profile_beta_blocker")
-    private val pregnant = androidx.datastore.preferences.core.booleanPreferencesKey("profile_pregnant")
+    private val birthYear = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.PROFILE_BIRTH_YEAR)
+    private val sex = stringPreferencesKey(SettingsKeys.PROFILE_SEX)
+    private val weight = androidx.datastore.preferences.core.floatPreferencesKey(SettingsKeys.PROFILE_WEIGHT_KG)
+    private val height = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.PROFILE_HEIGHT_CM)
+    private val imperial = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.PROFILE_IMPERIAL)
+    private val sleepNeed = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.PROFILE_SLEEP_NEED_MINUTES)
+    private val maxHr = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.PROFILE_MAX_HR)
+    private val activityLevel = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.PROFILE_ACTIVITY_LEVEL)
+    private val activityAt = longPreferencesKey(SettingsKeys.PROFILE_ACTIVITY_ANSWERED_AT)
+    private val bodyAt = longPreferencesKey(SettingsKeys.PROFILE_BODY_MEASURED_AT)
+    private val betaBlocker = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.PROFILE_BETA_BLOCKER)
+    private val pregnant = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.PROFILE_PREGNANT)
 
-    val profile: Flow<UserProfile> = context.dataStore.data.map { prefs ->
+    val profile: Flow<UserProfile> = read { prefs ->
         UserProfile(
             prefs[birthYear],
             prefs[sex]?.let { v -> UserProfile.Sex.entries.firstOrNull { it.name == v } },
@@ -296,7 +306,7 @@ class SettingsStore(private val context: Context) {
     }
 
     suspend fun saveProfile(p: UserProfile) {
-        context.dataStore.edit {
+        store.edit {
             if (p.birthYear != null) it[birthYear] = p.birthYear else it.remove(birthYear)
             if (p.sex != null) it[sex] = p.sex.name else it.remove(sex)
             if (p.weightKg != null) it[weight] = p.weightKg else it.remove(weight)
@@ -314,13 +324,13 @@ class SettingsStore(private val context: Context) {
 
     /** Sets only your max heart rate ([UserProfile.maxHeartRate]), from the Heart rate zones page; null learns it again. */
     suspend fun setMaxHeartRate(bpm: Int?) {
-        context.dataStore.edit { if (bpm != null) it[maxHr] = bpm else it.remove(maxHr) }
+        store.edit { if (bpm != null) it[maxHr] = bpm else it.remove(maxHr) }
     }
 
-    private val heartZonesKey = stringPreferencesKey("profile_hr_zones")
+    private val heartZonesKey = stringPreferencesKey(SettingsKeys.PROFILE_HR_ZONES)
 
     /** Your heart rate zones, one set for every sport; [HeartZones.STANDARD] until moved. Not part of [saveProfile]. */
-    val heartZones: Flow<org.openstrap.app.data.HeartZones> = context.dataStore.data.map { prefs ->
+    val heartZones: Flow<org.openstrap.app.data.HeartZones> = read { prefs ->
         org.openstrap.app.data.HeartZones.parse(prefs[heartZonesKey]) ?: org.openstrap.app.data.HeartZones.STANDARD
     }
 
@@ -330,16 +340,16 @@ class SettingsStore(private val context: Context) {
      */
     suspend fun setHeartZones(zones: org.openstrap.app.data.HeartZones) {
         org.openstrap.app.data.HeartZones.use(zones)
-        context.dataStore.edit { if (zones.standard) it.remove(heartZonesKey) else it[heartZonesKey] = zones.encode() }
+        store.edit { if (zones.standard) it.remove(heartZonesKey) else it[heartZonesKey] = zones.encode() }
     }
 
-    private val stepGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_steps")
-    private val sleepGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_sleep_minutes")
-    private val activeGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_active_hours")
-    private val calorieGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_calories")
-    private val workoutGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_workouts_week")
+    private val stepGoal = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.GOAL_STEPS)
+    private val sleepGoal = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.GOAL_SLEEP_MINUTES)
+    private val activeGoal = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.GOAL_ACTIVE_HOURS)
+    private val calorieGoal = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.GOAL_CALORIES)
+    private val workoutGoal = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.GOAL_WORKOUTS_WEEK)
 
-    val goals: Flow<Goals> = context.dataStore.data.map { prefs ->
+    val goals: Flow<Goals> = read { prefs ->
         Goals(
             prefs[stepGoal] ?: Goals.DEFAULT_STEPS,
             prefs[sleepGoal] ?: Goals.DEFAULT_SLEEP_MINUTES,
@@ -350,7 +360,7 @@ class SettingsStore(private val context: Context) {
     }
 
     suspend fun saveGoals(g: Goals) {
-        context.dataStore.edit {
+        store.edit {
             it[stepGoal] = g.steps
             it[sleepGoal] = g.sleepMinutes
             it[activeGoal] = g.activeHours
@@ -359,88 +369,88 @@ class SettingsStore(private val context: Context) {
         }
     }
 
-    private val todayHidden = stringPreferencesKey("today_hidden")
-    private val todayPinned = stringPreferencesKey("today_pinned")
+    private val todayHidden = stringPreferencesKey(SettingsKeys.TODAY_HIDDEN)
+    private val todayPinned = stringPreferencesKey(SettingsKeys.TODAY_PINNED)
 
     /** Edit Today's choices: the cards hidden and the ones pinned under the hero, by name. Null until first edited. */
-    val todayHiddenNames: Flow<List<String>?> = context.dataStore.data.map { prefs -> prefs[todayHidden]?.split(',')?.filter { it.isNotEmpty() } }
-    val todayPinnedNames: Flow<List<String>?> = context.dataStore.data.map { prefs -> prefs[todayPinned]?.split(',')?.filter { it.isNotEmpty() } }
+    val todayHiddenNames: Flow<List<String>?> = read { prefs -> prefs[todayHidden]?.split(',')?.filter { it.isNotEmpty() } }
+    val todayPinnedNames: Flow<List<String>?> = read { prefs -> prefs[todayPinned]?.split(',')?.filter { it.isNotEmpty() } }
 
-    private val goalMomentKey = androidx.datastore.preferences.core.booleanPreferencesKey("celebrate_goal")
-    private val weeklyRecapKey = androidx.datastore.preferences.core.booleanPreferencesKey("weekly_recap")
-    private val goalMomentWeekKey = longPreferencesKey("goal_moment_week")
-    private val recapWeekKey = longPreferencesKey("recap_week")
-    private val rewardsStartedKey = androidx.datastore.preferences.core.booleanPreferencesKey("rewards_started")
-    private val historyBadgesKey = androidx.datastore.preferences.core.booleanPreferencesKey("history_badges_waiting")
+    private val goalMomentKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.CELEBRATE_GOAL)
+    private val weeklyRecapKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.WEEKLY_RECAP)
+    private val goalMomentWeekKey = longPreferencesKey(SettingsKeys.GOAL_MOMENT_WEEK)
+    private val recapWeekKey = longPreferencesKey(SettingsKeys.RECAP_WEEK)
+    private val rewardsStartedKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.REWARDS_STARTED)
+    private val historyBadgesKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.HISTORY_BADGES_WAITING)
 
     /** Celebrations (workouts spec 3.4): the full screen goal moment, once a week. On by default. */
-    val goalMoment: Flow<Boolean> = context.dataStore.data.map { it[goalMomentKey] ?: true }
+    val goalMoment: Flow<Boolean> = read { it[goalMomentKey] ?: true }
 
     suspend fun setGoalMoment(on: Boolean) {
-        context.dataStore.edit { it[goalMomentKey] = on }
+        store.edit { it[goalMomentKey] = on }
     }
 
     /** Celebrations: the Monday morning recap notification. On by default. */
-    val weeklyRecap: Flow<Boolean> = context.dataStore.data.map { it[weeklyRecapKey] ?: true }
+    val weeklyRecap: Flow<Boolean> = read { it[weeklyRecapKey] ?: true }
 
     suspend fun setWeeklyRecap(on: Boolean) {
-        context.dataStore.edit { it[weeklyRecapKey] = on }
+        store.edit { it[weeklyRecapKey] = on }
     }
 
     /** The week (epoch day of its first day) the goal moment last showed for, so it shows once a week; null before. */
-    val goalMomentWeek: Flow<Long?> = context.dataStore.data.map { it[goalMomentWeekKey] }
+    val goalMomentWeek: Flow<Long?> = read { it[goalMomentWeekKey] }
 
     suspend fun setGoalMomentWeek(week: Long) {
-        context.dataStore.edit { it[goalMomentWeekKey] = week }
+        store.edit { it[goalMomentWeekKey] = week }
     }
 
     /** The week (epoch day of its first day) the last recap was about, so each week gets one; null before. */
-    val recapWeek: Flow<Long?> = context.dataStore.data.map { it[recapWeekKey] }
+    val recapWeek: Flow<Long?> = read { it[recapWeekKey] }
 
     suspend fun setRecapWeek(week: Long) {
-        context.dataStore.edit { it[recapWeekKey] = week }
+        store.edit { it[recapWeekKey] = week }
     }
 
     /** Rewards were worked out once already: later badges are new, not past history. */
-    val rewardsStarted: Flow<Boolean> = context.dataStore.data.map { it[rewardsStartedKey] ?: false }
+    val rewardsStarted: Flow<Boolean> = read { it[rewardsStartedKey] ?: false }
 
     /** The badges earned for past history on first launch wait to be shown once, all on one screen. */
-    val historyBadgesWaiting: Flow<Boolean> = context.dataStore.data.map { it[historyBadgesKey] ?: false }
+    val historyBadgesWaiting: Flow<Boolean> = read { it[historyBadgesKey] ?: false }
 
     suspend fun startRewards(historyBadges: Boolean) {
-        context.dataStore.edit {
+        store.edit {
             it[rewardsStartedKey] = true
             it[historyBadgesKey] = historyBadges
         }
     }
 
     suspend fun historyBadgesShown() {
-        context.dataStore.edit { it[historyBadgesKey] = false }
+        store.edit { it[historyBadgesKey] = false }
     }
 
-    private val habitAgeSeen = longPreferencesKey("habit_age_seen")
+    private val habitAgeSeen = longPreferencesKey(SettingsKeys.HABIT_AGE_SEEN)
 
     /** The Sunday (local midnight) of the last Habit Age estimate opened, so Today stops offering it; null before any. */
-    val habitAgeSeenAsOf: Flow<Long?> = context.dataStore.data.map { it[habitAgeSeen] }
+    val habitAgeSeenAsOf: Flow<Long?> = read { it[habitAgeSeen] }
 
     suspend fun setHabitAgeSeen(asOf: Long) {
-        context.dataStore.edit { it[habitAgeSeen] = asOf }
+        store.edit { it[habitAgeSeen] = asOf }
     }
 
-    private val firstScore = longPreferencesKey("first_score_day")
+    private val firstScore = longPreferencesKey(SettingsKeys.FIRST_SCORE_DAY)
 
     /**
      * The day (epoch day) of the first real Recovery score, so it's marked on that day only; null before one. Scores
      * from before this was kept are stored as a day long past ([org.openstrap.app.ui.dashboard.BEFORE_FIRST_SCORE]).
      */
-    val firstScoreDay: Flow<Long?> = context.dataStore.data.map { it[firstScore] }
+    val firstScoreDay: Flow<Long?> = read { it[firstScore] }
 
     suspend fun setFirstScoreDay(epochDay: Long) {
-        context.dataStore.edit { it[firstScore] = epochDay }
+        store.edit { it[firstScore] = epochDay }
     }
 
     suspend fun saveTodayEdits(hidden: List<String>, pinned: List<String>) {
-        context.dataStore.edit {
+        store.edit {
             it[todayHidden] = hidden.joinToString(",")
             it[todayPinned] = pinned.joinToString(",")
             // What changed's tile choice, which Edit Today replaced.
@@ -448,46 +458,50 @@ class SettingsStore(private val context: Context) {
         }
     }
 
-    private val companionId = androidx.datastore.preferences.core.intPreferencesKey("companion_association_id")
-    private val companionNo = androidx.datastore.preferences.core.booleanPreferencesKey("companion_declined")
+    private val companionId = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.COMPANION_ASSOCIATION_ID)
+    private val companionNo = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.COMPANION_DECLINED)
 
     /** The strap's companion association id ([org.openstrap.app.device.CompanionLink.LEGACY_ID] before Android 13), or null. */
-    val companionAssociation: Flow<Int?> = context.dataStore.data.map { it[companionId] }
+    val companionAssociation: Flow<Int?> = read { it[companionId] }
 
     suspend fun setCompanionAssociation(id: Int) {
-        context.dataStore.edit { it[companionId] = id }
+        store.edit { it[companionId] = id }
     }
 
     /** True once the user turned down Android's association prompt; the strap page then offers battery settings instead. */
-    val companionDeclined: Flow<Boolean> = context.dataStore.data.map { it[companionNo] == true }
+    val companionDeclined: Flow<Boolean> = read { it[companionNo] == true }
 
     suspend fun setCompanionDeclined(declined: Boolean) {
-        context.dataStore.edit { it[companionNo] = declined }
+        store.edit { it[companionNo] = declined }
     }
 
-    private val heldOff = androidx.datastore.preferences.core.booleanPreferencesKey("held_disconnected")
+    private val heldOff = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.HELD_DISCONNECTED)
 
     /** True after the user tapped Disconnect, until they connect again; background reconnects leave the strap alone. */
-    val heldDisconnected: Flow<Boolean> = context.dataStore.data.map { it[heldOff] == true }
+    val heldDisconnected: Flow<Boolean> = read { it[heldOff] == true }
 
     suspend fun setHeldDisconnected(held: Boolean) {
-        context.dataStore.edit { it[heldOff] = held }
+        store.edit { it[heldOff] = held }
     }
 
-    /** Forgets the strap and the Zepp sign-in; the user's profile and goals stay. */
+    /**
+     * Forgets the strap and the Zepp sign-in, removing only the keys about them ([STRAP_KEYS] and the history cursors),
+     * so every other setting stays, a key added later included.
+     */
     suspend fun forgetDevice() {
-        context.dataStore.edit { prefs ->
-            val keep = setOf(birthYear, sex, weight, height, imperial, sleepNeed, maxHr, activityLevel, activityAt, bodyAt, betaBlocker, pregnant, stepGoal, sleepGoal, activeGoal, calorieGoal, todayHidden, todayPinned, hcAuto, hcSynced, hcStopped, buzzCalls, buzzNotifications, buzzPattern, callBuzz, quietOn, quietFrom, quietTo, quietCalls, backupFolder, backupFolderName, backupDone, backupFailed, backupFailedAt)
-            prefs.asMap().keys.filter { it !in keep }.forEach { prefs.remove(it) }
+        store.edit { prefs ->
+            prefs.asMap().keys
+                .filter { it.name in STRAP_KEYS || it.name.startsWith(SettingsKeys.HISTORY_CURSOR_PREFIX) }
+                .forEach { prefs.remove(it) }
         }
     }
 
-    private val hcAuto = androidx.datastore.preferences.core.booleanPreferencesKey("health_connect_auto")
-    private val hcSynced = longPreferencesKey("health_connect_synced")
-    private val hcStopped = stringPreferencesKey("health_connect_auto_stopped")
+    private val hcAuto = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.HEALTH_CONNECT_AUTO)
+    private val hcSynced = longPreferencesKey(SettingsKeys.HEALTH_CONNECT_SYNCED)
+    private val hcStopped = stringPreferencesKey(SettingsKeys.HEALTH_CONNECT_AUTO_STOPPED)
 
     /** Auto sync to Health Connect, kept when the strap is forgotten: it's about the data, not the strap. */
-    val healthConnectAuto: Flow<HealthConnectAuto> = context.dataStore.data.map { prefs ->
+    val healthConnectAuto: Flow<HealthConnectAuto> = read { prefs ->
         HealthConnectAuto(
             prefs[hcAuto] == true,
             prefs[hcSynced],
@@ -497,7 +511,7 @@ class SettingsStore(private val context: Context) {
 
     /** The user's switch; either way clears why it last stopped. */
     suspend fun setHealthConnectAuto(enabled: Boolean) {
-        context.dataStore.edit {
+        store.edit {
             it[hcAuto] = enabled
             it.remove(hcStopped)
         }
@@ -505,7 +519,7 @@ class SettingsStore(private val context: Context) {
 
     /** Auto sync turns itself off, and the You page says [why]. */
     suspend fun stopHealthConnectAuto(why: HealthConnectAuto.Stopped) {
-        context.dataStore.edit {
+        store.edit {
             it[hcAuto] = false
             it[hcStopped] = why.name
         }
@@ -513,61 +527,61 @@ class SettingsStore(private val context: Context) {
 
     /** OpenStrap wrote to Health Connect at [epochSeconds]. */
     suspend fun setHealthConnectSynced(epochSeconds: Long) {
-        context.dataStore.edit { it[hcSynced] = epochSeconds }
+        store.edit { it[hcSynced] = epochSeconds }
     }
 
-    private val buzzCalls = androidx.datastore.preferences.core.booleanPreferencesKey("buzz_calls")
-    private val buzzNotifications = androidx.datastore.preferences.core.booleanPreferencesKey("buzz_notifications")
+    private val buzzCalls = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.BUZZ_CALLS)
+    private val buzzNotifications = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.BUZZ_NOTIFICATIONS)
 
     /** Buzz the strap while a phone call rings. Off by default; it needs the phone-state permission. */
-    val buzzOnCalls: Flow<Boolean> = context.dataStore.data.map { it[buzzCalls] == true }
+    val buzzOnCalls: Flow<Boolean> = read { it[buzzCalls] == true }
 
     /** Buzz the strap once for each app notification that would make a sound. Off by default; it needs notification access. */
-    val buzzOnNotifications: Flow<Boolean> = context.dataStore.data.map { it[buzzNotifications] == true }
+    val buzzOnNotifications: Flow<Boolean> = read { it[buzzNotifications] == true }
 
-    private val buzzPattern = stringPreferencesKey("buzz_pattern")
+    private val buzzPattern = stringPreferencesKey(SettingsKeys.BUZZ_PATTERN)
 
     /** How the strap buzzes for a notification; two short buzzes by default. */
-    val notificationPattern: Flow<BuzzPattern> = context.dataStore.data.map { prefs ->
+    val notificationPattern: Flow<BuzzPattern> = read { prefs ->
         BuzzPattern.entries.firstOrNull { it.name == prefs[buzzPattern] } ?: BuzzPattern.TWO_SHORT
     }
 
     suspend fun setNotificationPattern(pattern: BuzzPattern) {
-        context.dataStore.edit { it[buzzPattern] = pattern.name }
+        store.edit { it[buzzPattern] = pattern.name }
     }
 
-    private val callBuzz = stringPreferencesKey("call_buzz")
+    private val callBuzz = stringPreferencesKey(SettingsKeys.CALL_BUZZ)
 
     /** How the strap buzzes for a call; steady by default. */
-    val callBuzzStyle: Flow<CallBuzz> = context.dataStore.data.map { prefs ->
+    val callBuzzStyle: Flow<CallBuzz> = read { prefs ->
         CallBuzz.entries.firstOrNull { it.name == prefs[callBuzz] } ?: CallBuzz.STEADY
     }
 
     suspend fun setCallBuzzStyle(style: CallBuzz) {
-        context.dataStore.edit { it[callBuzz] = style.name }
+        store.edit { it[callBuzz] = style.name }
     }
 
     suspend fun setBuzzOnCalls(enabled: Boolean) {
-        context.dataStore.edit { it[buzzCalls] = enabled }
+        store.edit { it[buzzCalls] = enabled }
     }
 
     suspend fun setBuzzOnNotifications(enabled: Boolean) {
-        context.dataStore.edit { it[buzzNotifications] = enabled }
+        store.edit { it[buzzNotifications] = enabled }
     }
 
-    private val quietOn = androidx.datastore.preferences.core.booleanPreferencesKey("quiet_hours")
-    private val quietFrom = androidx.datastore.preferences.core.intPreferencesKey("quiet_from_minutes")
-    private val quietTo = androidx.datastore.preferences.core.intPreferencesKey("quiet_to_minutes")
-    private val quietCalls = androidx.datastore.preferences.core.booleanPreferencesKey("quiet_calls")
+    private val quietOn = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.QUIET_HOURS)
+    private val quietFrom = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.QUIET_FROM_MINUTES)
+    private val quietTo = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.QUIET_TO_MINUTES)
+    private val quietCalls = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.QUIET_CALLS)
 
     /** When the strap doesn't buzz for notifications; off by default, 22:00 to 07:00 once turned on. */
-    val quietHours: Flow<QuietHours> = context.dataStore.data.map { prefs ->
+    val quietHours: Flow<QuietHours> = read { prefs ->
         val d = QuietHours()
         QuietHours(prefs[quietOn] == true, prefs[quietFrom] ?: d.from, prefs[quietTo] ?: d.to, prefs[quietCalls] == true)
     }
 
     suspend fun setQuietHours(q: QuietHours) {
-        context.dataStore.edit {
+        store.edit {
             it[quietOn] = q.on
             it[quietFrom] = q.from.mod(24 * 60)
             it[quietTo] = q.to.mod(24 * 60)
@@ -575,21 +589,21 @@ class SettingsStore(private val context: Context) {
         }
     }
 
-    private val strapBattery = androidx.datastore.preferences.core.intPreferencesKey("strap_battery")
-    private val strapCharging = androidx.datastore.preferences.core.booleanPreferencesKey("strap_charging")
-    private val syncDone = longPreferencesKey("strap_last_sync_done")
+    private val strapBattery = androidx.datastore.preferences.core.intPreferencesKey(SettingsKeys.STRAP_BATTERY)
+    private val strapCharging = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.STRAP_CHARGING)
+    private val syncDone = longPreferencesKey(SettingsKeys.STRAP_LAST_SYNC_DONE)
 
     /**
      * What a widget's strap status line reads with the strap away (widgets spec 5): pairing, the battery and charging
      * as last connected, and when a sync last finished.
      */
-    val strapSnapshot: Flow<StrapSnapshot> = context.dataStore.data.map { prefs ->
+    val strapSnapshot: Flow<StrapSnapshot> = read { prefs ->
         StrapSnapshot(prefs[address] != null && prefs[authKey] != null, prefs[strapBattery], prefs[strapCharging] == true, prefs[syncDone])
     }
 
     /** The connected strap's battery and charging, written when either changes. */
     suspend fun setStrapBattery(percent: Int, charging: Boolean) {
-        context.dataStore.edit {
+        store.edit {
             it[strapBattery] = percent
             it[strapCharging] = charging
         }
@@ -597,24 +611,24 @@ class SettingsStore(private val context: Context) {
 
     /** When a history sync last finished (epoch seconds). Per type cursors are [lastSync]. */
     suspend fun setLastSyncDone(epochSeconds: Long) {
-        context.dataStore.edit { it[syncDone] = epochSeconds }
+        store.edit { it[syncDone] = epochSeconds }
     }
 
     /** Last synced timestamp (epoch seconds) for a history data type. */
     suspend fun lastSync(type: String): Long? =
-        context.dataStore.data.first()[longPreferencesKey("last_sync_$type")]
+        store.data.first()[longPreferencesKey(SettingsKeys.LAST_SYNC_PREFIX + type)]
 
     suspend fun setLastSync(type: String, epochSeconds: Long) {
-        context.dataStore.edit { it[longPreferencesKey("last_sync_$type")] = epochSeconds }
+        store.edit { it[longPreferencesKey(SettingsKeys.LAST_SYNC_PREFIX + type)] = epochSeconds }
     }
 
-    private val backupFolder = stringPreferencesKey("backup_folder")
-    private val backupFolderName = stringPreferencesKey("backup_folder_name")
-    private val backupDone = longPreferencesKey("backup_last_done")
-    private val backupFailed = stringPreferencesKey("backup_failed")
-    private val backupFailedAt = longPreferencesKey("backup_failed_at")
+    private val backupFolder = stringPreferencesKey(SettingsKeys.BACKUP_FOLDER)
+    private val backupFolderName = stringPreferencesKey(SettingsKeys.BACKUP_FOLDER_NAME)
+    private val backupDone = longPreferencesKey(SettingsKeys.BACKUP_LAST_DONE)
+    private val backupFailed = stringPreferencesKey(SettingsKeys.BACKUP_FAILED)
+    private val backupFailedAt = longPreferencesKey(SettingsKeys.BACKUP_FAILED_AT)
 
-    val backup: Flow<BackupState> = context.dataStore.data.map { prefs ->
+    val backup: Flow<BackupState> = read { prefs ->
         BackupState(
             prefs[backupFolder], prefs[backupFolderName], prefs[backupDone],
             prefs[backupFailed]?.let { v -> org.openstrap.app.export.BackupFiles.Failure.entries.firstOrNull { it.name == v } },
@@ -624,7 +638,7 @@ class SettingsStore(private val context: Context) {
 
     /** Turns automatic backup on, or moves it to another folder; the last run's result goes with the old folder. */
     suspend fun setBackupFolder(uri: String, name: String?) {
-        context.dataStore.edit {
+        store.edit {
             it[backupFolder] = uri
             if (name != null) it[backupFolderName] = name else it.remove(backupFolderName)
             it.remove(backupDone); it.remove(backupFailed); it.remove(backupFailedAt)
@@ -632,69 +646,69 @@ class SettingsStore(private val context: Context) {
     }
 
     suspend fun clearBackup() {
-        context.dataStore.edit {
+        store.edit {
             it.remove(backupFolder); it.remove(backupFolderName); it.remove(backupDone); it.remove(backupFailed); it.remove(backupFailedAt)
         }
     }
 
     suspend fun setBackupDone(epochSeconds: Long) {
-        context.dataStore.edit {
+        store.edit {
             it[backupDone] = epochSeconds
             it.remove(backupFailed); it.remove(backupFailedAt)
         }
     }
 
     suspend fun setBackupFailed(failure: org.openstrap.app.export.BackupFiles.Failure, epochSeconds: Long) {
-        context.dataStore.edit {
+        store.edit {
             it[backupFailed] = failure.name
             it[backupFailedAt] = epochSeconds
         }
     }
 
-    /** The settings a backup carries ([org.openstrap.app.export.SettingsBackup.KEYS]), by key name, as stored. */
-    private val updateAutoKey = androidx.datastore.preferences.core.booleanPreferencesKey("update_auto")
-    private val updateCheckedKey = longPreferencesKey("update_checked_at")
-    private val updateNotifiedKey = stringPreferencesKey("update_notified_tag")
-    private val updateInstallingKey = stringPreferencesKey("update_installing_tag")
-    private val updateSeenKey = stringPreferencesKey("update_seen_tag")
+    private val updateAutoKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.UPDATE_AUTO)
+    private val updateCheckedKey = longPreferencesKey(SettingsKeys.UPDATE_CHECKED_AT)
+    private val updateNotifiedKey = stringPreferencesKey(SettingsKeys.UPDATE_NOTIFIED_TAG)
+    private val updateInstallingKey = stringPreferencesKey(SettingsKeys.UPDATE_INSTALLING_TAG)
+    private val updateSeenKey = stringPreferencesKey(SettingsKeys.UPDATE_SEEN_TAG)
 
     /** The daily check for a new OpenStrap release on GitHub ([org.openstrap.app.update.AppUpdater]). On unless turned off. */
-    val updateAuto: Flow<Boolean> = context.dataStore.data.map { it[updateAutoKey] ?: true }
+    val updateAuto: Flow<Boolean> = read { it[updateAutoKey] ?: true }
 
     suspend fun setUpdateAuto(on: Boolean) {
-        context.dataStore.edit { it[updateAutoKey] = on }
+        store.edit { it[updateAutoKey] = on }
     }
 
     /** When the release list was last read from GitHub, epoch seconds. */
-    val updateChecked: Flow<Long?> = context.dataStore.data.map { it[updateCheckedKey] }
+    val updateChecked: Flow<Long?> = read { it[updateCheckedKey] }
 
     suspend fun setUpdateChecked(epochSeconds: Long) {
-        context.dataStore.edit { it[updateCheckedKey] = epochSeconds }
+        store.edit { it[updateCheckedKey] = epochSeconds }
     }
 
     /** The tag of the last release the daily check notified about, so each one is said once. */
-    suspend fun updateNotified(): String? = context.dataStore.data.first()[updateNotifiedKey]
+    suspend fun updateNotified(): String? = store.data.first()[updateNotifiedKey]
 
     suspend fun setUpdateNotified(tag: String) {
-        context.dataStore.edit { it[updateNotifiedKey] = tag }
+        store.edit { it[updateNotifiedKey] = tag }
     }
 
     /** The tag of the newest release the Updates page has shown, so its dot on the avatar goes once it's been seen. */
-    val updateSeen: Flow<String?> = context.dataStore.data.map { it[updateSeenKey] }
+    val updateSeen: Flow<String?> = read { it[updateSeenKey] }
 
     suspend fun setUpdateSeen(tag: String) {
-        context.dataStore.edit { it[updateSeenKey] = tag }
+        store.edit { it[updateSeenKey] = tag }
     }
 
     /** The tag of the release handed to Android to install, until the new version starts; null when none. */
-    suspend fun updateInstalling(): String? = context.dataStore.data.first()[updateInstallingKey]
+    suspend fun updateInstalling(): String? = store.data.first()[updateInstallingKey]
 
     suspend fun setUpdateInstalling(tag: String?) {
-        context.dataStore.edit { if (tag == null) it.remove(updateInstallingKey) else it[updateInstallingKey] = tag }
+        store.edit { if (tag == null) it.remove(updateInstallingKey) else it[updateInstallingKey] = tag }
     }
 
+    /** The settings a backup carries ([org.openstrap.app.export.SettingsBackup.carries]), by key name, as stored. */
     suspend fun backupValues(): Map<String, Any> =
-        context.dataStore.data.first().asMap().mapKeys { it.key.name }.filterKeys { it in org.openstrap.app.export.SettingsBackup.KEYS }
+        store.data.first().asMap().mapKeys { it.key.name }.filterKeys(org.openstrap.app.export.SettingsBackup::carries)
 
     /**
      * Restores [values] from a backup, only those this phone has never set, so restoring twice or onto a phone already
@@ -702,7 +716,7 @@ class SettingsStore(private val context: Context) {
      */
     suspend fun restoreValues(values: Map<String, Any>): Int {
         var written = 0
-        context.dataStore.edit { prefs ->
+        store.edit { prefs ->
             val present = prefs.asMap().keys.mapTo(HashSet()) { it.name }
             for ((name, v) in org.openstrap.app.export.SettingsBackup.missing(values, present)) {
                 when (v) {
@@ -718,7 +732,111 @@ class SettingsStore(private val context: Context) {
         }
         return written
     }
+
+    companion object {
+        /**
+         * What [forgetDevice] removes: the paired strap (address, auth key, name), its companion association and the
+         * answer to Android's association prompt, the Disconnect hold, the battery and sync time widgets show, and the
+         * Zepp sign-in, which belongs to that strap's account. The next strap starts clean. The history cursors go too.
+         */
+        val STRAP_KEYS: Set<String> = with(SettingsKeys) {
+            setOf(
+                DEVICE_ADDRESS, DEVICE_AUTH_KEY, DEVICE_NAME,
+                COMPANION_ASSOCIATION_ID, COMPANION_DECLINED, HELD_DISCONNECTED,
+                STRAP_BATTERY, STRAP_CHARGING, STRAP_LAST_SYNC_DONE,
+                ZEPP_APP_TOKEN, ZEPP_USER_ID, ZEPP_API_BASE, ZEPP_CHINA, ZEPP_LOGIN_TOKEN, ZEPP_APP_TOKEN_AT, ZEPP_APP_TTL,
+            )
+        }
+
+        /** Settings kept in [store] rather than the app's own file, for tests. */
+        internal fun of(store: DataStore<Preferences>) = SettingsStore(store)
+    }
 }
 
-/** The key each sport's [SportSettings][org.openstrap.app.data.SportSettings] is stored under, before the sport's id. */
-private const val SPORT_SETTINGS_PREFIX = "sport_settings_"
+/**
+ * The DataStore name of every setting [SettingsStore] keeps, shared with [org.openstrap.app.export.SettingsBackup] so a
+ * backup names the same keys. A key added here is kept when the strap is forgotten unless [SettingsStore.forgetDevice]
+ * names it.
+ */
+object SettingsKeys {
+    const val DEVICE_ADDRESS = "device_address"
+    const val DEVICE_AUTH_KEY = "device_auth_key"
+    const val DEVICE_NAME = "device_name"
+    const val ZEPP_APP_TOKEN = "zepp_app_token"
+    const val ZEPP_USER_ID = "zepp_user_id"
+    const val ZEPP_API_BASE = "zepp_api_base"
+    const val ZEPP_CHINA = "zepp_china"
+    const val ZEPP_LOGIN_TOKEN = "zepp_login_token"
+    const val ZEPP_APP_TOKEN_AT = "zepp_app_token_at"
+    const val ZEPP_APP_TTL = "zepp_app_ttl"
+    const val LIVE_HR = "live_hr"
+    const val AUTO_START_WORKOUTS = "auto_start_workouts"
+    const val WEAR_REMINDER = "wear_reminder"
+    const val STRAP_SESSIONS = "strap_sessions"
+    const val WORKOUT_LIVE_VIEW = "workout_live_view"
+    const val WORKOUT_SIDES = "workout_sides"
+    const val PROFILE_BIRTH_YEAR = "profile_birth_year"
+    const val PROFILE_SEX = "profile_sex"
+    const val PROFILE_WEIGHT_KG = "profile_weight_kg"
+    const val PROFILE_HEIGHT_CM = "profile_height_cm"
+    const val PROFILE_IMPERIAL = "profile_imperial"
+    const val PROFILE_SLEEP_NEED_MINUTES = "profile_sleep_need_minutes"
+    const val PROFILE_MAX_HR = "profile_max_hr"
+    const val PROFILE_ACTIVITY_LEVEL = "profile_activity_level"
+    const val PROFILE_ACTIVITY_ANSWERED_AT = "profile_activity_answered_at"
+    const val PROFILE_BODY_MEASURED_AT = "profile_body_measured_at"
+    const val PROFILE_BETA_BLOCKER = "profile_beta_blocker"
+    const val PROFILE_PREGNANT = "profile_pregnant"
+    const val PROFILE_HR_ZONES = "profile_hr_zones"
+    const val GOAL_STEPS = "goal_steps"
+    const val GOAL_SLEEP_MINUTES = "goal_sleep_minutes"
+    const val GOAL_ACTIVE_HOURS = "goal_active_hours"
+    const val GOAL_CALORIES = "goal_calories"
+    const val GOAL_WORKOUTS_WEEK = "goal_workouts_week"
+    const val TODAY_HIDDEN = "today_hidden"
+    const val TODAY_PINNED = "today_pinned"
+    const val CELEBRATE_GOAL = "celebrate_goal"
+    const val WEEKLY_RECAP = "weekly_recap"
+    const val GOAL_MOMENT_WEEK = "goal_moment_week"
+    const val RECAP_WEEK = "recap_week"
+    const val REWARDS_STARTED = "rewards_started"
+    const val HISTORY_BADGES_WAITING = "history_badges_waiting"
+    const val HABIT_AGE_SEEN = "habit_age_seen"
+    const val FIRST_SCORE_DAY = "first_score_day"
+    const val COMPANION_ASSOCIATION_ID = "companion_association_id"
+    const val COMPANION_DECLINED = "companion_declined"
+    const val HELD_DISCONNECTED = "held_disconnected"
+    const val HEALTH_CONNECT_AUTO = "health_connect_auto"
+    const val HEALTH_CONNECT_SYNCED = "health_connect_synced"
+    const val HEALTH_CONNECT_AUTO_STOPPED = "health_connect_auto_stopped"
+    const val BUZZ_CALLS = "buzz_calls"
+    const val BUZZ_NOTIFICATIONS = "buzz_notifications"
+    const val BUZZ_PATTERN = "buzz_pattern"
+    const val CALL_BUZZ = "call_buzz"
+    const val QUIET_HOURS = "quiet_hours"
+    const val QUIET_FROM_MINUTES = "quiet_from_minutes"
+    const val QUIET_TO_MINUTES = "quiet_to_minutes"
+    const val QUIET_CALLS = "quiet_calls"
+    const val STRAP_BATTERY = "strap_battery"
+    const val STRAP_CHARGING = "strap_charging"
+    const val STRAP_LAST_SYNC_DONE = "strap_last_sync_done"
+    const val BACKUP_FOLDER = "backup_folder"
+    const val BACKUP_FOLDER_NAME = "backup_folder_name"
+    const val BACKUP_LAST_DONE = "backup_last_done"
+    const val BACKUP_FAILED = "backup_failed"
+    const val BACKUP_FAILED_AT = "backup_failed_at"
+    const val UPDATE_AUTO = "update_auto"
+    const val UPDATE_CHECKED_AT = "update_checked_at"
+    const val UPDATE_NOTIFIED_TAG = "update_notified_tag"
+    const val UPDATE_INSTALLING_TAG = "update_installing_tag"
+    const val UPDATE_SEEN_TAG = "update_seen_tag"
+
+    /** Before a type, the keys of [SettingsStore.lastSync]. */
+    const val LAST_SYNC_PREFIX = "last_sync_"
+
+    /** Before a GDSP type's code, the strap's history cursors ([org.openstrap.app.device.HistorySync]). */
+    const val HISTORY_CURSOR_PREFIX = LAST_SYNC_PREFIX + "gdsp_"
+
+    /** The key each sport's [SportSettings][org.openstrap.app.data.SportSettings] is stored under, before the sport's id. */
+    const val SPORT_SETTINGS_PREFIX = "sport_settings_"
+}
