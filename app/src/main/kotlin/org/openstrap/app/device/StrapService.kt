@@ -74,14 +74,16 @@ class StrapService : LifecycleService() {
         // A GPS workout adds the location type, allowed because its start comes from the visible ready screen. After a
         // restart in the background Android refuses it; the workout carries on without GPS.
         val gps = (workout.state.value as? WorkoutState.Recording)?.workout?.useGps == true && WorkoutLocation.granted(this)
-        val base = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0
-        val withGps = if (gps && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) base or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else base
+        val base = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        val withGps = if (gps) base or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else base
         // Posting it again would undo a swipe; once in the foreground, the service stays there without it.
         if (!foreground || hidden.value == null || workout.state.value is WorkoutState.Recording) {
-            try {
-                ServiceCompat.startForeground(this, NOTIFICATION_ID, first, withGps)
-            } catch (e: SecurityException) {
-                ServiceCompat.startForeground(this, NOTIFICATION_ID, first, base)
+            val log: (String) -> Unit = { (strap as? StrapManager)?.log(it) }
+            // Refused for the location type, it tries again without. Refused outright (a start from the background
+            // with no exemption), it stops rather than crash: a workout records on, but can be killed.
+            if (!tryForeground(first, withGps, log) && (withGps == base || !tryForeground(first, base, log))) {
+                stopSelf()
+                return START_NOT_STICKY
             }
             foreground = true
         }
@@ -172,6 +174,22 @@ class StrapService : LifecycleService() {
         }
         return if (recording) START_STICKY else START_NOT_STICKY
     }
+
+    /**
+     * [ServiceCompat.startForeground] as [type], false when Android refuses it: a [SecurityException] for a type the app
+     * may not use now, an [IllegalStateException] (`ForegroundServiceStartNotAllowedException`) for a start it doesn't allow.
+     */
+    private fun tryForeground(n: Notification, type: Int, log: (String) -> Unit): Boolean =
+        try {
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, n, type)
+            true
+        } catch (e: SecurityException) {
+            log("service: foreground as $type refused: $e")
+            false
+        } catch (e: IllegalStateException) {
+            log("service: foreground start not allowed: $e")
+            false
+        }
 
     override fun onCreate() {
         super.onCreate()
@@ -282,7 +300,7 @@ class StrapService : LifecycleService() {
      * turned off for the app, and on Samsung, whose One UI keeps the chip for apps it lists.
      */
     private fun liveUpdatesShown(): Boolean =
-        Build.VERSION.SDK_INT >= 36 && !Build.MANUFACTURER.equals("samsung", ignoreCase = true) &&
+        !Build.MANUFACTURER.equals("samsung", ignoreCase = true) &&
             runCatching { getSystemService(NotificationManager::class.java).canPostPromotedNotifications() }.getOrDefault(false)
 
     /**
@@ -305,7 +323,7 @@ class StrapService : LifecycleService() {
             w.distanceFromSteps, target, session.zoneSeconds.value.toList(), confirming, session.kcal.value?.active,
         )
         val actions = WorkoutNotification.actions(r.paused, confirming, ::service)
-        if (!liveUpdatesShown()) return WorkoutNotification.build(this, card, actions, openApp()).build()
+        if (!liveUpdatesShown()) return WorkoutNotification.build(this, card, actions, openApp()).unsaved(r).build()
         val color = when {
             r.paused || !connected -> PAUSED_GREY
             zone != null -> ZONE_COLORS[zone].toArgb()
@@ -350,6 +368,7 @@ class StrapService : LifecycleService() {
             .apply { if (r.paused) setShortCriticalText("Paused") }
             // In the header, after the running time.
             .setSubText(card.kcal)
+            .unsaved(r)
             .setContentIntent(openApp())
             .setShowWhen(true)
             .setUsesChronometer(!r.paused)
@@ -357,6 +376,10 @@ class StrapService : LifecycleService() {
         actions.forEach(b::addAction)
         return b.build()
     }
+
+    /** In the header: the database refused the last save, so a process death now would lose some of the workout. */
+    private fun NotificationCompat.Builder.unsaved(r: WorkoutState.Recording): NotificationCompat.Builder =
+        apply { if (r.saveFailed) setSubText(NOT_SAVED) }
 
     /** "End workout?": a stray tap in a pocket can't end it. It falls back after [CONFIRM_MS]. */
     private fun NotificationCompat.Builder.endConfirmation(): NotificationCompat.Builder =
@@ -439,6 +462,7 @@ class StrapService : LifecycleService() {
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setRequestPromotedOngoing(true)
+            .unsaved(r)
             .setContentIntent(openApp())
         if (confirming) return b.endConfirmation().build()
         if (until != null) {
@@ -541,6 +565,7 @@ class StrapService : LifecycleService() {
         private const val REQUEST_START = 5
         private const val REQUEST_UNDO = 6
         private const val CONFIRM_MS = 6_000L
+        private const val NOT_SAVED = "Not saved yet"
         private const val FIGURES_REFRESH_MS = 30 * 60_000L
         /** Battery percent at which the everyday notification says to charge. */
         private const val LOW_BATTERY = 15
@@ -576,7 +601,7 @@ class StrapService : LifecycleService() {
          * Android 14 on refuses a connected-device service to an app holding no Bluetooth permission (never granted, or
          * revoked in Settings), and the refusal throws inside the service, where no caller can catch it.
          */
-        fun allowed(context: Context) = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
+        fun allowed(context: Context) =
             listOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
                 .any { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
 
