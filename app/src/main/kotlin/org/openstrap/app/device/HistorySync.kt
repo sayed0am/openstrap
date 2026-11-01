@@ -2,6 +2,8 @@ package org.openstrap.app.device
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -9,6 +11,7 @@ import kotlinx.coroutines.launch
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.StrapUuids
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.DailyMaxHr
@@ -88,16 +91,26 @@ import org.openstrap.protocol.history.StressSample as StrapStress
  * Control runs over channel endpoint 0x004B when listed, otherwise HUAMI(0004); data always
  * arrives on HUAMI(0005). Each type keeps its own cursor so an interrupted sync resumes.
  */
-class HistorySync(
+class HistorySync internal constructor(
     private val session: ChannelSession,
-    private val gatt: GattClient,
+    private val gatt: HistoryGatt,
     private val dao: HealthDao,
-    private val settings: SettingsStore,
+    private val cursors: SyncCursors,
     private val state: MutableStateFlow<SyncState>,
     private val log: (String) -> Unit,
     /** Called for a newly synced workout the strap auto-detected, to notify about it (codemap 05 §8). */
     private val onAutoDetected: (Workout) -> Unit = {},
 ) {
+    constructor(
+        session: ChannelSession,
+        gatt: GattClient,
+        dao: HealthDao,
+        settings: SettingsStore,
+        state: MutableStateFlow<SyncState>,
+        log: (String) -> Unit,
+        onAutoDetected: (Workout) -> Unit = {},
+    ) : this(session, gatt.asHistoryGatt(), dao, settings.asSyncCursors(), state, log, onAutoDetected)
+
     private val zone = ZoneId.systemDefault()
     private val useChannel = session.services.has(Endpoints.HISTORY)
     private val control = Channel<GdspMessage>(Channel.UNLIMITED)
@@ -107,7 +120,6 @@ class HistorySync(
     /** Syncs every type, or only the codes in [only] (an on-demand sync after a data-available push). */
     suspend fun run(only: Set<Int>? = null) = coroutineScope {
         state.value = SyncState.Running("Preparing…")
-        repairEarlierSyncs()
         val listeners = launch {
             launch { gatt.notifications.filter { it.characteristic == HISTORY_DATA }.collect { data.send(it.value) } }
             if (useChannel) {
@@ -116,7 +128,11 @@ class HistorySync(
                 launch { gatt.notifications.filter { it.characteristic == HISTORY_CONTROL }.collect { control.send(FetchCodec.parse(it.value)) } }
             }
         }
+        // The catch rethrows a CancellationException only once the sync is cancelled ([cancelled]): a timeout is one too.
+        @Suppress("SuspendFunSwallowedCancellation")
         try {
+            // Inside the try: a database error here ends the sync as Failed instead of escaping the app's scope.
+            repairEarlierSyncs()
             gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_DATA)
             if (!useChannel) gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_CONTROL)
             log("history: control via ${if (useChannel) "channel 0x004B" else "HUAMI(0004)"}")
@@ -133,18 +149,21 @@ class HistorySync(
                 try {
                     if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec)
                 } catch (e: Exception) {
-                    if (e is kotlinx.coroutines.CancellationException || e is FastRechargeModeException) throw e
+                    // A timeout is a CancellationException too, but only a cancelled sync stops here (audit C2).
+                    if (e is FastRechargeModeException || cancelled(e)) throw e
                     // The link is gone: every later type would fail the same way, and the sync must not end as Done.
                     if (!gatt.connected.value) throw e
                     log("history ${spec.type}: $e")
                 }
             }
-            if (only == null && session.services.has(Endpoints.READINESS)) runCatching { syncReadiness() }.onFailure { log("readiness: $it") }
+            if (only == null && session.services.has(Endpoints.READINESS)) catching { syncReadiness() }.onFailure { log("readiness: $it") }
             // A session the strap ran alongside a phone workout has just come in: its figures replace the model's.
-            runCatching { org.openstrap.app.data.WorkoutEffectEngine(dao).takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK) }
+            catching {
+                org.openstrap.app.data.WorkoutEffectEngine(dao).takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK)
+            }
                 .onFailure { log("strap effect: $it") }
             // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
-            runCatching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
+            catching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
                 .onSuccess { if (it > 0) log("history: removed $it sleep sessions deleted over a week ago") }
                 .onFailure { log("deleted sleep: $it") }
             state.value = SyncState.Done(System.currentTimeMillis() / 1000)
@@ -153,7 +172,7 @@ class HistorySync(
             log("history: strap is in fast-charge mode, sync stopped")
             state.value = SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off.")
         } catch (e: Exception) {
-            if (e is kotlinx.coroutines.CancellationException) throw e
+            if (cancelled(e)) throw e
             log("history failed: $e")
             // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for the card.
             // Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause is the link.
@@ -161,8 +180,15 @@ class HistorySync(
             state.value = SyncState.Failed(reason ?: "Sync failed")
         } finally {
             listeners.cancel()
+            // A cancelled sync, or anything else that got past the catches, must not stay Running: auto sync skips
+            // while it is, and the notification would show progress for good.
+            if (state.value is SyncState.Running) state.value = SyncState.Failed("Sync stopped before it finished.")
         }
     }
+
+    /** True when [e] is this sync being cancelled, not a timeout thrown as a CancellationException while it runs. */
+    private suspend fun cancelled(e: Exception): Boolean =
+        e is kotlinx.coroutines.CancellationException && !currentCoroutineContext().isActive
 
     /**
      * Debug aid: fetches every type the strap offers since [fromEpoch] and writes each chunk's payload to
@@ -184,14 +210,14 @@ class HistorySync(
             log("dump: types $codes (strap offers ${version?.supportedTypes()?.sorted()})")
             for (code in codes) {
                 state.value = SyncState.Running("Dumping type $code")
-                runCatching {
+                catching {
                     var cursor = fromEpoch
                     repeat(DUMP_CHUNKS) {
                         val chunk = when (val f = client.fetch(code, cursor, zone)) {
                             is GdspFetch.Chunk -> f
-                            is GdspFetch.Refused -> { log("dump $code: start ${f.status}"); return@runCatching }
-                            is GdspFetch.Failed -> { log("dump $code: ${f.reason}"); return@runCatching }
-                            GdspFetch.Empty -> { log("dump $code: empty"); return@runCatching }
+                            is GdspFetch.Refused -> { log("dump $code: start ${f.status}"); return@catching }
+                            is GdspFetch.Failed -> { log("dump $code: ${f.reason}"); return@catching }
+                            GdspFetch.Empty -> { log("dump $code: empty"); return@catching }
                         }
                         client.finish()
                         val header = chunk.headerTime
@@ -201,7 +227,7 @@ class HistorySync(
                         val spec = HistoryTypeSpecs.forCode(code)
                         val parsed = spec?.parser?.parse(payload, ParseContext(header, activityRecordSize = recordSize(code, payload, chunk.sizeField)))
                         val next = (parsed as? ParseResult.Success)?.nextCursor
-                        if (next == null || next <= cursor || spec.loops == false) return@runCatching
+                        if (next == null || next <= cursor || spec.loops == false) return@catching
                         cursor = next
                     }
                 }.onFailure { log("dump $code: $it") }
@@ -239,11 +265,11 @@ class HistorySync(
         // they were all deleted here is not that, and going back would only fetch them again to skip them.
         if (dao.workoutCount() == 0 && dao.deletedWorkoutsAll().isEmpty()) for (type in WORKOUT_TYPES) {
             val key = "gdsp_${type.code}"
-            if ((settings.lastSync(key) ?: continue) > now - WORKOUT_LOOKBACK) settings.setLastSync(key, now - WORKOUT_LOOKBACK)
+            if ((cursors.get(key) ?: continue) > now - WORKOUT_LOOKBACK) cursors.set(key, now - WORKOUT_LOOKBACK)
         }
         for (type in HistoryDataType.entries) {
             val key = "gdsp_${type.code}"
-            val cursor = settings.lastSync(key) ?: continue
+            val cursor = cursors.get(key) ?: continue
             val activityRepaired = type == HistoryDataType.ACTIVITY && padding + outside > 0
             if (cursor <= now + FUTURE_SLACK && !activityRepaired) continue
             val reset = if (type == HistoryDataType.ACTIVITY) {
@@ -252,14 +278,14 @@ class HistorySync(
                 now - DEFAULT_LOOKBACK
             }
             log("history: cursor for $type was ${Instant.ofEpochSecond(cursor)}, reset to ${Instant.ofEpochSecond(reset)}")
-            settings.setLastSync(key, reset)
+            cursors.set(key, reset)
         }
     }
 
     private suspend fun syncType(spec: HistoryTypeSpec) {
         val key = "gdsp_${spec.code}"
         val lookback = if (spec.type in WORKOUT_TYPES) WORKOUT_LOOKBACK else DEFAULT_LOOKBACK
-        var cursor = settings.lastSync(key) ?: (System.currentTimeMillis() / 1000 - lookback)
+        var cursor = cursors.get(key) ?: (System.currentTimeMillis() / 1000 - lookback)
         // The strap keeps updating a day's max exercise HR, so Zepp re-fetches it from the start of the day on every
         // sync (y4t.java:62-69).
         if (spec.type == HistoryDataType.DAILY_MAX_EXERCISE_HR) cursor = dayStart(cursor)
@@ -293,7 +319,10 @@ class HistorySync(
                     val kept = records.filter { it.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK }
                     val dropped = records.size - kept.size
                     log("history ${spec.type}: ${kept.size} records" + if (dropped > 0) " ($dropped with impossible times dropped)" else "")
-                    store(kept)
+                    // The chunk's rows commit together, before the ACK and the cursor: a kill before the commit keeps
+                    // none of them and the cursor where it was, a kill after it fetches the chunk again, and storing
+                    // it again replaces the same rows.
+                    dao.inTransaction { store(kept) }
                     // Only acknowledge once the data is safely in the database.
                     finish()
                     // A chunk with nothing usable (only gap slots, or only impossible times) still moves the cursor
@@ -303,7 +332,7 @@ class HistorySync(
                     val next = parsedNext
                         ?.let { if (kept.isEmpty()) it else it.coerceAtMost(kept.maxOf { r -> r.timestamp } + 60) }
                         ?.coerceAtMost(now)
-                    if (next != null && next > cursor) settings.setLastSync(key, next)
+                    if (next != null && next > cursor) cursors.set(key, next)
                     if (!HistoryTypeSpecs.shouldContinue(spec, cursor, next)) return
                     cursor = next!!
                 }
@@ -344,7 +373,7 @@ class HistorySync(
      */
     private suspend fun syncWorkouts(spec: HistoryTypeSpec) {
         val key = "gdsp_${spec.code}"
-        var cursor = settings.lastSync(key) ?: (System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK)
+        var cursor = cursors.get(key) ?: (System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK)
         repeat(MAX_CHUNKS_PER_TYPE) {
             when (val w = client.fetchWorkout(cursor, zone)) {
                 WorkoutFetch.None -> return
@@ -357,18 +386,20 @@ class HistorySync(
                     } else if (w.summary.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK) {
                         log("history workout ${Instant.ofEpochSecond(w.summary.trackId)}: type ${w.summary.sportType}, subtype ${w.summary.subtype}, ${w.detail?.heartRate?.size ?: 0} HR samples")
                         val storedBefore = dao.workout(w.summary.trackId).first() != null
-                        store(listOfNotNull(w.summary, w.detail))
+                        dao.inTransaction { store(listOfNotNull(w.summary, w.detail)) }
                         val row = workoutRow(w.summary)
                         // One you started on the phone over the same time is the same workout: nothing new to tell.
                         val yours = Workouts.phoneTwin(row, dao.appWorkoutsOnce(row.start, row.end), now) != null
-                        if (!yours && Workouts.notifyAutoDetected(row, storedBefore, now)) runCatching { onAutoDetected(row) }.onFailure { log("auto-detect notification: $it") }
+                        if (!yours && Workouts.notifyAutoDetected(row, storedBefore, now)) {
+                            catching { onAutoDetected(row) }.onFailure { log("auto-detect notification: $it") }
+                        }
                     } else {
                         log("history workout with impossible time ${w.summary.timestamp} dropped")
                     }
                     if (w.retryDetail) { log("history workout: detail failed, will retry next sync"); return }
                     val next = w.nextCursor.coerceAtMost(now)
                     if (next <= cursor) return
-                    settings.setLastSync(key, next)
+                    cursors.set(key, next)
                     cursor = next
                 }
             }
@@ -416,8 +447,7 @@ class HistorySync(
                 // One sample per second; the strap re-sends a workout whole, so replace it.
                 val samples = r.heartRate.associate { (ms, bpm) -> ms / 1000 to bpm }
                     .map { (t, bpm) -> WorkoutHeartRate(r.timestamp, t, bpm) }
-                dao.deleteWorkoutHeartRate(r.timestamp)
-                if (samples.isNotEmpty()) dao.insertWorkoutHeartRate(samples)
+                dao.replaceWorkoutDetail(r.timestamp, samples)
             }
             is SportEffect -> effects += SportEffectRow(
                 r.timestamp, r.recoveryTimeMinutes, r.vo2max, r.epoc, r.trainingLoadWeekly, r.trainingLoadMonthly,
@@ -494,31 +524,30 @@ class HistorySync(
                 log("history: implausible sleep window $start..$end, skipped")
             } else {
                 mainWindow = start to end
-                dao.deleteSleepStagesForDay(day, nap = false)
-                dao.deleteSleepSessionsForDay(day, nap = false)
-                dao.insertSleepSessions(listOf(SleepSession(
+                val session = SleepSession(
                     start, end, day, nap = false,
                     score = r.sleepScore.takeIf { it in 1..100 },
                     averageHeartRate = HeartRateSentinel.valid(r.averageHeartRate),
                     deepMinutes = r.deepSleepLength, lightMinutes = r.lightSleepLength,
                     remMinutes = r.remSleepLength.takeIf { r.isRemSupported }, awakeMinutes = r.wakeLength,
                     wakeCount = r.wakeCount,
-                )))
-                dao.insertSleepStages(main.map { stage(it, start, r) })
+                )
+                dao.replaceSleepDay(day, nap = false, listOf(session), main.map { stage(it, start, r) })
             }
         }
         // The newest copy of a day replaces its naps, including when it has none: the strap can report a stretch
         // of broken night sleep as a nap and later fold it into the main sleep. The empty record the strap writes
         // at midnight doesn't claim nap support, so it leaves them alone.
         if (!r.isShortSleepSupported) return
-        dao.deleteSleepStagesForDay(day, nap = true)
-        dao.deleteSleepSessionsForDay(day, nap = true)
         val stages = r.shortStages.map { stage(it, 0, r) }.filter { it.end > it.start }.sortedBy { it.start }
+        val naps = mutableListOf<SleepSession>()
+        val napStages = mutableListOf<SleepStage>()
         for ((start, end) in napWindows(r, stages)) {
             if (mainWindow != null && start < mainWindow.second && end > mainWindow.first) continue
-            dao.insertSleepSessions(listOf(SleepSession(start, end, day, nap = true)))
-            dao.insertSleepStages(stages.filter { it.start >= start && it.end <= end }.map { it.copy(sessionStart = start) })
+            naps += SleepSession(start, end, day, nap = true)
+            napStages += stages.filter { it.start >= start && it.end <= end }.map { it.copy(sessionStart = start) }
         }
+        dao.replaceSleepDay(day, nap = true, naps, napStages)
     }
 
     /** One window per nap: the strap's nap list when it gives one, otherwise runs of back-to-back nap stages. */
