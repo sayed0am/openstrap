@@ -2,16 +2,24 @@ package org.openstrap.app.ui.glow.live
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -22,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -32,7 +39,6 @@ import kotlinx.coroutines.delay
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.GlowLineChart
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.activeSeconds
 import org.openstrap.app.ui.glow.workoutClock
@@ -79,33 +85,77 @@ internal fun LiveMindScreen(
             }
         },
     ) {
-        LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null) {
-            Column(
-                Modifier.fillMaxWidth().padding(top = 32.dp), horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(workoutClock(active), color = Color.White, style = LiveClock)
-                Text(
-                    length?.let { "of ${it / 60} min" + if (active >= it) ", the length is up" else "" } ?: "Open, no length",
-                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
-                )
-            }
+        LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true) {
+            Spacer(Modifier.weight(0.6f))
+            MindRing(active, length)
+            Spacer(Modifier.weight(0.5f))
             val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
             val values = remember(recent) { bucketRecent(recent, now) }
-            if (values.any { it != null }) Box(Modifier.fillMaxWidth().padding(top = 24.dp).alpha(0.6f)) {
-                GlowLineChart(values, Modifier.fillMaxWidth(), height = 120.dp, showAverage = false)
-            }
+            if (values.count { it != null } >= 2) MindHeartLine(values)
+            val first = values.firstOrNull { it != null }?.toInt()
             Text(
-                bpm?.let { "$it bpm, settling" } ?: if (r.paused) "Paused" else "Waiting for heart rate",
-                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                bpm?.let { b ->
+                    "Heart rate $b, settling" + (first?.minus(b)?.takeIf { it > 0 }?.let { ", down $it since you started" } ?: "")
+                } ?: if (r.paused) "Paused" else "Waiting for heart rate",
+                color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
+            Spacer(Modifier.weight(0.6f))
         }
         // Dimmed, the first touch only lights the screen: the veil takes it.
         if (veil > 0f) Box(
             Modifier.fillMaxSize().background(Color.Black.copy(alpha = veil))
                 .then(if (dim) Modifier.pointerInput(Unit) { detectTapGestures { touched = System.currentTimeMillis() } } else Modifier),
         )
+    }
+}
+
+/**
+ * The time in a thin ring that fills in violet towards the length, "of 45 min" under it; open, the ring stays a
+ * faint track.
+ */
+@Composable
+private fun MindRing(active: Long, length: Long?) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Canvas(Modifier.size(280.dp)) {
+            // The strength rest ring's line and track, so the app's rings read as one.
+            val stroke = 8.dp.toPx()
+            val inset = stroke / 2
+            val arc = Size(size.width - stroke, size.height - stroke)
+            drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
+            if (length != null && length > 0) {
+                val sweep = 360f * (active.toFloat() / length).coerceIn(0f, 1f)
+                drawArc(MindColor, -90f, sweep, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
+            }
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1)
+            Text(
+                length?.let { "of ${it / 60} min" + if (active >= it) ", the length is up" else "" } ?: "Open, no length",
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+/** The heart rate as one thin violet line edge to edge, with a dot at now: no axis, no numbers. */
+@Composable
+private fun MindHeartLine(values: List<Float?>) {
+    val known = values.filterNotNull()
+    val lo = known.min() - 4
+    val hi = known.max() + 4
+    Canvas(Modifier.fillMaxWidth().height(64.dp)) {
+        val step = size.width / (values.size - 1).coerceAtLeast(1)
+        val path = Path()
+        var last: Offset? = null
+        values.forEachIndexed { i, v ->
+            if (v == null) return@forEachIndexed
+            val p = Offset(i * step, size.height * (1f - (v - lo) / (hi - lo)))
+            if (last == null) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
+            last = p
+        }
+        drawPath(path, MindColor.copy(alpha = 0.7f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
+        last?.let { drawCircle(MindColor, 4.dp.toPx(), it) }
     }
 }
 

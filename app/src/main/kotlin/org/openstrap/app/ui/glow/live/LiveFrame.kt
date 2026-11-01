@@ -109,6 +109,8 @@ internal fun LiveFrame(
     /** The pill's words when more than the sport's name ("HIIT, Tabata"). */
     title: String? = null,
     backdrop: androidx.compose.ui.graphics.Brush? = null,
+    /** Mind and body (board LiveMind): the sport's name plain and centred, no strap status, and two dark buttons. */
+    quiet: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = controls.onMinimize)
@@ -120,6 +122,15 @@ internal fun LiveFrame(
                 Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(controls.onMinimize, CircleShape),
                 contentAlignment = Alignment.Center,
             ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            if (quiet) {
+                Text(
+                    title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.cardTitle, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f),
+                )
+                // The minimise button's width again, so the name sits in the middle of the screen.
+                Spacer(Modifier.width(44.dp))
+                return@Row
+            }
             Spacer(Modifier.width(10.dp))
             Pill(title ?: Workouts.sportName(r.workout.sportType), color)
             Spacer(Modifier.weight(1f))
@@ -168,6 +179,22 @@ internal fun LiveFrame(
                 style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(20.dp))
+            return@WorkoutPage
+        }
+        if (quiet) {
+            Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+                Labelled("Pause", true) {
+                    FlatButton(Raised, 64.dp, onClick = controls.onPause) {
+                        Icon(AppIcons.PauseFill, "Pause", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+                Labelled("Hold to end", true) { HoldToEnd(controls.onEnd) }
+            }
+            Text(
+                "Tap anywhere to light the screen", color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary,
+                modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
             return@WorkoutPage
         }
         if (pillControls) {
