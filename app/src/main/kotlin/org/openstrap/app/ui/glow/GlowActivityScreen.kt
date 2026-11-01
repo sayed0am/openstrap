@@ -197,8 +197,8 @@ private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: ()
     EdgeCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart), kind = EdgeKind.Value) {
         EdgeTitle("Start a workout", null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            // Four on a phone; wider, as many as fit at a phone's column, so the tiles never spread apart.
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            // Four on a phone; wider, as many as fit at a phone's column, so the tiles never spread apart, centred.
             val columns = maxOf(4, ((maxWidth + StartTileGap) / (StartTileColumn + StartTileGap)).toInt())
             Row(
                 Modifier.widthIn(max = StartTileColumn * columns + StartTileGap * (columns - 1)).fillMaxWidth(),
