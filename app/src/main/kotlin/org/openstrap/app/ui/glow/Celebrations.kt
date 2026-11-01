@@ -51,20 +51,29 @@ internal val BestColor = MetricColors.calories
  * [dots] puts the text in dots (the one dotted number on its screen); a [locked] badge is dim and unlit.
  */
 @Composable
-internal fun BadgeArt(short: String, color: Color, size: Dp, modifier: Modifier = Modifier, locked: Boolean = false, dots: Boolean = false, under: String? = null) {
+internal fun BadgeArt(
+    short: String, color: Color, size: Dp, modifier: Modifier = Modifier, locked: Boolean = false, dots: Boolean = false, under: String? = null,
+    /** Just a ring in the colour with the text in it (board AchievementsV1's row), no fill. */
+    ring: Boolean = false,
+) {
     Box(
         modifier.size(size).alpha(if (locked) 0.35f else 1f)
-            .background(
-                if (locked) Brush.radialGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.02f)))
-                else Brush.verticalGradient(listOf(Color.Black, color.copy(alpha = 0.55f))),
-                CircleShape,
-            )
-            .border(1.dp, if (locked) Color.White.copy(alpha = 0.12f) else color.copy(alpha = 0.8f), CircleShape),
+            .let { m ->
+                if (ring) m else m.background(
+                    if (locked) Brush.radialGradient(listOf(Color.White.copy(alpha = 0.06f), Color.White.copy(alpha = 0.02f)))
+                    else Brush.verticalGradient(listOf(Color.Black, color.copy(alpha = 0.55f))),
+                    CircleShape,
+                )
+            }
+            .border(if (ring) 2.dp else 1.dp, if (locked) Color.White.copy(alpha = if (ring) 0.5f else 0.12f) else color.copy(alpha = if (ring) 1f else 0.8f), CircleShape),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (dots) DotMatrixText(short, dot = DotSize.Hero)
-            else Text(short, color = Color.White, style = if (size >= 80.dp) GlowType.pageTitle else GlowType.cardTitle, maxLines = 1)
+            else Text(
+                short, color = if (ring && !locked) color else Color.White, maxLines = 1,
+                style = if (size >= 80.dp) GlowType.pageTitle else GlowType.cardTitle,
+            )
             under?.let { Text(it, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 6.dp)) }
         }
     }
@@ -169,6 +178,27 @@ fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValu
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 4.dp),
         )
         BadgeGrid(badges.map { it to null }, face = face)
+    }
+}
+
+/**
+ * The badges on Goals and bests (board AchievementsV1): up to four rings in a row, no panel, the badge's colour as the
+ * ring and its text, the name under and its date, or for the next one dim with how far along it is.
+ */
+@Composable
+internal fun BadgeRow(badges: List<Pair<Rewards.Badge, String?>>, locked: (Rewards.Badge) -> Boolean, face: (Rewards.Badge) -> String) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
+        badges.take(4).forEach { (b, note) ->
+            val dim = locked(b)
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                BadgeArt(face(b), badgeColor(b.group), 64.dp, locked = dim, ring = true)
+                Text(
+                    if (dim && note != null) note else b.title, color = Color.White.copy(alpha = if (dim) 0.5f else 1f),
+                    style = GlowType.caption, textAlign = TextAlign.Center, maxLines = 2,
+                )
+            }
+        }
+        repeat((4 - badges.size).coerceAtLeast(0)) { Box(Modifier.weight(1f)) }
     }
 }
 

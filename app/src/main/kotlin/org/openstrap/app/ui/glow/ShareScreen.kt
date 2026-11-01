@@ -23,6 +23,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -91,6 +94,9 @@ private const val TAG = "ShareScreen"
 /** The saved picture's size in px: three to each of the card's dp. */
 private const val STORY_PX_PER_DP = 3f
 
+/** Room under the card for the photo button and its gap. */
+private val PhotoRoom = 64.dp
+
 /** How long "Saved" stays on the button. */
 private const val SAVED_MS = 2_000L
 
@@ -116,12 +122,30 @@ internal fun WorkoutShareScreen(
 }
 
 /**
+ * Hides the app's tab bar while it's given true: the share screen covers the whole screen, even from a page that sits
+ * over the tabs (the weekly recap).
+ */
+val LocalHideTabBar = androidx.compose.runtime.staticCompositionLocalOf<(Boolean) -> Unit> { {} }
+
+/** The share screen for a week's [card], from the recap's Share week. */
+@Composable
+internal fun WeekShareScreen(card: StoryCard.Week, fileName: String, onClose: () -> Unit) =
+    // Just the navigation bar (the page adds the status bar itself): the recap's padding leaves room for the tab bar
+    // this screen hides.
+    ShareScreen(card, emptyList(), fileName, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(), onClose)
+
+/**
  * The card for [card] in the middle at 9 by 16, close and the title over it, the photo button and a run's route
  * choices under it, then Save and Share. [route] is the workout's, drawn only on a run; the picture saves as [fileName].
  */
 @Composable
 private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: String, contentPadding: PaddingValues, onClose: () -> Unit) {
     BackHandler(onBack = onClose)
+    val hideTabBar = LocalHideTabBar.current
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        hideTabBar(true)
+        onDispose { hideTabBar(false) }
+    }
     val context = LocalContext.current
     var photoUri by rememberSaveable { mutableStateOf<Uri?>(null) }
     val photo by produceState<ImageBitmap?>(null, photoUri) { value = photoUri?.let { decodePhoto(context, it) } }
@@ -199,22 +223,26 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
                 }
             }
         }
-        // The card as large as the space allows, at 9 by 16.
+        // The card as large as the space allows, at 9 by 16, with the photo button right under it, so the button
+        // never sits in the fade over Save and Share.
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.TopCenter) {
-            val height = minOf(maxHeight, maxWidth * 16f / 9f, MaxPreviewHeight)
+            val height = minOf(maxHeight - PhotoRoom, maxWidth * 16f / 9f, MaxPreviewHeight)
             val width = height * 9f / 16f
             val density = LocalDensity.current
-            Box(Modifier.size(width, height).clip(GlowLayout.TileShape)) {
-                CompositionLocalProvider(LocalDensity provides Density(density.density * (width / StoryWidth), 1f)) {
-                    StoryCardView(card, photo, shown)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(Modifier.size(width, height).clip(GlowLayout.TileShape)) {
+                    CompositionLocalProvider(LocalDensity provides Density(density.density * (width / StoryWidth), 1f)) {
+                        StoryCardView(card, photo, shown)
+                    }
+                    if (photo != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
+                        RoundButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
+                    }
                 }
-                if (photo != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
-                    RoundButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
+                Spacer(Modifier.height(12.dp))
+                PhotoButton(if (photo != null) "Change photo" else "Add a photo", Modifier) {
+                    pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                 }
             }
-        }
-        PhotoButton(if (photo != null) "Change photo" else "Add a photo", Modifier.align(Alignment.CenterHorizontally)) {
-            pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         if (hasRoute) {
             Row(Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {

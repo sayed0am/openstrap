@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -105,11 +106,23 @@ internal sealed interface StoryCard {
         override val family = Workouts.Family.MindBody
     }
 
+    /**
+     * A week (the recap's Share week): the [range], the workouts [count] in dots with the [goalLine], its [days] as
+     * the app's week dots, the [totals] and up to two chips, the streak and a best.
+     */
+    class Week(val range: String, val count: String, val goalLine: String, val days: List<Pair<String, Boolean>>, val totals: List<WeekFigure>, val chips: List<StoryChip>) : StoryCard {
+        // Not a kind of workout: the card is lit in the goal green, as the recap is.
+        override val family = Workouts.Family.Distance
+    }
+
     /** A game: minutes in dots, Load and the peak. */
     class Game(val sport: String, val minutes: String, val unit: String, val load: String?, val peak: String?) : StoryCard {
         override val family = Workouts.Family.Games
     }
 }
+
+/** A week's total on its card: its icon, value, the small unit after it, and its label. */
+internal class WeekFigure(val icon: androidx.compose.ui.graphics.vector.ImageVector, val value: String, val unit: String?, val label: String)
 
 /** A run's figure: its value, the small unit after it, and its label. */
 internal class StoryStat(val value: String, val unit: String?, val label: String)
@@ -289,13 +302,18 @@ internal fun StoryCardView(card: StoryCard, photo: ImageBitmap?, route: List<Rou
                 is StoryCard.Rounds -> RoundsStory(card)
                 is StoryCard.Calm -> CalmStory(card)
                 is StoryCard.Game -> GameStory(card)
+                is StoryCard.Week -> WeekStory(card)
             }
         }
     }
 }
 
 /** A card's light: its kind's colour, except indoor cardio's, which is heart red like the board. */
-private fun storyColor(card: StoryCard): Color = if (card is StoryCard.Indoor) MetricColors.heart else familyColor(card.family)
+private fun storyColor(card: StoryCard): Color = when (card) {
+    is StoryCard.Indoor -> MetricColors.heart
+    is StoryCard.Week -> MetricColors.good
+    else -> familyColor(card.family)
+}
 
 /** The card's black, a touch off pure so a dark photo's edge still shows. */
 private val StoryBlack = Color(0xFF0A0A0B)
@@ -483,6 +501,51 @@ private fun IndoorStory(card: StoryCard.Indoor) {
         ZoneStrip(card.zones)
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 14.dp)) }
         card.chip?.let { Box(Modifier.padding(top = 14.dp)) { StoryChipView(it) } }
+    }
+}
+
+/**
+ * The week (mockups/share-week-days.html, option A): the brand and the dates, "My week" and the count in dots in the
+ * middle with the goal under it, the days as the app's week dots, then the totals and the chips.
+ */
+@Composable
+private fun WeekStory(card: StoryCard.Week) {
+    Column(Modifier.fillMaxSize()) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { Brand() }
+            Text(card.range, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
+        }
+        Spacer(Modifier.weight(1f))
+        Text("My week", color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.count, DotSize.Live, 310.dp) }
+        Text(card.goalLine, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        WeekDots(card.days, Color.White, Modifier.padding(top = 28.dp), dot = 34.dp)
+        Spacer(Modifier.weight(1f))
+        if (card.totals.isNotEmpty()) WeekFigures(card.totals)
+        if (card.chips.isNotEmpty()) Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            card.chips.take(2).forEach { StoryChipView(it) }
+        }
+    }
+}
+
+/**
+ * The week's totals (mockups/share-week-totals.html, option A with icons): each its icon over the value large with its
+ * unit, the label under, thin rules between them.
+ */
+@Composable
+private fun WeekFigures(figures: List<WeekFigure>) {
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        figures.forEachIndexed { i, f ->
+            if (i > 0) Box(Modifier.padding(end = 14.dp).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.18f)))
+            Column(Modifier.weight(1f)) {
+                Icon(f.icon, null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(18.dp))
+                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Bottom) {
+                    Text(f.value, color = Color.White, style = GlowType.storyStat, maxLines = 1)
+                    f.unit?.let { Text(" $it", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.padding(bottom = 3.dp)) }
+                }
+                Text(f.label, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1)
+            }
+        }
     }
 }
 

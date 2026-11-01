@@ -92,6 +92,7 @@ class ShareCardsTest {
                 is StoryCard.Rounds -> listOfNotNull(card.line, card.unit)
                 is StoryCard.Calm -> listOfNotNull(card.line, card.unit)
                 is StoryCard.Game -> listOfNotNull(card.load, card.peak, card.unit)
+                is StoryCard.Week -> listOf(card.range, card.goalLine) + card.totals.flatMap { listOfNotNull(it.value, it.unit, it.label) }
             }
             texts.forEach { t -> assertTrue("\"$t\"", t.none { it in "·;—–" }) }
         }

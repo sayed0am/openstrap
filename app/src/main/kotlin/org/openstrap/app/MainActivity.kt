@@ -898,7 +898,8 @@ private fun AppRoot(
         val navItems = Tab.entries.map { NavItem(it.label, it.icon, it.selectedIcon, it.tint) }
         // A detail covering the tab is a screen stepped into: no tab bar, only its back button (spec 3.2). Wide
         // enough for the detail to open beside the tab, the bar stays with the tab it belongs to.
-        val showBar = !rail && !(currentDetail != null && maxWidth < SideBySideWidth)
+        var barHidden by remember { mutableStateOf(false) }
+        val showBar = !rail && !barHidden && !(currentDetail != null && maxWidth < SideBySideWidth)
         // Another tab keeps every stack. The tab showing scrolls to the top, then pops to its root (spec 3.3). A tap
         // that closes pages over the tab does only that.
         val selectTab: (Int) -> Unit = { t ->
@@ -926,7 +927,7 @@ private fun AppRoot(
                 ) { FloatingNavBar(navItems, tab, selectTab, glass = navGlass) }
             },
             containerColor = MaterialTheme.colorScheme.background,
-        ) { padding ->
+        ) { padding -> androidx.compose.runtime.CompositionLocalProvider(org.openstrap.app.ui.glow.LocalHideTabBar provides { barHidden = it }) {
             if (editGoals) {
                 // The calorie goal your last four weeks suggest, read as the sheet opens (calories spec 3.4).
                 val suggestedCalories by produceState<Int?>(null) { value = runCatching { container.health.suggestedCalorieGoal() }.getOrNull() }
@@ -1251,7 +1252,7 @@ private fun AppRoot(
                 }
                 }
             } }
-        }
+        } }
         if (rail) org.openstrap.app.ui.components.FloatingNavRail(
             navItems, tab, selectTab, androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.CenterStart),
             glass = navGlass,

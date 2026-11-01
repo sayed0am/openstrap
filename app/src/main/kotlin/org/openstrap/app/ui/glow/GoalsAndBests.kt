@@ -11,11 +11,16 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import java.time.Instant
@@ -55,7 +60,11 @@ private fun weekDots(view: RewardsView, first: LocalDate, zone: ZoneId = ZoneId.
  * and [line] under them. [trailing] goes on the title row.
  */
 @Composable
-private fun GoalWeekCard(title: String, count: Int, goal: Int, dots: List<Pair<String, Boolean>>, line: String, trailing: @Composable (() -> Unit)? = null) {
+private fun GoalWeekCard(
+    title: String, count: Int, goal: Int, dots: List<Pair<String, Boolean>>, line: String,
+    /** The week as a bar of the goal's workouts (board AchievementsV1) rather than its days (WeeklyRecap). */
+    bar: Boolean = false, trailing: @Composable (() -> Unit)? = null,
+) {
     val style = GlowStyle.level(GoalColor, (count.toFloat() / goal).coerceIn(0f, 1f))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
@@ -67,10 +76,60 @@ private fun GoalWeekCard(title: String, count: Int, goal: Int, dots: List<Pair<S
                 DotMatrixText("$count", dot = DotSize.Hero)
                 Text("of $goal workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
             }
-            WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
+            if (bar) GoalBar(count, goal, Modifier.padding(top = 18.dp)) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
             Text(line, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 14.dp))
         }
     }
+}
+
+/** The week's workouts against the goal as a bar of [goal] segments, [count] of them white. */
+@Composable
+private fun GoalBar(count: Int, goal: Int, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(
+        modifier.fillMaxWidth().height(8.dp).semantics { contentDescription = "$count of $goal workouts" },
+    ) {
+        val n = goal.coerceIn(1, 14)
+        val gap = 6.dp.toPx()
+        val w = (size.width - gap * (n - 1)) / n
+        val corner = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
+        for (i in 0 until n) drawRoundRect(
+            Color.White.copy(alpha = if (i < count) 1f else 0.2f), androidx.compose.ui.geometry.Offset(i * (w + gap), 0f),
+            androidx.compose.ui.geometry.Size(w, size.height), corner,
+        )
+    }
+}
+
+/**
+ * The share card for the week from [first]: the count against the goal, its days, the hours, km and active kcal, and
+ * chips for the weeks in a row and the week's first best.
+ */
+private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
+    val week = view.week(first)
+    val count = week?.count ?: 0
+    val goal = week?.goal ?: view.goal
+    val zone = ZoneId.systemDefault()
+    val from = first.atStartOfDay(zone).toEpochSecond()
+    val to = first.plusDays(7).atStartOfDay(zone).toEpochSecond()
+    val mine = view.all.filter { it.startedByYou && it.shownStart in from until to }
+    val seconds = mine.sumOf { it.activeSeconds }
+    val km = mine.sumOf { (it.meters ?: 0f).toDouble() } / 1000
+    val kcal = Math.round(mine.mapNotNull { it.activeKcal }.sum())
+    val totals = if (mine.isEmpty()) emptyList() else listOfNotNull(
+        WeekFigure(AppIcons.Timer, "%d:%02d".format(seconds / 3600, seconds / 60 % 60), null, "Hours"),
+        km.takeIf { it >= 0.1 }?.let { WeekFigure(AppIcons.Route01, String.format(Locale.ROOT, "%.1f", it), "km", "Distance") },
+        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, "%,d".format(it), null, "Active kcal") },
+    )
+    val run = Rewards.inARow(view.weeks, first)
+    val best = view.bests.firstOrNull { it.date in from until to }
+    val chips = listOfNotNull(
+        if (week?.met == true && run > 0) StoryChip("$run ${if (run == 1) "week" else "weeks"} in a row", best = false, met = true) else null,
+        best?.let { StoryChip("${RewardsCopy.bestTitle(it.kind)}, ${RewardsCopy.bestValue(it.kind, it.value)}", best = true, met = false) },
+    )
+    val short = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
+    return StoryCard.Week(
+        "${first.format(short)} to ${first.plusDays(6).format(short)}", "$count",
+        "${if (count == 1) "workout" else "workouts"}, goal $goal", weekDots(view, first), totals, chips,
+    )
 }
 
 /** The weekly goal on its own, in a sheet: the pencil on the Goals and bests page and the recap. */
@@ -110,7 +169,7 @@ fun GoalsAndBestsPage(
         item {
             val week = view.week(view.thisWeek)
             GoalWeekCard(
-                "This week", week?.count ?: 0, view.goal, weekDots(view, view.thisWeek), RewardsCopy.runLine(view.inARow, view.bestRun),
+                "This week", week?.count ?: 0, view.goal, weekDots(view, view.thisWeek), RewardsCopy.runLine(view.inARow, view.bestRun), bar = true,
             ) { PageButton("Goal ${view.goal}", onGoal, icon = AppIcons.PencilEdit) }
         }
         item {
@@ -136,7 +195,8 @@ fun GoalsAndBestsPage(
                     "Badges, ${view.earned.size} of ${Rewards.BADGES.size}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                 )
-                BadgeGrid(earned + listOfNotNull(next), locked = { b -> view.earned.none { it.id == b.id } }, face = view::face)
+                // The last three earned and the next one, so the row is always four.
+                BadgeRow(earned.take(if (next != null) 3 else 4) + listOfNotNull(next), locked = { b -> view.earned.none { it.id == b.id } }, face = view::face)
             }
         }
         item {
@@ -202,6 +262,13 @@ fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () 
  */
 @Composable
 fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: PaddingValues, onGoal: () -> Unit, onBack: () -> Unit) {
+    // Share week opens the share screen in the recap's place; close comes back here.
+    var sharing by rememberSaveable { mutableStateOf(false) }
+    if (sharing && view != null) {
+        val card = remember(view, first) { weekStory(view, first) }
+        WeekShareScreen(card, "OpenStrap_week_$first.png") { sharing = false }
+        return
+    }
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Your week", onBack, subtitle = RewardsCopy.weekRange(first)) }
@@ -248,6 +315,12 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
                 )
             }
         }
-        item { PageButton("Next week: ${view.goal}", onGoal, Modifier.fillMaxWidth(), icon = AppIcons.PencilEdit) }
+        item {
+            // Board WeeklyRecap: next week's goal and Share week side by side, Share the bright one.
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PageButton("Next week: ${view.goal}", onGoal, Modifier.weight(1f), icon = AppIcons.PencilEdit)
+                PageButton("Share week", { sharing = true }, Modifier.weight(1f), primary = true, icon = AppIcons.UploadSimple)
+            }
+        }
     }
 }

@@ -621,7 +621,7 @@ internal fun WeekDots(
                         .let { if (i == today) it.drawBehind { drawCircle((if (on) color else Color.White).copy(alpha = 0.3f), radius = size.minDimension / 2 + 3.dp.toPx()) } else it }
                         .background(if (on) color else Color.White.copy(alpha = 0.08f), CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { if (on && ticks) Icon(AppIcons.CheckCircle, null, tint = Color.Black, modifier = Modifier.size(14.dp)) }
+                ) { if (on && ticks) Icon(AppIcons.Tick02, null, tint = Color.Black, modifier = Modifier.size(16.dp)) }
                 Text(
                     letter, color = if (i == today) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption,
                     textAlign = TextAlign.Center,
