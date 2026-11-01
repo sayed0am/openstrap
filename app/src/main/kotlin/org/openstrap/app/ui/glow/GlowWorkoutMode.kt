@@ -191,9 +191,12 @@ internal fun WorkoutPage(
         val width = constraints.maxWidth.toFloat()
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
+        // No wider than the box is tall: on a wide screen (unfolded) a wider glow would be cut off in a straight line.
+        val glowHeight = 420.dp
+        val radius = minOf(width * 0.9f, with(density) { glowHeight.toPx() })
         if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop)) else Box(
-            Modifier.fillMaxWidth().height(420.dp).background(
-                Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = width * 0.9f),
+            Modifier.fillMaxWidth().height(glowHeight).background(
+                Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = radius),
             ),
         )
         // On a wide screen the page keeps to one centred column (spec 2.4 Unfolded); the glow stays the screen's.
