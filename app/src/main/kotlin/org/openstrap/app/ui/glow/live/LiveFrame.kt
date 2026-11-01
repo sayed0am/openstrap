@@ -32,6 +32,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -111,6 +112,11 @@ internal fun LiveFrame(
     backdrop: androidx.compose.ui.graphics.Brush? = null,
     /** Mind and body (board LiveMind): the sport's name plain and centred, no strap status, and two dark buttons. */
     quiet: Boolean = false,
+    /**
+     * A page under a bar shared by the pages ([LiveBottomBar]): the note, the prompt and the controls are drawn once
+     * under the pager, so the page only leaves this much room for them.
+     */
+    bottomRoom: Dp? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = controls.onMinimize)
@@ -164,6 +170,10 @@ internal fun LiveFrame(
             Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
         }
         if (r.paused && paused != null) paused() else content()
+        if (bottomRoom != null && !r.paused) {
+            Spacer(Modifier.height(bottomRoom))
+            return@WorkoutPage
+        }
         if (!connected && !r.paused) {
             Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
         }
@@ -294,16 +304,48 @@ private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, heigh
 
 private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
-/** Two small dots for the live views, the current one white; tapping one goes there (the map keeps its own drags). */
+/**
+ * What the run's views share under their pager, fixed while the views slide: the strap note, the stopped prompt, the
+ * page dots following the swipe ([position]) and the controls. [onHeight] reports its height above the bottom padding.
+ */
 @Composable
-internal fun PageDots(current: Int, count: Int, onSelect: (Int) -> Unit) {
+internal fun LiveBottomBar(
+    r: WorkoutState.Recording, connected: Boolean, contentPadding: PaddingValues, controls: LiveControls, lap: (@Composable () -> Unit)?,
+    position: Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
+) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val side = org.openstrap.app.ui.glow.GlowLayout.pageSide(maxWidth, org.openstrap.app.ui.glow.LocalPageColumn.current, org.openstrap.app.ui.glow.GlowLayout.Gutter)
+        Column(
+            Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding())
+                .onSizeChanged { onHeight(with(density) { it.height.toDp() }) }
+                .padding(start = side, end = side, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
+            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
+            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(position).toInt() + 1} of $count" }) {
+                PageDots(kotlin.math.round(position).toInt(), count, position, onPage)
+            }
+            ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
+        }
+    }
+}
+
+/**
+ * Two small dots for the live views, the current one white; tapping one goes there (the map keeps its own drags).
+ * With [position] (the pager's page plus how far it's swiped) the white passes from one dot to the next as it slides.
+ */
+@Composable
+internal fun PageDots(current: Int, count: Int, position: Float? = null, onSelect: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         repeat(count) { i ->
             Box(
                 Modifier.size(28.dp).clip(CircleShape).pressClickable({ onSelect(i) }, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White.copy(alpha = if (i == current) 1f else 0.3f)))
+                val lit = if (position != null) (1f - kotlin.math.abs(position - i)).coerceIn(0f, 1f) else if (i == current) 1f else 0f
+                Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f + 0.7f * lit)))
             }
         }
     }

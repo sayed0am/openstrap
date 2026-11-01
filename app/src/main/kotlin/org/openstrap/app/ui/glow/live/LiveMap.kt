@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -120,6 +121,8 @@ internal fun LiveMapScreen(
     time: Long,
     page: Int,
     onPage: (Int) -> Unit,
+    /** Under a bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
+    bottomRoom: Dp? = null,
 ) {
     BackHandler(onBack = controls.onMinimize)
     val density = LocalDensity.current
@@ -171,7 +174,7 @@ internal fun LiveMapScreen(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .onSizeChanged { panel = with(density) { it.height.toDp() } }
                 .clip(org.openstrap.app.ui.glow.GlowLayout.SheetShape).background(Color.Black)
-                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding() + 20.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding() + if (bottomRoom != null) 0.dp else 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // The moving time in the middle and larger: on this page it isn't above the views.
@@ -183,10 +186,14 @@ internal fun LiveMapScreen(
                 LiveStat(figures[1].second, Modifier.weight(1f)) { LiveValue(figures[1].first) }
             }
             LastSplit(route, readings, r.workout.pauseRanges)
+            if (bottomRoom != null) {
+                Spacer(Modifier.height(bottomRoom))
+                return@Column
+            }
             if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
             Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${page + 1} of 2" }) {
-                PageDots(page, LiveView.entries.size, onPage)
+                PageDots(page, LiveView.entries.size, onSelect = onPage)
             }
             ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
         }

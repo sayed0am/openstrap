@@ -140,36 +140,45 @@ internal fun LiveDistanceScreen(
         return
     }
     val onPage: (Int) -> Unit = { scope.launch { pager.animateScrollToPage(it) } }
-    // The whole screen is the pager, so a swipe anywhere turns the page; a drag on the map pans the map instead.
-    HorizontalPager(pager, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
-        when (LiveView.entries[page]) {
-            LiveView.Heart -> LiveFrame(
-                r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps), fill = true,
-            ) {
-                Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    if (reps) RepCard(r, route, readings, bpm)
-                    else PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
-                    HeartStrip(bpm, r.maxHeartRate, color, r.paused)
-                    LiveFigures(listOf(
-                        Glance.kmFigure(distance) to "km",
-                        climb?.toInt()?.toString() to "Climb m",
-                        kcal?.active?.toInt()?.toString() to "Active kcal",
-                    ))
+    // Only what's above the dots slides: the note, the dots and the controls stay put under the pager, the dots
+    // following the swipe. A drag on the map pans the map instead.
+    val density = LocalDensity.current
+    var bar by remember { mutableStateOf(240.dp) }
+    Box(Modifier.fillMaxSize()) {
+        HorizontalPager(pager, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
+            when (LiveView.entries[page]) {
+                LiveView.Heart -> LiveFrame(
+                    r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps), fill = true,
+                    bottomRoom = bar,
+                ) {
+                    Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        if (reps) RepCard(r, route, readings, bpm)
+                        else PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
+                        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+                        LiveFigures(listOf(
+                            Glance.kmFigure(distance) to "km",
+                            climb?.toInt()?.toString() to "Climb m",
+                            kcal?.active?.toInt()?.toString() to "Active kcal",
+                        ))
+                    }
+                    // Each kilometre gets a line for a few seconds, with one tick. This page stays composed beside the
+                    // map, so the tick comes on either.
+                    KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = true)
                 }
-                Box(Modifier.fillMaxWidth().semantics { contentDescription = "View 1 of 2" }) { PageDots(0, LiveView.entries.size, onPage) }
-                // Each kilometre gets a line for a few seconds, with one tick. This page stays composed beside the
-                // map, so the tick comes on either.
-                KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = true)
+                LiveView.Map -> LiveMapScreen(
+                    r, route, readings, bpm, color, connected, contentPadding, controls, lap,
+                    figures = listOf(
+                        Glance.kmFigure(distance) to "km",
+                        (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
+                    ),
+                    time = active, page = 1, onPage = onPage, bottomRoom = bar,
+                )
             }
-            LiveView.Map -> LiveMapScreen(
-                r, route, readings, bpm, color, connected, contentPadding, controls, lap,
-                figures = listOf(
-                    Glance.kmFigure(distance) to "km",
-                    (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
-                ),
-                time = active, page = 1, onPage = onPage,
-            )
         }
+        LiveBottomBar(
+            r, connected, contentPadding, controls, lap, pager.currentPage + pager.currentPageOffsetFraction, LiveView.entries.size, onPage,
+            onHeight = { if (it != bar) bar = it }, modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 }
 

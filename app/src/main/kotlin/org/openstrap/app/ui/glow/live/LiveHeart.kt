@@ -199,7 +199,7 @@ fun GlowWorkoutLiveScreen(
                     }
                 }
             }
-            PageDots(pager.currentPage, LiveView.entries.size) { scope.launch { pager.animateScrollToPage(it) } }
+            PageDots(pager.currentPage, LiveView.entries.size, pager.currentPage + pager.currentPageOffsetFraction) { scope.launch { pager.animateScrollToPage(it) } }
         } else heartCard()
         if (r.strength) SetsPanel(r, color, onStartSet, { haptics.perform(HapticEvent.SetDone); onSetDone() }, onExtendRest)
         // Centred between the card and the buttons: the moving time large in the middle, the average and peak either
