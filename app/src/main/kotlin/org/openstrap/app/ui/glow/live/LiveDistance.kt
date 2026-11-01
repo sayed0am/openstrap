@@ -4,14 +4,18 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,6 +37,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
@@ -57,6 +62,7 @@ import org.openstrap.app.ui.glow.TrendGood
 import org.openstrap.app.ui.glow.activeSeconds
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.glow.draw.dotLayout
 import org.openstrap.app.ui.workout.Glance
 import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.workout.WorkoutCopy
@@ -100,9 +106,6 @@ internal fun LiveDistanceScreen(
     val saveView by rememberUpdatedState(onLiveView)
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.drop(1).collect { saveView(it) } }
     val scope = rememberCoroutineScope()
-    val density = LocalDensity.current
-    var pageHeight by remember { mutableStateOf(320.dp) }
-    var routeOnly by rememberSaveable { mutableStateOf(false) }
     val connected = connection is ConnectionState.Connected
     val color = workoutColor(r, liveHeartRate, connected)
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
@@ -117,52 +120,158 @@ internal fun LiveDistanceScreen(
     val accuracy = route.lastOrNull()?.accuracy
     val reps = r.structure is org.openstrap.app.data.Structure.Reps
     val gps = WorkoutCopy.gpsPill(accuracy) to if (accuracy != null && accuracy <= Route.MAX_ACCURACY_M) TrendGood else TrendBad
-    LiveFrame(
-        r, color, connected, contentPadding, controls,
-        // Reps skip instead of marking laps: the rounds are the laps.
-        lap = when {
-            r.paused -> null
-            reps -> ({ LapButton(onSkip, label = true, text = "Skip") })
-            else -> ({ LapButton(onLap, label = true) })
-        },
-        time = active, battery = (connection as? ConnectionState.Connected)?.batteryPercent, status = listOf(gps),
-        paused = {
-            LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
-                Glance.kmFigure(distance) to "km",
-                (if (speed) speedText(averagePace) else Glance.paceClock(averagePace)) to if (speed) "Avg km/h" else "Avg pace",
-                stats?.average?.toString() to "Avg bpm",
-            ))
-        },
-    ) {
-        HorizontalPager(pager, pageSpacing = 16.dp, verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
+    val readings = WorkoutCopy.readings(history, recent)
+    // Reps skip instead of marking laps: the rounds are the laps.
+    val lap: (@Composable () -> Unit)? = when {
+        r.paused -> null
+        reps -> ({ LapButton(onSkip, label = true, text = "Skip") })
+        else -> ({ LapButton(onLap, label = true) })
+    }
+    val battery = (connection as? ConnectionState.Connected)?.batteryPercent
+    if (r.paused) {
+        LiveFrame(
+            r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps),
+            paused = {
+                LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
+                    Glance.kmFigure(distance) to "km",
+                    (if (speed) speedText(averagePace) else Glance.paceClock(averagePace)) to if (speed) "Avg km/h" else "Avg pace",
+                    stats?.average?.toString() to "Avg bpm",
+                ))
+            },
+        ) {}
+        return
+    }
+    val onPage: (Int) -> Unit = { scope.launch { pager.animateScrollToPage(it) } }
+    // Only what's above the dots slides: the note, the dots and the controls stay put under the pager, the dots
+    // following the swipe. A drag on the map pans the map instead.
+    val density = LocalDensity.current
+    var bar by remember { mutableStateOf(240.dp) }
+    Box(Modifier.fillMaxSize()) {
+        HorizontalPager(pager, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
             when (LiveView.entries[page]) {
-                LiveView.Heart -> Column(
-                    Modifier.fillMaxWidth().onSizeChanged { pageHeight = with(density) { it.height.toDp() } },
-                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                // Reps (board RunIntervals): the total small on top, the rep the screen's number.
+                LiveView.Heart -> if (reps) LiveFrame(
+                    r, color, connected, contentPadding, controls, lap, time = active, smallTime = true, battery = battery, status = listOf(gps),
+                    fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
                 ) {
-                    if (reps) RepCard(r, route, WorkoutCopy.readings(history, recent), bpm) else PaceCard(pace, averagePace, splits, speed)
-                    HeartStrip(bpm, r.maxHeartRate, color, r.paused)
-                    LiveFigures(listOf(
-                        Glance.kmFigure(distance) to "km",
-                        climb?.toInt()?.toString() to "Climb m",
-                        kcal?.active?.toInt()?.toString() to "Active kcal",
-                    ))
+                    RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
+                } else LiveFrame(
+                    r, color, connected, contentPadding, controls, lap, time = active, battery = battery, status = listOf(gps), fill = true,
+                    bottomRoom = bar,
+                ) {
+                    Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                        PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
+                        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+                        LiveFigures(listOf(
+                            Glance.kmFigure(distance) to "km",
+                            climb?.toInt()?.toString() to "Climb m",
+                            kcal?.active?.toInt()?.toString() to "Active kcal",
+                        ))
+                    }
+                    // Each kilometre gets a line for a few seconds, with one tick. This page stays composed beside the
+                    // map, so the tick comes on either.
+                    KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = true)
                 }
-                LiveView.Map -> Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    LiveMapPage(route, history, r.maxHeartRate, routeOnly, bpm, color, r.paused, Modifier.height((pageHeight - 90.dp).coerceAtLeast(200.dp))) { routeOnly = it }
-                    LiveFigures(listOf(
+                LiveView.Map -> LiveMapScreen(
+                    r, route, readings, bpm, color, connected, contentPadding, controls, lap,
+                    figures = listOf(
                         Glance.kmFigure(distance) to "km",
                         (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
-                        stats?.average?.toString() to "Avg bpm",
-                    ))
+                    ),
+                    time = active, page = 1, onPage = onPage, bottomRoom = bar,
+                )
+            }
+        }
+        LiveBottomBar(
+            r, connected, contentPadding, controls, lap, pager.currentPage + pager.currentPageOffsetFraction, LiveView.entries.size, onPage,
+            onHeight = { if (it != bar) bar = it }, modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+/**
+ * A run's reps (workouts spec 2.5, board RunIntervals): the plan and a bar of the reps, rep N of M and the rest after
+ * it, the metres to go in the screen's one dotted number (the seconds of a time rep) with the rep's own pace, the heart
+ * rate strip, then each rep done with its time. A rest shows its seconds left and the rep after it.
+ */
+@Composable
+private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {
+    val now = nowTicking()
+    val m = org.openstrap.app.ui.workout.intervalMoment(r, now, bpm, readings, route) ?: return
+    val structure = r.structure as? org.openstrap.app.data.Structure.Reps ?: return
+    val repName = structure.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: org.openstrap.app.ui.workout.StartCopy.restText(structure.seconds ?: 0)
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        Text(
+            "${org.openstrap.app.ui.workout.StartCopy.structureName(structure)}, ${org.openstrap.app.ui.workout.StartCopy.restText(structure.rest)} rest",
+            color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1,
+        )
+        val underWay = structure.meters?.let { meters -> m.metersLeft?.let { 1f - it / meters } }
+        RoundBar(m, structure.seconds, underWay)
+        Row(Modifier.fillMaxWidth()) {
+            Text(
+                when (m.phase) {
+                    is org.openstrap.app.data.Phase.Work -> "Rep ${m.round} of ${m.rounds}"
+                    is org.openstrap.app.data.Phase.Rest -> "${m.round - 1} of ${m.rounds} done"
+                    org.openstrap.app.data.Phase.WarmUp -> "Warm up"
+                    org.openstrap.app.data.Phase.Done -> "All ${m.rounds} reps done"
+                },
+                color = Color.White, style = MediumBody, maxLines = 1, modifier = Modifier.weight(1f),
+            )
+            val next = when (m.phase) {
+                is org.openstrap.app.data.Phase.Work -> m.nextRest?.let { "Then rest ${org.openstrap.app.ui.workout.StartCopy.restText(it)}" } ?: "Last rep"
+                is org.openstrap.app.data.Phase.Rest -> "Rep ${m.round} next"
+                org.openstrap.app.data.Phase.WarmUp -> "${m.rounds} reps after it"
+                org.openstrap.app.data.Phase.Done -> ""
+            }
+            Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+        }
+        Column(
+            Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
+        ) {
+            val work = m.phase is org.openstrap.app.data.Phase.Work
+            val rest = m.phase is org.openstrap.app.data.Phase.Rest
+            Text(
+                when { work -> "$repName rep"; rest -> "Rest"; m.phase == org.openstrap.app.data.Phase.WarmUp -> "Warming up"; else -> "Done" },
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+            )
+            val (value, unit) = when {
+                work && m.metersLeft != null -> "${m.metersLeft.toInt()}" to "m to go"
+                m.left != null -> workoutClock(m.left) to if (rest) "rest left" else "left"
+                else -> null to ""
+            }
+            if (value != null) {
+                DotMatrixText(value, dot = DotSize.Live, scale = 1.2f)
+                Text(unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
+            }
+            val line = when {
+                work -> Route.currentPace(route)?.let { pace ->
+                    structure.meters?.let { "Pace ${workoutClock((pace * it / 1000).toLong())} per $repName" }
+                        ?: org.openstrap.app.ui.workout.Glance.paceClock(pace)?.let { "Pace $it /km" }
+                }
+                m.phase == org.openstrap.app.data.Phase.WarmUp -> "Skip starts the reps when you're ready"
+                m.phase == org.openstrap.app.data.Phase.Done -> "Hold the square to end, or keep going"
+                else -> null
+            }
+            if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        }
+        HeartStrip(bpm, r.maxHeartRate, color, r.paused)
+        val done = r.rounds.filter { it.workEnd != null }
+        if (done.isNotEmpty()) Row(
+            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState(Int.MAX_VALUE)),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            done.forEach { round ->
+                Row(
+                    Modifier.clip(RoundedCornerShape(50)).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Rep ${round.index + 1}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                    Spacer(Modifier.width(8.dp))
+                    Text(workoutClock(round.workEnd!! - round.workStart), color = Color.White, style = MediumBody, maxLines = 1)
                 }
             }
         }
-        Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${pager.currentPage + 1} of 2" }) {
-            PageDots(pager.currentPage, LiveView.entries.size) { scope.launch { pager.animateScrollToPage(it) } }
-        }
-        // Each kilometre gets a line for a few seconds, with one tick.
-        KmSplitLine(route, WorkoutCopy.readings(history, recent), r.workout.pauseRanges)
     }
 }
 
@@ -188,34 +297,42 @@ internal fun speedText(secondsPerKm: Double?): String? =
  * under it.
  */
 @Composable
-private fun PaceCard(pace: Double?, averagePace: Double?, splits: List<Route.Split>, speed: Boolean) {
-    EdgeCard(MetricColors.steps, Modifier.fillMaxWidth()) {
+private fun PaceCard(pace: Double?, averagePace: Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
+    EdgeCard(MetricColors.steps, modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(if (speed) "Speed" else "Pace", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
             val avg = if (speed) speedText(averagePace)?.let { "Avg $it" } else Glance.paceClock(averagePace)?.let { "Avg $it" }
             if (avg != null) Text(avg, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
-        Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            val now = if (speed) speedText(pace) else Glance.paceClock(pace)
-            if (now != null) DotMatrixText(now, dot = DotSize.Detail) else WaitingDash(Modifier.padding(vertical = 18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text(if (speed) "km/h" else "/km", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
+        // The pace sits in the middle of whatever height the card is given, the splits on its floor.
+        Spacer(Modifier.height(12.dp).weight(1f))
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val room = maxWidth.value
+            // Centred, as the board has it: the one number the card is for.
+            Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.Bottom) {
+                val now = if (speed) speedText(pace) else Glance.paceClock(pace)
+                // The live size, shrunk only as far as a walk's 12:30 needs to fit beside its unit.
+                val fit = now?.let { ((room - UNIT_ROOM) / dotLayout(it, DotSize.Live, 1f).width).coerceIn(0.5f, 1f) } ?: 1f
+                if (now != null) DotMatrixText(now, dot = DotSize.Live, scale = fit) else WaitingDash(Modifier.padding(vertical = 18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(if (speed) "km/h" else "/km", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
+            }
         }
+        Spacer(Modifier.height(16.dp).weight(1f))
         if (splits.isNotEmpty()) {
-            Spacer(Modifier.height(16.dp))
             SplitBars(splits)
         }
     }
 }
 
 /**
- * The last five kilometres as bars, taller for faster, the fastest finished one bright and the rest dim, each with its
- * time under it; the one under way grows toward a full bar and says which kilometre it is.
+ * The last five kilometres as bars, taller for faster, the fastest finished one bright with its time in white and bold,
+ * the rest dim, each with its time under it; the one under way is an outlined full bar filling from the bottom, named
+ * by its kilometre.
  */
 @Composable
 private fun SplitBars(splits: List<Route.Split>) {
-    val shown = splits.takeLast(5)
+    val shown = splits.takeLast(SPLIT_SLOTS)
     val done = splits.filter { it.meters >= 1000 }
     val fastest = done.minByOrNull { it.pace }
     val slowest = done.maxOfOrNull { it.pace } ?: 0.0
@@ -227,29 +344,44 @@ private fun SplitBars(splits: List<Route.Split>) {
     ) {
         shown.forEach { s ->
             val underWay = s.meters < 1000
-            // Faster is taller: from 40 % for the slowest to full for the fastest.
+            // Faster is taller: from 60 % for the slowest to full for the fastest.
             val height = when {
-                underWay -> (s.meters / 1000).toFloat().coerceIn(0.08f, 1f)
+                underWay -> 1f
                 slowest <= quickest -> 1f
-                else -> (0.4f + 0.6f * ((slowest - s.pace) / (slowest - quickest)).toFloat()).coerceIn(0.4f, 1f)
+                else -> (0.6f + 0.4f * ((slowest - s.pace) / (slowest - quickest)).toFloat()).coerceIn(0.6f, 1f)
             }
-            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            val best = s == fastest
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 val lime = MetricColors.steps
-                Canvas(Modifier.fillMaxWidth().height(36.dp)) {
+                Canvas(Modifier.fillMaxWidth().height(30.dp)) {
                     val h = size.height * height
-                    drawRoundRect(
-                        if (s == fastest || underWay) lime else lime.copy(alpha = 0.35f),
-                        Offset(0f, size.height - h), Size(size.width, h), CornerRadius(4.dp.toPx()),
-                    )
+                    val corner = CornerRadius(5.dp.toPx())
+                    if (underWay) {
+                        val filled = size.height * (s.meters / 1000).toFloat().coerceIn(0f, 1f)
+                        drawRoundRect(lime.copy(alpha = 0.35f), Offset(0f, size.height - filled), Size(size.width, filled), corner)
+                        val w = 1.5.dp.toPx()
+                        drawRoundRect(
+                            lime.copy(alpha = 0.6f), Offset(w / 2, w / 2), Size(size.width - w, size.height - w), corner,
+                            style = androidx.compose.ui.graphics.drawscope.Stroke(w),
+                        )
+                    } else drawRoundRect(if (best) lime else lime.copy(alpha = 0.35f), Offset(0f, size.height - h), Size(size.width, h), corner)
                 }
                 Text(
                     if (underWay) "Km ${s.index + 1}" else workoutClock(s.seconds),
-                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, maxLines = 1,
+                    color = if (best) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.caption.copy(fontWeight = if (best) FontWeight.SemiBold else null), maxLines = 1,
                 )
             }
         }
+        // Empty slots keep each bar a fifth of the card, so the first kilometre isn't a line across it.
+        repeat(SPLIT_SLOTS - shown.size) { Spacer(Modifier.weight(1f)) }
     }
 }
+
+private const val SPLIT_SLOTS = 5
+
+/** Room left beside the pace for "km/h" and its gap, in dp. */
+private const val UNIT_ROOM = 56f
 
 /**
  * The heart rate on a strip in its zone's [color]: a dot beating at it, the bpm in small dots and the zone named, in

@@ -312,6 +312,27 @@ class SettingsStore(private val context: Context) {
         }
     }
 
+    /** Sets only your max heart rate ([UserProfile.maxHeartRate]), from the Heart rate zones page; null learns it again. */
+    suspend fun setMaxHeartRate(bpm: Int?) {
+        context.dataStore.edit { if (bpm != null) it[maxHr] = bpm else it.remove(maxHr) }
+    }
+
+    private val heartZonesKey = stringPreferencesKey("profile_hr_zones")
+
+    /** Your heart rate zones, one set for every sport; [HeartZones.STANDARD] until moved. Not part of [saveProfile]. */
+    val heartZones: Flow<org.openstrap.app.data.HeartZones> = context.dataStore.data.map { prefs ->
+        org.openstrap.app.data.HeartZones.parse(prefs[heartZonesKey]) ?: org.openstrap.app.data.HeartZones.STANDARD
+    }
+
+    /**
+     * Stores [zones] ([HeartZones.STANDARD] clears them) and puts them in use at once, so whatever reads them next
+     * already has them ([HeartZones.current]).
+     */
+    suspend fun setHeartZones(zones: org.openstrap.app.data.HeartZones) {
+        org.openstrap.app.data.HeartZones.use(zones)
+        context.dataStore.edit { if (zones.standard) it.remove(heartZonesKey) else it[heartZonesKey] = zones.encode() }
+    }
+
     private val stepGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_steps")
     private val sleepGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_sleep_minutes")
     private val activeGoal = androidx.datastore.preferences.core.intPreferencesKey("goal_active_hours")

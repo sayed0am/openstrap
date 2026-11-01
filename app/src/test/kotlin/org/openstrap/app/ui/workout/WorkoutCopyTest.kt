@@ -29,12 +29,7 @@ class WorkoutCopyTest {
     }
 
     @Test fun `gps and route notes`() {
-        assertEquals("Off. No distance without GPS.", WorkoutCopy.gpsNote(false, 4))
-        assertEquals("Off. Distance from the strap's steps, roughly.", WorkoutCopy.gpsNote(false, 1))
-        assertEquals("On. Distance, pace and the map.", WorkoutCopy.gpsNote(true, 1))
         assertEquals("Off. Only the totals are kept.", WorkoutCopy.routeNote(false))
-        assertEquals(1, WorkoutCopy.readyRows(outdoor = false).size)
-        assertEquals(listOf("Heart rate", "GPS", "Keep the route"), WorkoutCopy.readyRows(outdoor = true).map { it.first })
     }
 
     @Test fun `zone name and time in it`() {
@@ -47,9 +42,8 @@ class WorkoutCopyTest {
         val strings = listOf(
             WorkoutCopy.readyHero(connected.copy(batteryPercent = 5), 60).line, WorkoutCopy.readyHero(ConnectionState.NotPaired, null).line,
             WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, WorkoutCopy.startLabel(1),
-            WorkoutCopy.gpsNote(true, 1), WorkoutCopy.gpsNote(false, 1), WorkoutCopy.gpsNote(false, 4),
-            WorkoutCopy.routeNote(true), WorkoutCopy.routeNote(false), WorkoutCopy.READY_MEANING, WorkoutCopy.zoneTime(600),
-        ) + WorkoutCopy.readyRows(true).flatMap { listOf(it.first, it.second) } + (0..4).flatMap { WorkoutCopy.zoneTitle(it).toList() }
+            WorkoutCopy.routeNote(true), WorkoutCopy.routeNote(false), WorkoutCopy.zoneTime(600),
+        ) + (0..4).flatMap { WorkoutCopy.zoneTitle(it).toList() }
         strings.forEach { s -> assertFalse("\"$s\"", s.any { it == '·' || it == ';' || it == '—' }) }
     }
 

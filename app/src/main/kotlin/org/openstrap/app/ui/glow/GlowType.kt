@@ -18,6 +18,24 @@ object GlowType {
     /** You, Strap, every detail and settings page: Display 400, 24 on 28. */
     val pageTitle = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Normal, fontSize = 24.sp, lineHeight = 28.sp)
 
+    /** HIIT's phase word over the seconds, WORK or REST (boards HiitWork, HiitRest): Display 500, 30 on 34, spaced out. */
+    val phaseWord = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 30.sp, lineHeight = 34.sp, letterSpacing = 0.14.em)
+
+    /** Mind and body's time inside its ring (board LiveMind): Display 300, 72 on 76, tabular. */
+    val mindClock = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 72.sp, letterSpacing = (-0.02).em, lineHeight = 76.sp, fontFeatureSettings = "tnum")
+
+    /** The moving time on the map's panel, beside its two figures (board RunMap): Display 300, 38 on 42, tabular. */
+    val mapClock = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 38.sp, letterSpacing = (-0.02).em, lineHeight = 42.sp, fontFeatureSettings = "tnum")
+
+    /** A run's distance, time and pace on its share card (board ShareRun): Display 300, 30 on 33, tabular. */
+    val storyStat = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 30.sp, letterSpacing = (-0.01).em, lineHeight = 33.sp, fontFeatureSettings = "tnum")
+
+    /** The sport at the top of a share card ("Push day", boards ShareStrength, ShareHiit): Display 500, 30 on 34. */
+    val storyTitle = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 30.sp, lineHeight = 34.sp)
+
+    /** "OpenStrap" on a share card: Display 500, 14 on 18, spaced out a little. */
+    val storyBrand = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 18.sp, letterSpacing = 0.04.em)
+
     /** The date in the moment header: Display 500, 20 on 24. */
     val headerDate = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 24.sp)
 
@@ -62,6 +80,15 @@ object GlowType {
      * the dotted answer is the other card's.
      */
     val smallValue = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 34.sp, letterSpacing = (-0.02).em, lineHeight = 36.sp, fontFeatureSettings = "tnum")
+
+    /**
+     * A goal's value on Ready, typed in place ("7.5 km", "1 h 15 min", "6 × 400 m"): Display 300, 44 on 44, tabular.
+     * Plain, since the card's dotted number is the heart rate's.
+     */
+    val goalValue = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 44.sp, letterSpacing = (-0.02).em, lineHeight = 44.sp, fontFeatureSettings = "tnum")
+
+    /** The smaller numbers beside a [goalValue] (the rest in "with 90 s rest between", the ×): Display 300, 26 on 28. */
+    val goalValueMinor = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 26.sp, lineHeight = 28.sp, fontFeatureSettings = "tnum")
 }
 
 /**

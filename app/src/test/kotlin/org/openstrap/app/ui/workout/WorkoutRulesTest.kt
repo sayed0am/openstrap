@@ -131,7 +131,7 @@ class WorkoutRulesTest {
 
     @Test fun `no workout text uses an interpunct, semicolon or em dash`() {
         val strings = Workouts.SIDES.flatMap { listOf(it.outdoorName, it.indoorName) } + Workouts.EVERYDAY.map(Workouts::shortName) +
-            SummaryCopy.DROP_MEANING + WorkoutCopy.READY_MEANING + WorkoutCopy.readyRows(true).flatMap { listOf(it.first, it.second) }
+            SummaryCopy.DROP_MEANING
         strings.forEach { s -> assertFalse("\"$s\"", s.any { it == '·' || it == ';' || it == '—' }) }
     }
 

@@ -42,6 +42,7 @@ import org.openstrap.app.ui.glow.PageField
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PagePanel
+import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageSwitchRow
 import java.time.LocalDate
 
@@ -61,7 +62,7 @@ fun UserProfile.summary(): String =
  * wide); back leaves without saving, asking first if anything was changed.
  */
 @Composable
-fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (UserProfile) -> Unit, onBack: () -> Unit) {
+fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (UserProfile) -> Unit, onBack: () -> Unit, onHeartZones: () -> Unit = {}) {
     var age by rememberSaveable { mutableStateOf(profile.age()?.toString().orEmpty()) }
     var sex by rememberSaveable { mutableIntStateOf(when (profile.sex) { UserProfile.Sex.Female -> 0; UserProfile.Sex.Male -> 1; null -> 2 }) }
     var imperial by rememberSaveable { mutableStateOf(profile.usesImperial) }
@@ -74,7 +75,6 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
     var activity by rememberSaveable { mutableIntStateOf(profile.activityLevel ?: -1) }
     var betaBlocker by rememberSaveable { mutableStateOf(profile.betaBlocker) }
     var pregnant by rememberSaveable { mutableStateOf(profile.pregnant) }
-    var maxHr by rememberSaveable { mutableStateOf(profile.maxHeartRate?.toString().orEmpty()) }
     var sleepNeed by rememberSaveable { mutableStateOf(profile.sleepNeedMinutes?.let { formatNumber(it / 60f) }.orEmpty()) }
 
     val ageValue = age.trim().toIntOrNull()?.takeIf { it in 10..100 }
@@ -86,12 +86,11 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         if (f != null && i != null) Units.feetInchesToCm(f, i).takeIf { it in 100..250 } else null
     } else heightCm.trim().toIntOrNull()?.takeIf { it in 100..250 }
     val heightBlank = if (imperial) feet.isBlank() && inches.isBlank() else heightCm.isBlank()
-    val maxHrValue = maxHr.trim().toIntOrNull()?.takeIf { it in 120..230 }
     // Hours, so "7.5" is 450 min; only 7-9 h is accepted (Recovery.SLEEP_NEED_MIN..MAX).
     val sleepNeedValue = sleepNeed.trim().replace(',', '.').toFloatOrNull()?.let { Math.round(it * 60) }
         ?.takeIf { it in org.openstrap.app.data.Recovery.SLEEP_NEED_MIN..org.openstrap.app.data.Recovery.SLEEP_NEED_MAX }
     val valid = (age.isBlank() || ageValue != null) && (weight.isBlank() || weightValue != null) && (heightBlank || heightValue != null) &&
-        (sleepNeed.isBlank() || sleepNeedValue != null) && (maxHr.isBlank() || maxHrValue != null)
+        (sleepNeed.isBlank() || sleepNeedValue != null)
 
     fun switchUnits(toImperial: Boolean) {
         if (toImperial == imperial) return
@@ -105,8 +104,8 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
     }
 
     // What the fields held when the page opened, so back knows whether there is anything to lose.
-    val initial = rememberSaveable { listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, maxHr, sleepNeed).joinToString("\u0000") }
-    val dirty = listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, maxHr, sleepNeed).joinToString("\u0000") != initial
+    val initial = rememberSaveable { listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") }
+    val dirty = listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") != initial
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     val back: () -> Unit = { if (dirty) confirmDiscard = true else onBack() }
     BackHandler(onBack = back)
@@ -127,7 +126,6 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                 heightCm = heightValue,
                 imperial = imperial,
                 sleepNeedMinutes = sleepNeedValue,
-                maxHeartRate = maxHrValue,
                 activityLevel = activity.takeIf { it in 0..4 },
                 // Saving confirms the answers, so the fitness estimate's freshness checks restart.
                 activityAnsweredAt = if (activity in 0..4) System.currentTimeMillis() / 1000 else null,
@@ -188,7 +186,11 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                         }
                         PageSwitchRow("Taking beta-blockers", null, betaBlocker, { betaBlocker = it }, divider = false)
                         PageSwitchRow("Pregnant", null, pregnant, { pregnant = it }, divider = false)
-                        NumberField(maxHr, { maxHr = it }, "Max heart rate from a test (optional)", "bpm", maxHr.isNotBlank() && maxHrValue == null)
+                        // Your max is set on the Heart rate zones page, with the zones that follow it.
+                        PageRow(
+                            org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW, org.openstrap.app.ui.workout.HeartZonesCopy.profileLine(profile.maxHeartRate),
+                            onClick = onHeartZones, below = true, divider = false,
+                        )
                         NumberField(sleepNeed, { sleepNeed = it }, "Sleep need (7–9, blank for your age's default)", "h", sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true)
                     }
                 }

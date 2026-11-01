@@ -23,6 +23,7 @@ object SettingsBackup {
         "profile_imperial" to Type.BOOLEAN,
         "profile_sleep_need_minutes" to Type.INT,
         "profile_max_hr" to Type.INT,
+        "profile_hr_zones" to Type.STRING,
         "profile_activity_level" to Type.INT,
         "profile_activity_answered_at" to Type.LONG,
         "profile_body_measured_at" to Type.LONG,

@@ -129,12 +129,15 @@ class WorkoutLocation(private val context: Context, private val onFix: (Route.Po
          */
         internal fun point(l: Location) = Route.Point(
             l.time / 1000, l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else Float.MAX_VALUE,
-            speed = l.speed.takeIf { l.hasSpeed() },
-            bearing = l.bearing.takeIf { l.hasBearing() },
+            speed = l.speed.takeIf { l.hasSpeed() && !EMULATOR },
+            bearing = l.bearing.takeIf { l.hasBearing() && !EMULATOR },
             altitude = l.altitude.takeIf { l.hasAltitude() },
             speedAccuracy = l.speedAccuracyMetersPerSecond.takeIf { l.hasSpeedAccuracy() },
             bearingAccuracy = l.bearingAccuracyDegrees.takeIf { l.hasBearingAccuracy() },
         )
+
+        /** A debug build on the emulator, whose `geo fix` always claims standing still: its speed and bearing are left out. */
+        private val EMULATOR = org.openstrap.app.BuildConfig.DEBUG && Build.HARDWARE == "ranchu"
 
         /** Fine or approximate; approximate fixes are too coarse to count, so distance falls back to steps. */
         fun granted(context: Context) =

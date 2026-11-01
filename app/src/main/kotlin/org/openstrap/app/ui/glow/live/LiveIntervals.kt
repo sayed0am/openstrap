@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,6 +27,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RadialGradientShader
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -59,7 +63,7 @@ private val RestGreen = ZONE_COLORS[1]
 
 /** The seconds a phase's clock is ticked from, for the screen. */
 @Composable
-private fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
+internal fun nowTicking(): Long = produceState(System.currentTimeMillis() / 1000) {
     while (true) {
         value = System.currentTimeMillis() / 1000
         delay(1000 - System.currentTimeMillis() % 1000)
@@ -99,6 +103,8 @@ internal fun LiveIntervalsScreen(
         is Phase.Rest -> "Skip rest"
         else -> null
     }
+    val structure = org.openstrap.app.data.Structure.parse(r.workout.structure)
+    val plan = structure?.let { StartCopy.structureName(it) }
     LiveFrame(
         r, color, connected, contentPadding, controls, time = activeSeconds(r), smallTime = true,
         lap = skipLabel?.takeIf { !r.paused }?.let { label -> { SkipButton(label, onSkip) } },
@@ -106,8 +112,20 @@ internal fun LiveIntervalsScreen(
             "${org.openstrap.app.data.Phases.roundsDone(r.rounds)}" to "Rounds done",
             r.rounds.mapNotNull { it.peakBpm }.maxOrNull()?.toString() to "Peak bpm",
         )) },
+        fill = true,
+        title = listOfNotNull(org.openstrap.app.data.Workouts.sportName(r.workout.sportType), plan).joinToString(", "),
+        backdrop = when {
+            r.paused -> null
+            m.phase is Phase.Work -> phaseGlow(WorkRed, fromTop = false)
+            m.phase is Phase.Rest -> phaseGlow(RestGreen, fromTop = true)
+            else -> null
+        },
     ) {
-        RoundDots(m)
+        RoundBar(m, when (structure) {
+            is org.openstrap.app.data.Structure.Timed -> structure.work
+            is org.openstrap.app.data.Structure.EveryMinute -> structure.period
+            else -> null
+        })
         when (m.phase) {
             is Phase.Work -> PhaseFigure(
                 "Round ${m.round} of ${m.rounds}", m.nextRest?.let { "Then rest ${StartCopy.restText(it)}" } ?: "Last round",
@@ -120,16 +138,33 @@ internal fun LiveIntervalsScreen(
             Phase.WarmUp -> PhaseFigure("Warm up", "${m.rounds} rounds after it", "Warming up", null, "Start the rounds when you're ready")
             Phase.Done -> PhaseFigure("All ${m.rounds} rounds done", "Hold the square to end, or keep going", "Done", null, "")
         }
-        if (m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate)
         if (m.phase is Phase.Rest || m.phase == Phase.Done) RoundPeaks(r.rounds, m.rounds)
-        Spacer(Modifier.weight(1f))
+        if (m.phase !is Phase.Rest) HeartStripDark(bpm, r.maxHeartRate, Modifier.align(Alignment.CenterHorizontally))
         when (m.phase) {
             Phase.WarmUp -> WorkoutButton("Start rounds", Color.White, Color.Black, onSkip, icon = AppIcons.PlayFill, height = 64.dp)
-            is Phase.Rest -> Box(Modifier.align(Alignment.CenterHorizontally).width(140.dp)) { WorkoutButton("+10 s", Raised, Color.White, onAddRest, height = 52.dp) }
+            // A pill as high as the heart rate strip and, like it, no wider than its words need.
+            is Phase.Rest -> WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.align(Alignment.CenterHorizontally).width(140.dp), height = 52.dp)
             is Phase.Work -> if (m.everyMinute) WorkoutButton("Done", Color.White, Color.Black, onSkip, icon = AppIcons.Tick02, height = 64.dp)
             Phase.Done -> Unit
         }
     }
+}
+
+/** A see-through button colour that reads both on the phase's light and on black. */
+private val OverGlow = Color.White.copy(alpha = 0.16f)
+
+/**
+ * The phase's light over the whole screen (boards HiitWork and HiitRest): work rises from the bottom, rest falls from
+ * the top, strongest at the edge and gone by the middle, so the seconds stay on black.
+ */
+private fun phaseGlow(color: Color, fromTop: Boolean) = object : ShaderBrush() {
+    override fun createShader(size: Size) = RadialGradientShader(
+        Offset(size.width / 2f, if (fromTop) -size.height * 0.08f else size.height * 1.08f),
+        size.height * if (fromTop) 0.7f else 0.88f,
+        // A white-hot core in the phase's colour, as on the boards.
+        listOf(lerp(color, Color.White, 0.6f), color.copy(alpha = 0.85f), color.copy(alpha = 0.3f), Color.Transparent),
+        listOf(0f, 0.3f, 0.62f, 1f),
+    )
 }
 
 /** Skip, Done or Skip rest on the controls row's left, labelled under it. */
@@ -137,65 +172,69 @@ internal fun LiveIntervalsScreen(
 private fun SkipButton(label: String, onSkip: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Box(Modifier.height(88.dp), contentAlignment = Alignment.Center) {
-            FlatButton(Color.Black.copy(alpha = 0.55f), 64.dp, onClick = onSkip) {
-                Icon(AppIcons.PlayFill, label, tint = Color.White, modifier = Modifier.size(20.dp))
+            FlatButton(OverGlow, 64.dp, onClick = onSkip) {
+                Icon(if (label == "Done") AppIcons.Tick02 else AppIcons.SkipFill, label, tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
         Text(label, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
     }
 }
 
-/** The rounds as dots: done white, the one under way half lit, those to go faint. */
+/**
+ * The rounds as a segmented bar: done white, the one under way filling as its [workLength] passes (or by [underWay],
+ * a run rep's share of its metres), those to go faint.
+ */
 @Composable
-private fun RoundDots(m: IntervalMoment) {
+internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = null) {
     val done = when (m.phase) {
-        is Phase.Work -> m.round - 1
-        is Phase.Rest -> m.round - 1
+        is Phase.Work, is Phase.Rest -> m.round - 1
         Phase.Done -> m.rounds
         Phase.WarmUp -> 0
     }
-    Row(
-        Modifier.fillMaxWidth().semantics { contentDescription = "$done of ${m.rounds} rounds done" },
-        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-    ) {
-        repeat(m.rounds.coerceAtMost(20)) { i ->
-            val alpha = when {
-                i < done -> 1f
-                i == done && m.phase is Phase.Work -> 0.6f
-                else -> 0.25f
-            }
-            Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White.copy(alpha = alpha)))
+    // How far into the round under way: the work's seconds gone of [workLength], when it runs on a clock.
+    val under = if (m.phase is Phase.Work && underWay != null) underWay.coerceIn(0f, 1f)
+    else if (m.phase is Phase.Work && m.left != null && workLength != null && workLength > 0) {
+        (1f - m.left.toFloat() / workLength).coerceIn(0f, 1f)
+    } else 0f
+    Canvas(Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = "$done of ${m.rounds} rounds done" }) {
+        val n = m.rounds.coerceIn(1, 20)
+        val gap = 6.dp.toPx()
+        val w = (size.width - gap * (n - 1)) / n
+        val corner = CornerRadius(size.height / 2)
+        for (i in 0 until n) {
+            val x = i * (w + gap)
+            drawRoundRect(Color.White.copy(alpha = if (i < done) 1f else 0.25f), Offset(x, 0f), Size(w, size.height), corner)
+            if (i == done && under > 0f) drawRoundRect(Color.White, Offset(x, 0f), Size(w * under, size.height), corner)
         }
     }
 }
 
 /** A phase: where you are and what's next, its word large, the seconds in the screen's one dotted number, a line under. */
 @Composable
-private fun PhaseFigure(where: String, next: String, word: String, seconds: String?, line: String) {
+private fun ColumnScope.PhaseFigure(where: String, next: String, word: String, seconds: String?, line: String) {
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp)) {
         Text(where, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-        Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Text(next, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary)
     }
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(word, color = Color.White, style = GlowType.pageTitle)
+    Column(Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically)) {
+        Text(word.uppercase(), color = Color.White, style = GlowType.phaseWord)
         if (seconds != null) DotMatrixText(seconds, dot = DotSize.Live, scale = 1.4f)
         if (line.isNotEmpty()) Text(line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center)
     }
 }
 
-/** The heart rate on a black strip with the zone's dot and name: the phase's colour is all around it. */
+/** The heart rate on a black pill as wide as its words, with the zone's dot and name: the phase's colour is all around it. */
 @Composable
-private fun HeartStripDark(bpm: Int?, maxHr: Int) {
+private fun HeartStripDark(bpm: Int?, maxHr: Int, modifier: Modifier = Modifier) {
     Row(
-        Modifier.fillMaxWidth().height(52.dp).clip(CircleShape).background(Color.Black).padding(horizontal = 18.dp),
+        modifier.height(52.dp).clip(CircleShape).background(Color.Black).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         val zone = WorkoutRecorder.liveZone(bpm, maxHr)
         Canvas(Modifier.size(8.dp)) { drawCircle(zone?.let { ZONE_COLORS[it] } ?: Color.White) }
         Spacer(Modifier.width(10.dp))
         Text(bpm?.let { "$it bpm" } ?: "No heart rate yet", color = Color.White, style = GlowType.body)
-        Spacer(Modifier.weight(1f))
-        zone?.let { Text(WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary, maxLines = 1) }
+        zone?.let { Spacer(Modifier.width(16.dp)); Text(WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary, maxLines = 1) }
     }
 }
 

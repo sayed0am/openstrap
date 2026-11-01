@@ -859,12 +859,33 @@ object Recovery {
      * [ARTEFACT_JUMP_BPM] of the filtered minute maximum. A strap value on a day without one has nothing to
      * corroborate it and is dropped, so the strap's unfiltered figure can't carry a spike in.
      */
-    fun <K> dailyMaxima(minuteMax: Map<K, Int?>, strapMax: List<Pair<K, Int>>): List<Int> {
+    fun <K> dailyMaxima(minuteMax: Map<K, Int?>, strapMax: List<Pair<K, Int>>): List<Int> = dailyMaximaByDay(minuteMax, strapMax).values.toList()
+
+    /** [dailyMaxima] by day, for saying when max HR was learned ([observedPeakDay]). */
+    fun <K> dailyMaximaByDay(minuteMax: Map<K, Int?>, strapMax: List<Pair<K, Int>>): Map<K, Int> {
         val strap = strapMax.filter { it.second in HR_MIN_BPM..HR_MAX_BPM }.groupBy({ it.first }, { it.second })
         return minuteMax.mapNotNull { (day, m) ->
             m ?: return@mapNotNull null
-            maxOf(m, strap[day].orEmpty().filter { abs(it - m) <= ARTEFACT_JUMP_BPM }.maxOrNull() ?: m)
-        }
+            day to maxOf(m, strap[day].orEmpty().filter { abs(it - m) <= ARTEFACT_JUMP_BPM }.maxOrNull() ?: m)
+        }.toMap()
+    }
+
+    /** The day [observedPeak] comes from: the latest of the days whose maximum is that peak. Null with no peak. */
+    fun <K : Comparable<K>> observedPeakDay(maxima: Map<K, Int>): K? {
+        val peak = observedPeak(maxima.values.toList()) ?: return null
+        return maxima.filterValues { it == peak }.keys.maxOrNull()
+    }
+
+    /**
+     * Where [maxHeartRate] comes from, for the same inputs: your own value, a peak that raised the estimate, your age,
+     * the strap's value, or the 190 used when there's nothing.
+     */
+    fun maxHeartRateSource(age: Int?, strapMax: Int? = null, observedPeak: Int? = null, tested: Int? = null): MaxHeartRate.Source = when {
+        tested != null && tested in 120..230 -> MaxHeartRate.Source.Set
+        observedPeak != null && observedPeak > maxHeartRate(age, strapMax) -> MaxHeartRate.Source.Learned
+        age != null && age in 10..100 -> MaxHeartRate.Source.Age
+        strapMax != null && strapMax in 140..225 -> MaxHeartRate.Source.Strap
+        else -> MaxHeartRate.Source.Guess
     }
 
     /**

@@ -85,6 +85,9 @@ fun YouPage(
     logLines: Int,
     contentPadding: PaddingValues,
     onProfile: () -> Unit,
+    /** Your max heart rate once worked out, said on the Heart rate zones row, which opens that page. */
+    maxHeartRate: Int?,
+    onHeartZones: () -> Unit,
     onGoals: () -> Unit,
     /** The weekly goal, personal bests and badges (workouts spec 3.5). */
     onGoalsAndBests: () -> Unit,
@@ -115,6 +118,10 @@ fun YouPage(
         item {
             PageRows {
                 PageRow("Profile", profile.summary(), onClick = onProfile, below = true, divider = false, icon = AppIcons.User, selected = selected == "Profile")
+                PageRow(
+                    org.openstrap.app.ui.workout.HeartZonesCopy.TITLE, org.openstrap.app.ui.workout.HeartZonesCopy.youLine(maxHeartRate), onClick = onHeartZones,
+                    below = true, icon = AppIcons.Heartbeat, selected = selected == org.openstrap.app.ui.workout.HeartZonesCopy.TITLE,
+                )
                 PageRow("Goals", goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
                 PageRow("Sleep goal", sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true, icon = AppIcons.Moon)
                 PageRow(

@@ -138,7 +138,7 @@ object FamilySummary {
      */
     fun roundsLine(lines: List<RoundLine>, restSeconds: Long?): String? {
         val drops = lines.mapNotNull { it.drop }
-        val hardest = lines.filter { it.peak != null }.takeIf { it.size >= 3 }?.maxByOrNull { it.peak!! }
+        val hardest = hardestRound(lines)?.let { lines[it] }
         val parts = listOfNotNull(
             drops.takeIf { it.isNotEmpty() }?.let {
                 val avg = Math.round(it.average()).toInt()
@@ -147,6 +147,29 @@ object FamilySummary {
             hardest?.let { "Round ${it.number} was your hardest." },
         )
         return parts.joinToString(" ").takeIf { it.isNotEmpty() }
+    }
+
+    /** The hardest of [lines], the highest peak (the first of equals), as its index; named only with 3 or more peaks. */
+    fun hardestRound(lines: List<RoundLine>): Int? {
+        if (lines.count { it.peak != null } < 3) return null
+        return lines.indices.filter { lines[it].peak != null }.maxByOrNull { lines[it].peak!! }
+    }
+
+    /** A peak bar starts from this share of the highest peak, so the gaps between sets and rounds show. */
+    const val PEAK_FLOOR = 0.7
+
+    /** The shortest a bar gets, so a low one still shows. */
+    const val PEAK_MIN_SHARE = 0.08f
+
+    /**
+     * How long each of [peaks] draws against the highest (boards SummaryStrength, SummaryHiit, SummaryGame): the
+     * highest is full, the rest by how far they sit above [PEAK_FLOOR] of it, at least [PEAK_MIN_SHARE]. Null for a
+     * missing peak.
+     */
+    fun peakShares(peaks: List<Int?>): List<Float?> {
+        val top = peaks.filterNotNull().maxOrNull() ?: return peaks.map { null }
+        val floor = top * PEAK_FLOOR
+        return peaks.map { p -> p?.let { (if (top <= floor) 1.0 else (it - floor) / (top - floor)).toFloat().coerceIn(PEAK_MIN_SHARE, 1f) } }
     }
 
     /** Work time over the finished rounds. */
@@ -212,6 +235,43 @@ object FamilySummary {
             last != null && last >= firstHalf * (100 + FADE_PCT) / 100 -> "You finished stronger than you started."
             else -> "You kept your effort up to the end."
         }
+    }
+
+    /** Each zone's time on the zone strip, to the nearest minute, and a minute for any time under one. */
+    fun zoneMinutes(zones: IntArray): List<Int> = zones.map { s -> if (s <= 0) 0 else Math.round(s / 60.0).toInt().coerceAtLeast(1) }
+
+    /**
+     * The heart rate as [points] evenly spaced values from [readings] (time, bpm), each the average of its stretch and
+     * then of the [window] values round it, so the line draws smooth. Null where a stretch has no reading.
+     */
+    fun heartLine(readings: List<Pair<Long, Int>>, points: Int, window: Int = 1): List<Float?> {
+        if (readings.isEmpty() || points < 2) return List(points.coerceAtLeast(0)) { null }
+        val first = readings.first().first
+        val span = (readings.last().first - first).coerceAtLeast(1)
+        val sums = FloatArray(points)
+        val counts = IntArray(points)
+        readings.forEach { (t, v) -> val i = ((t - first) * (points - 1) / span).toInt().coerceIn(0, points - 1); sums[i] += v.toFloat(); counts[i]++ }
+        val raw = List(points) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        val half = window / 2
+        return raw.indices.map { i ->
+            if (raw[i] == null) null
+            else raw.subList((i - half).coerceAtLeast(0), (i + half + 1).coerceAtMost(points)).filterNotNull().average().toFloat()
+        }
+    }
+
+    /**
+     * The line under the week's days with the weekly goal (board SummaryMind): "3 workouts this week, 1 more for your
+     * goal." or, once it's met, "4 workouts this week, goal met."
+     */
+    fun weekGoalLine(count: Int, goal: Int): String {
+        val first = "$count ${if (count == 1) "workout" else "workouts"} this week"
+        return if (count >= goal) "$first, goal met." else "$first, ${goal - count} more for your goal."
+    }
+
+    /** Whether a kcal [target] was reached: at [reachedSeconds], or by the [activeKcal] at the end. */
+    fun targetReached(target: String?, reachedSeconds: Long?, activeKcal: Int?): Boolean {
+        val k = org.openstrap.app.data.WorkoutTarget.parse(target) as? org.openstrap.app.data.WorkoutTarget.Kcal ?: return false
+        return reachedSeconds != null || (activeKcal != null && activeKcal >= k.kcal)
     }
 
     /** "Mostly zone 3": the zone with the most time, or null with none. */

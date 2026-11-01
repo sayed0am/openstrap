@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
@@ -83,12 +84,16 @@ fun GlowChooseScreen(
     onSaved: (RecentChip.Saved) -> Unit = {},
 ) {
     var more by rememberSaveable { mutableStateOf(false) }
-    BackHandler { if (more) more = false else onBack() }
+    var searching by rememberSaveable { mutableStateOf(false) }
+    BackHandler { if (searching) searching = false else if (more) more = false else onBack() }
     if (more) {
         MoreSports(contentPadding, onReady) { more = false }
         return
     }
-    var query by rememberSaveable { mutableStateOf("") }
+    if (searching) {
+        SearchPage(contentPadding, onReady) { searching = false }
+        return
+    }
     WorkoutPage(Color.Transparent, contentPadding) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.X, "Close", onBack)
@@ -97,10 +102,9 @@ fun GlowChooseScreen(
         }
         StrapLine(connection, liveHeartRate)
         if (usual != null) UsualRow(usual, { onStartUsual(usual.type) }, { onReady(usual.type) })
-        SearchField(query, "Search all sports") { query = it }
-        // Typing swaps Recent and the tiles for what it finds.
-        if (query.isNotBlank()) SearchResults(query, -1, onReady)
-        else {
+        // The search opens a page of its own (board ActivitySearchTyping).
+        SearchEntry("Search all sports") { searching = true }
+        run {
             if (recent.isNotEmpty()) {
                 ChipLabel("Recent")
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -275,6 +279,72 @@ private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
     else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, pick)
 }
 
+/** Choose's search field before it's typed in: it looks like the field and opens [SearchPage]. */
+@Composable
+private fun SearchEntry(hint: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised)
+            .pressClickable(onClick, GlowLayout.TileShape).semantics { role = Role.Button }.padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(SportIcons.Search, null, tint = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), modifier = Modifier.size(18.dp))
+        Spacer(Modifier.width(10.dp))
+        Text(hint, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body, maxLines = 1)
+    }
+}
+
+/**
+ * The search over every sport (board ActivitySearchTyping): back and the field, with the keyboard up, then how many
+ * sports match and a row for each, its icon and full name. Before anything is typed, every sport A to Z.
+ */
+@Composable
+private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit) {
+    var query by rememberSaveable { mutableStateOf("") }
+    val found = remember(query) {
+        if (query.isBlank()) (Workouts.EVERYDAY + Workouts.MORE).distinct().sortedBy { Workouts.sportName(it) }
+        // Names starting with what's typed first, then a word in them starting with it, then the rest.
+        else Workouts.search(query).sortedBy { type ->
+            val name = Workouts.sportName(type).lowercase()
+            val q = query.trim().lowercase()
+            when {
+                name.startsWith(q) -> 0
+                name.split(' ').any { it.startsWith(q) } -> 1
+                else -> 2
+            }
+        }
+    }
+    val keyboard = LocalSoftwareKeyboardController.current
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    androidx.compose.runtime.LaunchedEffect(Unit) { focus.requestFocus() }
+    ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
+        item {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                BackButton(onBack)
+                Spacer(Modifier.width(12.dp))
+                Box(Modifier.weight(1f)) { SearchField(query, "Search all sports", Modifier.focusRequester(focus)) { query = it } }
+            }
+        }
+        item {
+            Text(
+                when {
+                    query.isBlank() -> "All sports"
+                    found.isEmpty() -> "No sport matches \"${query.trim()}\"."
+                    found.size == 1 -> "1 sport"
+                    else -> "${found.size} sports"
+                },
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+        if (found.isNotEmpty()) item {
+            ListPanel {
+                found.forEachIndexed { i, type ->
+                    PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, onClick = { keyboard?.hide(); onPick(type) })
+                }
+            }
+        }
+    }
+}
+
 /** A section of sport tiles, four to a row, under its Caption [title]. */
 @Composable
 private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, isSelected: (Int) -> Boolean, onPick: (Int) -> Unit) {
@@ -291,10 +361,10 @@ private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, 
 
 /** The search on Choose and the picker: a 48 dp field on the Control surface with 16 dp corners and the search icon (spec 6.3). */
 @Composable
-private fun SearchField(query: String, hint: String, onChange: (String) -> Unit) {
+private fun SearchField(query: String, hint: String, modifier: Modifier = Modifier, onChange: (String) -> Unit) {
     val keyboard = LocalSoftwareKeyboardController.current
     BasicTextField(
-        query, onChange, Modifier.fillMaxWidth(), singleLine = true,
+        query, onChange, modifier.fillMaxWidth(), singleLine = true,
         textStyle = GlowType.body.copy(color = Color.White),
         cursorBrush = SolidColor(Color.White),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),

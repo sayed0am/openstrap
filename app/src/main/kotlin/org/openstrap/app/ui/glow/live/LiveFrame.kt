@@ -29,8 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -101,19 +103,42 @@ internal fun LiveFrame(
     battery: Int? = null,
     status: List<Pair<String, Color>> = emptyList(),
     paused: (@Composable ColumnScope.() -> Unit)? = null,
+    /** The [content] takes the height left above the buttons itself (a weighted pager), so nothing pushes them down. */
+    fill: Boolean = false,
+    /** Pause and the hold to end as two pills under the screen's own big button (strength), not the round row. */
+    pillControls: Boolean = false,
+    /** The pill's words when more than the sport's name ("HIIT, Tabata"). */
+    title: String? = null,
+    backdrop: androidx.compose.ui.graphics.Brush? = null,
+    /** Mind and body (board LiveMind): the sport's name plain and centred, no strap status, and two dark buttons. */
+    quiet: Boolean = false,
+    /**
+     * A page under a bar shared by the pages ([LiveBottomBar]): the note, the prompt and the controls are drawn once
+     * under the pager, so the page only leaves this much room for them.
+     */
+    bottomRoom: Dp? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(onBack = controls.onMinimize)
     // The screens built for each sport label their buttons; the older one says to hold the square under them.
     val labelled = time != null
-    WorkoutPage(color, contentPadding, scroll = false) {
+    WorkoutPage(color, contentPadding, scroll = false, backdrop = backdrop) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box(
                 Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(controls.onMinimize, CircleShape),
                 contentAlignment = Alignment.Center,
             ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            if (quiet) {
+                Text(
+                    title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.cardTitle, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f),
+                )
+                // The minimise button's width again, so the name sits in the middle of the screen.
+                Spacer(Modifier.width(44.dp))
+                return@Row
+            }
             Spacer(Modifier.width(10.dp))
-            Pill(Workouts.sportName(r.workout.sportType), color)
+            Pill(title ?: Workouts.sportName(r.workout.sportType), color)
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val strap = when {
@@ -125,10 +150,12 @@ internal fun LiveFrame(
                 if (time != null && smallTime) {
                     // The total, small, where a set or a round's clock is the screen's number.
                     Text(workoutClock(time), color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    // Under it, the GPS where there is one (run reps), else that it's the total.
+                    val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("Total", color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                        Text(under, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
                         Spacer(Modifier.width(8.dp))
-                        Canvas(Modifier.size(6.dp)) { drawCircle(if (connected) TrendGood else TrendBad) }
+                        Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
                     }
                 } else (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -145,11 +172,15 @@ internal fun LiveFrame(
             Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
         }
         if (r.paused && paused != null) paused() else content()
+        if (bottomRoom != null && !r.paused) {
+            Spacer(Modifier.height(bottomRoom))
+            return@WorkoutPage
+        }
         if (!connected && !r.paused) {
             Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
         }
         r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-        Spacer(Modifier.weight(1f))
+        if (!fill || r.paused) Spacer(Modifier.weight(1f))
         if (r.paused && paused != null) {
             Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 HoldPill("End workout", Modifier.weight(1f), controls.onEnd)
@@ -162,30 +193,59 @@ internal fun LiveFrame(
             Spacer(Modifier.height(20.dp))
             return@WorkoutPage
         }
-        // At most a thumb's reach wide, so on a wide screen (an unfolded or half-folded phone) Lap and End stay by Pause.
-        Row(
-            Modifier.align(Alignment.CenterHorizontally).widthIn(max = 360.dp).fillMaxWidth().padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.Top,
-        ) {
-            val pauseLabel = if (r.paused) "Resume" else "Pause"
-            // Pause stays centred with or without the left button.
-            // The left button labels itself ([LapButton]).
-            if (lap != null) lap() else Spacer(Modifier.size(64.dp))
-            Spacer(Modifier.weight(1f))
-            Labelled(pauseLabel, labelled) {
-                FlatButton(Color.White, 88.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
-                    Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, pauseLabel, tint = Color.Black, modifier = Modifier.size(30.dp))
+        if (quiet) {
+            Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
+                Labelled("Pause", true) {
+                    FlatButton(Raised, 64.dp, onClick = controls.onPause) {
+                        Icon(AppIcons.PauseFill, "Pause", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
                 }
+                Labelled("Hold to end", true) { HoldToEnd(controls.onEnd) }
             }
-            Spacer(Modifier.weight(1f))
-            Labelled("Hold to end", labelled) { HoldToEnd(controls.onEnd) }
+            Text(
+                "Tap anywhere to light the screen", color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary,
+                modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(8.dp))
+            return@WorkoutPage
         }
+        if (pillControls) {
+            Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                WorkoutButton("Pause", Raised, Color.White, controls.onPause, Modifier.weight(1f), icon = AppIcons.PauseFill, height = 52.dp)
+                HoldPill("Hold to end", Modifier.weight(1f), controls.onEnd, height = 52.dp)
+            }
+            Spacer(Modifier.height(8.dp))
+            return@WorkoutPage
+        }
+        ControlsRow(r, controls, lap, labelled, Modifier.align(Alignment.CenterHorizontally))
         if (!labelled) Text(
             "Hold the square to end", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
             modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
         )
         // A little room under the controls, so they sit up off the screen's edge.
         Spacer(Modifier.height(20.dp))
+    }
+}
+
+/**
+ * The controls row, in the same place on every live screen: [lap] on the left (or room for it), Pause or Resume in the
+ * middle and largest, and the square to hold to end, [labelled] under each on the screens built for each sport.
+ */
+@Composable
+internal fun ControlsRow(r: WorkoutState.Recording, controls: LiveControls, lap: (@Composable () -> Unit)?, labelled: Boolean, modifier: Modifier = Modifier) {
+    // At most a thumb's reach wide, so on a wide screen (an unfolded or half-folded phone) Lap and End stay by Pause.
+    Row(modifier.widthIn(max = 360.dp).fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.Top) {
+        val pauseLabel = if (r.paused) "Resume" else "Pause"
+        // Pause stays centred with or without the left button. The left button labels itself ([LapButton]).
+        if (lap != null) lap() else Spacer(Modifier.size(64.dp))
+        Spacer(Modifier.weight(1f))
+        Labelled(pauseLabel, labelled) {
+            FlatButton(Color.White, 88.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
+                Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, pauseLabel, tint = Color.Black, modifier = Modifier.size(30.dp))
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        Labelled("Hold to end", labelled) { HoldToEnd(controls.onEnd) }
     }
 }
 
@@ -203,7 +263,7 @@ private fun Labelled(label: String, show: Boolean, button: @Composable () -> Uni
 @Composable
 internal fun LapButton(onLap: () -> Unit, label: Boolean = false, text: String = "Lap") = Labelled(text, label) {
     FlatButton(Raised, 64.dp, onClick = onLap) {
-        Icon(if (text == "Lap") SportIcons.Lap else AppIcons.PlayFill, text, tint = Color.White, modifier = Modifier.size(22.dp))
+        Icon(if (text == "Lap") SportIcons.Lap else AppIcons.SkipFill, text, tint = Color.White, modifier = Modifier.size(22.dp))
     }
 }
 
@@ -212,12 +272,12 @@ internal fun LapButton(onLap: () -> Unit, label: Boolean = false, text: String =
  * a pocket still can't end a workout.
  */
 @Composable
-private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit) {
+private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, height: androidx.compose.ui.unit.Dp = 64.dp) {
     val progress = remember { Animatable(0f) }
     val haptics = rememberHaptics()
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
     Row(
-        modifier.height(64.dp).clip(shape).background(Raised)
+        modifier.height(height).clip(shape).background(Raised)
             .drawBehind { drawRect(EndRed.copy(alpha = 0.35f), size = size.copy(width = size.width * progress.value)) }
             .pointerInput(Unit) {
                 detectTapGestures(onPress = {
@@ -246,16 +306,48 @@ private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit) {
 
 private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
-/** Two small dots for the live views, the current one white; tapping one goes there (the map keeps its own drags). */
+/**
+ * What the run's views share under their pager, fixed while the views slide: the strap note, the stopped prompt, the
+ * page dots following the swipe ([position]) and the controls. [onHeight] reports its height above the bottom padding.
+ */
 @Composable
-internal fun PageDots(current: Int, count: Int, onSelect: (Int) -> Unit) {
+internal fun LiveBottomBar(
+    r: WorkoutState.Recording, connected: Boolean, contentPadding: PaddingValues, controls: LiveControls, lap: (@Composable () -> Unit)?,
+    position: Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
+) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
+        val side = org.openstrap.app.ui.glow.GlowLayout.pageSide(maxWidth, org.openstrap.app.ui.glow.LocalPageColumn.current, org.openstrap.app.ui.glow.GlowLayout.Gutter)
+        Column(
+            Modifier.fillMaxWidth().padding(bottom = contentPadding.calculateBottomPadding())
+                .onSizeChanged { onHeight(with(density) { it.height.toDp() }) }
+                .padding(start = side, end = side, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
+            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
+            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(position).toInt() + 1} of $count" }) {
+                PageDots(kotlin.math.round(position).toInt(), count, position, onPage)
+            }
+            ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
+        }
+    }
+}
+
+/**
+ * Two small dots for the live views, the current one white; tapping one goes there (the map keeps its own drags).
+ * With [position] (the pager's page plus how far it's swiped) the white passes from one dot to the next as it slides.
+ */
+@Composable
+internal fun PageDots(current: Int, count: Int, position: Float? = null, onSelect: (Int) -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center) {
         repeat(count) { i ->
             Box(
                 Modifier.size(28.dp).clip(CircleShape).pressClickable({ onSelect(i) }, CircleShape),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White.copy(alpha = if (i == current) 1f else 0.3f)))
+                val lit = if (position != null) (1f - kotlin.math.abs(position - i)).coerceIn(0f, 1f) else if (i == current) 1f else 0f
+                Box(Modifier.size(7.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.3f + 0.7f * lit)))
             }
         }
     }
@@ -342,5 +434,5 @@ internal fun HoldToEnd(onEnd: () -> Unit) {
     }
 }
 
-private val EndRed = MetricColors.heart
+internal val EndRed = MetricColors.heart
 private const val HOLD_MS = 2000

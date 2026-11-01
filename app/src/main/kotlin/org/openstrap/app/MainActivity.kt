@@ -382,7 +382,7 @@ private enum class Page(
     /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
     val row: String? = null,
 ) {
-    You, Profile("Profile"), HealthConnect("Health Connect"), Backup("Backup"), DeletedSleep("Deleted sleep"), Updates("Updates"), Diagnostics("Diagnostics"),
+    You, Profile("Profile"), HeartZones("Heart rate zones"), HealthConnect("Health Connect"), Backup("Backup"), DeletedSleep("Deleted sleep"), Updates("Updates"), Diagnostics("Diagnostics"),
     GoalsAndBests("Goals and bests"), AllBadges, WeeklyRecap,
     Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
 }
@@ -898,7 +898,8 @@ private fun AppRoot(
         val navItems = Tab.entries.map { NavItem(it.label, it.icon, it.selectedIcon, it.tint) }
         // A detail covering the tab is a screen stepped into: no tab bar, only its back button (spec 3.2). Wide
         // enough for the detail to open beside the tab, the bar stays with the tab it belongs to.
-        val showBar = !rail && !(currentDetail != null && maxWidth < SideBySideWidth)
+        var barHidden by remember { mutableStateOf(false) }
+        val showBar = !rail && !barHidden && !(currentDetail != null && maxWidth < SideBySideWidth)
         // Another tab keeps every stack. The tab showing scrolls to the top, then pops to its root (spec 3.3). A tap
         // that closes pages over the tab does only that.
         val selectTab: (Int) -> Unit = { t ->
@@ -926,7 +927,7 @@ private fun AppRoot(
                 ) { FloatingNavBar(navItems, tab, selectTab, glass = navGlass) }
             },
             containerColor = MaterialTheme.colorScheme.background,
-        ) { padding ->
+        ) { padding -> androidx.compose.runtime.CompositionLocalProvider(org.openstrap.app.ui.glow.LocalHideTabBar provides { barHidden = it }) {
             if (editGoals) {
                 // The calorie goal your last four weeks suggest, read as the sheet opens (calories spec 3.4).
                 val suggestedCalories by produceState<Int?>(null) { value = runCatching { container.health.suggestedCalorieGoal() }.getOrNull() }
@@ -1151,11 +1152,14 @@ private fun AppRoot(
                             val updates by container.updater.state.collectAsStateWithLifecycle()
                             val updateWaiting by container.updater.waiting.collectAsStateWithLifecycle()
                             val deletedSleep by dayVm.deletedSleep.collectAsStateWithLifecycle()
+                            val youMaxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
                             // Permissions can be taken back in Health Connect while away: the row says so on return.
                             androidx.lifecycle.compose.LifecycleResumeEffect(Unit) { deviceVm.checkAutoHealthConnect(); onPauseOrDispose { } }
                             org.openstrap.app.ui.device.YouPage(
                                 profile, goals, org.openstrap.app.data.Recovery.sleepNeed(profile.age(), profile.sleepNeedMinutes), log.size, padding,
                                 onProfile = { open(Page.Profile) },
+                                maxHeartRate = youMaxHr,
+                                onHeartZones = { open(Page.HeartZones) },
                                 onGoals = { editGoals = true },
                                 onGoalsAndBests = { open(Page.GoalsAndBests) },
                                 healthConnectAuto = hcAuto,
@@ -1248,7 +1252,7 @@ private fun AppRoot(
                 }
                 }
             } }
-        }
+        } }
         if (rail) org.openstrap.app.ui.components.FloatingNavRail(
             navItems, tab, selectTab, androidx.compose.ui.Modifier.align(androidx.compose.ui.Alignment.CenterStart),
             glass = navGlass,
@@ -1307,6 +1311,7 @@ private fun AppRoot(
             choosing = choosing,
             onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick; readyStructure = null },
             readyStructure = readyStructure,
+            glass = navGlass,
             onOpenSaved = { sport, structure -> readySport = sport; readyPicking = false; readyStructure = structure },
             onCloseChoose = { choosing = false },
             glance = liveGlance, onGlanceAction = onGlanceAction,
@@ -1416,7 +1421,10 @@ private fun OverPages(
             Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)
             Page.HealthConnect, Page.Backup, Page.DeletedSleep, Page.Updates -> dataPage(shown, close)
             Page.GoalsAndBests, Page.AllBadges, Page.WeeklyRecap -> RewardsPage(shown, container, padding, open, close)
-            Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close)
+            Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(
+                profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close, onHeartZones = { open(Page.HeartZones) },
+            )
+            Page.HeartZones -> HeartZonesPage(container, padding, close)
             Page.Diagnostics -> {
                 val log by container.strap.log.collectAsStateWithLifecycle()
                 org.openstrap.app.ui.device.DiagnosticsScreen(log, padding, onBack = close)
@@ -1520,6 +1528,8 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
     choosing: Boolean = false,
+    /** What popups blur: Choose, Ready and the zones page join it over the pages, so a sheet blurs the screen it opened from. */
+    glass: dev.chrisbanes.haze.HazeState? = null,
     /** Opens Ready over Choose for a sport, or on its sport picker ([pick]). */
     onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
     onCloseChoose: () -> Unit = {},
@@ -1533,6 +1543,8 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     capsuleHidden: Boolean = false,
 ) {
     val session = container.workout
+    // Your zones, opened from Ready's zone goal.
+    var zonesOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
     val saved by remember { session.savedWorkouts() }.collectAsStateWithLifecycle(emptyList())
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -1558,9 +1570,9 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     // Read here, ahead of a workout, so the live screen usually opens on the right view at once.
     val liveView by container.settings.workoutLiveView.collectAsStateWithLifecycle(null)
     val kcal by session.kcal.collectAsStateWithLifecycle()
-    val profile by container.settings.profile.collectAsStateWithLifecycle(null)
     val padding = androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues()
     val full = androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
+    fun over(z: Float) = if (glass != null) full.hazeSource(glass, zIndex = z) else full
     when {
         // Minimizing morphs the live screen into the capsule above the tab bar, and tapping the capsule back.
         state is org.openstrap.app.device.WorkoutState.Recording -> org.openstrap.app.ui.glow.WorkoutMorph(
@@ -1645,7 +1657,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     val recording = state is org.openstrap.app.device.WorkoutState.Recording || state is org.openstrap.app.device.WorkoutState.Ended
     // Choose sits under Ready, so closing Ready comes back to it.
     org.openstrap.app.ui.glow.PushOverlay(choosing.takeIf { it && !recording }, cut = recording) {
-        androidx.compose.foundation.layout.Box(full) {
+        androidx.compose.foundation.layout.Box(over(2f)) {
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val (_, sides) = pickerSports(container, workoutsVm)
             val zone = java.time.ZoneId.systemDefault()
@@ -1670,24 +1682,16 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
         }
     }
     org.openstrap.app.ui.glow.PushOverlay(readySport.takeIf { !recording }, cut = recording) { sport ->
-        androidx.compose.foundation.layout.Box(full) {
+        androidx.compose.foundation.layout.Box(over(2.5f)) {
             val (recentSports, sides) = pickerSports(container, workoutsVm)
-            val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val key = org.openstrap.app.data.Workouts.tileType(sport)
-            // The sport's two most used goals, from the phone workouts that had one, newest first.
-            val goalChips = remember(workouts, key) {
-                org.openstrap.app.data.WorkoutSetup.goalChips(
-                    org.openstrap.app.data.Workouts.family(sport),
-                    workouts.filter { it.fromPhone && org.openstrap.app.data.Workouts.tileType(it.workout.sportType) == key }
-                        .sortedByDescending { it.workout.start }.map { it.target },
-                )
-            }
+            val maxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
             org.openstrap.app.ui.glow.GlowWorkoutReadyScreen(
                 sport, readyPicking, connection, live, padding,
-                settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(), goalChips = goalChips,
+                settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(),
                 saved = saved, onSaveIntervals = { name, code -> session.saveWorkout(name, sport, code) }, structure = readyStructure,
                 recentSports = recentSports, sides = sides,
-                kcalTargets = profile?.let { org.openstrap.app.data.EnergyExpenditure.bmrPerMinute(it, it.age()) } != null,
+                maxHeartRate = maxHr, onYourZones = { zonesOpen = true },
                 onSide = { s, indoor ->
                     viewScope.launch {
                         container.settings.setWorkoutSide(s, indoor)
@@ -1700,8 +1704,39 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                 onStart = startPlan,
                 onBack = onCloseReady,
             )
+            // Your zones, over Ready; back comes back to it.
+            org.openstrap.app.ui.glow.PushOverlay(Unit.takeIf { zonesOpen }, cut = false) {
+                androidx.compose.foundation.layout.Box(over(3f)) { HeartZonesPage(container, padding, onBack = { zonesOpen = false }) }
+            }
         }
     }
+}
+
+/**
+ * The Heart rate zones page, from Ready's Your zones and the You page: your max as the app works it out, and your
+ * zones. Both are stored in the settings, which every zone and max HR reader goes by; moved zones are in use at once.
+ */
+@Composable
+private fun HeartZonesPage(container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    val profile by container.settings.profile.collectAsStateWithLifecycle(null)
+    val zones by org.openstrap.app.data.HeartZones.current.collectAsStateWithLifecycle()
+    val max by androidx.compose.runtime.produceState<org.openstrap.app.data.MaxHeartRate?>(null, profile) {
+        val p = profile ?: return@produceState
+        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
+            org.openstrap.app.data.RecoveryEngine(container.database.healthDao()).maxHeartRateExplained(p)
+        }
+    }
+    org.openstrap.app.ui.glow.HeartZonesScreen(
+        max, zones, padding,
+        onMax = { bpm -> scope.launch { container.settings.setMaxHeartRate(bpm) } },
+        onZones = { z ->
+            // In use before it's stored, so a quick second tap moves on from this one.
+            org.openstrap.app.data.HeartZones.use(z)
+            scope.launch { container.settings.setHeartZones(z) }
+        },
+        onBack = onBack,
+    )
 }
 
 /** A metric's detail. */

@@ -82,6 +82,58 @@ class FamilySummaryTest {
     }
 
     @Test
+    fun theHardestRoundIsTheHighestPeakFromThreeRounds() {
+        val lines = listOf(RoundLine(1, 158, 19), RoundLine(2, 176, 17), RoundLine(3, null, null), RoundLine(4, 176, 22))
+        assertEquals(1, FamilySummary.hardestRound(lines))
+        assertNull(FamilySummary.hardestRound(lines.take(2)))
+    }
+
+    @Test
+    fun peakBarsAreFullForTheHardestAndShorterBelowIt() {
+        val shares = FamilySummary.peakShares(listOf(167, 141, null, 100))
+        assertEquals(1f, shares[0]!!, 1e-4f)
+        // 141 sits 24 above the floor of 116.9, out of 50.1.
+        assertEquals(0.48f, shares[1]!!, 0.01f)
+        assertNull(shares[2])
+        assertEquals(FamilySummary.PEAK_MIN_SHARE, shares[3]!!, 1e-4f)
+        assertEquals(listOf<Float?>(null, null), FamilySummary.peakShares(listOf(null, null)))
+        assertEquals(listOf<Float?>(1f, 1f), FamilySummary.peakShares(listOf(150, 150)))
+    }
+
+    @Test
+    fun zoneMinutesRoundAndKeepAMinuteForAShortStay() {
+        assertEquals(listOf(6, 0, 1, 31, 17), FamilySummary.zoneMinutes(intArrayOf(360, 0, 20, 1850, 1020)))
+    }
+
+    @Test
+    fun theHeartLineAveragesAndSmooths() {
+        val flat = FamilySummary.heartLine((0L..600L step 5).map { it to 80 }, 30, window = 5)
+        assertEquals(30, flat.size)
+        flat.forEach { assertEquals(80f, it!!, 1e-4f) }
+        // One high stretch is softened by its neighbours.
+        val spike = (0L..600L step 5).map { t -> t to if (t in 300L..310L) 160 else 80 }
+        val raw = FamilySummary.heartLine(spike, 60).filterNotNull().max()
+        val smooth = FamilySummary.heartLine(spike, 60, window = 5).filterNotNull().max()
+        assertEquals(true, smooth < raw)
+        assertEquals(listOf<Float?>(null, null), FamilySummary.heartLine(emptyList(), 2))
+    }
+
+    @Test
+    fun theWeekLineCountsTowardTheGoal() {
+        assertEquals("3 workouts this week, 1 more for your goal.", FamilySummary.weekGoalLine(3, 4))
+        assertEquals("1 workout this week, 3 more for your goal.", FamilySummary.weekGoalLine(1, 4))
+        assertEquals("4 workouts this week, goal met.", FamilySummary.weekGoalLine(4, 4))
+    }
+
+    @Test
+    fun aKcalTargetIsReachedByTimeOrByTheEnd() {
+        assertEquals(true, FamilySummary.targetReached("k:300", 1800, null))
+        assertEquals(true, FamilySummary.targetReached("k:300", null, 310))
+        assertEquals(false, FamilySummary.targetReached("k:300", null, 212))
+        assertEquals(false, FamilySummary.targetReached("t:1800", 1800, 400))
+    }
+
+    @Test
     fun theHeartSettlesFromTheFirstMinutesToTheLast() {
         val readings = (0L..1800L step 5).map { t -> t to (96 - (t * 30 / 1800)).toInt() }
         val (from, to) = FamilySummary.settled(readings, 0, 1800)!!

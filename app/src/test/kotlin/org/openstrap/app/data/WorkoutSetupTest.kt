@@ -50,25 +50,19 @@ class WorkoutSetupTest {
     }
 
     @Test
+    fun theRouteIsKeptUnlessTurnedOff() {
+        assertTrue(SportSettings().keepRoute)
+        // Lines saved before the map was on by default carry k=0, which no longer counts.
+        assertTrue(SportSettings.parse("a=1|p=1|k=0|l=0").keepRoute)
+        assertFalse(SportSettings.parse(SportSettings(keepRoute = false).encode()).keepRoute)
+    }
+
+    @Test
     fun unreadableSettingsFallBackToTheDefaults() {
         assertEquals(SportSettings(), SportSettings.parse(null))
         assertEquals(SportSettings(), SportSettings.parse("nonsense|g=x:1|s=99|r=bad|a=maybe"))
         // What's readable is kept.
         assertEquals(SportSettings(goal = "t:1800"), SportSettings.parse("g=t:1800|zz=1"))
-    }
-
-    @Test
-    fun goalChipsLearnTheTwoMostUsed() {
-        // Never used: the family's defaults.
-        assertEquals(listOf(WorkoutTarget.Distance(5000), WorkoutTarget.Time(1800)), WorkoutSetup.goalChips(Family.Distance, emptyList()))
-        assertEquals(listOf(WorkoutTarget.Time(1200), WorkoutTarget.Time(1800)), WorkoutSetup.goalChips(Family.IndoorCardio, listOf(null, null)))
-        // 10 km three times, 45 min twice, 5 km once: the two most used.
-        val used = listOf("d:10000", "t:2700", "d:10000", "d:5000", "t:2700", "d:10000", null)
-        assertEquals(listOf(WorkoutTarget.Distance(10_000), WorkoutTarget.Time(2700)), WorkoutSetup.goalChips(Family.Distance, used))
-        // One learnt, topped up with a default it isn't.
-        assertEquals(listOf(WorkoutTarget.Time(1800), WorkoutTarget.Distance(5000)), WorkoutSetup.goalChips(Family.Distance, listOf("t:1800")))
-        // A tie goes to the latest.
-        assertEquals(listOf(WorkoutTarget.Time(900), WorkoutTarget.Time(3600)), WorkoutSetup.goalChips(Family.IndoorCardio, listOf("t:900", "t:3600")))
     }
 
     @Test
@@ -139,7 +133,6 @@ class WorkoutSetupTest {
         assertFalse(WorkoutSetup.offered(WorkoutTarget.Distance(5000), hasDistance = false, kcal = true))
         assertFalse(WorkoutSetup.offered(WorkoutTarget.Kcal(300), hasDistance = true, kcal = false))
         assertTrue(WorkoutSetup.offered(null, hasDistance = false, kcal = false))
-        assertFalse(WorkoutSetup.moreGoals(kcal = false).any { (_, goals) -> goals.any { it is WorkoutTarget.Kcal } })
     }
 
     @Test
@@ -178,5 +171,25 @@ class WorkoutSetupTest {
         assertEquals(105L, Strength.stepRest(90, 1))
         assertEquals(30L, Strength.stepRest(30, -1))
         assertEquals(300L, Strength.stepRest(300, 1))
+    }
+
+    @Test fun `Ready's goal kinds, a distance where there is one, intervals for a run`() {
+        val k = WorkoutSetup.GoalKind.entries
+        assertEquals(k, WorkoutSetup.goalKinds(1, hasDistance = true))
+        assertEquals(k, WorkoutSetup.goalKinds(2, hasDistance = true))
+        assertEquals(k - WorkoutSetup.GoalKind.Intervals, WorkoutSetup.goalKinds(3, hasDistance = true))
+        assertEquals(listOf(WorkoutSetup.GoalKind.None, WorkoutSetup.GoalKind.Time, WorkoutSetup.GoalKind.Zone), WorkoutSetup.goalKinds(9, hasDistance = false))
+        assertEquals(WorkoutSetup.GoalKind.Intervals, WorkoutSetup.goalKind(WorkoutTarget.Time(60), Structure.Reps(400, null, 90, 6)))
+        assertEquals(WorkoutSetup.GoalKind.Zone, WorkoutSetup.goalKind(WorkoutTarget.Zones(1, 2), null))
+        assertEquals(WorkoutSetup.GoalKind.None, WorkoutSetup.goalKind(WorkoutTarget.Kcal(300), null))
+    }
+
+    @Test fun `a second zone tapped makes a range, a third starts over`() {
+        val z2 = WorkoutSetup.pickZone(null, 1)
+        assertEquals(WorkoutTarget.Zones(1, 1), z2)
+        assertEquals(WorkoutTarget.Zones(1, 2), WorkoutSetup.pickZone(z2, 2))
+        assertEquals(WorkoutTarget.Zones(0, 1), WorkoutSetup.pickZone(z2, 0))
+        assertEquals(WorkoutTarget.Zones(1, 1), WorkoutSetup.pickZone(z2, 1))
+        assertEquals(WorkoutTarget.Zones(4, 4), WorkoutSetup.pickZone(WorkoutTarget.Zones(1, 2), 4))
     }
 }

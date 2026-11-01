@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import org.openstrap.app.ui.dashboard.Info
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -35,6 +36,13 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.text.font.FontWeight
+import org.openstrap.app.ui.workout.SplitRow
+import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.components.pressClickable
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
@@ -124,19 +132,35 @@ fun GlowWorkoutSummaryScreen(
     }
     BackHandler(onBack = done)
     var info by rememberSaveable { mutableStateOf(false) }
-    // Done stays on the bottom edge, Delete as quiet text under it; nothing to delete until the workout has loaded.
-    // Share comes with the share screen (workouts spec 2.9), not yet.
+    val hero = remember(summary, workouts) {
+        if (summary == null || a == null) null
+        else summaryHero(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, Workouts.usualLoad(workouts.filter { it.workout.start != a.workout.start }.map { it.workout.trainingLoad }))
+    }
+    // Share opens the share screen (workouts spec 2.9) in the summary's place; close comes back here.
+    var sharing by rememberSaveable { mutableStateOf(false) }
+    if (sharing && summary != null && hero != null) {
+        WorkoutShareScreen(summary, hero, rewards?.earned.orEmpty(), liveRoute, workouts, contentPadding, onClose = { sharing = false })
+        return
+    }
+    // Share and Done stay on the bottom edge; Delete waits at the end of the page. Nothing to share until the workout
+    // has loaded.
     WorkoutPage(
         Color.Transparent, contentPadding,
-        pinned = { if (a != null) SummaryActions(justEnded = true, onDone = done, onDelete = onDelete) else WorkoutButton("Done", Color.White, Color.Black, onDone) },
+        pinned = {
+            if (a != null && hero != null) SummaryButtons(onShare = { sharing = true }, onDone = done)
+            else WorkoutButton("Done", Color.White, Color.Black, onDone)
+        },
     ) {
-        // The sport, then when (board SummaryRun).
-        Column(Modifier.padding(start = 4.dp, top = 12.dp)) {
-            Text(a?.sportName ?: "Workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
-            if (a != null) Text(
-                FamilySummary.whenLine(a.shownStart, System.currentTimeMillis() / 1000), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp),
-            )
+        // The sport, then when, with Done beside them (board SummaryRun).
+        Row(Modifier.padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(a?.sportName ?: "Workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+                if (a != null) Text(
+                    FamilySummary.whenLine(a.shownStart, System.currentTimeMillis() / 1000), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            TopDone(done)
         }
         if (summary == null || a == null) {
             Note("Loading…")
@@ -163,20 +187,21 @@ fun GlowWorkoutSummaryScreen(
         }
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        SummaryHeroCard(summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
+        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
         val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
-        val underList = FamilySection(family, summary, liveRoute, others, weekStarts)
-        EarnedPanel(earned, underList)
+        val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
+        EarnedChips(earned)
         // The drop only with heart rate to show: recorded in the workout, or arriving live after it.
         val live = calmDown?.takeIf { it.start == w.start }
         val dropShown = summary.recorded.isNotEmpty() || !live?.readings.isNullOrEmpty()
         if (dropShown) CalmDownHero(summary, live, usualDrop, effort, 0f) { info = true }
-        // Load is lit from the left: what comes before it (the hero, the drop, Earned on an edge card) is lit from
-        // below, so two cards in a row never look the same.
-        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left)) {
+        // Load is lit from the left: what comes before it (the hero, the drop) is lit from below, so two cards in a row
+        // never look the same. Under the section's own edge card, lit from the left or right, Load takes the bottom.
+        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = if (sectionOnEdge && !dropShown) Edge.Bottom else Edge.Left)) {
             LoadCard(a, usualLoad, best = null)
         }
         TrimSection(summary, onTrim, onUndoTrim)
+        DeleteWorkout(PHONE_DELETE, onDelete)
     }
     if (info) InfoSheet(
         Info("Heart rate drop", SummaryCopy.DROP_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
@@ -372,7 +397,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
             title = if (rows.isNotEmpty()) "Splits" else "Laps",
             note = if (rows.isNotEmpty()) fastest?.let { "Fastest: ${rows[it].name.lowercase()}" } ?: summary.distanceMeters?.let { km(it) + if (it >= 1000) " km" else "" } else "${laps.size}",
         ) {
-            rows.forEachIndexed { i, r ->
+            if (markFastest) SplitBars(rows, fastest) else rows.forEachIndexed { i, r ->
                 ListRow(
                     r.name, dot(r.averageBpm), r.time, if (i == fastest) "Fastest" + (r.averageBpm?.let { ", average $it bpm" } ?: "") else r.averageBpm?.let { "Average $it bpm" },
                     divider = i > 0, icon = AppIcons.Heart, offNormal = i == fastest,
@@ -397,4 +422,47 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
         else -> return false
     }
     return true
+}
+
+/**
+ * Each kilometre as a bar as long as its speed against the [fastest] one's (board SummaryRun): the distance's lime,
+ * the fastest white and its row bold. A part kilometre at the end has its time and no bar.
+ */
+@Composable
+private fun SplitBars(rows: List<SplitRow>, fastest: Int?) {
+    val seconds = rows.map { r -> r.time.split(":").fold(0L) { acc, p -> acc * 60 + (p.toLongOrNull() ?: 0) } }
+    val best = rows.indices.filter { rows[it].name.startsWith("Km ") && seconds[it] > 0 }.minOfOrNull { seconds[it] }
+    val bar = familyColor(Workouts.Family.Distance).copy(alpha = 0.5f)
+    rows.forEachIndexed { i, r ->
+        val lit = i == fastest
+        val text = if (lit) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)
+        val style = if (lit) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary
+        Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(r.name, color = text, style = style, maxLines = 1, modifier = Modifier.widthIn(min = 56.dp).padding(end = 8.dp))
+            Box(Modifier.weight(1f).height(10.dp)) {
+                if (best != null && r.name.startsWith("Km ") && seconds[i] > 0) Box(
+                    Modifier.fillMaxWidth(best.toFloat() / seconds[i]).fillMaxHeight().clip(CircleShape).background(if (lit) Color.White else bar),
+                )
+            }
+            Text(r.time, color = Color.White, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, modifier = Modifier.padding(start = 14.dp))
+        }
+    }
+}
+
+/** The Share and Done pair on a summary's bottom edge (boards SummaryRun to SummaryGame): Done is the way on, in white. */
+@Composable
+internal fun SummaryButtons(onShare: () -> Unit, onDone: () -> Unit) {
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        WorkoutButton("Share", Raised, Color.White, onShare, Modifier.weight(1f), icon = AppIcons.UploadSimple)
+        WorkoutButton("Done", Color.White, Color.Black, onDone, Modifier.weight(1f), icon = AppIcons.Tick02)
+    }
+}
+
+/** Done as a small pill beside the title, to leave without scrolling to the bottom. */
+@Composable
+internal fun TopDone(onDone: () -> Unit) {
+    Box(
+        Modifier.height(40.dp).clip(CircleShape).background(Raised).pressClickable(onDone, CircleShape).padding(horizontal = 18.dp),
+        contentAlignment = Alignment.Center,
+    ) { Text("Done", color = Color.White, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold), maxLines = 1) }
 }

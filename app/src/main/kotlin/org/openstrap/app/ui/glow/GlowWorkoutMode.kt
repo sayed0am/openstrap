@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -108,9 +109,11 @@ fun workoutColor(r: WorkoutState.Recording, liveHeartRate: Int?, connected: Bool
 internal fun workoutClock(seconds: Long): String =
     if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
 
-internal fun zoneRange(zone: Int, maxHr: Int) =
-    if (zone == 0) "under ${60 * maxHr / 100} bpm"
-    else "${(50 + zone * 10) * maxHr / 100} to ${if (zone == Workouts.ZONES - 1) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+/** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
+internal fun zoneRange(zone: Int, maxHr: Int): String {
+    val zones = org.openstrap.app.data.HeartZones.current.value
+    return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
+}
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
@@ -170,13 +173,15 @@ internal fun WorkoutButton(
 internal fun WorkoutPage(
     glow: Color, contentPadding: PaddingValues, scroll: Boolean = true,
     pinned: (@Composable ColumnScope.() -> Unit)? = null,
+    /** Painted over the whole screen in place of the top glow (HIIT's phase light). */
+    backdrop: Brush? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val width = constraints.maxWidth.toFloat()
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
-        Box(
+        if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop)) else Box(
             Modifier.fillMaxWidth().height(420.dp).background(
                 Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = width * 0.9f),
             ),
@@ -188,9 +193,10 @@ internal fun WorkoutPage(
         val padTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
         val padBottom = contentPadding.calculateBottomPadding()
         val end = if (pinned != null) (PinnedFade.listClearance(pinnedHeight) - padBottom).coerceAtLeast(16.dp) else 16.dp
-        // The live screen fits the screen instead (scroll = false): its controls never move.
+        // The live screen fits the screen instead (scroll = false): its controls never move. A scrolling page ends at
+        // the keyboard, so what's typed can scroll above it.
         Column(
-            Modifier.fillMaxSize().then(if (scroll) Modifier.verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()
+            Modifier.fillMaxSize().then(if (scroll) Modifier.imePadding().verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()
                 .padding(contentPadding).padding(start = side, end = side, top = 8.dp, bottom = end)
                 // At least the screen's height, so the controls sit at the bottom without the page scrolling.
                 .then(if (scroll) Modifier.heightIn(min = (maxHeight - padTop - padBottom - end).coerceAtLeast(0.dp)) else Modifier),

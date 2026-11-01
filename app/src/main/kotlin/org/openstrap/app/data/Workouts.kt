@@ -195,11 +195,8 @@ object Workouts {
         return e.takeIf { otherStarts.none { s -> s > w.start && s < e.end } }
     }
 
-    /** Zone 0..4 for 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below 50 %. */
-    fun zoneOf(bpm: Int, maxHr: Int): Int? {
-        val pct = bpm * 100 / maxHr
-        return if (pct < 50) null else ((pct - 50) / 10).coerceAtMost(ZONES - 1)
-    }
+    /** Zone 0..4 in your zones ([HeartZones.current]), by default 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below zone 1. */
+    fun zoneOf(bpm: Int, maxHr: Int): Int? = HeartZones.current.value.zoneOf(bpm, maxHr)
 
     /** HR drop from the end to [after] seconds later, each taken as a 5-second median to ride out noise. */
     private fun recovery(hr: List<WorkoutHeartRate>, end: Long, after: Long): Int? {
@@ -247,7 +244,7 @@ object Workouts {
      * Sports kept for naming workouts already recorded (by the strap, Zepp or an import) but not offered for new ones:
      * each is another one under a second name, or the strap's own generic "Activity".
      */
-    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223)
+    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223, 215)
 
     /**
      * A sport offered once with an outdoor and an indoor kind (spec 6.3): Ready's switch picks one, and the workout is

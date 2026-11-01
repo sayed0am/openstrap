@@ -5,6 +5,8 @@
     <!-- INTERNET is used only for Zepp sign-in (device list), strap firmware checks and downloads, map tiles, and the
          daily check for a new OpenStrap on GitHub and its download. Health data is never uploaded. -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Saving a share card to the gallery: Android 10 and later need no permission for the app's own pictures. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
     <!-- Installing a new OpenStrap downloaded from its GitHub releases (update/AppUpdater.kt). Android asks the user to
          allow it the first time. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
@@ -230,6 +232,16 @@
                 android:name="android.service.notification.disabled_filter_types"
                 android:value="ongoing|silent" />
         </service>
+        <!-- A workout's share card, handed to another app from the cache (ui/glow/ShareScreen.kt). -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.share"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/share_paths" />
+        </provider>
         <!-- WorkManager starts from OpenStrapApp's configuration, so Glance renders off the main thread
              (widget/WidgetWork.kt), not from its own startup initializer. -->
         <provider

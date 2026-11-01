@@ -14,9 +14,13 @@ data class SportSettings(
     val goal: String? = null,
     /** "Ask to end when I stop". */
     val askToEnd: Boolean = true,
-    /** GPS where it's offered; turned off behind Ready's settings. */
+    /**
+     * GPS where it's offered. No longer turned off anywhere: Ready's where row picks an indoor side instead, so GPS is
+     * on wherever it's offered ([WorkoutSetup.plan]). Kept so older lines still read.
+     */
     val gps: Boolean = true,
-    val keepRoute: Boolean = false,
+    /** Saving the GPS route for the map: on unless turned off. */
+    val keepRoute: Boolean = true,
     /** Strength: how rest ends ([Strength.Rest.code]) and the sets planned, null for open. */
     val rest: String? = null,
     val sets: Int? = null,
@@ -29,7 +33,8 @@ data class SportSettings(
         goal?.let { "g=$it" },
         "a=${bit(askToEnd)}",
         "p=${bit(gps)}",
-        "k=${bit(keepRoute)}",
+        // "m", not the old "k": every saved line had k=0 from when the route was off unless turned on, so those read as on now.
+        "m=${bit(keepRoute)}",
         rest?.let { "r=$it" },
         sets?.let { "s=$it" },
         "l=${bit(log)}",
@@ -52,7 +57,7 @@ data class SportSettings(
                 goal = fields["g"]?.takeIf { WorkoutTarget.parse(it) != null },
                 askToEnd = flag("a", d.askToEnd),
                 gps = flag("p", d.gps),
-                keepRoute = flag("k", d.keepRoute),
+                keepRoute = flag("m", d.keepRoute),
                 rest = fields["r"]?.takeIf { Strength.Rest.parse(it) != null },
                 sets = fields["s"]?.toIntOrNull()?.takeIf { it in Strength.SETS },
                 log = flag("l", d.log),
@@ -124,13 +129,13 @@ object WorkoutSetup {
 
     /**
      * Choose's Start on your usual (workouts spec 2.1): a plan from last time's [settings] for [type], skipping Ready.
-     * Its side is the one you last chose ([sides]); GPS is on where it's offered, the settings say so and the phone's
-     * location can be used ([location]).
+     * Its side is the one you last chose ([sides]); GPS is on where it's offered and the phone's location can be used
+     * ([location]).
      */
     fun plan(type: Int, settings: SportSettings, sides: Map<Int, Boolean>, location: Boolean): WorkoutPlan {
         val indoor = Workouts.indoorSide(type, sides)
         val sport = Workouts.sidesOf(type)?.type(indoor == true) ?: type
-        val gps = Workouts.gpsOffered(type, indoor) && settings.gps && location
+        val gps = Workouts.gpsOffered(type, indoor) && location
         val strength = sport in Strength.SPORTS
         val goal = WorkoutTarget.parse(settings.goal)?.takeIf { it !is WorkoutTarget.Distance || gps || sport in Workouts.ON_FOOT }
         return WorkoutPlan(
@@ -142,37 +147,8 @@ object WorkoutSetup {
         )
     }
 
-    /** How many goal chips Ready shows between "Just go" and More. */
-    const val GOAL_CHIPS = 2
-
-    /** The goal chips before a sport has goals of its own: a distance and a time for a distance sport, two times else. */
-    fun defaultGoals(family: Workouts.Family): List<WorkoutTarget> = when (family) {
-        Workouts.Family.Distance -> listOf(WorkoutTarget.Distance(5000), WorkoutTarget.Time(30 * 60))
-        else -> listOf(WorkoutTarget.Time(20 * 60), WorkoutTarget.Time(30 * 60))
-    }
-
-    /**
-     * The goal chips for a sport of [family]: the [GOAL_CHIPS] goals used most in its past workouts ([used], goal
-     * codes newest first, null for none), ties to the latest, so the chips learn; topped up with [defaultGoals].
-     */
-    fun goalChips(family: Workouts.Family, used: List<String?>): List<WorkoutTarget> {
-        val counted = used.mapNotNull { WorkoutTarget.parse(it) }
-        val learnt = counted.groupingBy { it }.eachCount().entries
-            .sortedWith(compareByDescending<Map.Entry<WorkoutTarget, Int>> { it.value }.thenBy { counted.indexOf(it.key) })
-            .map { it.key }.take(GOAL_CHIPS)
-        return (learnt + defaultGoals(family).filter { it !in learnt }).take(GOAL_CHIPS)
-    }
-
     /** Mind and body: the length chips after Open. */
     val LENGTHS = listOf(15, 30, 45, 60).map { WorkoutTarget.Time(it * 60L) }
-
-    /** More's goals by kind (workouts spec 2.2): distance, time, heart rate zone, and active kcal with a profile. */
-    fun moreGoals(kcal: Boolean): List<Pair<String, List<WorkoutTarget>>> = listOfNotNull(
-        "Distance" to listOf(1000, 3000, 5000, 10_000, 21_100).map { WorkoutTarget.Distance(it) },
-        "Time" to listOf(15, 20, 30, 45, 60, 90).map { WorkoutTarget.Time(it * 60L) },
-        "Heart rate zone" to listOf(WorkoutTarget.Zones(1, 1), WorkoutTarget.Zones(1, 2), WorkoutTarget.Zones(2, 2), WorkoutTarget.Zones(3, 3)),
-        ("Active kcal" to listOf(300, 500, 800).map { WorkoutTarget.Kcal(it) }).takeIf { kcal },
-    )
 
     /**
      * Whether [goal] can be aimed for now: a distance only where the workout has one, from GPS or steps
@@ -183,4 +159,42 @@ object WorkoutSetup {
         is WorkoutTarget.Kcal -> kcal
         else -> true
     }
+
+    /** The kinds of goal Ready's goal card offers a distance or cardio sport (board ReadyFinal): its chips. */
+    enum class GoalKind { None, Distance, Time, Zone, Intervals }
+
+    /**
+     * The goal kinds for [type]: Just go, a distance where the workout has one ([hasDistance]), a time, a zone, and
+     * intervals where reps fit the sport ([Structure.fits], runs).
+     */
+    fun goalKinds(type: Int, hasDistance: Boolean): List<GoalKind> = listOfNotNull(
+        GoalKind.None,
+        GoalKind.Distance.takeIf { hasDistance },
+        GoalKind.Time,
+        GoalKind.Zone,
+        GoalKind.Intervals.takeIf { Structure.fits(Structure.Reps(400, null, 90, 6), type) },
+    )
+
+    /** The kind of what Ready opens on: reps are Intervals, else the goal's kind; a kcal goal has no chip, so none. */
+    fun goalKind(goal: WorkoutTarget?, reps: Structure.Reps?): GoalKind = when {
+        reps != null -> GoalKind.Intervals
+        goal is WorkoutTarget.Distance -> GoalKind.Distance
+        goal is WorkoutTarget.Time -> GoalKind.Time
+        goal is WorkoutTarget.Zones -> GoalKind.Zone
+        else -> GoalKind.None
+    }
+
+    /**
+     * A zone button tapped on Ready: the zone alone, unless one zone is chosen and another is tapped, which makes the
+     * range between them. Tapping again after a range starts over from the zone tapped.
+     */
+    fun pickZone(current: WorkoutTarget.Zones?, tapped: Int): WorkoutTarget.Zones = when {
+        current != null && current.low == current.high && current.low != tapped -> WorkoutTarget.Zones(minOf(current.low, tapped), maxOf(current.low, tapped))
+        else -> WorkoutTarget.Zones(tapped, tapped)
+    }
+
+    /** What each kind opens on before it's been chosen for the sport: 5 km, 30 min, zone 2. */
+    val DEFAULT_DISTANCE = WorkoutTarget.Distance(5000)
+    val DEFAULT_TIME = WorkoutTarget.Time(30 * 60)
+    val DEFAULT_ZONES = WorkoutTarget.Zones(1, 1)
 }
