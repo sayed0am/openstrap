@@ -65,6 +65,9 @@ import org.openstrap.app.ui.components.GlassSheet
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /*
  * The settings pages (the Strap page and what it opens, Profile, You) in the glow language's quiet tier: black, with
@@ -206,7 +209,7 @@ fun PageRow(
                 }
             }
             .let { if (onClick != null) it.clickable(enabled = enabled, onClick = onClick) else it }
-            .let { if (divider) it.drawBehind { drawLine(Hairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, Hairline)
             .alpha(if (enabled) 1f else 0.45f)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -325,7 +328,7 @@ fun <T> PageMenuRow(
     var open by remember { mutableStateOf(false) }
     Column(
         Modifier.fillMaxWidth()
-            .let { if (divider) it.drawBehind { drawLine(Hairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+            .topHairline(divider, Hairline),
     ) {
         Box(Modifier.fillMaxWidth()) {
             Row(
@@ -377,7 +380,7 @@ private val MenuSurface = Color(0xFF232326)
 fun PageSwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit, divider: Boolean = true, enabled: Boolean = true) {
     Row(
         Modifier.fillMaxWidth()
-            .let { if (divider) it.drawBehind { drawLine(Hairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, Hairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -589,3 +592,12 @@ fun PageChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
 fun PageNote(text: String, color: Color = Color.White.copy(alpha = 0.6f)) {
     Text(text, color = color, style = GlowType.secondary)
 }
+
+/** A list row's divider: a 1 dp [color] line along its top, when [show] (every row but the first). */
+internal fun Modifier.topHairline(show: Boolean, color: Color = RowHairline): Modifier =
+    if (show) drawBehind { drawLine(color, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else this
+
+/** A time of day from [epoch] seconds, "07:45", in the phone's zone. */
+internal fun clock(epoch: Long): String = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(CLOCK_FORMAT)
+
+private val CLOCK_FORMAT = DateTimeFormatter.ofPattern("HH:mm")

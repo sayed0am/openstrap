@@ -115,7 +115,7 @@ private val HeroBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 private fun ZoneRow(zone: Int, bpm: String, divider: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, RowHairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {

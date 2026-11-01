@@ -79,7 +79,6 @@ import java.util.Locale
  * of in step 5 is here: what shaped the score, the night's heart rate and breathing, and each nap's heart rate.
  */
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
@@ -545,7 +544,7 @@ internal fun NapsDetail(
                     item(key = nap.start) {
                         Column(
                             Modifier.fillMaxWidth().padding(top = 12.dp)
-                                .let { if (i > 0) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+                                .topHairline(i > 0, RowHairline),
                         ) {
                             ChartTitle(SleepCopy.span(clock(nap.start), clock(nap.end)), TodayCopy.duration(nap.end - nap.start))
                             val detected = state.napsAsDetected[nap.start]

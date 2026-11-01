@@ -429,7 +429,6 @@ internal fun km(meters: Float): String = if (meters < 1000) "${meters.toInt()} m
 
 /* ---------------------------------------------- Summary ---------------------------------------------- */
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /** Done right after the end, and Delete workout behind a question. */
 @Composable

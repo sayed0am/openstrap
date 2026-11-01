@@ -141,7 +141,7 @@ private fun Fold(title: String, text: String, divider: Boolean = true) {
     val turn by animateFloatAsState(if (open) 180f else 0f, label = "fold caret")
     Column(
         Modifier.fillMaxWidth()
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+            .topHairline(divider, RowHairline),
     ) {
         Row(
             Modifier.fillMaxWidth().clickable(onClickLabel = if (open) "Fold" else "Open") { open = !open }.padding(vertical = 16.dp),

@@ -131,10 +131,7 @@ internal fun LiveFrame(
     val labelled = time != null
     WorkoutPage(color, contentPadding, scroll = false, backdrop = backdrop) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(controls.onMinimize, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize)
             if (quiet) {
                 Text(
                     title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
@@ -313,7 +310,6 @@ private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, heigh
     }
 }
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /**
  * What the run's views share under their pager, fixed while the views slide: the strap note, the stopped prompt, the

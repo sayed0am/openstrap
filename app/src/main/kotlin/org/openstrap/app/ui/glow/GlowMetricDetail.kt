@@ -602,7 +602,6 @@ private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): L
 /** A name inside a sentence: lower case, unless it's an acronym like HRV. */
 internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /**
  * The selected day's own chart: steps by the hour, the week of resting heart rates, or the day's readings as a line

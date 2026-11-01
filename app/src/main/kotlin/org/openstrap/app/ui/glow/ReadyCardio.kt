@@ -388,7 +388,7 @@ private fun KindPill(icon: ImageVector, label: String, hint: String, onClick: ()
 private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean, divider: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
-            .then(if (divider) Modifier.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else Modifier)
+            .topHairline(divider, RowHairline)
             .clickable(onClick = onClick).semantics { selected = on }.padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -427,20 +427,8 @@ internal fun <T> Presets(presets: List<Pair<T, String>>, on: T?, onPick: (T) -> 
 
 /** A value between round minus and plus buttons. */
 @Composable
-private fun ValueStepper(less: String, more: String, onLess: () -> Unit, onMore: () -> Unit, value: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        StepButton(AppIcons.Minus, less, onLess)
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, content = value)
-        StepButton(AppIcons.Plus, more, onMore)
-    }
-}
-
-@Composable
-private fun StepButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Box(Modifier.size(52.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape), contentAlignment = Alignment.Center) {
-        Icon(icon, label, tint = Color.White, modifier = Modifier.size(20.dp))
-    }
-}
+private fun ValueStepper(less: String, more: String, onLess: () -> Unit, onMore: () -> Unit, value: @Composable RowScope.() -> Unit) =
+    MinusPlus(less, more, onLess, onMore, Modifier.fillMaxWidth(), buttonSize = 52.dp, gap = 12.dp, value = value)
 
 /** A value to tap and type: its numbers and units, "Tap to type" under them ([hint]). */
 @Composable

@@ -68,6 +68,7 @@ import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageSheet
 import org.openstrap.app.ui.glow.QuietPanel
 import org.openstrap.app.ui.glow.Raised
+import org.openstrap.app.ui.glow.MinusPlus
 import org.openstrap.app.ui.glow.RoundIcon
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
@@ -386,10 +387,8 @@ private fun LogCard(
 private fun LogStepper(label: String, value: String, less: String, more: String, modifier: Modifier, onLess: () -> Unit, onMore: () -> Unit) {
     Column(modifier.clip(GlowLayout.CardShape).background(org.openstrap.app.ui.glow.ListSurface).padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            RoundIcon(AppIcons.Minus, less, onLess)
-            Text(value, color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
-            RoundIcon(AppIcons.Plus, more, onMore)
+        MinusPlus(less, more, onLess, onMore) {
+            Text(value, color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center)
         }
     }
 }

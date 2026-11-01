@@ -97,10 +97,7 @@ internal fun LiveMapScreen(
                 Modifier.fillMaxWidth().padding(top = top, start = 16.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(
-                    Modifier.size(44.dp).clip(CircleShape).background(OverMap).pressClickable(controls.onMinimize, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+                RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize, surface = OverMap)
                 LitHeartPill(bpm, null, color, r.paused, 44.dp)
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
@@ -161,12 +158,8 @@ private val OverMap = Color(0xD9141416)
 
 /** A round button over the map, white while what it does is on ([lit]). */
 @Composable
-private fun MapButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, lit: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier.size(44.dp).clip(CircleShape).background(if (lit) Color.White else OverMap).pressClickable(onClick, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, tint = if (lit) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
-}
+private fun MapButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, lit: Boolean, onClick: () -> Unit) =
+    RoundIcon(icon, label, onClick, surface = if (lit) Color.White else OverMap, ink = if (lit) Color.Black else Color.White, iconSize = 20.dp)
 
 /** The latest whole kilometre on a dark row with how long ago it ended, until the next; nothing before the first. */
 @Composable
