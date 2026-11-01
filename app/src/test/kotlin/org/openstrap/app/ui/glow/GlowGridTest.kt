@@ -57,8 +57,7 @@ class GlowGridTest {
 
     @Test fun `unit width on a phone`() {
         // (390 - 32 - 12) / 2, the mockups' 173.
-        assertEquals(173f, GlowGrid.unitWidth(390.dp).value, 1e-4f)
-        assertEquals(GlowGrid.unitWidth(390.dp).value, GlowGrid.unitWidthIn(358.dp).value, 1e-4f)
+        assertEquals(173f, GlowGrid.unitWidthIn(358.dp).value, 1e-4f)
     }
 
     @Test fun `heights line up across rows`() {

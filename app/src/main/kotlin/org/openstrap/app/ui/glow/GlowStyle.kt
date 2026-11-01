@@ -309,12 +309,9 @@ private const val SECOND_REACH = 0.28f
 /** The handful of colours a [GlowStyle] is drawn with, all derived from its main colour. */
 @Immutable
 internal class GlowPalette(style: GlowStyle) {
-    var light: Color
-        private set
-    var mid: Color
-        private set
-    var tone: Color
-        private set
+    val light: Color
+    val mid: Color
+    val tone: Color
     val core: Color
 
     init {
@@ -322,20 +319,18 @@ internal class GlowPalette(style: GlowStyle) {
         // Near-grey colours stay neutral (a dark grey glow); anything coloured gets enough saturation to glow.
         val s = if (s0 < 0.12f) s0 else s0.coerceIn(0.35f, 0.9f)
         // A rim not far above the body in brightness, so the light melts in rather than sitting on top.
-        light = hsl(h, s * 0.9f, (l + 0.03f).coerceIn(0.45f, 0.6f))
+        val rim = hsl(h, s * 0.9f, (l + 0.03f).coerceIn(0.45f, 0.6f))
         // Same lightness looks far brighter in yellow-green than in red or blue, so the body and band
         // are darkened until their actual brightness keeps white text readable, whatever the hue.
         // Only a small hue step from the rim, so the card reads as one colour in different light.
-        mid = capped(h - 4f, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
-        tone = capped(h + style.toneShift, s * 0.8f, style.bodyLightness - 0.04f, TONE_MAX_LUMINANCE)
+        val body = capped(h - 4f, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
+        val band = capped(h + style.toneShift, s * 0.8f, style.bodyLightness - 0.04f, TONE_MAX_LUMINANCE)
         core = hsl(h, 0.7f, style.coreLightness)
         // A dimmer mood darkens the whole lit area, like turning the light down.
         val k = style.light().brightness.coerceIn(0f, 1f)
-        if (k < 1f) {
-            light = lerp(Color.Black, light, k)
-            mid = lerp(Color.Black, mid, k)
-            tone = lerp(Color.Black, tone, k)
-        }
+        light = if (k < 1f) lerp(Color.Black, rim, k) else rim
+        mid = if (k < 1f) lerp(Color.Black, body, k) else body
+        tone = if (k < 1f) lerp(Color.Black, band, k) else band
     }
 
     companion object {
