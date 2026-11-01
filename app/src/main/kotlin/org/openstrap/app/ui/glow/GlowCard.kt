@@ -141,11 +141,15 @@ fun GlowCard(
     // The motion doesn't change how the card looks at rest, so it isn't part of the cache key.
     // A live heart rate changes the motion every reading; keyed on it, each new bpm would drop the drawn layers and
     // show the plain body colour until they're redrawn, a flash on every beat update.
-    val key = GlowCache.Key(lit.copy(motion = GlowMotion.Still), size, density.density)
-    val bitmaps by produceState(GlowCache.peek(key), key) {
-        // Always the layers for this key: when the card changes size, the old ones no longer fit.
-        value = GlowCache.peek(key)
-        if (key.size == IntSize.Zero || lit.outline || value != null) return@produceState
+    val still = remember(lit) { lit.copy(motion = GlowMotion.Still) }
+    val key = GlowCache.Key(still, size, density.density)
+    val bitmaps by produceState(GlowCache.peek(key) ?: GlowCache.latest(still, density.density), key) {
+        // The layers for this key once there are some. Until then the last ones stay, or the last made for this look
+        // at any size, stretched to the card's (a detail opening or closing beside the tab rebuilds and resizes the
+        // cards): the plain body colour in between would flash.
+        GlowCache.peek(key)?.let { value = it; return@produceState }
+        if (value == null) value = GlowCache.latest(still, density.density)
+        if (key.size == IntSize.Zero || lit.outline) return@produceState
         value = withContext(Dispatchers.Default) { GlowCache.get(key) }
     }
 
@@ -171,10 +175,21 @@ fun GlowCard(
         // Base: fill and rim light. Until its bitmap is ready, the plain mid colour; an outline card is black.
         Spacer(
             Modifier.matchParentSize().drawBehind {
+                val w = this.size.width
+                val h = this.size.height
+                // A card built anew (a detail closing beside the tab) draws once before it knows its size: the layers
+                // already made for the size it's drawn at stand in, core and all, for that frame.
+                val first = if (b == null && !lit.outline) {
+                    GlowCache.peek(GlowCache.Key(still, IntSize(w.roundToInt(), h.roundToInt()), density.density)) ?: GlowCache.latest(still, density.density)
+                } else null
                 when {
                     lit.outline -> drawRect(Color.Black)
+                    first != null -> drawIntoCanvas {
+                        it.nativeCanvas.drawBitmap(first.base, null, first.baseIn(w, h), FILTER)
+                        it.nativeCanvas.drawBitmap(first.core, null, first.coreIn(w, h), Paint(FILTER).apply { alpha = (lit.coreOpacity * 255).roundToInt().coerceIn(0, 255) })
+                    }
                     b == null -> drawRect(palette.mid)
-                    else -> drawIntoCanvas { it.nativeCanvas.drawBitmap(b.base, null, b.baseDst, FILTER) }
+                    else -> drawIntoCanvas { it.nativeCanvas.drawBitmap(b.base, null, b.baseIn(w, h), FILTER) }
                 }
             },
         )
@@ -209,7 +224,7 @@ private fun BoxScope.CoreLayer(b: GlowBitmaps, style: GlowStyle, core: CoreBox, 
                 // Fade by scaling each pixel's alpha instead of rendering the layer offscreen first.
                 compositingStrategy = CompositingStrategy.ModulateAlpha
             }
-            .drawBehind { drawIntoCanvas { it.nativeCanvas.drawBitmap(b.core, null, b.coreDst, FILTER) } },
+            .drawBehind { drawIntoCanvas { it.nativeCanvas.drawBitmap(b.core, null, b.coreIn(size.width, size.height), FILTER) } },
     )
 }
 
@@ -240,7 +255,20 @@ private class GlowBitmaps(
     val core: android.graphics.Bitmap,
     val baseDst: RectF,
     val coreDst: RectF,
-)
+) {
+    /** Where the base goes on a card [w] by [h]: its own place, or stretched over a card of another size. */
+    fun baseIn(w: Float, h: Float): RectF = if (fits(w, h)) baseDst else RectF(0f, 0f, w, h)
+
+    /** Where the core goes on a card [w] by [h], its margin stretched with the card. */
+    fun coreIn(w: Float, h: Float): RectF {
+        if (fits(w, h)) return coreDst
+        val sx = w / baseDst.width()
+        val sy = h / baseDst.height()
+        return RectF(coreDst.left * sx, coreDst.top * sy, coreDst.right * sx, coreDst.bottom * sy)
+    }
+
+    private fun fits(w: Float, h: Float) = w == baseDst.width() && h == baseDst.height()
+}
 
 /**
  * Rendered glow layers, shared by every card with the same look and size. Rendering blurs is the
@@ -255,14 +283,19 @@ private object GlowCache {
 
     fun peek(key: Key): GlowBitmaps? = synchronized(entries) { entries[key] }
 
+    /** The layers last used for [style] at any size, to stretch over a card until its own size's are made. */
+    fun latest(style: GlowStyle, density: Float): GlowBitmaps? = synchronized(entries) {
+        entries.entries.lastOrNull { it.key.style == style && it.key.density == density }?.value
+    }
+
     fun get(key: Key): GlowBitmaps {
         peek(key)?.let { return it }
         val built = render(key.style, key.size.width.toFloat(), key.size.height.toFloat(), Density(key.density))
         return synchronized(entries) { entries.getOrPut(key) { built } }
     }
 
-    /** Enough for every card on a screen plus the ones just scrolled past. */
-    private const val MAX_ENTRIES = 10
+    /** Enough for every card on a screen and the tabs either side, plus the ones just scrolled past. */
+    private const val MAX_ENTRIES = 16
 }
 
 /**

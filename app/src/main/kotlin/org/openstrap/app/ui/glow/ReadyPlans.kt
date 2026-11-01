@@ -25,7 +25,7 @@ import org.openstrap.app.ui.workout.StartCopy
 
 /*
  * Ready for strength, HIIT, mind and body and games (boards ReadyFinalStrength, ReadyFinalHiit, ReadyFinalMind,
- * ReadyFinalGames), on the run Ready's skeleton: the heart card, one plan card ([ReadyPlanCard]) and a few switch
+ * ReadyFinalGames), on the run Ready's skeleton: the heart card, one plan card ([PlanChoice]) and a few switch
  * rows ([ReadyRows]).
  */
 
@@ -44,12 +44,11 @@ internal fun StrengthPlanCard(
     typing: Boolean,
     onTyping: (Boolean) -> Unit,
 ) {
-    val options = listOf(
-        PlanOption(SportIcons.of(type), StartCopy.OPEN, StartCopy.OPEN_SETS_KIND_NOTE),
-        PlanOption(AppIcons.ChartBar, StartCopy.PLAN, StartCopy.PLAN_KIND_NOTE),
+    val choices = listOf(
+        false to PlanOption(SportIcons.of(type), StartCopy.OPEN, StartCopy.OPEN_SETS_KIND_NOTE),
+        true to PlanOption(AppIcons.ChartBar, StartCopy.PLAN, StartCopy.PLAN_KIND_NOTE),
     )
-    val at = if (sets == null) 0 else 1
-    ReadyPlanCard(Workouts.Family.Strength, options, options[at], at, { onSets(if (it == 0) null else planSets) }, typing, onTyping) {
+    PlanChoice(Workouts.Family.Strength, choices, { it == (sets != null) }, { onSets(if (it) planSets else null) }, typing, onTyping) {
         val (restN, restU) = StartCopy.restParts(restSeconds)
         val rest = NumberField(restN, restU, edit = "$restSeconds", editUnit = "s", style = GlowType.goalValueMinor)
         if (sets == null) {
@@ -60,7 +59,7 @@ internal fun StrengthPlanCard(
                 }
             }
             GoalNote(if (typing) StartCopy.STRENGTH_TYPING else StartCopy.OPEN_SETS_NOTE)
-            return@ReadyPlanCard
+            return@PlanChoice
         }
         TypedValue(
             listOf(NumberField("$sets", "sets", length = 2), rest), typing, onTyping,
@@ -88,12 +87,10 @@ internal fun StrengthPlanCard(
  */
 @Composable
 internal fun HiitPlanCard(type: Int, rounds: Structure?, onChange: (Structure?) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
-    val icons = listOf(AppIcons.Timer, AppIcons.Hourglass, AppIcons.Alarm, SportIcons.of(type))
-    val options = StartCopy.PRESETS.mapIndexed { i, (_, name, note) -> PlanOption(icons[i], name, note) }
-    val at = StartCopy.PRESETS.indexOfFirst { it.first?.code == rounds?.warm(false)?.code }.takeIf { it >= 0 }
-    val shown = at?.let { options[it] } ?: PlanOption(if (rounds is Structure.EveryMinute) AppIcons.Alarm else AppIcons.Timer, StartCopy.hiitName(rounds!!), "")
-    ReadyPlanCard(
-        Workouts.Family.Intervals, options, shown, at, { onChange(StartCopy.PRESETS[it].first?.warm(rounds?.warmUp == true)) }, typing, onTyping,
+    val choices = StartCopy.PRESETS.map { it.rounds to PlanOption(it.icon ?: SportIcons.of(type), it.name, it.note) }
+    PlanChoice(
+        Workouts.Family.Intervals, choices, { it?.code == rounds?.warm(false)?.code }, { onChange(it?.warm(rounds?.warmUp == true)) }, typing, onTyping,
+        other = { PlanOption(if (rounds is Structure.EveryMinute) AppIcons.Alarm else AppIcons.Timer, StartCopy.hiitName(rounds!!), "") },
     ) {
         when (rounds) {
             is Structure.Timed -> {
@@ -139,12 +136,11 @@ internal fun HiitPlanCard(type: Int, rounds: Structure?, onChange: (Structure?) 
 /** Mind and body's length: Open or Time in the pill; a time is the run's Time card with its own presets and note. */
 @Composable
 internal fun MindPlanCard(type: Int, seconds: Long?, onSeconds: (Long?) -> Unit, lastSeconds: Long, typing: Boolean, onTyping: (Boolean) -> Unit) {
-    val options = listOf(
-        PlanOption(SportIcons.of(type), StartCopy.OPEN, StartCopy.MIND_OPEN_KIND_NOTE),
-        PlanOption(AppIcons.Timer, StartCopy.TIME, StartCopy.MIND_TIME_KIND_NOTE),
+    val choices = listOf(
+        false to PlanOption(SportIcons.of(type), StartCopy.OPEN, StartCopy.MIND_OPEN_KIND_NOTE),
+        true to PlanOption(AppIcons.Timer, StartCopy.TIME, StartCopy.MIND_TIME_KIND_NOTE),
     )
-    val at = if (seconds == null) 0 else 1
-    ReadyPlanCard(Workouts.Family.MindBody, options, options[at], at, { onSeconds(if (it == 0) null else lastSeconds) }, typing, onTyping) {
+    PlanChoice(Workouts.Family.MindBody, choices, { it == (seconds != null) }, { onSeconds(if (it) lastSeconds else null) }, typing, onTyping) {
         if (seconds == null) GoalNote(StartCopy.MIND_OPEN_NOTE)
         else TimeGoal(seconds, { onSeconds(it) }, typing, onTyping, StartCopy.MIND_PRESETS, StartCopy.MIND_STATUS)
     }
@@ -156,20 +152,15 @@ internal fun MindPlanCard(type: Int, seconds: Long?, onSeconds: (Long?) -> Unit,
  */
 @Composable
 internal fun GamePlanCard(type: Int, periods: Structure.Periods?, onChange: (Structure.Periods?) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
-    val options = listOf(
-        PlanOption(SportIcons.of(type), StartCopy.FREE_PLAY, StartCopy.FREE_PLAY_KIND_NOTE),
-        PlanOption(AppIcons.Hourglass, StartCopy.periodsName(Structure.HALVES), StartCopy.HALVES_KIND_NOTE),
-        PlanOption(AppIcons.Timer, StartCopy.periodsName(Structure.QUARTERS), StartCopy.QUARTERS_KIND_NOTE),
+    val choices = listOf(
+        null to PlanOption(SportIcons.of(type), StartCopy.FREE_PLAY, StartCopy.FREE_PLAY_KIND_NOTE),
+        Structure.HALVES to PlanOption(AppIcons.Hourglass, StartCopy.periodsName(Structure.HALVES), StartCopy.HALVES_KIND_NOTE),
+        Structure.QUARTERS to PlanOption(AppIcons.Timer, StartCopy.periodsName(Structure.QUARTERS), StartCopy.QUARTERS_KIND_NOTE),
     )
-    val at = when (periods?.rounds) {
-        null -> 0
-        Structure.HALVES.rounds -> 1
-        Structure.QUARTERS.rounds -> 2
-        else -> null
-    }
-    val shown = at?.let { options[it] } ?: PlanOption(AppIcons.Timer, StartCopy.periodsName(periods!!), "")
-    ReadyPlanCard(
-        Workouts.Family.Games, options, shown, at, { onChange(listOf(null, Structure.HALVES, Structure.QUARTERS)[it]) }, typing, onTyping,
+    // By the count of periods alone, so typed lengths keep Halves or Quarters ticked.
+    PlanChoice(
+        Workouts.Family.Games, choices, { it?.rounds == periods?.rounds }, onChange, typing, onTyping,
+        other = { PlanOption(AppIcons.Timer, StartCopy.periodsName(periods!!), "") },
     ) {
         if (periods != null) {
             TypedValue(

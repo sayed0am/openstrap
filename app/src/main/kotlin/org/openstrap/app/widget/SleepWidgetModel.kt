@@ -329,10 +329,6 @@ object SleepLayout {
         val top: TopRow = TopRow(null, note, 0f), val spread: Spread = Spread(0f, 0),
     )
 
-    /** Whether the title row holds [title] and [note] on one line in [width]. */
-    fun noteFits(title: String, note: String?, width: Float, fontScale: Float): Boolean = note != null &&
-        WidgetText.width(title, WidgetText.TITLE_SP, fontScale) + SIDE_GAP_DP + WidgetText.width(note, WidgetText.SECONDARY_SP, fontScale) <= width
-
     /**
      * The Wide in [width] by [height]: the title row, the score row ([scoreRow] with time asleep) and the stage bar
      * always, the legend on one row or two while it fits, else none.

@@ -4,7 +4,12 @@ import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
+import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutRoutePoint
+import org.openstrap.app.data.db.BadgeRow
+import org.openstrap.app.data.db.ExerciseRow
+import org.openstrap.app.data.db.SavedWorkout
+import org.openstrap.app.data.db.WeekResult
 import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.ActivityMinute
@@ -256,6 +261,44 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 if (it.has("exercise")) it.string("exercise") else null, it.intOrNull("reps"), it.floatOrNull("weight_kg"))
         },
         { d, r -> d.upsertSets(r) }),
+    CsvTable("app_workout_round.csv", "workout_start_epoch,round_index,work_start_epoch,work_end_epoch,rest_end_epoch,peak_bpm",
+        Key("app_workout_round", "workoutStart", "workout_start_epoch", parent = "app_workout"),
+        { d, f, t -> d.roundsAll().filter { it.workoutStart in f..t } },
+        { listOf(it.workoutStart, it.index, it.workStart, it.workEnd, it.restEnd, it.peakBpm) },
+        {
+            AppWorkoutRound(it.long("workout_start_epoch"), it.int("round_index"), it.long("work_start_epoch"), it.longOrNull("work_end_epoch"),
+                it.longOrNull("rest_end_epoch"), it.intOrNull("peak_bpm"))
+        },
+        { d, r -> d.upsertRounds(r) }),
+    // What the user named and saved, which no history can bring back.
+    CsvTable("saved_workout.csv", "created_epoch,name,sport_type,structure,goal",
+        Key("saved_workout", "createdAt", "created_epoch"),
+        { d, f, t -> d.savedWorkoutsOnce().filter { it.createdAt in f..t } },
+        { listOf(it.createdAt, it.name, it.sport, it.structure, it.goal) },
+        {
+            SavedWorkout(name = it.string("name"), sport = it.int("sport_type"), structure = it.string("structure"),
+                goal = if (it.has("goal")) it.string("goal") else null, createdAt = it.long("created_epoch"))
+        },
+        { d, r -> d.insertSavedWorkouts(r) }),
+    CsvTable("exercise.csv", "used_epoch,name,last_reps,last_kg",
+        Key("exercise", "usedAt", "used_epoch"),
+        { d, f, t -> d.exercisesOnce().filter { it.usedAt in f..t } },
+        { listOf(it.usedAt, it.name, it.lastReps, it.lastKg) },
+        { ExerciseRow(it.string("name"), it.intOrNull("last_reps"), it.floatOrNull("last_kg"), it.long("used_epoch")) },
+        { d, r -> d.insertExercises(r) }),
+    // Badges are never taken back and each past week keeps the goal it had (Rewards): neither can be worked out again.
+    CsvTable("badge.csv", "earned_epoch,id,workout_start_epoch,day",
+        Key("badge", "earnedAt", "earned_epoch"),
+        { d, f, t -> d.badgesOnce().filter { it.earnedAt in f..t } },
+        { listOf(it.earnedAt, it.id, it.workoutStart, it.day) },
+        { BadgeRow(it.string("id"), it.long("earned_epoch"), it.longOrNull("workout_start_epoch"), it.longOrNull("day")) },
+        { d, r -> d.insertBadges(r) }),
+    CsvTable("week_result.csv", "week_start_day,goal,count,met",
+        Key("week_result", "weekStart", "week_start_day"),
+        { d, f, t -> d.weekResultsOnce().filter { it.weekStart * 86_400 in f..t } },
+        { listOf(it.weekStart, it.goal, it.count, it.met) },
+        { WeekResult(it.long("week_start_day"), it.int("goal"), it.int("count"), it.bool("met")) },
+        { d, r -> d.upsertWeekResults(r) }),
     CsvTable("app_workout_dismissed.csv", "start_epoch,end_epoch",
         Key("app_workout_dismissed", "start", "start_epoch"),
         { d, f, t -> d.dismissedWorkoutsAll().filter { it.start in f..t } }, { listOf(it.start, it.end) },

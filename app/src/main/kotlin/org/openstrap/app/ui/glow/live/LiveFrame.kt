@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import kotlinx.coroutines.delay
+import androidx.compose.runtime.produceState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -60,6 +62,9 @@ import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import androidx.compose.foundation.shape.RoundedCornerShape
+import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.data.WorkoutRecorder
 
 /**
  * The live stats row's figures, unchanged from before spec 6.3 ("Stats row unchanged"): the moving time large in the
@@ -70,6 +75,7 @@ internal val LiveClock = GlowType.sentence.copy(fontSize = 46.sp, lineHeight = 5
 internal val LiveFigure = GlowType.sentence.copy(fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")
 
 /** What every live screen can do to the workout, passed down as one. */
+@androidx.compose.runtime.Immutable
 internal class LiveControls(
     val onPause: () -> Unit,
     val onResume: () -> Unit,
@@ -97,7 +103,8 @@ internal fun LiveFrame(
     contentPadding: PaddingValues,
     controls: LiveControls,
     lap: (@Composable () -> Unit)? = null,
-    time: Long? = null,
+    /** The total time, read by its own text so only the clock is composed again each second. */
+    time: (() -> Long)? = null,
     /** The total time small on the top right instead of large under it (strength, intervals). */
     smallTime: Boolean = false,
     battery: Int? = null,
@@ -112,6 +119,8 @@ internal fun LiveFrame(
     backdrop: androidx.compose.ui.graphics.Brush? = null,
     /** Mind and body (board LiveMind): the sport's name plain and centred, no strap status, and two dark buttons. */
     quiet: Boolean = false,
+    /** Under a quiet screen's buttons, the line saying a tap lights it; left out where there's no room for it. */
+    tapHint: Boolean = true,
     /**
      * A page under a bar shared by the pages ([LiveBottomBar]): the note, the prompt and the controls are drawn once
      * under the pager, so the page only leaves this much room for them.
@@ -124,10 +133,7 @@ internal fun LiveFrame(
     val labelled = time != null
     WorkoutPage(color, contentPadding, scroll = false, backdrop = backdrop) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                Modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(controls.onMinimize, CircleShape),
-                contentAlignment = Alignment.Center,
-            ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
+            RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize)
             if (quiet) {
                 Text(
                     title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
@@ -149,7 +155,7 @@ internal fun LiveFrame(
                 }
                 if (time != null && smallTime) {
                     // The total, small, where a set or a round's clock is the screen's number.
-                    Text(workoutClock(time), color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    ClockText(time, GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
                     // Under it, the GPS where there is one (run reps), else that it's the total.
                     val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -168,7 +174,7 @@ internal fun LiveFrame(
         }
         if (time != null && !smallTime) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             // Plain digits: the screen's one dot-matrix number is further down.
-            Text(workoutClock(time), color = Color.White, style = LiveClock)
+            ClockText(time, LiveClock)
             Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
         }
         if (r.paused && paused != null) paused() else content()
@@ -195,14 +201,16 @@ internal fun LiveFrame(
         }
         if (quiet) {
             Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
-                Labelled("Pause", true) {
-                    FlatButton(Raised, 64.dp, onClick = controls.onPause) {
-                        Icon(AppIcons.PauseFill, "Pause", tint = Color.White, modifier = Modifier.size(20.dp))
+                // With no [paused] view, a paused quiet screen keeps this row, so it turns into Resume.
+                val label = if (r.paused) "Resume" else "Pause"
+                Labelled(label, true) {
+                    FlatButton(Raised, 64.dp, onClick = if (r.paused) controls.onResume else controls.onPause) {
+                        Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, label, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                 }
                 Labelled("Hold to end", true) { HoldToEnd(controls.onEnd) }
             }
-            Text(
+            if (tapHint) Text(
                 "Tap anywhere to light the screen", color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
@@ -304,7 +312,6 @@ private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, heigh
     }
 }
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /**
  * What the run's views share under their pager, fixed while the views slide: the strap note, the stopped prompt, the
@@ -313,7 +320,8 @@ private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.syst
 @Composable
 internal fun LiveBottomBar(
     r: WorkoutState.Recording, connected: Boolean, contentPadding: PaddingValues, controls: LiveControls, lap: (@Composable () -> Unit)?,
-    position: Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
+    /** The pager's page plus how far it's swiped, read here so a swipe composes only the bar again. */
+    position: () -> Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
@@ -326,8 +334,9 @@ internal fun LiveBottomBar(
         ) {
             if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(position).toInt() + 1} of $count" }) {
-                PageDots(kotlin.math.round(position).toInt(), count, position, onPage)
+            val at = position()
+            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {
+                PageDots(kotlin.math.round(at).toInt(), count, at, onPage)
             }
             ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
         }
@@ -436,3 +445,50 @@ internal fun HoldToEnd(onEnd: () -> Unit) {
 
 internal val EndRed = MetricColors.heart
 private const val HOLD_MS = 2000
+
+/** A live clock in white, its own scope: the second it reads composes it again, not the screen around it. */
+@Composable
+internal fun ClockText(time: () -> Long, style: androidx.compose.ui.text.TextStyle, maxLines: Int = Int.MAX_VALUE) {
+    Text(workoutClock(time()), color = Color.White, style = style, maxLines = maxLines)
+}
+
+/** Now in epoch seconds, ticking on each whole second: the clock every live screen counts from. */
+@Composable
+internal fun nowTicking(): Long = nowTickingState().value
+
+/** [nowTicking] as state, read only where the second shows, so what holds it isn't composed again each second. */
+@Composable
+internal fun nowTickingState(): androidx.compose.runtime.State<Long> = produceState(System.currentTimeMillis() / 1000) {
+    while (true) {
+        value = System.currentTimeMillis() / 1000
+        delay(1000 - System.currentTimeMillis() % 1000)
+    }
+}
+
+/**
+ * The live heart rate on a pill lit in the zone's [color] (pattern D5): a dot beating at it, the bpm in small dots and
+ * the zone named when [maxHr] is given, all in black on the colour. The pace page's strip and the map's chip, [height]
+ * apart. Paused or without a reading, it says so.
+ */
+@Composable
+internal fun LitHeartPill(bpm: Int?, maxHr: Int?, color: Color, paused: Boolean, height: Dp, modifier: Modifier = Modifier) {
+    Row(
+        modifier.height(height).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (bpm == null) {
+            Text(WorkoutCopy.noHeartRate(paused), color = Color.Black, style = MediumBody)
+            return@Row
+        }
+        org.openstrap.app.ui.glow.PulseDot(Color.Black, bpm, 8.dp)
+        Spacer(Modifier.width(10.dp))
+        DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
+        Spacer(Modifier.width(6.dp))
+        Text("bpm", color = Color.Black, style = MediumBody)
+        if (maxHr == null) return@Row
+        Spacer(Modifier.weight(1f))
+        WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
+            Text(WorkoutCopy.zoneLine(z), color = Color.Black, style = MediumBody, maxLines = 1)
+        }
+    }
+}

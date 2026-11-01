@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.workout
 
+import androidx.compose.ui.graphics.vector.ImageVector
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
@@ -7,6 +8,7 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.ui.glow.km
+import org.openstrap.app.ui.theme.AppIcons
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
@@ -93,9 +95,6 @@ object StartCopy {
         else -> "GPS ready, ${accuracy.roundToInt().coerceAtLeast(1)} m"
     }
 
-    /** Whether [gpsStatus] says ready. */
-    fun gpsReady(accuracy: Float?): Boolean = accuracy != null && accuracy <= Route.MAX_ACCURACY_M
-
     /** Under two minutes in seconds ("90 s"), then minutes: "2 min", "2 min 30 s". */
     fun restText(seconds: Long): String = when {
         seconds < 120 -> "$seconds s"
@@ -103,12 +102,18 @@ object StartCopy {
         else -> "${seconds / 60} min ${seconds % 60} s"
     }
 
-    /** HIIT's presets on Ready, null for Free: their names and what each is, in the plan pill's sheet. */
-    val PRESETS: List<Triple<org.openstrap.app.data.Structure?, String, String>> = listOf(
-        Triple(org.openstrap.app.data.Structure.TABATA, "Tabata", "20 s on, 10 off, 8 rounds"),
-        Triple(org.openstrap.app.data.Structure.FORTY_TWENTY, "40 / 20", "10 rounds"),
-        Triple(org.openstrap.app.data.Structure.EVERY_MINUTE, "Every minute", "12 rounds, rest is what's left"),
-        Triple(null, "Free", "No timer, laps mark the rounds"),
+    /**
+     * One of HIIT's presets on Ready: its rounds (null for Free), its name and what it is in the plan pill's sheet, and
+     * its icon there, null for the sport's own. Each carries its icon, so a new preset can't miss one.
+     */
+    class HiitPreset(val rounds: org.openstrap.app.data.Structure?, val name: String, val note: String, val icon: ImageVector?)
+
+    /** HIIT's presets on Ready, Free last. */
+    val PRESETS: List<HiitPreset> = listOf(
+        HiitPreset(org.openstrap.app.data.Structure.TABATA, "Tabata", "20 s on, 10 off, 8 rounds", AppIcons.Timer),
+        HiitPreset(org.openstrap.app.data.Structure.FORTY_TWENTY, "40 / 20", "10 rounds", AppIcons.Hourglass),
+        HiitPreset(org.openstrap.app.data.Structure.EVERY_MINUTE, "Every minute", "12 rounds, rest is what's left", AppIcons.Alarm),
+        HiitPreset(null, "Free", "No timer, laps mark the rounds", null),
     )
 
     const val INTERVALS_STATUS = "The strap buzzes at every switch, so the phone can stay on the floor."
@@ -120,7 +125,7 @@ object StartCopy {
 
     /** HIIT's plan in its pill: a preset's name, else what it is ("30 / 15", "Every 90 s"). */
     fun hiitName(s: org.openstrap.app.data.Structure): String {
-        PRESETS.firstOrNull { it.first?.code == s.warm(false).code }?.let { return it.second }
+        PRESETS.firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
         return when (s) {
             is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}"
             is org.openstrap.app.data.Structure.EveryMinute -> if (s.period == 60L) "Every minute" else "Every ${restText(s.period)}"
@@ -148,11 +153,12 @@ object StartCopy {
 
     /** A structure's name: a preset's ("Tabata"), else what it is ("6 × 400 m", "8 × 2 min", "30 / 15, 6 rounds"). */
     fun structureName(s: org.openstrap.app.data.Structure): String {
-        PRESETS.firstOrNull { it.first?.code == s.warm(false).code }?.let { return it.second }
+        PRESETS.firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
         return when (s) {
             is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}, ${s.rounds} rounds"
             is org.openstrap.app.data.Structure.EveryMinute -> "Every ${restText(s.period)}, ${s.rounds} rounds"
-            is org.openstrap.app.data.Structure.Reps -> "${s.rounds} × " + (s.meters?.let { if (it >= 1000 && it % 1000 == 0) "${it / 1000} km" else "$it m" } ?: restText(s.seconds ?: 0))
+            // As Ready's rep field and note say it ([repParts]): "6 × 1.5 km", "8 × 1 min".
+            is org.openstrap.app.data.Structure.Reps -> repParts(s).let { (n, unit) -> "${s.rounds} × $n $unit" }
             is org.openstrap.app.data.Structure.Periods -> periodsName(s)
         }
     }
@@ -220,14 +226,6 @@ object StartCopy {
         is org.openstrap.app.data.Structure.EveryMinute -> s.rounds * s.period
         is org.openstrap.app.data.Structure.Reps -> null
         is org.openstrap.app.data.Structure.Periods -> s.rounds * s.length + (s.rounds - 1) * s.rest
-    }
-
-    /** A goal on a chip: "5 km", "30 min", "Zone 2", "300 kcal". */
-    fun goalLabel(goal: WorkoutTarget): String = when (goal) {
-        is WorkoutTarget.Zones -> goal.label
-        is WorkoutTarget.Time -> goal.label
-        is WorkoutTarget.Kcal -> goal.label
-        is WorkoutTarget.Distance -> goal.label
     }
 
     /**

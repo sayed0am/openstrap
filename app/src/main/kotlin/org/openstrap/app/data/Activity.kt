@@ -1,6 +1,5 @@
 package org.openstrap.app.data
 
-import kotlin.math.abs
 
 /**
  * Steps, distance and moderate-to-vigorous activity (docs/algorithms/evidence-review.md, "Energy and activity").
@@ -23,8 +22,6 @@ object Activity {
     const val HR_RUN_MINUTES = 10
     /** WHO 2020: 150 min of moderate a week, a vigorous minute counting double. */
     const val MVPA_WEEKLY_TARGET = 150
-    /** Flag a divergence between the strap's daily counter and the summed minutes above this fraction. */
-    const val STEP_DIVERGENCE = 0.05f
 
     data class Mvpa(
         val moderateMinutes: Int,
@@ -72,13 +69,6 @@ object Activity {
             if (minutes[k].hrr!! >= HR_VIGOROUS_HRR) vigorous++ else moderate++
         }
         return Mvpa(moderate, vigorous, fromHr)
-    }
-
-    /** True when the strap's daily counter and the summed minutes differ by more than [STEP_DIVERGENCE]. */
-    fun stepsDiverge(strapTotal: Int?, minuteSum: Int): Boolean {
-        if (strapTotal == null || strapTotal <= 0 && minuteSum <= 0) return false
-        val ref = maxOf(strapTotal, minuteSum).toFloat()
-        return abs(strapTotal - minuteSum) / ref > STEP_DIVERGENCE
     }
 
     /**

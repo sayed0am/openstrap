@@ -102,8 +102,6 @@ class Vo2maxTest {
         assertEquals(70..80, Vo2max.Friend.fitnessAge(10f, m))
         // Women use their own medians: 25.7 is the 40-49 median.
         assertEquals(35..55, Vo2max.Friend.fitnessAge(25.7f, UserProfile.Sex.Female))
-        assertEquals("typical of a woman aged about 35–55", Vo2max.Friend.fitnessAgeText(35..55, UserProfile.Sex.Female))
-        assertEquals("typical of a man aged about 45–65", Vo2max.Friend.fitnessAgeText(45..65, m))
     }
 
     @Test fun `fitness age is withheld with the estimate`() {

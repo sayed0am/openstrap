@@ -58,5 +58,5 @@ object HeartZonesCopy {
     const val SAVE = "Save"
 
     /** A typed max: 120 to 230 bpm, as the profile has always taken it. */
-    fun parseMax(text: String): Int? = text.trim().toIntOrNull()?.takeIf { it in 120..230 }
+    fun parseMax(text: String): Int? = text.trim().toIntOrNull()?.takeIf { it in org.openstrap.app.data.Recovery.TESTED_MAX_RANGE }
 }

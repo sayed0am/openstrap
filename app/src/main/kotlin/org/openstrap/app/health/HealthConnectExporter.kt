@@ -130,38 +130,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         records += workouts(dao.appWorkoutsOnce(from, to))
         records += calories(from, to, now)
 
-        // Every night the delete below can reach (from a day before [from]) is written again, so a night ending
-        // just before the range isn't taken out of Health Connect and left out.
-        val sleep = org.openstrap.app.data.SleepSource(dao)
-        for (r in sleep.resolvedOnce(from - 86_400, to)) {
-            // A sleep goes with the user's own times; its record id stays the strap's start, so it replaces the old one.
-            // A deleted one isn't written, so the delete below takes it out of Health Connect.
-            val strapSession = r.strap
-            val s = r.shown ?: continue
-            // Rows synced before stage ends were made exclusive can be zero length; Health Connect rejects those,
-            // and stages must stay inside the session.
-            val stages = sleep.stagesOnce(s).mapNotNull {
-                val start = it.start.coerceAtLeast(s.start)
-                val end = maxOf(it.end, it.start + 60).coerceAtMost(s.end)
-                if (end <= start) return@mapNotNull null
-                SleepSessionRecord.Stage(
-                    Instant.ofEpochSecond(start), Instant.ofEpochSecond(end),
-                    when (it.stage) {
-                        SleepStage.AWAKE -> SleepSessionRecord.STAGE_TYPE_AWAKE
-                        SleepStage.LIGHT -> SleepSessionRecord.STAGE_TYPE_LIGHT
-                        SleepStage.DEEP -> SleepSessionRecord.STAGE_TYPE_DEEP
-                        SleepStage.REM -> SleepSessionRecord.STAGE_TYPE_REM
-                        else -> SleepSessionRecord.STAGE_TYPE_UNKNOWN
-                    },
-                )
-            }
-            records += SleepSessionRecord(
-                startTime = Instant.ofEpochSecond(s.start), startZoneOffset = offset(s.start),
-                endTime = Instant.ofEpochSecond(s.end), endZoneOffset = offset(s.end),
-                stages = stages,
-                metadata = meta("sleep:${strapSession.start}"),
-            )
-        }
+        records += sleep(from, to)
 
         for (o in dao.spo2Once(from, to)) {
             if (o.percent !in 70..100) continue
@@ -189,12 +158,67 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             )
         }
 
-        // Sleep that OpenStrap exported earlier may since have changed shape (a nap folded into the night),
-        // so its old records in this range are replaced rather than updated. This only touches OpenStrap's records.
-        client.deleteRecords(SleepSessionRecord::class, TimeRangeFilter.between(Instant.ofEpochSecond(from - 86_400), Instant.ofEpochSecond(to)))
+        deleteSleep(from, to)
         // Health Connect caps the batch size per call.
         records.chunked(500).forEach { client.insertRecords(it) }
         return records.size
+    }
+
+    /**
+     * Writes only the sleep in [from, to] again, as [export] does: for a sleep the user moved, deleted or brought back,
+     * which changes nothing else. Returns the number of records written.
+     */
+    suspend fun exportSleep(from: Long, to: Long): Int {
+        val records = sleep(from, to)
+        deleteSleep(from, to)
+        records.chunked(500).forEach { client.insertRecords(it) }
+        return records.size
+    }
+
+    /**
+     * Sleep that OpenStrap exported earlier may since have changed shape (a nap folded into the night), so its old
+     * records in this range are replaced rather than updated. This only touches OpenStrap's records.
+     */
+    private suspend fun deleteSleep(from: Long, to: Long) =
+        client.deleteRecords(SleepSessionRecord::class, TimeRangeFilter.between(Instant.ofEpochSecond(from - 86_400), Instant.ofEpochSecond(to)))
+
+    /** The sleep sessions [deleteSleep] reaches, as shown. */
+    private suspend fun sleep(from: Long, to: Long): List<Record> {
+        val records = mutableListOf<Record>()
+        // Every night [deleteSleep] can reach (from a day before [from]) is written again, so a night ending
+        // just before the range isn't taken out of Health Connect and left out.
+        val sleep = org.openstrap.app.data.SleepSource(dao)
+        for (r in sleep.resolvedOnce(from - 86_400, to)) {
+            // A sleep goes with the user's own times; its record id stays the strap's start, so it replaces the old one.
+            // A deleted one isn't written, so the delete below takes it out of Health Connect.
+            val strapSession = r.strap
+            val s = r.shown ?: continue
+            // Rows synced before stage ends were made exclusive can be zero length; Health Connect rejects those,
+            // and stages must stay inside the session.
+            val stages = sleep.stagesOnce(r).mapNotNull {
+                val start = it.start.coerceAtLeast(s.start)
+                val end = maxOf(it.end, it.start + 60).coerceAtMost(s.end)
+                if (end <= start) return@mapNotNull null
+                SleepSessionRecord.Stage(
+                    Instant.ofEpochSecond(start), Instant.ofEpochSecond(end),
+                    when (it.stage) {
+                        SleepStage.AWAKE -> SleepSessionRecord.STAGE_TYPE_AWAKE
+                        SleepStage.LIGHT -> SleepSessionRecord.STAGE_TYPE_LIGHT
+                        SleepStage.DEEP -> SleepSessionRecord.STAGE_TYPE_DEEP
+                        SleepStage.REM -> SleepSessionRecord.STAGE_TYPE_REM
+                        else -> SleepSessionRecord.STAGE_TYPE_UNKNOWN
+                    },
+                )
+            }
+            records += SleepSessionRecord(
+                startTime = Instant.ofEpochSecond(s.start), startZoneOffset = offset(s.start),
+                endTime = Instant.ofEpochSecond(s.end), endZoneOffset = offset(s.end),
+                stages = stages,
+                metadata = meta("sleep:${strapSession.start}"),
+            )
+        }
+
+        return records
     }
 
     /**

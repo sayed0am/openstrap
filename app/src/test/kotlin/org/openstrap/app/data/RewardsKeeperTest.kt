@@ -11,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.settings.SettingsStore
@@ -61,5 +62,32 @@ class RewardsKeeperTest {
         keeper.refresh(listed + WorkoutRecorder.analyse(next, emptyList(), 190), 3)
         assertFalse(settings.historyBadgesWaiting.first())
         assertEquals(4, dao.weekResultsOnce().sumOf { it.count })
+    }
+    @Test fun `the steps per day it keeps follow new minutes, older ones and a rewritten one`() = runBlocking {
+        val dao = db.healthDao()
+        val keeper = RewardsKeeper(dao, settings)
+        val listed = listOf(WorkoutRecorder.analyse(workout(0), emptyList(), 190))
+        fun minute(t: Long, steps: Int) = ActivityMinute(t, steps, 0, 0, null)
+        suspend fun steps() = keeper.facts(listed).days.sumOf { it.steps }
+        dao.insertActivity(listOf(minute(start, 100), minute(start + 60, 100)))
+        assertEquals(200, steps())
+        // A newer minute, and the last one rewritten by a sync: only the last day is read again.
+        dao.insertActivity(listOf(minute(start + 60, 150), minute(start + 120, 50)))
+        assertEquals(300, steps())
+        // A minute older than any kept: everything is read again.
+        dao.insertActivity(listOf(minute(start - 3 * 86_400L, 70)))
+        assertEquals(370, steps())
+    }
+
+    @Test fun `a refresh without the screen counts workouts synced while the app was closed, less the one recording`() = runBlocking {
+        val dao = db.healthDao()
+        val keeper = RewardsKeeper(dao, settings)
+        dao.insertAppWorkouts((0 until 3).map(::workout))
+        assertEquals(0, dao.weekResultsOnce().sumOf { it.count })
+        // The weekly recap's refresh, while the last one is still recording: it waits until that one ends.
+        keeper.refreshNow(recordingStart = workout(2).start)
+        assertEquals(2, dao.weekResultsOnce().sumOf { it.count })
+        keeper.refreshNow(recordingStart = null)
+        assertEquals(3, dao.weekResultsOnce().sumOf { it.count })
     }
 }

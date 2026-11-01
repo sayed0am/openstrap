@@ -21,12 +21,6 @@ enum class LiveView {
     }
 }
 
-/** The figures the live screen shows around the moving time, in the order they are laid out. */
-enum class SideFigure { Avg, Max, Kcal, Distance, Pace }
-
-/** The live figures: [sides] either side of the moving time, [below] in the row under it (none when empty). */
-data class LiveFigures(val sides: List<SideFigure>, val below: List<SideFigure>)
-
 /** A finished kilometre on the live screen: which one ([index] from 0), when it ended, and its line. */
 data class SplitLine(val index: Int, val endT: Long, val text: String)
 
@@ -95,6 +89,16 @@ object WorkoutCopy {
     /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
     fun zoneTitle(zone: Int): Pair<String, String> = "Zone ${zone + 1}," to ZONE_NAMES[zone].lowercase()
 
+    /** [zoneTitle] as one line: "Zone 3, aerobic". */
+    fun zoneLine(zone: Int): String = zoneTitle(zone).let { (name, word) -> "$name $word" }
+
+    /** What a live screen says where the heart rate goes and there's none: the same words on every screen. */
+    fun noHeartRate(paused: Boolean, connected: Boolean = true): String = when {
+        paused -> "Paused"
+        !connected -> "Waiting for the strap"
+        else -> "Waiting for heart rate"
+    }
+
     /** "9 min in this zone". */
     fun zoneTime(seconds: Int): String = if (seconds < 60) "Under a minute in this zone" else "${seconds / 60} min in this zone"
 
@@ -149,36 +153,6 @@ object WorkoutCopy {
 
     /** Whether going from zone [previous] to [current] ticks: a change between two readings, not the first one. */
     fun zoneTick(previous: Int?, current: Int?): Boolean = previous != null && current != null && previous != current
-
-    /* ------------------------------------------ Side figures ------------------------------------------ */
-
-    /**
-     * What this workout has to show around the moving time, in layout order: the average and peak always, kcal
-     * with a profile ([kcal]), the distance once there is one, and the pace only with GPS ([gps], not from steps).
-     */
-    fun sideFigures(kcal: Boolean, distance: Boolean, gps: Boolean): List<SideFigure> = SideFigure.entries.filter {
-        when (it) {
-            SideFigure.Avg, SideFigure.Max -> true
-            SideFigure.Kcal -> kcal
-            SideFigure.Distance -> distance
-            SideFigure.Pace -> distance && gps
-        }
-    }
-
-    /**
-     * Every figure this workout has, all at once: the average and peak either side of the moving time, and kcal, the
-     * distance and the pace in a row under it, so nothing waits behind a tap.
-     */
-    fun liveFigures(available: List<SideFigure>): LiveFigures = LiveFigures(
-        available.filter { it == SideFigure.Avg || it == SideFigure.Max },
-        available.filter { it != SideFigure.Avg && it != SideFigure.Max },
-    )
-
-    /** The label over Ready's targets: what the strap does for the one chosen. */
-    fun targetHint(target: WorkoutTarget?): String = when (target) {
-        is WorkoutTarget.Kcal -> "Target. The strap buzzes at ${target.kcal} active kcal."
-        else -> "Target. The strap buzzes if you drift out."
-    }
 
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */
     fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal): String = "${activeKcal?.toInt() ?: 0} of ${target.label}"

@@ -30,7 +30,6 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.widget.WidgetKind
-import kotlin.math.roundToInt
 
 sealed interface WorkoutState {
     data object Idle : WorkoutState
@@ -56,7 +55,8 @@ sealed interface WorkoutState {
         val rounds: List<org.openstrap.app.data.db.AppWorkoutRound> = emptyList(),
         val restExtra: Long = 0,
     ) : WorkoutState {
-        val structure: org.openstrap.app.data.Structure? get() = org.openstrap.app.data.Structure.parse(workout.structure)
+        /** Parsed once per state, not on every read: the rounds' clock reads it each second. */
+        val structure: org.openstrap.app.data.Structure? by lazy { org.openstrap.app.data.Structure.parse(workout.structure) }
 
         /** The phase now, by the workout's active time. */
         fun phase(now: Long): org.openstrap.app.data.Phase? = structure?.let { s ->
@@ -92,6 +92,8 @@ class WorkoutSession(
     private val dao: HealthDao,
     private val settings: SettingsStore,
     private val strap: StrapController,
+    /** Max heart rate as every zone reads it, read afresh as each workout starts. */
+    private val maxHeartRates: org.openstrap.app.data.MaxHeartRates,
     /** A coaching buzz never plays while a call rings: a motor pattern cuts off the call's buzz (hardware test). */
     private val callRinging: () -> Boolean = { false },
     /** A finished workout was saved or changed, by its start: auto sync writes it to Health Connect. Returns at once. */
@@ -740,9 +742,9 @@ class WorkoutSession(
                 val t = now()
                 val w = r.workout
                 val active = { at: Long -> WorkoutRecorder.activeSeconds(w, minOf(at, t)) }
-                val readings = synchronized(allReadings) { allReadings.toList() }
-                val peak = { a: Long, b: Long -> org.openstrap.app.data.Strength.peak(readings, a, b) }
-                val meters = { from: Long -> _route.value.filter { it.t >= from }.takeIf { it.size > 1 }?.let { Route.distance(it, w.pauseRanges).toFloat() } }
+                // Copied only when a round ends and needs its peak, not every second.
+                val peak = { a: Long, b: Long -> org.openstrap.app.data.Strength.peak(synchronized(allReadings) { allReadings.toList() }, a, b) }
+                val meters = { from: Long -> repMeters(from, w.pauseRanges) }
                 val step = if (skip) org.openstrap.app.data.Phases.skip(s, r.rounds, w.start, t, active, peak)
                     else org.openstrap.app.data.Phases.tick(s, r.rounds, w.start, t, active, meters, peak, r.restExtra)
                 if (step.rounds != r.rounds) {
@@ -762,6 +764,21 @@ class WorkoutSession(
                 }
             }
         }
+    }
+
+    /**
+     * The rep's metres from [from], worked out again only on a new fix, rep or pause: the rounds' clock asks each
+     * second, and smoothing the rep's fixes each time added up over a long rep.
+     */
+    private var repMetersOf: Pair<Triple<Long, Int, List<LongRange>>, Float?>? = null
+
+    private fun repMeters(from: Long, pauses: List<LongRange>): Float? {
+        val route = _route.value
+        val key = Triple(from, route.size, pauses)
+        repMetersOf?.let { (k, m) -> if (k == key) return m }
+        val m = route.filter { it.t >= from }.takeIf { it.size > 1 }?.let { Route.distance(it, pauses).toFloat() }
+        repMetersOf = key to m
+        return m
     }
 
     /** A named buzz ([org.openstrap.app.data.WorkoutBuzz]), as quiet as a coaching cue: never during a call or Do Not Disturb. */
@@ -845,7 +862,7 @@ class WorkoutSession(
     }
 
     private suspend fun maxHeartRate() =
-        runCatching { RecoveryEngine(dao).maxHeartRate(settings.profile.first()).roundToInt() }.getOrDefault(DEFAULT_MAX_HR)
+        runCatching { maxHeartRates.now().bpm }.getOrDefault(DEFAULT_MAX_HR)
 
     private var coach = org.openstrap.app.data.Coach(null)
 

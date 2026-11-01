@@ -69,7 +69,7 @@ object NotificationCopy {
             confirming -> END_QUESTION
             paused -> null
             !connected -> "Still recording"
-            else -> zone?.let { WorkoutCopy.zoneTitle(it).let { (a, b) -> "$a $b" } }
+            else -> zone?.let { WorkoutCopy.zoneLine(it) }
         }
         val detail = when {
             gps -> distanceMeters?.takeIf { it >= 10 }?.let { (if (distanceFromSteps) "≈ " else "") + km(it) + if (it >= 1000) " km" else "" }

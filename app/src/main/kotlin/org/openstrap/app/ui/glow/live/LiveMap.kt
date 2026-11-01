@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,25 +18,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.layout.Column
 import org.openstrap.app.ui.workout.WorkoutCopy
-import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.device.WorkoutState
-import kotlinx.coroutines.delay
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.material3.Icon
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -53,58 +45,10 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.ui.glow.*
 
 /**
- * The live route in zone colours with the heart rate on a chip in the zone's colour, so it's never hidden (pattern
- * D5), then the GPS accuracy and "route only" (no tiles).
- */
-@Composable
-internal fun LiveMapPage(
-    route: List<Route.Point>,
-    history: List<Pair<Long, Int>>,
-    maxHr: Int,
-    routeOnly: Boolean,
-    bpm: Int?,
-    color: Color,
-    paused: Boolean,
-    modifier: Modifier,
-    onRouteOnly: (Boolean) -> Unit,
-) {
-    val stretches = remember(route.size, history.size) { Route.byZone(route, history, maxHr) }
-    // The whole page is the map; what its tiles reveal is said in the ready screen's (i).
-    Box(modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(Raised)) {
-        // Where you are now, from the latest fix good enough to count, even while standing still.
-        val here = route.lastOrNull { it.accuracy <= Route.MAX_ACCURACY_M }
-        WorkoutMap(stretches, routeOnly, Modifier.fillMaxSize(), here, fitPadding = PaddingValues(horizontal = 28.dp, vertical = 76.dp))
-        BpmChip(bpm, color, paused, Modifier.align(Alignment.TopStart).padding(16.dp))
-        Row(Modifier.align(Alignment.BottomStart).padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val acc = route.lastOrNull()?.accuracy
-            Pill(if (acc == null || acc > 1000) "Finding GPS…" else "GPS ±${acc.toInt()} m", if (acc != null && acc <= Route.MAX_ACCURACY_M) TrendGood else TrendBad)
-            Pill(if (routeOnly) "Route only" else "Map", null, onClick = { onRouteOnly(!routeOnly) })
-        }
-    }
-}
-
-/** The live heart rate on the map: a pill in the zone's [color], a dot beating at it, the number in dots. */
-@Composable
-internal fun BpmChip(bpm: Int?, color: Color, paused: Boolean, modifier: Modifier) {
-    Row(
-        modifier.height(44.dp).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (bpm != null) {
-            PulseDot(Color.Black, bpm, 8.dp)
-            Spacer(Modifier.width(10.dp))
-            DotMatrixText("$bpm", dot = DotSize.Edge, color = Color.Black)
-            Spacer(Modifier.width(6.dp))
-            Text("bpm", color = Color.Black, style = MediumBody)
-        } else Text(if (paused) "Paused" else "No heart rate yet", color = Color.Black, style = MediumBody)
-    }
-}
-
-/**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
  * in its zone's [color] and the GPS over it, route only and follow me on the right; under it a black panel with the
- * distance, the moving time and the pace (a ride's speed), the latest kilometre, the page dots and the controls. A
- * drag on the map pans it and stops following; follow me fits the route again.
+ * distance, the moving time and the pace (a ride's speed) and the latest kilometre, above the bar shared with the
+ * pace page ([LiveBottomBar]). A drag on the map pans it and stops following; follow me fits the route again.
  */
 @Composable
 internal fun LiveMapScreen(
@@ -113,23 +57,23 @@ internal fun LiveMapScreen(
     readings: List<Pair<Long, Int>>,
     bpm: Int?,
     color: Color,
-    connected: Boolean,
     contentPadding: PaddingValues,
     controls: LiveControls,
-    lap: (@Composable () -> Unit)?,
     figures: List<Pair<String?, String>>,
-    time: Long,
-    page: Int,
-    onPage: (Int) -> Unit,
-    /** Under a bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
-    bottomRoom: Dp? = null,
+    /** The moving time, read by its own text so the page isn't composed again each second. */
+    time: () -> Long,
+    /** The height of the bar shared with the other view ([LiveBottomBar]): the panel leaves this much room for it. */
+    bottomRoom: Dp,
+    /** False when the heart rate is on the other half of a folded phone. */
+    heartPill: Boolean = true,
 ) {
     BackHandler(onBack = controls.onMinimize)
     val density = LocalDensity.current
     var panel by remember { mutableStateOf(344.dp) }
     var routeOnly by rememberSaveable { mutableStateOf(false) }
     var follow by rememberSaveable { mutableStateOf(true) }
-    val stretches = remember(route.size, readings.size) { Route.byZone(route, readings, r.maxHeartRate) }
+    // A reading comes every second: the zone colours follow every tenth, the line every fix.
+    val stretches = remember(route.size, readings.size / 10) { Route.byZone(route, readings, r.maxHeartRate) }
     val here = route.lastOrNull { it.accuracy <= Route.MAX_ACCURACY_M }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
     Box(Modifier.fillMaxSize().background(Color.Black)) {
@@ -146,11 +90,8 @@ internal fun LiveMapScreen(
                 Modifier.fillMaxWidth().padding(top = top, start = 16.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Box(
-                    Modifier.size(44.dp).clip(CircleShape).background(OverMap).pressClickable(controls.onMinimize, CircleShape),
-                    contentAlignment = Alignment.Center,
-                ) { Icon(AppIcons.CaretDown, "Minimize", tint = Color.White, modifier = Modifier.size(18.dp)) }
-                BpmChip(bpm, color, r.paused, Modifier)
+                RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize, surface = OverMap)
+                if (heartPill) LitHeartPill(bpm, null, color, r.paused, 44.dp)
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
                 Row(
@@ -174,28 +115,19 @@ internal fun LiveMapScreen(
             Modifier.align(Alignment.BottomCenter).fillMaxWidth()
                 .onSizeChanged { panel = with(density) { it.height.toDp() } }
                 .clip(org.openstrap.app.ui.glow.GlowLayout.SheetShape).background(Color.Black)
-                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding() + if (bottomRoom != null) 0.dp else 20.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 18.dp, bottom = contentPadding.calculateBottomPadding()),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             // The moving time in the middle and larger: on this page it isn't above the views.
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.Bottom) {
                 LiveStat(figures[0].second, Modifier.weight(1f)) { LiveValue(figures[0].first) }
                 StatRule()
-                LiveStat("Moving time", Modifier.weight(1.3f)) { Text(workoutClock(time), color = Color.White, style = GlowType.mapClock, maxLines = 1) }
+                LiveStat("Moving time", Modifier.weight(1.3f)) { ClockText(time, GlowType.mapClock, maxLines = 1) }
                 StatRule()
                 LiveStat(figures[1].second, Modifier.weight(1f)) { LiveValue(figures[1].first) }
             }
             LastSplit(route, readings, r.workout.pauseRanges)
-            if (bottomRoom != null) {
-                Spacer(Modifier.height(bottomRoom))
-                return@Column
-            }
-            if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
-            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${page + 1} of 2" }) {
-                PageDots(page, LiveView.entries.size, onSelect = onPage)
-            }
-            ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
+            Spacer(Modifier.height(bottomRoom))
         }
     }
 }
@@ -206,27 +138,16 @@ private val PANEL_OVERLAP = 28.dp
 /** Buttons and pills drawn over the map: near black, a little see-through. */
 private val OverMap = Color(0xD9141416)
 
-/** The moving time between the map page's figures. */
-
 /** A round button over the map, white while what it does is on ([lit]). */
 @Composable
-private fun MapButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, lit: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier.size(44.dp).clip(CircleShape).background(if (lit) Color.White else OverMap).pressClickable(onClick, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, tint = if (lit) Color.Black else Color.White, modifier = Modifier.size(20.dp)) }
-}
+private fun MapButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, lit: Boolean, onClick: () -> Unit) =
+    RoundIcon(icon, label, onClick, surface = if (lit) Color.White else OverMap, ink = if (lit) Color.Black else Color.White, iconSize = 20.dp)
 
 /** The latest whole kilometre on a dark row with how long ago it ended, until the next; nothing before the first. */
 @Composable
 private fun LastSplit(route: List<Route.Point>, readings: List<Pair<Long, Int>>, pauses: List<LongRange>) {
     val splits = remember(route.size, pauses) { Route.splits(route, pauses) }
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            delay(1000 - System.currentTimeMillis() % 1000)
-            value = System.currentTimeMillis() / 1000
-        }
-    }
+    val now = nowTicking()
     val (line, ago) = WorkoutCopy.lastSplit(splits, readings, route.firstOrNull()?.t, now) ?: return
     Row(
         Modifier.fillMaxWidth().height(44.dp).clip(RoundedCornerShape(14.dp)).background(Raised).padding(horizontal = 14.dp),

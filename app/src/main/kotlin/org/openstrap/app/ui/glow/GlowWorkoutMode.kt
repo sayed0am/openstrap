@@ -33,11 +33,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.em
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -60,13 +59,11 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.math.min
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutSuggestions
-import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.data.db.AppWorkout
@@ -82,7 +79,6 @@ import org.openstrap.app.ui.workout.SummaryCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
@@ -90,7 +86,7 @@ import java.time.format.DateTimeFormatter
 internal val PausedColor = Color(0xFF9AA0B4)
 
 /** The Control surface (spec 2.2): round buttons, chips, pills, tiles and fields on the workout pages. */
-internal val Raised = Color(0xFF1F1F22)
+internal val Raised = ControlSurface
 
 /** A button's label: Body (spec 2.3), a step heavier so it reads as the thing to press. */
 private val ButtonText = GlowType.body.copy(fontWeight = FontWeight.SemiBold)
@@ -110,39 +106,28 @@ internal fun workoutClock(seconds: Long): String =
     if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
 
 /** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
+// Collected, so it reads again when the zones are moved on the Heart rate zones page.
+@Composable
 internal fun zoneRange(zone: Int, maxHr: Int): String {
-    val zones = org.openstrap.app.data.HeartZones.current.value
+    val zones = org.openstrap.app.data.HeartZones.current.collectAsState().value
     return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
 }
 
 /** Active time of the workout, ticking once a second while it records. */
 @Composable
-internal fun activeSeconds(r: WorkoutState.Recording): Long = produceState(WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000), r.workout) {
+internal fun activeSeconds(r: WorkoutState.Recording): Long = activeSecondsState(r).value
+
+/**
+ * [activeSeconds] as state, for a live screen to hand on as `{ active.value }`: only what shows the time reads it, so
+ * the screen itself isn't composed again each second.
+ */
+@Composable
+internal fun activeSecondsState(r: WorkoutState.Recording): androidx.compose.runtime.State<Long> = produceState(WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000), r.workout) {
     while (true) {
         value = WorkoutRecorder.activeSeconds(r.workout, System.currentTimeMillis() / 1000)
         if (r.paused) break
         delay(1000 - System.currentTimeMillis() % 1000)
     }
-}.value
-
-/**
- * A target's colour: the top zone it aims for, a calm blue for a time, Calories' gold for kcal, Steps' lime for a
- * distance, white for none.
- */
-internal fun targetColor(t: WorkoutTarget?): Color = when (t) {
-    is WorkoutTarget.Zones -> ZONE_COLORS[t.high]
-    is WorkoutTarget.Time -> ZONE_COLORS[0]
-    is WorkoutTarget.Kcal -> MetricColors.calories
-    is WorkoutTarget.Distance -> MetricColors.steps
-    null -> Color.White
-}
-
-internal fun targetLabel(t: WorkoutTarget?): String = when (t) {
-    is WorkoutTarget.Zones -> t.label
-    is WorkoutTarget.Time -> t.label
-    is WorkoutTarget.Kcal -> t.label
-    is WorkoutTarget.Distance -> t.label
-    null -> "None"
 }
 
 /** A full-width pill button, 56 dp like Start and Done (spec 6.3). */
@@ -181,9 +166,12 @@ internal fun WorkoutPage(
         val width = constraints.maxWidth.toFloat()
         val density = LocalDensity.current
         var pinnedHeight by remember { mutableStateOf(0.dp) }
+        // No wider than the box is tall: on a wide screen (unfolded) a wider glow would be cut off in a straight line.
+        val glowHeight = 420.dp
+        val radius = minOf(width * 0.9f, with(density) { glowHeight.toPx() })
         if (backdrop != null) Box(Modifier.fillMaxSize().background(backdrop)) else Box(
-            Modifier.fillMaxWidth().height(420.dp).background(
-                Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = width * 0.9f),
+            Modifier.fillMaxWidth().height(glowHeight).background(
+                Brush.radialGradient(listOf(glow.copy(alpha = 0.22f), Color.Transparent), center = Offset(width / 2f, 0f), radius = radius),
             ),
         )
         // On a wide screen the page keeps to one centred column (spec 2.4 Unfolded); the glow stays the screen's.
@@ -416,7 +404,6 @@ internal fun km(meters: Float): String = if (meters < 1000) "${meters.toInt()} m
 
 /* ---------------------------------------------- Summary ---------------------------------------------- */
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /** Done right after the end, and Delete workout behind a question. */
 @Composable
@@ -505,13 +492,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
     val step = 10L
     val points = remember(summary) {
         val n = ((last - first) / step + 1).toInt().coerceAtLeast(2)
-        val sums = FloatArray(n)
-        val counts = IntArray(n)
-        summary.recorded.forEach { s ->
-            val i = ((s.timestamp - first) / step).toInt()
-            if (i in 0 until n) { sums[i] += s.bpm.toFloat(); counts[i]++ }
-        }
-        List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        org.openstrap.app.data.Summaries.bucketMeans(summary.recorded, n, { ((it.timestamp - first) / step).toInt() }, { it.bpm.toFloat() })
     }
     QuietPanel {
         PanelTitle("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))

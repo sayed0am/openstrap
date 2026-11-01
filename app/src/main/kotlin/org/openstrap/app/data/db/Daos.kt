@@ -298,6 +298,17 @@ interface HealthDao {
     @Query("DELETE FROM app_workout_round WHERE workoutStart = :start")
     suspend fun deleteRounds(start: Long)
 
+    @Query("SELECT * FROM app_workout_round ORDER BY workoutStart, `index`")
+    suspend fun roundsAll(): List<AppWorkoutRound>
+
+    /** For a restore: an exercise the phone already has keeps its own last reps and weight. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertExercises(e: List<ExerciseRow>)
+
+    /** For a restore, each with a new id. */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertSavedWorkouts(w: List<SavedWorkout>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertExercise(e: ExerciseRow)
 
@@ -332,6 +343,14 @@ interface HealthDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPersonalBests(bests: List<PersonalBest>)
+
+    /** A rewards refresh's changes in one go: [bests] replaces them all when given ([replacePersonalBests]). */
+    @androidx.room.Transaction
+    suspend fun storeRewards(weeks: List<WeekResult>, bests: List<PersonalBest>?, badges: List<BadgeRow>) {
+        if (weeks.isNotEmpty()) upsertWeekResults(weeks)
+        if (bests != null) replacePersonalBests(bests)
+        if (badges.isNotEmpty()) insertBadges(badges)
+    }
 
     /** The bests worked out again from every workout and day: what was there goes, so a delete takes its bests too. */
     @androidx.room.Transaction
@@ -657,9 +676,6 @@ interface HealthDao {
     @Query("DELETE FROM day_tag WHERE day = :day AND tag = :tag")
     suspend fun deleteDayTag(day: Long, tag: String)
 
-    @Query("SELECT * FROM day_tag WHERE day = :day ORDER BY tag")
-    fun dayTags(day: Long): Flow<List<DayTagRow>>
-
     @Query("SELECT * FROM day_tag WHERE day BETWEEN :from AND :to ORDER BY day, tag")
     suspend fun dayTagsOnce(from: Long, to: Long): List<DayTagRow>
 
@@ -693,6 +709,13 @@ interface HealthDao {
     /** Steps per local day, minutes over 250 steps left out as bad data. */
     @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, SUM(steps) AS value, MIN(steps) AS min, MAX(steps) AS max, COUNT(*) AS count FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND steps BETWEEN 0 AND 250 GROUP BY day ORDER BY day")
     suspend fun dailyStepsOnce(from: Long, to: Long): List<DailyAggregate>
+
+    /** How many minutes are stored, and the latest: a cheap look at whether old days' steps can have changed. */
+    @Query("SELECT COUNT(*) AS rowCount, MAX(timestamp) AS latest FROM activity_minute")
+    suspend fun activityStampOnce(): TableStamp
+
+    @Query("SELECT COUNT(*) FROM activity_minute WHERE timestamp > :after")
+    suspend fun activityCountAfterOnce(after: Long): Long
 
     /**
      * Steps per local hour of each local day, for your usual steps by this time of day ([org.openstrap.app.data.UsualSteps]).

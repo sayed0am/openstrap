@@ -73,7 +73,7 @@ import org.openstrap.app.ui.workout.familyColor
  * The hero: its one number in dots and its word, then a sentence or three figures in text. A figure's value is null
  * when it's missing (no heart rate, no profile for kcal): it shows the waiting dash.
  */
-internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null)
+internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null, val pace: String? = null)
 
 /**
  * What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. When the kind's own number is missing
@@ -82,7 +82,7 @@ internal class SummaryHero(val value: String, val unit: String, val figures: Lis
 internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLoad: Float?): SummaryHero {
     val a = summary.analysis
     val active = a.activeSeconds
-    val readings = summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    val readings = FamilySummary.readings(summary)
     val peak = readings.maxOfOrNull { it.second }?.toString()
     val avg = a.workout.averageHeartRate?.toString()
     val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) }
@@ -100,6 +100,7 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
                 else -> SummaryHero(
                     if (m < 1000) m.toInt().toString() else km(m), if (m < 1000) "m" else "km",
                     listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
+                    pace = pace,
                 )
             }
         }
@@ -175,7 +176,7 @@ internal fun FamilySection(
     week: Rewards.WeekLine? = null,
 ): Boolean {
     val a = summary.analysis
-    val readings = remember(summary) { summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm } }
+    val readings = remember(summary) { FamilySummary.readings(summary) }
     val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
     when (family) {
         Workouts.Family.Distance -> {
@@ -201,7 +202,7 @@ internal fun FamilySection(
             val below = summary.restBelow
             val rest = remember(summary) { FamilySummary.restRecovery(summary.sets, readings, below) }
             val restShown = below != null && rest != null
-            if (restShown) SentenceCard("Rest", FamilySummary.restLine(rest!!, below!!, summary.restBefore))
+            if (restShown) SentenceCard("Rest", FamilySummary.restLine(rest, below, summary.restBefore))
             return groups.isNotEmpty() && !restShown
         }
         Workouts.Family.Intervals -> {
@@ -225,20 +226,22 @@ internal fun FamilySection(
             return false
         }
         Workouts.Family.Games -> {
-            val periods = remember(summary) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate) }
+            // Named out of the periods it was set up with, not the ones played, so ending early doesn't rename them.
+            val of = (summary.structure as? org.openstrap.app.data.Structure.Periods)?.rounds ?: summary.rounds.count { it.workEnd != null }
+            val periods = remember(summary) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate, of) }
             val read = FamilySummary.gameRead(readings, a.shownStart, a.end)
             val periodsShown = periods.isNotEmpty() || read != null
-            if (periodsShown) PeriodsCard(periods, read)
+            if (periodsShown) PeriodsCard(periods, of, read)
             if (zones.sum() > 0) ZoneStripPanel(zones)
             return periodsShown && zones.sum() <= 0
         }
     }
 }
 
-/** The kept route in its zones' colours with the climb; nothing without a route. */
+/** The kept route in its zones' colours with the climb; nothing without a route that goes somewhere. */
 @Composable
 private fun RouteCard(summary: PhoneSummary) {
-    if (summary.route.size < 2) return
+    if (!Route.mappable(summary.route)) return
     EdgeCard(MetricColors.steps, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         EdgeTitle("Route", Route.climb(summary.route)?.let { "Climb ${Math.round(it)} m" })
         RouteMap(summary, Modifier.padding(top = 12.dp))
@@ -385,11 +388,11 @@ private val RoundColumnHeight = 52.dp
  * how the game went.
  */
 @Composable
-private fun PeriodsCard(periods: List<PeriodLine>, read: String?) {
+private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
     val color = familyColor(Workouts.Family.Games)
     val shares = remember(periods) { FamilySummary.peakShares(periods.map { it.averageBpm }) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle(if (periods.size == 2) "Each half" else "Each period", null)
+        EdgeTitle(when (of) { 2 -> "Each half"; 4 -> "Each quarter"; else -> "Each period" }, null)
         periods.forEachIndexed { i, p ->
             Column(Modifier.fillMaxWidth().padding(top = if (i == 0) 14.dp else 12.dp)) {
                 Row(Modifier.fillMaxWidth()) {
@@ -567,7 +570,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
     if (readings.size < 10 || (!chart && settled == null)) return
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 9) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        val drop = settled?.let { it.first - it.second }?.takeIf { it >= 3 }
+        val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
         EdgeTitle("Heart rate", drop?.let { "down $it" } ?: "${readings.minOf { it.second }} to ${readings.maxOf { it.second }}")
         if (chart) SmoothLine(values, color, Modifier.padding(top = 14.dp), height = 74.dp, ends = true)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {

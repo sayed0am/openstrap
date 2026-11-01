@@ -24,9 +24,6 @@ data class CalmDownLine(val watching: Boolean, val drop: Int?, val text: String)
 /** A kilometre on the Splits list: "Km 3" in "5:42", with its average heart rate when there were readings. */
 data class SplitRow(val name: String, val time: String, val averageBpm: Int?)
 
-/** A workout as the personal best check sees it: its sport, active [seconds], and [meters] from GPS only. */
-data class BestCandidate(val start: Long, val sportType: Int, val seconds: Long, val meters: Float?)
-
 object SummaryCopy {
     /** The drop is read over the first minute after the end. */
     const val DROP_S = 60L
@@ -43,9 +40,6 @@ object SummaryCopy {
 
     /** A drop only says something about fitness after a real effort: ending at this share of max or more. */
     private const val MIN_EFFORT_PCT = 65
-
-    /** The page title right after a workout, by the sport's short name: "Run saved" (spec 6.3). */
-    fun savedTitle(sportType: Int?): String = sportType?.let { "${Workouts.shortName(it)} saved" } ?: "Workout saved"
 
     /** The (i) on the calm down hero. */
     const val DROP_MEANING = "How far your heart rate falls in the first minute after you stop. A bigger drop usually " +
@@ -145,13 +139,6 @@ object SummaryCopy {
         return listOfNotNull(parts.takeIf { it.isNotEmpty() }?.let { "$it." }, paused).joinToString(" ").ifEmpty { null }
     }
 
-    /** The workout card's calories, active first (calories spec 4.2): "486 active kcal, total 612"; null without them. */
-    fun kcalLine(active: Int?, total: Int?, locale: java.util.Locale = java.util.Locale.getDefault()): String? = when {
-        total == null || total <= 0 -> null
-        active == null || active == total -> "%,d kcal".format(locale, total)
-        else -> "%,d active kcal, total %,d".format(locale, active, total)
-    }
-
     /**
      * The workout card's kcal target ([target], a [WorkoutTarget.code]): "Target 400 kcal, reached at 38:10" from
      * [reachedSeconds], or "Target not reached, 212 of 400 kcal" from [activeKcal]. A workout that got there without a
@@ -198,8 +185,6 @@ object SummaryCopy {
     /** A best counts once the last better one is at least this long ago. */
     const val BEST_GAP_S = 30 * 86_400L
 
-    /** "Yet" only once there are this many of the sport before. */
-    const val BEST_MIN_BEFORE = 5
 
     /** "Since March" only when it beats at least this many of the sport since then. */
     const val BEST_MIN_BEATEN = 3
@@ -207,30 +192,6 @@ object SummaryCopy {
     /** Shorter than these and a best means little. */
     private const val BEST_MIN_M = 1000f
     private const val BEST_MIN_S = 10 * 60L
-
-    /**
-     * A personal best as one line, from what's stored: the farthest of the sport by GPS ("Farthest run since March."),
-     * else the longest by active time ("Longest walk since March."). It counts when the last better one of [others] is
-     * [BEST_GAP_S] or more before with [BEST_MIN_BEATEN] or more of the sport since, or there is none among
-     * [BEST_MIN_BEFORE] or more ("Your farthest run yet."). Null otherwise. TODO: the spec's "Fastest 5 km since March" needs the fastest stretch of every stored route of the
-     * sport, which means reading every route back; nothing caches split times yet.
-     */
-    fun personalBest(w: BestCandidate, others: List<BestCandidate>, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String? {
-        val noun = sportNoun(w.sportType) ?: Workouts.sportName(w.sportType).lowercase(locale)
-        val before = others.filter { it.sportType == w.sportType && it.start < w.start }
-        fun best(word: String, value: (BestCandidate) -> Double?, min: Double): String? {
-            val mine = value(w)?.takeIf { it >= min } ?: return null
-            val measured = before.filter { value(it) != null }
-            val better = measured.filter { value(it)!! >= mine }.maxByOrNull { it.start }
-            return when {
-                better == null -> "Your $word $noun yet.".takeIf { measured.size >= BEST_MIN_BEFORE }
-                w.start - better.start >= BEST_GAP_S && measured.count { it.start > better.start } >= BEST_MIN_BEATEN -> "${word.replaceFirstChar { it.uppercase() }} $noun since ${month(better.start, w.start, zone, locale)}."
-                else -> null
-            }
-        }
-        return best("farthest", { it.meters?.toDouble() }, BEST_MIN_M.toDouble())
-            ?: best("longest", { it.seconds.toDouble().takeIf { s -> s > 0 } }, BEST_MIN_S.toDouble())
-    }
 
     /** "March", or "March 2025" when [at] is in another year than [now]. */
     private fun month(at: Long, now: Long, zone: ZoneId, locale: Locale): String {

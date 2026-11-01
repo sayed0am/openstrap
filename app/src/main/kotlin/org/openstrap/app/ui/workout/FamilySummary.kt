@@ -175,8 +175,20 @@ object FamilySummary {
     /** Work time over the finished rounds. */
     fun workSeconds(rounds: List<AppWorkoutRound>): Long = rounds.sumOf { r -> r.workEnd?.let { it - r.workStart } ?: 0L }
 
+    /**
+     * [summary]'s heart rate over its shown range, as (epoch seconds, bpm): what its hero, its sections and its share
+     * card all read.
+     */
+    fun readings(summary: PhoneSummary): List<Pair<Long, Int>> {
+        val a = summary.analysis
+        return summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    }
+
     /** How long to average over at each end, for the heart settling. */
     const val SETTLE_S = 120L
+
+    /** How far the heart has to come down over a calm session before it reads as settled rather than held. */
+    const val SETTLED_BPM = 3
 
     /**
      * The heart settling over a calm session: the average of [readings] over its first [SETTLE_S] and over its last.
@@ -189,21 +201,24 @@ object FamilySummary {
         return first to last
     }
 
+    /** How far the heart came down from [from] to [to], null under [SETTLED_BPM]: the summary's and the card's rule. */
+    fun settledDrop(from: Int, to: Int): Int? = (from - to).takeIf { it >= SETTLED_BPM }
+
     /** "Your heart settled from 96 to 66.", or when it didn't come down, "Your heart held near 72." */
-    fun settledLine(from: Int, to: Int): String = if (from - to >= 3) "Your heart settled from $from to $to." else "Your heart held near $to."
+    fun settledLine(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Your heart settled from $from to $to." else "Your heart held near $to."
+
+    /** [settledLine] as the share card says it: "Heart settled 96 to 66", or "Heart held near 72". */
+    fun settledShort(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Heart settled $from to $to" else "Heart held near $to"
 
     /**
-     * A game's [periods] from its rounds: "1st half" and "2nd half" for two, "Quarter 1" for four, else "Period 1",
-     * with the average of [readings] and the hard efforts ([Games.hardEfforts]) in each.
+     * A game's [periods] from its rounds, named as the live screen names them out of the [of] it was set up with
+     * ([StartCopy.periodName]: "1st half", "3rd quarter", "Period 2"), so a game ended early keeps its periods' names.
+     * With the average of [readings] and the hard efforts ([Games.hardEfforts]) in each.
      */
-    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int): List<PeriodLine> {
+    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int, of: Int): List<PeriodLine> {
         val done = rounds.filter { it.workEnd != null }
         return done.map { r ->
-            val name = when (done.size) {
-                2 -> if (r.index == 0) "1st half" else "2nd half"
-                4 -> "Quarter ${r.index + 1}"
-                else -> "Period ${r.index + 1}"
-            }
+            val name = StartCopy.periodName(r.index, of)
             val workEnd = r.workEnd!!
             val inside = readings.filter { it.first in r.workStart..workEnd }
             PeriodLine(name, WorkoutCopy.averageOver(readings, r.workStart, workEnd), Games.hardEfforts(inside, maxHr), workEnd - r.workStart)
@@ -248,10 +263,7 @@ object FamilySummary {
         if (readings.isEmpty() || points < 2) return List(points.coerceAtLeast(0)) { null }
         val first = readings.first().first
         val span = (readings.last().first - first).coerceAtLeast(1)
-        val sums = FloatArray(points)
-        val counts = IntArray(points)
-        readings.forEach { (t, v) -> val i = ((t - first) * (points - 1) / span).toInt().coerceIn(0, points - 1); sums[i] += v.toFloat(); counts[i]++ }
-        val raw = List(points) { if (counts[it] == 0) null else sums[it] / counts[it] }
+        val raw = org.openstrap.app.data.Summaries.bucketMeans(readings, points, { ((it.first - first) * (points - 1) / span).toInt().coerceIn(0, points - 1) }, { it.second.toFloat() })
         val half = window / 2
         return raw.indices.map { i ->
             if (raw[i] == null) null
@@ -309,10 +321,16 @@ object FamilySummary {
     }
 
     /** "Load, hard" style label for the game hero's figure: Load and how it compares with your usual. */
-    fun loadLabel(load: Int, usual: Float?): String = when (org.openstrap.app.ui.dashboard.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Above -> "Load, hard"
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Below -> "Load, light"
-        else -> "Load"
+    fun loadLabel(load: Int, usual: Float?): String = "Load" + loadWord(load, usual)
+
+    /** The game's share card line, the number in: "Load 120, hard", "Load 80". */
+    fun loadLine(load: Int, usual: Float?): String = "Load $load" + loadWord(load, usual)
+
+    /** How [load] compares with your [usual], as the Load labels end: ", hard", ", light", or nothing. */
+    private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.ui.dashboard.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
+        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Above -> ", hard"
+        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Below -> ", light"
+        else -> ""
     }
 
     /** Whether [a] is a run whose distance came from GPS, the only one whose pace means something. */

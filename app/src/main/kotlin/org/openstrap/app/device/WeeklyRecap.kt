@@ -51,6 +51,10 @@ object WeeklyRecap {
         if (now.toLocalDate() != thisWeek || now.toLocalTime() !in MORNING) return
         val lastWeek = thisWeek.minusWeeks(1)
         if (!settings.weeklyRecap.first() || settings.recapWeek.first() == lastWeek.toEpochDay()) return
+        // The weeks are only worked out again while the app is open: workouts synced since would be missed, and the
+        // week is never sent again. Brought up to date first; a refresh that fails still sends what's stored.
+        val recordingStart = (container.workout.state.value as? WorkoutState.Recording)?.workout?.start
+        runCatching { container.rewards.refreshNow(recordingStart) }
         val weeks = container.database.healthDao().weekResultsOnce()
         val week = weeks.firstOrNull { it.weekStart == lastWeek.toEpochDay() }
         settings.setRecapWeek(lastWeek.toEpochDay())

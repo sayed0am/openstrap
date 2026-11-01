@@ -79,7 +79,6 @@ import java.util.Locale
  * of in step 5 is here: what shaped the score, the night's heart rate and breathing, and each nap's heart rate.
  */
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
@@ -247,7 +246,7 @@ internal fun SleepScoreDetail(
         notes = listOfNotNull(SleepCopy.SCORE_FROM_YOUR_TIMES.takeIf { ownScore }) + InfoCopy.sleepNotes(r?.sleepNeed ?: Recovery.SLEEP_NEED_MINUTES),
     )
     if (adjusting && session != null && detected != null) SleepTimesSheet(
-        session, detected, state.sleepHeartRate, state.naps,
+        session, detected, state.sleepHeartRate, state.sleepNeighbours.filter { it.nap || it.start != session.start },
         onSave = { from, to -> adjusting = false; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = false },
     )
     if (deleting && session != null && detected != null) DeleteSleepSheet(
@@ -433,16 +432,8 @@ private fun ScrubLine(
 }
 
 /** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.x - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.y; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
-}
+private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
+    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })
 
 /* ---------------------------------------------- Regularity ------------------------------------------ */
 
@@ -553,7 +544,7 @@ internal fun NapsDetail(
                     item(key = nap.start) {
                         Column(
                             Modifier.fillMaxWidth().padding(top = 12.dp)
-                                .let { if (i > 0) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+                                .topHairline(i > 0, RowHairline),
                         ) {
                             ChartTitle(SleepCopy.span(clock(nap.start), clock(nap.end)), TodayCopy.duration(nap.end - nap.start))
                             val detected = state.napsAsDetected[nap.start]
@@ -604,7 +595,7 @@ internal fun NapsDetail(
         val detected = state.napsAsDetected[start]
         if (nap == null || detected == null) adjusting = null
         else SleepTimesSheet(
-            nap, detected, state.heartRate, listOfNotNull(state.sleep) + naps.filter { it.start != start },
+            nap, detected, state.heartRate, state.sleepNeighbours.filter { !it.nap || it.start != start },
             onSave = { from, to -> adjusting = null; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = null },
         )
     }

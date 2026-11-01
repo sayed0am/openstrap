@@ -134,7 +134,7 @@ internal class StoryStat(val value: String, val unit: String?, val label: String
 internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, usualLoad: Float?, now: Long, zone: ZoneId = ZoneId.systemDefault()): StoryCard {
     val a = summary.analysis
     val active = a.activeSeconds
-    val readings = summary.recorded.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+    val readings = FamilySummary.readings(summary)
     val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
     val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
     val avg = a.workout.averageHeartRate
@@ -145,7 +145,7 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters?.takeIf { it > 0f }
-            val pace = hero.figures.firstOrNull { it.second == "Avg pace" }?.first
+            val pace = hero.pace
             val stats = if (m != null) listOfNotNull(
                 StoryStat(hero.value, hero.unit, "Distance"),
                 StoryStat(workoutClock(active), null, "Time"),
@@ -189,14 +189,14 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             StoryCard.Calm(
                 a.sportName, whenLine, minutes, minUnit,
-                settled?.let { (f, t) -> if (f - t >= 3) "Heart settled $f to $t" else "Heart held near $t" }, heartLine(readings),
+                settled?.let { (f, t) -> FamilySummary.settledShort(f, t) }, heartLine(readings),
             )
         }
         Workouts.Family.Games -> {
             val load = a.workout.trainingLoad
             StoryCard.Game(
                 a.sportName, minutes, minUnit,
-                load?.let { "Load $it" + FamilySummary.loadLabel(it, usualLoad).removePrefix("Load") },
+                load?.let { FamilySummary.loadLine(it, usualLoad) },
                 readings.maxOfOrNull { it.second }?.let { "Peak $it" },
             )
         }
@@ -224,13 +224,7 @@ internal fun exerciseRows(sets: List<org.openstrap.app.data.db.AppWorkoutSet>): 
 /** [readings] as 40 averages, for a calm card's heart line; empty under ten readings. */
 private fun heartLine(readings: List<Pair<Long, Int>>): List<Float?> {
     if (readings.size < 10) return emptyList()
-    val first = readings.first().first
-    val span = (readings.last().first - first).coerceAtLeast(1)
-    val n = 40
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    readings.forEach { (t, v) -> val i = ((t - first) * (n - 1) / span).toInt(); sums[i] += v.toFloat(); counts[i]++ }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    return FamilySummary.heartLine(readings, 40)
 }
 
 /** How a run's route shows on its card. Map, the route over a map, is to come. */
@@ -316,7 +310,7 @@ private fun storyColor(card: StoryCard): Color = when (card) {
 }
 
 /** The card's black, a touch off pure so a dark photo's edge still shows. */
-private val StoryBlack = Color(0xFF0A0A0B)
+private val StoryBlack = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /**
  * The board's light from below: an ellipse wider than the card centred under its foot, from [strength] of [color] to

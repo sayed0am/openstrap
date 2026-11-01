@@ -193,8 +193,6 @@ object Rewards {
         fun fastestMeters(kind: String): Int? = kind.removePrefix(FASTEST).takeIf { kind.startsWith(FASTEST) }?.toIntOrNull()
         fun lift(exercise: String) = LIFT + exercise.trim()
         fun liftName(kind: String): String? = kind.removePrefix(LIFT).takeIf { kind.startsWith(LIFT) }
-        /** Lower is better only for the fastest stretches. */
-        fun lowerIsBetter(kind: String) = fastestMeters(kind) != null
     }
 
     /**
@@ -234,9 +232,10 @@ object Rewards {
      */
     fun newBests(w: Done, workouts: List<Done>, days: List<Day>, zone: ZoneId): List<NewBest> {
         val others = workouts.filter { it.start != w.start }
-        val before = bests(others, emptyList(), zone).associateBy { it.kind }
+        // A lift's kind is spelled as its heaviest set was ([bests] groups them ignoring case), so match ignoring it too.
+        val before = bests(others, emptyList(), zone).associateBy { it.kind.lowercase() }
         return bests(others + w, emptyList(), zone).filter { it.workoutStart == w.start }
-            .mapNotNull { b -> before[b.kind]?.let { NewBest(b, it) } }
+            .mapNotNull { b -> before[b.kind.lowercase()]?.let { NewBest(b, it) } }
     }
 
     /* -------------------------------------------- Badges -------------------------------------------- */
@@ -277,6 +276,14 @@ object Rewards {
     fun badge(id: String): Badge? = BADGES.firstOrNull { it.id == id }
 
     /**
+     * The badges of one count, by id ("km_", "workouts_", "goal_"), with what each needs: earning and progress read
+     * these, so a badge's award and its progress bar can't drift apart.
+     */
+    private fun thresholds(prefix: String): List<Pair<String, Long>> = BADGES.filter { it.id.startsWith(prefix) }.mapNotNull { b -> b.needs?.let { b.id to it } }
+
+    private fun needs(id: String): Long = badge(id)!!.needs!!
+
+    /**
      * The goal of the week a badge [row] was earned in, from [weeks]: the first weekly goal badge shows it ("3/3").
      * Null for a badge a day earned, or a week not stored.
      */
@@ -304,16 +311,16 @@ object Rewards {
         mine.forEach { w ->
             val e = Earn(w.end, w.start)
             km += (w.meters ?: 0f) / 1000.0
-            listOf(100, 500, 1000).forEach { n -> if (km >= n) earn("km_$n", e) }
+            thresholds("km_").forEach { (id, n) -> if (km >= n) earn(id, e) }
             if (!w.counts) return@forEach
             counted++
             earn("first_workout", e)
-            listOf(10, 50, 100, 500).forEach { n -> if (counted >= n) earn("workouts_$n", e) }
+            thresholds("workouts_").forEach { (id, n) -> if (counted >= n) earn(id, e) }
             val family = Workouts.family(w.sport)
             val structure = Structure.parse(w.structure)
             if (w.sport in Workouts.RUNS) earn("first_run", e)
-            if (w.gpsRun && w.gpsMeters!! >= 5000f) earn("first_5k", e)
-            if (w.gpsRun && w.gpsMeters!! >= 10_000f) earn("first_10k", e)
+            if (w.gpsRun && w.gpsMeters!! >= needs("first_5k")) earn("first_5k", e)
+            if (w.gpsRun && w.gpsMeters!! >= needs("first_10k")) earn("first_10k", e)
             if (family == Workouts.Family.IndoorCardio && w.sport != Workouts.GENERIC_ACTIVITY) earn("first_indoor", e)
             if (family == Workouts.Family.Strength && w.sets.any { it.reps != null && it.weightKg != null }) earn("first_log", e)
             if (structure is Structure.Timed && structure.work == Structure.TABATA.work && structure.rest == Structure.TABATA.rest) earn("first_tabata", e)
@@ -324,9 +331,9 @@ object Rewards {
         var steps = 0L
         days.sortedBy { it.date }.forEach { d ->
             val e = Earn(d.date.plusDays(1).atStartOfDay(zone).toEpochSecond() - 1, day = d.date.toEpochDay())
-            if (d.steps >= 10_000) earn("first_10k_steps", e)
+            if (d.steps >= needs("first_10k_steps")) earn("first_10k_steps", e)
             steps += d.steps
-            if (steps >= 1_000_000) earn("steps_1m", e)
+            if (steps >= needs("steps_1m")) earn("steps_1m", e)
         }
         // Each met week, by the workout that met it, and the run of weeks it extends.
         val goals = weeks.associate { it.weekStart to it.goal }
@@ -339,8 +346,8 @@ object Rewards {
             run = if (last != null && w.weekStart - last == 7L) run + 1 else 1
             last = w.weekStart
             val e = Earn(meeting.end, meeting.start)
-            earn("goal_first", e)
-            listOf(4, 12, 26, 52).forEach { n -> if (run >= n) earn("goal_$n", e) }
+            // goal_first needs one week, so every met week earns it.
+            thresholds("goal_").forEach { (id, n) -> if (run >= n) earn(id, e) }
         }
         return BADGES.mapNotNull { b -> earned[b.id]?.let { BadgeRow(b.id, it.at, it.workout, it.day) } }
     }

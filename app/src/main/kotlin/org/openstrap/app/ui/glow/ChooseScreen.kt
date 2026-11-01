@@ -7,10 +7,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -94,29 +98,48 @@ fun GlowChooseScreen(
         SearchPage(contentPadding, onReady) { searching = false }
         return
     }
-    WorkoutPage(Color.Transparent, contentPadding) {
+    val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.X, "Close", onBack)
             Spacer(Modifier.width(12.dp))
             Text("Start a workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
         }
+    }
+    val choose: @Composable ColumnScope.() -> Unit = {
         StrapLine(connection, liveHeartRate)
         if (usual != null) UsualRow(usual, { onStartUsual(usual.type) }, { onReady(usual.type) })
         // The search opens a page of its own (board ActivitySearchTyping).
         SearchEntry("Search all sports") { searching = true }
-        run {
-            if (recent.isNotEmpty()) {
-                ChipLabel("Recent")
-                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    recent.forEach { chip ->
-                        when (chip) {
-                            is RecentChip.Sport -> RecentChipButton(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
-                            is RecentChip.Saved -> RecentChipButton(chip.sport, chip.name) { onSaved(chip) }
-                        }
+        if (recent.isNotEmpty()) {
+            ChipLabel("Recent")
+            Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                recent.forEach { chip ->
+                    when (chip) {
+                        is RecentChip.Sport -> RecentChipButton(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
+                        is RecentChip.Saved -> RecentChipButton(chip.sport, chip.name) { onSaved(chip) }
                     }
                 }
             }
-            SportTiles("All sports", Workouts.EVERYDAY, Workouts::shortName, { false }, onReady)
+        }
+        SportTiles("All sports", Workouts.EVERYDAY, Workouts::shortName, { false }, onReady)
+    }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        // Unfolded (spec 2.4): the rest of the sports, A to Z, in a column of their own beside the tiles, each side
+        // scrolling by itself, so none is a tap away behind More sports.
+        if (maxWidth >= GlowLayout.TwoColumnWidth) CompositionLocalProvider(LocalPageColumn provides GlowLayout.MaxContentWidth) {
+            WorkoutPage(Color.Transparent, contentPadding, scroll = false) {
+                header()
+                Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap * 2)) {
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)
+                    Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        ChipLabel("More sports")
+                        MoreSportsList(onReady)
+                    }
+                }
+            }
+        } else WorkoutPage(Color.Transparent, contentPadding) {
+            header()
+            choose()
             MoreSportsRow { more = true }
         }
     }
@@ -171,7 +194,7 @@ private fun RecentChipButton(sport: Int, name: String, onClick: () -> Unit) {
 }
 
 /** Choose's quiet chips, a step off black so the usual's glow stays the one lit thing. */
-private val QuietCard = Color(0xFF0F0F11)
+private val QuietCard = ListSurface
 
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 
@@ -249,13 +272,15 @@ internal fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddi
 private fun MoreSports(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit) {
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("More sports", onBack) }
-        item {
-            ListPanel {
-                Workouts.MORE.forEachIndexed { i, type ->
-                    PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, onClick = { onPick(type) })
-                }
-            }
-        }
+        item { MoreSportsList(onPick) }
+    }
+}
+
+/** Every sport behind the tiles, A to Z, in one panel. */
+@Composable
+private fun MoreSportsList(onPick: (Int) -> Unit) = ListPanel {
+    Workouts.MORE.forEachIndexed { i, type ->
+        PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i > 0, onClick = { onPick(type) })
     }
 }
 

@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -80,6 +81,7 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
+import androidx.compose.runtime.SideEffect
 
 /*
  * Ready for distance and cardio sports (board ReadyFinal): the heart, where you are, then the goal, typed in place.
@@ -128,7 +130,7 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
 }
 
 /** The heart card's dark base under its light. */
-private val HeartBase = Color(0xFF0A0A0B)
+private val HeartBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /**
  * Where you are and the switch rows, on one quiet panel. For a sport with an indoor side ([sides]), its title is the
@@ -252,11 +254,9 @@ internal fun ReadyGoal(
     saved: List<SavedWorkout>,
     onSave: (String, Structure.Reps) -> Unit,
 ) {
-    val options = kinds.map { PlanOption(kindIcon(it, type), kindName(it, type), kindNote(it, hasDistance)) }
-    val at = kinds.indexOf(draft.kind)
-    ReadyPlanCard(
-        Workouts.family(type), options, options.getOrElse(at) { options[0] }, at.takeIf { it >= 0 }, { onDraft(draft.copy(kind = kinds[it])) },
-        typing, onTyping,
+    PlanChoice(
+        Workouts.family(type), kinds.map { it to PlanOption(kindIcon(it, type), kindName(it, type), kindNote(it, hasDistance)) },
+        { it == draft.kind }, { onDraft(draft.copy(kind = it)) }, typing, onTyping,
     ) {
         when (draft.kind) {
             GoalKind.None -> GoalNote(StartCopy.noGoalNote(hasDistance))
@@ -272,13 +272,33 @@ internal fun ReadyGoal(
 internal class PlanOption(val icon: ImageVector, val name: String, val note: String)
 
 /**
+ * [ReadyPlanCard] over values rather than places: each of [choices] is what it sets and how it reads, the first that
+ * [isChosen] is ticked and shown, and picking one hands its value to [onChoose]. Where none is chosen (a value typed
+ * that's no preset) the pill shows [other], the first choice unless said.
+ */
+@Composable
+internal fun <T> PlanChoice(
+    family: Workouts.Family,
+    choices: List<Pair<T, PlanOption>>,
+    isChosen: (T) -> Boolean,
+    onChoose: (T) -> Unit,
+    typing: Boolean,
+    onTyping: (Boolean) -> Unit,
+    other: () -> PlanOption = { choices[0].second },
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val at = choices.indexOfFirst { isChosen(it.first) }.takeIf { it >= 0 }
+    ReadyPlanCard(family, choices.map { it.second }, at?.let { choices[it].second } ?: other(), at, { onChoose(choices[it].first) }, typing, onTyping, content)
+}
+
+/**
  * The one plan card every Ready has (boards ReadyFinal, ReadyKindPill, ReadyKindSheet): the family's label over it
  * ([StartCopy.planTitle]), then the choice in one pill ([shown], which may be none of [options] once a value is typed),
  * opening a sheet of every option with what each does, the one [chosen] ticked; then [content], the chosen one's
  * value. While typing ([typing]) the whole card scrolls up over the keyboard, presets and note too.
  */
 @Composable
-internal fun ReadyPlanCard(
+private fun ReadyPlanCard(
     family: Workouts.Family,
     options: List<PlanOption>,
     shown: PlanOption,
@@ -290,9 +310,16 @@ internal fun ReadyPlanCard(
 ) {
     Text(StartCopy.planTitle(family), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))
     val inView = remember { BringIntoViewRequester() }
-    val keyboard = WindowInsets.ime.getBottom(LocalDensity.current)
-    // Once the keyboard has stopped moving: each frame of it rising starts this again.
-    LaunchedEffect(typing, keyboard) { if (typing && keyboard > 0) { kotlinx.coroutines.delay(80); inView.bringIntoView() } }
+    val ime = WindowInsets.ime
+    val density = LocalDensity.current
+    // Once the keyboard has stopped moving. Its height is read in the effect, not in composition, so the card isn't
+    // composed again for every frame of the keyboard rising.
+    LaunchedEffect(typing) {
+        if (!typing) return@LaunchedEffect
+        androidx.compose.runtime.snapshotFlow { ime.getBottom(density) }.collectLatest { keyboard ->
+            if (keyboard > 0) { kotlinx.coroutines.delay(80); inView.bringIntoView() }
+        }
+    }
     Column(
         Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -361,7 +388,7 @@ private fun KindPill(icon: ImageVector, label: String, hint: String, onClick: ()
 private fun KindRow(icon: ImageVector, label: String, note: String, on: Boolean, divider: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
-            .then(if (divider) Modifier.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else Modifier)
+            .topHairline(divider, RowHairline)
             .clickable(onClick = onClick).semantics { selected = on }.padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
@@ -400,20 +427,8 @@ internal fun <T> Presets(presets: List<Pair<T, String>>, on: T?, onPick: (T) -> 
 
 /** A value between round minus and plus buttons. */
 @Composable
-private fun ValueStepper(less: String, more: String, onLess: () -> Unit, onMore: () -> Unit, value: @Composable RowScope.() -> Unit) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        StepButton(AppIcons.Minus, less, onLess)
-        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, content = value)
-        StepButton(AppIcons.Plus, more, onMore)
-    }
-}
-
-@Composable
-private fun StepButton(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Box(Modifier.size(52.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape), contentAlignment = Alignment.Center) {
-        Icon(icon, label, tint = Color.White, modifier = Modifier.size(20.dp))
-    }
-}
+private fun ValueStepper(less: String, more: String, onLess: () -> Unit, onMore: () -> Unit, value: @Composable RowScope.() -> Unit) =
+    MinusPlus(less, more, onLess, onMore, Modifier.fillMaxWidth(), buttonSize = 52.dp, gap = 12.dp, value = value)
 
 /** A value to tap and type: its numbers and units, "Tap to type" under them ([hint]). */
 @Composable
@@ -490,36 +505,26 @@ private fun EndTyping(typing: Boolean, focused: Int?, everFocused: Boolean, onDo
     }
 }
 
-/** Distance: minus and plus by half a km, the value in km to tap and type, the presets, and its note. */
+/** Distance: minus and plus by half a km, the value in km to tap and type ([TypedValue]), the presets, and its note. */
 @Composable
 private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
     val focusManager = LocalFocusManager.current
-    var text by remember { mutableStateOf(TextFieldValue()) }
-    var focused by remember { mutableStateOf<Int?>(null) }
-    var everFocused by remember { mutableStateOf(false) }
-    val focus = remember { FocusRequester() }
-    fun finish() {
-        if (!typing) return
-        StartCopy.parseDistance(text.text)?.let(onMeters)
-        onTyping(false)
-    }
+    // What's typed so far, for the note while typing.
+    var typed by remember { mutableStateOf<String?>(null) }
     // A step or preset while typing drops what was typed.
     fun stop() { onTyping(false); focusManager.clearFocus() }
-    EndTyping(typing, focused, everFocused) { finish() }
     ValueStepper("Shorter", "Longer", { stop(); onMeters(StartCopy.stepDistance(meters, up = false)) }, { stop(); onMeters(StartCopy.stepDistance(meters, up = true)) }) {
-        if (typing) {
-            LaunchedEffect(Unit) { focus.requestFocus() }
-            TypedNumber(
-                text, { v -> text = v.copy(text = v.text.filter { it.isDigit() || it == '.' || it == ',' }.take(6)) }, "km", focused == 0,
-                Modifier.focusRequester(focus).onFocusChanged { if (it.isFocused) { focused = 0; everFocused = true } else if (focused == 0) focused = null },
-                KeyboardType.Decimal, ImeAction.Done, { focusManager.clearFocus() },
-            )
-        } else TapValue(listOf(StartCopy.distanceValue(meters) to "km"), StartCopy.TAP_TO_TYPE) {
-            text = selected(StartCopy.distanceValue(meters)); everFocused = false; onTyping(true)
+        TypedValue(
+            listOf(NumberField(StartCopy.distanceValue(meters), "km", length = 6, decimal = true)), typing, onTyping,
+            onDone = { t -> StartCopy.parseDistance(t[0])?.let(onMeters) }, hint = StartCopy.TAP_TO_TYPE,
+        ) {
+            val now = this.typed?.firstOrNull()
+            SideEffect { if (typed != now) typed = now }
+            Row { Number(0) }
         }
     }
     Presets(StartCopy.DISTANCE_PRESETS, meters.takeIf { !typing }) { stop(); onMeters(it) }
-    GoalNote(StartCopy.distanceNote(if (typing) StartCopy.parseDistance(text.text) ?: meters else meters))
+    GoalNote(StartCopy.distanceNote(if (typing) typed?.let(StartCopy::parseDistance) ?: meters else meters))
 }
 
 /**

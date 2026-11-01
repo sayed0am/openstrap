@@ -20,7 +20,9 @@ class AppContainer(val app: Application) {
     val database = OpenStrapDatabase.create(app)
     val settings = SettingsStore(app)
     val health = HealthRepository(database.healthDao())
-    val rewards = org.openstrap.app.data.RewardsKeeper(database.healthDao(), settings)
+    /** The max heart rate every zone goes by: `maxHeartRates.current` to follow it, `maxHeartRates.now()` to read it once. */
+    val maxHeartRates = org.openstrap.app.data.MaxHeartRates(database.healthDao(), settings.profile)
+    val rewards = org.openstrap.app.data.RewardsKeeper(database.healthDao(), settings, maxHeartRates)
     val scanner = BleScanner(app)
     val csv = CsvExporter(database.healthDao())
     val healthConnect = HealthConnectExporter(app, database.healthDao())
@@ -29,7 +31,7 @@ class AppContainer(val app: Application) {
     val phoneAlerts = PhoneAlerts(app, settings, strap)
     val autoHealthConnect = org.openstrap.app.health.HealthConnectAutoSync(app, settings, healthConnect, strap)
     val workout = org.openstrap.app.device.WorkoutSession(
-        app, database.healthDao(), settings, strap, callRinging = { phoneAlerts.callRinging }, onSaved = autoHealthConnect::workoutSaved,
+        app, database.healthDao(), settings, strap, maxHeartRates, callRinging = { phoneAlerts.callRinging }, onSaved = autoHealthConnect::workoutSaved,
     )
     val updater = org.openstrap.app.update.AppUpdater(app, settings, recording = { workout.state.value is org.openstrap.app.device.WorkoutState.Recording })
 }

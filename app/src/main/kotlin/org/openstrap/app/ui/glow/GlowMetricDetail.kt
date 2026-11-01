@@ -9,10 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -71,21 +69,14 @@ import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
-import org.openstrap.app.ui.theme.AppIcons
 import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
-
-/** The one page header ([PageHeader], spec 3.4): the round back button, the page title, and the day or note under it. */
-@Composable
-internal fun GlowDetailHeader(title: String, subtitle: String?, onBack: () -> Unit) = PageHeader(title, onBack, subtitle = subtitle)
 
 internal fun dayName(date: LocalDate): String = when (date) {
     LocalDate.now() -> "Today"
@@ -596,21 +587,12 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
 }
 
 /** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.x - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.y; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
-}
+private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
+    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })
 
 /** A name inside a sentence: lower case, unless it's an acronym like HRV. */
 internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
 
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
 
 /**
  * The selected day's own chart: steps by the hour, the week of resting heart rates, or the day's readings as a line

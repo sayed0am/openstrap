@@ -40,10 +40,11 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.gestures.detectTapGestures
+import org.openstrap.app.ui.workout.WorkoutCopy
 
 /** The screen dims this long after the last touch. */
 private const val DIM_AFTER_MS = 10_000L
@@ -52,7 +53,8 @@ private const val DIM_AFTER_MS = 10_000L
  * Mind and body (workouts spec 2.6, board LiveMind): dark by design. The time against the length, a soft heart line
  * that shows it settling, then Pause and the square to end. No zone colours, no kcal. The screen dims to near black
  * after ten seconds and lights again on a touch, which does nothing else. One soft buzz at the end of the length; the
- * workout keeps recording until you end it.
+ * workout keeps recording until you end it. With [split] the heart rate is on the other half of a folded phone, so this
+ * half leaves it out, and [compact] (a short half) drops the ring around the time.
  */
 @Composable
 internal fun LiveMindScreen(
@@ -62,10 +64,12 @@ internal fun LiveMindScreen(
     connection: ConnectionState,
     contentPadding: PaddingValues,
     controls: LiveControls,
+    split: Boolean = false,
+    compact: Boolean = false,
 ) {
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
-    val active = activeSeconds(r)
+    val active = activeSecondsState(r)
     val length = (WorkoutTarget.parse(r.workout.target) as? WorkoutTarget.Time)?.seconds
     var touched by remember { mutableLongStateOf(System.currentTimeMillis()) }
     var dim by remember { mutableStateOf(false) }
@@ -85,10 +89,14 @@ internal fun LiveMindScreen(
             }
         },
     ) {
-        LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true) {
+        LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true, tapHint = !compact) {
             Spacer(Modifier.weight(0.6f))
-            MindRing(active, length)
+            MindRing({ active.value }, length, ring = !compact)
             Spacer(Modifier.weight(0.5f))
+            if (split) {
+                Spacer(Modifier.weight(0.6f))
+                return@LiveFrame
+            }
             val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
             val values = remember(recent) { bucketRecent(recent, now) }
             if (values.count { it != null } >= 2) MindHeartLine(values)
@@ -96,7 +104,7 @@ internal fun LiveMindScreen(
             Text(
                 bpm?.let { b ->
                     "Heart rate $b, settling" + (first?.minus(b)?.takeIf { it > 0 }?.let { ", down $it since you started" } ?: "")
-                } ?: if (r.paused) "Paused" else "Waiting for heart rate",
+                } ?: WorkoutCopy.noHeartRate(r.paused, connected),
                 color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
@@ -112,12 +120,14 @@ internal fun LiveMindScreen(
 
 /**
  * The time in a thin ring that fills in violet towards the length, "of 45 min" under it; open, the ring stays a
- * faint track.
+ * faint track. Without the [ring], the time and its line alone.
  */
 @Composable
-private fun MindRing(active: Long, length: Long?) {
+private fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
+    // Read here, so the second composes the ring again and not the screen.
+    val active = time()
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.size(280.dp)) {
+        if (ring) Canvas(Modifier.size(280.dp)) {
             // The strength rest ring's line and track, so the app's rings read as one.
             val stroke = 8.dp.toPx()
             val inset = stroke / 2

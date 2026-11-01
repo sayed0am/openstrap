@@ -142,6 +142,23 @@ class FamilySummaryTest {
         assertEquals("Your heart settled from 96 to 66.", FamilySummary.settledLine(96, 66))
         assertEquals("Your heart held near 72.", FamilySummary.settledLine(73, 72))
         assertNull(FamilySummary.settled(readings, 0, 300))
+        // The share card's short form, by the same 3 bpm rule.
+        assertEquals("Heart settled 96 to 66", FamilySummary.settledShort(96, 66))
+        assertEquals("Heart settled 75 to 72", FamilySummary.settledShort(75, 72))
+        assertEquals("Heart held near 72", FamilySummary.settledShort(74, 72))
+        assertEquals(3, FamilySummary.settledDrop(75, 72))
+        assertNull(FamilySummary.settledDrop(74, 72))
+    }
+
+    @Test
+    fun aGamesLoadReadsTheSameOnTheSummaryAndTheCard() {
+        assertEquals("Load, hard", FamilySummary.loadLabel(130, 100f))
+        assertEquals("Load 130, hard", FamilySummary.loadLine(130, 100f))
+        assertEquals("Load, light", FamilySummary.loadLabel(60, 100f))
+        assertEquals("Load 60, light", FamilySummary.loadLine(60, 100f))
+        assertEquals("Load", FamilySummary.loadLabel(100, 100f))
+        assertEquals("Load 100", FamilySummary.loadLine(100, 100f))
+        assertEquals("Load 80", FamilySummary.loadLine(80, null))
     }
 
     @Test
@@ -160,8 +177,15 @@ class FamilySummaryTest {
     fun periodsAreHalvesOrQuarters() {
         val readings = (0L..6000L step 5).map { it to 150 }
         val halves = listOf(AppWorkoutRound(0, 0, 0, 2400, 3000), AppWorkoutRound(0, 1, 3000, 5400, 5400))
-        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190).map { it.name })
-        assertEquals(150, FamilySummary.periods(halves, readings, 190)[0].averageBpm)
+        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190, 2).map { it.name })
+        assertEquals(150, FamilySummary.periods(halves, readings, 190, 2)[0].averageBpm)
+    }
+
+    @Test
+    fun aQuartersGameEndedEarlyKeepsItsQuarters() {
+        val readings = (0L..6000L step 5).map { it to 150 }
+        val two = listOf(AppWorkoutRound(0, 0, 0, 900, 1000), AppWorkoutRound(0, 1, 1000, 1900, null))
+        assertEquals(listOf("1st quarter", "2nd quarter"), FamilySummary.periods(two, readings, 190, 4).map { it.name })
     }
 
     @Test

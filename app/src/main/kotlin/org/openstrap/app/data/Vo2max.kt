@@ -187,10 +187,6 @@ object Vo2max {
             return (centre - FITNESS_AGE_SPREAD).coerceAtLeast(FITNESS_AGE_MIN)..(centre + FITNESS_AGE_SPREAD).coerceAtMost(FITNESS_AGE_MAX)
         }
 
-        /** "typical of a woman aged about 35–55". */
-        fun fitnessAgeText(range: IntRange, sex: UserProfile.Sex): String =
-            "typical of a ${if (sex == UserProfile.Sex.Male) "man" else "woman"} aged about ${range.first}–${range.last}"
-
         const val FITNESS_AGE_SPREAD = 10
         const val FITNESS_AGE_MIN = 20
         const val FITNESS_AGE_MAX = 80

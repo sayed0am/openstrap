@@ -137,7 +137,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         private val DELETABLE = setOf("workout", "sport_effect")
 
         /** Tables restored whole rather than only before the phone's first day: what the user did, which the strap can't re-send. */
-        private val WHOLE = setOf("workout_deleted")
+        private val WHOLE = setOf("workout_deleted", "saved_workout", "exercise", "badge", "week_result")
 
         /** Minute tables, keyed by the minute: restored wherever the phone has no row for it, not only before its first day. */
         private val MINUTES = setOf("heart_rate", "activity_minute", "activity_extended")

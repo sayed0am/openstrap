@@ -108,14 +108,14 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
 }
 
 /** The hero's dark base under its light. */
-private val HeroBase = Color(0xFF0A0A0B)
+private val HeroBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /** A zone on the list: its colour as a short bar, its number and name, and its heart rates. */
 @Composable
 private fun ZoneRow(zone: Int, bpm: String, divider: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, RowHairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {

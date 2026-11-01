@@ -11,13 +11,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.DotMatrixText
@@ -33,12 +31,7 @@ import org.openstrap.app.ui.glow.workoutClock
 @Composable
 internal fun ColumnScope.LivePaused(r: WorkoutState.Recording, liveHeartRate: Int?, recent: List<Pair<Long, Int>>, figures: List<Pair<String?, String>>) {
     val at = r.workout.pausedAt ?: return
-    val now by produceState(System.currentTimeMillis() / 1000, at) {
-        while (true) {
-            value = System.currentTimeMillis() / 1000
-            delay(1000 - System.currentTimeMillis() % 1000)
-        }
-    }
+    val now = nowTicking()
     Column(
         Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),

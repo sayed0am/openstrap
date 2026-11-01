@@ -114,7 +114,7 @@ internal fun ContributorRow(
         Modifier.fillMaxWidth()
             .then(opening?.modifier ?: Modifier)
             .let { if (onClick != null) it.clickable(onClick = opening?.onClick ?: onClick) else it }
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, RowHairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -145,7 +145,7 @@ internal fun ContributorRow(
 internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, RowHairline)
             .padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

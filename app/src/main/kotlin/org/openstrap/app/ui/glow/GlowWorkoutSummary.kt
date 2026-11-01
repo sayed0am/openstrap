@@ -113,7 +113,7 @@ fun GlowWorkoutSummaryScreen(
     fun next(from: SummaryStep) {
         step = when {
             from < SummaryStep.Best && rewards?.best != null -> SummaryStep.Best
-            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations?.markMoment(rewards!!.weekStart) }
+            from < SummaryStep.Moment && moment -> SummaryStep.Moment.also { celebrations.markMoment(rewards.weekStart) }
             else -> { onDone(); return }
         }
     }
@@ -187,7 +187,7 @@ fun GlowWorkoutSummaryScreen(
         }
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort, swell.value)
+        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort) { swell.value }
         val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
         val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
         EarnedChips(earned)
@@ -214,8 +214,9 @@ fun GlowWorkoutSummaryScreen(
  * one number in dots, then a sentence or three figures in text. [swell] lifts the light for a personal best.
  */
 @Composable
-internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: Float) {
-    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell).coerceAtMost(1f))
+internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f }) {
+    // Read here, so a best's swell composes only the hero each frame, not the whole summary.
+    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell()).coerceAtMost(1f))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {
@@ -312,10 +313,10 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
     }
 }
 
-/** The kept route in its zones' colours; nothing without a route. */
+/** The kept route in its zones' colours; nothing without a route that goes somewhere. */
 @Composable
 internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
-    if (summary.route.size < 2) return
+    if (!Route.mappable(summary.route)) return
     val stretches = remember(summary) { Route.byZone(summary.route, summary.history, summary.analysis.maxHeartRate) }
     Box(modifier.fillMaxWidth().height(170.dp).clip(GlowLayout.TileShape).background(Raised)) {
         WorkoutMap(stretches, routeOnly = false, Modifier.fillMaxSize())

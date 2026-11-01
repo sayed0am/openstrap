@@ -83,10 +83,15 @@ object Route {
      * §5.1); a stretch of standing still ([still]) is left as its first fix, so a phone's wander adds nothing.
      */
     fun track(points: List<Point>): List<Point> {
+        // A live workout's route is one list per fix, read by the screen, the map, the splits and the glance alike:
+        // the last one's track is kept, so a fix is smoothed once, not once for each of them.
+        lastTrack?.let { (from, track) -> if (from === points) return track }
         val smoothed = smooth(clean(points))
         val still = still(smoothed)
-        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }
+        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }.also { lastTrack = points to it }
     }
+
+    @Volatile private var lastTrack: Pair<List<Point>, List<Point>>? = null
 
     /**
      * Process noise (white acceleration, m/s^1.5) when fixes carry Doppler velocity: Zepp's q (native 02 §3.7), free
@@ -295,6 +300,13 @@ object Route {
     /** How far two fixes can lie apart from GPS error alone. */
     private fun noise(a: Point, b: Point): Double = maxOf(MIN_MOVE_M, (a.accuracy + b.accuracy).toDouble())
 
+    /** Least spread for a route to be worth a map: standing still gives a dot, and the map would zoom out to the world. */
+    const val MAPPABLE_M = 25.0
+
+    /** Whether [points] spread at least [MAPPABLE_M] from the first one, so a map of them shows somewhere. */
+    fun mappable(points: List<Point>): Boolean =
+        points.size >= 2 && points.any { meters(points[0], it) >= MAPPABLE_M }
+
     /** Metres covered by [points] along [track], leaving out stretches that overlap [pauses]. */
     fun distance(points: List<Point>, pauses: List<LongRange> = emptyList()): Double =
         track(points).zipWithNext().sumOf { (a, b) -> if (paused(a, b, pauses)) 0.0 else meters(a, b) }
@@ -363,17 +375,10 @@ object Route {
     fun currentPace(points: List<Point>, windowS: Long = 30): Double? {
         val clean = track(points)
         val last = clean.lastOrNull() ?: return null
-        val recent = clean.filter { it.t >= last.t - windowS }
+        val recent = clean.takeLastWhile { it.t >= last.t - windowS }
         val m = recent.zipWithNext().sumOf { (a, b) -> meters(a, b) }
         val s = recent.last().t - recent.first().t
         return if (m < 10 || s <= 0) null else s / (m / 1000)
-    }
-
-    /** "5′42″" per kilometre, or null with no pace to show. */
-    fun formatPace(secondsPerKm: Double?): String? {
-        if (secondsPerKm == null || secondsPerKm <= 0 || secondsPerKm > 3600) return null
-        val s = Math.round(secondsPerKm)
-        return "%d′%02d″".format(s / 60, s % 60)
     }
 
     /**

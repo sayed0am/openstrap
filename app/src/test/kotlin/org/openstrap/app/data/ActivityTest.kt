@@ -1,9 +1,7 @@
 package org.openstrap.app.data
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.Activity.Minute
 
@@ -46,13 +44,6 @@ class ActivityTest {
         assertEquals(100, Activity.MODERATE_CADENCE)
         assertEquals(3, Activity.mvpa(minutes(102, 102, 102)).moderateMinutes)
         assertEquals(0, Activity.mvpa(minutes(99, 99, 99)).moderateMinutes)
-    }
-
-    @Test fun `step divergence over 5 percent is flagged`() {
-        assertFalse(Activity.stepsDiverge(10_000, 9_600))
-        assertTrue(Activity.stepsDiverge(10_000, 9_400))
-        assertFalse(Activity.stepsDiverge(null, 9_000))
-        assertFalse(Activity.stepsDiverge(0, 0))
     }
 
     @Test fun `step length rises from walking to running`() {

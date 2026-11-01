@@ -107,6 +107,8 @@ class HealthRepository(private val dao: HealthDao) {
     fun sleepSessions(w: DayWindow): Flow<List<SleepSession>> = sleep.sessions(w.from, w.to)
     /** Each strap session ending in [w] with its edit, deleted ones too, for the screens that change them. */
     fun sleepResolved(w: DayWindow): Flow<List<SleepEdits.Resolved>> = sleep.resolved(w.from, w.to)
+    /** [resolved] as [sleepSessions] shows them. */
+    suspend fun sleepShown(resolved: List<SleepEdits.Resolved>): List<SleepSession> = sleep.shown(resolved)
     /** [r]'s stages as shown. */
     fun sleepStages(r: SleepEdits.Resolved): Flow<List<SleepStage>> = sleep.stages(r)
     /** The strap's own stages for its session [strap], unclipped. */
@@ -115,20 +117,20 @@ class HealthRepository(private val dao: HealthDao) {
 
     /** Keeps [start] to [end] as the strap's session [strap]'s times; its own times again drop the edit. */
     suspend fun setSleepTimes(strap: SleepSession, start: Long, end: Long) {
-        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        val current = sleep.editOf(strap)
         val e = SleepEdits.edit(strap, start, end, current, System.currentTimeMillis() / 1000)
         if (e == null) dao.deleteSleepEdit(current?.strapStart ?: strap.start) else dao.upsertSleepEdit(e)
     }
 
     /** Deletes the strap's session [strap], keeping any times the user gave it, so [restoreSleep] brings back exactly that. */
     suspend fun deleteSleep(strap: SleepSession) {
-        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit
+        val current = sleep.editOf(strap)
         dao.upsertSleepEdit(SleepEdits.delete(strap, current, System.currentTimeMillis() / 1000))
     }
 
     /** Brings back the strap's deleted session [strap], with the times it had: Undo and Restore. */
     suspend fun restoreSleep(strap: SleepSession) {
-        val current = SleepEdits.resolve(listOf(strap), dao.sleepEditsOnce()).single().edit ?: return
+        val current = sleep.editOf(strap) ?: return
         val restored = SleepEdits.restore(current, System.currentTimeMillis() / 1000)
         if (restored == null) dao.deleteSleepEdit(current.strapStart) else dao.upsertSleepEdit(restored)
     }

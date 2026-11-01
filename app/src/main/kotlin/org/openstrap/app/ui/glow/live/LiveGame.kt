@@ -14,7 +14,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import org.openstrap.app.data.Games
 import org.openstrap.app.data.Phase
 import org.openstrap.app.data.Structure
@@ -36,7 +34,7 @@ import org.openstrap.app.ui.glow.GlowMotion
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.LightAngle
 import org.openstrap.app.ui.glow.WorkoutButton
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.heroStyle
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.workoutColor
@@ -63,20 +61,20 @@ internal fun LiveGameScreen(
     controls: LiveControls,
     kcal: WorkoutRecorder.Kcal?,
     onHalfTime: () -> Unit,
+    /** Split across a fold: the heart rate is on the other half, so only the effort is left of the card. */
+    split: Boolean = false,
+    /** A short half: the total small on top, so the controls keep their labels. */
+    compact: Boolean = false,
 ) {
-    val now by produceState(System.currentTimeMillis() / 1000) {
-        while (true) {
-            value = System.currentTimeMillis() / 1000
-            delay(1000 - System.currentTimeMillis() % 1000)
-        }
-    }
+    val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
     val color = workoutColor(r, liveHeartRate, connected)
     val periods = r.structure as? Structure.Periods
-    val phase = r.phase(now)
-    val active = activeSeconds(r)
+    // The phase alone picks the buttons; its clock is read in [PeriodRow], so the screen holds still between seconds.
+    val phase = remember(r) { androidx.compose.runtime.derivedStateOf { r.phase(now.value) } }.value
+    val active = activeSecondsState(r)
     val effort = Games.effort(zoneSeconds)
     val hard = remember(readings.size / 10) { Games.hardEfforts(readings, r.maxHeartRate) }
     val figures = listOf(
@@ -85,34 +83,22 @@ internal fun LiveGameScreen(
         hard.toString() to "Hard efforts",
     )
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = active, smallTime = periods != null,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = compact || periods != null,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, readings, figures) },
     ) {
-        if (periods != null && phase != null) {
-            val (title, clock) = when (phase) {
-                is Phase.Work -> StartCopy.periodName(phase.round, periods.rounds) to
-                    workoutClock((WorkoutRecorder.activeSeconds(r.workout, now) - WorkoutRecorder.activeSeconds(r.workout, phase.start)).coerceAtLeast(0))
-                is Phase.Rest -> StartCopy.breakName(periods.rounds) to
-                    (workoutClock((phase.endsAt - WorkoutRecorder.activeSeconds(r.workout, now)).coerceAtLeast(0)) + " left")
-                else -> "Full time" to workoutClock(active)
-            }
-            Row(Modifier.fillMaxWidth()) {
-                Text(title, color = Color.White, style = GlowType.pageTitle, modifier = Modifier.weight(1f))
-                Text(clock, color = Color.White, style = GlowType.pageTitle.copy(fontFeatureSettings = "tnum"))
-            }
-        }
+        if (periods != null && phase != null) PeriodRow(r, periods, phase, { now.value }, { active.value })
         val style = heroStyle(color, LightAngle.Below).let { s -> bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
-        GlowCard(style, Modifier.fillMaxWidth()) {
+        if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text("Waiting for heart rate", color = Color.White, style = GlowType.sentence)
+                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                     if (bpm != null) {
                         Spacer(Modifier.width(8.dp))
                         Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
                     }
                     Spacer(Modifier.weight(1f))
                     WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { z ->
-                        Text(WorkoutCopy.zoneTitle(z).let { (a, b) -> "$a $b" }, color = Color.White, style = GlowType.secondary)
+                        Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
                     }
                 }
                 EffortBar(effort)
@@ -122,6 +108,22 @@ internal fun LiveGameScreen(
         Spacer(Modifier.weight(1f))
         if (periods != null && phase is Phase.Work) WorkoutButton(StartCopy.breakName(periods.rounds), Color.White, Color.Black, onHalfTime, icon = AppIcons.PauseFill, height = 64.dp)
         if (periods != null && phase is Phase.Rest) WorkoutButton("Start ${StartCopy.periodName(phase.round + 1, periods.rounds).lowercase()}", Color.White, Color.Black, onHalfTime, icon = AppIcons.PlayFill, height = 64.dp)
+    }
+}
+
+/** The period and the time in it, or the break and its time left: its own scope, so only it reads each second. */
+@Composable
+private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, phase: Phase, now: () -> Long, active: () -> Long) {
+    val (title, clock) = when (phase) {
+        is Phase.Work -> StartCopy.periodName(phase.round, periods.rounds) to
+            workoutClock((WorkoutRecorder.activeSeconds(r.workout, now()) - WorkoutRecorder.activeSeconds(r.workout, phase.start)).coerceAtLeast(0))
+        is Phase.Rest -> StartCopy.breakName(periods.rounds) to
+            (workoutClock((phase.endsAt - WorkoutRecorder.activeSeconds(r.workout, now())).coerceAtLeast(0)) + " left")
+        else -> "Full time" to workoutClock(active())
+    }
+    Row(Modifier.fillMaxWidth()) {
+        Text(title, color = Color.White, style = GlowType.pageTitle, modifier = Modifier.weight(1f))
+        Text(clock, color = Color.White, style = GlowType.pageTitle.copy(fontFeatureSettings = "tnum"))
     }
 }
 

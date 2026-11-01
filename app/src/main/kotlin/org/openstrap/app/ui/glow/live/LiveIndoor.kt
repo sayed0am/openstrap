@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.activeSeconds
+import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.workout.Glance
 import org.openstrap.app.ui.workout.ZONE_COLORS
@@ -41,11 +41,15 @@ internal fun LiveIndoorScreen(
     controls: LiveControls,
     onLap: () -> Unit,
     kcal: WorkoutRecorder.Kcal?,
+    /** Split across a fold: the heart card is on the other half, so this one keeps the time in zones. */
+    split: Boolean = false,
+    /** A short half: the total small on top, so the controls keep their labels. */
+    compact: Boolean = false,
 ) {
     val connected = connection is ConnectionState.Connected
     val color = workoutColor(r, liveHeartRate, connected)
     ZoneTick(liveHeartRate.takeIf { connected && !r.paused }, r)
-    val active = activeSeconds(r)
+    val active = activeSecondsState(r)
     val figures = listOfNotNull(
         // "2.14 km from steps", or metres under a kilometre.
         r.workout.distanceMeters?.takeIf { it >= 10 }?.let { m ->
@@ -58,12 +62,13 @@ internal fun LiveIndoorScreen(
     LiveFrame(
         r, color, connected, contentPadding, controls,
         lap = if (!r.paused) ({ LapButton(onLap, label = true) }) else null,
-        time = active, battery = (connection as? ConnectionState.Connected)?.batteryPercent,
+        time = { active.value }, smallTime = compact, battery = (connection as? ConnectionState.Connected)?.batteryPercent,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, recent, figures) },
     ) {
         // Time reps on the treadmill side: the rep above the heart.
         if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
-        WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
+        if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(liveHeartRate.takeIf { connected && !r.paused }, r.maxHeartRate))
+        else WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active.value, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
         LiveFigures(figures, Modifier.padding(top = 4.dp))
     }
 }

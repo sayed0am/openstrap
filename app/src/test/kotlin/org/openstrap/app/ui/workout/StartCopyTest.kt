@@ -60,6 +60,13 @@ class StartCopyTest {
         assertEquals("2 min 15 s", StartCopy.restText(135))
     }
 
+    @Test fun `every HIIT preset carries its own icon, and only Free takes the sport's`() {
+        val icons = org.openstrap.app.ui.theme.AppIcons
+        assertEquals(listOf(icons.Timer, icons.Hourglass, icons.Alarm, null), StartCopy.PRESETS.map { it.icon })
+        // Free is the one without rounds, and the last.
+        assertEquals(listOf(false, false, false, true), StartCopy.PRESETS.map { it.rounds == null })
+    }
+
     @Test fun `HIIT's pill names a preset, else what the rounds are, and typed numbers change only what reads`() {
         val tabata = org.openstrap.app.data.Structure.TABATA
         assertEquals("Tabata", StartCopy.hiitName(tabata.warm(true)))
@@ -116,6 +123,8 @@ class StartCopyTest {
         assertEquals("40 / 20", StartCopy.structureName(org.openstrap.app.data.Structure.FORTY_TWENTY))
         assertEquals("6 × 400 m", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(400, null, 90, 6)))
         assertEquals("8 × 2 min", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(null, 120, 60, 8)))
+        // As the rep field under it says it, not "1500 m".
+        assertEquals("6 × 1.5 km", StartCopy.structureName(org.openstrap.app.data.Structure.Reps(1500, null, 90, 6)))
         assertEquals(230L, StartCopy.totalTime(org.openstrap.app.data.Structure.TABATA))
         // Reps fit a run, rounds fit HIIT, never the other way round.
         assertEquals(true, org.openstrap.app.data.Structure.fits(org.openstrap.app.data.Structure.Reps(400, null, 90, 6), 2))
@@ -144,7 +153,7 @@ class StartCopyTest {
             StartCopy.EVERY_TYPING, StartCopy.WARM_UP_NOTE, StartCopy.MIND_STATUS, StartCopy.MIND_OPEN_NOTE, StartCopy.MIND_OPEN_KIND_NOTE,
             StartCopy.MIND_TIME_KIND_NOTE, StartCopy.FREE_PLAY_KIND_NOTE, StartCopy.HALVES_KIND_NOTE, StartCopy.QUARTERS_KIND_NOTE,
             StartCopy.GAMES_TYPING, StartCopy.gamesNote(org.openstrap.app.data.Structure.QUARTERS), StartCopy.planSheet(org.openstrap.app.data.Workouts.Family.Games),
-        ) + StartCopy.PRESETS.flatMap { listOf(it.second, it.third) }
+        ) + StartCopy.PRESETS.flatMap { listOf(it.name, it.note) }
         all.forEach { s -> assertFalse(s, s.any { it in "·;—–" }) }
     }
 

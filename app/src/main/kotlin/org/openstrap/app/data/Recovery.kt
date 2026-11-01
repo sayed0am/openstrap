@@ -224,6 +224,9 @@ object Recovery {
     /** Valid nights of history a baseline looks back over (published windows run 28-60). */
     const val BASELINE_NIGHTS = 60
 
+    /** The max heart rates a tested value may be: anything outside is taken as a typo and left out. */
+    val TESTED_MAX_RANGE = 120..230
+
     enum class Phase { Withheld, Learning, Scored, Calibrated }
 
     fun phase(validNights: Int): Phase = when {
@@ -817,7 +820,7 @@ object Recovery {
      * lowering is not), by at most [MAX_HR_RAISE] bpm.
      */
     fun maxHeartRate(age: Int?, strapMax: Int? = null, observedPeak: Int? = null, tested: Int? = null): Float {
-        if (tested != null && tested in 120..230) return tested.toFloat()
+        if (tested != null && tested in TESTED_MAX_RANGE) return tested.toFloat()
         val estimate = when {
             age != null && age in 10..100 -> 208f - 0.7f * age
             strapMax != null && strapMax in 140..225 -> strapMax.toFloat()
@@ -881,7 +884,7 @@ object Recovery {
      * the strap's value, or the 190 used when there's nothing.
      */
     fun maxHeartRateSource(age: Int?, strapMax: Int? = null, observedPeak: Int? = null, tested: Int? = null): MaxHeartRate.Source = when {
-        tested != null && tested in 120..230 -> MaxHeartRate.Source.Set
+        tested != null && tested in TESTED_MAX_RANGE -> MaxHeartRate.Source.Set
         observedPeak != null && observedPeak > maxHeartRate(age, strapMax) -> MaxHeartRate.Source.Learned
         age != null && age in 10..100 -> MaxHeartRate.Source.Age
         strapMax != null && strapMax in 140..225 -> MaxHeartRate.Source.Strap

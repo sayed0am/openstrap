@@ -23,21 +23,12 @@ object Strength {
             }
             val TIMES = listOf(60L, 90L, 120L, 180L)
             val LEVELS = listOf(null, 100, 110, 120)
-            /** Ready's rest stepper: 15 s at a time, from 30 s to 5 min. */
-            const val STEP_S = 15L
             val RANGE_S = 30L..300L
         }
     }
 
     /** Ready's sets stepper; below its first is open, no plan. */
     val SETS = 1..10
-
-    /** One step of Ready's sets stepper from [sets] by [by]: below 1 is open (null), and open steps up to 1. */
-    fun stepSets(sets: Int?, by: Int): Int? = when {
-        sets == null -> if (by > 0) SETS.first else null
-        sets + by < SETS.first -> null
-        else -> (sets + by).coerceAtMost(SETS.last)
-    }
 
     /** The exercise list's built in lifts (workouts spec 11: a short list plus typed names), after your own. */
     val COMMON_LIFTS = listOf(
@@ -76,14 +67,29 @@ object Strength {
         return if (logged.isEmpty()) null else logged.sumOf { it.reps!! * it.weightKg!!.toDouble() }.toFloat()
     }
 
-    /** The highest heart rate of [readings] (time, bpm) from [from] to [to]; null without any. */
-    fun peak(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? = readings.filter { it.first in from..to }.maxOfOrNull { it.second }
+    /**
+     * The highest heart rate of [readings] (time, bpm, oldest first, as every workout's are) from [from] to [to]; null
+     * without any. Found by a binary search and a scan of just that stretch: it's asked once per set row and round.
+     */
+    fun peak(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? {
+        var lo = 0
+        var hi = readings.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (readings[mid].first < from) lo = mid + 1 else hi = mid
+        }
+        var best: Int? = null
+        var i = lo
+        while (i < readings.size && readings[i].first <= to) {
+            val bpm = readings[i].second
+            if (best == null || bpm > best) best = bpm
+            i++
+        }
+        return best
+    }
 
     /** "60", or "62.5" kg. */
     fun kgText(kg: Float): String = if (kg % 1f == 0f) kg.toInt().toString() else String.format(java.util.Locale.ROOT, "%.1f", kg)
-
-    /** One step of Ready's rest stepper. */
-    fun stepRest(seconds: Long, by: Int): Long = (seconds + by * Rest.STEP_S).coerceIn(Rest.RANGE_S)
 
     /**
      * Whether a rest that began at [restStart] (and may have been extended to [restUntil]) is over at [now]: its time

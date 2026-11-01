@@ -1,6 +1,7 @@
 package org.openstrap.app.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,6 +19,14 @@ class RouteTest {
     @Test
     fun distanceAlongTheEquator() {
         assertEquals(300.0, Route.distance(run(100)), 1.0)
+    }
+
+    @Test
+    fun aMapNeedsTheRouteToGoSomewhere() {
+        // Standing still with the fixes wandering a few metres is a dot, not a route.
+        assertFalse(Route.mappable((0..90).map { east(it.toLong(), (it % 3) * 2.0) }))
+        assertFalse(Route.mappable(listOf(east(0, 0.0))))
+        assertTrue(Route.mappable(run(10)))
     }
 
     @Test
@@ -66,10 +75,8 @@ class RouteTest {
     }
 
     @Test
-    fun paceAndItsFormat() {
+    fun currentPace() {
         assertEquals(333.0, Route.currentPace(run(100))!!, 2.0)
-        assertEquals("5′33″", Route.formatPace(333.0))
-        assertNull(Route.formatPace(null))
     }
 
     /**

@@ -51,6 +51,9 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.data.Structure
+import androidx.compose.ui.unit.Dp
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Arrangement
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
@@ -279,13 +282,33 @@ private val GoalDraftSaver = androidx.compose.runtime.saveable.listSaver<GoalDra
 internal fun locationAvailable(context: Context): Boolean =
     WorkoutLocation.granted(context) && context.getSystemService(LocationManager::class.java)?.isLocationEnabled == true
 
-/** A 44 dp round button on the Control surface with its icon, as on the workout pages' top bars. */
+/**
+ * A round button with its icon, 44 dp on the Control surface as on the workout pages' top bars; a stepper's are 52 dp,
+ * the map's sit on [surface] over the map.
+ */
 @Composable
-internal fun RoundIcon(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+internal fun RoundIcon(
+    icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier,
+    size: Dp = 44.dp, surface: Color = Raised, ink: Color = Color.White, iconSize: Dp = 18.dp,
+) {
     Box(
-        modifier.size(44.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape),
+        modifier.size(size).clip(CircleShape).background(surface).pressClickable(onClick, CircleShape),
         contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, tint = Color.White, modifier = Modifier.size(18.dp)) }
+    ) { Icon(icon, label, tint = ink, modifier = Modifier.size(iconSize)) }
+}
+
+/** Minus, the [value] between, and plus: Ready's goal steppers ([buttonSize] 52 dp) and the log card's. */
+@Composable
+internal fun MinusPlus(
+    less: String, more: String, onLess: () -> Unit, onMore: () -> Unit, modifier: Modifier = Modifier,
+    buttonSize: Dp = 44.dp, gap: Dp = 0.dp, value: @Composable RowScope.() -> Unit,
+) {
+    val iconSize = if (buttonSize > 44.dp) 20.dp else 18.dp
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(gap)) {
+        RoundIcon(AppIcons.Minus, less, onLess, size = buttonSize, iconSize = iconSize)
+        Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, content = value)
+        RoundIcon(AppIcons.Plus, more, onMore, size = buttonSize, iconSize = iconSize)
+    }
 }
 
 /** The strap in one line with its dot, on Choose: "Strap ready, 72 bpm". */

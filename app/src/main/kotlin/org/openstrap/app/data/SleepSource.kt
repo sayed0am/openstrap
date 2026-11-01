@@ -40,6 +40,10 @@ class SleepSource(private val dao: HealthDao) {
         return SleepEdits.clip(dao.sleepStagesOnce(strap), session.start, session.end)
     }
 
+    /** The stages of [r] as shown: the strap's, clipped to the user's times when moved. */
+    suspend fun stagesOnce(r: SleepEdits.Resolved): List<SleepStage> =
+        dao.sleepStagesOnce(r.strap.start).let { if (r.moved) SleepEdits.clip(it, r.start, r.end) else it }
+
     /** The stages of [r] as shown, as they change: the strap's, clipped to the user's times when moved. */
     fun stages(r: SleepEdits.Resolved): Flow<List<SleepStage>> =
         dao.sleepStages(r.strap.start).map { if (r.moved) SleepEdits.clip(it, r.start, r.end) else it }
@@ -92,14 +96,24 @@ class SleepSource(private val dao: HealthDao) {
         return removed
     }
 
+    /**
+     * [strap]'s edit, resolved among the sessions near it as [resolved] resolves it: alone, a session with no edit of
+     * its own would take a neighbour's within [SleepEdits.MATCH_SECONDS], and saving over it would change that one.
+     */
+    suspend fun editOf(strap: SleepSession): org.openstrap.app.data.db.SleepEdit? {
+        val near = dao.sleepSessionsStartingOnce(strap.start - 2 * SleepEdits.MATCH_SECONDS, strap.start + 2 * SleepEdits.MATCH_SECONDS)
+            .filter { it.start != strap.start } + strap
+        return SleepEdits.resolve(near.sortedBy { it.start }, dao.sleepEditsOnce()).first { it.strap.start == strap.start }.edit
+    }
+
     /** The strap's session [edit] resolves to among [edits], when it's still there. */
     private suspend fun strapOf(edit: org.openstrap.app.data.db.SleepEdit, edits: List<org.openstrap.app.data.db.SleepEdit>): SleepEdits.Resolved? {
         val near = dao.sleepSessionsStartingOnce(edit.strapStart - SleepEdits.MATCH_SECONDS, edit.strapStart + SleepEdits.MATCH_SECONDS)
         return SleepEdits.resolve(near, edits).firstOrNull { it.edit == edit }
     }
 
-    /** Moved sessions take their totals from their clipped stages. */
-    private suspend fun shown(resolved: List<SleepEdits.Resolved>): List<SleepSession> = resolved.mapNotNull { r ->
+    /** [resolved] as shown ([sessions]): deleted ones left out, moved ones with their totals from their clipped stages. */
+    suspend fun shown(resolved: List<SleepEdits.Resolved>): List<SleepSession> = resolved.mapNotNull { r ->
         val s = r.shown ?: return@mapNotNull null
         if (!r.moved) s else SleepEdits.restage(s, r.strap, dao.sleepStagesOnce(r.strap.start))
     }
