@@ -432,7 +432,7 @@ private fun AppRoot(
     // The All metrics sheet, from the grid button in the header: over the tab, never a place.
     var allMetricsOpen by rememberSaveable { mutableStateOf(false) }
     val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile) }
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
     })
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val openWorkout by workoutsVm.open.collectAsStateWithLifecycle()
@@ -1453,7 +1453,7 @@ private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.
     val scope = rememberCoroutineScope()
     // The app root's, already made.
     val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile) }
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
     })
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
@@ -1719,14 +1719,10 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
 @Composable
 private fun HeartZonesPage(container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, onBack: () -> Unit) {
     val scope = rememberCoroutineScope()
-    val profile by container.settings.profile.collectAsStateWithLifecycle(null)
     val zones by org.openstrap.app.data.HeartZones.current.collectAsStateWithLifecycle()
-    val max by androidx.compose.runtime.produceState<org.openstrap.app.data.MaxHeartRate?>(null, profile) {
-        val p = profile ?: return@produceState
-        value = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) {
-            org.openstrap.app.data.RecoveryEngine(container.database.healthDao()).maxHeartRateExplained(p)
-        }
-    }
+    val max by container.maxHeartRates.current.collectAsStateWithLifecycle()
+    // Afresh as the page opens, as it always was; a profile change works it out again on its own.
+    LaunchedEffect(Unit) { container.maxHeartRates.now() }
     org.openstrap.app.ui.glow.HeartZonesScreen(
         max, zones, padding,
         onMax = { bpm -> scope.launch { container.settings.setMaxHeartRate(bpm) } },

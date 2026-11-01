@@ -30,7 +30,6 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.widget.WidgetKind
-import kotlin.math.roundToInt
 
 sealed interface WorkoutState {
     data object Idle : WorkoutState
@@ -93,6 +92,8 @@ class WorkoutSession(
     private val dao: HealthDao,
     private val settings: SettingsStore,
     private val strap: StrapController,
+    /** Max heart rate as every zone reads it, read afresh as each workout starts. */
+    private val maxHeartRates: org.openstrap.app.data.MaxHeartRates,
     /** A coaching buzz never plays while a call rings: a motor pattern cuts off the call's buzz (hardware test). */
     private val callRinging: () -> Boolean = { false },
     /** A finished workout was saved or changed, by its start: auto sync writes it to Health Connect. Returns at once. */
@@ -861,7 +862,7 @@ class WorkoutSession(
     }
 
     private suspend fun maxHeartRate() =
-        runCatching { RecoveryEngine(dao).maxHeartRate(settings.profile.first()).roundToInt() }.getOrDefault(DEFAULT_MAX_HR)
+        runCatching { maxHeartRates.now().bpm }.getOrDefault(DEFAULT_MAX_HR)
 
     private var coach = org.openstrap.app.data.Coach(null)
 

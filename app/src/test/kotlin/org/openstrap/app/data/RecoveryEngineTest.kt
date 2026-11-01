@@ -1,5 +1,6 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -11,6 +12,7 @@ import org.openstrap.app.data.settings.UserProfile
 import java.lang.reflect.Proxy
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlin.math.roundToInt
 
 class RecoveryEngineTest {
     private val date = LocalDate.of(2026, 10, 1)
@@ -42,6 +44,24 @@ class RecoveryEngineTest {
         assertEquals(186f, maxHr(dao(effort(3, 188) + effort(10, 186))), 0.01f)
         // A tested value wins over both.
         assertEquals(183f, maxHr(dao(effort(3, 188) + effort(10, 186)), forty.copy(maxHeartRate = 183)), 0.01f)
+    }
+
+    @Test
+    fun sharedMaxHrIsTheWorkoutRule() = runBlocking {
+        // Efforts near today, so the shared one (always as of now) has peaks to learn from.
+        fun near(daysBack: Long, bpm: Int) = (0 until 10).map { i ->
+            HeartRateSample(LocalDate.now().minusDays(daysBack).atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toEpochSecond() + i * 60, bpm)
+        }
+        val d = dao(near(3, 188) + near(10, 186))
+        for (p in listOf(forty, forty.copy(maxHeartRate = 183), forty.copy(maxHeartRate = 250), UserProfile())) {
+            val shared = MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(p))
+            val once = shared.now()
+            assertEquals(RecoveryEngine(d).maxHeartRate(p).roundToInt(), once.bpm)
+            assertEquals(once, kotlinx.coroutines.withTimeout(5_000) { shared.current.first { it != null } })
+        }
+        // A tested value wins and says so; one out of range is ignored.
+        assertEquals(MaxHeartRate(183, MaxHeartRate.Source.Set), MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(forty.copy(maxHeartRate = 183))).now())
+        assertEquals(MaxHeartRate.Source.Learned, MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(forty.copy(maxHeartRate = 250))).now().source)
     }
 
     @Test
