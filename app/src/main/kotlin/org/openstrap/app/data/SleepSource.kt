@@ -84,16 +84,12 @@ class SleepSource(private val dao: HealthDao) {
      */
     suspend fun purgeExpired(now: Long): Int {
         val edits = dao.sleepEditsOnce()
-        var removed = 0
-        for (e in edits.filter { SleepEdits.expired(it, now) }) {
-            strapOf(e, edits)?.let { r ->
-                dao.deleteSleepStagesOf(r.strap.start)
-                dao.deleteSleepSession(r.strap.start)
-                removed++
-            }
-            if (e.moved) dao.upsertSleepEdit(SleepEdits.marker(e))
-        }
-        return removed
+        val expired = edits.filter { SleepEdits.expired(it, now) }
+        val starts = expired.mapNotNull { strapOf(it, edits)?.strap?.start }.distinct()
+        val markers = expired.filter { it.moved }.map { SleepEdits.marker(it) }
+        // One transaction: a kill half way must not leave a session without its stages, or an edit still moved.
+        if (starts.isNotEmpty() || markers.isNotEmpty()) dao.purgeSleepEdits(starts, markers)
+        return starts.size
     }
 
     /**
