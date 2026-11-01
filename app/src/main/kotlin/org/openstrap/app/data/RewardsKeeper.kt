@@ -9,6 +9,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 
@@ -103,6 +104,28 @@ class RewardsKeeper(private val dao: HealthDao, private val settings: SettingsSt
             )
             if (!started) settings.startRewards(historyBadges = badges.isNotEmpty())
         }
+    }
+
+    /**
+     * The merged list as [org.openstrap.app.ui.workout.WorkoutsViewModel.workouts] has it, read once: the strap's
+     * workouts and the phone's ([Workouts.listed]) against the same learned max HR. Without the list's zone seconds,
+     * which no reward reads.
+     */
+    suspend fun listedOnce(): List<WorkoutAnalysis> = withContext(Dispatchers.IO) {
+        val maxHr = RecoveryEngine(dao).maxHeartRate(settings.profile.first()).roundToInt()
+        Workouts.listed(
+            dao.workouts().first(), dao.sportEffects().first(), dao.lastWorkoutHeartRates().first(), dao.appWorkouts().first(),
+            dao.setCounts().first().associate { it.workoutStart to it.sets }, maxHr,
+        )
+    }
+
+    /**
+     * [refresh] without the screen: from [listedOnce] against the weekly goal stored, less the workout starting at
+     * [recordingStart] (the one recording, as the app root leaves it out). The weekly recap runs it before it reads
+     * the weeks, so workouts synced while the app was closed are counted.
+     */
+    suspend fun refreshNow(recordingStart: Long?) {
+        refresh(listedOnce().filter { it.workout.start != recordingStart }, settings.goals.first().workoutsPerWeek)
     }
 
     private companion object {

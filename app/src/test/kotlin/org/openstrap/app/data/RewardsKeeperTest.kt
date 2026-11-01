@@ -78,4 +78,16 @@ class RewardsKeeperTest {
         dao.insertActivity(listOf(minute(start - 3 * 86_400L, 70)))
         assertEquals(370, steps())
     }
+
+    @Test fun `a refresh without the screen counts workouts synced while the app was closed, less the one recording`() = runBlocking {
+        val dao = db.healthDao()
+        val keeper = RewardsKeeper(dao, settings)
+        dao.insertAppWorkouts((0 until 3).map(::workout))
+        assertEquals(0, dao.weekResultsOnce().sumOf { it.count })
+        // The weekly recap's refresh, while the last one is still recording: it waits until that one ends.
+        keeper.refreshNow(recordingStart = workout(2).start)
+        assertEquals(2, dao.weekResultsOnce().sumOf { it.count })
+        keeper.refreshNow(recordingStart = null)
+        assertEquals(3, dao.weekResultsOnce().sumOf { it.count })
+    }
 }
