@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- What the share FileProvider may hand out: only the card written to the cache to share. -->
+<paths>
+    <cache-path name="share" path="share/" />
+</paths>

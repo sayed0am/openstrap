@@ -36,11 +36,9 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
-import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
 import org.openstrap.app.ui.workout.familyColor
@@ -134,20 +132,23 @@ fun GlowWorkoutSummaryScreen(
     }
     BackHandler(onBack = done)
     var info by rememberSaveable { mutableStateOf(false) }
-    val context = LocalContext.current
     val hero = remember(summary, workouts) {
         if (summary == null || a == null) null
         else summaryHero(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, Workouts.usualLoad(workouts.filter { it.workout.start != a.workout.start }.map { it.workout.trainingLoad }))
     }
-    // Share (as text, until the share screen of workouts spec 2.9) and Done stay on the bottom edge; Delete waits at
-    // the end of the page. Nothing to share until the workout has loaded.
+    // Share opens the share screen (workouts spec 2.9) in the summary's place; close comes back here.
+    var sharing by rememberSaveable { mutableStateOf(false) }
+    if (sharing && summary != null && hero != null) {
+        WorkoutShareScreen(summary, hero, rewards?.earned.orEmpty(), liveRoute, workouts, contentPadding, onClose = { sharing = false })
+        return
+    }
+    // Share and Done stay on the bottom edge; Delete waits at the end of the page. Nothing to share until the workout
+    // has loaded.
     WorkoutPage(
         Color.Transparent, contentPadding,
         pinned = {
-            if (a != null && hero != null) SummaryButtons(onShare = {
-                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, shareText(a.sportName, hero))
-                context.startActivity(Intent.createChooser(send, null))
-            }, onDone = done) else WorkoutButton("Done", Color.White, Color.Black, onDone)
+            if (a != null && hero != null) SummaryButtons(onShare = { sharing = true }, onDone = done)
+            else WorkoutButton("Done", Color.White, Color.Black, onDone)
         },
     ) {
         // The sport, then when, with Done beside them (board SummaryRun).
@@ -465,8 +466,3 @@ internal fun TopDone(onDone: () -> Unit) {
         contentAlignment = Alignment.Center,
     ) { Text("Done", color = Color.White, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold), maxLines = 1) }
 }
-
-/** The workout as a line of text to send: the sport, the hero's number and its figures. */
-internal fun shareText(sport: String, hero: SummaryHero): String =
-    "$sport: ${hero.value} ${hero.unit}" + hero.figures.mapNotNull { (v, label) -> v?.let { "$label $it" } }.joinToString(", ").let { if (it.isEmpty()) "" else ". $it" } +
-        ". Recorded with OpenStrap."
