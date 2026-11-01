@@ -14,6 +14,8 @@ import kotlin.coroutines.cancellation.CancellationException
  * is a timeout, not a cancellation, so it comes back as a failure. Rethrowing every [CancellationException] would let
  * a timeout escape as if the caller were cancelled and leave its state where it was (audit C1 and C2).
  */
+// Catching everything is the point: it is runCatching with cancellation kept.
+@Suppress("TooGenericExceptionCaught")
 suspend inline fun <T> catching(block: () -> T): Result<T> =
     try {
         Result.success(block())

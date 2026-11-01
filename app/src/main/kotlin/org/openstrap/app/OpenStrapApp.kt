@@ -27,6 +27,8 @@ class AppContainer(val app: Application) {
      * the thread's default handler, which kills the process, so this handler logs it instead (audit C3). Classes get it
      * passed in rather than building their own.
      */
+    // This is where the dispatcher is injected from, so there is nothing to inject it into.
+    @Suppress("InjectDispatcher")
     val appScope = CoroutineScope(
         SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.e("OpenStrap", "app scope: uncaught $e", e) },
     )
