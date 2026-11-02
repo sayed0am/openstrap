@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -36,9 +38,6 @@ import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 /*
  * Recovery's and Charge's details (spec 6.1) in the same template as a metric's, and the way to the Sleep tab's
@@ -172,9 +171,9 @@ private fun RecoveryDetail(
                     val values = week.map { it.second?.toFloat() }
                     // TODO(step 6): your normal as a band, once the app keeps a normal of the score; every day stays dim until then.
                     NormalTrend(
-                        values, DetailCopy.levels(values, null), color, labels = week.map { shortDay(it.first) },
+                        values, DetailCopy.levels(values, null), color, labels = week.map { weekdayShort(it.first) },
                         onScrub = { i ->
-                            scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(it.toString(), d.format(DateTimeFormatter.ofPattern("EEE d MMM")), TodayCopy.recoveryWord(it, false)) } }
+                            scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(it.toString(), DayWords.short(d), TodayCopy.recoveryWord(it, false)) } }
                         },
                     )
                 }
@@ -193,7 +192,6 @@ private fun RecoveryDetail(
 /** A contributor's reading as the engine words it ("52 ms, -8% vs usual"). */
 private fun readable(detail: String): String? = detail.takeIf { it.isNotBlank() }
 
-private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
 /* ----------------------------------------------- Charge --------------------------------------------- */
 
@@ -231,7 +229,7 @@ private fun ChargeDetail(
         else -> DetailHeadline(
             now.toString(),
             when {
-                stale -> "at ${clockAt(lastAt)}"
+                stale -> "at ${clock(lastAt)}"
                 isToday -> "now"
                 else -> "at the end of the day"
             },
@@ -260,7 +258,7 @@ private fun ChargeDetail(
                 GlowLineChart(
                     values, height = if (hours < SHORT_CURVE_HOURS) 110.dp else 200.dp, labels = HOURS, color = color, showAverage = false, yRange = 0f..100f,
                     onScrub = { i ->
-                        scrub = i?.let { values[it] }?.let { v -> DetailHeadline(chargeShown(v).toString(), "at ${clockAt(day.first + i * step)}", Narrative.chargeHeadline(chargeShown(v))) }
+                        scrub = i?.let { values[it] }?.let { v -> DetailHeadline(chargeShown(v).toString(), "at ${clock(day.first + i * step)}", Narrative.chargeHeadline(chargeShown(v))) }
                     },
                 )
                 // A figure the day doesn't have (no waking without a night's sleep) is left out, the others share the row.
@@ -296,10 +294,6 @@ private fun ChargeDetail(
     )
 }
 
-/** Averages charge samples into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun bucket(points: List<Recovery.ChargePoint>, range: LongRange, seconds: Long): List<Float?> =
-    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.t }, { it.value })
-
 /* ---------------------------------------------- Related --------------------------------------------- */
 
 /**
@@ -311,7 +305,7 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
     val ready = r?.readiness
     // Before the first night Charge is only the simulation's starting guess: a dash, as on the Recovery tab's battery.
     val charge = r?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)
-    val chargeWaiting = if (r?.charge?.anchored == false) org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT else "Nothing for this day"
+    val chargeWaiting = if (r?.charge?.anchored == false) org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT else NO_VALUE
     val asleep = state.asleepSeconds
     val metrics = if (score == Score.Recovery) listOf(Metric.Hrv, Metric.RestingHr) else listOf(Metric.Stress)
     ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
@@ -320,11 +314,11 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
             onClick = { onOpen(Detail.OfScore(Score.Charge)) }, divider = false, icon = Score.Charge.rowIcon(),
         ) else ListRow(
             "Recovery", MetricColors.readiness, ready?.score?.toString(),
-            ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: "Nothing for this day",
+            ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE,
             onClick = { onOpen(Detail.OfScore(Score.Recovery)) }, divider = false, icon = Score.Recovery.rowIcon(),
         )
         ListRow(
-            "Last night", MetricColors.sleepDeep, asleep?.let(::clockDuration), if (asleep == null) "No sleep recorded" else "Asleep",
+            "Last night", MetricColors.sleepDeep, asleep?.let { Units.duration(it) }, if (asleep == null) "No sleep recorded" else "Asleep",
             onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, icon = Score.Sleep.rowIcon(),
         )
         metrics.forEach { m ->
@@ -332,7 +326,7 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
             val v = dayValue(m, state)
             val status = History.status(v, normal)
             ListRow(
-                m.title, colorOf(m), v?.let(m::format), if (v == null) "Nothing for this day" else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+                m.title, colorOf(m), v?.let(m::format), if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
                 offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, icon = m.rowIcon(),
             )
         }

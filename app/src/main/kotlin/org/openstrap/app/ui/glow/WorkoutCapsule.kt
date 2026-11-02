@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -56,7 +57,7 @@ import androidx.compose.ui.text.style.TextOverflow
 internal fun glanceColor(g: LiveGlance): Color = when (g.tint) {
     GlanceTint.Zone -> g.zone?.let { ZONE_COLORS[it] } ?: PausedColor
     GlanceTint.Work -> MetricColors.heart
-    GlanceTint.Rest -> ZONE_COLORS[1]
+    GlanceTint.Rest -> Color(WorkoutColors.REST_GREEN)
     GlanceTint.Mind -> MetricColors.evening
     GlanceTint.Paused -> PausedColor
     GlanceTint.Asking -> MetricColors.warn

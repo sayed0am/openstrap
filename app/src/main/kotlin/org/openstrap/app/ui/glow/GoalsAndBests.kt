@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Formatters
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import org.openstrap.app.data.Rewards
@@ -99,6 +100,9 @@ private fun GoalBar(count: Int, goal: Int, modifier: Modifier = Modifier) {
     }
 }
 
+/** A week's distance shows from a tenth of a km, the first the figure can write. */
+private const val MIN_WEEK_METERS = 100f
+
 /**
  * The share card for the week from [first]: the count against the goal, its days, the hours, km and active kcal, and
  * chips for the weeks in a row and the week's first best.
@@ -112,12 +116,12 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
     val to = first.plusDays(7).atStartOfDay(zone).toEpochSecond()
     val mine = view.all.filter { it.startedByYou && it.shownStart in from until to }
     val seconds = mine.sumOf { it.activeSeconds }
-    val km = mine.sumOf { (it.meters ?: 0f).toDouble() } / 1000
+    val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
     val kcal = Math.round(mine.mapNotNull { it.activeKcal }.sum())
     val totals = if (mine.isEmpty()) emptyList() else listOfNotNull(
-        WeekFigure(AppIcons.Timer, "%d:%02d".format(seconds / 3600, seconds / 60 % 60), null, "Hours"),
-        km.takeIf { it >= 0.1 }?.let { WeekFigure(AppIcons.Route01, String.format(Locale.ROOT, "%.1f", it), "km", "Distance") },
-        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, "%,d".format(it), null, "Active kcal") },
+        WeekFigure(AppIcons.Timer, Units.clockDuration(seconds), null, "Hours"),
+        meters.takeIf { it >= MIN_WEEK_METERS }?.let { WeekFigure(AppIcons.Route01, Units.km(it, Units.Precision.Day), "km", "Distance") },
+        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, Units.count(it), null, "Active kcal") },
     )
     val run = Rewards.inARow(view.weeks, first)
     val best = view.bests.firstOrNull { it.date in from until to }
@@ -125,9 +129,8 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
         if (week?.met == true && run > 0) StoryChip("$run ${if (run == 1) "week" else "weeks"} in a row", best = false, met = true) else null,
         best?.let { StoryChip("${RewardsCopy.bestTitle(it.kind)}, ${RewardsCopy.bestValue(it.kind, it.value)}", best = true, met = false) },
     )
-    val short = DateTimeFormatter.ofPattern("d MMM", Locale.getDefault())
     return StoryCard.Week(
-        "${first.format(short)} to ${first.plusDays(6).format(short)}", "$count",
+        "${dayMonth(first)} to ${dayMonth(first.plusDays(6))}", "$count",
         "${if (count == 1) "workout" else "workouts"}, goal $goal", weekDots(view, first), totals, chips,
     )
 }
@@ -221,7 +224,7 @@ private fun order(kind: String): Int = Rewards.Kind.fastestMeters(kind)
 /** "30 Oct", or "30 Oct 2025" in another year. */
 private fun shortDate(epoch: Long): String {
     val d = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).toLocalDate()
-    return d.format(DateTimeFormatter.ofPattern(if (d.year == LocalDate.now().year) "d MMM" else "d MMM yyyy", Locale.getDefault()))
+    return if (d.year == LocalDate.now().year) dayMonth(d) else d.format(Formatters.of("d MMM yyyy", Locale.getDefault()))
 }
 
 /** Every badge by group: earned ones in colour with their date, locked ones dim with what they need. */
@@ -292,7 +295,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
                 highlights.forEachIndexed { i, b ->
                     ListRow(
                         "${RewardsCopy.bestTitle(b.kind)}, ${RewardsCopy.bestValue(b.kind, b.value)}", BestColor,
-                        Instant.ofEpochSecond(b.date).atZone(zone).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()), null,
+                        weekdayShort(Instant.ofEpochSecond(b.date).atZone(zone).toLocalDate()), null,
                         divider = i > 0, icon = AppIcons.FlagCheckered,
                     )
                 }
@@ -301,15 +304,15 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         item {
             val mine = view.all.filter { it.startedByYou && it.shownStart in from until to }
             val seconds = mine.sumOf { it.activeSeconds }
-            val km = mine.sumOf { (it.meters ?: 0f).toDouble() } / 1000
+            val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
             EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
                 EdgeTitle("In all", "${mine.size} ${if (mine.size == 1) "workout" else "workouts"}")
                 SummaryFigures(
                     listOf(
-                        "%d:%02d".format(seconds / 3600, seconds / 60 % 60) to "Hours",
-                        String.format(Locale.ROOT, "%.1f", km) to "km",
-                        "%,d".format(Math.round(kcal)) to "Active kcal",
+                        Units.clockDuration(seconds) to "Hours",
+                        Units.km(meters, Units.Precision.Day) to "km",
+                        Units.count(Math.round(kcal)) to "Active kcal",
                     ),
                     Modifier.padding(top = 12.dp),
                 )

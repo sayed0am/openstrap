@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -62,17 +63,17 @@ internal fun termDetail(t: Healthspan.Term, age: Int): String {
                 (if (m < Healthspan.STRENGTH_TARGET_MINUTES) ", aim for ${Healthspan.STRENGTH_TARGET_MINUTES}" else "")
         }
         Healthspan.Habit.Vo2max -> "${v.roundToInt()} ml/kg/min, typical at $age: ${ref?.roundToInt()}"
-        Healthspan.Habit.Steps -> "${"%,d".format(v.roundToInt())} a day, typical: ${"%,d".format(((ref ?: 0f) / 100).roundToInt() * 100)}" +
+        Healthspan.Habit.Steps -> "${Units.count(v.roundToInt())} a day, typical: ${Units.count(((ref ?: 0f) / 100).roundToInt() * 100)}" +
             (if (v < 8000f) ", aim for 8,000–10,000" else "")
         Healthspan.Habit.Regularity -> "${v.roundToInt()}, typical: ${ref?.roundToInt()}"
         Healthspan.Habit.RestingHr -> "${v.roundToInt()} bpm asleep, typical: about ${ref?.roundToInt()}"
-        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> "${m / 60} h ${m % 60} m, counts only below 6 h 30 m" }
+        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> "${Units.duration(m * 60L)}, counts only below ${Units.duration(Healthspan.SLEEP_COUNTS_BELOW_MINUTES * 60L)}" }
     }
 }
 
 /** "Sunday 22 Nov" for local midnight [day] (epoch seconds), with no-break spaces so it never wraps inside the date. */
 internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-    .format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMM")).replace(' ', '\u00A0')
+    .format(org.openstrap.app.presentation.Formatters.of("EEEE d MMM", java.util.Locale.getDefault())).replace(' ', '\u00A0')
 
 /** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
 internal fun profileReminder(missing: List<String>): String =

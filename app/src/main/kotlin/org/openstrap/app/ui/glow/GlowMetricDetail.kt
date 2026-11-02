@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.DayWords
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -71,18 +74,12 @@ import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
-import java.util.Locale
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
 
-internal fun dayName(date: LocalDate): String = when (date) {
-    LocalDate.now() -> "Today"
-    LocalDate.now().minusDays(1) -> "Yesterday"
-    else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM"))
-}
+/** [date] as a heading: "Today", "Yesterday", the weekday within the week, then the date ([DayWords.relative]). */
+internal fun dayName(date: LocalDate): String = DayWords.relative(date, LocalDate.now())
 
 /** A row of choices on a faint pill; the chosen one is a soft white pill. */
 @Composable
@@ -469,7 +466,7 @@ fun GlowMetricDetailScreen(
     }
     val label = if (night) SleepCopy.nightLabel(metric, range) else DetailCopy.valueLabel(metric, range, live = live != null, today = isToday)
     val headline = when {
-        value != null -> DetailHeadline(metric.format(value), label, DetailCopy.statusWord(status))
+        value != null -> DetailHeadline(metric.dotValue(value), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
         night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
         range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
@@ -506,11 +503,11 @@ fun GlowMetricDetailScreen(
                 if (values.all { it == null }) DetailEmpty("No ${inSentence(metric.title)} in the last 7 nights yet.")
                 else Column {
                     NormalTrend(
-                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { shortDay(it.first) },
+                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { weekdayShort(it.first) },
                         band = nightNormal?.let { it.low..it.high }, bandLabel = nightNormal?.let { DetailCopy.bandLabel(it, metric::format) },
                         onScrub = { i ->
                             scrub = i?.let { nightWeek[it] }?.let { (d, v) ->
-                                v?.let { DetailHeadline(metric.format(it), "${metric.unit}, ${d.format(DateTimeFormatter.ofPattern("EEE d MMM"))}", DetailCopy.statusWord(History.status(it, nightNormal))) }
+                                v?.let { DetailHeadline(metric.dotValue(it), "${metric.unit}, ${DayWords.short(d)}", DetailCopy.statusWord(History.status(it, nightNormal))) }
                             }
                         },
                     )
@@ -574,7 +571,6 @@ fun GlowMetricDetailScreen(
     }
 }
 
-private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
 /**
  * The night's readings of [metric] while asleep as a line to scrub, from falling asleep to waking ([SleepCopy.nightSeries]);
@@ -590,21 +586,17 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
     }
     val window = session.start..session.end
     // Heart rate and breathing come every few minutes in sleep, the rest more sparsely.
-    val bucket = if (metric == Metric.HeartRate || metric == Metric.Breathing) 5 * 60L else 15 * 60L
-    val values = remember(series, window) { evenly(series, window, bucket) }
+    val slot = if (metric == Metric.HeartRate || metric == Metric.Breathing) 5 * 60L else 15 * 60L
+    val values = remember(series, window) { bucket(series, window, slot) }
     Column(Modifier.padding(top = 8.dp)) {
         GlowLineChart(
             values, height = 220.dp, labels = listOf(clock(window.first), clock(window.last)), color = color, showAverage = false, format = metric::format,
             onScrub = { i ->
-                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(window.first + i * slot)}".trim(), null) })
             },
         )
     }
 }
-
-/** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
-    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })
 
 /** A name inside a sentence: lower case, unless it's an acronym like HRV. */
 internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
@@ -635,21 +627,21 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
             // Holding an hour puts its steps in the headline.
             Metric.Steps -> GlowBars(
                 state.hourlySteps, height = 200.dp, labels = HOURS, accent = color,
-                onScrub = { h -> onScrub(h?.let { DetailHeadline("%,d".format(Math.round(state.hourlySteps[it])), "steps, %02d:00 to %02d:00".format(it, (it + 1) % 24), null) }) },
+                onScrub = { h -> onScrub(h?.let { DetailHeadline(dotFormat("%,d", Math.round(state.hourlySteps[it])), "steps, ${TimeOfDay.minutes(it * 60)} to ${TimeOfDay.minutes((it + 1) * 60)}", null) }) },
             )
             Metric.RestingHr -> if (state.restingTrend.any { it.value != null }) {
                 GlowTrend(state.restingTrend.map { GlowDay(it.label, it.value) }, height = 200.dp)
             }
             else -> if (series.isNotEmpty()) {
                 // Readings come every minute for heart rate, sparser for the rest.
-                val bucket = if (metric == Metric.HeartRate) 5 * 60L else 15 * 60L
-                val values = remember(series, window) { evenly(series, window, bucket) }
+                val slot = if (metric == Metric.HeartRate) 5 * 60L else 15 * 60L
+                val values = remember(series, window) { bucket(series, window, slot) }
                 val labels = if (window == day) HOURS else listOf(clock(window.first), clock(window.last))
                 val band = if (metric == Metric.HeartRate) normalOf(Metric.RestingHr)?.let { it.low..it.high } else null
                 GlowLineChart(
                     values, height = 220.dp, labels = labels, color = color, showAverage = false, band = band, format = metric::format,
                     onScrub = { i ->
-                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(window.first + i * slot)}".trim(), null) })
                     },
                 )
             }
@@ -668,15 +660,14 @@ private fun HistoryChart(
 ) {
     val (values, labels, dates) = remember(stats, range, start, end) { series(range, stats, start, end) }
     val levels = remember(values, normal) { DetailCopy.levels(values, normal) }
-    val day = DateTimeFormatter.ofPattern("EEE d MMM")
     NormalTrend(
         values, levels, color, labels = labels,
         band = normal?.let { it.low..it.high }, bandLabel = normal?.let { DetailCopy.bandLabel(it, metric::format) },
         onScrub = { i ->
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
-                val label = if (range == Range.Year) "week of ${d.format(DateTimeFormatter.ofPattern("d MMM"))}" else d.format(day)
-                DetailHeadline(metric.format(v), listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", "), DetailCopy.statusWord(History.status(v, normal)))
+                val label = if (range == Range.Year) "week of ${dayMonth(d)}" else DayWords.short(d)
+                DetailHeadline(metric.dotValue(v), listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", "), DetailCopy.statusWord(History.status(v, normal)))
             })
         },
     )
@@ -700,9 +691,9 @@ private fun series(range: Range, stats: List<DayStat>, start: LocalDate, end: Lo
         byDate = inRange.associate { it.date to it.value }
     }
     val labels = when (range) {
-        Range.Week -> dates.map { it.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dates[((dates.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("d MMM")) }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dates[((dates.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("MMM")) }
+        Range.Week -> dates.map { weekdayShort(it) }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(dates[((dates.size - 1) * it).toInt()]) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { monthShort(dates[((dates.size - 1) * it).toInt()]) }
     }
     return Triple(dates.map { byDate[it] }, labels, dates)
 }
@@ -718,7 +709,7 @@ private fun RelatedList(related: List<Metric>, state: DayUiState, history: Daily
             val score = state.sleep?.score
             ListRow(
                 org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: "Nothing for this night",
+                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
                 onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
                 icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
             )
@@ -729,7 +720,7 @@ private fun RelatedList(related: List<Metric>, state: DayUiState, history: Daily
             val status = if (m == Metric.HeartRate) null else History.status(v, normal)
             ListRow(
                 m.title, colorOf(m), v?.let { m.format(it) },
-                if (v == null) "Nothing for this day" else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+                if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
                 offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = i > 0 || sleepRow,
                 icon = m.rowIcon(),
             )

@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow.live
 
+import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -74,6 +75,7 @@ import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.heroStyle
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.WorkoutCopy
@@ -81,7 +83,7 @@ import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.strengthMoment
 
 /** Strength's rest colour, the green the floating bar and the hero rest in too. */
-private val RestGreen = ZONE_COLORS[1]
+private val RestGreen = Color(WorkoutColors.REST_GREEN)
 
 /**
  * Strength (workouts spec 2.4, boards StrengthSet, StrengthLog and StrengthRest), with the total small on top.
@@ -179,7 +181,7 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: () -> Long,
                 ExercisePill(r.exercise, onName)
             }
             Column(Modifier.fillMaxWidth().padding(top = 34.dp, bottom = 26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                DotClock({ workoutClock(seconds()) }, DotSize.Live)
+                DotClock({ dotClock(seconds()) }, DotSize.Live)
                 Spacer(Modifier.height(14.dp))
                 Text("in this set", color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
             }
@@ -200,9 +202,9 @@ private fun CompactCard(
     color: Color, onName: () -> Unit,
 ) {
     val (title, clock) = when {
-        r.inSet -> WorkoutCopy.setOf(moment.setNumber, r.workout.setsTarget) to { workoutClock(now().setSeconds) }
+        r.inSet -> WorkoutCopy.setOf(moment.setNumber, r.workout.setsTarget) to { dotClock(now().setSeconds) }
         r.resting -> "Rest after " + WorkoutCopy.setOf(moment.done, r.workout.setsTarget).lowercase() to
-            { workoutClock((now().restLeft ?: 0).coerceAtLeast(0)) }
+            { dotClock((now().restLeft ?: 0).coerceAtLeast(0)) }
         else -> (if (moment.setNumber == 1) "Ready for set 1" else "Rest over") to null
     }
     EdgeCard(color, Modifier.fillMaxWidth()) {
@@ -278,7 +280,7 @@ private fun RestRing(left: () -> Long, total: Long) {
             drawArc(RestGreen, -90f, sweep, false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            DotClock({ workoutClock(left()) }, DotSize.Detail)
+            DotClock({ dotClock(left()) }, DotSize.Detail)
             Spacer(Modifier.height(10.dp))
             Text("left", color = Color.White.copy(alpha = 0.75f), style = GlowType.body)
         }

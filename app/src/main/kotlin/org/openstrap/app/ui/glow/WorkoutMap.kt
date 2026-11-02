@@ -199,7 +199,7 @@ private fun geoJson(stretches: List<Pair<List<Route.Point>, Int>>): String = bui
     append("""{"type":"FeatureCollection","features":[""")
     stretches.forEachIndexed { i, (points, zone) ->
         if (i > 0) append(',')
-        val color = if (zone in ZONE_COLORS.indices) ZONE_COLORS[zone] else Color(0xFF9AA0B4)
+        val color = if (zone in ZONE_COLORS.indices) ZONE_COLORS[zone] else PausedColor
         val hex = String.format(Locale.ROOT, "#%06X", color.toArgb() and 0xFFFFFF)
         append("""{"type":"Feature","properties":{"color":"$hex"},"geometry":{"type":"LineString","coordinates":[""")
         append(points.joinToString(",") { "[${coord(it)}]" })

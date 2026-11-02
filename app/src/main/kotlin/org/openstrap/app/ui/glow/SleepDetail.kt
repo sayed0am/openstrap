@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -69,8 +72,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
 
 /*
@@ -78,11 +79,6 @@ import java.util.Locale
  * Sleep regularity over the week, and the day's naps. They switch among themselves. Everything the Sleep tab let go
  * of in step 5 is here: what shaped the score, the night's heart rate and breathing, and each nap's heart rate.
  */
-
-
-private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
-
-private val DAY = DateTimeFormatter.ofPattern("EEE d MMM")
 
 /** The days of the strip with a main sleep: the nights the day loads, and later days with breathing rate (measured in sleep). */
 @Composable
@@ -186,7 +182,7 @@ internal fun SleepScoreDetail(
                             else if (state.sleepStages.isNotEmpty()) GlowSleepStages(state.sleepStages, 150.dp)
                             state.sleepBreakdown?.let { StageBars(it, Modifier.padding(top = 18.dp)) }
                             DetailFigures(
-                                listOf(clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE, clockDuration(asleep) to SleepCopy.ASLEEP),
+                                listOf(clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE, Units.duration(asleep) to SleepCopy.ASLEEP),
                                 Modifier.padding(top = 20.dp),
                             )
                             if (detected != null) SleepEditActions(
@@ -221,10 +217,10 @@ internal fun SleepScoreDetail(
                     else Column {
                         val values = week.map { it.second }
                         NormalTrend(
-                            values, DetailCopy.levels(values, normal), color, labels = week.map { shortDay(it.first) },
+                            values, DetailCopy.levels(values, normal), color, labels = week.map { weekdayShort(it.first) },
                             band = normal?.let { it.low..it.high }, bandLabel = normal?.let { DetailCopy.bandLabel(it) { v -> Math.round(v).toString() } },
                             onScrub = { i ->
-                                scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(Math.round(it).toString(), d.format(DAY), TabCopy.sleepScoreWord(Math.round(it))) } }
+                                scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(Math.round(it).toString(), DayWords.short(d), TabCopy.sleepScoreWord(Math.round(it))) } }
                             },
                         )
                         if (normal == null) Caption(DetailCopy.learningNormal(before.size, nightly = true))
@@ -412,7 +408,7 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
             ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, "bpm") { hrAt = it; onScrub(it) }
         }
         if (breath.isNotEmpty()) {
-            ChartTitle("Breathing rate", "Average %.1f br/min".format(breath.map { it.y }.average()), scrubbed = breathAt)
+            ChartTitle("Breathing rate", String.format(java.util.Locale.getDefault(), "Average %.1f br/min", breath.map { it.y }.average()), scrubbed = breathAt)
             ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, "br/min", decimals = 1) { breathAt = it; onScrub(it) }
         }
     }
@@ -427,18 +423,14 @@ private fun ScrubLine(
     onScrub: (DetailHeadline?) -> Unit,
 ) {
     val step = 5 * 60L
-    val values = remember(points, window) { evenly(points, window, step) }
+    val values = remember(points, window) { bucket(points, window, step) }
     val length = (window.last - window.first).coerceAtLeast(1).toFloat()
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
         span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length }, spanColor = spanColor,
-        onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline("%.${decimals}f".format(v), "$unit at ${clock(window.first + i * step)}", null) }) },
+        onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(dotFormat("%.${decimals}f", v), "$unit at ${clock(window.first + i * step)}", null) }) },
     )
 }
-
-/** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
-    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })
 
 /* ---------------------------------------------- Regularity ------------------------------------------ */
 
@@ -566,7 +558,7 @@ internal fun NapsDetail(
                                     val figures = listOf(
                                         org.openstrap.app.data.db.SleepStage.DEEP, org.openstrap.app.data.db.SleepStage.REM,
                                         org.openstrap.app.data.db.SleepStage.LIGHT, org.openstrap.app.data.db.SleepStage.AWAKE,
-                                    ).mapNotNull { st -> b.byStage[st]?.takeIf { it > 0 }?.let { clockDuration(it) to SLEEP_NAMES[st].orEmpty() } }
+                                    ).mapNotNull { st -> b.byStage[st]?.takeIf { it > 0 }?.let { Units.duration(it) to SLEEP_NAMES[st].orEmpty() } }
                                     if (figures.isNotEmpty()) DetailFigures(figures, Modifier.padding(top = 14.dp))
                                 }
                             }
@@ -698,7 +690,7 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
     val rows = buildList<@Composable (Boolean) -> Unit> {
         if (current != Score.Sleep) add { divider ->
             ListRow(
-                Score.Sleep.title, MetricColors.sleepDeep, score?.toString(), score?.let(TabCopy::sleepScoreWord) ?: "Nothing for this night",
+                Score.Sleep.title, MetricColors.sleepDeep, score?.toString(), score?.let(TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
                 onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, divider = divider, icon = Score.Sleep.rowIcon(),
             )
         }
@@ -710,7 +702,7 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
         }
         if (current != Score.Naps) add { divider ->
             ListRow(
-                Score.Naps.title, MetricColors.sleepDeep, naps.takeIf { it.isNotEmpty() }?.let { n -> clockDuration(n.sumOf { it.end - it.start }) },
+                Score.Naps.title, MetricColors.sleepDeep, naps.takeIf { it.isNotEmpty() }?.let { n -> Units.duration(n.sumOf { it.end - it.start }) },
                 if (naps.isEmpty()) "None that day" else TabCopy.naps(naps.size, clock(naps.minOf { it.start })),
                 onClick = { onOpen(Detail.OfScore(Score.Naps)) }, divider = divider, icon = Score.Naps.rowIcon(),
             )
@@ -718,7 +710,7 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
         add { divider ->
             ListRow(
                 Score.Recovery.title, MetricColors.readiness, ready?.score?.toString(),
-                ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: "Nothing for this day",
+                ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE,
                 onClick = { onOpen(Detail.OfScore(Score.Recovery)) }, divider = divider, icon = Score.Recovery.rowIcon(),
             )
         }

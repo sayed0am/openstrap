@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.runtime.LaunchedEffect
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.tween
@@ -84,8 +86,8 @@ import java.time.ZoneId
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
-/** A paused workout, or one with no reading yet, is a cool grey rather than a zone. */
-internal val PausedColor = Color(0xFF9AA0B4)
+/** A paused workout, or one with no reading yet, is a cool grey rather than a zone, the notification's grey. */
+internal val PausedColor = Color(WorkoutColors.PAUSED_GREY)
 
 /** The Control surface (spec 2.2): round buttons, chips, pills, tiles and fields on the workout pages. */
 internal val Raised = ControlSurface
@@ -103,9 +105,11 @@ internal fun zoneColor(bpm: Int?, maxHr: Int): Color = WorkoutRecorder.liveZone(
 fun workoutColor(r: WorkoutState.Recording, liveHeartRate: Int?, connected: Boolean): Color =
     if (r.paused) PausedColor else zoneColor(liveHeartRate.takeIf { connected }, r.maxHeartRate)
 
-/** "12:34", or "1:02:03" past the hour. */
-internal fun workoutClock(seconds: Long): String =
-    if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60) else "%d:%02d".format(seconds / 60, seconds % 60)
+/** "12:34", or "1:02:03" past the hour, in the phone's digits. Text drawn in dots passes [Units.DOT_LOCALE]. */
+internal fun workoutClock(seconds: Long, locale: java.util.Locale = java.util.Locale.getDefault()): String = Units.workoutClock(seconds, locale)
+
+/** [workoutClock] for the dot font, whose digits are ASCII only. */
+internal fun dotClock(seconds: Long): String = Units.workoutClock(seconds, Units.DOT_LOCALE)
 
 /** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
 // Collected, so it reads again when the zones are moved on the Heart rate zones page.
@@ -407,7 +411,10 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
     }
 }
 
-/** "5.21" kilometres, or "820 m" under one. */
+/**
+ * "5.21" kilometres, or "820 m" under one. Nothing in ui/glow uses it any more: it stays for the ui/workout copy and
+ * the notification until they move to [Units.distance], then goes.
+ */
 internal fun km(meters: Float): String = if (meters < 1000) "${meters.toInt()} m" else String.format(java.util.Locale.ROOT, "%.2f", meters / 1000)
 
 /* ---------------------------------------------- Summary ---------------------------------------------- */

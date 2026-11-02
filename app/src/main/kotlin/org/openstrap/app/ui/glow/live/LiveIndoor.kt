@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow.live
 
+import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -21,7 +22,6 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
-import org.openstrap.app.ui.workout.Glance
 import org.openstrap.app.ui.workout.ZONE_COLORS
 
 /**
@@ -52,9 +52,10 @@ internal fun LiveIndoorScreen(
     val active = activeSecondsState(r)
     val figures = listOfNotNull(
         // "2.14 km from steps", or metres under a kilometre.
-        r.workout.distanceMeters?.takeIf { it >= 10 }?.let { m ->
-            (if (m >= 1000) Glance.kmFigure(m) else "${m.toInt()}") to
-                (if (m >= 1000) "km" else "m") + if (r.workout.distanceFromSteps) " from steps" else ""
+        r.workout.distanceMeters?.takeIf { it >= Units.SHOWN_FROM_METERS }?.let { m ->
+            val km = m >= Units.METERS_PER_KM
+            (if (km) Units.km(m, Units.Precision.Workout) else Units.count(m.toLong())) to
+                (if (km) "km" else "m") + if (r.workout.distanceFromSteps) " from steps" else ""
         },
         stats?.average?.toString() to "Avg bpm",
         kcal?.active?.toInt()?.toString() to "Active kcal",

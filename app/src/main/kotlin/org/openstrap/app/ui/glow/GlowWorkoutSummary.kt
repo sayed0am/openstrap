@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -261,7 +262,7 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
             GlowHeader(
-                "Heart rate drop", trailing = "Since ${clockAt(a.end)}",
+                "Heart rate drop", trailing = "Since ${clock(a.end)}",
                 trailingContent = { Spacer(Modifier.width(10.dp)); RoundButton(AppIcons.Info, "About the heart rate drop", onInfo, size = 32.dp) },
             )
             HeroSentence(line.text)
@@ -398,7 +399,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
     when {
         rows.isNotEmpty() || laps.isNotEmpty() -> ListPanel(
             title = if (rows.isNotEmpty()) "Splits" else "Laps",
-            note = if (rows.isNotEmpty()) fastest?.let { "Fastest: ${rows[it].name.lowercase()}" } ?: summary.distanceMeters?.let { km(it) + if (it >= 1000) " km" else "" } else "${laps.size}",
+            note = if (rows.isNotEmpty()) fastest?.let { "Fastest: ${rows[it].name.lowercase()}" } ?: summary.distanceMeters?.let { Units.distance(it, Units.Precision.Workout) } else "${laps.size}",
         ) {
             if (markFastest) SplitBars(rows, fastest) else rows.forEachIndexed { i, r ->
                 ListRow(

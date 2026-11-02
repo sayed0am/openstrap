@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.ui.glow.draw.EdgeSurface
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,10 +47,8 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -99,20 +98,13 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
     val bpm = liveHeartRate.takeIf { hero.live }
     val light = if (bpm != null) 1f else 0.4f
     Row(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(HeartBase)
+        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
             .drawBehind {
                 // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
-                val ry = size.height * 1.1f
-                val c = Offset(size.width / 2, size.height * 1.25f)
-                scale(size.width * 1.2f / ry, 1f, c) {
-                    drawCircle(
-                        Brush.radialGradient(
-                            0f to color.copy(alpha = 0.7f * light), 0.5f to color.copy(alpha = 0.18f * light),
-                            1f to Color.Transparent, center = c, radius = ry,
-                        ),
-                        ry, c,
-                    )
-                }
+                drawCardLight(
+                    color, Offset(size.width / 2, size.height * 1.25f), size.width * 1.2f, size.height * 1.1f,
+                    0f to 0.7f * light, 0.5f to 0.18f * light,
+                )
             }
             .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)
             .padding(horizontal = 20.dp, vertical = 18.dp),
@@ -128,9 +120,6 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
         }
     }
 }
-
-/** The heart card's dark base under its light. */
-private val HeartBase = org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /**
  * Where you are and the switch rows, on one quiet panel. For a sport with an indoor side ([sides]), its title is the
@@ -492,7 +481,7 @@ private val TextFieldValuesSaver = androidx.compose.runtime.saveable.listSaver<L
 )
 
 /** The caret and underline of a number being typed. */
-private val TypingLime = Color(0xFFC3F53C)
+private val TypingLime = MetricColors.steps
 
 /** [text] with all of it selected, so the first key typed replaces it. */
 private fun selected(text: String) = TextFieldValue(text, TextRange(0, text.length))

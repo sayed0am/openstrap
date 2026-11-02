@@ -1,5 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Pace
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,20 +46,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.time.temporal.WeekFields
 import java.util.Locale
 import org.openstrap.app.data.Rewards
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutAnalysis
-import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.EarnedLine
 import org.openstrap.app.ui.workout.ExerciseSets
 import org.openstrap.app.ui.workout.FamilySummary
-import org.openstrap.app.ui.workout.Glance
 import org.openstrap.app.ui.workout.PeriodLine
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.RoundLine
@@ -75,6 +76,12 @@ import org.openstrap.app.ui.workout.familyColor
  */
 internal class SummaryHero(val value: String, val unit: String, val figures: List<Pair<String?, String>> = emptyList(), val sentence: String? = null, val line: String? = null, val pace: String? = null)
 
+/** A workout's active kcal as its summary and share card write it: "1,312". */
+internal fun kcalFigure(a: WorkoutAnalysis): String? = a.activeKcal?.let { Units.count(Math.round(it)) }
+
+/** A workout's length in whole minutes, or seconds under one, with its unit: "42" to "min". */
+internal fun minutesFigure(active: Long): Pair<String, String> = if (active >= 60) "${active / 60}" to "min" else "$active" to "s"
+
 /**
  * What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. When the kind's own number is missing
  * (no heart rate for an indoor workout, no sets or rounds), the hero falls back to the minutes, for every kind.
@@ -85,20 +92,19 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
     val readings = FamilySummary.readings(summary)
     val peak = readings.maxOfOrNull { it.second }?.toString()
     val avg = a.workout.averageHeartRate?.toString()
-    val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) }
+    val kcal = kcalFigure(a)
     val time = workoutClock(active)
-    // Minutes, or seconds under one.
-    val (minutes, minUnit) = if (active >= 60) "${active / 60}" to "min" else "$active" to "s"
+    val (minutes, minUnit) = minutesFigure(active)
     fun byTime(figures: List<Pair<String?, String>>) = SummaryHero(minutes, minUnit, listOf(time to "Time") + figures)
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters
             val gps = FamilySummary.gpsDistance(m, summary.distanceFromSteps)
-            val pace = Glance.paceClock(FamilySummary.pace(gps, active))
+            val pace = Pace.clock(FamilySummary.pace(gps, active))
             when {
                 m == null || m <= 0f -> byTime(listOf(avg to "Avg bpm", kcal to "Active kcal"))
                 else -> SummaryHero(
-                    if (m < 1000) m.toInt().toString() else km(m), if (m < 1000) "m" else "km",
+                    if (m < Units.METERS_PER_KM) m.toInt().toString() else Units.km(m, Units.Precision.Workout, Units.DOT_LOCALE), if (m < Units.METERS_PER_KM) "m" else "km",
                     listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
                     pace = pace,
                 )
@@ -113,7 +119,7 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
             val rest = FamilySummary.averageRest(summary.sets)?.let(::workoutClock)
             // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8); without sets, the minutes.
             when {
-                lifted != null -> SummaryHero("%,d".format(Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"))
+                lifted != null -> SummaryHero(dotFormat("%,d", Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"))
                 sets > 0 -> SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))
                 else -> byTime(listOf(avg to "Avg bpm", peak to "Peak"))
             }
@@ -177,7 +183,8 @@ internal fun FamilySection(
 ): Boolean {
     val a = summary.analysis
     val readings = remember(summary) { FamilySummary.readings(summary) }
-    val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
+    // The stored time in zones, as the hero and the share card read it, so the page shows one total.
+    val zones = remember(a) { a.zoneSeconds.toIntArray() }
     when (family) {
         Workouts.Family.Distance -> {
             RouteCard(summary)
@@ -592,7 +599,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
  */
 @Composable
 internal fun WeekDaysPanel(weekStarts: List<Long>, note: String? = null, day: LocalDate = LocalDate.now(), color: Color = Color.White) {
-    val firstDay = remember { WeekFields.of(Locale.getDefault()).firstDayOfWeek }
+    val firstDay = remember { Weeks.firstDay() }
     val days = remember(weekStarts, day) { FamilySummary.weekDays(weekStarts, day, firstDay) }
     val today = LocalDate.now()
     val thisWeek = days.any { it.first == today }

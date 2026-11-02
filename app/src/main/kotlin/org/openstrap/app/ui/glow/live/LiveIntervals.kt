@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import org.openstrap.app.presentation.WorkoutColors
+import org.openstrap.app.presentation.dotFormat
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -47,6 +49,7 @@ import org.openstrap.app.ui.glow.Raised
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.IntervalMoment
@@ -57,7 +60,7 @@ import org.openstrap.app.ui.workout.intervalMoment
 
 /** Work red and rest green, the intervals' two colours. */
 private val WorkRed = MetricColors.heart
-private val RestGreen = ZONE_COLORS[1]
+private val RestGreen = Color(WorkoutColors.REST_GREEN)
 
 /**
  * HIIT (workouts spec 2.5, boards HiitWork and HiitRest), with the total small on top and the screen in the phase's
@@ -128,10 +131,10 @@ internal fun LiveIntervalsScreen(
         when (m.phase) {
             is Phase.Work -> PhaseFigure(
                 "Round ${m.round} of ${m.rounds}", m.nextRest?.let { "Then rest ${StartCopy.restText(it)}" } ?: "Last round",
-                "Work", m.left?.let { "%02d".format(it) }, if (m.everyMinute) "seconds left in the minute" else "seconds left", compact,
+                "Work", m.left?.let { dotFormat("%02d", it) }, if (m.everyMinute) "seconds left in the minute" else "seconds left", compact,
             )
             is Phase.Rest -> PhaseFigure(
-                "${m.round - 1} of ${m.rounds} done", "Round ${m.round} next", "Rest", m.left?.let { "%02d".format(it) },
+                "${m.round - 1} of ${m.rounds} done", "Round ${m.round} next", "Rest", m.left?.let { dotFormat("%02d", it) },
                 bpm?.let { b -> "Heart rate $b" + (m.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") } ?: "seconds left", compact,
                 // Folded, +10 s sits beside the seconds: the half has no room for a row of its own.
                 action = { WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.width(120.dp), height = 44.dp) },
@@ -316,7 +319,7 @@ internal fun RepCard(r: WorkoutState.Recording, route: List<Route.Point>, readin
         Row(verticalAlignment = Alignment.Bottom) {
             val (value, unit) = when {
                 m.metersLeft != null && m.phase is Phase.Work -> "${m.metersLeft.toInt()}" to "m to go"
-                m.left != null -> workoutClock(m.left) to if (resting) "rest left" else "left"
+                m.left != null -> dotClock(m.left) to if (resting) "rest left" else "left"
                 else -> null to ""
             }
             if (value != null) {
