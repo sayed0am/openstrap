@@ -141,6 +141,9 @@ tasks.withType<Test>().configureEach {
     systemProperty("openstrap.srcRoot", appSrcMain)
     // A failure prints its message and the assertion's values, so a CI only failure can be read from the log.
     testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+    // Robolectric's SQLite is native: its 'localtime' follows the process's TZ, not Java's default zone or a test's
+    // ZoneRule. UTC on every machine, so a day grouped in SQL is the same day on a Mac in Dubai and on CI.
+    environment("TZ", "UTC")
     testLocale?.let { tag ->
         val locale = Locale.forLanguageTag(tag)
         systemProperty("user.language", locale.language)
