@@ -59,7 +59,7 @@ class AppContainer(val app: Application) {
 
     init {
         // The Recovery cache follows the data from here on.
-        health.start(appScope)
+        health.start(appScope, HealthRepository.recoveryInputs(database))
     }
 }
 

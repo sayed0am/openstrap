@@ -23,6 +23,7 @@ import org.openstrap.app.data.db.CheckInRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.HrvSample
+import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.RestingHeartRate
 import org.openstrap.app.data.db.SkinTemperature
@@ -55,14 +56,21 @@ data class DayWindow(val from: Long, val to: Long) {
     }
 }
 
-class HealthRepository(private val dao: HealthDao) {
+class HealthRepository(
+    private val dao: HealthDao,
+    /** The clock Recovery is worked out at, in epoch seconds. Tests pass one they move by hand. */
+    private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000 },
+) {
     private val recoveryEngine = RecoveryEngine(dao)
     private val healthspanEngine = HealthspanEngine(dao)
     /** The one reader of sleep for everything shown ([SleepSource]). */
     val sleep = SleepSource(dao)
 
-    /** A Recovery worked out, and the data version it was worked out from. */
-    private class CachedRecovery(val version: Long, val result: RecoveryResult)
+    /**
+     * A Recovery worked out, the data version it was worked out from, and the clock minute when the day's Charge run
+     * still reached the present ([liveMinute]).
+     */
+    private class CachedRecovery(val version: Long, val minute: Long?, val result: RecoveryResult)
 
     /**
      * Recovery by day and profile, so Today and the widgets work a day out once per data version, not once each. The
@@ -72,47 +80,59 @@ class HealthRepository(private val dao: HealthDao) {
     private val recoveries = LinkedHashMap<Pair<LocalDate, UserProfile>, CachedRecovery>()
     private val recoveryLock = Mutex()
 
-    /** Moves on every emission of [changes], so a cached Recovery is never older than the data under it. */
+    /** Moves whenever a table Recovery reads changes, so a cached Recovery is never older than the data under it. */
     private val dataVersion = AtomicLong()
 
-    /** How many times [changes] has emitted since [start], the first emission included. */
+    /** How many times the inputs given to [start] have emitted, the first emission included. */
     @get:androidx.annotation.VisibleForTesting
     internal val recoveryVersion: Long get() = dataVersion.get()
 
-    /** False until [start]: with nothing following [changes], every Recovery is worked out afresh. */
+    /** False until [start]: with nothing following the data, every Recovery is worked out afresh. */
     @Volatile private var caching = false
 
     /**
-     * Follows [changes] for as long as [scope] lives, so the Recovery cache knows when new data lands: a sync, a
-     * restore, a sleep edit or a trim. Called once, from the app's container.
+     * Follows [inputs] for as long as [scope] lives, so the Recovery cache knows when new data lands: a sync, a
+     * restore, a sleep edit or a trim. [inputs] is [recoveryInputs] in the app, which watches every table Recovery
+     * reads, not only those [changes] watches. Called once, from the app's container.
      */
-    fun start(scope: CoroutineScope) {
+    fun start(scope: CoroutineScope, inputs: Flow<*>) {
         caching = true
-        scope.launch { changes().collect { dataVersion.incrementAndGet() } }
+        scope.launch { inputs.collect { dataVersion.incrementAndGet() } }
     }
 
     /**
      * Readiness and charge for [date]; heavy, so call it off the main thread. Also logs the night's own inputs next to
      * the strap's ([NightMetricsRow]) for the calibration review, and keeps the day's energy ([DailyEnergyHistory]).
      * Once [start]ed, a result is kept until the data changes, and a kept one writes nothing: its rows were written
-     * when it was first worked out. A failure is never kept, so asking again works it out again.
+     * when it was first worked out. While the day's Charge still runs up to the present, it is kept for the minute
+     * only. A failure is never kept, so asking again works it out again.
      */
     suspend fun recovery(date: LocalDate, profile: UserProfile): RecoveryResult {
-        if (!caching) return computeRecovery(date, profile)
+        val now = nowSeconds()
+        if (!caching) return computeRecovery(date, profile, now)
         val key = date to profile
         val version = dataVersion.get()
-        return recoveryLock.withLock { recoveries[key]?.takeIf { it.version == version }?.result }
-            ?: computeRecovery(date, profile).also { r ->
+        val minute = liveMinute(date, now)
+        return recoveryLock.withLock { recoveries[key]?.takeIf { it.version == version && it.minute == minute }?.result }
+            ?: computeRecovery(date, profile, now).also { r ->
                 recoveryLock.withLock {
                     recoveries.remove(key)
-                    recoveries[key] = CachedRecovery(version, r)
+                    recoveries[key] = CachedRecovery(version, minute, r)
                     while (recoveries.size > RECOVERY_CACHE_SIZE) recoveries.remove(recoveries.keys.first())
                 }
             }
     }
 
-    private suspend fun computeRecovery(date: LocalDate, profile: UserProfile): RecoveryResult {
-        val r = recoveryEngine.compute(date, profile)
+    /**
+     * The clock minute at [now] when [date]'s Charge run ends at the present rather than at its lookahead
+     * ([RecoveryEngine.LOOKAHEAD_SECONDS]): today, and yesterday until the lookahead has passed. Null for older days,
+     * whose result changes only with the data.
+     */
+    private fun liveMinute(date: LocalDate, now: Long): Long? =
+        (now / MINUTE_S).takeIf { now / MINUTE_S * MINUTE_S + MINUTE_S < DayWindow.of(date).to + 1 + RecoveryEngine.LOOKAHEAD_SECONDS }
+
+    private suspend fun computeRecovery(date: LocalDate, profile: UserProfile, now: Long): RecoveryResult {
+        val r = recoveryEngine.compute(date, profile, now = now)
         r.tonight?.let { logNight(it) }
         r.energy?.let { dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(DayWindow.of(date).from, it, System.currentTimeMillis() / 1000))) }
         return r
@@ -307,6 +327,24 @@ class HealthRepository(private val dao: HealthDao) {
 
         /** Recoveries kept: today, yesterday and a few days browsed. */
         const val RECOVERY_CACHE_SIZE = 8
+
+        private const val MINUTE_S = 60L
+
+        /**
+         * Every table [RecoveryEngine.compute] reads, directly or through [SleepSource]. Not the two it writes
+         * (`daily_energy` and `night_metrics`), or each compute would throw away its own result.
+         */
+        val RECOVERY_TABLES = arrayOf(
+            "activity_minute", "heart_rate", "stress", "hrv", "skin_temperature", "breath_rate", "resting_hr", "pai",
+            "sleep_spo2", "osa_result", "strap_readiness", "wear_event", "daily_max_hr", "workout", "workout_hr",
+            "app_workout", "app_workout_hr", "sleep_session", "sleep_edit", "sleep_stage",
+        )
+
+        // Built once, at app start, so the spread's copy of the table names costs nothing.
+        /** Emits once at first and again whenever one of [RECOVERY_TABLES] changes, for [start]. */
+        @Suppress("SpreadOperator")
+        fun recoveryInputs(database: OpenStrapDatabase): Flow<Unit> =
+            database.invalidationTracker.createFlow(*RECOVERY_TABLES).map { }
     }
 }
 
