@@ -1,4 +1,4 @@
-package org.openstrap.app.presentation
+package org.openstrap.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -6,7 +6,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import org.openstrap.app.data.Rewards
+import org.openstrap.app.presentation.localeParameters
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.ZoneRule
 import java.time.DayOfWeek

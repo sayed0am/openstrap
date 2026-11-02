@@ -3,6 +3,7 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
+import org.openstrap.app.data.Weeks
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.LocalCardsGrow
 import org.openstrap.app.ui.components.detailNumber
@@ -72,9 +74,7 @@ import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
-import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
 
@@ -466,7 +466,7 @@ fun GlowMetricDetailScreen(
     }
     val label = if (night) SleepCopy.nightLabel(metric, range) else DetailCopy.valueLabel(metric, range, live = live != null, today = isToday)
     val headline = when {
-        value != null -> DetailHeadline(metric.dotValue(value), label, DetailCopy.statusWord(status))
+        value != null -> DetailHeadline(metric.format(value, Units.DOT_LOCALE), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
         night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
         range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
@@ -503,13 +503,13 @@ fun GlowMetricDetailScreen(
                 if (values.all { it == null }) DetailEmpty("No ${inSentence(metric.title)} in the last 7 nights yet.")
                 else Column {
                     NormalTrend(
-                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { weekdayShort(it.first) },
+                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { DayWords.weekdayShort(it.first) },
                         band = nightNormal?.let { it.low..it.high }, bandLabel = nightNormal?.let { DetailCopy.bandLabel(it, metric::format) },
                         onScrub = { i ->
                             scrub = i?.let { nightWeek[it] }?.let { (d, v) ->
                                 v?.let {
                                     val word = DetailCopy.statusWord(History.status(it, nightNormal))
-                                    DetailHeadline(metric.dotValue(it), "${metric.unit}, ${DayWords.short(d)}", word)
+                                    DetailHeadline(metric.format(it, Units.DOT_LOCALE), "${metric.unit}, ${DayWords.short(d)}", word)
                                 }
                             }
                         },
@@ -602,7 +602,7 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
 }
 
 /** A scrubbed reading of [metric] in the headline: its value and the time it was taken, "bpm at 22:30". */
-private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(at)}".trim(), null)
+private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.format(v, Units.DOT_LOCALE), "${metric.unit} at ${clock(at)}".trim(), null)
 
 /** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
 private fun hourSteps(hour: Int, steps: Float): DetailHeadline {
@@ -680,9 +680,9 @@ private fun HistoryChart(
         onScrub = { i ->
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
-                val label = if (range == Range.Year) "week of ${dayMonth(d)}" else DayWords.short(d)
+                val label = if (range == Range.Year) "week of ${DayWords.dayMonth(d)}" else DayWords.short(d)
                 val unitAndDay = listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", ")
-                DetailHeadline(metric.dotValue(v), unitAndDay, DetailCopy.statusWord(History.status(v, normal)))
+                DetailHeadline(metric.format(v, Units.DOT_LOCALE), unitAndDay, DetailCopy.statusWord(History.status(v, normal)))
             })
         },
     )
@@ -693,22 +693,25 @@ private fun HistoryChart(
 }
 
 /** Evenly spaced values for the chart: one a day, or one a week over a year; gaps are null. Also axis labels and each point's date. */
-private fun series(range: Range, stats: List<DayStat>, start: LocalDate, end: LocalDate): Triple<List<Float?>, List<String>, List<LocalDate>> {
+internal fun series(
+    range: Range, stats: List<DayStat>, start: LocalDate, end: LocalDate,
+): Triple<List<Float?>, List<String>, List<LocalDate>> {
     val inRange = stats.filter { it.date in start..end }
     val dates: List<LocalDate>
     val byDate: Map<LocalDate, Float>
     if (range == Range.Year) {
-        val first = start.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        dates = generateSequence(first) { it.plusWeeks(1) }.takeWhile { !it.isAfter(end) }.toList()
-        byDate = History.weekly(inRange).associate { it.date to it.value }
+        // The chart's weeks and History's must start on the same day, or no week finds its average.
+        val firstDay = Weeks.firstDay()
+        dates = generateSequence(Weeks.start(start, firstDay)) { it.plusWeeks(1) }.takeWhile { !it.isAfter(end) }.toList()
+        byDate = History.weekly(inRange, firstDay).associate { it.date to it.value }
     } else {
         dates = generateSequence(start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }.toList()
         byDate = inRange.associate { it.date to it.value }
     }
     val labels = when (range) {
-        Range.Week -> dates.map { weekdayShort(it) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(dates[((dates.size - 1) * it).toInt()]) }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { monthShort(dates[((dates.size - 1) * it).toInt()]) }
+        Range.Week -> dates.map { DayWords.weekdayShort(it) }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.dayMonth(dates[((dates.size - 1) * it).toInt()]) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.monthShort(dates[((dates.size - 1) * it).toInt()]) }
     }
     return Triple(dates.map { byDate[it] }, labels, dates)
 }

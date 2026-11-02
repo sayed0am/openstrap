@@ -76,4 +76,21 @@ object DayWords {
 
     /** A day for a chart or a short label, always dated: "Tue 21 Oct". */
     fun short(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of(SHORT, locale))
+
+    /** A weekday's short name, for a week's strip of bars: "Tue". */
+    fun weekdayShort(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+
+    /** A day and month with no weekday, for chart axes, ranges and widgets: "21 Oct". */
+    fun dayMonth(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("d MMM", locale))
+
+    /** [dayMonth] with its year, for a date that may be from any year: "21 Oct 2025". */
+    fun dayMonthYear(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.format(Formatters.of("d MMM yyyy", locale))
+
+    /** The month first, as a share card's corner reads: "Oct 21". */
+    fun monthDay(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("MMM d", locale))
+
+    /** A month's short name, for a year's chart axis: "Oct". */
+    fun monthShort(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("MMM", locale))
 }

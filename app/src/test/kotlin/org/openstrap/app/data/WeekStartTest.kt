@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.data.db.BadgeRow
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 import org.openstrap.app.testing.LocaleRule
 import java.time.DayOfWeek
 import java.time.LocalDate

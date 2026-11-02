@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutRecorder
+import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
@@ -118,7 +119,7 @@ internal fun LiveDistanceScreen(
     val distance = r.workout.distanceMeters ?: 0f
     val splits = remember(route.size, r.workout.pauseRanges) { Route.splits(route, r.workout.pauseRanges) }
     val climb = remember(route.size) { Route.climb(route) }
-    val speed = Workouts.tileType(r.workout.sportType) !in Workouts.ON_FOOT
+    val speed = Workouts.tileType(r.workout.sportType) !in SportTypes.ON_FOOT
     val pace = remember(route) { Route.currentPace(route) }
     val active = activeSecondsState(r)
     // Read where it shows, so the screen holds still between seconds.

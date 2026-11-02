@@ -1,4 +1,4 @@
-package org.openstrap.app.presentation
+package org.openstrap.app.data
 
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -7,9 +7,10 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 
 /**
- * What "a week" is everywhere in the app (decision 7 in [Units]): it starts on the phone's locale's first day, Monday
- * on most phones outside the Americas and Sunday in the US. Rewards, history, recovery, Today and the widgets all ask
- * here, so "this week" is the same week on every screen.
+ * What "a week" is everywhere in the app (decision 7 in presentation's `Units`): it starts on the phone's locale's
+ * first day, Monday on most phones outside the Americas and Sunday in the US. Rewards, history, recovery, Today, the
+ * charts and the widgets all ask here, so "this week" is the same week on every screen. It lives in data because the
+ * data package groups by week too.
  */
 object Weeks {
     const val DAYS = 7

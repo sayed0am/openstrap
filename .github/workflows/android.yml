@@ -41,9 +41,8 @@ jobs:
         continue-on-error: true
         run: ./gradlew ktlintCheck
 
-      # A German locale and a zone with a 45 minute offset. Expected to fail until the locale fixes land (wave 3).
+      # A German locale and a zone with a 45 minute offset, so a comma decimal mark or a fixed zone fails the build.
       - name: Tests under a German locale
-        continue-on-error: true
         run: ./gradlew :app:testDebugUnitTest -PtestLocale=de-DE
 
       - uses: github/codeql-action/upload-sarif@v3

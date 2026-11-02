@@ -7,6 +7,9 @@ import java.time.format.DateTimeFormatter
 import java.time.format.DecimalStyle
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
+import kotlin.math.abs
+import kotlin.math.pow
+import kotlin.math.roundToLong
 
 /**
  * How the app writes a unit, one style each, as decided at the wave 3 design gate
@@ -23,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap
  * 5. Pace. "5:24 /km" everywhere, shown once a workout has covered 100 m, and never slower than 60 min a km ([Pace]).
  * 6. Day words. "Today", "Yesterday", the weekday for the rest of the last 7 days, then "Tue 21 Oct", with the year
  *    from an earlier year. Lowercase after other words ("yesterday 10:42"). Charts keep "Tue 21 Oct" ([DayWords]).
- * 7. Week start. The phone's locale decides the first day of every week, in one place ([Weeks]).
+ * 7. Week start. The phone's locale decides the first day of every week, in one place ([org.openstrap.app.data.Weeks]).
  * 8. Score bands. Recovery 85 and 70, sleep 90, 80 and 60, words unchanged, defined once. Load follows Today's rule
  *    ([LoadBands]).
  * 9. Valid heart rate. 30 to 230 bpm everywhere, database queries and workouts included
@@ -79,6 +82,12 @@ object Units {
     /** A count with the language's grouping: "23,410" steps, "23.410" in German. */
     fun count(n: Long, locale: Locale = Locale.getDefault()): String = String.format(locale, "%,d", n)
 
+    /** [count] for an Int. */
+    fun count(n: Int, locale: Locale = Locale.getDefault()): String = count(n.toLong(), locale)
+
+    /** [v] with [places] decimals in the phone's language, for text: "1.4", "1,4" in German. */
+    fun decimal(v: Number, places: Int, locale: Locale = Locale.getDefault()): String = String.format(locale, "%.${places}f", v)
+
     /** A length of time: "40 min", "7 h", "7 h 40", "7 h 05". Under a minute is "0 min". */
     fun duration(seconds: Long, locale: Locale = Locale.getDefault()): String {
         val minutes = seconds.coerceAtLeast(0) / MINUTE
@@ -103,6 +112,32 @@ object Units {
     /** A finished workout's length, or a gap between two: "45 s" under a minute, else [workoutClock]. */
     fun secondsOrClock(seconds: Long, locale: Locale = Locale.getDefault()): String =
         if (seconds < MINUTE) String.format(locale, "%d s", seconds) else workoutClock(seconds, locale)
+}
+
+/** A change against your usual, with its sign: "+3", "−3", or "±0" when it rounds to nothing, never "-0". */
+object Signed {
+    fun of(v: Int, locale: Locale = Locale.getDefault()): String {
+        val text = String.format(locale, "%d", abs(v))
+        return when {
+            v > 0 -> "+$text"
+            v < 0 -> "−$text"
+            else -> "±$text"
+        }
+    }
+
+    /** [v] to [decimals] places with its sign: "+0.4", "−3", "±0.0". */
+    fun of(v: Float, decimals: Int, locale: Locale = Locale.getDefault()): String {
+        val text = String.format(locale, "%.${decimals}f", abs(v))
+        // Decided on the rounded value, not the text, so a comma decimal mark can't make "0,0" read as a change.
+        val rounded = (abs(v) * TEN.pow(decimals)).roundToLong()
+        return when {
+            rounded == 0L -> "±$text"
+            v > 0 -> "+$text"
+            else -> "−$text"
+        }
+    }
+
+    private const val TEN = 10f
 }
 
 /** A pace, decision 5 in [Units]: "5:24 /km", from 100 m covered, nothing slower than an hour a km. */

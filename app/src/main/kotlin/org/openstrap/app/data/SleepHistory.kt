@@ -36,7 +36,7 @@ object SleepHistory {
         sessions.filter { !it.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
 
     /**
-     * Time asleep on the week's other nights, for the longest or shortest rule ([org.openstrap.app.ui.dashboard.TabCopy.night]):
+     * Time asleep on the week's other nights, for the longest or shortest rule (`TabCopy.night`):
      * the [WEEK_NIGHTS] nights ending on [date] ([nights] by [mainSleeps]) without [date] itself, those with a sleep.
      */
     fun weekOthers(nights: Map<LocalDate, SleepSession>, date: LocalDate): List<Long> =

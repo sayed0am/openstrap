@@ -8,7 +8,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.ceil
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.Units
 
 /** How a day of this week stands against the goal, which colours its bar on the Large. */

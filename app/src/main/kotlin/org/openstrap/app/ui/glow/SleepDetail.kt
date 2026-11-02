@@ -2,6 +2,7 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.SleepEditCopy
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -220,7 +221,7 @@ internal fun SleepScoreDetail(
                     else Column {
                         val values = week.map { it.second }
                         NormalTrend(
-                            values, DetailCopy.levels(values, normal), color, labels = week.map { weekdayShort(it.first) },
+                            values, DetailCopy.levels(values, normal), color, labels = week.map { DayWords.weekdayShort(it.first) },
                             band = normal?.let { it.low..it.high }, bandLabel = normal?.let { DetailCopy.bandLabel(it) { v -> Math.round(v).toString() } },
                             onScrub = { i ->
                                 scrub = i?.let { week[it] }?.let { (d, v) ->
@@ -415,7 +416,7 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
             ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, "bpm") { hrAt = it; onScrub(it) }
         }
         if (breath.isNotEmpty()) {
-            val average = "Average ${decimal(breath.map { it.y }.average(), 1)} br/min"
+            val average = "Average ${Units.decimal(breath.map { it.y }.average(), 1)} br/min"
             ChartTitle("Breathing rate", average, scrubbed = breathAt)
             ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, "br/min", decimals = 1) { breathAt = it; onScrub(it) }
         }
@@ -645,7 +646,7 @@ private fun SleepTimesSheet(
         if (c.hour == local(was).hour && c.minute == local(was).minute) was else SleepEdits.atNear(c.hour * 60 + c.minute, near, zone)
     val start = picked(startClock, shown.start, detected.start)
     val end = picked(endClock, shown.end, detected.end)
-    val problem = SleepEdits.problem(detected, start, end, Instant.now().epochSecond, others, zone)
+    val problem = SleepEdits.check(detected, start, end, Instant.now().epochSecond, others)?.let { SleepEditCopy.text(it, zone) }
     val window = (detected.start - 2 * 3600)..(detected.end + 2 * 3600)
     val hr = remember(heartRate, window) { heartRate.filter { it.x in window } }
 

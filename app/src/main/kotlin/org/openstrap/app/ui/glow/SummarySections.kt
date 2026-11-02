@@ -1,6 +1,6 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Pace

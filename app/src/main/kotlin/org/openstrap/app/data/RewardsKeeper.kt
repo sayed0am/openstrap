@@ -9,7 +9,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
-import org.openstrap.app.presentation.Weeks
 
 /**
  * Keeps the stored rewards ([Rewards]) in step with the workouts: works the weeks, bests and badges out again from
@@ -30,7 +29,7 @@ class RewardsKeeper(
     /** The locale's first day of the week (workouts spec 3.1, [Weeks]). */
     val firstDay: DayOfWeek get() = Weeks.firstDay()
 
-    /** [workouts] (the merged list, [org.openstrap.app.ui.workout.WorkoutsViewModel.workouts]) with what the phone kept of each. */
+    /** [workouts] (the merged list, `WorkoutsViewModel.workouts`) with what the phone kept of each. */
     suspend fun facts(workouts: List<WorkoutAnalysis>): Facts = withContext(Dispatchers.IO) {
         val phone = dao.appWorkoutsAll().associateBy { it.start }
         val sets = dao.setsAll().groupBy { it.workoutStart }
@@ -115,7 +114,7 @@ class RewardsKeeper(
     }
 
     /**
-     * The merged list as [org.openstrap.app.ui.workout.WorkoutsViewModel.workouts] has it, read once: the strap's
+     * The merged list as `WorkoutsViewModel.workouts` has it, read once: the strap's
      * workouts and the phone's ([Workouts.listed]) against the shared max heart rate ([MaxHeartRates]). Without the
      * list's zone seconds, which no reward reads.
      */

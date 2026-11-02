@@ -8,6 +8,7 @@ import java.io.File
 /**
  * The service, the notifications and the updater read their words and colours from presentation, never from the
  * screens: device and update code imports nothing from ui or Compose, and presentation nothing from either of those.
+ * Data sits below them all: it hands over values and names nothing in presentation or ui, not even in a KDoc link.
  */
 class LayersTest {
     private fun offenders(dir: String, banned: List<String>): List<String> =
@@ -21,6 +22,11 @@ class LayersTest {
     fun deviceAndUpdateDontReachIntoTheScreens() {
         assertEquals(emptyList<String>(), offenders("device", ui))
         assertEquals(emptyList<String>(), offenders("update", ui))
+    }
+
+    @Test
+    fun dataNamesNothingAboveIt() {
+        assertEquals(emptyList<String>(), offenders("data", ui + "org.openstrap.app.presentation"))
     }
 
     @Test

@@ -28,6 +28,7 @@ import org.openstrap.app.data.Rewards
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
+import org.openstrap.app.presentation.dotFormat
 
 /*
  * The celebrations (workouts spec 3.4, boards GoalMoment and BadgeUnlocked): the full screen goal moment, once a week,
@@ -129,7 +130,9 @@ fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>,
     ) {
         CloseRow(null, onContinue)
         Spacer(Modifier.height(32.dp))
-        DotMatrixText("$count/$goal", Modifier.align(Alignment.CenterHorizontally), dot = DotSize.Hero, color = MetricColors.good)
+        DotMatrixText(
+            dotFormat("%d/%d", count, goal), Modifier.align(Alignment.CenterHorizontally), dot = DotSize.Hero, color = MetricColors.good,
+        )
         Text("Weekly goal met", color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
         Text(RewardsCopy.momentLine(inARow), color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))

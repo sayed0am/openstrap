@@ -12,9 +12,14 @@ import org.junit.Test
 import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.presentation.SleepEditCopy
 
 class SleepEditsTest {
     private val zone = ZoneId.of("Europe/Berlin")
+
+    /** [SleepEdits.check] as the edit sheet says it. */
+    private fun problem(strap: SleepSession, start: Long, end: Long, now: Long, others: List<SleepSession> = emptyList(), zone: ZoneId = this.zone) =
+        SleepEdits.check(strap, start, end, now, others)?.let { SleepEditCopy.text(it, zone) }
     private fun at(h: Int, m: Int, day: Int = 30) = LocalDateTime.of(2026, 10, day, h, m).atZone(zone).toEpochSecond()
     private val nap = SleepSession(at(14, 10), at(14, 48), nap = true)
     private val main = SleepSession(at(23, 20, day = 29), at(7, 21), score = 81, deepMinutes = 90, lightMinutes = 240, remMinutes = 100, awakeMinutes = 30)
@@ -129,25 +134,25 @@ class SleepEditsTest {
     }
 
     @Test fun `times that can't be saved are refused, by kind`() {
-        assertNull(SleepEdits.problem(nap, at(14, 0), at(15, 0), now))
-        assertEquals("Waking up has to come after falling asleep.", SleepEdits.problem(nap, at(14, 30), at(14, 20), now))
-        assertEquals("A nap needs at least 5 minutes.", SleepEdits.problem(nap, at(14, 30), at(14, 33), now))
-        assertEquals("A nap can be 4 hours at most.", SleepEdits.problem(nap, at(11, 0), at(15, 30), now))
-        assertEquals("That's later than now.", SleepEdits.problem(nap, at(16, 0), at(18, 30), now))
-        assertEquals("Keep it within 3 hours of what the strap saw.", SleepEdits.problem(nap, at(10, 30), at(11, 0), now))
-        assertNull(SleepEdits.problem(main, at(23, 55, day = 29), at(7, 21), now))
-        assertEquals("Sleep needs at least an hour.", SleepEdits.problem(main, at(6, 30), at(7, 21), now))
-        assertEquals("Sleep can be 16 hours at most.", SleepEdits.problem(main.copy(end = at(10, 0)), at(20, 50, day = 29), at(12, 55), at(20, 0)))
+        assertNull(problem(nap, at(14, 0), at(15, 0), now))
+        assertEquals("Waking up has to come after falling asleep.", problem(nap, at(14, 30), at(14, 20), now))
+        assertEquals("A nap needs at least 5 minutes.", problem(nap, at(14, 30), at(14, 33), now))
+        assertEquals("A nap can be 4 hours at most.", problem(nap, at(11, 0), at(15, 30), now))
+        assertEquals("That's later than now.", problem(nap, at(16, 0), at(18, 30), now))
+        assertEquals("Keep it within 3 hours of what the strap saw.", problem(nap, at(10, 30), at(11, 0), now))
+        assertNull(problem(main, at(23, 55, day = 29), at(7, 21), now))
+        assertEquals("Sleep needs at least an hour.", problem(main, at(6, 30), at(7, 21), now))
+        assertEquals("Sleep can be 16 hours at most.", problem(main.copy(end = at(10, 0)), at(20, 50, day = 29), at(12, 55), at(20, 0)))
     }
 
     @Test fun `times that run into another sleep or nap are refused`() {
         val earlier = SleepSession(at(13, 0), at(14, 5), nap = true)
-        assertEquals("That runs into your nap at 13:00.", SleepEdits.problem(nap, at(14, 0), at(14, 48), now, listOf(earlier, main), zone))
+        assertEquals("That runs into your nap at 13:00.", problem(nap, at(14, 0), at(14, 48), now, listOf(earlier, main), zone))
         val evening = SleepSession(at(22, 0, day = 29), at(23, 0, day = 29), nap = true)
-        assertEquals("That runs into your nap at 22:00.", SleepEdits.problem(main, at(22, 50, day = 29), at(7, 21), now, listOf(evening), zone))
-        assertEquals("That runs into your sleep at 23:20.", SleepEdits.problem(evening, at(22, 0, day = 29), at(23, 30, day = 29), now, listOf(main), zone))
+        assertEquals("That runs into your nap at 22:00.", problem(main, at(22, 50, day = 29), at(7, 21), now, listOf(evening), zone))
+        assertEquals("That runs into your sleep at 23:20.", problem(evening, at(22, 0, day = 29), at(23, 30, day = 29), now, listOf(main), zone))
         // Touching isn't running into.
-        assertNull(SleepEdits.problem(nap, at(14, 5), at(14, 48), now, listOf(earlier), zone))
+        assertNull(problem(nap, at(14, 5), at(14, 48), now, listOf(earlier), zone))
     }
 
     @Test fun `the strap's own times again drop the edit, unless it's deleted`() {

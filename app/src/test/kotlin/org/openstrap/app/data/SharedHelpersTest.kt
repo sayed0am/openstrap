@@ -144,10 +144,8 @@ class SharedHelpersTest {
 
     @Test
     fun sportSetsAreTheOnesTheyReplace() {
-        assertEquals(Workouts.RUNS, SportTypes.RUNS)
-        assertEquals(Workouts.WALKS, SportTypes.WALKS)
-        assertEquals(Workouts.ON_FOOT, SportTypes.ON_FOOT)
-        assertEquals(Strength.SPORTS, SportTypes.STRENGTH)
+        assertEquals(setOf(1, 2, 11), SportTypes.RUNS)
+        assertEquals(setOf(24, 50, 52, 222, 226), SportTypes.STRENGTH)
         assertEquals(setOf(3, 15, 40, 215, 224, 225), SportTypes.WALKS)
         assertTrue(SportTypes.HIKES.all { it in SportTypes.WALKS })
     }

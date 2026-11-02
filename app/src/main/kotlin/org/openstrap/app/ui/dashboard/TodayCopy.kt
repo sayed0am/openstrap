@@ -13,7 +13,7 @@ import org.openstrap.app.presentation.LoadBands
 import org.openstrap.app.presentation.RecoveryBands
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 
 /*
  * The words on Today's hero and its small facts (spec 4.2 and 7). Built only from numbers the app already has: where

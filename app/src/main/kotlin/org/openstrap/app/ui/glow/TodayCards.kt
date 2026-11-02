@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
@@ -505,7 +506,7 @@ internal fun WeekCard(
     val zone = ZoneId.systemDefault()
     val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
     EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
-        EdgeTitle("Your week", "${dayMonth(start)}–${dayMonth(end)}")
+        EdgeTitle("Your week", "${DayWords.dayMonth(start)}–${DayWords.dayMonth(end)}")
         EdgeValue(stepsNow?.let { dotFormat("%,d", it.roundToInt()) }, "steps a day", null)
         val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { TodayCopy.duration(it) + " asleep a night" }
         val workoutsDone = if (done == 1) "1 workout" else "$done workouts"

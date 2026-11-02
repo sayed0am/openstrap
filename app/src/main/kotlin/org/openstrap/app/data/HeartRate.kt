@@ -1,7 +1,7 @@
 package org.openstrap.app.data
 
 /**
- * The heart rates the app believes (decision 9 in [org.openstrap.app.presentation.Units]): 30 to 230 bpm, in every
+ * The heart rates the app believes (decision 9 in `Units`): 30 to 230 bpm, in every
  * chart, summary, export, engine and workout. Outside it a reading is a sensor artefact, and one range means a reading
  * counts everywhere or nowhere.
  */

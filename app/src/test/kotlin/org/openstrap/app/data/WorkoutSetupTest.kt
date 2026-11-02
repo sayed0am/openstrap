@@ -22,7 +22,7 @@ class WorkoutSetupTest {
         assertEquals(Family.IndoorCardio, Workouts.family(23))
         assertEquals(Family.IndoorCardio, Workouts.family(40))
         assertEquals(Family.IndoorCardio, Workouts.family(5))
-        Strength.SPORTS.forEach { assertEquals(Family.Strength, Workouts.family(it)) }
+        SportTypes.STRENGTH.forEach { assertEquals(Family.Strength, Workouts.family(it)) }
         assertEquals(Family.Intervals, Workouts.family(49))
         listOf(53, 55, 60, 61).forEach { assertEquals(Family.MindBody, Workouts.family(it)) }
         listOf(17, 18, 85, 205, 204).forEach { assertEquals(Family.Games, Workouts.family(it)) }

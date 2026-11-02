@@ -20,7 +20,7 @@ class TabCopyTest {
     // The expected numbers are written the English way, and the German test below sets its own.
     @get:Rule val locale = LocaleRule(Locale.US)
 
-    private fun c(f: Factor, score: Int) = Contributor(f, score, "")
+    private fun c(f: Factor, score: Int) = Contributor(f, score, org.openstrap.app.data.Recovery.Detail.Asleep(0))
 
     @Test fun `recovery against yesterday`() {
         assertEquals("+3 vs yesterday", TabCopy.vsYesterday(78, 75))

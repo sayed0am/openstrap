@@ -1,7 +1,6 @@
 package org.openstrap.app.widget
 
 import org.openstrap.app.presentation.DayWords
-import org.openstrap.app.presentation.Formatters
 import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
 import java.time.ZoneId
@@ -40,7 +39,7 @@ data class StatusLine(val status: StrapStatus, val options: List<String>) {
                             listOf("Synced $short", day, short)
                         }
                         // "Tue 13 Oct", then "13 Oct" where even that doesn't fit.
-                        else -> listOf(full.removePrefix("Synced "), then.format(Formatters.of("d MMM", locale)))
+                        else -> listOf(full.removePrefix("Synced "), DayWords.dayMonth(then, locale))
                     }
                 }
             }

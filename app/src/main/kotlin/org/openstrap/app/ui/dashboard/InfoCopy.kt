@@ -7,6 +7,7 @@ import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.presentation.RecoveryBands
 import org.openstrap.app.presentation.SleepBands
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Vo2maxCopy
 
 /*
  * What every detail's info sheet says (spec 6.2): a bold one-line meaning, the scale its value is read on, and three
@@ -343,7 +344,7 @@ object InfoCopy {
                 e.sex?.let { add("That's typical of a ${if (it == org.openstrap.app.data.settings.UserProfile.Sex.Male) "man" else "woman"} aged about ${a.first} to ${a.last}.") }
             }
         }
-        withheld?.let { add("No estimate from your profile yet. ${it.reason}") }
+        withheld?.let { add("No estimate from your profile yet. ${Vo2maxCopy.reason(it)}") }
     }
 
     /** What's particular about the day's energy: part of the day worn, an unusual total, minutes from heart rate. */

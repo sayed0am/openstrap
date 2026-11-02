@@ -21,6 +21,7 @@ import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.PairedDevice
 import org.openstrap.app.device.StrapController
 import org.openstrap.app.device.StrapManager
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
 
@@ -223,7 +224,8 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     fun importHealthConnect() = viewModelScope.launch {
         _message.value = catching {
             val n = withContext(Dispatchers.IO) { container.healthConnect.import() }
-            if (n == 0) "Health Connect has no OpenStrap data to restore." else "Restored %,d records from Health Connect.".format(n)
+            if (n == 0) "Health Connect has no OpenStrap data to restore."
+            else "Restored ${Units.count(n.toLong())} records from Health Connect."
         }.getOrElse { failed("health connect import", it, ErrorCopy.healthConnect("Couldn't restore from Health Connect", it)) }
     }
 

@@ -1,8 +1,9 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
 import androidx.compose.foundation.Canvas
@@ -163,7 +164,7 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
             item {
                 if (daily.all { it == null }) DetailEmpty("No Heart points from the strap for these days yet.")
                 else StackedDayBars(
-                    daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map { weekdayShort(it) },
+                    daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map { DayWords.weekdayShort(it) },
                     Modifier.padding(top = 8.dp),
                 ) { i ->
                     scrub = i?.let {
@@ -184,7 +185,7 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
                     val values = totals.map { it?.toFloat() }
                     NormalTrend(
                         values, DetailCopy.levels(values, null), color,
-                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(month[((month.size - 1) * it).toInt()]) },
+                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.dayMonth(month[((month.size - 1) * it).toInt()]) },
                         onScrub = { i ->
                             scrub = i?.let { totals[it] }?.let { v ->
                                 DetailHeadline(v.toString(), "7-day total, ${DayWords.short(month[i])}", ActivityCopy.heartPointsWord(v))
@@ -297,7 +298,7 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
             val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
             item {
                 GlowBars(
-                    values, height = 200.dp, labels = week.map { weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
+                    values, height = 200.dp, labels = week.map { DayWords.weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
                     onScrub = { i ->
                         scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "minutes, ${DayWords.short(week[it])}", null) }
                     },
@@ -364,7 +365,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                         listOf(
                             Math.round(r.workoutLoad).toString() to "From workouts",
                             Math.round(r.everydayLoad).toString() to "Moving about",
-                            decimal(r.strain, 1) to "Strain",
+                            Units.decimal(r.strain, 1) to "Strain",
                         ),
                     )
                     DetailSentence(ActivityCopy.loadDay(r.strainPercentile, ctx.isToday))
@@ -375,8 +376,8 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                 if (known.isEmpty()) DetailEmpty("No Load in the last ${range.days} days yet.")
                 else NormalTrend(
                     values, levels(values, band), color,
-                    labels = if (range == Range.Week) days.map { weekdayShort(it) }
-                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(days[((days.size - 1) * it).toInt()]) },
+                    labels = if (range == Range.Week) days.map { DayWords.weekdayShort(it) }
+                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.dayMonth(days[((days.size - 1) * it).toInt()]) },
                     band = band, bandLabel = band?.let(ActivityCopy::usualBandLabel),
                     onScrub = { i ->
                         scrub = i?.let { values[it] }?.let { v ->
@@ -437,7 +438,7 @@ private fun Vo2Detail(ctx: ActivityDetailContext) {
         .mapNotNull { w -> (w.workout.vo2max ?: w.effect?.vo2max?.let(Math::round))?.takeIf { it > 0 }?.let { w to it } }
     val latest = readings.firstOrNull()
     val est = ctx.r?.vo2max
-    val band = est?.band?.label
+    val band = est?.band?.let(Vo2maxCopy::band)
     // The band is the profile estimate's, so it stands beside that number only.
     val headline = when {
         latest != null -> DetailHeadline(latest.second.toString(), "ml/kg/min", null)
@@ -595,7 +596,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                         listOf(
                             Units.count(Math.round(e.totalKcal)) to "Total kcal",
                             Units.count(Math.round(e.totalKcal - e.activeKcal)) to "At rest",
-                            e.pal?.takeIf { !ctx.isToday }?.let { decimal(it, 2) to "Activity level" }
+                            e.pal?.takeIf { !ctx.isToday }?.let { Units.decimal(it, 2) to "Activity level" }
                                 ?: (Units.count(goal) to "Goal"),
                         ),
                     )
@@ -706,9 +707,9 @@ private fun RangeKcal(
         }
     }
     val labels = when (range) {
-        Range.Week -> bars.map { weekdayShort(it.first) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(bars[((bars.size - 1) * it).toInt()].first) }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { monthShort(bars[((bars.size - 1) * it).toInt()].first) }
+        Range.Week -> bars.map { DayWords.weekdayShort(it.first) }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.dayMonth(bars[((bars.size - 1) * it).toInt()].first) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.monthShort(bars[((bars.size - 1) * it).toInt()].first) }
     }
     Column(Modifier.padding(top = 8.dp)) {
         KcalBars(
@@ -716,8 +717,8 @@ private fun RangeKcal(
             onPick = { i ->
                 onScrub(i?.let { bars[it] }?.let { (d, parts) ->
                     parts?.let {
-                        val label =
-                            if (range == Range.Year) "active kcal a day, week of ${dayMonth(d)}" else "active kcal, ${DayWords.short(d)}"
+                        val label = if (range == Range.Year) "active kcal a day, week of ${DayWords.dayMonth(d)}"
+                        else "active kcal, ${DayWords.short(d)}"
                         DetailHeadline(dotFormat("%,d", Math.round(it.sum())), label, null)
                     }
                 })
@@ -919,7 +920,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         val values = days.map { (it.steps ?: 0).toFloat() }
         if (values.any { it > 0f }) item {
             GlowBars(
-                values, height = 180.dp, labels = days.map { weekdayShort(it.date) }, accent = MetricColors.steps, modifier = Modifier.padding(top = 8.dp),
+                values, height = 180.dp, labels = days.map { DayWords.weekdayShort(it.date) }, accent = MetricColors.steps, modifier = Modifier.padding(top = 8.dp),
                 onScrub = { i ->
                     scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "steps, ${DayWords.short(days[it].date)}", null) }
                 },

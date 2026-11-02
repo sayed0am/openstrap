@@ -1,6 +1,6 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.Formatters
+import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.ZoneId
-import java.util.Locale
 import kotlin.math.cos
 import org.openstrap.app.data.Phases
 import org.openstrap.app.data.Route
@@ -137,7 +136,7 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
     val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
-    val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(Formatters.of("MMM d", Locale.getDefault()))
+    val date = DayWords.monthDay(Instant.ofEpochSecond(a.shownStart).atZone(zone).toLocalDate())
     val avg = a.workout.averageHeartRate
     val kcal = kcalFigure(a)
     val (minutes, minUnit) = minutesFigure(active)

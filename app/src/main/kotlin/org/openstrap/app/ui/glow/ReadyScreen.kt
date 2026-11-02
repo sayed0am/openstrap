@@ -41,6 +41,7 @@ import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutPlan
 import org.openstrap.app.data.WorkoutSetup
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutLocation
@@ -145,7 +146,7 @@ fun GlowWorkoutReadyScreen(
     val useGps = outdoor && locationOn
     val strength = family == Workouts.Family.Strength
     val mind = family == Workouts.Family.MindBody
-    val hasDistance = useGps || type in Workouts.ON_FOOT
+    val hasDistance = useGps || type in SportTypes.ON_FOOT
     val kinds = WorkoutSetup.goalKinds(type, hasDistance)
     // A kind that doesn't fit the side now (a distance indoors on a bike) shows as no goal.
     val kind = draft.kind.takeIf { it in kinds } ?: WorkoutSetup.GoalKind.None

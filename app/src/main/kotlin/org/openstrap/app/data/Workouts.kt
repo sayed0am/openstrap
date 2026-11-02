@@ -339,18 +339,6 @@ object Workouts {
     /** Sports done only outdoors, whose tile carries the location mark: no indoor side to choose. */
     val OUTDOOR_ONLY: Set<Int> get() = OUTDOOR - SIDES.map { it.outdoor }.toSet()
 
-    /**
-     * Sports done on your feet, where steps times a stride make a distance (≈) without GPS: runs, walks, hikes. On a
-     * bike, in water or on a mat, steps say nothing about distance, so those show none.
-     */
-    val ON_FOOT: Set<Int> get() = SportTypes.ON_FOOT
-
-    /** Runs, where distance comes with a pace ([SportTypes.RUNS], kept for the screens that still ask here). */
-    val RUNS: Set<Int> get() = SportTypes.RUNS
-
-    /** On foot but not running: walks and hikes, where distance alone says it ([SportTypes.WALKS]). */
-    val WALKS: Set<Int> get() = SportTypes.WALKS
-
     /** A workout's effort glow never goes below this, so a light one, or one with no Load, still shows a trace. */
     const val EFFORT_MIN = 0.12f
     /** Workouts with a Load before your usual counts: fewer and the fixed [EFFORT_FULL_LOAD] scale is used. */

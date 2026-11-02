@@ -71,7 +71,7 @@ sealed interface WorkoutState {
             org.openstrap.app.data.Phases.phase(s, rounds, { t -> WorkoutRecorder.activeSeconds(workout, minOf(t, now)) }, restExtra)
         }
         val paused: Boolean get() = workout.pausedAt != null
-        val strength: Boolean get() = workout.sportType in org.openstrap.app.data.Strength.SPORTS
+        val strength: Boolean get() = workout.sportType in org.openstrap.app.data.SportTypes.STRENGTH
         /** A set under way. */
         val inSet: Boolean get() = sets.lastOrNull()?.let { it.end == null } == true
         val resting: Boolean get() = restUntil != null
@@ -973,10 +973,10 @@ class WorkoutSession(
 
     /**
      * The strap's steps since the start times a stride for their cadence and your height; null without either, and
-     * for sports not done on foot ([org.openstrap.app.data.Workouts.ON_FOOT]).
+     * for sports not done on foot ([org.openstrap.app.data.SportTypes.ON_FOOT]).
      */
     private fun stepsDistance(w: AppWorkout): Float? {
-        if (w.sportType !in org.openstrap.app.data.Workouts.ON_FOOT) return null
+        if (w.sportType !in org.openstrap.app.data.SportTypes.ON_FOOT) return null
         val first = firstSteps ?: return null
         val last = steps.lastOrNull()?.second ?: return null
         val height = heightCm ?: return null
@@ -1040,7 +1040,7 @@ class WorkoutSession(
             }
             launch { countKcal(w, maxHr) }
             // Strength rest is timed to the second, not to the flush.
-            if (w.sportType in org.openstrap.app.data.Strength.SPORTS) launch {
+            if (w.sportType in org.openstrap.app.data.SportTypes.STRENGTH) launch {
                 while (isActive) {
                     delay(1_000)
                     checkRest()

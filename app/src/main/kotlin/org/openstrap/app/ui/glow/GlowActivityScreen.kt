@@ -2,6 +2,7 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -371,7 +372,7 @@ private fun FactsList(
             fromWorkouts?.toString() ?: est?.let { "${it.low}-${it.high}" },
             when {
                 fromWorkouts != null -> "From your workouts"
-                est != null -> est.band?.let { "${it.label} for your age" } ?: "Estimated from your profile"
+                est != null -> est.band?.let { "${Vo2maxCopy.band(it)} for your age" } ?: "Estimated from your profile"
                 else -> "After a workout the strap can read it from"
             },
             divider = false, onClick = { open(Score.Vo2Max) }, icon = Score.Vo2Max.rowIcon(),

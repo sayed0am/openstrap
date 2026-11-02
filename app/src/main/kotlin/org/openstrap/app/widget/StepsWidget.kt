@@ -45,7 +45,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.roundToInt
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 
 /**
  * The Steps widget (widgets spec 3.3): today's steps against the goal, glanceable all day. The Wide adds what's to go

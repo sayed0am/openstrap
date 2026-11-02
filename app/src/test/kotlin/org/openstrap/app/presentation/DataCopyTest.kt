@@ -8,7 +8,7 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.Vo2max
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.data.settings.CalorieGoal
+import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.assertCleanCopy
 import java.time.LocalDate
@@ -39,9 +39,10 @@ class DataCopyTest {
         val earlier = SleepSession(start = at(13), end = at(14, 10), nap = true)
         val now = at(20)
         assertEquals(SleepEdits.Problem.RunsInto(nap = true, start = at(13)), SleepEdits.check(nap, at(14), at(14, 48), now, listOf(earlier)))
-        assertEquals("That runs into your nap at 13:00.", SleepEdits.problem(nap, at(14), at(14, 48), now, listOf(earlier), zone))
+        val problem = SleepEdits.check(nap, at(14), at(14, 48), now, listOf(earlier))!!
+        assertEquals("That runs into your nap at 13:00.", SleepEditCopy.text(problem, zone))
         ClockSetting.use24Hour = false
-        val twelve = SleepEdits.problem(nap, at(14), at(14, 48), now, listOf(earlier), zone)!!
+        val twelve = SleepEditCopy.text(problem, zone)
         assertEquals("That runs into your nap at ${TimeOfDay.format(at(13), zone, use24Hour = false)}.", twelve)
         assertCleanCopy(twelve)
     }
@@ -57,28 +58,47 @@ class DataCopyTest {
     }
 
     @Test fun `the calorie range groups its digits in the phone's language`() {
-        assertEquals("Pick a number from 200 to 3.000", CalorieGoal.OUT_OF_RANGE)
+        assertEquals("Pick a number from 200 to 3.000", GoalCopy.outOfRange(Goals.CALORIES))
         assertEquals("Pick a number from 200 to 3,000", GoalCopy.outOfRange(200..3000, Locale.US))
-        assertEquals("8.000 steps, 450 active kcal, 8 h sleep, 10 active hours", org.openstrap.app.data.settings.Goals(calories = 450).summary())
+        assertEquals("8.000 steps, 450 active kcal, 8 h sleep, 10 active hours", GoalCopy.summary(Goals(calories = 450)))
         assertEquals(
             "8,000 steps, 300 active kcal, 7 h 30 sleep, 10 active hours",
-            GoalCopy.summary(org.openstrap.app.data.settings.Goals(sleepMinutes = 450), Locale.US),
+            GoalCopy.summary(Goals(sleepMinutes = 450), Locale.US),
         )
     }
 
     @Test fun `the VO2max words, with the bands as ranges in words`() {
-        assertEquals("Needs an age between 20 and 79.", Vo2max.Withheld.Age.reason)
-        assertEquals("Top 10 %", Vo2max.Friend.Band.Top10.label)
+        assertEquals("Needs an age between 20 and 79.", Vo2maxCopy.reason(Vo2max.Withheld.Age))
+        assertEquals("Top 10 %", Vo2maxCopy.band(Vo2max.Friend.Band.Top10))
         // The ranges say "to" now: copy uses no en dash between words.
-        assertEquals("30th to 50th percentile", Vo2max.Friend.Band.P30to50.label)
-        assertCleanCopy(Vo2max.Withheld.entries.map { it.reason } + Vo2max.Friend.Band.entries.map { it.label })
+        assertEquals("30th to 50th percentile", Vo2maxCopy.band(Vo2max.Friend.Band.P30to50))
+        assertCleanCopy(Vo2max.Withheld.entries.map(Vo2maxCopy::reason) + Vo2max.Friend.Band.entries.map(Vo2maxCopy::band))
     }
 
     @Test fun `recovery's contributor lines use the app's durations`() {
         val nights = (1..20).map { org.openstrap.app.testing.night(it) }
         val tonight = org.openstrap.app.testing.night(21, asleep = 460)
         val sleep = Recovery.readiness(tonight, nights).contributors.first { it.factor == Recovery.Factor.Sleep }
-        assertEquals("7 h 40 asleep", sleep.detail)
-        assertCleanCopy(sleep.detail)
+        assertEquals("7 h 40 asleep", RecoveryCopy.detail(sleep.detail))
+        assertCleanCopy(RecoveryCopy.detail(sleep.detail))
+    }
+
+    @Test fun `every recovery contributor line, in German and English`() {
+        val all = listOf(
+            Recovery.Detail.Hrv(52, -8), Recovery.Detail.RestingHr(54, 1.6f), Recovery.Detail.Asleep(460),
+            Recovery.Detail.SleepDebt(0), Recovery.Detail.SleepDebt(75), Recovery.Detail.LowestHeartRate(95),
+            Recovery.Detail.Temperature(-0.04f), Recovery.Detail.Breathing(0.4f), Recovery.Detail.BloodOxygen(96.25f, -1.2f),
+            Recovery.Detail.Load(140, 95),
+        )
+        assertEquals(
+            listOf(
+                "52 ms, −8% vs usual", "54 bpm, +2 vs usual", "7 h 40 asleep", "No sleep debt", "1 h 15 of sleep debt",
+                "Lowest heart rate 1 h 35 before waking", "±0,0 °C vs usual", "+0,4 /min vs usual", "96,3 %, −1,2 vs usual",
+                "Load 140, usual 95",
+            ),
+            all.map { RecoveryCopy.detail(it) },
+        )
+        assertEquals("96.3 %, −1.2 vs usual", RecoveryCopy.detail(Recovery.Detail.BloodOxygen(96.25f, -1.2f), Locale.US))
+        assertCleanCopy(all.map { RecoveryCopy.detail(it) } + all.map { RecoveryCopy.detail(it, Locale.US) })
     }
 }

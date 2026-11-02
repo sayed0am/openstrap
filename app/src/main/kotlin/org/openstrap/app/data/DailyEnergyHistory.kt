@@ -4,7 +4,6 @@ import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.UserProfile
-import org.openstrap.app.presentation.Weeks
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId

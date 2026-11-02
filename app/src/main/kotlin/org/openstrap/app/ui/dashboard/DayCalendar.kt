@@ -48,7 +48,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 
 /**
  * What the date header's calendar needs: the days that have data, and where a picked day goes. Immutable, so a header

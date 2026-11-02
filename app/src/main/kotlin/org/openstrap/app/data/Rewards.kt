@@ -8,7 +8,6 @@ import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.data.db.BadgeRow
 import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.WeekResult
-import org.openstrap.app.presentation.Weeks
 
 /**
  * The weekly goal, personal bests and badges (workouts spec 3, requests spec 7), worked out from the workouts and days

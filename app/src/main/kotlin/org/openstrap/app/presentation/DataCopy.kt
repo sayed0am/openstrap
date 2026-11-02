@@ -1,44 +1,35 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.Vo2max
 import org.openstrap.app.data.settings.Goals
 import java.time.ZoneId
 import java.util.Locale
-import kotlin.math.abs
-import kotlin.math.pow
-import kotlin.math.roundToLong
 
 /*
- * Text the data package used to write itself (audit finding A10), moved here by task 3E. The data side keeps a thin
- * function that calls these, for the ui callers that still read its text. Written in its own file so the coordinator
- * can fold it into the rest of presentation/.
+ * Text the data package used to write itself (audit finding A10). Data now hands over values only, and the screens
+ * ask here for the words.
  */
 
-/** A change against your usual, with its sign: "+3", "−3", or "±0" when it rounds to nothing, never "-0". */
-object Signed {
-    fun of(v: Int, locale: Locale = Locale.getDefault()): String {
-        val text = String.format(locale, "%d", abs(v))
-        return when {
-            v > 0 -> "+$text"
-            v < 0 -> "−$text"
-            else -> "±$text"
-        }
+/** A recovery contributor's line under its name in the score detail: "52 ms, +4% vs usual", "7 h 40 asleep". */
+object RecoveryCopy {
+    fun detail(d: Recovery.Detail, locale: Locale = Locale.getDefault()): String = when (d) {
+        is Recovery.Detail.Hrv -> "${whole(d.ms, locale)} ms, ${Signed.of(d.percentVsUsual, locale)}% vs usual"
+        is Recovery.Detail.RestingHr -> "${whole(d.bpm, locale)} bpm, ${Signed.of(d.vsUsual, 0, locale)} vs usual"
+        is Recovery.Detail.Asleep -> "${minutes(d.minutes, locale)} asleep"
+        is Recovery.Detail.SleepDebt -> if (d.minutes == 0) "No sleep debt" else "${minutes(d.minutes, locale)} of sleep debt"
+        is Recovery.Detail.LowestHeartRate -> "Lowest heart rate ${minutes(d.minutesBeforeWaking, locale)} before waking"
+        is Recovery.Detail.Temperature -> "${Signed.of(d.vsUsual, 1, locale)} °C vs usual"
+        is Recovery.Detail.Breathing -> "${Signed.of(d.vsUsual, 1, locale)} /min vs usual"
+        is Recovery.Detail.BloodOxygen ->
+            "${String.format(locale, "%.1f", d.percent)} %, ${Signed.of(d.vsUsual, 1, locale)} vs usual"
+        is Recovery.Detail.Load -> "Load ${whole(d.yesterday, locale)}, usual ${whole(d.usual, locale)}"
     }
 
-    /** [v] to [decimals] places with its sign: "+0.4", "−3", "±0.0". */
-    fun of(v: Float, decimals: Int, locale: Locale = Locale.getDefault()): String {
-        val text = String.format(locale, "%.${decimals}f", abs(v))
-        // Decided on the rounded value, not the text, so a comma decimal mark can't make "0,0" read as a change.
-        val rounded = (abs(v) * TEN.pow(decimals)).roundToLong()
-        return when {
-            rounded == 0L -> "±$text"
-            v > 0 -> "+$text"
-            else -> "−$text"
-        }
-    }
+    private fun whole(n: Int, locale: Locale) = String.format(locale, "%d", n)
 
-    private const val TEN = 10f
+    private fun minutes(m: Int, locale: Locale) = Units.duration(m * Units.MINUTE, locale)
 }
 
 /** Why a sleep edit can't be saved ([SleepEdits.check]), as the edit sheet says it. */

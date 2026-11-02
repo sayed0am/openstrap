@@ -1,7 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
-import org.openstrap.app.presentation.Formatters
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -130,7 +130,7 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
         best?.let { StoryChip("${RewardsCopy.bestTitle(it.kind)}, ${RewardsCopy.bestValue(it.kind, it.value)}", best = true, met = false) },
     )
     return StoryCard.Week(
-        "${dayMonth(first)} to ${dayMonth(first.plusDays(6))}", "$count",
+        "${DayWords.dayMonth(first)} to ${DayWords.dayMonth(first.plusDays(6))}", "$count",
         "${if (count == 1) "workout" else "workouts"}, goal $goal", weekDots(view, first), totals, chips,
     )
 }
@@ -224,7 +224,7 @@ private fun order(kind: String): Int = Rewards.Kind.fastestMeters(kind)
 /** "30 Oct", or "30 Oct 2025" in another year. */
 private fun shortDate(epoch: Long): String {
     val d = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).toLocalDate()
-    return if (d.year == LocalDate.now().year) dayMonth(d) else d.format(Formatters.of("d MMM yyyy", Locale.getDefault()))
+    return if (d.year == LocalDate.now().year) DayWords.dayMonth(d) else DayWords.dayMonthYear(d)
 }
 
 /** Every badge by group: earned ones in colour with their date, locked ones dim with what they need. */
@@ -295,7 +295,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
                 highlights.forEachIndexed { i, b ->
                     ListRow(
                         "${RewardsCopy.bestTitle(b.kind)}, ${RewardsCopy.bestValue(b.kind, b.value)}", BestColor,
-                        weekdayShort(Instant.ofEpochSecond(b.date).atZone(zone).toLocalDate()), null,
+                        DayWords.weekdayShort(Instant.ofEpochSecond(b.date).atZone(zone).toLocalDate()), null,
                         divider = i > 0, icon = AppIcons.FlagCheckered,
                     )
                 }

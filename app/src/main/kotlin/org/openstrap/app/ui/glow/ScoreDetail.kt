@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.RecoveryCopy
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -160,7 +161,7 @@ private fun RecoveryDetail(
                     all.forEachIndexed { i, c ->
                         ContributorRow(
                             TabCopy.factorName(c.factor), MetricColors.readiness, TabCopy.contributorWord(c.score), c.score / 100f,
-                            offNormal = TabCopy.contributorOff(c.score), divider = i > 0, detail = readable(c.detail),
+                            offNormal = TabCopy.contributorOff(c.score), divider = i > 0, detail = RecoveryCopy.detail(c.detail),
                         )
                     }
                 }
@@ -172,7 +173,7 @@ private fun RecoveryDetail(
                     val values = week.map { it.second?.toFloat() }
                     // TODO(step 6): your normal as a band, once the app keeps a normal of the score; every day stays dim until then.
                     NormalTrend(
-                        values, DetailCopy.levels(values, null), color, labels = week.map { weekdayShort(it.first) },
+                        values, DetailCopy.levels(values, null), color, labels = week.map { DayWords.weekdayShort(it.first) },
                         onScrub = { i ->
                             scrub = i?.let { week[it] }?.let { (d, v) ->
                                 v?.let { DetailHeadline(it.toString(), DayWords.short(d), TodayCopy.recoveryWord(it, false)) }
@@ -192,8 +193,6 @@ private fun RecoveryDetail(
     )
 }
 
-/** A contributor's reading as the engine words it ("52 ms, -8% vs usual"). */
-private fun readable(detail: String): String? = detail.takeIf { it.isNotBlank() }
 
 
 /* ----------------------------------------------- Charge --------------------------------------------- */

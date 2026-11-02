@@ -42,6 +42,15 @@ class RewardsCopyTest {
     }
 
     @Test
+    fun aBestsDottedArtKeepsAsciiDigitsInEveryLanguage() {
+        for (locale in TEST_LOCALES) {
+            Locale.setDefault(locale)
+            assertEquals("10K", RewardsCopy.bestShort(Rewards.Kind.fastest(10_000)))
+            assertEquals("HM", RewardsCopy.bestShort(Rewards.Kind.fastest(21097)))
+        }
+    }
+
+    @Test
     fun aNewBestSaysHowFarItBeatTheLast() {
         val before = PersonalBest(Rewards.Kind.fastest(5000), 1623.0, at("2026-08-12", 7))
         val now = PersonalBest(Rewards.Kind.fastest(5000), 1601.0, at("2026-10-30", 7))

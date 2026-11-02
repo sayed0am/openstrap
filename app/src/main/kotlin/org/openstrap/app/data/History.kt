@@ -2,7 +2,6 @@ package org.openstrap.app.data
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import org.openstrap.app.presentation.Weeks
 import kotlin.math.sqrt
 
 /** Pure helpers for week, month and year views of a daily series; free of Android types so they're unit-testable. */

@@ -14,7 +14,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.util.Locale
-import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.data.Weeks
 
 /**
  * The mockups' sample day as each widget's model, made by the same factories the widgets load through, so the

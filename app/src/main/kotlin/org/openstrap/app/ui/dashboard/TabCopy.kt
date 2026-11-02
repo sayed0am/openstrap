@@ -2,7 +2,7 @@ package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
-import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.SportTypes
 import java.time.LocalDate
 import java.util.Locale
 import org.openstrap.app.presentation.DayWords
@@ -287,9 +287,9 @@ object TabCopy {
     enum class SportFact { Run, Walk, Strength, Other }
 
     fun sportFact(sportType: Int): SportFact = when (sportType) {
-        in Workouts.RUNS -> SportFact.Run
-        in Workouts.WALKS -> SportFact.Walk
-        in org.openstrap.app.data.Strength.SPORTS -> SportFact.Strength
+        in SportTypes.RUNS -> SportFact.Run
+        in SportTypes.WALKS -> SportFact.Walk
+        in SportTypes.STRENGTH -> SportFact.Strength
         else -> SportFact.Other
     }
 

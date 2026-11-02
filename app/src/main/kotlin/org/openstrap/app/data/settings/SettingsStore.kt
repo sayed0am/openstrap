@@ -441,7 +441,7 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
 
     /**
      * The day (epoch day) of the first real Recovery score, so it's marked on that day only; null before one. Scores
-     * from before this was kept are stored as a day long past ([org.openstrap.app.ui.dashboard.BEFORE_FIRST_SCORE]).
+     * from before this was kept are stored as a day long past (`BEFORE_FIRST_SCORE`).
      */
     val firstScoreDay: Flow<Long?> = read { it[firstScore] }
 

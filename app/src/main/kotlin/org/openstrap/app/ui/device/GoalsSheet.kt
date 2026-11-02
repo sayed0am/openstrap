@@ -35,6 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.settings.CalorieGoal
 import org.openstrap.app.data.settings.Goals
+import org.openstrap.app.presentation.GoalCopy
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.glow.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
@@ -145,14 +147,14 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
                     )
                     LaunchedEffect(Unit) { focus.requestFocus() }
                 } else {
-                    Text("%,d active kcal".format(value), color = Color.White, style = GlowType.body, maxLines = 1)
+                    Text("${Units.count(value.toLong())} active kcal", color = Color.White, style = GlowType.body, maxLines = 1)
                 }
             }
             RoundButton(AppIcons.Plus, "Raise the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) }, size = 44.dp)
         }
-        if (refused) PageNote(CalorieGoal.OUT_OF_RANGE, MetricColors.warn)
+        if (refused) PageNote(GoalCopy.outOfRange(Goals.CALORIES), MetricColors.warn)
         if (suggested != null) {
-            val line = "Suggested %,d, from your last 4 weeks".format(suggested)
+            val line = "Suggested ${Units.count(suggested.toLong())}, from your last 4 weeks"
             if (suggested == value) PageNote("$line. Your strap's goal is set to match.")
             else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Box(Modifier.weight(1f)) { PageNote(line) }

@@ -6,7 +6,6 @@ import kotlin.math.abs
 import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.presentation.SleepEditCopy
 
 /**
  * The user's own times for a sleep or nap the strap detected, or its removal ([SleepEdit]). The strap's rows and
@@ -170,20 +169,6 @@ object SleepEdits {
             else -> null
         }
     }
-
-    /**
-     * [check] as the sentence the edit sheet shows ([SleepEditCopy]). Kept here for the sheet in ui/glow until it
-     * builds the text itself.
-     */
-    fun problem(
-        strap: SleepSession,
-        start: Long,
-        end: Long,
-        now: Long,
-        others: List<SleepSession> = emptyList(),
-        zone: ZoneId = ZoneId.systemDefault(),
-    ): String? =
-        check(strap, start, end, now, others)?.let { SleepEditCopy.text(it, zone) }
 
     /**
      * The moment at [minuteOfDay] (after local midnight) closest to [near]: a clock picked for a session's end is read

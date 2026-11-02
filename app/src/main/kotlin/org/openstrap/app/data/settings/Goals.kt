@@ -1,7 +1,6 @@
 package org.openstrap.app.data.settings
 
 import org.openstrap.app.data.Stats
-import org.openstrap.app.presentation.GoalCopy
 
 /** Your daily targets. The defaults are the app's old fixed goals, and the strap's 300 for calories. */
 data class Goals(
@@ -14,9 +13,6 @@ data class Goals(
     val workoutsPerWeek: Int = org.openstrap.app.data.Rewards.DEFAULT_GOAL,
 ) {
     val sleepSeconds: Long get() = sleepMinutes * 60L
-
-    /** "8,000 steps, 300 active kcal, 8 h sleep, 10 active hours" ([GoalCopy.summary]), for the ui callers. */
-    fun summary(): String = GoalCopy.summary(this)
 
     companion object {
         const val DEFAULT_STEPS = 8000
@@ -40,9 +36,6 @@ data class Goals(
  * the last four weeks. Pure, so it's tested without the sheet.
  */
 object CalorieGoal {
-    /** Said under the field when a typed value is outside [Goals.CALORIES]. */
-    val OUT_OF_RANGE: String get() = GoalCopy.outOfRange(Goals.CALORIES)
-
     /** Fewer full days than this and there is no suggestion: a few days say nothing about your usual. */
     const val MIN_FULL_DAYS = 7
 

@@ -3,7 +3,6 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.settings.UserProfile
-import org.openstrap.app.presentation.Weeks
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId

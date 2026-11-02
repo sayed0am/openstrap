@@ -104,7 +104,7 @@ class RecoveryWidgetModelTest {
             hrvSamples = 40, hrMinutes = 400,
         )
         val ready = Recovery.Readiness(
-            78, listOf(Recovery.Contributor(Recovery.Factor.Sleep, 82, "7 h 30 asleep")), 30, false, emptyList(), false,
+            78, listOf(Recovery.Contributor(Recovery.Factor.Sleep, 82, Recovery.Detail.Asleep(450))), 30, false, emptyList(), false,
         )
         val r = RecoveryResult(
             today, ready, Recovery.ChargeDay(emptyList(), null, null, 0f, 0f, 0f, 0f, null, null, anchored = true), week,

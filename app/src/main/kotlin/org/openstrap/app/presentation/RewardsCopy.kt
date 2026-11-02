@@ -50,9 +50,9 @@ object RewardsCopy {
     /** "1 km", "5 km", "half marathon". */
     fun distanceName(meters: Int): String = if (meters == 21097) "half marathon" else "${meters / 1000} km"
 
-    /** The badge art's short text for a best: "5K", "HM", "KG", "RUN". */
+    /** The badge art's short text for a best, drawn in dots, so ASCII digits always: "5K", "HM", "KG", "RUN". */
     fun bestShort(kind: String): String {
-        Rewards.Kind.fastestMeters(kind)?.let { return if (it == 21097) "HM" else "${it / 1000}K" }
+        Rewards.Kind.fastestMeters(kind)?.let { return if (it == 21097) "HM" else dotFormat("%dK", it / 1000) }
         if (Rewards.Kind.liftName(kind) != null) return "KG"
         return when (kind) {
             Rewards.Kind.LONGEST_RUN -> "RUN"

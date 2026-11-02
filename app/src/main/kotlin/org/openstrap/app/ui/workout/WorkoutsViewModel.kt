@@ -254,7 +254,7 @@ class WorkoutsViewModel(
      */
     private suspend fun restBefore(w: org.openstrap.app.data.db.AppWorkout, below: Int): Long? {
         val last = dao.appWorkoutsOnce(w.start - 14 * 86_400L, w.start - 1)
-            .filter { it.end != null && it.start < w.start && it.sportType in org.openstrap.app.data.Strength.SPORTS }
+            .filter { it.end != null && it.start < w.start && it.sportType in org.openstrap.app.data.SportTypes.STRENGTH }
             .maxByOrNull { it.start } ?: return null
         val readings = dao.appWorkoutHeartRateOnce(last.start).map { it.timestamp to it.bpm }
         return FamilySummary.restRecovery(dao.setsOnce(last.start), readings, below)

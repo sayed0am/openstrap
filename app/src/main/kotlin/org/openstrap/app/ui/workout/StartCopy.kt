@@ -5,6 +5,7 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.presentation.DayWords
@@ -30,8 +31,8 @@ object StartCopy {
 
     /** The goal chip for no goal, named for the sport: "Just run", "Just walk", "Just ride", else "Just go". */
     fun noGoal(type: Int): String = when {
-        type in Workouts.RUNS -> "Just run"
-        type in Workouts.WALKS -> "Just walk"
+        type in SportTypes.RUNS -> "Just run"
+        type in SportTypes.WALKS -> "Just walk"
         Workouts.tileType(type) == 4 -> "Just ride"
         else -> "Just go"
     }
@@ -266,8 +267,8 @@ object StartCopy {
 
     /** Under an indoor side's title: what you get without GPS. */
     fun indoorNote(type: Int): String = when {
-        type in Workouts.RUNS -> "Pace from your steps"
-        type in Workouts.ON_FOOT -> "Distance from your steps"
+        type in SportTypes.RUNS -> "Pace from your steps"
+        type in SportTypes.ON_FOOT -> "Distance from your steps"
         else -> "Time and your heart, no distance"
     }
 
