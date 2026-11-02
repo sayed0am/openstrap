@@ -51,6 +51,9 @@ class AppContainer(val app: Application) {
     val updater = org.openstrap.app.update.AppUpdater(
         app, settings, recording = { workout.state.value is org.openstrap.app.device.WorkoutState.Recording }, scope = appScope,
     )
+    /** Save a copy, Restore and automatic backup's zip. What a restore couldn't do goes to Diagnostics. */
+    val backups: org.openstrap.app.data.BackupRepository =
+        org.openstrap.app.export.CsvBackups(app, database, settings, csv, log = { (strap as? StrapManager)?.log(it) })
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {

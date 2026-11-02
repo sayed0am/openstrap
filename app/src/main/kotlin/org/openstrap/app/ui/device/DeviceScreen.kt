@@ -27,7 +27,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.NonRestartableComposable
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,9 +48,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
 import androidx.compose.foundation.layout.height
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.graphics.Color
-import kotlinx.coroutines.launch
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.ui.alarms.AlarmsUiState
 import org.openstrap.app.ui.alarms.alarmsSummary
@@ -105,6 +104,35 @@ internal fun strapStateLine(connection: ConnectionState, sync: SyncState, lastSe
     ConnectionState.Disconnected -> lastSeen?.let { "Last seen ${agoText(now - it).lowercase()}" } ?: "Not connected"
 }
 
+/** The page as it was called before the view model held the settings. Kept until MainActivity calls the new one. */
+@Deprecated("The view model holds the settings now. Drop the settings argument.")
+// A shim over the real page, deleted once MainActivity calls the new signature.
+@Suppress(
+    "ComposeModifierMissing", "ModifierMissing", "ComposeViewModelForwarding", "ViewModelForwarding", "UNUSED_PARAMETER", "UnusedParameter",
+)
+@NonRestartableComposable
+@Composable
+fun DeviceScreen(
+    vm: DeviceViewModel,
+    contentPadding: PaddingValues,
+    onRequestBluetooth: (then: () -> Unit) -> Unit,
+    settings: SettingsStore,
+    alarms: AlarmsUiState,
+    zeppSignedIn: Boolean,
+    lastSeen: Long?,
+    onAlarms: () -> Unit,
+    onPhoneAlerts: () -> Unit,
+    onHealthAlerts: () -> Unit,
+    onFirmware: () -> Unit,
+    onZeppAccount: () -> Unit,
+    onBack: () -> Unit,
+    preview: StrapView? = null,
+    selected: String? = null,
+) = DeviceScreen(
+    vm, contentPadding, onRequestBluetooth, alarms, zeppSignedIn, lastSeen,
+    onAlarms, onPhoneAlerts, onHealthAlerts, onFirmware, onZeppAccount, onBack, preview, selected,
+)
+
 /**
  * The Strap page (spec 3.4), opened from the header chip on any tab: the strap with its state and battery, Sync now and
  * Find strap, then its settings as rows with their values, each opening its page or switching in place, then
@@ -115,7 +143,6 @@ fun DeviceScreen(
     vm: DeviceViewModel,
     contentPadding: PaddingValues,
     onRequestBluetooth: (then: () -> Unit) -> Unit,
-    settings: SettingsStore,
     /** The strap's alarms and health settings as last read, for the rows' values. */
     alarms: AlarmsUiState,
     zeppSignedIn: Boolean,
@@ -133,21 +160,20 @@ fun DeviceScreen(
     selected: String? = null,
 ) {
     BackHandler(onBack = onBack)
-    val scope = rememberCoroutineScope()
-    val paired by vm.paired.collectAsState()
-    val connection by vm.strap.connection.collectAsState()
-    val sync by vm.strap.sync.collectAsState()
-    val scan by vm.scan.collectAsState()
-    val info by vm.strap.info.collectAsState()
-    val calls by settings.buzzOnCalls.collectAsState(false)
-    val notifications by settings.buzzOnNotifications.collectAsState(false)
-    val wearReminder by settings.wearReminder.collectAsState(true)
-    val autoStart by settings.autoStartWorkouts.collectAsState(true)
+    val paired by vm.paired.collectAsStateWithLifecycle()
+    val connection by vm.connection.collectAsStateWithLifecycle()
+    val sync by vm.sync.collectAsStateWithLifecycle()
+    val scan by vm.scan.collectAsStateWithLifecycle()
+    val info by vm.info.collectAsStateWithLifecycle()
+    val calls by vm.buzzOnCalls.collectAsStateWithLifecycle()
+    val notifications by vm.buzzOnNotifications.collectAsStateWithLifecycle()
+    val wearReminder by vm.wearReminder.collectAsStateWithLifecycle()
+    val autoStart by vm.autoStartWorkouts.collectAsStateWithLifecycle()
     var confirmForget by rememberSaveable { mutableStateOf(false) }
     var confirmDisconnect by rememberSaveable { mutableStateOf(false) }
     var confirmRestart by rememberSaveable { mutableStateOf(false) }
     val keepConnected = rememberKeepConnected(vm)
-    val offerBackground by vm.offerBackground.collectAsState()
+    val offerBackground by vm.offerBackground.collectAsStateWithLifecycle()
     LaunchedEffect(offerBackground, paired) {
         val address = paired?.address
         if (offerBackground && address != null) { vm.backgroundOffered(); keepConnected.associate(address) }
@@ -158,7 +184,7 @@ fun DeviceScreen(
             "Disconnect the strap?",
             (if (sync is SyncState.Running) "The sync in progress will stop. " else "") +
                 "The strap keeps recording on its own, but OpenStrap won't sync or show live heart rate until you connect again.",
-            confirm = "Disconnect", onConfirm = { confirmDisconnect = false; vm.strap.disconnect() }, onDismiss = { confirmDisconnect = false },
+            confirm = "Disconnect", onConfirm = { confirmDisconnect = false; vm.disconnect() }, onDismiss = { confirmDisconnect = false },
         )
     }
 
@@ -197,14 +223,16 @@ fun DeviceScreen(
                 when (connection) {
                     is ConnectionState.Connected -> {
                         PageButton(
-                            "Sync now", vm.strap::syncNow, Modifier.weight(1f).height(56.dp), enabled = sync !is SyncState.Running,
+                            "Sync now", vm::syncNow, Modifier.weight(1f).height(56.dp), enabled = sync !is SyncState.Running,
                             icon = AppIcons.Refresh04,
                         )
                         if (info?.findDevice == true) FindStrapButton(vm, Modifier.weight(1f).height(56.dp))
                     }
                     ConnectionState.Connecting, ConnectionState.Authenticating ->
-                        PageButton("Cancel", vm.strap::disconnect, Modifier.fillMaxWidth().height(56.dp))
-                    else -> PageButton("Connect", { onRequestBluetooth { vm.strap.connect() } }, Modifier.fillMaxWidth().height(56.dp), primary = true)
+                        PageButton("Cancel", vm::disconnect, Modifier.fillMaxWidth().height(56.dp))
+                    else -> PageButton(
+                        "Connect", { onRequestBluetooth { vm.connect() } }, Modifier.fillMaxWidth().height(56.dp), primary = true,
+                    )
                 }
             }
         }
@@ -216,11 +244,11 @@ fun DeviceScreen(
                 PageRow("Alarms", alarmsSummary(alarms) ?: waiting, onClick = onAlarms, divider = false, icon = AppIcons.Alarm, selected = selected == "Alarms")
                 PageRow("Phone alerts", phoneAlertsSummary(calls, notifications), onClick = onPhoneAlerts, icon = AppIcons.Vibrate, selected = selected == "Phone alerts")
                 PageRow("Health alerts", healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts, icon = AppIcons.Heartbeat, selected = selected == "Health alerts")
-                PageRow("Off-body reminder", onClick = { scope.launch { settings.setWearReminder(!wearReminder) } }, icon = AppIcons.HandPalm) {
-                    GlowSwitch(wearReminder, { on -> scope.launch { settings.setWearReminder(on) } })
+                PageRow("Off-body reminder", onClick = { vm.setWearReminder(!wearReminder) }, icon = AppIcons.HandPalm) {
+                    GlowSwitch(wearReminder, vm::setWearReminder)
                 }
-                PageRow("Auto-detect workouts", onClick = { scope.launch { settings.setAutoStartWorkouts(!autoStart) } }, icon = AppIcons.PersonSimpleRun) {
-                    GlowSwitch(autoStart, { on -> scope.launch { settings.setAutoStartWorkouts(on) } })
+                PageRow("Auto-detect workouts", onClick = { vm.setAutoStartWorkouts(!autoStart) }, icon = AppIcons.PersonSimpleRun) {
+                    GlowSwitch(autoStart, vm::setAutoStartWorkouts)
                 }
                 KeepConnectedRow(vm, keepConnected, device.address)
                 PageRow("Firmware", info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware ?: "Check for updates", onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == "Firmware")
@@ -247,7 +275,7 @@ fun DeviceScreen(
 /** Find strap: buzzes the strap and becomes Stop while it runs; it stops by itself after 60 s, as Zepp's does. */
 @Composable
 private fun FindStrapButton(vm: DeviceViewModel, modifier: Modifier) {
-    val finding by vm.strap.findingStrap.collectAsState()
+    val finding by vm.findingStrap.collectAsStateWithLifecycle()
     PageButton(
         if (finding) "Stop buzzing" else "Find strap", { if (finding) vm.stopFindingStrap() else vm.findStrap() }, modifier,
         icon = if (finding) AppIcons.StopFill else AppIcons.SearchArea,
@@ -260,18 +288,13 @@ private class KeepConnected(val associate: (address: String) -> Unit)
 @Composable
 private fun rememberKeepConnected(vm: DeviceViewModel): KeepConnected {
     val context = LocalContext.current
-    val companion = vm.companion
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-        if (!companion.onResult(result.resultCode)) vm.showMessage("Not linked. You can turn off battery optimization for OpenStrap instead.")
+        vm.associationResult(result.resultCode)
     }
-    return remember(companion, launcher) {
+    return remember(vm, launcher) {
         KeepConnected { address ->
             val activity = context.findActivity() ?: return@KeepConnected
-            companion.associate(
-                activity, address,
-                launch = { launcher.launch(IntentSenderRequest.Builder(it).build()) },
-                onError = vm::showMessage,
-            )
+            vm.associate(activity, address, launch = { launcher.launch(IntentSenderRequest.Builder(it).build()) })
         }
     }
 }
@@ -290,14 +313,14 @@ private tailrec fun android.content.Context.findActivity(): android.app.Activity
 @Composable
 private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, address: String) {
     val context = LocalContext.current
-    val associated by vm.companion.associated.collectAsState()
-    val ignoringBattery by vm.companion.ignoringBatteryOptimizations.collectAsState()
-    val declined by vm.companionDeclined.collectAsState()
+    val associated by vm.companionAssociated.collectAsStateWithLifecycle()
+    val ignoringBattery by vm.ignoringBatteryOptimizations.collectAsStateWithLifecycle()
+    val declined by vm.companionDeclined.collectAsStateWithLifecycle()
     val title = "Stay connected in background"
     val icon = AppIcons.Bluetooth
     when {
         associated -> PageRow(title, "On", icon = icon)
-        vm.companion.supported && !declined -> PageRow(title, "Off", onClick = { keepConnected.associate(address) }, icon = icon)
+        vm.companionSupported && !declined -> PageRow(title, "Off", onClick = { keepConnected.associate(address) }, icon = icon)
         !ignoringBattery -> PageRow(title, "Off", icon = icon, onClick = {
             runCatching {
                 context.startActivity(

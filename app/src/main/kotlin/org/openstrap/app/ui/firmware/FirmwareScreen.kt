@@ -19,7 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,10 +63,10 @@ import org.openstrap.app.zepp.DeviceListing
  */
 @Composable
 fun FirmwareScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack: () -> Unit, onZeppAccount: () -> Unit) {
-    val step by vm.step.collectAsState()
-    val account by vm.account.collectAsState()
-    val connection by vm.strap.connection.collectAsState()
-    val info by vm.strap.info.collectAsState()
+    val step by vm.step.collectAsStateWithLifecycle()
+    val account by vm.account.collectAsStateWithLifecycle()
+    val connection by vm.connection.collectAsStateWithLifecycle()
+    val info by vm.info.collectAsStateWithLifecycle()
     val installing = step is FirmwareStep.Installing
 
     // Leaving mid-install would be harmless for the strap, but keep the user here and the screen on.
@@ -191,8 +191,8 @@ private fun CheckResult(result: UpdateCheck, vm: FirmwareViewModel) {
 @Composable
 fun ZeppAccountScreen(vm: FirmwareViewModel, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
-    val account by vm.account.collectAsState()
-    val installing = vm.step.collectAsState().value is FirmwareStep.Installing
+    val account by vm.account.collectAsStateWithLifecycle()
+    val installing = vm.step.collectAsStateWithLifecycle().value is FirmwareStep.Installing
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Zepp account", onBack) }
         item { AccountPanel(account, enabled = !installing, onSave = vm::saveAccount, onClear = vm::clearAccount, onSignIn = vm::saveSignIn) }
