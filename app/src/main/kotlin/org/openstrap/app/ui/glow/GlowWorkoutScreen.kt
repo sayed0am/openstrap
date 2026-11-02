@@ -24,6 +24,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -101,7 +102,7 @@ fun GlowWorkoutDetailScreen(
     // A phone workout whose summary hasn't loaded yet shows only its header.
     val shown = a?.takeIf { !it.fromPhone }
     val list = rememberLazyListState()
-    var info by remember { mutableStateOf(false) }
+    var info by rememberSaveable { mutableStateOf(false) }
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
     val zones = shown?.zoneSeconds.orEmpty()
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
@@ -172,7 +173,7 @@ private fun PastSummary(
     val a = summary.analysis
     val w = a.workout
     val list = rememberLazyListState()
-    var info by remember { mutableStateOf(false) }
+    var info by rememberSaveable { mutableStateOf(false) }
     val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
     val usual = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
     val family = org.openstrap.app.ui.workout.FamilySummary.familyOf(w.sportType, summary.structure)

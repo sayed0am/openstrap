@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -81,7 +82,6 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
-import androidx.compose.runtime.SideEffect
 
 /*
  * Ready for distance and cardio sports (board ReadyFinal): the heart, where you are, then the goal, typed in place.
@@ -485,6 +485,12 @@ private fun TypedNumber(
     }
 }
 
+/** Keeps a [TypedValue]'s numbers as typed: each one's text and selection, three plain values a number. */
+private val TextFieldValuesSaver = androidx.compose.runtime.saveable.listSaver<List<TextFieldValue>, Any>(
+    save = { l -> l.flatMap { listOf(it.text, it.selection.start, it.selection.end) } },
+    restore = { v -> v.chunked(3) { (t, a, b) -> TextFieldValue(t as String, TextRange(a as Int, b as Int)) } },
+)
+
 /** The caret and underline of a number being typed. */
 private val TypingLime = Color(0xFFC3F53C)
 
@@ -509,17 +515,16 @@ private fun EndTyping(typing: Boolean, focused: Int?, everFocused: Boolean, onDo
 @Composable
 private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, onTyping: (Boolean) -> Unit) {
     val focusManager = LocalFocusManager.current
-    // What's typed so far, for the note while typing.
-    var typed by remember { mutableStateOf<String?>(null) }
+    // What's typed so far, for the note while typing, set as it's typed, never during composition (audit K6).
+    var typed by rememberSaveable { mutableStateOf<String?>(null) }
     // A step or preset while typing drops what was typed.
     fun stop() { onTyping(false); focusManager.clearFocus() }
     ValueStepper("Shorter", "Longer", { stop(); onMeters(StartCopy.stepDistance(meters, up = false)) }, { stop(); onMeters(StartCopy.stepDistance(meters, up = true)) }) {
         TypedValue(
             listOf(NumberField(StartCopy.distanceValue(meters), "km", length = 6, decimal = true)), typing, onTyping,
             onDone = { t -> StartCopy.parseDistance(t[0])?.let(onMeters) }, hint = StartCopy.TAP_TO_TYPE,
+            onTexts = { typed = it.firstOrNull() },
         ) {
-            val now = this.typed?.firstOrNull()
-            SideEffect { if (typed != now) typed = now }
             Row { Number(0) }
         }
     }
@@ -542,8 +547,10 @@ internal fun TimeGoal(
 ) {
     val focusManager = LocalFocusManager.current
     val context = LocalContext.current
-    var hours by remember { mutableStateOf(TextFieldValue()) }
-    var minutes by remember { mutableStateOf(TextFieldValue()) }
+    // What's typed outlives a rotation, a fold and process death (audit K7). Focus doesn't, so typing starts again on
+    // the hours, as it does when tapped.
+    var hours by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
+    var minutes by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
     var focused by remember { mutableStateOf<Int?>(null) }
     var everFocused by remember { mutableStateOf(false) }
     // Set once the hour is typed and the minutes have focus, until the minutes let it go.
@@ -642,7 +649,7 @@ private fun IntervalsGoal(
     saved: List<SavedWorkout>,
     onSave: (String, Structure.Reps) -> Unit,
 ) {
-    var unit by remember { mutableStateOf(StartCopy.repUnit(reps)) }
+    var unit by rememberSaveable { mutableStateOf(StartCopy.repUnit(reps)) }
     var sheet by rememberSaveable { mutableStateOf<Int?>(null) }
     fun typed(t: List<String>): Structure.Reps {
         val withCount = StartCopy.parseCount(t[0])?.let { reps.copy(rounds = it) } ?: reps
@@ -725,7 +732,9 @@ internal class TypedValueScope(val typed: List<String>?, val focused: Int?, priv
 /**
  * A value of several numbers, each typed in place (board ReadyFinalReps): [lines] lay out its numbers ([NumberField],
  * by index) among words. Any number taps to type ([onStart] first), then Next goes on to the next; once none has
- * focus, [onDone] reads what was typed, each number as text. "Tap a number to type it" ([hint]) under it at rest.
+ * focus, [onDone] reads what was typed, each number as text. [onTexts] hears each change to what's typed, as it's
+ * typed. "Tap a number to type it" ([hint]) under it at rest. What's typed, and which number typing started on, outlive
+ * a rotation, a fold and process death (audit K7).
  */
 @Composable
 internal fun TypedValue(
@@ -735,13 +744,14 @@ internal fun TypedValue(
     onDone: (List<String>) -> Unit,
     onStart: () -> Unit = {},
     hint: String? = StartCopy.TAP_A_NUMBER,
+    onTexts: (List<String>) -> Unit = {},
     lines: @Composable TypedValueScope.() -> Unit,
 ) {
     val focusManager = LocalFocusManager.current
-    var texts by remember(fields.size) { mutableStateOf(List(fields.size) { TextFieldValue() }) }
+    var texts by rememberSaveable(fields.size, stateSaver = TextFieldValuesSaver) { mutableStateOf(List(fields.size) { TextFieldValue() }) }
     var focused by remember { mutableStateOf<Int?>(null) }
     var everFocused by remember { mutableStateOf(false) }
-    var first by remember { mutableStateOf(0) }
+    var first by rememberSaveable { mutableIntStateOf(0) }
     val focus = remember(fields.size) { List(fields.size) { FocusRequester() } }
     EndTyping(typing, focused, everFocused) {
         if (typing) {
@@ -754,7 +764,11 @@ internal fun TypedValue(
         val f = fields[i]
         val last = i == fields.lastIndex
         if (typing) TypedNumber(
-            texts[i], { v -> texts = texts.toMutableList().also { it[i] = v.copy(text = v.text.filter { c -> c.isDigit() || f.decimal && (c == '.' || c == ',') }.take(f.length)) } },
+            texts[i], { v ->
+                val typed = v.text.filter { c -> c.isDigit() || f.decimal && (c == '.' || c == ',') }.take(f.length)
+                texts = texts.toMutableList().also { it[i] = v.copy(text = typed) }
+                onTexts(texts.map { it.text })
+            },
             f.editUnit, focused == i,
             Modifier.focusRequester(focus[i]).onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null },
             if (f.decimal) KeyboardType.Decimal else KeyboardType.Number, if (last) ImeAction.Done else ImeAction.Next,
@@ -762,6 +776,7 @@ internal fun TypedValue(
             style = f.style, modifier = Modifier.alignByBaseline(),
         ) else TapNumber(f.shown, f.unit, f.style) {
             texts = fields.map { selected(it.edit) }
+            onTexts(texts.map { it.text })
             first = i; everFocused = false
             onStart()
             onTyping(true)

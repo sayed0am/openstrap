@@ -32,7 +32,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,7 +50,11 @@ import java.time.format.TextStyle
 import java.time.temporal.WeekFields
 import java.util.Locale
 
-/** What the date header's calendar needs: the days that have data, and where a picked day goes. */
+/**
+ * What the date header's calendar needs: the days that have data, and where a picked day goes. Immutable, so a header
+ * given an equal picker skips (audit K11).
+ */
+@androidx.compose.runtime.Immutable
 data class DayPicker(val available: Set<LocalDate> = emptySet(), val onPick: (LocalDate) -> Unit = {})
 
 /** The red full stop from the wordmark marks today. */
@@ -65,7 +69,8 @@ fun DayCalendarSheet(selected: LocalDate, available: Set<LocalDate>, onPick: (Lo
     val today = LocalDate.now()
     val first = YearMonth.from(available.minOrNull()?.coerceAtMost(today) ?: today)
     val last = YearMonth.from(today)
-    var month by remember { mutableStateOf(YearMonth.from(selected)) }
+    // Opened on another day, the calendar opens on that day's month (audit K8).
+    var month by rememberSaveable(selected) { mutableStateOf(YearMonth.from(selected)) }
 
     // Glass over the blurred page, in the app's overlay.
     org.openstrap.app.ui.components.GlassSheet(onDismiss) {

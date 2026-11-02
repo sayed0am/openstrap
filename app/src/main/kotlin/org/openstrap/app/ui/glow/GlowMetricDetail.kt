@@ -140,7 +140,8 @@ internal fun siblings(detail: Detail, onSwitch: (Detail) -> Unit): List<DetailSi
  * [headline] and the seven-day [strip] ([onDay] picks a day). Under it the [ranges] as pills when there's more than
  * one, then [body]: the chart, the sentence and the rows. [heroValue] replaces the value row with a score gauge (the
  * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroSide] sits to the right of
- * a plain value row (heart rate's Live switch).
+ * a plain value row (heart rate's Live switch). While a chart is scrubbed, [scrubbed] gives the reading under the
+ * finger in the headline's place, on the value row in the gauge's place. It's read only inside the hero.
  */
 @Composable
 internal fun DetailTemplate(
@@ -158,38 +159,48 @@ internal fun DetailTemplate(
     onRange: (Range) -> Unit,
     heroValue: (@Composable () -> Unit)? = null,
     heroSide: (@Composable () -> Unit)? = null,
+    scrubbed: () -> DetailHeadline? = { null },
     body: LazyListScope.() -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val list = rememberLazyListState()
-    var switching by remember { mutableStateOf(false) }
+    var switching by rememberSaveable { mutableStateOf(false) }
     val gutter = GlowLayout.WideGutter
     // Rows inside a detail open the next one with a crossfade, not by growing (spec 3.5).
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalCardsGrow provides false) {
         ScreenList(contentPadding, list, gutter = gutter) {
             item {
                 DetailHero(color, gutter) {
+                    // A scrub is read here, so only the hero follows the finger, not the whole detail (audit K4).
+                    val scrub = scrubbed()
+                    val shown = scrub ?: headline
+                    // A scrubbed reading takes the gauge's place, as the value row.
+                    val gauge = heroValue.takeIf { scrub == null }
                     DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
                     // A score gauge, its label and status word make one block, centred in the header (spec 6.1).
-                    if (heroValue != null) Column(Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        heroValue()
+                    if (gauge != null) Column(
+                        Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        gauge()
                         Text(
-                            headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                            shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                             style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
                         )
-                        if (headline.word != null && headline.value != null) StatusWord(headline.word, color, Modifier.padding(top = 12.dp))
+                        if (shown.word != null && shown.value != null) StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
                     } else Row(Modifier.fillMaxWidth().padding(top = 22.dp), verticalAlignment = Alignment.Bottom) {
                         Box(Modifier.weight(1f)) {
                             when {
                                 // No number: the state in words, large in the value's place, as a Small does.
-                                headline.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(headline.word ?: "No reading", color = Color.White, style = GlowType.pageTitle)
-                                    Text(headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                                shown.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(shown.word ?: "No reading", color = Color.White, style = GlowType.pageTitle)
+                                    Text(
+                                        shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                                    )
                                 }
                                 else -> Row(verticalAlignment = Alignment.Bottom) {
-                                    DotMatrixText(headline.value, Modifier.detailNumber(headline.value), dot = DotSize.Detail)
+                                    DotMatrixText(shown.value, Modifier.detailNumber(shown.value), dot = DotSize.Detail)
                                     Text(
-                                        headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                                        shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                                         style = GlowType.secondary, modifier = Modifier.padding(start = 10.dp, bottom = 2.dp),
                                     )
                                 }
@@ -197,7 +208,9 @@ internal fun DetailTemplate(
                         }
                         heroSide?.invoke()
                     }
-                    if (heroValue == null && headline.word != null && headline.value != null) StatusWord(headline.word, color, Modifier.padding(top = 12.dp))
+                    if (gauge == null && shown.word != null && shown.value != null) {
+                        StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
+                    }
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
@@ -423,13 +436,14 @@ fun GlowMetricDetailScreen(
     val to = maxOf(end, strip0.last().date)
     val from = minOf(end.minusDays(maxOf(range.days, History.NORMAL_DAYS) - 1L), strip0.first().date)
     val daily = if (night) SleepCopy.nightDaily(metric) else metric.daily
-    val stats by remember(daily, from, to) { history(daily, from, to) }.collectAsState(null)
-    val normal = stats?.let { History.normal(it, end) }
-    val normalDays = stats?.count { it.date in end.minusDays(History.NORMAL_DAYS - 1L)..end } ?: 0
+    val stats by remember(daily, from, to, history) { history(daily, from, to) }.collectAsState(null)
+    // Worked out once per load, not on every pass of the screen (audit K4).
+    val normal = remember(stats, end) { stats?.let { History.normal(it, end) } }
+    val normalDays = remember(stats, end) { stats?.count { it.date in end.minusDays(History.NORMAL_DAYS - 1L)..end } ?: 0 }
     // The night's own: its normal from the nights before, and the last 7 nights. Day and Week read against these.
-    val nightNormal = if (night) SleepCopy.nightNormal(state, metric) else null
-    val nightDays = if (night) SleepCopy.nightNormalNights(state, metric) else 0
-    val nightWeek = if (night) SleepCopy.nightWeek(state, metric) else emptyList()
+    val nightNormal = remember(night, state, metric) { if (night) SleepCopy.nightNormal(state, metric) else null }
+    val nightDays = remember(night, state, metric) { if (night) SleepCopy.nightNormalNights(state, metric) else 0 }
+    val nightWeek = remember(night, state, metric) { if (night) SleepCopy.nightWeek(state, metric) else emptyList() }
     val fromNight = night && (range == Range.Day || range == Range.Week)
     val color = colorOf(metric)
     val nightly = if (night) range == Range.Day || range == Range.Week || SleepCopy.dailyIsNightly(metric) else metric in NIGHTLY
@@ -440,7 +454,7 @@ fun GlowMetricDetailScreen(
 
     // The range's number and the daily values its chart draws (weekly over a year).
     val start = end.minusDays(range.days - 1L)
-    val summary = stats?.takeIf { range != Range.Day }?.let { History.summary(it, start, end) }
+    val summary = remember(stats, range, start, end) { stats?.takeIf { range != Range.Day }?.let { History.summary(it, start, end) } }
     val value = when {
         night && range == Range.Day -> SleepCopy.nightValue(state, metric)
         night && range == Range.Week -> nightWeek.mapNotNull { it.second }.takeIf { it.isNotEmpty() }?.average()?.toFloat()
@@ -454,20 +468,22 @@ fun GlowMetricDetailScreen(
         else -> History.status(value, normal)
     }
     val label = if (night) SleepCopy.nightLabel(metric, range) else DetailCopy.valueLabel(metric, range, live = live != null, today = isToday)
-    val headline = scrub ?: when {
+    val headline = when {
         value != null -> DetailHeadline(metric.format(value), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
         night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
         range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
         else -> DetailHeadline.none("No reading", DetailCopy.noValue(metric, range, isToday))
     }
-    val withData = stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
+    val withData = remember(stats, nightWeek) {
+        stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
+    }
 
     DetailTemplate(
         metric.title, color, siblings(Detail.OfMetric(metric, night), onSwitch), onInfo = { info = true }, onBack = onBack,
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(end, today, withData), onDay = onSelectDay,
-        ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal },
+        ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
         heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
             {
                 LiveChip(liveEnabled, onLiveToggle)
