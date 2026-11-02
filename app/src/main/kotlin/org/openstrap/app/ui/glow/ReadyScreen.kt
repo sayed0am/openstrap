@@ -1,8 +1,6 @@
 package org.openstrap.app.ui.glow
 
-import android.content.Context
 import android.content.Intent
-import android.location.LocationManager
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
@@ -55,6 +53,7 @@ import org.openstrap.app.data.Structure
 import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Arrangement
+import org.openstrap.app.device.locationAvailable
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
@@ -283,10 +282,6 @@ private val GoalDraftSaver = androidx.compose.runtime.saveable.listSaver<GoalDra
         )
     },
 )
-
-/** Whether the phone's location can be used now: allowed, and turned on. */
-internal fun locationAvailable(context: Context): Boolean =
-    WorkoutLocation.granted(context) && context.getSystemService(LocationManager::class.java)?.isLocationEnabled == true
 
 /**
  * A round button with its icon, 44 dp on the Control surface as on the workout pages' top bars; a stepper's are 52 dp,

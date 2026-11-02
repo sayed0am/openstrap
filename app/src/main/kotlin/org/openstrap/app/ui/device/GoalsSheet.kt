@@ -37,7 +37,7 @@ import org.openstrap.app.data.settings.CalorieGoal
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.presentation.GoalCopy
 import org.openstrap.app.presentation.Units
-import org.openstrap.app.ui.glow.ControlSurface
+import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton

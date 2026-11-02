@@ -40,6 +40,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.HeartZonesCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /**
  * Heart rate zones (board SettingsHeartZones), from Ready's Your zones and the You page: your max heart rate as the

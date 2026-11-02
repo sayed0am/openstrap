@@ -11,7 +11,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.device.WidgetUpdater
 
 /**
  * Widgets spec 5: the strap status line's wordings, its button and words in the title row, and that every widget
@@ -120,11 +119,11 @@ class WidgetStatusLineTest {
     }
 
     @Test fun `a stale line has an alarm of its own, only while widgets are placed`() {
-        assertEquals(now + 1, WidgetUpdater.staleAt(true, now - SYNC_STALE_SECONDS, now - 10))
+        assertEquals(now + 1, WidgetUpdater.staleAt(true, now - org.openstrap.app.presentation.StrapBands.STALE_AFTER_S, now - 10))
         assertNull(WidgetUpdater.staleAt(false, now, now))
         assertNull(WidgetUpdater.staleAt(true, null, now))
         // Already stale: the line shows now, no alarm needed.
-        assertNull(WidgetUpdater.staleAt(true, now - SYNC_STALE_SECONDS - 5, now))
+        assertNull(WidgetUpdater.staleAt(true, now - org.openstrap.app.presentation.StrapBands.STALE_AFTER_S - 5, now))
     }
 
     @Test fun `the gaps share the spare height, half above and below`() {

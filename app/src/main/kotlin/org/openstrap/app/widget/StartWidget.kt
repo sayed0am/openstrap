@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.os.SystemClock
-import android.util.Log
 import android.util.TypedValue
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
@@ -40,22 +39,19 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
-import org.openstrap.app.data.catching
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
-import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.ControlSurface
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
-import org.openstrap.app.ui.glow.GlowMood
+import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.edgeLight
-import org.openstrap.app.ui.glow.locationAvailable
+import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.SportIcons
@@ -69,7 +65,7 @@ import java.time.ZoneId
  * and the moment's mood. Play, a tile or the widget opens Ready with that sport, All sports the sport picker.
  */
 class StartWidget : LoadingWidget<StartWidget.Shown>(WidgetKind.Start) {
-    override suspend fun loadShown(context: Context): Shown = load(context)
+    override fun shown(data: WidgetData, context: Context): Shown = load(data)
 
     override fun sample(): Shown = Shown(WidgetSamples.start(Instant.now(), ZoneId.systemDefault()), GlowMood.Day)
 
@@ -82,37 +78,18 @@ class StartWidget : LoadingWidget<StartWidget.Shown>(WidgetKind.Start) {
     companion object {
         /**
          * Every workout as the workout lists read them ([Workouts.listed]), the Outdoor or Indoor side last chosen per
-         * sport and whether location is on, as Ready reads them, and the workout recording now. The mood from the
-         * moment now ([widgetMood]).
+         * sport and whether location is on, as Ready reads them, and the workout recording then. The mood from the
+         * moment then ([widgetMood]).
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): Shown {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val recording = (container.workout.state.value as? WorkoutState.Recording)?.let { r ->
+        internal fun load(data: WidgetData): Shown {
+            val read = checkNotNull(data.start) { "not read for Start" }
+            val recording = (read.state as? WorkoutState.Recording)?.let { r ->
                 val w = r.workout
-                StartRecordingInput(w.sportType, w.start, WorkoutRecorder.activeSeconds(w, now.epochSecond), r.paused)
+                StartRecordingInput(w.sportType, w.start, WorkoutRecorder.activeSeconds(w, data.now.epochSecond), r.paused)
             }
-            val model = catching {
-                val dao = container.database.healthDao()
-                val workouts = Workouts.listed(
-                    dao.workouts().first(), dao.sportEffects().first(), dao.lastWorkoutHeartRates().first(), dao.appWorkouts().first(),
-                    dao.setCounts().first().associate { it.workoutStart to it.sets }, LIST_MAX_HR,
-                )
-                StartWidgetModel.from(workouts, container.settings.workoutSides.first(), locationAvailable(context), recording, now, zone)
-            }.getOrElse { e ->
-                Log.w(WIDGET_TAG, "widgets: workouts for Start not read: $e")
-                StartWidgetModel.from(emptyList(), emptyMap(), false, recording, now, zone)
-            }
-            val bedtime = catching {
-                container.health.usualBedtime(now.atZone(zone).toLocalDate())
-            }.onFailure { Log.w(WIDGET_TAG, "widgets: usual bedtime for Start not read: $it") }.getOrNull()
-            return Shown(model, widgetMood(container, bedtime, now, zone))
+            val model = StartWidgetModel.from(read.workouts.orEmpty(), read.sides, read.location, recording, data.now, data.zone)
+            return Shown(model, widgetMood(data, data.usualBedtime))
         }
-
-        /**
-         * The max heart rate the lists' zones are shares of. The widget shows no zones, so it skips the app's 90-day
-         * read for it ([org.openstrap.app.data.RecoveryEngine.maxHeartRate]); nothing it shows depends on it.
-         */
-        private const val LIST_MAX_HR = 190
     }
 }
 

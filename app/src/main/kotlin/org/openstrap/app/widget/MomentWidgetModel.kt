@@ -16,14 +16,14 @@ import org.openstrap.app.ui.dashboard.momentMood
 import org.openstrap.app.ui.dashboard.sportNoun
 import org.openstrap.app.ui.dashboard.todayTitle
 import org.openstrap.app.ui.dashboard.wakingLead
-import org.openstrap.app.ui.glow.AFTER_RIM
-import org.openstrap.app.ui.glow.EVENING_BODY
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.LightAngle
-import org.openstrap.app.ui.glow.WINDOW_RIM
+import org.openstrap.app.ui.glow.draw.AFTER_RIM
+import org.openstrap.app.ui.glow.draw.EVENING_BODY
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.WINDOW_RIM
 import org.openstrap.app.presentation.chargeShown
-import org.openstrap.app.ui.glow.heroStyle
+import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
@@ -109,7 +109,7 @@ data class MomentWidgetInput(
 
 /** How the Large's chart is drawn. */
 enum class MomentChartKind {
-    /** The night's stages laid flat, as the nap strip ([org.openstrap.app.ui.glow.StageStrip]). */
+    /** The night's stages laid flat, as the app's nap strip. */
     Stages,
 
     /** A solid white line ending in its dot, as the Steps widget's ([org.openstrap.app.ui.glow.draw.ghostLineGeometry]). */

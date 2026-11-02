@@ -65,7 +65,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlin.math.min
-import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutSuggestions
 import org.openstrap.app.data.Workouts
@@ -83,6 +82,8 @@ import org.openstrap.app.ui.workout.SummaryCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.theme.ControlSurface
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
@@ -230,19 +231,6 @@ internal fun Pill(label: String, dot: Color?, onClick: (() -> Unit)? = null, car
 }
 
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
-
-/** A sport someone has done, for the start card: how often and when last. */
-data class SportUse(val sportType: Int, val count: Int, val lastStart: Long?)
-
-/** The 3 most-used sports across both kinds of workout, else three sensible defaults. */
-fun topSports(workouts: List<WorkoutAnalysis>, n: Int = 3): List<SportUse> {
-    // The strap's own "Activity" records aren't a sport to offer.
-    val used = workouts.filter { it.workout.sportType != Workouts.GENERIC_ACTIVITY }.groupBy { it.workout.sportType }
-        .map { (type, ws) -> SportUse(type, ws.size, ws.maxOf { it.workout.start }) }
-        .sortedWith(compareByDescending<SportUse> { it.count }.thenByDescending { it.lastStart })
-        .take(n)
-    return used + Workouts.DEFAULT_SPORTS.filter { d -> used.none { it.sportType == d } }.take(n - used.size).map { SportUse(it, 0, null) }
-}
 
 /**
  * Where an offer or a suggestion sits: a quiet panel, or on Today a strip lit in heart red from [edge]'s side, so the
@@ -412,7 +400,6 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
 }
 
 /* ---------------------------------------------- Summary ---------------------------------------------- */
-
 
 /** Done right after the end, and Delete workout behind a question. */
 @Composable

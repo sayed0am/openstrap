@@ -36,6 +36,11 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.level
+import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The Goals and bests page from You (workouts spec 3.5, board AchievementsV1), All badges, and the weekly recap the

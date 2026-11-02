@@ -34,10 +34,7 @@ import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.WearEventRow
 import org.openstrap.app.data.settings.SettingsStore
-import org.openstrap.app.data.settings.StrapSnapshot
 import org.openstrap.app.data.settings.UserProfile
-import org.openstrap.app.widget.strapStateChanged
-import org.openstrap.app.widget.syncStale
 import org.openstrap.protocol.services.Gender
 import org.openstrap.protocol.services.HealthAlert
 import org.openstrap.protocol.services.UserProfile as StrapUserProfile
@@ -475,11 +472,6 @@ class StrapManager(
             var previous: SyncState = SyncState.Idle
             sync.collect { s ->
                 syncRecord.update { it.next(previous, s, System.currentTimeMillis() / 1000) }
-                // A sync starting while the widgets say the last one is old: their line turns to Syncing (widgets spec 5).
-                if (s is SyncState.Running && previous !is SyncState.Running) launch {
-                    val done = catching { settings.strapSnapshot.first().lastSyncDone }.getOrNull()
-                    if (syncStale(done, System.currentTimeMillis() / 1000)) WidgetUpdater.changedAll(context)
-                }
                 previous = s
             }
         }
@@ -488,17 +480,6 @@ class StrapManager(
             connection.mapNotNull { c -> (c as? ConnectionState.Connected)?.let { it.batteryPercent?.let { b -> b to it.charging } } }
                 .distinctUntilChanged()
                 .collect { (b, ch) -> catching { settings.setStrapBattery(b, ch) }.onFailure { log("strap battery not kept: $it") } }
-        }
-        // And the widgets told when that line could change: pairing, the low battery edge, charging (widgets spec 7).
-        scope.launch {
-            var before: StrapSnapshot? = null
-            settings.strapSnapshot.collect { now ->
-                val was = before
-                before = now
-                if (was != null && strapStateChanged(now.paired, now.battery, now.charging, was.paired, was.battery, was.charging)) {
-                    WidgetUpdater.changedAll(context)
-                }
-            }
         }
     }
 
@@ -722,7 +703,6 @@ class StrapManager(
                         log("steps today=${it.steps} dist=${it.distanceMeters} kcal=${it.calories}" + if (!it.isPlausible) " (total doesn't match distance: counting from synced history)" else "")
                     }
                     todaySteps.value = it
-                    WidgetUpdater.stepsChanged(context)
                 }
             }
         }
@@ -853,8 +833,7 @@ class StrapManager(
                     .onFailure { log("workout gap fill: $it") }
                 catching { updateEffectModel() }.onFailure { log("workout effect: $it") }
                 catching { updateDailyEnergy() }.onFailure { log("daily energy: $it") }
-                // Everything a widget shows may have moved (widgets spec 7).
-                WidgetUpdater.changedAll(context)
+                // Everything a widget shows may have moved (widgets spec 7): they watch for this.
                 syncEnded.tryEmit(Unit)
             } finally {
                 syncLock.unlock()

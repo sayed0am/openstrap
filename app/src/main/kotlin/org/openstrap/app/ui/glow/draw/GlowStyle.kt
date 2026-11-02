@@ -1,7 +1,6 @@
-package org.openstrap.app.ui.glow
+package org.openstrap.app.ui.glow.draw
 
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -11,6 +10,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
+import org.openstrap.app.ui.glow.GlowLayout
 
 /** Shape of the dark core: a rounded rectangle that follows the card, or a soft oval. */
 enum class CoreShape { Rounded, Radial }
@@ -60,12 +60,6 @@ enum class GlowMood(val glow: Float, val edge: Float, val tone: Boolean, val bel
     /** The night moment, and the Sleep tab always: calmer still, and every light comes from below. */
     Night(glow = 0.65f, edge = 0.8f, tone = true, belowOnly = true),
 }
-
-/**
- * The mood for the cards on this screen; every [GlowCard] and [EdgeCard] under it follows. Only Today (by its moment)
- * and the Sleep tab provide one; everywhere else it's [GlowMood.Day].
- */
-val LocalGlowMood = staticCompositionLocalOf { GlowMood.Day }
 
 /**
  * The "glow" design language: a card lit from its rim, with a dark core floating inside it and an
@@ -365,3 +359,19 @@ private fun hslOf(c: Color): Triple<Float, Float, Float> {
     } * 60f
     return Triple(h, s, l)
 }
+
+/**
+ * The hero's recipe, L4 (spec 2.1): the rim at full from the one side the moment places, no bevel, and the dark core
+ * opposite the light. [rim] raises or calms it for the moment (spec 4.2: 120% before a workout, 80% after one). The
+ * Moment widget lights its background with the same recipe (widgets spec 3.1).
+ */
+internal fun heroStyle(color: Color, lightAngle: Float?, rim: Float = 1f) = GlowStyle.Bloom.copy(
+    lightAngle = lightAngle, color = color,
+    coreShape = CoreShape.Radial, coreX = 0.5f, coreY = 0.6f, coreWidth = 0.95f, coreHeight = 0.75f,
+    coreBlur = 30.dp, toneWidth = 16.dp, toneShift = -10f, glowStrength = rim, bevel = 0f,
+)
+
+/** The workout window's rim, raised for effort, and the calmer one after a workout (spec 4.2). */
+internal const val WINDOW_RIM = 1.2f
+internal const val AFTER_RIM = 0.8f
+internal const val EVENING_BODY = 0.46f

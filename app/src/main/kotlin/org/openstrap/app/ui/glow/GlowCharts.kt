@@ -48,7 +48,6 @@ import androidx.compose.ui.unit.sp
 import org.openstrap.app.ui.components.rememberScrubHaptics
 import org.openstrap.app.ui.components.scrub
 import org.openstrap.app.ui.theme.FunnelSans
-import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.glow.draw.BAR_MAX_WIDTH_DP
 import org.openstrap.app.ui.glow.draw.ChartInk
 import org.openstrap.app.ui.glow.draw.chartHairline
@@ -65,6 +64,7 @@ import org.openstrap.app.ui.glow.draw.lineChartGeometry
 import org.openstrap.app.ui.glow.draw.pillBar
 import kotlin.math.roundToInt
 import kotlin.math.sin
+import org.openstrap.app.ui.glow.draw.stageColor
 
 /*
  * Charts for glow cards. The card's colour carries the mood, so the marks are white: lines get a soft halo, and grids,
@@ -816,12 +816,4 @@ fun StageStrip(spans: List<org.openstrap.app.ui.components.StageSpan>, modifier:
             drawLine(stageColor(s.stage), Offset(s.x0, size.height / 2), Offset(s.x1, size.height / 2), size.height, StrokeCap.Round)
         }
     }
-}
-
-/** A sleep stage's colour, as on the strap's own charts. */
-internal fun stageColor(stage: Int): Color = when (stage) {
-    org.openstrap.app.data.db.SleepStage.DEEP -> MetricColors.sleepDeep
-    org.openstrap.app.data.db.SleepStage.REM -> MetricColors.sleepRem
-    org.openstrap.app.data.db.SleepStage.AWAKE -> MetricColors.sleepAwake
-    else -> MetricColors.sleepLight
 }

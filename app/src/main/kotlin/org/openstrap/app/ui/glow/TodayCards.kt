@@ -56,6 +56,11 @@ import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * The pieces Today is built from (spec 4.2): the hero's parts, strips, edge cards and lists. Each card has one home

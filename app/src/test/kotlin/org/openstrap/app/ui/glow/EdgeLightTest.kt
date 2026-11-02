@@ -4,6 +4,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeLight
+import org.openstrap.app.ui.glow.draw.edgeLight
+import org.openstrap.app.ui.glow.draw.Edge
 
 /** Every row of the edge placement table (spec 2.4). */
 class EdgeLightTest {

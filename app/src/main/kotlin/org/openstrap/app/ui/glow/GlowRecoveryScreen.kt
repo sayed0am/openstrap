@@ -49,6 +49,9 @@ import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.recoveryCards
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.glow.draw.CoreShape
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * The Recovery tab (spec 5.1): "can I push today, and why". The score glows with the last 7 days beside it, what

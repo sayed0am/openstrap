@@ -48,6 +48,10 @@ import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.*
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.chart
 
 /* -------------------------------------------- Live screen -------------------------------------------- */
 

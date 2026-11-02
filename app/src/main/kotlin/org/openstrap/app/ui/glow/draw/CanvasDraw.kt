@@ -23,11 +23,6 @@ import androidx.compose.ui.graphics.toArgb
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.random.Random
-import org.openstrap.app.ui.glow.CoreShape
-import org.openstrap.app.ui.glow.DotSize
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.stageColor
-
 /*
  * The shared drawing on an android.graphics.Canvas: the same light, dots and charts the app's cards draw, for places
  * Compose can't draw, the home screen widgets (widgets spec 6.2). GlowCard renders its cached layers with these very

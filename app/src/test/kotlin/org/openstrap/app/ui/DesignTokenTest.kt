@@ -8,11 +8,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.openstrap.app.ui.glow.BarMaxWidth
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import androidx.compose.ui.graphics.luminance
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowPalette
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.glow.draw.GlowPalette
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.theme.MetricColors
 import java.io.File
 

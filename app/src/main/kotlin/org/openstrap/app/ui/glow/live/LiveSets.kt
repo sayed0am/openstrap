@@ -56,13 +56,13 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.EdgeCard
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.LightAngle
+import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageRow
@@ -73,7 +73,7 @@ import org.openstrap.app.ui.glow.MinusPlus
 import org.openstrap.app.ui.glow.RoundIcon
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
-import org.openstrap.app.ui.glow.heroStyle
+import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.glow.workoutColor

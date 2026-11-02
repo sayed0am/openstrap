@@ -64,6 +64,20 @@ class AppContainer(val app: Application) {
         // The Recovery cache follows the data from here on.
         health.start(appScope, HealthRepository.recoveryInputs(database))
     }
+    /** Today's steps with the strap's live counter on top: one anchor, so Today and the widgets count alike (audit A5). */
+    val liveSteps = org.openstrap.app.data.LiveSteps()
+    /** The home screen widgets' refreshes. Built last: it watches the strap, the workout and settings. */
+    val widgets = org.openstrap.app.widget.WidgetUpdater(
+        app, appScope, settings, strap, workout,
+        org.openstrap.app.widget.WidgetSnapshot(
+            health, database.healthDao(), settings, liveSteps,
+            syncing = { strap.sync.value is org.openstrap.app.device.SyncState.Running },
+            todaySteps = { strap.todaySteps.value },
+            workoutState = { workout.state.value },
+            location = { org.openstrap.app.device.locationAvailable(app) },
+            placed = { org.openstrap.app.widget.placedWidgets(app) },
+        ),
+    )
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
@@ -89,10 +103,9 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         // Android restarts the process on its own (companion presence, a reboot): reconnect without the screen.
         // A no-op when nothing is paired, a connection is already up, or the user tapped Disconnect.
         if (BlePermissions.granted(this)) container.strap.backgroundConnect()
-        // Widgets turn the day over at midnight; alarms don't survive a reboot or an update, so set it on each start.
-        org.openstrap.app.device.WidgetUpdater.scheduleMidnight(this)
-        // Android 15 and later: the widget picker's previews, from the real layouts (spec 6.4).
-        org.openstrap.app.device.WidgetUpdater.publishPreviews(this)
+        // The widgets watch what they show from now on, turn the day over at midnight (alarms don't survive a reboot or
+        // an update, so it's set on each start) and, on Android 15 and later, give the picker their previews (spec 6.4).
+        container.widgets.start()
         // The daily check for a new OpenStrap, unless it was turned off on the Updates page.
         container.updater.start()
         // Looks for the first morning of the week, for the weekly recap (workouts spec 3.4).

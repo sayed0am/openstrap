@@ -6,19 +6,9 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.ui.glow.Edge
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowPalette
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.LightAngle
 import org.openstrap.app.ui.glow.SoftGlow
 import org.openstrap.app.ui.glow.StrongGlow
-import org.openstrap.app.ui.glow.edgeLight
-import org.openstrap.app.ui.glow.level
-import org.openstrap.app.ui.glow.levelEdge
 import org.openstrap.app.ui.theme.MetricColors
 
 /** The glow and edge light's shared spec (widgets spec 6.2): what the cards and a widget's background are drawn with. */

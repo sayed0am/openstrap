@@ -55,15 +55,15 @@ import org.openstrap.app.ui.alarms.alarmsSummary
 import org.openstrap.app.ui.alarms.healthAlertsSummary
 import org.openstrap.app.ui.alarms.phoneAlertsSummary
 import org.openstrap.app.ui.dashboard.agoText
-import org.openstrap.app.ui.glow.CoreShape
+import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DestructiveInk
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.GlowSwitch
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.LightAngle
+import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageConfirm
 import org.openstrap.app.ui.glow.PageField
@@ -362,7 +362,7 @@ private fun StrapHero(name: String, connection: ConnectionState, sync: SyncState
             Column(Modifier.fillMaxWidth().padding(top = 128.dp, bottom = 5.dp, end = 112.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The card's one dotted number (spec 2.3); the word after it sits on the digits' baseline in Body at 72%.
                 if (battery != null) Row(verticalAlignment = Alignment.Bottom) {
-                    DotMatrixText("$battery", dot = org.openstrap.app.ui.glow.DotSize.Hero)
+                    DotMatrixText("$battery", dot = org.openstrap.app.ui.glow.draw.DotSize.Hero)
                     Text("% battery", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
                 }
                 if (sync is SyncState.Running) {

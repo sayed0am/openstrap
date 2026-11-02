@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.DotMatrixText
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.dotClock
 

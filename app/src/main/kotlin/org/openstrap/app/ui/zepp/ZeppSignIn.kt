@@ -46,7 +46,7 @@ import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.catching
 import org.openstrap.app.ui.components.pressClickable
-import org.openstrap.app.ui.glow.ControlSurface
+import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton

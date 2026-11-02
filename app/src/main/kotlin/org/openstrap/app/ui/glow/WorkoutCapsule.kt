@@ -50,6 +50,11 @@ import org.openstrap.app.ui.workout.GlanceAction
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.ui.text.style.TextOverflow
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.heroStyle
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.theme.ControlSurface
 
 /* ------------------------------------- Rest of the app meanwhile ------------------------------------- */
 

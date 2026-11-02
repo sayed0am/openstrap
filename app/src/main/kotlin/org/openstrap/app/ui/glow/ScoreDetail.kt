@@ -41,6 +41,7 @@ import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 import java.time.LocalTime
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * Recovery's and Charge's details (spec 6.1) in the same template as a metric's, and the way to the Sleep tab's

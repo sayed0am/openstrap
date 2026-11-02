@@ -11,7 +11,6 @@ import org.openstrap.app.ui.dashboard.InfoCopy
 import org.openstrap.app.ui.dashboard.TabCopy
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.STALE_AFTER_S
-import org.openstrap.app.widget.STRAP_LOW_PERCENT
 import org.openstrap.app.widget.syncStale
 
 /** The bands are the ones the screens wrote by hand, at every score. */
@@ -97,7 +96,6 @@ class BandsTest {
 
     @Test
     fun lowBatteryAtFifteen() {
-        assertEquals(STRAP_LOW_PERCENT, StrapBands.LOW_BATTERY)
         assertTrue(StrapBands.lowBattery(15, charging = false))
         assertTrue(StrapBands.lowBattery(0, charging = false))
         assertFalse(StrapBands.lowBattery(16, charging = false))
