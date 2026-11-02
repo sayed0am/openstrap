@@ -304,7 +304,8 @@ class WidgetSnapshot(
             dayWorkouts = dayWorkouts,
             heartRate = heart,
             restingHr = resting,
-            steps = stepsDay?.steps ?: liveSteps.today(today, 0, todaySteps()),
+            // A failed read leaves the shared anchor alone: anchoring on 0 would throw off Today's count too.
+            steps = stepsDay?.steps ?: todaySteps()?.takeIf { it.isPlausible }?.steps ?: 0,
             stepGoal = checkNotNull(r.goal).getOrThrow(),
             nightDeleted = night == null && read("a deleted night", false) {
                 DayWindow.nightEndingOn(today, zone).let { n -> health.sleep.nightDeleted(n.from, n.to) }
