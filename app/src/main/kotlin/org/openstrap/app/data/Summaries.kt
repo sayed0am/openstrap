@@ -3,20 +3,29 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.SleepStage
+import java.time.Instant
+import java.time.ZoneId
 
 /** Pure aggregation helpers for the dashboard; kept free of Android types so they're unit-testable. */
 object Summaries {
     fun totalSteps(minutes: List<ActivityMinute>): Int = minutes.sumOf { it.steps }
 
-    /** 24 buckets of steps for the day starting at [dayStart]. */
-    fun hourlySteps(minutes: List<ActivityMinute>, dayStart: Long): List<Float> {
-        val buckets = FloatArray(24)
+    /**
+     * 24 buckets of steps for the day starting at [dayStart], one for each hour on the clock in [zone]. A day the
+     * clocks change on has 23 or 25 hours, so a minute goes by its local hour rather than by hours since midnight:
+     * the hour that repeats shares its bucket, and the one skipped stays empty.
+     */
+    fun hourlySteps(minutes: List<ActivityMinute>, dayStart: Long, zone: ZoneId = ZoneId.systemDefault()): List<Float> {
+        val buckets = FloatArray(HOURS)
+        val dayEnd = Days.end(dayStart, zone)
         for (m in minutes) {
-            val hour = ((m.timestamp - dayStart) / 3600).toInt()
-            if (hour in 0..23) buckets[hour] += m.steps.toFloat()
+            if (m.timestamp < dayStart || m.timestamp >= dayEnd) continue
+            buckets[Instant.ofEpochSecond(m.timestamp).atZone(zone).hour] += m.steps.toFloat()
         }
         return buckets.toList()
     }
+
+    private const val HOURS = 24
 
     /**
      * The day's running total at the end of each hour from its [hourly] steps, the Steps card's line: null for the
@@ -33,8 +42,8 @@ object Summaries {
     /** Merges heart rate from dedicated HR samples and per-minute activity, preferring HR samples. */
     fun heartRateSeries(hr: List<HeartRateSample>, minutes: List<ActivityMinute>): List<Pair<Long, Int>> {
         val byTime = sortedMapOf<Long, Int>()
-        for (m in minutes) if (m.heartRate != null && m.heartRate in 30..230) byTime[m.timestamp] = m.heartRate
-        for (s in hr) if (s.bpm in 30..230) byTime[s.timestamp] = s.bpm
+        for (m in minutes) if (m.heartRate != null && m.heartRate in HeartRate.VALID) byTime[m.timestamp] = m.heartRate
+        for (s in hr) if (s.bpm in HeartRate.VALID) byTime[s.timestamp] = s.bpm
         return byTime.map { it.key to it.value }
     }
 

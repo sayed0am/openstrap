@@ -73,7 +73,7 @@ sealed interface Structure {
 
         /** Whether [s] fits a workout of [sport]: timed rounds for HIIT, reps for a run. */
         fun fits(s: Structure, sport: Int): Boolean = when (s) {
-            is Reps -> sport in Workouts.RUNS
+            is Reps -> sport in SportTypes.RUNS
             is Periods -> Workouts.family(sport) == Workouts.Family.Games
             else -> Workouts.family(sport) == Workouts.Family.Intervals
         }

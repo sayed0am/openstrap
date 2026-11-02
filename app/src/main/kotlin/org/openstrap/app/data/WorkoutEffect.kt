@@ -43,7 +43,7 @@ object WorkoutEffect {
             val values = byEpoch[k]
             val bpm = if (values != null) {
                 held = 0
-                values.sorted()[values.size / 2].also { last = it }
+                Stats.upperMiddle(values)?.also { last = it }
             } else if (last != null && held < HOLD_EPOCHS) {
                 held++
                 last
@@ -272,12 +272,7 @@ object WorkoutEffect {
         return sqrt(x.sumOf { (it - m) * (it - m) } / x.size)
     }
 
-    private fun quantile(sorted: List<Double>, p: Double): Double {
-        val pos = p * (sorted.size - 1)
-        val lo = floor(pos).toInt()
-        val hi = minOf(lo + 1, sorted.lastIndex)
-        return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo)
-    }
+    private fun quantile(sorted: List<Double>, p: Double): Double = Stats.quantileOfSorted(sorted, p)
 
     /* ---------------------------------------------- Together ---------------------------------------------- */
 

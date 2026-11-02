@@ -42,7 +42,11 @@ object Healthspan {
     const val STEP_DAY_WORN_MINUTES = 10 * 60
     /** VO2max needs this many workout estimates in [VO2_WINDOW_DAYS]. */
     const val MIN_VO2_WORKOUTS = 3
-    /** The strap's sport types for strength work ([Workouts.sportName]): 52 Strength training, 50 Core training. */
+    /**
+     * The strap's sport types for strength work ([Workouts.sportName]): 52 Strength training, 50 Core training. A
+     * deliberate subset of [SportTypes.STRENGTH], as docs/algorithms/healthspan.md documents, so Habit Age counts
+     * only dedicated strength sessions.
+     */
     val STRENGTH_SPORTS = setOf(50, 52)
 
     // ------------------------------------------------------------------------------------------------

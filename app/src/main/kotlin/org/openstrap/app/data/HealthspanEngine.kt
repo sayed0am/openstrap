@@ -19,7 +19,10 @@ class HealthspanEngine(private val dao: HealthDao) {
     private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: Long)
     private var cached: Pair<Key, Healthspan.Outcome>? = null
 
-    /** The Sunday on or before [date]: the day the estimate it shows was made. */
+    /**
+     * The Sunday on or before [date]: the day the estimate it shows was made. Sunday whatever the locale, not
+     * [org.openstrap.app.presentation.Weeks], because the weekly schedule follows WHOOP's.
+     */
     fun sundayOf(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
 
     suspend fun compute(date: LocalDate, profile: UserProfile, zone: ZoneId = ZoneId.systemDefault()): Healthspan.Outcome {

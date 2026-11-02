@@ -32,7 +32,7 @@ object WorkoutRecorder {
     const val MAX_STEP_S = 5L
 
     /** Live readings outside this range are the sensor settling or off the skin, not a heart rate. */
-    fun isValid(bpm: Int) = bpm in 30..240
+    fun isValid(bpm: Int) = HeartRate.isValid(bpm)
 
     /** A history minute is drawn as samples this far apart, so charts and zone time treat it like live data. */
     private const val HISTORY_STEP_S = 5L

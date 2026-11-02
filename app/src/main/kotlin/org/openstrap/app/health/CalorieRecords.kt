@@ -1,5 +1,6 @@
 package org.openstrap.app.health
 
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.db.DailyEnergyRow
 import java.time.Instant
 import java.time.ZoneId
@@ -38,10 +39,10 @@ object CalorieRecords {
     }
 
     /** Local midnight of the day [epoch] falls in, in [zone]. */
-    fun dayStart(epoch: Long, zone: ZoneId): Long = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    fun dayStart(epoch: Long, zone: ZoneId): Long = Days.start(epoch, zone)
 
     /** The next local midnight after [day] (itself one), 23 to 25 hours on. */
-    fun dayEnd(day: Long, zone: ZoneId): Long = Instant.ofEpochSecond(day).atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toEpochSecond()
+    fun dayEnd(day: Long, zone: ZoneId): Long = Days.end(day, zone)
 
     /** The span of whole local days [from] to [to] are in, for the stored days to write and the old records to clear. */
     fun days(from: Long, to: Long, zone: ZoneId): Pair<Long, Long> = dayStart(from, zone) to dayEnd(dayStart(maxOf(from, to), zone), zone)

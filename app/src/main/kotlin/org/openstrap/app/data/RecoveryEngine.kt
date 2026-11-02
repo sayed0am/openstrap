@@ -3,6 +3,7 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.presentation.Weeks
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -116,13 +117,13 @@ class RecoveryEngine(private val dao: HealthDao) {
         val sleepSpo2 = dao.sleepSpo2Once(from, to)
         // A night's summary uses the sleep result's day rule: the date of belongTime + 2 h.
         val osaByMorning = dao.osaResultsOnce(from - 86_400, to).associateBy {
-            Instant.ofEpochSecond(it.belongTime + 2 * 3600).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+            Days.start(it.belongTime + 2 * 3600, zone)
         }
 
         val mains = mainsByMorning(sessions, zone)
         val strapNights = dao.strapReadinessOnce(from, to).associateBy { it.day }
         // Naps count toward a day's total sleep for the debt; a nap belongs to the day it started.
-        val napsByDay = sessions.filter { it.nap }.groupBy { Instant.ofEpochSecond(it.start).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond() }
+        val napsByDay = sessions.filter { it.nap }.groupBy { Days.start(it.start, zone) }
             .mapValues { (_, v) -> v.sumOf { asleepMinutes(it) } }
         val nights = mains.map { (morning, s) ->
             val stages = stagesOf(s).map { Triple(it.start, it.end, it.stage) }
@@ -247,11 +248,11 @@ class RecoveryEngine(private val dao: HealthDao) {
             byDay = dayMvpa.mapIndexed { i, m -> date.minusDays(ACTIVITY_DAYS - 1L - i) to m }.toMap(),
         )
 
-        // VO2max: recomputed weekly, as of the latest Monday, from the nightly resting HR.
-        val monday = date.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+        // VO2max: recomputed weekly, as of the first day of the week ([Weeks]), from the nightly resting HR.
+        val weekStart = Weeks.start(date)
         val (vo2, vo2Withheld) = Vo2max.estimate(
-            profile, profile.age(monday), nights.mapNotNull { n -> n.validRestingHr?.let { n.day to it } }.toMap(),
-            DayWindow.of(monday, zone).from,
+            profile, profile.age(weekStart), nights.mapNotNull { n -> n.validRestingHr?.let { n.day to it } }.toMap(),
+            DayWindow.of(weekStart, zone).from,
         )
 
         val energy = energy(
@@ -383,19 +384,24 @@ class RecoveryEngine(private val dao: HealthDao) {
     }
 
     /**
-     * VO2max as of [date] by the rule [compute] uses ([RecoveryResult.vo2max]): Jurca as of the latest Monday, on
-     * the nightly resting HR of the two weeks before it. Null when withheld.
+     * VO2max as of [date] by the rule [compute] uses ([RecoveryResult.vo2max]): Jurca as of the first day of the
+     * week ([Weeks]), on the nightly resting HR of the two weeks before it. Null when withheld.
      */
-    suspend fun vo2max(profile: UserProfile, date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Float? {
-        val monday = date.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-        val from = DayWindow.of(monday.minusDays(Vo2max.RHR_LOOKBACK_DAYS + 1L), zone).from
-        val to = DayWindow.of(monday, zone).to
+    suspend fun vo2max(
+        profile: UserProfile,
+        date: LocalDate,
+        zone: ZoneId = ZoneId.systemDefault(),
+        firstDay: java.time.DayOfWeek = Weeks.firstDay(),
+    ): Float? {
+        val weekStart = Weeks.start(date, firstDay)
+        val from = DayWindow.of(weekStart.minusDays(Vo2max.RHR_LOOKBACK_DAYS + 1L), zone).from
+        val to = DayWindow.of(weekStart, zone).to
         val hr = minuteHeartRate(from, to)
         val hrv = dao.hrvOnce(from, to)
         val nights = mainsByMorning(sleepSource.sessionsOnce(from, to), zone).mapNotNull { (morning, s) ->
             night(morning, s, hr, hrv, emptyList(), emptyList(), emptyList(), null).validRestingHr?.let { morning to it }
         }.toMap()
-        return Vo2max.estimate(profile, profile.age(monday), nights, DayWindow.of(monday, zone).from).first?.value?.toFloat()
+        return Vo2max.estimate(profile, profile.age(weekStart), nights, DayWindow.of(weekStart, zone).from).first?.value?.toFloat()
     }
 
     /** Live heart rate is stored several times a minute; the model works in minutes. */
@@ -555,7 +561,7 @@ class RecoveryEngine(private val dao: HealthDao) {
 
         /** Local midnight of the morning a sleep belongs to. */
         fun morningOf(s: SleepSession, zone: ZoneId): Long =
-            if (s.day > 0) s.day else Instant.ofEpochSecond(s.end).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+            if (s.day > 0) s.day else Days.start(s.end, zone)
 
         /**
          * The daily loads a morning's readiness saw: those of [loadDays] (day start to load, oldest first) before
@@ -603,4 +609,4 @@ internal fun <T> List<T>.within(from: Long, to: Long, time: (T) -> Long): List<T
 }
 
 private fun List<Float>.mean(): Float? = if (isEmpty()) null else average().toFloat()
-private fun List<Float>.median(): Float? = if (isEmpty()) null else sorted().let { (it[(it.size - 1) / 2] + it[it.size / 2]) / 2 }
+private fun List<Float>.median(): Float? = Stats.median(this)

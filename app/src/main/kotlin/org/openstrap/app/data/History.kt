@@ -2,7 +2,7 @@ package org.openstrap.app.data
 
 import java.time.DayOfWeek
 import java.time.LocalDate
-import java.time.temporal.TemporalAdjusters
+import org.openstrap.app.presentation.Weeks
 import kotlin.math.sqrt
 
 /** Pure helpers for week, month and year views of a daily series; free of Android types so they're unit-testable. */
@@ -38,14 +38,15 @@ object History {
     }
 
     /**
-     * Averages daily stats into weeks starting on Monday, for the year view; each week keeps its lowest and highest
-     * day. The week's date is its Monday.
+     * Averages daily stats into weeks starting on [firstDay] ([Weeks]), for the year view. Each week keeps its lowest
+     * and highest day. The week's date is its first day.
      */
-    fun weekly(stats: List<DayStat>): List<DayStat> =
-        stats.groupBy { it.date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)) }
+    fun weekly(stats: List<DayStat>, firstDay: DayOfWeek = Weeks.firstDay()): List<DayStat> =
+        stats.groupBy { Weeks.start(it.date, firstDay) }
             .toSortedMap()
-            .map { (monday, days) ->
-                DayStat(monday, days.map { it.value }.average().toFloat(), days.minOf { it.value }, days.maxOf { it.value }, days.sumOf { it.count })
+            .map { (first, days) ->
+                val mean = days.map { it.value }.average().toFloat()
+                DayStat(first, mean, days.minOf { it.value }, days.maxOf { it.value }, days.sumOf { it.count })
             }
 
     /** Average, lowest and highest of the daily values in [from]..[to]; null when there are none. */

@@ -1,5 +1,8 @@
 package org.openstrap.app.data.settings
 
+import org.openstrap.app.data.Stats
+import org.openstrap.app.presentation.GoalCopy
+
 /** Your daily targets. The defaults are the app's old fixed goals, and the strap's 300 for calories. */
 data class Goals(
     val steps: Int = DEFAULT_STEPS,
@@ -12,13 +15,8 @@ data class Goals(
 ) {
     val sleepSeconds: Long get() = sleepMinutes * 60L
 
-    /** "8,000 steps, 300 active kcal, 8 h sleep, 10 active hours". */
-    fun summary(): String {
-        val h = sleepMinutes / 60
-        val m = sleepMinutes % 60
-        val sleep = if (m == 0) "$h h" else "$h h $m min"
-        return "%,d steps, %,d active kcal, %s sleep, %d active hours".format(steps, calories, sleep, activeHours)
-    }
+    /** "8,000 steps, 300 active kcal, 8 h sleep, 10 active hours" ([GoalCopy.summary]), for the ui callers. */
+    fun summary(): String = GoalCopy.summary(this)
 
     companion object {
         const val DEFAULT_STEPS = 8000
@@ -43,7 +41,7 @@ data class Goals(
  */
 object CalorieGoal {
     /** Said under the field when a typed value is outside [Goals.CALORIES]. */
-    const val OUT_OF_RANGE = "Pick a number from 200 to 3,000"
+    val OUT_OF_RANGE: String get() = GoalCopy.outOfRange(Goals.CALORIES)
 
     /** Fewer full days than this and there is no suggestion: a few days say nothing about your usual. */
     const val MIN_FULL_DAYS = 7
@@ -64,9 +62,6 @@ object CalorieGoal {
      */
     fun suggested(fullDays: List<Float>): Int? {
         if (fullDays.size < MIN_FULL_DAYS) return null
-        val sorted = fullDays.sorted()
-        val n = sorted.size
-        val median = if (n % 2 == 1) sorted[n / 2] else (sorted[n / 2 - 1] + sorted[n / 2]) / 2f
-        return (Math.round(median * 1.1f / 10f) * 10).coerceIn(Goals.CALORIES)
+        return Stats.median(fullDays)?.let { median -> (Math.round(median * 1.1f / 10f) * 10).coerceIn(Goals.CALORIES) }
     }
 }

@@ -34,15 +34,17 @@ import java.time.ZoneId
 data class DayWindow(val from: Long, val to: Long) {
     companion object {
         fun of(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow {
-            val from = date.atStartOfDay(zone).toEpochSecond()
-            val to = date.plusDays(1).atStartOfDay(zone).toEpochSecond() - 1
-            return DayWindow(from, to)
+            return DayWindow(Days.start(date, zone), Days.end(date, zone) - 1)
         }
+
+        /** Where one night's sleep ends and the next begins, on the clock. */
+        private const val NIGHT_SPLIT_HOUR = 18
 
         /** Sleep that *ended* on [date]: from 18:00 the previous evening until 18:00 on [date]. */
         fun nightEndingOn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow {
-            val to = date.atTime(18, 0).atZone(zone).toEpochSecond()
-            return DayWindow(to - 24 * 3600, to)
+            // From the evening before by the clock, not 24 hours back, which is an hour off when the clocks change.
+            fun split(d: LocalDate) = d.atTime(NIGHT_SPLIT_HOUR, 0).atZone(zone).toEpochSecond()
+            return DayWindow(split(date.minusDays(1)), split(date))
         }
     }
 }

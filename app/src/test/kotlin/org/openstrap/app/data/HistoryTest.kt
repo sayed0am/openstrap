@@ -47,7 +47,7 @@ class HistoryTest {
     fun weeklyGroupsFromMonday() {
         // 17 Oct 2026 is a Saturday: 12–17 Oct are one week, 11 Oct belongs to the week before.
         val stats = listOf(day(6, 10f), day(5, 20f), day(0, 30f))
-        val weeks = History.weekly(stats)
+        val weeks = History.weekly(stats, java.time.DayOfWeek.MONDAY)
         assertEquals(listOf(LocalDate.of(2026, 10, 5), LocalDate.of(2026, 10, 12)), weeks.map { it.date })
         assertEquals(25f, weeks[1].value, 0.001f)
         assertEquals(20f, weeks[1].min, 0.001f)

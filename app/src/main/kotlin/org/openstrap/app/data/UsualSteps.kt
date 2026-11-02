@@ -56,9 +56,5 @@ object UsualSteps {
         else -> Pace.About
     }
 
-    private fun median(values: List<Float>): Float {
-        val s = values.sorted()
-        val n = s.size
-        return if (n % 2 == 1) s[n / 2] else (s[n / 2 - 1] + s[n / 2]) / 2f
-    }
+    private fun median(values: List<Float>): Float = Stats.median(values) ?: 0f
 }

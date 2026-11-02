@@ -1,6 +1,7 @@
 package org.openstrap.app.export
 
 import androidx.room.withTransaction
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.db.OpenStrapDatabase
 import java.io.InputStream
 import java.time.Instant
@@ -142,7 +143,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         return Outcome(fresh.size, rows.size - fresh.size, bad)
     }
 
-    private fun dayStart(epoch: Long): Long = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    private fun dayStart(epoch: Long): Long = Days.start(epoch, zone)
 
     private fun <R> query(sql: String, vararg args: Any, read: (android.database.Cursor) -> R): List<R> =
         db.openHelper.writableDatabase.query(sql, args).use { c -> buildList { while (c.moveToNext()) add(read(c)) } }
