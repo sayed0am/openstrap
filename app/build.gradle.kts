@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "org.openstrap.app"
-        minSdk = 36
+        minSdk = 31
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
@@ -102,6 +102,22 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.file("config/detekt.yml"))
     baseline = file("detekt-baseline.xml")
+}
+
+// BuildConfig is generated Java, which the Kotlin analysis only sees as a compiled class on the classpath. Without it
+// detekt reports "25 compiler errors" (unresolved BuildConfig) and type resolved rules miss findings in those files.
+// The plugin sets its classpath as a convention (Kotlin classes plus the Kotlin task's libraries), and adding to it
+// replaces that convention, so the same two parts are restated here next to the javac output.
+listOf("Debug", "Release").forEach { variant ->
+    tasks.withType<dev.detekt.gradle.Detekt>().matching { it.name == "detekt$variant" }.configureEach {
+        val kotlinCompile = tasks.named("compile${variant}Kotlin", org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java)
+        val javac = tasks.named("compile${variant}JavaWithJavac", JavaCompile::class.java)
+        classpath.setFrom(
+            kotlinCompile.flatMap { it.destinationDirectory },
+            kotlinCompile.map { it.libraries },
+            javac.flatMap { it.destinationDirectory },
+        )
+    }
 }
 
 // Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.

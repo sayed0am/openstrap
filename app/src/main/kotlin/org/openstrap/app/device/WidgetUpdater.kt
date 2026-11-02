@@ -147,7 +147,7 @@ object WidgetUpdater {
     /**
      * Android 15 and later: gives the launcher's picker each widget's generated preview ([GlanceAppWidget.providePreview]),
      * the real layout with sample values (spec 6.4), once per app version. The system limits how often this may be
-     * called, so a limited or failed call is tried again on the next start; older systems use the provider XML's
+     * called, so a limited or failed call is tried again on the next start. Older systems use the provider XML's
      * `previewLayout` and `previewImage`.
      */
     fun publishPreviews(context: Context) {
@@ -227,7 +227,7 @@ object WidgetUpdater {
         lastSyncDone?.let { it + SYNC_STALE_SECONDS + 1 }?.takeIf { placed && it > now }
 
     /**
-     * Exact while the app may set exact alarms (Android 11 and older always, later with "Alarms and reminders"),
+     * Exact while the app may set exact alarms ("Alarms and reminders" allows it),
      * otherwise inside [ALARM_WINDOW_MS]. Never `USE_EXACT_ALARM`: that's for clocks and calendars (spec 7).
      */
     /** Sets [action]'s alarm for [atMs]; one that doesn't [wake] is held until the phone is awake for something else. */
@@ -238,7 +238,7 @@ object WidgetUpdater {
             alarms.setWindow(AlarmManager.RTC, atMs, ALARM_WINDOW_MS, pending)
             return
         }
-        val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
+        val exact = alarms.canScheduleExactAlarms()
         try {
             if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pending)
             else alarms.setWindow(AlarmManager.RTC_WAKEUP, atMs, ALARM_WINDOW_MS, pending)

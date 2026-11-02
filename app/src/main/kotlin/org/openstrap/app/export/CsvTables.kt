@@ -19,6 +19,7 @@ import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.DailyMaxHr
 import org.openstrap.app.data.db.DeletedWorkout
 import org.openstrap.app.data.db.DayTagRow
+import org.openstrap.app.data.db.HabitAgeWeekRow
 import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
@@ -28,6 +29,7 @@ import org.openstrap.app.data.db.NightMetricsRow
 import org.openstrap.app.data.db.OsaEventRow
 import org.openstrap.app.data.db.OsaResultRow
 import org.openstrap.app.data.db.PaiSample
+import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.RecoveryHeartRateRow
 import org.openstrap.app.data.db.RestingHeartRate
 import org.openstrap.app.data.db.SkinTemperature
@@ -67,9 +69,16 @@ class CsvRow(private val index: Map<String, Int>, private val cells: List<String
  * Where a table's rows sit in time: the database table, the column that holds each row's time, and the CSV column
  * with that time in epoch seconds. A restore only writes rows from before the first day the phone has in the table. A
  * [span] table (sleep, workouts) also skips rows that overlap one on the phone, as a night can cross into that day.
- * A [parent] table's rows belong to a row of that table, keyed by its start, and come back only with it.
+ * A [parent] table's rows belong to a row of that table, keyed by its start, and come back only with it. A [unique]
+ * table is keyed by text rather than time.
  */
-class Key(val table: String, val column: String, val epoch: String, val span: Span? = null, val parent: String? = null)
+class Key(
+    val table: String, val column: String, val epoch: String,
+    val span: Span? = null, val parent: String? = null, val unique: Unique? = null,
+)
+
+/** A text key: the database column and the CSV column. A restore leaves out rows whose key the phone already has. */
+class Unique(val column: String, val csv: String)
 
 /** A span table's end: the database column and the CSV column, in epoch seconds. */
 class Span(val column: String, val epoch: String)
@@ -103,6 +112,10 @@ private fun stageCode(name: String) = when (name) {
     else -> name.toIntOrNull() ?: SleepStage.LIGHT
 }
 
+/**
+ * The tables a backup carries: every table of user data. Left out: raw_record, records the app can't decode yet, kept
+ * only to parse later and never read back, so a restore would add nothing anything shows.
+ */
 val CSV_TABLES: List<CsvTable<*>> = listOf(
     CsvTable("heart_rate.csv", "time,epoch,bpm,source",
         Key("heart_rate", "timestamp", "epoch"),
@@ -214,13 +227,15 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
     // Workouts recorded on the phone; one still recording is left out until it ends.
     CsvTable("app_workout.csv",
         "start,start_epoch,end_epoch,sport_type,source,pauses,end_reason,avg_hr,max_hr,ask_to_end,recorded_end_epoch,shown_start_epoch,target," +
-            "use_gps,keep_route,distance_m,distance_from_steps,rest,sets_target,laps,epoc,aerobic_te,recovery_minutes,vo2max,active_kcal,total_kcal,target_reached_epoch,structure,stretches",
+            "use_gps,keep_route,distance_m,distance_from_steps,rest,sets_target,laps,epoc,aerobic_te,recovery_minutes,vo2max,active_kcal," +
+            "total_kcal,target_reached_epoch,structure,stretches,anaerobic_te,effect_from_strap,own_recovery_minutes",
         Key("app_workout", "start", "start_epoch", span = Span("`end`", "end_epoch")),
         { d, f, t -> d.appWorkoutsAll().filter { it.start in f..t } },
         {
             listOf(iso(it.start), it.start, it.end, it.sportType, it.source, it.pauses, it.endReason, it.averageHeartRate, it.maxHeartRate,
                 it.askToEnd, it.recordedEnd, it.shownStart, it.target, it.useGps, it.keepRoute, it.distanceMeters, it.distanceFromSteps,
-                it.rest, it.setsTarget, it.laps, it.epoc, it.aerobicTrainingEffect, it.recoveryMinutes, it.vo2max, it.activeKcal, it.totalKcal, it.targetReachedAt, it.structure, it.stretches)
+                it.rest, it.setsTarget, it.laps, it.epoc, it.aerobicTrainingEffect, it.recoveryMinutes, it.vo2max, it.activeKcal, it.totalKcal, it.targetReachedAt, it.structure, it.stretches,
+                it.anaerobicTrainingEffect, it.effectFromStrap, it.ownRecoveryMinutes)
         },
         {
             AppWorkout(it.long("start_epoch"), it.long("end_epoch"), it.int("sport_type"), it.intOrNull("source") ?: AppWorkout.SOURCE_APP,
@@ -234,7 +249,10 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 aerobicTrainingEffect = it.floatOrNull("aerobic_te"), recoveryMinutes = it.intOrNull("recovery_minutes"), vo2max = it.floatOrNull("vo2max"),
                 activeKcal = it.floatOrNull("active_kcal"), totalKcal = it.floatOrNull("total_kcal"),
                 targetReachedAt = it.longOrNull("target_reached_epoch"), structure = if (it.has("structure")) it.string("structure") else null,
-                stretches = if (it.has("stretches")) it.string("stretches") else null)
+                stretches = if (it.has("stretches")) it.string("stretches") else null,
+                anaerobicTrainingEffect = it.floatOrNull("anaerobic_te"),
+                effectFromStrap = it.has("effect_from_strap") && it.bool("effect_from_strap"),
+                ownRecoveryMinutes = it.intOrNull("own_recovery_minutes"))
         },
         { d, r -> d.insertAppWorkouts(r) }),
     CsvTable("app_workout_hr.csv", "workout_start_epoch,epoch,bpm,from_history",
@@ -299,6 +317,13 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { listOf(it.weekStart, it.goal, it.count, it.met) },
         { WeekResult(it.long("week_start_day"), it.int("goal"), it.int("count"), it.bool("met")) },
         { d, r -> d.upsertWeekResults(r) }),
+    // Bests by kind. A rewards refresh works them out again from the workouts above, so these mostly show what a backup had.
+    CsvTable("personal_best.csv", "kind,value,date,workout_start_epoch",
+        Key("personal_best", "date", "date", unique = Unique("kind", "kind")),
+        { d, f, t -> d.personalBestsOnce().filter { it.date * 86_400 in f..t } },
+        { listOf(it.kind, it.value, it.date, it.workoutStart) },
+        { PersonalBest(it.string("kind"), it.string("value").toDouble(), it.long("date"), it.longOrNull("workout_start_epoch")) },
+        { d, r -> d.insertPersonalBests(r) }),
     CsvTable("app_workout_dismissed.csv", "start_epoch,end_epoch",
         Key("app_workout_dismissed", "start", "start_epoch"),
         { d, f, t -> d.dismissedWorkoutsAll().filter { it.start in f..t } }, { listOf(it.start, it.end) },
@@ -392,6 +417,12 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 it.intOrNull("strap_hrv"), it.intOrNull("strap_resting_hr"))
         },
         { d, r -> d.insertNightMetrics(r) }),
+    // Each Sunday's Habit Age as it was shown: only the current week is ever worked out, so a past one can't come back.
+    CsvTable("habit_age_week.csv", "as_of,as_of_epoch,estimate,low,high,updated_epoch",
+        Key("habit_age_week", "asOf", "as_of_epoch"),
+        { d, f, t -> d.habitAgeWeeksOnce(f, t) }, { listOf(iso(it.asOf), it.asOf, it.estimate, it.low, it.high, it.updatedAt) },
+        { HabitAgeWeekRow(it.long("as_of_epoch"), it.float("estimate"), it.int("low"), it.int("high"), it.long("updated_epoch")) },
+        { d, r -> r.forEach { row -> d.insertHabitAgeWeek(row) } }),
     // Worked out from the data above, but kept so a later change of model doesn't rewrite the history that was shown.
     CsvTable("daily_energy.csv", "day,day_epoch,updated_epoch,total_kcal,active_kcal,bmr_kcal,minutes_with_data,partial,workout_kcal,walking_kcal,hourly_active_kcal",
         Key("daily_energy", "day", "day_epoch"),

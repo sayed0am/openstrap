@@ -432,6 +432,47 @@ interface HealthDao {
     @Query("DELETE FROM sleep_session WHERE day = :day AND nap = :nap")
     suspend fun deleteSleepSessionsForDay(day: Long, nap: Boolean)
 
+    /**
+     * A day's main sleep ([nap] false) or naps as the strap sent them again: the old ones go and [sessions] with their
+     * [stages] come in, in one go. Apart, a reader could see the night empty, and a kill between them lost it.
+     */
+    @androidx.room.Transaction
+    suspend fun replaceSleepDay(day: Long, nap: Boolean, sessions: List<SleepSession>, stages: List<SleepStage>) {
+        deleteSleepStagesForDay(day, nap)
+        deleteSleepSessionsForDay(day, nap)
+        if (sessions.isNotEmpty()) insertSleepSessions(sessions)
+        if (stages.isNotEmpty()) insertSleepStages(stages)
+    }
+
+    /** A strap workout's HR stream as the strap re-sent it, whole: the old one goes with the new one coming in. */
+    @androidx.room.Transaction
+    suspend fun replaceWorkoutDetail(start: Long, samples: List<WorkoutHeartRate>) {
+        deleteWorkoutHeartRate(start)
+        if (samples.isNotEmpty()) insertWorkoutHeartRate(samples)
+    }
+
+    /**
+     * Removes for good the sleep sessions starting at [sessionStarts] with their stages, and saves [markers] over
+     * their edits ([org.openstrap.app.data.SleepSource.purgeExpired]), all or none.
+     */
+    @androidx.room.Transaction
+    suspend fun purgeSleepEdits(sessionStarts: List<Long>, markers: List<SleepEdit>) {
+        for (start in sessionStarts) {
+            deleteSleepStagesOf(start)
+            deleteSleepSession(start)
+        }
+        if (markers.isNotEmpty()) insertSleepEdits(markers)
+    }
+
+    /**
+     * Runs [block] in one transaction, so writes that belong together (a history chunk's rows) land all or none and
+     * readers never see half of them.
+     */
+    @androidx.room.Transaction
+    suspend fun inTransaction(block: suspend () -> Unit) {
+        block()
+    }
+
     @Query("SELECT * FROM sleep_edit")
     fun sleepEdits(): Flow<List<SleepEdit>>
 

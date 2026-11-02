@@ -13,7 +13,6 @@ import org.openstrap.app.OpenStrapApp
  * Android binds this while the associated strap is in range (see [CompanionLink]), starting the process if it
  * was killed. Each "appeared" event reconnects; the connection's own retries handle the strap going out of range.
  */
-@RequiresApi(Build.VERSION_CODES.S)
 class StrapPresenceService : CompanionDeviceService() {
 
     private fun appeared(what: String) {

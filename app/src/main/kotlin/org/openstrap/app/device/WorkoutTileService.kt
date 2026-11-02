@@ -32,12 +32,10 @@ class WorkoutTileService : TileService() {
                     val r = state as? WorkoutState.Recording
                     tile.state = if (r != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
                     tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else "Start workout"
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        tile.subtitle = when {
-                            r?.paused == true -> "Paused"
-                            r != null -> "Recording"
-                            else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
-                        }
+                    tile.subtitle = when {
+                        r?.paused == true -> "Paused"
+                        r != null -> "Recording"
+                        else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
                     }
                     tile.updateTile()
                 }

@@ -245,7 +245,6 @@ class DesignTokenTest {
          * (audit section 4). The list shrinks with each step and never grows.
          */
         val typeNotMigrated = mapOf(
-            "components/Charts.kt" to 2,
             "dashboard/SleepPanels.kt" to 1,
             "glow/AllMetricsScreen.kt" to 1,
             "glow/GlowActivityScreen.kt" to 2,

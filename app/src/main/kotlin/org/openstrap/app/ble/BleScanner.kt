@@ -16,7 +16,7 @@ data class FoundDevice(val address: String, val name: String, val rssi: Int)
 val HELIO_STRAP_NAMES = listOf("Amazfit Helio Strap", "Stuttgart")
 
 class BleScanner(private val context: Context) {
-    /** Emits Helio Straps as they're seen. Requires BLUETOOTH_SCAN. */
+    /** Emits Helio Straps as they're seen. Requires BLUETOOTH_SCAN (see BlePermissions). */
     @SuppressLint("MissingPermission")
     fun scan(): Flow<FoundDevice> = callbackFlow {
         val scanner = context.getSystemService(BluetoothManager::class.java).adapter?.bluetoothLeScanner

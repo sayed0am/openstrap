@@ -71,19 +71,15 @@ class WorkoutLocation(private val context: Context, private val onFix: (Route.Po
     }
 
     /**
-     * Updates once a second at high accuracy. From API 31 that has to be asked for: the plain overload leaves fused
-     * at balanced power, which may never turn the GPS chip on.
+     * Updates once a second at high accuracy. That has to be asked for: the plain overload leaves fused at balanced
+     * power, which may never turn the GPS chip on.
      */
     @SuppressLint("MissingPermission")
     private fun request(provider: String): Boolean {
         val m = manager ?: return false
         return runCatching {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val request = LocationRequest.Builder(INTERVAL_MS).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).build()
-                m.requestLocationUpdates(provider, request, context.mainExecutor, listener)
-            } else {
-                m.requestLocationUpdates(provider, INTERVAL_MS, 0f, listener, Looper.getMainLooper())
-            }
+            val request = LocationRequest.Builder(INTERVAL_MS).setQuality(LocationRequest.QUALITY_HIGH_ACCURACY).build()
+            m.requestLocationUpdates(provider, request, context.mainExecutor, listener)
             source = provider
         }.isSuccess
     }
@@ -114,18 +110,16 @@ class WorkoutLocation(private val context: Context, private val onFix: (Route.Po
 
         /** How long fused gets to produce a location before plain GPS takes over, as in Zepp (native 01 §2.1). */
         internal const val FUSED_TIMEOUT_MS = 20_000L
-        private const val FUSED = "fused" // LocationManager.FUSED_PROVIDER, named from API 31
+        private const val FUSED = LocationManager.FUSED_PROVIDER
         private const val GPS = LocationManager.GPS_PROVIDER
         private const val TAG = "OpenStrap"
 
-        /** From a mock-location app rather than the GPS chip. `isMock` replaced `isFromMockProvider` in API 31. */
-        @Suppress("DEPRECATION")
-        internal fun isMock(l: Location): Boolean =
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) l.isMock else l.isFromMockProvider
+        /** From a mock-location app rather than the GPS chip. */
+        internal fun isMock(l: Location): Boolean = l.isMock
 
         /**
          * Everything the route can use from a fix: speed and bearing let `Route.smooth` follow turns (native 02 §3.7),
-         * altitude is kept for later. Each only when the fix has it; the accuracies need API 26, below the app's 28.
+         * altitude is kept for later. Each only when the fix has it.
          */
         internal fun point(l: Location) = Route.Point(
             l.time / 1000, l.latitude, l.longitude, if (l.hasAccuracy()) l.accuracy else Float.MAX_VALUE,

@@ -30,6 +30,12 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
 
     private class Outcome(val stored: Int, val present: Int, val bad: Int)
 
+    /** One CSV row read: its time and, for a span, its end, its text key for a [Unique] table, and the row. */
+    private class Parsed<T>(val time: Long, val end: Long, val id: String?, val value: T)
+
+    /** A file's rows as read, waiting to be written, and how many were unreadable. */
+    private class Pending<T>(val table: CsvTable<T>, val rows: List<Parsed<T>>, val bad: Int)
+
     suspend fun importZip(input: InputStream): Result = db.withTransaction {
         val tables = CSV_TABLES.associateBy { it.file }
         val counts = linkedMapOf<String, Int>()
@@ -37,13 +43,13 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         val added = mutableMapOf<String, Set<Long>>()
         // Child tables wait until every parent is in, whatever order the zip lists them in, and the tables a deleted
         // workout is left out of wait until every deleted workout is in.
-        val children = mutableListOf<Pair<CsvTable<*>, List<String>>>()
-        val deletable = mutableListOf<Pair<CsvTable<*>, List<String>>>()
+        val children = mutableListOf<Pending<*>>()
+        val deletable = mutableListOf<Pending<*>>()
         var present = 0
         var skipped = 0
         var settings: String? = null
-        fun count(table: CsvTable<*>, o: Outcome) {
-            counts[table.file] = o.stored; present += o.present; skipped += o.bad
+        fun count(file: String, o: Outcome) {
+            counts[file] = o.stored; present += o.present; skipped += o.bad
         }
         ZipInputStream(input).use { zip ->
             while (true) {
@@ -53,13 +59,12 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
                     continue
                 }
                 val table = tables[entry.name.substringAfterLast('/')] ?: continue
-                // Only this entry's bytes, without closing the zip (a Reader's readLines would close it).
-                val lines = zip.readBytes().toString(Charsets.UTF_8).lines().filter { it.isNotBlank() }
-                if (lines.isEmpty()) continue
+                // Only this entry, read as it streams: the reader is never closed, so the zip stays open.
+                val pending = table.read(CsvReader(zip.reader(Charsets.UTF_8))) ?: continue
                 when {
-                    table.key.parent != null -> children += table to lines
-                    table.key.table in DELETABLE -> deletable += table to lines
-                    else -> count(table, table.backfill(lines, added))
+                    table.key.parent != null -> children += pending
+                    table.key.table in DELETABLE -> deletable += pending
+                    else -> count(table.file, pending.backfill(added))
                 }
             }
         }
@@ -68,62 +73,72 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
             "workout" to deleted.mapTo(HashSet()) { it.start },
             "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
         )
-        for ((table, lines) in deletable) count(table, table.backfill(lines, added, gone[table.key.table].orEmpty()))
-        for ((table, lines) in children) count(table, table.backfill(lines, added))
+        for (p in deletable) count(p.table.file, p.backfill(added, gone[p.table.key.table].orEmpty()))
+        for (p in children) count(p.table.file, p.backfill(added))
         // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
         if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
         Result(counts, present, skipped, settings)
     }
 
-    /** Writes the rows of [lines] that fall before the phone's first day for this table, less those timed at [gone]. */
-    private suspend fun <T> CsvTable<T>.backfill(lines: List<String>, added: MutableMap<String, Set<Long>>, gone: Set<Long> = emptySet()): Outcome {
-        val index = parseLine(lines.first()).withIndex().associate { (i, name) -> name to i }
+    /** This table's rows from [records], the header first; null for an empty file. */
+    private fun <T> CsvTable<T>.read(records: CsvReader): Pending<T>? {
+        val index = (records.next() ?: return null).withIndex().associate { (i, name) -> name to i }
         var bad = 0
-        val rows = mutableListOf<Triple<Long, Long, T>>()
-        for (line in lines.drop(1)) {
+        val rows = mutableListOf<Parsed<T>>()
+        while (true) {
+            val cells = CsvRow(index, records.next() ?: break)
             runCatching {
-                val cells = CsvRow(index, parseLine(line))
                 val time = cells.long(key.epoch)
-                if (time in gone) return@runCatching
-                rows += Triple(time, key.span?.let { cells.long(it.epoch) } ?: time, parse(cells))
+                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, key.unique?.let { cells.string(it.csv) }, parse(cells))
             }.onFailure { bad++ }
         }
+        return Pending(this, rows, bad)
+    }
+
+    /** Writes the rows that fall before the phone's first day for this table, less those timed at [gone]. */
+    private suspend fun <T> Pending<T>.backfill(added: MutableMap<String, Set<Long>>, gone: Set<Long> = emptySet()): Outcome {
+        val key = table.key
+        val rows = rows.filter { it.time !in gone }
         val fresh = if (rows.isEmpty()) rows else {
-            val from = rows.minOf { it.first }
-            val to = rows.maxOf { it.second }
+            val from = rows.minOf { it.time }
+            val to = rows.maxOf { it.end }
             val parent = key.parent
             val span = key.span
             when {
-                parent != null -> added[parent].orEmpty().let { starts -> rows.filter { it.first in starts } }
+                parent != null -> added[parent].orEmpty().let { starts -> rows.filter { it.time in starts } }
                 else -> {
                     val first = query("SELECT MIN(${key.column}) FROM ${key.table}") { c -> if (c.isNull(0)) null else c.getLong(0) }.single()
                     val cutoff = first?.let { dayStart(it) } ?: Long.MAX_VALUE
                     // A deletion is the user's, not the strap's history: every one comes back, less those already here.
+                    val unique = key.unique
                     val before = when (key.table) {
-                        in WHOLE -> {
+                        in WHOLE -> if (unique != null) {
+                            val have = query("SELECT ${unique.column} FROM ${key.table}") { it.getString(0) }.toHashSet()
+                            rows.filter { it.id !in have }
+                        } else {
                             val have = query("SELECT ${key.column} FROM ${key.table}") { it.getLong(0) }.toHashSet()
-                            rows.filter { it.first !in have }
+                            rows.filter { it.time !in have }
                         }
                         // One row a minute, keyed by it: a minute the phone has keeps the strap's value, any other
                         // minute comes back, so a day the strap only partly re-sent is filled in too.
                         in MINUTES -> {
                             val have = query("SELECT ${key.column} FROM ${key.table} WHERE ${key.column} BETWEEN ? AND ?", from, to) { it.getLong(0) }.toHashSet()
-                            rows.filter { it.first !in have }
+                            rows.filter { it.time !in have }
                         }
-                        else -> rows.filter { it.first < cutoff }
+                        else -> rows.filter { it.time < cutoff }
                     }
                     if (span == null) before else {
                         // A night that starts the evening before the strap's first day can still be one it has.
                         val have = query("SELECT ${key.column}, ${span.column} FROM ${key.table} WHERE ${key.column} <= ? AND ${span.column} >= ?", to, from) {
                             it.getLong(0) to it.getLong(1)
                         }
-                        before.filter { (start, end) -> have.none { (s, e) -> s == start || (s < end && e > start) } }
+                        before.filter { row -> have.none { (s, e) -> s == row.time || (s < row.end && e > row.time) } }
                     }
                 }
             }
         }
-        if (key.span != null) added[key.table] = fresh.mapTo(HashSet()) { it.first }
-        fresh.map { it.third }.chunked(2_000).forEach { write(db.healthDao(), it) }
+        if (key.span != null) added[key.table] = fresh.mapTo(HashSet()) { it.time }
+        fresh.map { it.value }.chunked(2_000).forEach { table.write(db.healthDao(), it) }
         return Outcome(fresh.size, rows.size - fresh.size, bad)
     }
 
@@ -137,29 +152,12 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         private val DELETABLE = setOf("workout", "sport_effect")
 
         /** Tables restored whole rather than only before the phone's first day: what the user did, which the strap can't re-send. */
-        private val WHOLE = setOf("workout_deleted", "saved_workout", "exercise", "badge", "week_result")
+        private val WHOLE = setOf("workout_deleted", "saved_workout", "exercise", "badge", "week_result", "personal_best", "habit_age_week")
 
         /** Minute tables, keyed by the minute: restored wherever the phone has no row for it, not only before its first day. */
         private val MINUTES = setOf("heart_rate", "activity_minute", "activity_extended")
 
-        /** One CSV line into cells: commas separate, double quotes wrap a cell and "" inside is a quote. */
-        fun parseLine(line: String): List<String> {
-            val cells = mutableListOf<String>()
-            val cell = StringBuilder()
-            var quoted = false
-            var i = 0
-            while (i < line.length) {
-                val c = line[i]
-                when {
-                    quoted && c == '"' && line.getOrNull(i + 1) == '"' -> { cell.append('"'); i++ }
-                    c == '"' -> quoted = !quoted
-                    c == ',' && !quoted -> { cells += cell.toString(); cell.clear() }
-                    else -> cell.append(c)
-                }
-                i++
-            }
-            cells += cell.toString()
-            return cells
-        }
+        /** One CSV line into cells, as [CsvReader] reads it. */
+        fun parseLine(line: String): List<String> = CsvReader(line.reader()).next() ?: listOf("")
     }
 }

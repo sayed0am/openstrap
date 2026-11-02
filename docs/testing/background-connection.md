@@ -23,7 +23,6 @@ The companion device association (sayed0am/openstrap#7) was tested on one phone:
 | The strap leaving range and coming back | Needs the strap moved away from the phone | Walk away with the phone for a few minutes, come back, and check the strap reconnects without opening the app. |
 | Android 13–15 (`onDeviceAppeared(AssociationInfo)`, presence by address) | No phone on those versions | Associate, SIGKILL the process, and check `companion: strap appeared` and `connecting to` in `adb logcat -s OpenStrap`. |
 | Android 12 (`onDeviceAppeared(String)`, no association ids) | No phone on that version | As above. Also check that Forget removes the association by address. |
-| Android 9–11 (association, no presence callbacks) | No phone on those versions | Associate, then check the whitelist as above. Nothing restarts the process after a kill on these versions; a notification or opening the app reconnects. |
 | Phones without companion device support | No such phone | The row should offer the battery-optimization prompt straight away. |
 | A day of normal use on battery | Not run | Leave the strap connected all day with the app closed. Check that syncs, call buzzes and notification buzzes keep working, and look at OpenStrap's battery use in Settings. |
 

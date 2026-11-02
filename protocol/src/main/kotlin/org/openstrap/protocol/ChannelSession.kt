@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.openstrap.protocol.auth.Auth
 import org.openstrap.protocol.auth.AuthException
@@ -53,6 +52,12 @@ interface StrapLink {
 }
 
 class ProtocolException(message: String) : Exception(message)
+
+/**
+ * The strap didn't reply in time. A plain exception, not `withTimeout`'s cancellation: a caller that rethrows every
+ * cancellation would otherwise take a silent strap for a cancelled job and never report the failure (audit C1).
+ */
+class ProtocolTimeoutException(message: String) : Exception(message)
 
 /**
  * One authenticated channel connection (docs/protocol/01 §1.4 steps 6-10).
@@ -132,11 +137,10 @@ class ChannelSession(
 
     /** Version query, services list, ECDH auth. Throws [AuthException] on a rejected key. */
     suspend fun handshake(authKey: ByteArray) {
-        val v = withTimeout(5_000) {
-            val versionReplies = link.controlNotifications.filter { it.isNotEmpty() && it.u8(0) == 0x02 }
-            val reply = launchAndAwait(versionReplies) { link.writeControl(ChannelVersion.REQUEST) }
-            ChannelVersion.parse(reply) ?: throw ProtocolException("Unexpected version reply ${reply.toHex()}")
-        }
+        val versionReplies = link.controlNotifications.filter { it.isNotEmpty() && it.u8(0) == 0x02 }
+        val reply = withTimeoutOrNull(VERSION_TIMEOUT_MS) { launchAndAwait(versionReplies) { link.writeControl(ChannelVersion.REQUEST) } }
+            ?: throw ProtocolTimeoutException("No reply to the channel version query")
+        val v = ChannelVersion.parse(reply) ?: throw ProtocolException("Unexpected version reply ${reply.toHex()}")
         version = v
         log("channel v${v.version}, encryptEnable=${v.encryptEnable}")
         if (v.version != 2 || v.encryptEnable == null) throw ProtocolException("Unsupported channel (v${v.version}, encryption ${v.encryptEnable})")
@@ -210,15 +214,16 @@ class ChannelSession(
         timeoutMs: Long = 10_000,
         wantReply: Boolean = true,
         matches: (ByteArray) -> Boolean = { true },
-    ): ByteArray = withTimeout(timeoutMs) {
+    ): ByteArray = withTimeoutOrNull(timeoutMs) {
         launchAndAwait(messagesFor(endpoint).filter(matches)) { send(endpoint, payload, wantReply) }
+    } ?: throw ProtocolTimeoutException("No reply on ${"%04x".format(endpoint)} in $timeoutMs ms")
+
+    private companion object {
+        const val ENCRYPTED_ACK_TIMEOUT_MS = 2_000L
+        const val VERSION_TIMEOUT_MS = 5_000L
     }
 
     /** Subscribes to [flow] before running [action], so a fast reply can't be missed. */
-    private companion object {
-        const val ENCRYPTED_ACK_TIMEOUT_MS = 2_000L
-    }
-
     private suspend fun <T> launchAndAwait(flow: Flow<T>, action: suspend () -> Unit): T =
         coroutineScope {
             val waiter = async(start = CoroutineStart.UNDISPATCHED) { flow.first() }

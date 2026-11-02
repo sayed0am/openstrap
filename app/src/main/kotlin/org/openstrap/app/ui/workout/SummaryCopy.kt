@@ -1,8 +1,5 @@
 package org.openstrap.app.ui.workout
 
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
@@ -181,22 +178,4 @@ object SummaryCopy {
             val last = totalMeters?.let { it - 1000f * i }?.takeIf { it > 0f } ?: sp.meters.toFloat()
             SplitRow(if (whole) "Km ${i + 1}" else "Last ${km(last)}", workoutClock(sp.seconds), WorkoutCopy.averageOver(readings, from, sp.endT))
         }
-
-    /** A best counts once the last better one is at least this long ago. */
-    const val BEST_GAP_S = 30 * 86_400L
-
-
-    /** "Since March" only when it beats at least this many of the sport since then. */
-    const val BEST_MIN_BEATEN = 3
-
-    /** Shorter than these and a best means little. */
-    private const val BEST_MIN_M = 1000f
-    private const val BEST_MIN_S = 10 * 60L
-
-    /** "March", or "March 2025" when [at] is in another year than [now]. */
-    private fun month(at: Long, now: Long, zone: ZoneId, locale: Locale): String {
-        val d = Instant.ofEpochSecond(at).atZone(zone)
-        val pattern = if (d.year == Instant.ofEpochSecond(now).atZone(zone).year) "MMMM" else "MMMM yyyy"
-        return d.format(DateTimeFormatter.ofPattern(pattern, locale))
-    }
 }

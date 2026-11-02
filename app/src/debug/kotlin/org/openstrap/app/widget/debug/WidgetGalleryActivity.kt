@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.SizeF
@@ -157,7 +156,7 @@ class WidgetGalleryActivity : ComponentActivity() {
         refresh()
     }
 
-    /** The size bundle Glance reads to pick its layout: Android 12's size list, and the min and max before it. */
+    /** The size bundle Glance reads to pick its layout: the size list, and the min and max for launchers without it. */
     private fun sizeOptions(size: DpSize): Bundle = Bundle().apply {
         val w = size.width.value.toInt()
         val h = size.height.value.toInt()
@@ -165,9 +164,7 @@ class WidgetGalleryActivity : ComponentActivity() {
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, w)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, h)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, h)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
-        }
+        putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
     }
 
     /** Loads the widget again and renders every bound id. */
