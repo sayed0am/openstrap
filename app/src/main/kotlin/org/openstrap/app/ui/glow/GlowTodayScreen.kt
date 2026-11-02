@@ -186,6 +186,8 @@ fun GlowTodayScreen(
     var editing by rememberSaveable { mutableStateOf(false) }
     if (editing) EditTodaySheet(edits, onSave = { onEditsChange(it); editing = false }, onDismiss = { editing = false })
     var partialInfo by rememberSaveable { mutableStateOf(false) }
+    // Built once, so the cards given it can skip (audit K11).
+    val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
 
     val zone = ZoneId.systemDefault()
     val now = Instant.now()
@@ -200,7 +202,7 @@ fun GlowTodayScreen(
         strapScore = strapReadiness?.takeIf { it.day == state.dayStart }?.score,
         stopped = strap.stopped, staleAfter = strap.staleAfter,
         recoveryFailure = recoveryFailure?.takeIf { it.date == state.date && rec == null },
-        partial = wear?.takeIf { it.partial }?.let { TitleTag(PARTIAL_DAY) { partialInfo = true } },
+        partial = partialTag.takeIf { wear?.partial == true },
         firstScore = firstScore,
     )
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
@@ -230,8 +232,9 @@ fun GlowTodayScreen(
             val slots = varyLooks(applyEdits(todayCards(moment, facts, morning), edits, moment, unavailable), looksFor, live, wide, across)
             val panes = todayPanes(slots, across)
             GlowScreenList(contentPadding, list) {
-                full { header() }
-                // One block per grid row: a Small pair stays side by side, and on a wide screen in one column.
+                add(Pane.Full, GlowBlocks.HEADER) { header() }
+                // One block per grid row: a Small pair stays side by side, and on a wide screen in one column. Each is
+                // keyed on its cards, so its state stays with them when Edit Today hides or pins one above (audit K5).
                 packGrid(slots.indices.map { slots[it].size to it }).forEach { row ->
                     val block: @Composable () -> Unit = {
                         GridRowBlock(row) { i, m ->
@@ -268,19 +271,19 @@ fun GlowTodayScreen(
                         }
                     }
                     // The hero and strips span the width on a wide screen; the rows between take turns.
-                    when (panes[row.items().first()]) {
-                        Pane.Full -> full(block)
-                        Pane.Left -> left(block)
-                        Pane.Right -> right(block)
-                    }
+                    add(panes[row.items().first()], GlowBlocks.cardsKey(row.items().map { slots[it].card }), block)
                 }
             }
         }
     }
 }
 
-/** What Today's cards read, worked out once per screen. */
-private class TodayContext(
+/**
+ * What Today's cards read, worked out once per screen. Equal by value and immutable, so a card given an equal one
+ * skips rather than recompose with every pass of Today (audit K11).
+ */
+@androidx.compose.runtime.Immutable
+private data class TodayContext(
     val state: DayUiState,
     val rec: RecoveryResult?,
     val live: Int?,
@@ -413,9 +416,10 @@ private fun Hero(
         if (it == HeroKind.Waking && ctx.state.loaded && ctx.recoveryFailure == null && wakingLead(ctx.firstNights, ctx.state.asleepSeconds, ctx.isToday) == WakingLead.Charge) HeroKind.NoSleep
         else it
     }
-    // The During hero keeps drawing while it fades out after the workout ends, when [running] is already gone.
+    // The During hero keeps drawing while it fades out after the workout ends, when [running] is already gone. Kept
+    // once each composition is applied, not written during it (audit K6). Only the fading hero reads it.
     val lastRunning = remember { androidx.compose.runtime.mutableStateOf(running) }
-    if (running != null) lastRunning.value = running
+    androidx.compose.runtime.SideEffect { if (running != null) lastRunning.value = running }
     Crossfade(kind, animationSpec = tween(300), label = "hero") { k ->
         when (k) {
             HeroKind.Pair -> PairHero(pairing ?: PairStep.Ready, onPair, m)

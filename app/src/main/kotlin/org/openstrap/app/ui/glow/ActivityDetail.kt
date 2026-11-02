@@ -138,13 +138,14 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
     val stored by remember(date, ctx.paiHistory) {
         ctx.paiHistory?.invoke(date.minusDays(29), maxOf(date, ctx.today)) ?: flowOf(emptyMap())
     }.collectAsState(emptyMap())
-    val week = weekOf(date)
-    val daily = week.map { stored[it]?.daily }
+    // Worked out once per load, not on every pass of the screen (audit K4).
+    val week = remember(date) { weekOf(date) }
+    val daily = remember(week, stored) { week.map { stored[it]?.daily } }
     val total = (ctx.state.pai?.total ?: stored[date]?.total)?.let(Math::round)
-    val month = (29 downTo 0).map { date.minusDays(it.toLong()) }
-    val totals = month.map { stored[it]?.total?.let(Math::round) }
+    val month = remember(date) { (29 downTo 0).map { date.minusDays(it.toLong()) } }
+    val totals = remember(month, stored) { month.map { stored[it]?.total?.let(Math::round) } }
 
-    val headline = scrub ?: when {
+    val headline = when {
         range == Range.Month && totals.any { it != null } ->
             DetailHeadline(Math.round(totals.filterNotNull().average()).toString(), "points, 7-day total on average", null)
         range == Range.Month -> DetailHeadline.none("No points", "In the last 30 days")
@@ -156,7 +157,7 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
     DetailTemplate(
         Score.HeartPoints.title, color, siblings(Detail.OfScore(Score.HeartPoints), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = strip, onDay = ctx.onSelectDay,
-        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
+        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
         if (range == Range.Week) {
             item {
@@ -274,7 +275,7 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
     val week = weekOf(date)
     val byDay = a?.byDay.orEmpty()
     val day = byDay[date] ?: a?.mvpa
-    val headline = scrub ?: when {
+    val headline = when {
         a == null -> DetailHeadline.none("No reading", "Needs the strap's steps and heart rate")
         range == Range.Week -> DetailHeadline(a.weekEquivalent.toString(), "minutes, last 7 days", ActivityCopy.activeWord(a.weekEquivalent))
         // The sentence says when ("So far today"), and which minutes.
@@ -284,7 +285,7 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
     DetailTemplate(
         Score.ActiveMinutes.title, color, siblings(Detail.OfScore(Score.ActiveMinutes), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx), onDay = ctx.onSelectDay,
-        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
+        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
         if (a != null && range == Range.Week) {
             val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
@@ -331,7 +332,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
     val status = r?.let { TodayCopy.loadStatus(it.load, usual, endOfDay = !ctx.isToday) }
     val balance = TabCopy.loadBalance(r?.loadTrend)
     val known = values.filterNotNull()
-    val headline = scrub ?: when {
+    val headline = when {
         r == null -> DetailHeadline.none("No reading", "Needs a day of heart rate")
         // "So far today" and "learning your usual" are the sentence's to say, so the word is only a comparison.
         range == Range.Day -> DetailHeadline(Math.round(r.load).toString(), if (ctx.isToday) "today" else "that day", status?.takeIf { it != TodayCopy.LoadStatus.SoFar }?.text)
@@ -346,7 +347,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
     DetailTemplate(
         Score.Load.title, color, siblings(Detail.OfScore(Score.Load), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx, DailyMetric.HeartRate), onDay = ctx.onSelectDay,
-        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
+        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
         if (r != null && range == Range.Day) {
             item {
@@ -537,12 +538,17 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
         if (range == Range.Day) flowOf(null) else ctx.energyHistory?.invoke(start.minusDays(range.days.toLong()), date) ?: flowOf(emptyMap())
     }.collectAsState(null)
     // The day shown is worked out afresh, so it stands in for its row.
-    val rows = stored?.let { m ->
-        m.mapValues { (d, r) -> CaloriesCopy.DayKcal(d, r.activeKcal, r.totalKcal, r.workoutKcal, r.partial) } +
+    // Worked out once per load, not on every pass of the screen (audit K4).
+    val rows = remember(stored, e, date) {
+        stored?.let { m ->
+            m.mapValues { (d, r) -> CaloriesCopy.DayKcal(d, r.activeKcal, r.totalKcal, r.workoutKcal, r.partial) } +
             (e?.let { mapOf(date to CaloriesCopy.DayKcal(date, it.activeKcal, it.totalKcal, it.workoutKcal, it.partial)) } ?: emptyMap())
+        }
     }
-    val summary = rows?.let { CaloriesCopy.summary(it, start, date, goal, inProgress = date.takeIf { ctx.isToday }) }
-    val headline = scrub ?: when {
+    val summary = remember(rows, start, date, goal, ctx.isToday) {
+        rows?.let { CaloriesCopy.summary(it, start, date, goal, inProgress = date.takeIf { ctx.isToday }) }
+    }
+    val headline = when {
         ctx.r == null -> DetailHeadline.none("No reading", DetailCopy.noValue(Metric.Steps, Range.Day, ctx.isToday))
         e == null || active == null -> DetailHeadline.none("No estimate", "Needs your age, weight and height")
         range == Range.Day -> DetailHeadline("%,d".format(active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
@@ -553,7 +559,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     DetailTemplate(
         Score.Energy.title, color, siblings(Detail.OfScore(Score.Energy), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx, DailyMetric.HeartRate), onDay = ctx.onSelectDay,
-        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
+        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
         if (e == null || active == null) {
             if (ctx.r != null) item {
@@ -878,7 +884,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
     val workoutsBefore = if (ctx.workouts.any { dayOf(it) < start }) ctx.workouts.count {
         dayOf(it) in before..start.minusDays(1) && it.workout.sportType != org.openstrap.app.data.Workouts.GENERIC_ACTIVITY
     } else null
-    val headline = scrub ?: when {
+    val headline = when {
         totals.stepsADay != null -> DetailHeadline("%,d".format(totals.stepsADay), WeekStory.label(week), change)
         steps == null -> DetailHeadline.none("Loading", WeekStory.label(week).replaceFirstChar { it.uppercase() })
         else -> DetailHeadline.none("No steps", "Monday to Sunday last week")
@@ -886,6 +892,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
     DetailTemplate(
         "Your week", color, emptyList(), onInfo = { info = true }, onBack = ctx.onBack, contentPadding = ctx.contentPadding,
         headline = headline, strip = emptyList(), onDay = {}, ranges = listOf(Range.Week), range = Range.Week, onRange = {},
+        scrubbed = { scrub },
     ) {
         val values = days.map { (it.steps ?: 0).toFloat() }
         if (values.any { it > 0f }) item {

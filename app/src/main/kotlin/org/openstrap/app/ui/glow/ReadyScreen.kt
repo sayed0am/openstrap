@@ -111,24 +111,29 @@ fun GlowWorkoutReadyScreen(
     val family = Workouts.family(type)
     val cardio = family == Workouts.Family.Distance || family == Workouts.Family.IndoorCardio
     // Last time's settings until changed here. Keyed on them too: the stored ones load a moment after the screen opens.
+    // Each choice is keyed on the stored field it starts from, so settings arriving again, or another field changing,
+    // keeps what was just picked or typed (audit K7).
     val key = Workouts.tileType(sportType)
-    var askToEnd by rememberSaveable(key, settings) { mutableStateOf(settings.askToEnd) }
-    var keepRoute by rememberSaveable(key, settings) { mutableStateOf(settings.keepRoute) }
+    var askToEnd by rememberSaveable(key, settings.askToEnd) { mutableStateOf(settings.askToEnd) }
+    var keepRoute by rememberSaveable(key, settings.keepRoute) { mutableStateOf(settings.keepRoute) }
     val lastRest = Strength.Rest.parse(settings.rest) ?: Strength.Rest.DEFAULT
-    var sets by rememberSaveable(key, settings) { mutableStateOf(settings.sets) }
-    var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }
-    var restBelow by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm) }
+    var sets by rememberSaveable(key, settings.sets) { mutableStateOf(settings.sets) }
+    var restSeconds by rememberSaveable(key, settings.rest) { mutableStateOf(lastRest.seconds) }
+    var restBelow by rememberSaveable(key, settings.rest) { mutableStateOf(lastRest.belowBpm) }
     // The level End rest early turns back on at, and the sets Plan opens on after Open.
-    var belowLevel by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm ?: StartCopy.DEFAULT_BELOW) }
-    var planSets by rememberSaveable(key, settings) { mutableStateOf(settings.sets ?: StartCopy.DEFAULT_SETS) }
-    var log by rememberSaveable(key, settings) { mutableStateOf(settings.log) }
+    val belowLevel = rememberSaveable(key, settings.rest) { lastRest.belowBpm ?: StartCopy.DEFAULT_BELOW }
+    var planSets by rememberSaveable(key, settings.sets) { mutableStateOf(settings.sets ?: StartCopy.DEFAULT_SETS) }
+    var log by rememberSaveable(key, settings.log) { mutableStateOf(settings.log) }
     // HIIT's rounds (Tabata unless last time was another), or a game's periods; null is Free, or free play.
-    var structureCode by rememberSaveable(key, settings, structure) {
+    var structureCode by rememberSaveable(key, settings.structure, structure) {
         mutableStateOf(structure ?: settings.structure ?: Structure.TABATA.code.takeIf { family == Workouts.Family.Intervals })
     }
     // A cardio sport's goal, or mind and body's length: the kind chosen and each kind's value, from last time's goal or reps.
-    var draft by rememberSaveable(key, settings, structure, stateSaver = GoalDraftSaver) { mutableStateOf(goalDraft(settings, structure)) }
-    var typing by remember { mutableStateOf(false) }
+    var draft by rememberSaveable(key, settings.goal, settings.structure, structure, stateSaver = GoalDraftSaver) {
+        mutableStateOf(goalDraft(settings, structure))
+    }
+    // Typing outlives a rotation or a fold, so the half-typed value comes back with its keyboard.
+    var typing by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     var locationOn by remember { mutableStateOf(locationAvailable(context)) }
     LifecycleResumeEffect(Unit) {
