@@ -50,6 +50,7 @@ import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.data.wasoMinutes
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory

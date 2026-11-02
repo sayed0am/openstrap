@@ -1,6 +1,8 @@
 package org.openstrap.app.ui.dashboard
 
+import org.openstrap.app.data.continuityScore
 import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.data.durationScore
 import org.openstrap.app.presentation.RecoveryBands
 import org.openstrap.app.presentation.SleepBands
 import org.openstrap.app.presentation.Units
