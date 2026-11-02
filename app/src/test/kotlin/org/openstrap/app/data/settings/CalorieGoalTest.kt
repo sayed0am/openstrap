@@ -2,9 +2,14 @@ package org.openstrap.app.data.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
+import org.openstrap.app.testing.LocaleRule
 
+/** In English: the German words are in [org.openstrap.app.presentation.DataCopyTest]. */
 class CalorieGoalTest {
+    @get:Rule val locale = LocaleRule()
+
     @Test fun `the buttons step by 10 and stop at the strap's range`() {
         assertEquals(460, CalorieGoal.step(450, Goals.CALORIES_STEP))
         assertEquals(440, CalorieGoal.step(450, -Goals.CALORIES_STEP))

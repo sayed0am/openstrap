@@ -217,7 +217,7 @@ object Workouts {
     private fun asSamples(readings: List<Pair<Long, Int>>) = readings.map { (t, bpm) -> WorkoutHeartRate(0, t, bpm) }
 
     private fun medianAt(hr: List<WorkoutHeartRate>, t: Long): Int? =
-        hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm }.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
+        Stats.upperMiddle(hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm })
 
     /** Zepp's sport type ids (Type.type in the summary) for the sports a strap is likely to record. */
     fun sportName(type: Int): String = SPORT_NAMES[type] ?: "Workout"
@@ -343,13 +343,13 @@ object Workouts {
      * Sports done on your feet, where steps times a stride make a distance (≈) without GPS: runs, walks, hikes. On a
      * bike, in water or on a mat, steps say nothing about distance, so those show none.
      */
-    val ON_FOOT = setOf(1, 2, 3, 11, 15, 40, 215, 224, 225)
+    val ON_FOOT: Set<Int> get() = SportTypes.ON_FOOT
 
-    /** Runs, where distance comes with a pace. */
-    val RUNS = setOf(1, 2, 11)
+    /** Runs, where distance comes with a pace ([SportTypes.RUNS], kept for the screens that still ask here). */
+    val RUNS: Set<Int> get() = SportTypes.RUNS
 
-    /** On foot but not running: walks and hikes, where distance alone says it. */
-    val WALKS = ON_FOOT - RUNS
+    /** On foot but not running: walks and hikes, where distance alone says it ([SportTypes.WALKS]). */
+    val WALKS: Set<Int> get() = SportTypes.WALKS
 
     /** A workout's effort glow never goes below this, so a light one, or one with no Load, still shows a trace. */
     const val EFFORT_MIN = 0.12f
@@ -366,10 +366,9 @@ object Workouts {
      * Not the day's Load: that is TRIMP over every minute, on another scale.
      */
     fun usualLoad(loads: List<Int?>): Float? {
-        val recent = loads.filterNotNull().filter { it > 0 }.take(USUAL_LOAD_OF).sorted()
+        val recent = loads.filterNotNull().filter { it > 0 }.take(USUAL_LOAD_OF)
         if (recent.size < USUAL_LOAD_MIN) return null
-        val mid = recent.size / 2
-        return if (recent.size % 2 == 1) recent[mid].toFloat() else (recent[mid - 1] + recent[mid]) / 2f
+        return Stats.median(recent)
     }
 
     /**
@@ -404,7 +403,7 @@ object Workouts {
      * Games and sports: tennis, padel, climbing and the rest are played with the phone in a bag.
      */
     fun family(type: Int): Family = when (type) {
-        in Strength.SPORTS -> Family.Strength
+        in SportTypes.STRENGTH -> Family.Strength
         in INTERVALS -> Family.Intervals
         in MIND_BODY -> Family.MindBody
         in DISTANCE -> Family.Distance

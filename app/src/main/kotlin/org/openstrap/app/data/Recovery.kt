@@ -1,6 +1,8 @@
 package org.openstrap.app.data
 
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.presentation.Signed
+import org.openstrap.app.presentation.Units
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
@@ -143,8 +145,8 @@ object Recovery {
     fun stressThreshold(calm: List<Pair<Long, Int>>, dayOf: (Long) -> Long): StressThreshold {
         val days = calm.map { dayOf(it.first) }.distinct().size
         if (days < MIN_STRESS_DAYS || calm.size < MIN_STRESS_READINGS) return StressThreshold(STRESS_FROM, null, days)
-        val sorted = calm.map { it.second }.sorted()
-        val median = (sorted[(sorted.size - 1) / 2] + sorted[sorted.size / 2]) / 2f
+        // Never null here: there are at least MIN_STRESS_READINGS.
+        val median = Stats.median(calm.map { it.second }) ?: 0f
         val value = Math.round(median + STRESS_MARGIN).coerceIn(STRESS_FROM_MIN, STRESS_FROM_MAX)
         return StressThreshold(value, Math.round(median), days)
     }
@@ -1395,7 +1397,7 @@ object Recovery {
         return out
     }
 
-    private fun List<Float>.median(): Float? = if (isEmpty()) null else sorted().let { (it[(it.size - 1) / 2] + it[it.size / 2]) / 2 }
+    private fun List<Float>.median(): Float? = Stats.median(this)
 
     private const val EPOC_THRESHOLD = 5f
     /** Charge's EPOC-like debt, and a workout's EPOC at rest ([WorkoutEffect]), are multiplied by this each minute (half-life ≈ 20 min). */
@@ -1455,21 +1457,17 @@ object Recovery {
         return out
     }
 
-    /** Gates for a nightly sample: RMSSD outside 5-200 ms or heart rate outside 30-220 bpm is treated as artefact. */
+    /**
+     * Gates for a nightly sample: RMSSD outside 5-200 ms or heart rate outside [HeartRate.VALID] is treated as
+     * artefact.
+     */
     const val HRV_MIN_MS = 5
     const val HRV_MAX_MS = 200
-    const val HR_MIN_BPM = 30
-    const val HR_MAX_BPM = 220
+    const val HR_MIN_BPM = HeartRate.MIN_BPM
+    const val HR_MAX_BPM = HeartRate.MAX_BPM
 
     /** The [p]-th percentile (0-1) of [values] by linear interpolation; null when empty. */
-    fun percentile(values: List<Float>, p: Float): Float? {
-        if (values.isEmpty()) return null
-        val sorted = values.sorted()
-        val pos = p.coerceIn(0f, 1f) * (sorted.size - 1)
-        val lo = pos.toInt()
-        val hi = min(lo + 1, sorted.size - 1)
-        return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo)
-    }
+    fun percentile(values: List<Float>, p: Float): Float? = Stats.quantile(values, p)
 
     /** Lowest rolling-[windowMinutes] average in [series], with the time at its centre. */
     fun lowestAverage(series: List<Pair<Long, Int>>, windowMinutes: Int, minCount: Int = windowMinutes / 2): Pair<Long, Float>? {
@@ -1489,15 +1487,9 @@ object Recovery {
         return best
     }
 
-    private fun signed(v: Int) = if (v > 0) "+$v" else if (v < 0) "−${-v}" else "±0"
-    /** "+0.4", "−3", or "±0" when it rounds to zero (never "-0"). */
-    private fun signed(v: Float, decimals: Int): String {
-        val text = "%.${decimals}f".format(abs(v))
-        return when {
-            text.trim('0', '.').isEmpty() -> "±$text"
-            v > 0 -> "+$text"
-            else -> "−$text"
-        }
-    }
-    fun formatMinutes(m: Int) = if (m >= 60) "${m / 60}h ${"%02d".format(m % 60)}m" else "${m}m"
+    // The contributors' detail lines are still written here for the score detail in ui/glow, through presentation's
+    // helpers so they read as every other screen does.
+    private fun signed(v: Int) = Signed.of(v)
+    private fun signed(v: Float, decimals: Int) = Signed.of(v, decimals)
+    private fun formatMinutes(m: Int) = Units.duration(m * 60L)
 }

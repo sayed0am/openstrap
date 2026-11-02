@@ -156,7 +156,7 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         return (phone + strap).maxOfOrNull { (end, minutes) -> minutes - ((w.from - end) / 60).toInt() }?.coerceAtLeast(0) ?: 0
     }
 
-    private fun dayStart(t: Long, zone: ZoneId) = Instant.ofEpochSecond(t).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    private fun dayStart(t: Long, zone: ZoneId) = Days.start(t, zone)
 
     private companion object {
         const val DAY = 86_400L

@@ -1,5 +1,6 @@
 package org.openstrap.app.export
 
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
@@ -147,8 +148,7 @@ private fun hex(bytes: ByteArray?) = bytes?.joinToString("") { "%02x".format(it)
 
 /** Local midnight of the day a sleep belongs to, for rows from exports that didn't carry it: the day you woke up. */
 private fun sleepDay(start: Long, end: Long, nap: Boolean): Long {
-    val zone = ZoneId.systemDefault()
-    return Instant.ofEpochSecond(if (nap) start else end).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    return Days.start(if (nap) start else end, ZoneId.systemDefault())
 }
 
 private fun stageCode(name: String) = when (name) {

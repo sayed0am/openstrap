@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
+import org.openstrap.app.data.HeartRate
 
 // A DAO is its queries, one function each: splitting it by count would only scatter them.
 @Suppress("TooManyFunctions")
@@ -656,7 +657,11 @@ interface HealthDao : RangedReads {
      * One row per local day (SQLite's 'localtime' follows the phone's zone, DST included), for week, month and
      * year views. Heart rate here is the heart_rate table only; the day chart also folds in per-minute activity HR.
      */
-    @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(bpm) AS value, MIN(bpm) AS min, MAX(bpm) AS max, COUNT(*) AS count FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm BETWEEN 30 AND 230 GROUP BY day ORDER BY day")
+    @Query(
+        "SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(bpm) AS value, MIN(bpm) AS min, MAX(bpm) AS max, " +
+            "COUNT(*) AS count FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm " + HeartRate.SQL_VALID +
+            " GROUP BY day ORDER BY day",
+    )
     fun dailyHeartRate(from: Long, to: Long): Flow<List<DailyAggregate>>
 
     @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, SUM(steps) AS value, MIN(steps) AS min, MAX(steps) AS max, COUNT(*) AS count FROM activity_minute WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
@@ -768,7 +773,11 @@ interface HealthDao : RangedReads {
     suspend fun hourlyStepsOnce(from: Long, to: Long): List<HourSteps>
 
     /** Minutes (epoch seconds / 60) with a heart rate from either table: the strap was worn. */
-    @Query("SELECT timestamp / 60 FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm BETWEEN 30 AND 230 UNION SELECT timestamp / 60 FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND heartRate BETWEEN 30 AND 230")
+    @Query(
+        "SELECT timestamp / 60 FROM heart_rate WHERE timestamp BETWEEN :from AND :to AND bpm " + HeartRate.SQL_VALID +
+            " UNION SELECT timestamp / 60 FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND heartRate " +
+            HeartRate.SQL_VALID,
+    )
     suspend fun wornMinutesOnce(from: Long, to: Long): List<Long>
 
     /**

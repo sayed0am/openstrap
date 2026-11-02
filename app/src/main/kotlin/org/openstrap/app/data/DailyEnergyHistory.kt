@@ -4,6 +4,7 @@ import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.presentation.Weeks
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -40,10 +41,10 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         val engine = RecoveryEngine(dao)
         val maxHr = engine.maxHeartRate(profile, today, zone)
         val vo2 = HashMap<LocalDate, Float?>()
+        val firstDay = Weeks.firstDay()
         var written = 0
         for (d in days) {
-            val monday = d.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
-            val v = vo2.getOrPut(monday) { runCatching { engine.vo2max(profile, d, zone) }.getOrNull() }
+            val v = vo2.getOrPut(Weeks.start(d, firstDay)) { runCatching { engine.vo2max(profile, d, zone, firstDay) }.getOrNull() }
             if (write(engine, d, profile, maxHr, v, zone, now)) written++
         }
         return written

@@ -7,8 +7,8 @@ package org.openstrap.app.data
  * the time limit always applies.
  */
 object Strength {
-    /** Sports counted in sets rather than distance. */
-    val SPORTS = setOf(24, 50, 52, 222, 226)
+    /** Sports counted in sets rather than distance ([SportTypes.STRENGTH], kept for the callers that still ask here). */
+    val SPORTS: Set<Int> get() = SportTypes.STRENGTH
 
     /** How rest works for a workout, chosen on the ready screen; stored as [code] ("r:90:110"). */
     data class Rest(val seconds: Long, val belowBpm: Int?) {

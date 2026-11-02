@@ -2,11 +2,11 @@ package org.openstrap.app.data
 
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlin.math.abs
 import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.presentation.SleepEditCopy
 
 /**
  * The user's own times for a sleep or nap the strap detected, or its removal ([SleepEdit]). The strap's rows and
@@ -143,27 +143,47 @@ object SleepEdits {
         if (to <= from) null else it.copy(start = from, end = to)
     }
 
+    /** Why an edit can't be saved ([check]). [nap] says which kind's limits it broke, or ran into. */
+    sealed interface Problem {
+        data object WakeBeforeSleep : Problem
+        data class TooShort(val nap: Boolean) : Problem
+        data class TooLong(val nap: Boolean) : Problem
+        data object Future : Problem
+        data object TooFarFromStrap : Problem
+        data class RunsInto(val nap: Boolean, val start: Long) : Problem
+    }
+
     /**
      * Why [start] to [end] can't be saved for the strap's session [strap], or null when it can. [others] are the
      * other sleep and naps as shown, which it mustn't run into.
      */
-    fun problem(strap: SleepSession, start: Long, end: Long, now: Long, others: List<SleepSession> = emptyList(), zone: ZoneId = ZoneId.systemDefault()): String? {
+    fun check(strap: SleepSession, start: Long, end: Long, now: Long, others: List<SleepSession> = emptyList()): Problem? {
         val nap = strap.nap
         val overlap = others.filter { start < it.end && end > it.start }.minByOrNull { it.start }
         return when {
-            end <= start -> "Waking up has to come after falling asleep."
-            nap && end - start < NAP_MIN_SECONDS -> "A nap needs at least 5 minutes."
-            !nap && end - start < SLEEP_MIN_SECONDS -> "Sleep needs at least an hour."
-            nap && end - start > NAP_MAX_SECONDS -> "A nap can be 4 hours at most."
-            !nap && end - start > SLEEP_MAX_SECONDS -> "Sleep can be 16 hours at most."
-            end > now -> "That's later than now."
-            start < strap.start - MAX_SHIFT_SECONDS || end > strap.end + MAX_SHIFT_SECONDS -> "Keep it within 3 hours of what the strap saw."
-            overlap != null -> "That runs into your ${if (overlap.nap) "nap" else "sleep"} at ${CLOCK.format(Instant.ofEpochSecond(overlap.start).atZone(zone))}."
+            end <= start -> Problem.WakeBeforeSleep
+            end - start < if (nap) NAP_MIN_SECONDS else SLEEP_MIN_SECONDS -> Problem.TooShort(nap)
+            end - start > if (nap) NAP_MAX_SECONDS else SLEEP_MAX_SECONDS -> Problem.TooLong(nap)
+            end > now -> Problem.Future
+            start < strap.start - MAX_SHIFT_SECONDS || end > strap.end + MAX_SHIFT_SECONDS -> Problem.TooFarFromStrap
+            overlap != null -> Problem.RunsInto(overlap.nap, overlap.start)
             else -> null
         }
     }
 
-    private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
+    /**
+     * [check] as the sentence the edit sheet shows ([SleepEditCopy]). Kept here for the sheet in ui/glow until it
+     * builds the text itself.
+     */
+    fun problem(
+        strap: SleepSession,
+        start: Long,
+        end: Long,
+        now: Long,
+        others: List<SleepSession> = emptyList(),
+        zone: ZoneId = ZoneId.systemDefault(),
+    ): String? =
+        check(strap, start, end, now, others)?.let { SleepEditCopy.text(it, zone) }
 
     /**
      * The moment at [minuteOfDay] (after local midnight) closest to [near]: a clock picked for a session's end is read

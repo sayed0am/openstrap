@@ -183,9 +183,7 @@ object MomentResolver {
             recent.size >= USUAL_WORKOUT_MIN -> recent
             else -> return null
         }
-        val minutes = pick.map { it.toLocalTime().toSecondOfDay() / 60 }.sorted()
-        val median = (minutes[(minutes.size - 1) / 2] + minutes[minutes.size / 2]) / 2
-        return LocalTime.ofSecondOfDay(median * 60L)
+        return Stats.median(pick.map { it.toLocalTime().toSecondOfDay() / 60 })?.let { LocalTime.ofSecondOfDay(it.toInt() * 60L) }
     }
 
     /** Within [WINDOW_MINUTES] either side of [usual], the end minute left out, across midnight too. */

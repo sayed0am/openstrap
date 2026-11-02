@@ -5,6 +5,8 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.request.ReadRecordsRequest
+import org.openstrap.app.data.Days
+import org.openstrap.app.data.HeartRate
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.HrvSample
@@ -310,7 +312,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
     /** Heart rate: one record per hour with all samples in it. */
     private suspend fun heartRate(from: Long, to: Long): List<Record> {
         val hr = dao.heartRateOnce(from, to) + dao.activityOnce(from, to)
-            .mapNotNull { m -> m.heartRate?.takeIf { it in 30..230 }?.let { org.openstrap.app.data.db.HeartRateSample(m.timestamp, it) } }
+            .mapNotNull { m -> m.heartRate?.takeIf { it in HeartRate.VALID }?.let { HeartRateSample(m.timestamp, it) } }
         return hr.distinctBy { it.timestamp }.sortedBy { it.timestamp }.groupBy { it.timestamp / 3600 }.map { (hour, samples) ->
             val start = hour * 3600
             val end = samples.last().timestamp + 1 // not the end of the hour, which can be in the future
@@ -406,7 +408,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             val start = r.startTime.epochSecond
             val end = r.endTime.epochSecond
             val nap = end - start < 3 * 3600
-            val day = Instant.ofEpochSecond(if (nap) start else end).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+            val day = Days.start(if (nap) start else end, zone)
             val stages = r.stages.map {
                 SleepStage(
                     it.startTime.epochSecond, it.endTime.epochSecond, start,

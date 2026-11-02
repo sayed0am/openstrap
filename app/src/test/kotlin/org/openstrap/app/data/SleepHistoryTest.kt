@@ -20,8 +20,8 @@ class SleepHistoryTest {
     @Test
     fun sleepBelongsToTheDayItEnds() {
         assertEquals(end, SleepHistory.nightOf(night(0, -60, 7 * 60).end, zone))
-        // A sleep ending at 19:00 counts towards the next night.
-        assertEquals(end.plusDays(1), SleepHistory.nightOf(night(0, 13 * 60, 19 * 60).end, zone))
+        // A sleep ending at 19:00 counts towards the day it ended on, as recovery counts it.
+        assertEquals(end, SleepHistory.nightOf(night(0, 13 * 60, 19 * 60).end, zone))
     }
 
     @Test

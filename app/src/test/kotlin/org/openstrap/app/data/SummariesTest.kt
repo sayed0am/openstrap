@@ -12,10 +12,11 @@ class SummariesTest {
 
     @Test
     fun hourlyStepsBucketsByHour() {
-        val day = 1_000_000L
+        val day = 1_000_000L / 86_400 * 86_400
         val buckets = Summaries.hourlySteps(
             listOf(minute(day, 10), minute(day + 59 * 60, 5), minute(day + 3600, 7), minute(day + 25 * 3600, 99)),
             day,
+            java.time.ZoneOffset.UTC,
         )
         assertEquals(24, buckets.size)
         assertEquals(15f, buckets[0])

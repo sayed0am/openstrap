@@ -3,14 +3,13 @@ package org.openstrap.app.data
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.temporal.WeekFields
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
+import org.openstrap.app.presentation.Weeks
 
 /**
  * Keeps the stored rewards ([Rewards]) in step with the workouts: works the weeks, bests and badges out again from
@@ -28,8 +27,8 @@ class RewardsKeeper(
     /** The weekly recap notification's tap, until the app root has opened the recap. */
     val openRecap = kotlinx.coroutines.flow.MutableStateFlow(false)
 
-    /** The locale's first day of the week (workouts spec 3.1). */
-    val firstDay: DayOfWeek get() = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+    /** The locale's first day of the week (workouts spec 3.1, [Weeks]). */
+    val firstDay: DayOfWeek get() = Weeks.firstDay()
 
     /** [workouts] (the merged list, [org.openstrap.app.ui.workout.WorkoutsViewModel.workouts]) with what the phone kept of each. */
     suspend fun facts(workouts: List<WorkoutAnalysis>): Facts = withContext(Dispatchers.IO) {

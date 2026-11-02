@@ -1,6 +1,7 @@
 package org.openstrap.app.data
 
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.presentation.Vo2maxCopy
 
 /**
  * A non-exercise VO2max estimate (docs/algorithms/evidence-review.md, "VO2max and fitness age"): Jurca et al. 2005
@@ -65,13 +66,11 @@ object Vo2max {
     )
 
     /** Why there is no estimate, in the order checked. */
-    enum class Withheld(val reason: String) {
-        Age("Needs an age between 20 and 79."),
-        Sex("Needs your sex: the equation differs for women and men."),
-        Body("Needs a weight and height entered in the last 90 days."),
-        Activity("Answer the activity question (asked every 6 months)."),
-        Medication("Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn't reflect fitness then."),
-        RestingHr("Needs at least 5 nights of resting heart rate in the last 2 weeks."),
+    enum class Withheld {
+        Age, Sex, Body, Activity, Medication, RestingHr;
+
+        /** What the screens say ([Vo2maxCopy.reason]), kept here for the ui callers until they ask there. */
+        val reason: String get() = Vo2maxCopy.reason(this)
     }
 
     /**
@@ -115,12 +114,11 @@ object Vo2max {
      * interpolation or a distribution assumption.
      */
     object Friend {
-        enum class Band(val label: String) {
-            Below30("Below the 30th percentile"),
-            P30to50("30th–50th percentile"),
-            P50to70("50th–70th percentile"),
-            P70to90("70th–90th percentile"),
-            Top10("Top 10 %"),
+        enum class Band {
+            Below30, P30to50, P50to70, P70to90, Top10;
+
+            /** What the screens say ([Vo2maxCopy.band]), kept here for the ui callers until they ask there. */
+            val label: String get() = Vo2maxCopy.band(this)
         }
 
         /** The percentiles in each row, ascending. */

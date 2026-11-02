@@ -8,6 +8,7 @@ import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.data.db.BadgeRow
 import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.WeekResult
+import org.openstrap.app.presentation.Weeks
 
 /**
  * The weekly goal, personal bests and badges (workouts spec 3, requests spec 7), worked out from the workouts and days
@@ -100,7 +101,7 @@ object Rewards {
         val counts: Boolean get() = startedByYou && activeSeconds >= MIN_SECONDS
 
         /** A run measured by GPS. */
-        val gpsRun: Boolean get() = sport in Workouts.RUNS && gpsMeters != null && gpsMeters > 0f
+        val gpsRun: Boolean get() = sport in SportTypes.RUNS && gpsMeters != null && gpsMeters > 0f
 
         /** Its stretches still inside it after a trim. */
         val stretchesInside: List<Stretch> get() = stretches.filter { it.start >= shownStart && it.start + it.seconds <= end }
@@ -111,8 +112,8 @@ object Rewards {
 
     /* -------------------------------------------- Weekly goal -------------------------------------------- */
 
-    /** The first day of [date]'s week, weeks starting on [firstDay]. */
-    fun weekStart(date: LocalDate, firstDay: DayOfWeek): LocalDate = date.minusDays(((date.dayOfWeek.value - firstDay.value + 7) % 7).toLong())
+    /** The first day of [date]'s week, weeks starting on [firstDay] ([Weeks.start]). */
+    fun weekStart(date: LocalDate, firstDay: DayOfWeek): LocalDate = Weeks.start(date, firstDay)
 
     /**
      * The workouts that count, in order, each with its week: at most [PER_DAY] a day, the first of the day by start.
@@ -318,7 +319,7 @@ object Rewards {
             thresholds("workouts_").forEach { (id, n) -> if (counted >= n) earn(id, e) }
             val family = Workouts.family(w.sport)
             val structure = Structure.parse(w.structure)
-            if (w.sport in Workouts.RUNS) earn("first_run", e)
+            if (w.sport in SportTypes.RUNS) earn("first_run", e)
             if (w.gpsRun && w.gpsMeters!! >= needs("first_5k")) earn("first_5k", e)
             if (w.gpsRun && w.gpsMeters!! >= needs("first_10k")) earn("first_10k", e)
             if (family == Workouts.Family.IndoorCardio && w.sport != Workouts.GENERIC_ACTIVITY) earn("first_indoor", e)

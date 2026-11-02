@@ -15,14 +15,18 @@ object SleepHistory {
     /** Nights the Sleep screen's week looks back over. */
     const val WEEK_NIGHTS = 7
 
-    /** The night a sleep belongs to: the day it ended on, counting until 18:00 (see DayWindow.nightEndingOn). */
-    fun nightOf(end: Long, zone: ZoneId): LocalDate = Instant.ofEpochSecond(end + 6 * 3600).atZone(zone).toLocalDate()
+    /**
+     * The night a sleep ending at [end] belongs to: the day it ended on, the rule recovery counts by
+     * ([RecoveryEngine.morningOf]).
+     */
+    fun nightOf(end: Long, zone: ZoneId): LocalDate = Days.date(end, zone)
 
-    /** The main sleep of each night: the longest session that isn't a nap. */
+    /** The night [s] belongs to: the day the strap gave it, else the day it ended on ([RecoveryEngine.morningOf]). */
+    fun nightOf(s: SleepSession, zone: ZoneId): LocalDate = Days.date(RecoveryEngine.morningOf(s, zone), zone)
+
+    /** The main sleep of each night: the longest session that isn't a nap, as recovery picks it ([RecoveryEngine.mainsByMorning]). */
     fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =
-        sessions.filter { !it.nap }
-            .groupBy { nightOf(it.end, zone) }
-            .mapValues { (_, s) -> s.maxBy { it.end - it.start } }
+        RecoveryEngine.mainsByMorning(sessions, zone).mapKeys { (morning, _) -> Days.date(morning, zone) }
 
     /**
      * The main sleep of the night in [night] (a [DayWindow.nightEndingOn]): the longest session that isn't a nap and
@@ -38,15 +42,15 @@ object SleepHistory {
     fun weekOthers(nights: Map<LocalDate, SleepSession>, date: LocalDate): List<Long> =
         (WEEK_NIGHTS - 1 downTo 1).mapNotNull { nights[date.minusDays(it.toLong())] }.map(::asleepSeconds)
 
-    /** Time asleep from the strap's stage totals, or the whole session when it didn't send them. */
-    fun asleepSeconds(s: SleepSession): Long {
-        val staged = listOfNotNull(s.deepMinutes, s.lightMinutes, s.remMinutes)
-        return if (staged.isEmpty()) s.end - s.start else staged.sum() * 60L
-    }
+    /**
+     * Time asleep from the strap's stage totals, or the time in bed less awake when it didn't send them: the rule
+     * recovery counts by ([RecoveryEngine.asleepMinutes]).
+     */
+    fun asleepSeconds(s: SleepSession): Long = RecoveryEngine.asleepMinutes(s) * 60L
 
     /**
      * The average fall-asleep and wake-up time over the nights up to [end]. [bedtime] and [wake] are average minutes
-     * past midnight (bedtime can be past 24 h · 60 when it's after midnight; use [clockMinutes] to print it).
+     * past midnight (bedtime can be past 24 times 60 when it's after midnight, and [clockMinutes] prints it).
      */
     data class UsualTimes(val bedtime: Int, val wake: Int, val nights: Int)
 
