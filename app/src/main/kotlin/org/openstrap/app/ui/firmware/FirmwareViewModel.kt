@@ -11,11 +11,16 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.FileNotFoundException
+import java.io.InputStream
 import org.openstrap.app.AppContainer
 import org.openstrap.app.data.catching
+import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.settings.ZeppAccount
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.device.StrapController
+import org.openstrap.app.device.StrapInfo
 import org.openstrap.app.device.StrapManager
 import org.openstrap.app.firmware.FirmwareCloud
 import org.openstrap.app.firmware.FirmwareCloudException
@@ -54,29 +59,47 @@ sealed interface FirmwareStep {
     data class Failed(val message: String) : FirmwareStep
 }
 
-class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
-    private val cloud = FirmwareCloud(container.app.cacheDir)
-    val strap get() = container.strap
+/**
+ * The Firmware and Zepp account pages: checking for, downloading and installing strap firmware, and the Zepp sign-in
+ * the check needs. [cacheDir] holds downloads, and [openFile] reads a file the user picked.
+ */
+class FirmwareViewModel(
+    private val strap: StrapController,
+    private val settings: SettingsStore,
+    cacheDir: File,
+    private val openFile: (Uri) -> InputStream?,
+) : ViewModel() {
+    constructor(container: AppContainer) : this(
+        container.strap, container.settings, container.app.cacheDir, { container.app.contentResolver.openInputStream(it) },
+    )
+
+    private val cloud = FirmwareCloud(cacheDir)
+
+    /** The strap's link, for what the page offers. */
+    val connection: StateFlow<ConnectionState> get() = strap.connection
+
+    /** What the strap said about itself, its firmware among it, once connected. */
+    val info: StateFlow<StrapInfo?> get() = strap.info
 
     val account: StateFlow<ZeppAccount?> =
-        container.settings.zeppAccount.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        settings.zeppAccount.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private val _step = MutableStateFlow<FirmwareStep>(FirmwareStep.Idle)
     val step = _step.asStateFlow()
 
     fun saveAccount(token: String, userId: String, apiBase: String, china: Boolean) = viewModelScope.launch {
-        container.settings.saveZeppAccount(
+        settings.saveZeppAccount(
             ZeppAccount(token.trim(), userId.trim(), apiBase.trim().ifEmpty { ZeppAccount.DEFAULT_API_BASE }, china),
         )
     }
 
     fun saveSignIn(listing: DeviceListing, strap: BoundDevice?) = viewModelScope.launch {
-        container.settings.saveZeppAccount(
+        settings.saveZeppAccount(
             listing.session.toAccount(listing.apiBase, strap?.china ?: account.value?.china ?: false, System.currentTimeMillis()),
         )
     }
 
-    fun clearAccount() = viewModelScope.launch { container.settings.clearZeppAccount() }
+    fun clearAccount() = viewModelScope.launch { settings.clearZeppAccount() }
 
     fun reset() { if (!busy) _step.value = FirmwareStep.Idle }
 
@@ -118,7 +141,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
         val fresh = if (rejected) ZeppCloud.refreshAppToken(acc) else catching { ZeppCloud.refreshAppToken(acc) }
             .onFailure { log("firmware: early token renewal failed, keeping the old one: $it") }
             .getOrNull() ?: return acc
-        container.settings.saveZeppAccount(fresh)
+        settings.saveZeppAccount(fresh)
         return fresh
     }
 
@@ -143,7 +166,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
     fun loadFile(uri: Uri) = viewModelScope.launch {
         _step.value = catching {
             val bytes = withContext(Dispatchers.IO) {
-                val input = container.app.contentResolver.openInputStream(uri) ?: throw FileNotFoundException("no input stream for $uri")
+                val input = openFile(uri) ?: throw FileNotFoundException("no input stream for $uri")
                 input.use { it.readBytes() }
             }
             if (bytes.size !in 1024..16 * 1024 * 1024) {
@@ -212,7 +235,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
 
     private fun log(message: String) {
         android.util.Log.w("OpenStrap", message)
-        (container.strap as? StrapManager)?.log(message)
+        (strap as? StrapManager)?.log(message)
     }
 
     companion object {

@@ -16,18 +16,20 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import kotlinx.coroutines.launch
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
@@ -72,24 +74,36 @@ internal fun quietHoursSummary(q: QuietHours, callsOn: Boolean): String = when {
     else -> "No notification buzz from ${quietClock(q.from)} to ${quietClock(q.to)}."
 }
 
+/** The page as it was called before it had a view model. Kept until MainActivity calls the view model version. */
+@Deprecated("Pass a PhoneAlertsViewModel", ReplaceWith("PhoneAlertsScreen(vm, contentPadding, onBack)"))
+// A shim over the real page, deleted once MainActivity builds the view model itself.
+@Suppress("ComposeModifierMissing", "ModifierMissing", "ComposeViewModelInjection", "ViewModelInjection")
+@Composable
+fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPadding: PaddingValues, onBack: () -> Unit) {
+    val vm: PhoneAlertsViewModel = viewModel(
+        key = "phoneAlerts", factory = viewModelFactory { initializer { PhoneAlertsViewModel(alerts, settings) } },
+    )
+    PhoneAlertsScreen(vm, contentPadding, onBack)
+}
+
 /**
  * Buzzing the strap on calls and notifications, opened from the Strap page. These are phone settings, so they work
  * offline too. (The off-body reminder is a row of its own on the Strap page.)
  */
 @Composable
-fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPadding: PaddingValues, onBack: () -> Unit) {
+fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val calls by settings.buzzOnCalls.collectAsState(false)
-    val notifications by settings.buzzOnNotifications.collectAsState(false)
-    val callPermission by alerts.callPermission.collectAsState()
-    val notificationAccess by alerts.notificationAccess.collectAsState()
-    val pattern by settings.notificationPattern.collectAsState(BuzzPattern.TWO_SHORT)
-    val callStyle by settings.callBuzzStyle.collectAsState(CallBuzz.STEADY)
-    var previewError by remember { mutableStateOf<String?>(null) }
-    var callPreviewError by remember { mutableStateOf<String?>(null) }
-    val quiet by settings.quietHours.collectAsState(QuietHours())
+    val calls by vm.calls.collectAsStateWithLifecycle()
+    val notifications by vm.notifications.collectAsStateWithLifecycle()
+    val callPermission by vm.callPermission.collectAsStateWithLifecycle()
+    val notificationAccess by vm.notificationAccess.collectAsStateWithLifecycle()
+    val pattern by vm.pattern.collectAsStateWithLifecycle()
+    val callStyle by vm.callStyle.collectAsStateWithLifecycle()
+    val previewError by vm.previewError.collectAsStateWithLifecycle()
+    val callPreviewError by vm.callPreviewError.collectAsStateWithLifecycle()
+    DisposableEffect(vm) { onDispose { vm.clearPreviewErrors() } }
+    val quiet by vm.quiet.collectAsStateWithLifecycle()
     // Which end of the quiet hours is being picked: true for From, false for To.
     var pickingFrom by remember { mutableStateOf<Boolean?>(null) }
 
@@ -98,8 +112,8 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
     val activity = androidx.activity.compose.LocalActivity.current
     var phoneBlocked by rememberSaveable { mutableStateOf(false) }
     val askPhone = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        alerts.refresh()
-        if (granted) scope.launch { settings.setBuzzOnCalls(true) }
+        vm.refresh()
+        if (granted) vm.setBuzzOnCalls(true)
         phoneBlocked = !granted && activity != null &&
             BlePermissions.turnedDownForGood(activity, listOf(Manifest.permission.READ_PHONE_STATE))
     }
@@ -107,8 +121,8 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
     // The user may grant access in system settings and come back. Phone access turned on there counts afresh, so a
     // later turn-down asks again before it counts as for good.
     LifecycleResumeEffect(Unit) {
-        alerts.refresh()
-        if (alerts.hasCallPermission()) phoneBlocked = false
+        vm.refresh()
+        if (vm.hasCallPermission()) phoneBlocked = false
         onPauseOrDispose { }
     }
     val openNotificationAccess = {
@@ -128,8 +142,8 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
                     calls && callPermission,
                     { on ->
                         when {
-                            !on -> scope.launch { settings.setBuzzOnCalls(false) }
-                            callPermission -> scope.launch { settings.setBuzzOnCalls(true) }
+                            !on -> vm.setBuzzOnCalls(false)
+                            callPermission -> vm.setBuzzOnCalls(true)
                             phoneBlocked -> openAppSettings()
                             else -> askPhone.launch(Manifest.permission.READ_PHONE_STATE)
                         }
@@ -144,18 +158,12 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Call buzz", style = GlowType.body, color = Color.White)
                         // Picking one plays it for a few seconds, so the two can be compared on the wrist.
-                        GlowSegments(CallBuzz.entries.map { it.label }, callStyle.ordinal, { i ->
-                            val style = CallBuzz.entries[i]
-                            scope.launch {
-                                settings.setCallBuzzStyle(style)
-                                callPreviewError = runCatching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: "Couldn't buzz the strap" }
-                            }
-                        })
+                        GlowSegments(CallBuzz.entries.map { it.label }, callStyle.ordinal, { i -> vm.pickCallBuzz(CallBuzz.entries[i]) })
                         callPreviewError?.let { PageNote(it, color = MetricColors.warn) }
                     }
                 }
                 PageSwitchRow("Notifications", "Buzzes for notifications that make a sound.", notifications && notificationAccess, { on ->
-                    scope.launch { settings.setBuzzOnNotifications(on) }
+                    vm.setBuzzOnNotifications(on)
                     if (on && !notificationAccess) openNotificationAccess()
                 })
                 if (notifications && !notificationAccess) {
@@ -166,24 +174,18 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("Buzz pattern", style = GlowType.body, color = Color.White)
                         // Picking a pattern plays it once, so it can be felt before the next notification.
-                        GlowSegments(BuzzPattern.entries.map { it.label }, pattern.ordinal, { i ->
-                            val p = BuzzPattern.entries[i]
-                            scope.launch {
-                                settings.setNotificationPattern(p)
-                                previewError = runCatching { alerts.preview(p) }.exceptionOrNull()?.let { it.message ?: "Couldn't buzz the strap" }
-                            }
-                        })
+                        GlowSegments(BuzzPattern.entries.map { it.label }, pattern.ordinal, { i -> vm.pickPattern(BuzzPattern.entries[i]) })
                         previewError?.let { PageNote(it, color = MetricColors.warn) }
                     }
                     PageSwitchRow("Quiet hours", quietHoursSummary(quiet, calls && callPermission), quiet.on, { on ->
-                        scope.launch { settings.setQuietHours(quiet.copy(on = on)) }
+                        vm.updateQuietHours { it.copy(on = on) }
                     })
                     if (quiet.on) {
                         PageRow("From", quietClock(quiet.from), onClick = { pickingFrom = true }, divider = false)
                         PageRow("To", quietClock(quiet.to), onClick = { pickingFrom = false })
                         if (calls && callPermission) {
                             PageSwitchRow("Calls too", "Off lets a ringing phone still buzz.", quiet.calls, { on ->
-                                scope.launch { settings.setQuietHours(quiet.copy(calls = on)) }
+                                vm.updateQuietHours { it.copy(calls = on) }
                             })
                         }
                     }
@@ -199,7 +201,7 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
             if (from) "Quiet from" else "Quiet until", if (from) quiet.from else quiet.to,
             onSave = { m ->
                 pickingFrom = null
-                scope.launch { settings.setQuietHours(if (from) quiet.copy(from = m) else quiet.copy(to = m)) }
+                vm.updateQuietHours { if (from) it.copy(from = m) else it.copy(to = m) }
             },
             onDismiss = { pickingFrom = null },
         )
