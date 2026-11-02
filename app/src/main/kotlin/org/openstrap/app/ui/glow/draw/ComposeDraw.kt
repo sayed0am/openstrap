@@ -59,20 +59,40 @@ fun DrawScope.chartHairline(y: Float, color: Color = ChartInk.Grid, x0: Float = 
     drawLine(color, Offset(x0, y), Offset(x1, y), strokeWidth = ChartInk.HAIRLINE_DP * density)
 
 /**
- * A day's line, under its average and labels: the grid rows, your normal's band, lone readings as dots, and each run
- * as a smooth line with a halo over a soft fill, in [color].
+ * A line chart's runs as paths, each smooth line with the fill under it, and the fill's brush in [color]: built once
+ * per size and data (in a drawWithCache block) so a redraw, a scrub say, allocates none of them.
  */
-fun DrawScope.drawLineChartBody(g: LineChartGeometry, color: Color) {
+class LineChartPaths(val lines: List<Path>, val fills: List<Path>, val fill: Brush, val halo: Stroke, val stroke: Stroke)
+
+/** [g]'s runs as [LineChartPaths] in [color], at [density]. */
+fun lineChartPaths(g: LineChartGeometry, color: Color, density: Float): LineChartPaths {
+    val lines = g.runs.map { pts -> composePath(smoothOps(pts)) }
+    val fills = g.runs.mapIndexed { i, pts ->
+        Path().apply { addPath(lines[i]); lineTo(pts.last().x, g.plotBottom); lineTo(pts.first().x, g.plotBottom); close() }
+    }
+    return LineChartPaths(
+        lines, fills,
+        Brush.verticalGradient(
+            listOf(color.copy(alpha = LineChartLook.FILL_ALPHA), Color.Transparent), startY = g.top, endY = g.plotBottom,
+        ),
+        Stroke(LineChartLook.HALO_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round),
+        Stroke(LineChartLook.LINE_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round),
+    )
+}
+
+/**
+ * A day's line, under its average and labels: the grid rows, your normal's band, lone readings as dots, and each run
+ * as a smooth line with a halo over a soft fill, in [color], from its [paths].
+ */
+fun DrawScope.drawLineChartBody(g: LineChartGeometry, paths: LineChartPaths, color: Color) {
     g.grid.forEach { chartHairline(it) }
     if (g.bandTopLeft != null && g.bandSize != null) drawRect(color.copy(alpha = ChartInk.NORMAL_BAND_ALPHA), g.bandTopLeft, g.bandSize)
     g.dots.forEach { drawCircle(color, LineChartLook.LONE_DOT_DP * density, it) }
-    g.runs.forEach { pts ->
-        val line = composePath(smoothOps(pts))
-        val fill = Path().apply { addPath(line); lineTo(pts.last().x, g.plotBottom); lineTo(pts.first().x, g.plotBottom); close() }
-        drawPath(fill, Brush.verticalGradient(listOf(color.copy(alpha = LineChartLook.FILL_ALPHA), Color.Transparent), startY = g.top, endY = g.plotBottom))
+    paths.lines.forEachIndexed { i, line ->
+        drawPath(paths.fills[i], paths.fill)
         // A faint halo just wider than the line.
-        drawPath(line, color.copy(alpha = LineChartLook.HALO_ALPHA), style = Stroke(LineChartLook.HALO_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round))
-        drawPath(line, color, style = Stroke(LineChartLook.LINE_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round))
+        drawPath(line, color.copy(alpha = LineChartLook.HALO_ALPHA), style = paths.halo)
+        drawPath(line, color, style = paths.stroke)
     }
 }
 
@@ -82,16 +102,22 @@ fun DrawScope.drawLineChartEnd(g: LineChartGeometry, color: Color) {
     drawCircle(color, LineChartLook.END_DOT_DP * density, g.last)
 }
 
-/** The ghost line: your usual by now in white at 35%, today in [color] ending in a dot. */
-fun DrawScope.drawGhostLine(g: GhostLineGeometry, color: Color) {
-    g.usual?.let { u ->
-        drawPath(composePath(polylineOps(u)), Color.White.copy(alpha = GhostLineLook.USUAL_ALPHA), style = Stroke(GhostLineLook.USUAL_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round))
-    }
+/** The ghost line's two paths, built once per size and data (in a drawWithCache block), not on every draw. */
+class GhostLinePaths(val usual: Path?, val today: Path?, val usualStroke: Stroke, val todayStroke: Stroke)
+
+/** [g]'s lines as [GhostLinePaths], at [density]. */
+fun ghostLinePaths(g: GhostLineGeometry, density: Float) = GhostLinePaths(
+    g.usual?.let { composePath(polylineOps(it)) },
+    g.today.takeIf { it.size >= 2 }?.let { composePath(polylineOps(it)) },
+    Stroke(GhostLineLook.USUAL_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round),
+    Stroke(GhostLineLook.LINE_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round),
+)
+
+/** The ghost line: your usual by now in white at 35%, today in [color] ending in a dot, from its [paths]. */
+fun DrawScope.drawGhostLine(g: GhostLineGeometry, paths: GhostLinePaths, color: Color) {
+    paths.usual?.let { drawPath(it, Color.White.copy(alpha = GhostLineLook.USUAL_ALPHA), style = paths.usualStroke) }
     if (g.today.isEmpty()) return
-    if (g.today.size >= 2) drawPath(
-        composePath(polylineOps(g.today)),
-        color, style = Stroke(GhostLineLook.LINE_DP * density, cap = StrokeCap.Round, join = StrokeJoin.Round),
-    )
+    paths.today?.let { drawPath(it, color, style = paths.todayStroke) }
     drawCircle(color, g.endDot, g.today.last())
 }
 

@@ -96,6 +96,8 @@ fun GlowCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     contentPadding: PaddingValues = GlowLayout.CardPadding,
+    /** A passing lift of the light (a personal best), faded over the card's own layers, so it never renders anew. */
+    swell: GlowSwell? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val lit = style.copy(mood = LocalGlowMood.current)
@@ -152,6 +154,15 @@ fun GlowCard(
         if (key.size == IntSize.Zero || lit.outline) return@produceState
         value = withContext(Dispatchers.Default) { GlowCache.get(key) }
     }
+    // The swell's peak is one more cached look, rendered once: each frame of the swell only changes how much of it shows.
+    val peak = swell?.peak?.takeIf { it != still.lightLevel && !lit.outline }
+    val peakKey = peak?.let { GlowCache.Key(still.copy(lightLevel = it), size, density.density) }
+    val peakBitmaps by produceState(peakKey?.let(GlowCache::peek), peakKey) {
+        value = peakKey?.let(GlowCache::peek)
+        if (peakKey == null || value != null || peakKey.size == IntSize.Zero) return@produceState
+        value = withContext(Dispatchers.Default) { GlowCache.get(peakKey) }
+    }
+    val peakPaint = remember { Paint(FILTER) }
 
     // Tapped, the card grows into what it opens (spec 3.5).
     val opening = cardOpening(onClick, shape)
@@ -191,6 +202,13 @@ fun GlowCard(
                     b == null -> drawRect(palette.mid)
                     else -> drawIntoCanvas { it.nativeCanvas.drawBitmap(b.base, null, b.baseIn(w, h), FILTER) }
                 }
+                // Read here, so the swell redraws this layer each frame and composes nothing.
+                val lifted = peakBitmaps
+                val lift = if (b != null && lifted != null) swell?.amount?.invoke() ?: 0f else 0f
+                if (lifted != null && lift > 0f) drawIntoCanvas {
+                    peakPaint.alpha = (lift.coerceIn(0f, 1f) * 255).roundToInt()
+                    it.nativeCanvas.drawBitmap(lifted.base, null, lifted.baseIn(w, h), peakPaint)
+                }
             },
         )
         if (b != null) {
@@ -204,6 +222,13 @@ fun GlowCard(
         Spacer(Modifier.matchParentSize().drawWithCache { overlay(lit, grainSeed) })
     }
 }
+
+/**
+ * A passing lift of a card's light to [peak] (its [GlowStyle.lightLevel] at the top), shown as much as [amount] says,
+ * 0 to 1. [amount] is read only while drawing, so an animated swell recomposes nothing.
+ */
+@androidx.compose.runtime.Immutable
+class GlowSwell(val peak: Float, val amount: () -> Float)
 
 /** The pre-blurred core, moved by the motion through layer properties only. */
 @Composable

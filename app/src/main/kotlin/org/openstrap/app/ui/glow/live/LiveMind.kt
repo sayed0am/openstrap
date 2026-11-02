@@ -3,7 +3,6 @@ package org.openstrap.app.ui.glow.live
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
@@ -30,6 +29,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -79,7 +80,8 @@ internal fun LiveMindScreen(
         delay(DIM_AFTER_MS)
         dim = true
     }
-    val veil by animateFloatAsState(if (dim) 0.92f else 0f, tween(if (dim) 1500 else 200), label = "dim")
+    // Read only in the veil's draw, so dimming fades the screen without composing it again each frame.
+    val veil = animateFloatAsState(if (dim) 0.92f else 0f, tween(if (dim) 1500 else 200), label = "dim")
     Box(
         Modifier.fillMaxSize().pointerInput(Unit) {
             // Seen before anything under it, and never taken from it: a touch lights the screen and still presses.
@@ -111,8 +113,8 @@ internal fun LiveMindScreen(
             Spacer(Modifier.weight(0.6f))
         }
         // Dimmed, the first touch only lights the screen: the veil takes it.
-        if (veil > 0f) Box(
-            Modifier.fillMaxSize().background(Color.Black.copy(alpha = veil))
+        Box(
+            Modifier.fillMaxSize().drawBehind { if (veil.value > 0f) drawRect(Color.Black.copy(alpha = veil.value)) }
                 .then(if (dim) Modifier.pointerInput(Unit) { detectTapGestures { touched = System.currentTimeMillis() } } else Modifier),
         )
     }
@@ -124,8 +126,7 @@ internal fun LiveMindScreen(
  */
 @Composable
 private fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
-    // Read here, so the second composes the ring again and not the screen.
-    val active = time()
+    // The time is read by the ring's draw and the clock's text, so the second composes only the text again.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         if (ring) Canvas(Modifier.size(280.dp)) {
             // The strength rest ring's line and track, so the app's rings read as one.
@@ -134,17 +135,24 @@ private fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
             val arc = Size(size.width - stroke, size.height - stroke)
             drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
             if (length != null && length > 0) {
-                val sweep = 360f * (active.toFloat() / length).coerceIn(0f, 1f)
+                val sweep = 360f * (time().toFloat() / length).coerceIn(0f, 1f)
                 drawArc(MindColor, -90f, sweep, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
             }
         }
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1)
-            Text(
-                length?.let { "of ${it / 60} min" + if (active >= it) ", the length is up" else "" } ?: "Open, no length",
-                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
-            )
-        }
+        MindClock(time, length)
+    }
+}
+
+/** The mind ring's time and its line under it, its own scope so only it reads the second. */
+@Composable
+private fun MindClock(time: () -> Long, length: Long?) {
+    val active = time()
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1)
+        Text(
+            length?.let { "of ${it / 60} min" + if (active >= it) ", the length is up" else "" } ?: "Open, no length",
+            color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -154,19 +162,26 @@ private fun MindHeartLine(values: List<Float?>) {
     val known = values.filterNotNull()
     val lo = known.min() - 4
     val hi = known.max() + 4
-    Canvas(Modifier.fillMaxWidth().height(64.dp)) {
-        val step = size.width / (values.size - 1).coerceAtLeast(1)
-        val path = Path()
-        var last: Offset? = null
-        values.forEachIndexed { i, v ->
-            if (v == null) return@forEachIndexed
-            val p = Offset(i * step, size.height * (1f - (v - lo) / (hi - lo)))
-            if (last == null) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
-            last = p
-        }
-        drawPath(path, MindColor.copy(alpha = 0.7f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-        last?.let { drawCircle(MindColor, 4.dp.toPx(), it) }
-    }
+    Spacer(
+        Modifier.fillMaxWidth().height(64.dp).drawWithCache {
+            // Built once per size and readings, not on every draw.
+            val step = size.width / (values.size - 1).coerceAtLeast(1)
+            val path = Path()
+            var last: Offset? = null
+            values.forEachIndexed { i, v ->
+                if (v == null) return@forEachIndexed
+                val p = Offset(i * step, size.height * (1f - (v - lo) / (hi - lo)))
+                if (last == null) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
+                last = p
+            }
+            val stroke = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            val end = last
+            onDrawBehind {
+                drawPath(path, MindColor.copy(alpha = 0.7f), style = stroke)
+                end?.let { drawCircle(MindColor, 4.dp.toPx(), it) }
+            }
+        },
+    )
 }
 
 /** Mind and body's colour: the evening violet, never a zone's. */

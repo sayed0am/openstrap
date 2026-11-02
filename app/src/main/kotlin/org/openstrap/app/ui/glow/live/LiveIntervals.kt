@@ -99,7 +99,8 @@ internal fun LiveIntervalsScreen(
         is Phase.Rest -> "Skip rest"
         else -> null
     }
-    val structure = org.openstrap.app.data.Structure.parse(r.workout.structure)
+    // Parsed once with the recording, not on each recomposition.
+    val structure = r.structure
     val plan = structure?.let { StartCopy.structureName(it) }
     val active = activeSecondsState(r)
     LiveFrame(

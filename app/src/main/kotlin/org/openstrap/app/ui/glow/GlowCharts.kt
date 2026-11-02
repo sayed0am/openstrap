@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,7 +27,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.Path
@@ -34,6 +37,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -53,6 +57,8 @@ import org.openstrap.app.ui.glow.draw.drawHypnogramBands
 import org.openstrap.app.ui.glow.draw.drawLineChartBody
 import org.openstrap.app.ui.glow.draw.drawLineChartEnd
 import org.openstrap.app.ui.glow.draw.drawPillBar
+import org.openstrap.app.ui.glow.draw.ghostLinePaths
+import org.openstrap.app.ui.glow.draw.lineChartPaths
 import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.hypnogramGeometry
 import org.openstrap.app.ui.glow.draw.lineChartGeometry
@@ -89,10 +95,24 @@ internal val BarMaxWidth = BAR_MAX_WIDTH_DP.dp
 internal fun DrawScope.pillBar(color: Color, x: Float, pitch: Float, bottom: Float, height: Float) =
     drawPillBar(pillBar(x, pitch, bottom, height, BarMaxWidth.toPx()), color)
 
-private fun DrawScope.text(m: TextMeasurer, s: String, style: TextStyle, x: Float, y: Float, align: Float = 0f) {
-    val r = m.measure(s, style)
+/*
+ * Chart text is measured in each chart's drawWithCache block, once per size and data, and only drawn on each frame:
+ * measuring in draw churned the measurer's small cache on every scrub frame.
+ */
+
+/** A label measured once ([TextMeasurer.measure]) and drawn at [x], [align] of its width left of it, kept on the chart. */
+private fun DrawScope.text(r: TextLayoutResult, x: Float, y: Float, align: Float = 0f) {
     drawText(r, topLeft = Offset((x - r.size.width * align).coerceIn(0f, size.width - r.size.width), y))
 }
+
+/** The average's label: the axis text a touch brighter. */
+private val averageText = axisText.copy(color = Ink.copy(alpha = 0.8f))
+/** Today's day name and value on a [GlowTrend], and the other days' values. */
+private val todayAxisText = axisText.copy(color = Ink)
+private val todayValueText = valueText.copy(color = Ink)
+private val pastValueText = valueText.copy(color = Ink.copy(alpha = 0.75f))
+/** A [NormalTrend]'s band label and day labels. */
+private val trendLabelText = axisText.copy(fontSize = 12.sp)
 
 /** The touch readout: a dark glass pill with white text, above [anchorY] when there's room, else below. */
 private fun DrawScope.readout(m: TextMeasurer, s: String, x: Float, anchorY: Float) {
@@ -109,14 +129,21 @@ private fun DrawScope.readout(m: TextMeasurer, s: String, x: Float, anchorY: Flo
 /** A solid vertical guide under the finger. */
 private fun DrawScope.guide(x: Float, bottom: Float) = drawLine(Target, Offset(x, 0f), Offset(x, bottom), strokeWidth = 1.dp.toPx())
 
-/** Bottom axis labels spread evenly from the left edge to the right edge. */
-private fun DrawScope.axis(m: TextMeasurer, labels: List<String>, y: Float) {
+/** [labels] measured in [style], for a chart's cache block. */
+private fun TextMeasurer.measureAll(labels: List<String>, style: TextStyle = axisText): List<TextLayoutResult> =
+    labels.map { measure(it, style) }
+
+/** Bottom axis labels, measured, spread evenly from the left edge to the right edge. */
+private fun DrawScope.axis(labels: List<TextLayoutResult>, y: Float) {
     if (labels.isEmpty()) return
     labels.forEachIndexed { i, l ->
         val f = if (labels.size == 1) 0f else i / (labels.size - 1f)
-        text(m, l, axisText, size.width * f, y, align = f)
+        text(l, size.width * f, y, align = f)
     }
 }
+
+/** A chart's cache block that draws nothing (no data yet). */
+private fun CacheDrawScope.nothing() = onDrawBehind {}
 
 /* ------------------------------------------------------------------------------------------------ */
 
@@ -160,7 +187,7 @@ fun GlowLineChart(
     val inset = with(androidx.compose.ui.platform.LocalDensity.current) { 7.dp.toPx() }
     val scrubbing = describe != null || onScrub != null
     val tick = rememberScrubHaptics()
-    Canvas(
+    Spacer(
         modifier.fillMaxWidth().height(height)
             .onSizeChanged { width = it.width.toFloat() }
             .let {
@@ -170,43 +197,53 @@ fun GlowLineChart(
                     tick(i, values, band, true)
                     onScrub?.invoke(i)
                 }
-            },
-    ) {
-        // The shared line geometry ([lineChartGeometry]), as a widget's chart draws it.
-        val g = lineChartGeometry(values, size.width, size.height, density, inset, axis = labels.isNotEmpty(), yRange = yRange, band = band) ?: return@Canvas
-        val h = g.plotBottom
-        if (span != null) {
-            fun x(f: Float) = inset + f.coerceIn(0f, 1f) * (size.width - inset * 2)
-            val a = x(span.start)
-            val b = x(span.endInclusive)
-            drawRect(spanColor.copy(alpha = 0.18f), Offset(a, 0f), Size(b - a, h))
-            listOf(a, b).forEach { drawLine(Color.White, Offset(it, 0f), Offset(it, h), 1.5.dp.toPx()) }
-        }
-        drawLineChartBody(g, color)
-
-        if (showAverage) {
-            val y = g.averageY
-            gridLine(y, Target)
-            text(m, "avg ${format(g.average)}", axisText.copy(color = Ink.copy(alpha = 0.8f)), size.width, y - 16.dp.toPx(), align = 1f)
-        }
-
-        drawLineChartEnd(g, color)
-
-        axis(m, labels, h + 4.dp.toPx())
-
-        // Scrubbing: the reading nearest the finger (gaps are skipped, not bridged).
-        val tx = touchX
-        if (scrubbing && tx != null) {
-            val i = nearestReading(values, tx, size.width, inset)
-            if (i != null) {
-                val p = Offset(g.xOf(i), g.yOf(values[i]!!))
-                guide(p.x, h)
-                drawCircle(Color.Black.copy(alpha = 0.6f), 6.dp.toPx(), p)
-                drawCircle(color, 4.dp.toPx(), p)
-                if (describe != null) readout(m, describe(i, values[i]!!), p.x, p.y)
             }
-        }
-    }
+            .drawWithCache {
+                // The shared line geometry ([lineChartGeometry]), as a widget's chart draws it.
+                val g = lineChartGeometry(
+                    values, size.width, size.height, density, inset, axis = labels.isNotEmpty(), yRange = yRange, band = band,
+                ) ?: return@drawWithCache nothing()
+                val paths = lineChartPaths(g, color, density)
+                val average = if (showAverage) m.measure("avg ${format(g.average)}", averageText) else null
+                val axisLabels = m.measureAll(labels)
+                val h = g.plotBottom
+                onDrawBehind {
+                    if (span != null) {
+                        fun x(f: Float) = inset + f.coerceIn(0f, 1f) * (size.width - inset * 2)
+                        val a = x(span.start)
+                        val b = x(span.endInclusive)
+                        drawRect(spanColor.copy(alpha = 0.18f), Offset(a, 0f), Size(b - a, h))
+                        drawLine(Color.White, Offset(a, 0f), Offset(a, h), 1.5.dp.toPx())
+                        drawLine(Color.White, Offset(b, 0f), Offset(b, h), 1.5.dp.toPx())
+                    }
+                    drawLineChartBody(g, paths, color)
+
+                    if (average != null) {
+                        val y = g.averageY
+                        gridLine(y, Target)
+                        text(average, size.width, y - 16.dp.toPx(), align = 1f)
+                    }
+
+                    drawLineChartEnd(g, color)
+
+                    axis(axisLabels, h + 4.dp.toPx())
+
+                    // Scrubbing: the reading nearest the finger (gaps are skipped, not bridged). Read here, so a scrub
+                    // only redraws.
+                    val tx = touchX
+                    if (scrubbing && tx != null) {
+                        val i = nearestReading(values, tx, size.width, inset)
+                        if (i != null) {
+                            val p = Offset(g.xOf(i), g.yOf(values[i]!!))
+                            guide(p.x, h)
+                            drawCircle(Color.Black.copy(alpha = 0.6f), 6.dp.toPx(), p)
+                            drawCircle(color, 4.dp.toPx(), p)
+                            if (describe != null) readout(m, describe(i, values[i]!!), p.x, p.y)
+                        }
+                    }
+                }
+            },
+    )
 }
 
 /** Your normal behind a chart: a band of the ink at 12% (spec 2.7). */
@@ -244,7 +281,7 @@ fun GlowBars(
     var width by remember { mutableStateOf(0f) }
     val scrubbing = describe != null || onScrub != null
     val tick = rememberScrubHaptics()
-    Canvas(
+    Spacer(
         modifier.fillMaxWidth().height(height).onSizeChanged { width = it.width.toFloat() }.let {
             if (!scrubbing) it else it.scrub(values) { x ->
                 touchX = x
@@ -253,26 +290,29 @@ fun GlowBars(
                 tick(i, values, null, false)
                 onScrub?.invoke(i)
             }
+        }.drawWithCache {
+            if (values.isEmpty()) return@drawWithCache nothing()
+            val axisH = if (labels.isEmpty()) 0f else 18.dp.toPx()
+            val top = 4.dp.toPx()
+            val h = size.height - axisH
+            val pitchX = size.width / values.size
+            val max = values.max().coerceAtLeast(1f)
+            val axisLabels = m.measureAll(labels)
+            onDrawBehind {
+                val picked = touchX?.takeIf { scrubbing }?.let { (it / pitchX).toInt().coerceIn(0, values.size - 1) }
+                gridLine(h - 0.5.dp.toPx())
+                values.forEachIndexed { i, v ->
+                    if (v <= 0f) return@forEachIndexed
+                    // While scrubbing, the other columns dim so the picked one stands out.
+                    val dim = if (picked == null || picked == i) 1f else 0.35f
+                    val color = if (i == highlight || i == picked) accent else Ink.copy(alpha = 0.6f)
+                    pillBar(color.copy(alpha = color.alpha * dim), pitchX * i, pitchX, h, (h - top) * v / max)
+                }
+                axis(axisLabels, h + 4.dp.toPx())
+                if (picked != null && describe != null) readout(m, describe(picked, values[picked]), pitchX * picked + pitchX / 2, 0f)
+            }
         },
-    ) {
-        if (values.isEmpty()) return@Canvas
-        val axisH = if (labels.isEmpty()) 0f else 18.dp.toPx()
-        val top = 4.dp.toPx()
-        val h = size.height - axisH
-        val pitchX = size.width / values.size
-        val max = values.max().coerceAtLeast(1f)
-        val picked = touchX?.takeIf { scrubbing }?.let { (it / pitchX).toInt().coerceIn(0, values.size - 1) }
-        gridLine(h - 0.5.dp.toPx())
-        values.forEachIndexed { i, v ->
-            if (v <= 0f) return@forEachIndexed
-            // While scrubbing, the other columns dim so the picked one stands out.
-            val dim = if (picked == null || picked == i) 1f else 0.35f
-            val color = if (i == highlight || i == picked) accent else Ink.copy(alpha = 0.6f)
-            pillBar(color.copy(alpha = color.alpha * dim), pitchX * i, pitchX, h, (h - top) * v / max)
-        }
-        axis(m, labels, h + 4.dp.toPx())
-        if (picked != null && describe != null) readout(m, describe(picked, values[picked]), pitchX * picked + pitchX / 2, 0f)
-    }
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -292,37 +332,44 @@ fun GlowTrend(
     average: Float? = null,
 ) {
     val m = rememberTextMeasurer()
-    Canvas(modifier.fillMaxWidth().height(height)) {
-        if (days.isEmpty()) return@Canvas
-        val axisH = 18.dp.toPx()
-        val top = 22.dp.toPx()
-        val h = size.height - axisH
-        val slot = size.width / days.size
-        val known = days.mapNotNull { it.value } + listOfNotNull(average)
-        val lo = (known.minOrNull() ?: 0f) * 0.85f
-        val hi = (known.maxOrNull() ?: 1f).coerceAtLeast(lo + 1f)
-        fun yOf(v: Float) = top + (h - top - 6.dp.toPx()) * (1f - (v - lo) / (hi - lo))
-
-        average?.let { gridLine(yOf(it), Target) }
-        days.forEachIndexed { i, d ->
-            val cx = slot * i + slot / 2
-            val today = i == days.lastIndex
-            text(m, d.label, if (today) axisText.copy(color = Ink) else axisText, cx, h + 4.dp.toPx(), align = 0.5f)
-            val v = d.value ?: return@forEachIndexed
-            val y = yOf(v)
-            drawLine(
-                Ink.copy(alpha = if (today) 0.9f else 0.45f), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
-                strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
-            )
-            if (today) {
-                drawCircle(Ink.copy(alpha = 0.18f), 11.dp.toPx(), Offset(cx, y))
-                drawCircle(Ink, 6.dp.toPx(), Offset(cx, y))
-            } else {
-                drawCircle(Ink, 4.dp.toPx(), Offset(cx, y))
+    Spacer(
+        modifier.fillMaxWidth().height(height).drawWithCache {
+            if (days.isEmpty()) return@drawWithCache nothing()
+            val axisH = 18.dp.toPx()
+            val top = 22.dp.toPx()
+            val h = size.height - axisH
+            val slot = size.width / days.size
+            val known = days.mapNotNull { it.value } + listOfNotNull(average)
+            val lo = (known.minOrNull() ?: 0f) * 0.85f
+            val hi = (known.maxOrNull() ?: 1f).coerceAtLeast(lo + 1f)
+            fun yOf(v: Float) = top + (h - top - 6.dp.toPx()) * (1f - (v - lo) / (hi - lo))
+            val names = days.mapIndexed { i, d -> m.measure(d.label, if (i == days.lastIndex) todayAxisText else axisText) }
+            val figures = days.mapIndexed { i, d ->
+                d.value?.let { m.measure(it.roundToInt().toString(), if (i == days.lastIndex) todayValueText else pastValueText) }
             }
-            text(m, v.roundToInt().toString(), valueText.copy(color = if (today) Ink else Ink.copy(alpha = 0.75f)), cx, y - 20.dp.toPx(), align = 0.5f)
-        }
-    }
+            onDrawBehind {
+                average?.let { gridLine(yOf(it), Target) }
+                days.forEachIndexed { i, d ->
+                    val cx = slot * i + slot / 2
+                    val today = i == days.lastIndex
+                    text(names[i], cx, h + 4.dp.toPx(), align = 0.5f)
+                    val v = d.value ?: return@forEachIndexed
+                    val y = yOf(v)
+                    drawLine(
+                        Ink.copy(alpha = if (today) 0.9f else 0.45f), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
+                        strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
+                    )
+                    if (today) {
+                        drawCircle(Ink.copy(alpha = 0.18f), 11.dp.toPx(), Offset(cx, y))
+                        drawCircle(Ink, 6.dp.toPx(), Offset(cx, y))
+                    } else {
+                        drawCircle(Ink, 4.dp.toPx(), Offset(cx, y))
+                    }
+                    figures[i]?.let { text(it, cx, y - 20.dp.toPx(), align = 0.5f) }
+                }
+            }
+        },
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -358,7 +405,8 @@ fun ArcGauge(
                 val topLeft = Offset(size.width / 2 - rad, centreY.toPx() - rad)
                 val box = Size(rad * 2, rad * 2)
                 drawArc(Ink.copy(alpha = ARC_TRACK_ALPHA), 180f, 180f, false, topLeft, box, style = Stroke(w, cap = StrokeCap.Round))
-                val sweep = 180f * shown.coerceIn(0f, 1f)
+                // Read here, so the fill animates by redrawing only.
+                val sweep = 180f * shown().coerceIn(0f, 1f)
                 if (sweep > 0f) drawArc(tint, 180f, sweep, false, topLeft, box, style = Stroke(w, cap = StrokeCap.Round))
             }
             Box(Modifier.fillMaxWidth().height(centreY - r * ARC_NUMBER_LIFT), contentAlignment = Alignment.BottomCenter, content = content)
@@ -398,27 +446,38 @@ fun HorizonArc(
         val rise = HorizonRise * k
         val stroke = HorizonStroke * k
         Box(Modifier.size(span + stroke, rise + stroke)) {
-            Canvas(Modifier.matchParentSize()) {
-                val w = stroke.toPx()
-                val x0 = w / 2
-                val base = size.height - w / 2
-                val width = span.toPx()
-                fun hill(height: Float) = List(HORIZON_STEPS + 1) { i ->
-                    val u = i / HORIZON_STEPS.toFloat()
-                    Offset(x0 + u * width, base - height * sin(Math.PI * u).toFloat())
-                }
-                fun path(points: List<Offset>) = Path().apply {
-                    moveTo(points[0].x, points[0].y)
-                    for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
-                }
-                val value = hill(rise.toPx())
-                drawPath(
-                    path(hill(rise.toPx() * HORIZON_TRACK_RISE)), Ink.copy(alpha = HORIZON_TRACK_ALPHA),
-                    style = Stroke(w * HORIZON_TRACK_STROKE, cap = StrokeCap.Round, join = StrokeJoin.Round),
-                )
-                val upTo = upToLength(value, shown.coerceIn(0f, 1f))
-                if (upTo.size > 1) drawPath(path(upTo), tint, style = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round))
-            }
+            Spacer(
+                Modifier.matchParentSize().drawWithCache {
+                    // The hills are the same on every frame of a fill: only the cut of the value's line moves.
+                    val w = stroke.toPx()
+                    val x0 = w / 2
+                    val base = size.height - w / 2
+                    val width = span.toPx()
+                    fun hill(height: Float) = List(HORIZON_STEPS + 1) { i ->
+                        val u = i / HORIZON_STEPS.toFloat()
+                        Offset(x0 + u * width, base - height * sin(Math.PI * u).toFloat())
+                    }
+                    fun path(points: List<Offset>) = Path().apply {
+                        moveTo(points[0].x, points[0].y)
+                        for (i in 1 until points.size) lineTo(points[i].x, points[i].y)
+                    }
+                    val value = hill(rise.toPx())
+                    val track = path(hill(rise.toPx() * HORIZON_TRACK_RISE))
+                    val trackStroke = Stroke(w * HORIZON_TRACK_STROKE, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    val valueStroke = Stroke(w, cap = StrokeCap.Round, join = StrokeJoin.Round)
+                    val full = path(value)
+                    onDrawBehind {
+                        drawPath(track, Ink.copy(alpha = HORIZON_TRACK_ALPHA), style = trackStroke)
+                        // Read here, so the fill animates by redrawing only. At rest on a full hill it reuses the path.
+                        val f = shown().coerceIn(0f, 1f)
+                        if (f >= 1f) drawPath(full, tint, style = valueStroke)
+                        else {
+                            val upTo = upToLength(value, f)
+                            if (upTo.size > 1) drawPath(path(upTo), tint, style = valueStroke)
+                        }
+                    }
+                },
+            )
             Box(
                 Modifier.matchParentSize().padding(bottom = stroke / 2 + span * HORIZON_NUMBER_LIFT),
                 contentAlignment = Alignment.BottomCenter, content = content,
@@ -460,13 +519,14 @@ private fun upToLength(points: List<Offset>, fraction: Float): List<Offset> {
  * system's animations off it jumps.
  */
 @Composable
-private fun rememberGaugeProgress(target: Float, key: Any?): Float {
+private fun rememberGaugeProgress(target: Float, key: Any?): () -> Float {
     val animate = org.openstrap.app.ui.components.rememberAnimationsOn()
     val shown = remember(key) { Animatable(target) }
     LaunchedEffect(shown, target, animate) {
         if (animate) shown.animateTo(target, tween(GAUGE_FILL_MS, easing = FastOutSlowInEasing)) else shown.snapTo(target)
     }
-    return shown.value
+    // Read by the draw, so the fill never composes the gauge again.
+    return remember(shown) { { shown.value } }
 }
 
 private const val GAUGE_FILL_MS = 450
@@ -505,7 +565,7 @@ fun GlowHypnogram(
     val nameWidth = with(androidx.compose.ui.platform.LocalDensity.current) { if (showNames) 46.dp.toPx() else 0f }
     val haptics = org.openstrap.app.ui.components.rememberHaptics()
     var lastStage by remember { mutableStateOf<Int?>(null) }
-    Canvas(
+    Spacer(
         modifier.fillMaxWidth().height(height).onSizeChanged { width = it.width.toFloat() }.let {
             if (describe != null) it.scrub(stages) { x ->
                 touchX = x
@@ -517,42 +577,44 @@ fun GlowHypnogram(
                 if (stage != null && lastStage != null && stage != lastStage) haptics.perform(org.openstrap.app.ui.components.HapticEvent.ScrubStep)
                 lastStage = if (x == null) null else stage ?: lastStage
             } else it
-        },
-    ) {
-        val nameW = if (showNames) 46.dp.toPx() else 0f
-        // The shared hypnogram geometry ([hypnogramGeometry]), as a widget's chart draws it.
-        val g = hypnogramGeometry(stages, rowNames.size, size.width, size.height, density, nameW, axis = labels.isNotEmpty()) ?: return@Canvas
-        val h = g.plotBottom
-
-        rowNames.forEachIndexed { row, name ->
-            gridLine(g.rowY[row], x0 = nameW)
-            if (showNames) text(m, name, axisText, 0f, g.rowY[row] - 7.dp.toPx())
-        }
-        drawHypnogramBands(g, rowColors)
-        if (kept != null) {
-            val dim = Color.Black.copy(alpha = 0.65f)
-            val a = g.xOf(kept.start.coerceIn(0f, 1f))
-            val b = g.xOf(kept.endInclusive.coerceIn(0f, 1f))
-            if (a > nameW) drawRect(dim, Offset(nameW, 0f), Size(a - nameW, h))
-            if (b < size.width) drawRect(dim, Offset(b, 0f), Size(size.width - b, h))
-        }
-        if (labels.isNotEmpty()) {
-            labels.forEachIndexed { i, l ->
-                val f = if (labels.size == 1) 0f else i / (labels.size - 1f)
-                text(m, l, axisText, g.xOf(f), h + 4.dp.toPx(), align = f)
+        }.drawWithCache {
+            val nameW = if (showNames) 46.dp.toPx() else 0f
+            // The shared hypnogram geometry ([hypnogramGeometry]), as a widget's chart draws it.
+            val g = hypnogramGeometry(stages, rowNames.size, size.width, size.height, density, nameW, axis = labels.isNotEmpty())
+                ?: return@drawWithCache nothing()
+            val h = g.plotBottom
+            val names = if (showNames) m.measureAll(rowNames) else emptyList()
+            val axisLabels = m.measureAll(labels)
+            onDrawBehind {
+                rowNames.indices.forEach { row ->
+                    gridLine(g.rowY[row], x0 = nameW)
+                    if (showNames) text(names[row], 0f, g.rowY[row] - 7.dp.toPx())
+                }
+                drawHypnogramBands(g, rowColors)
+                if (kept != null) {
+                    val dim = Color.Black.copy(alpha = 0.65f)
+                    val a = g.xOf(kept.start.coerceIn(0f, 1f))
+                    val b = g.xOf(kept.endInclusive.coerceIn(0f, 1f))
+                    if (a > nameW) drawRect(dim, Offset(nameW, 0f), Size(a - nameW, h))
+                    if (b < size.width) drawRect(dim, Offset(b, 0f), Size(size.width - b, h))
+                }
+                axisLabels.forEachIndexed { i, l ->
+                    val f = if (axisLabels.size == 1) 0f else i / (axisLabels.size - 1f)
+                    text(l, g.xOf(f), h + 4.dp.toPx(), align = f)
+                }
+                val tx = touchX
+                if (describe != null && tx != null) {
+                    val x = tx.coerceIn(nameW, size.width)
+                    val f = (x - nameW) / (size.width - nameW)
+                    // The stage under the finger, or the nearest one when the finger is in a gap.
+                    val band = g.bands.firstOrNull { f >= it.stage.from && f < it.stage.to }
+                        ?: g.bands.minBy { minOf(kotlin.math.abs(it.stage.from - f), kotlin.math.abs(it.stage.to - f)) }
+                    guide(x, h)
+                    readout(m, describe(band.stage), x, band.topLeft.y)
+                }
             }
-        }
-        val tx = touchX
-        if (describe != null && tx != null) {
-            val x = tx.coerceIn(nameW, size.width)
-            val f = (x - nameW) / (size.width - nameW)
-            // The stage under the finger, or the nearest one when the finger is in a gap.
-            val band = g.bands.firstOrNull { f >= it.stage.from && f < it.stage.to }
-                ?: g.bands.minBy { minOf(kotlin.math.abs(it.stage.from - f), kotlin.math.abs(it.stage.to - f)) }
-            guide(x, h)
-            readout(m, describe(band.stage), x, band.topLeft.y)
-        }
-    }
+        },
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -564,10 +626,14 @@ fun GlowHypnogram(
  */
 @Composable
 fun GhostLine(today: List<Float?>, color: Color, max: Float, modifier: Modifier = Modifier, usual: List<Float>? = null, height: Dp = 56.dp) {
-    Canvas(modifier.fillMaxWidth().height(height)) {
-        // The shared ghost line geometry ([ghostLineGeometry]), as a widget's chart draws it.
-        ghostLineGeometry(today, usual, max, size.width, size.height, density)?.let { drawGhostLine(it, color) }
-    }
+    Spacer(
+        modifier.fillMaxWidth().height(height).drawWithCache {
+            // The shared ghost line geometry ([ghostLineGeometry]), as a widget's chart draws it.
+            val g = ghostLineGeometry(today, usual, max, size.width, size.height, density) ?: return@drawWithCache nothing()
+            val paths = ghostLinePaths(g, density)
+            onDrawBehind { drawGhostLine(g, paths, color) }
+        },
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -627,7 +693,7 @@ internal fun NormalTrend(
     var width by remember { mutableStateOf(0f) }
     val inset = with(androidx.compose.ui.platform.LocalDensity.current) { 16.dp.toPx() }
     val tick = rememberScrubHaptics()
-    Canvas(
+    Spacer(
         modifier.fillMaxWidth().height(height)
             .onSizeChanged { width = it.width.toFloat() }
             .let {
@@ -637,76 +703,84 @@ internal fun NormalTrend(
                     tick(i, values, band, true)
                     onScrub(i)
                 }
+            }
+            .drawWithCache {
+                // Labels measured and points placed once per size and data. The scrub is read in draw only.
+                val known = values.filterNotNull()
+                if (known.isEmpty()) return@drawWithCache nothing()
+                val axisH = if (labels.isEmpty()) 0f else 24.dp.toPx()
+                // Fewer, bigger dots for a week; a month or a year of them get smaller.
+                val scale = when {
+                    values.size <= 7 -> 1f
+                    values.size <= 31 -> 0.55f
+                    else -> 0.4f
+                }
+                // The band's label has a row of its own above the plot, clear of the biggest halo, so it never sits on a point
+                // or the line wherever the data goes. A swatch of the band's colour ties it to the band.
+                val bandText = bandLabel?.takeIf { band != null }?.let { m.measure(it, trendLabelText) }
+                val labelH = bandText?.size?.height?.toFloat()
+                val top = (labelH?.plus(6.dp.toPx()) ?: 0f) + 14.dp.toPx() * scale + 4.dp.toPx()
+                val h = size.height - axisH - 16.dp.toPx()
+                val lo0 = minOf(known.min(), band?.start ?: Float.MAX_VALUE)
+                val hi0 = maxOf(known.max(), band?.endInclusive ?: -Float.MAX_VALUE)
+                val pad = ((hi0 - lo0) * 0.12f).coerceAtLeast(0.5f)
+                val lo = lo0 - pad
+                val hi = hi0 + pad
+                fun xOf(i: Int) = inset + i / (values.size - 1f).coerceAtLeast(1f) * (size.width - inset * 2)
+                fun yOf(v: Float) = top + (h - top) * (1f - (v - lo) / (hi - lo))
+                val pts = values.mapIndexedNotNull { i, v -> v?.let { i to Offset(xOf(i), yOf(it)) } }
+                val stroke = 2.4.dp.toPx() * (0.6f + 0.4f * scale)
+                val dim = lerp(color, Color.Black, 0.5f)
+                val perDay = labels.size == values.size
+                val dayLabels = m.measureAll(labels, if (perDay) trendLabelText else axisText)
+                onDrawBehind {
+                    band?.let { b ->
+                        val y0 = yOf(b.endInclusive)
+                        drawRoundRect(color.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(12.dp.toPx()))
+                        if (bandText != null && labelH != null) {
+                            val w = bandText.size.width
+                            val sw = 14.dp.toPx()
+                            val x = size.width - w
+                            drawRoundRect(color.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()), Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()))
+                            text(bandText, size.width, 0f, align = 1f)
+                        }
+                    }
+
+                    pts.zipWithNext { (i, a), (j, b) ->
+                        // A missing day between two dots: the line stops there.
+                        if (j - i == 1) drawLine(color.copy(alpha = 0.85f), a, b, stroke, StrokeCap.Round)
+                    }
+                    pts.forEach { (i, p) ->
+                        when (levels.getOrNull(i)) {
+                            org.openstrap.app.ui.dashboard.DetailCopy.Level.Above,
+                            org.openstrap.app.ui.dashboard.DetailCopy.Level.Below,
+                            -> {
+                                val lit = lerp(color, Color.White, 0.3f)
+                                drawCircle(lit.copy(alpha = 0.35f), 14.dp.toPx() * scale, p)
+                                drawCircle(lit, 7.dp.toPx() * scale, p)
+                            }
+                            else -> {
+                                drawCircle(dim, 5.dp.toPx() * scale, p)
+                                drawCircle(color, 5.dp.toPx() * scale, p, style = Stroke(2.dp.toPx() * scale.coerceAtLeast(0.6f)))
+                            }
+                        }
+                    }
+
+                    if (perDay) dayLabels.forEachIndexed { i, l -> text(l, xOf(i), size.height - axisH + 6.dp.toPx(), align = 0.5f) }
+                    else axis(dayLabels, size.height - axisH + 6.dp.toPx())
+
+                    val tx = touchX
+                    if (onScrub != null && tx != null) {
+                        nearestReading(values, tx, size.width, inset)?.let { i ->
+                            val p = Offset(xOf(i), yOf(values[i]!!))
+                            guide(p.x, h)
+                            drawCircle(Color.Black.copy(alpha = 0.6f), 8.dp.toPx(), p)
+                            drawCircle(Ink, 5.dp.toPx(), p)
+                        }
+                    }
+                }
             },
-    ) {
-        val known = values.filterNotNull()
-        if (known.isEmpty()) return@Canvas
-        val axisH = if (labels.isEmpty()) 0f else 24.dp.toPx()
-        // Fewer, bigger dots for a week; a month or a year of them get smaller.
-        val scale = when {
-            values.size <= 7 -> 1f
-            values.size <= 31 -> 0.55f
-            else -> 0.4f
-        }
-        // The band's label has a row of its own above the plot, clear of the biggest halo, so it never sits on a point
-        // or the line wherever the data goes. A swatch of the band's colour ties it to the band.
-        val labelStyle = axisText.copy(fontSize = 12.sp)
-        val labelH = bandLabel?.takeIf { band != null }?.let { m.measure(it, labelStyle).size.height.toFloat() }
-        val top = (labelH?.plus(6.dp.toPx()) ?: 0f) + 14.dp.toPx() * scale + 4.dp.toPx()
-        val h = size.height - axisH - 16.dp.toPx()
-        val lo0 = minOf(known.min(), band?.start ?: Float.MAX_VALUE)
-        val hi0 = maxOf(known.max(), band?.endInclusive ?: -Float.MAX_VALUE)
-        val pad = ((hi0 - lo0) * 0.12f).coerceAtLeast(0.5f)
-        val lo = lo0 - pad
-        val hi = hi0 + pad
-        fun xOf(i: Int) = inset + i / (values.size - 1f).coerceAtLeast(1f) * (size.width - inset * 2)
-        fun yOf(v: Float) = top + (h - top) * (1f - (v - lo) / (hi - lo))
-        band?.let { b ->
-            val y0 = yOf(b.endInclusive)
-            drawRoundRect(color.copy(alpha = NormalBandAlpha), Offset(0f, y0), Size(size.width, yOf(b.start) - y0), CornerRadius(12.dp.toPx()))
-            if (bandLabel != null && labelH != null) {
-                val w = m.measure(bandLabel, labelStyle).size.width
-                val sw = 14.dp.toPx()
-                val x = size.width - w
-                drawRoundRect(color.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()), Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()))
-                text(m, bandLabel, labelStyle, size.width, 0f, align = 1f)
-            }
-        }
-
-        val pts = values.mapIndexedNotNull { i, v -> v?.let { i to Offset(xOf(i), yOf(it)) } }
-        val stroke = 2.4.dp.toPx() * (0.6f + 0.4f * scale)
-        pts.zipWithNext { (i, a), (j, b) ->
-            // A missing day between two dots: the line stops there.
-            if (j - i == 1) drawLine(color.copy(alpha = 0.85f), a, b, stroke, StrokeCap.Round)
-        }
-        val dim = lerp(color, Color.Black, 0.5f)
-        pts.forEach { (i, p) ->
-            when (levels.getOrNull(i)) {
-                org.openstrap.app.ui.dashboard.DetailCopy.Level.Above, org.openstrap.app.ui.dashboard.DetailCopy.Level.Below -> {
-                    val lit = lerp(color, Color.White, 0.3f)
-                    drawCircle(lit.copy(alpha = 0.35f), 14.dp.toPx() * scale, p)
-                    drawCircle(lit, 7.dp.toPx() * scale, p)
-                }
-                else -> {
-                    drawCircle(dim, 5.dp.toPx() * scale, p)
-                    drawCircle(color, 5.dp.toPx() * scale, p, style = Stroke(2.dp.toPx() * scale.coerceAtLeast(0.6f)))
-                }
-            }
-        }
-
-        if (labels.size == values.size) labels.forEachIndexed { i, l -> text(m, l, axisText.copy(fontSize = 12.sp), xOf(i), size.height - axisH + 6.dp.toPx(), align = 0.5f) }
-        else axis(m, labels, size.height - axisH + 6.dp.toPx())
-
-        val tx = touchX
-        if (onScrub != null && tx != null) {
-            nearestReading(values, tx, size.width, inset)?.let { i ->
-                val p = Offset(xOf(i), yOf(values[i]!!))
-                guide(p.x, h)
-                drawCircle(Color.Black.copy(alpha = 0.6f), 8.dp.toPx(), p)
-                drawCircle(Ink, 5.dp.toPx(), p)
-            }
-        }
-    }
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */

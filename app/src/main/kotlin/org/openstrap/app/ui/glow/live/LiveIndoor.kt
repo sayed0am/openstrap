@@ -68,7 +68,10 @@ internal fun LiveIndoorScreen(
         // Time reps on the treadmill side: the rep above the heart.
         if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
         if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(liveHeartRate.takeIf { connected && !r.paused }, r.maxHeartRate))
-        else WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, active.value, Modifier.fillMaxWidth(), kcal = kcal?.active, zoneBar = true)
+        else WorkoutHeartCard(
+            r, liveHeartRate, recent, zoneSeconds, connected, { active.value }, Modifier.fillMaxWidth(),
+            kcal = kcal?.active, zoneBar = true,
+        )
         LiveFigures(figures, Modifier.padding(top = 4.dp))
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -95,6 +96,8 @@ fun GlowWorkoutLiveScreen(
     val controls = remember(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing) {
         LiveControls(onPause, onResume, onEnd, onMinimize, onEndAtPrompt, onKeepGoing)
     }
+    // The merged readings are remembered where a screen takes them: built anew each recomposition, they grow with the
+    // workout and stop the screens that take them from skipping.
     // Each kind of workout has its own screen (workouts spec 2.3), split across a fold too: Skip, +10 s, Half time and
     // the log card stay on the half under your hand. Only the screens whose hero is the heart rate leave it to the
     // other half.
@@ -106,14 +109,21 @@ fun GlowWorkoutLiveScreen(
             family == Workouts.Family.Distance && r.workout.useGps ->
                 LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)
             family == Workouts.Family.Strength -> LiveStrengthScreen(
-                r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, exercises,
+                r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
+                controls, exercises,
                 onStartSet, onSetDone, onExtendRest, onExercise, onLogSet, compact,
             )
             family == Workouts.Family.Intervals && r.structure != null ->
-                LiveIntervalsScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), connection, contentPadding, controls, onSkip, onAddRest, split, compact)
+                LiveIntervalsScreen(
+                    r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
+                    controls, onSkip, onAddRest, split, compact,
+                )
             family == Workouts.Family.MindBody -> LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls, split, compact)
             family == Workouts.Family.Games ->
-                LiveGameScreen(r, liveHeartRate, WorkoutCopy.readings(history, recent), stats, zoneSeconds, connection, contentPadding, controls, kcal, onSkip, split, compact)
+                LiveGameScreen(
+                    r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, stats, zoneSeconds, connection,
+                    contentPadding, controls, kcal, onSkip, split, compact,
+                )
             // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
             // the rounds.
             else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal, split, compact)
@@ -135,8 +145,10 @@ internal fun KmSplitLine(
     keepRoom: Boolean = false,
 ) {
     val splits = remember(route.size, pauses) { Route.splits(route, pauses) }
-    val now = nowTicking()
-    val line = WorkoutCopy.splitLine(splits, readings, route.firstOrNull()?.t, now)
+    val now = nowTickingState()
+    val first = route.firstOrNull()?.t
+    // The second is read by the derived line, so this composes again only when the line comes or goes.
+    val line = remember(splits, readings, first) { derivedStateOf { WorkoutCopy.splitLine(splits, readings, first, now.value) } }.value
     val haptics = rememberHaptics()
     var ticked by remember { mutableIntStateOf(WorkoutCopy.wholeKms(splits)) }
     LaunchedEffect(line?.index) {
@@ -199,7 +211,8 @@ internal fun WorkoutHeartCard(
     recent: List<Pair<Long, Int>>,
     zoneSeconds: IntArray,
     connected: Boolean,
-    active: Long,
+    /** The active seconds, read only by the time target's note, so the card isn't composed again each second. */
+    active: () -> Long,
     modifier: Modifier,
     fill: Boolean = false,
     /** The live active kcal, for a kcal target's progress. */
@@ -260,7 +273,7 @@ internal fun WorkoutHeartCard(
                 Spacer(Modifier.weight(1f))
                 when (val t = WorkoutTarget.parse(r.workout.target)) {
                     is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
-                    is WorkoutTarget.Time -> Note("${workoutClock(active)} of ${t.label}")
+                    is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
                     is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
                     is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
                     null -> Unit
@@ -285,10 +298,17 @@ fun GlowWorkoutGlance(
     kcal: WorkoutRecorder.Kcal? = null,
 ) {
     val connected = connection is ConnectionState.Connected
+    val active = activeSecondsState(r)
     Box(modifier.background(Color.Black).statusBarsPadding().padding(horizontal = GlowLayout.Gutter, vertical = 12.dp)) {
-        WorkoutHeartCard(r, liveHeartRate, recent, zoneSeconds, connected, activeSeconds(r), Modifier.fillMaxSize(), fill = true, kcal = kcal?.active)
+        WorkoutHeartCard(
+            r, liveHeartRate, recent, zoneSeconds, connected, { active.value }, Modifier.fillMaxSize(), fill = true, kcal = kcal?.active,
+        )
     }
 }
+
+/** "12:30 of 30 min" under the heart card: its own scope, so only it reads the time. */
+@Composable
+private fun TimeTargetNote(active: () -> Long, target: String) = Note("${workoutClock(active())} of $target")
 
 private const val BUCKET_S = 5L
 private const val WINDOW_S = 600L
