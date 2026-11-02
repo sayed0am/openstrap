@@ -1,10 +1,13 @@
 package org.openstrap.app.ui.workout
 
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.device.ConnectionState
@@ -139,13 +142,14 @@ data class GlanceInput(
 /**
  * The glance of the workout [session] records, once a second and whenever what it shows changes; null while nothing
  * records. Worked out off the screen, so the Today hero and the floating bar each read it without the app around them
- * recomposing every second.
+ * recomposing every second, and on [work], since each second's figures walk the whole route (audit C7).
  */
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 fun liveGlance(
     session: WorkoutSession,
     liveHeartRate: Flow<Int?>,
     connection: Flow<ConnectionState>,
+    work: CoroutineDispatcher = Dispatchers.Default,
 ): Flow<LiveGlance?> {
     val ticks = flow {
         while (true) {
@@ -157,7 +161,7 @@ fun liveGlance(
     val figures = combine(session.route, session.kcal, session.stats) { route, kcal, stats -> Triple(route, kcal, stats) }
     // Nothing ticks while nothing records.
     val recording = session.state.map { it is WorkoutState.Recording }.distinctUntilChanged()
-    return recording.flatMapLatest { on -> if (!on) flowOf(null) else glanceTicks(session, strap, figures, ticks) }
+    return recording.flatMapLatest { on -> if (!on) flowOf(null) else glanceTicks(session, strap, figures, ticks) }.flowOn(work)
 }
 
 /** [liveGlance] while a workout records. */

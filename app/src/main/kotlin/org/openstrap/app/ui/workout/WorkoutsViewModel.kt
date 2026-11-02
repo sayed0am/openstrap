@@ -2,6 +2,8 @@ package org.openstrap.app.ui.workout
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -9,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -21,11 +24,14 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.HeartZones
+import org.openstrap.app.data.Today
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.UserProfile
+import java.time.Clock
 
 /**
  * What a phone workout's summary shows: [analysis] over its shown range, [recorded] every sample from
@@ -71,7 +77,18 @@ class WorkoutsViewModel(
     private val dao: HealthDao,
     private val profile: Flow<UserProfile>,
     maxHeartRates: org.openstrap.app.data.MaxHeartRates,
+    /** The clock today and now are read from, asked afresh each time. Tests pass one they move by hand. */
+    private val clock: () -> Clock = { Clock.systemDefaultZone() },
+    /** The phone's clock, time zone or date changed ([Today.changes]), so today is read again at once. */
+    dateChanges: Flow<Unit> = emptyFlow(),
+    /** Where rows are worked into what the screens show, off the main thread (audit C7). */
+    private val work: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
+    /** Today as it moves, so the suggestions' window moves on at midnight (audit C10). */
+    private val today: Flow<java.time.LocalDate> = Today.dates(clock, dateChanges)
+
+    private fun nowSeconds(): Long = clock().instant().epochSecond
+
     /**
      * Zones fall back to the app's one max-HR rule (tested value, Tanaka, strap, raised by observed peaks) when a
      * workout has no sport effect of its own. The app's shared one ([org.openstrap.app.AppContainer.maxHeartRates]),
@@ -101,14 +118,14 @@ class WorkoutsViewModel(
             val phoneByStart = phone.associateBy { it.start }
             val stamps = ws.associate { w -> (false to w.start) to listOf(w, Workouts.effectOf(w, effects), maxHr, zones, strapMark[w.start]) } +
                 phone.associate { w -> (true to w.start) to listOf(w, maxHr, zones, phoneMark[w.start]) }
-            val work: suspend (Pair<Boolean, Long>) -> List<Int> = { (fromPhone, start) ->
+            val analyse: suspend (Pair<Boolean, Long>) -> List<Int> = { (fromPhone, start) ->
                 if (fromPhone) WorkoutRecorder.analyse(phoneByStart.getValue(start), dao.appWorkoutHeartRateOnce(start), maxHr).zoneSeconds
                 else Workouts.analyse(strapByStart.getValue(start), dao.workoutHeartRateOnce(start), effects, maxHr).zoneSeconds
             }
-            stamps to work
+            stamps to analyse
         }
-            .mapLatest { (stamps, work) -> zoneCache.zones(stamps, work) }
-            .flowOn(Dispatchers.Default)
+            .mapLatest { (stamps, analyse) -> zoneCache.zones(stamps, analyse) }
+            .flowOn(work)
             .onStart { emit(emptyMap()) }
 
     /**
@@ -124,6 +141,7 @@ class WorkoutsViewModel(
             ) { ws, effects, last, (phone, sets), maxHr -> Workouts.listed(ws, effects, last, phone, sets, maxHr) },
             listZones,
         ) { list, zones -> list.map { a -> zones[a.fromPhone to a.workout.start]?.let { a.copy(zoneSeconds = it) } ?: a } }
+            .flowOn(work)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     /** The strap's sport-effect records, newest last: recovery time, VO2 max and weekly load after each workout. */
@@ -134,19 +152,22 @@ class WorkoutsViewModel(
     val maxHeartRate: StateFlow<Int?> = learnedMaxHr.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** A day's heart rate a minute at a time, for adding a workout after the fact. */
-    suspend fun dayMinuteHeartRate(date: java.time.LocalDate): List<Pair<Long, Int>> = kotlinx.coroutines.withContext(Dispatchers.Default) {
+    suspend fun dayMinuteHeartRate(date: java.time.LocalDate): List<Pair<Long, Int>> = kotlinx.coroutines.withContext(work) {
         val w = org.openstrap.app.data.DayWindow.of(date)
         org.openstrap.app.data.Summaries.bucketAverage(org.openstrap.app.data.Summaries.heartRateSeries(dao.heartRateOnce(w.from, w.to), dao.activityOnce(w.from, w.to)), 60)
     }
-
-    /** From the start of yesterday: the stretches the strap's history may hold that nobody started. */
-    private val suggestFrom = org.openstrap.app.data.DayWindow.of(java.time.LocalDate.now().minusDays(1)).from
 
     /**
      * Workouts nobody started, newest first ([org.openstrap.app.data.WorkoutSuggestions]), from the strap's heart rate
      * since yesterday. Sleep, saved workouts and stretches answered "Not a workout" never count.
      */
-    val suggestions: StateFlow<List<org.openstrap.app.data.WorkoutSuggestions.Suggestion>> = combine(
+    val suggestions: StateFlow<List<org.openstrap.app.data.WorkoutSuggestions.Suggestion>> = today
+        .flatMapLatest { d -> suggestionsFrom(org.openstrap.app.data.DayWindow.of(d.minusDays(1)).from) }
+        .flowOn(work)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** [suggestions] from [suggestFrom], the start of yesterday: the stretches the strap's history may hold that nobody started. */
+    private fun suggestionsFrom(suggestFrom: Long): Flow<List<org.openstrap.app.data.WorkoutSuggestions.Suggestion>> = combine(
         combine(dao.heartRate(suggestFrom, Long.MAX_VALUE), dao.activity(suggestFrom, Long.MAX_VALUE)) { hr, minutes ->
             org.openstrap.app.data.Summaries.bucketAverage(org.openstrap.app.data.Summaries.heartRateSeries(hr, minutes), 60)
         },
@@ -157,12 +178,10 @@ class WorkoutsViewModel(
         fallbackMaxHr,
     ) { series, busy, maxHr -> Triple(series, busy, maxHr) }
         .mapLatest { (series, busy, maxHr) ->
-            val now = System.currentTimeMillis() / 1000
+            val now = nowSeconds()
             val resting = dao.restingHrOnce(now - 14 * 86_400L, now).lastOrNull()?.bpm ?: 60
             org.openstrap.app.data.WorkoutSuggestions.find(series, resting, maxHr, busy)
         }
-        .flowOn(Dispatchers.Default)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val openStart = MutableStateFlow<Long?>(null)
 
@@ -174,7 +193,7 @@ class WorkoutsViewModel(
                 w?.let { Workouts.analyse(it, hr, effects, maxHr) }
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+    }.flowOn(work).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     /** A phone workout with every second of it, updating as gap filling adds minutes. */
     fun phoneAnalysis(start: Long): Flow<WorkoutAnalysis?> =
@@ -184,21 +203,17 @@ class WorkoutsViewModel(
 
     /**
      * A phone workout's summary: its analysis, everything recorded (for trimming), and the strap's own record of it
-     * when there is one. [backfill] works out the effect of a workout from before there was one and saves it; off,
-     * opening the summary writes nothing.
+     * when there is one. [backfill] works out the effect of a workout from before there was one and saves it
+     * ([backfillEffect]) as the summary opens. Off, opening the summary writes nothing.
      */
     fun phoneSummary(start: Long, backfill: Boolean = true): Flow<PhoneSummary?> =
-        combine(dao.appWorkout(start), dao.appWorkoutHeartRate(start), fallbackMaxHr, workouts, combine(dao.route(start), dao.sets(start), dao.rounds(start)) { r, s, n -> Triple(r, s, n) }) { w, hr, maxHr, all, extra ->
-            Quad(w, hr, maxHr, all) to extra
+        combine(dao.appWorkout(start), dao.appWorkoutHeartRate(start), fallbackMaxHr, combine(dao.route(start), dao.sets(start), dao.rounds(start)) { r, s, n -> Triple(r, s, n) }) { w, hr, maxHr, extra ->
+            Triple(w, hr, maxHr) to extra
         }
-            .mapLatest { (q, extra) ->
+            .mapLatest { (main, extra) ->
                 val (routeRows, sets, rounds) = extra
-                val (w, hr, maxHr, all) = q
+                val (w, hr, maxHr) = main
                 w ?: return@mapLatest null
-                // A workout from before its effect was worked out gets it now; saving it brings this summary round again.
-                if (backfill && w.end != null && w.epoc == null && hr.isNotEmpty()) {
-                    runCatching { org.openstrap.app.data.WorkoutEffectEngine(dao).backfill(w, profile.first()) }
-                }
                 val a = WorkoutRecorder.analyse(w, hr, maxHr)
                 // The strap's own records of this workout ([Workouts.sameWorkout]), which the lists leave out.
                 val effects = dao.sportEffects().first()
@@ -216,7 +231,22 @@ class WorkoutsViewModel(
                     org.openstrap.app.data.Structure.parse(w.structure), rounds, below,
                     below?.let { restBefore(w, it) },
                 )
-            }.flowOn(Dispatchers.Default)
+            }.flowOn(work)
+            .onStart { if (backfill) backfillEffect(start) }
+
+    /**
+     * Works out and saves the effect of phone workout [start] when it ended before effects were worked out
+     * ([org.openstrap.app.data.WorkoutEffectEngine.backfill]). On a coroutine of its own, not in the summary's read,
+     * so the summary shows without waiting for it and comes round again once the effect is saved.
+     */
+    private fun backfillEffect(start: Long) {
+        viewModelScope.launch(work) {
+            catching {
+                val w = dao.appWorkoutOnce(start) ?: return@catching
+                org.openstrap.app.data.WorkoutEffectEngine(dao).backfill(w, profile.first())
+            }.onFailure { Log.w("OpenStrap", "effect backfill failed for $start", it) }
+        }
+    }
 
     /**
      * How fast rest brought the heart rate under [below] in the last strength session before [w] with sets, in the
@@ -235,7 +265,7 @@ class WorkoutsViewModel(
      * the strap's own workouts, whose recording runs on after the end, and only those ended from a real effort
      * ([WorkoutAnalysis.recoveryIsMeaningful]). Phone workouts keep no drop yet. Null with too few.
      */
-    suspend fun usualDrop(before: Long): Int? = kotlinx.coroutines.withContext(Dispatchers.Default) {
+    suspend fun usualDrop(before: Long): Int? = kotlinx.coroutines.withContext(work) {
         val maxHr = fallbackMaxHr.first()
         val effects = dao.sportEffects().first()
         val drops = dao.workouts().first()
@@ -251,12 +281,10 @@ class WorkoutsViewModel(
         const val USUAL_DROP_LOOKBACK_S = 180 * 86_400L
     }
 
-    private data class Quad<A, B, C, D>(val a: A, val b: B, val c: C, val d: D)
-
     fun open(start: Long?) { openStart.value = start }
 
     /** Deletes a strap workout and keeps it from coming back with a later sync ([HealthDao.deleteStrapWorkout]). */
     fun deleteStrapWorkout(start: Long) {
-        viewModelScope.launch { dao.deleteStrapWorkout(start, System.currentTimeMillis() / 1000) }
+        viewModelScope.launch { dao.deleteStrapWorkout(start, nowSeconds()) }
     }
 }
