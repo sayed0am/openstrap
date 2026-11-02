@@ -119,7 +119,7 @@ class GattClientTest {
     }
 
     @Test
-    @Config(sdk = [30])
+    @Config(sdk = [32])
     fun beforeAndroid13ANotificationComesThroughTheOldCallback() = runTest {
         val (client, gatt) = connected("AA:BB:CC:00:01:05", BluetoothGattService(StrapUuids.MAIN_SERVICE, BluetoothGattService.SERVICE_TYPE_PRIMARY))
         val first = async { client.notifications.first() }
@@ -138,7 +138,7 @@ class GattClientTest {
     }
 
     @Test
-    @Config(sdk = [30])
+    @Config(sdk = [32])
     fun beforeAndroid13AReadAnswersThroughTheOldCallback() = runTest {
         val service = BluetoothGattService(StrapUuids.MAIN_SERVICE, BluetoothGattService.SERVICE_TYPE_PRIMARY)
         val c = BluetoothGattCharacteristic(StrapUuids.BATTERY, BluetoothGattCharacteristic.PROPERTY_READ, 0)

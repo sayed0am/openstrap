@@ -2,12 +2,10 @@
 <!--
   The Recovery widget (widgets spec 3.4, 6.1). Every widget declares the same sizes (WidgetSizes): placed as a
   Small (2 × 2), resizing from 110 × 110 dp (two cells by the old formula, which One UI uses) up to 480 × 400 dp. No periodic updates: WidgetUpdater asks
-  when something changed (spec 7). minWidth and minHeight are the Small for launchers before Android 12.
-  The picker shows previewLayout on Android 12 and later, previewImage before (spec 6.4).
+  when something changed (spec 7). minWidth and minHeight are the Small for launchers that ignore targetCellWidth.
+  The picker shows previewLayout, or previewImage on launchers without it (spec 6.4).
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:targetApi="s"
     android:description="@string/widget_recovery_description"
     android:previewLayout="@layout/widget_preview_recovery"
     android:previewImage="@drawable/widget_preview_recovery"

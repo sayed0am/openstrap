@@ -3,7 +3,6 @@ package org.openstrap.app.ui.alarms
 import android.Manifest
 import android.content.ComponentName
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -111,12 +110,8 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
         onPauseOrDispose { }
     }
     val openNotificationAccess = {
-        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
-                .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, ComponentName(context, StrapNotificationListener::class.java).flattenToString())
-        } else {
-            Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
-        }
+        val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+            .putExtra(Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME, ComponentName(context, StrapNotificationListener::class.java).flattenToString())
         runCatching { context.startActivity(intent) }
             .onFailure { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
         Unit

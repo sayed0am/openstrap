@@ -18,28 +18,16 @@ import org.robolectric.annotation.Config
 class BlePermissionsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    @Test fun `Android 12 and later need scan and connect, older versions fine location`() {
-        val location = listOf(Manifest.permission.ACCESS_FINE_LOCATION)
-        val runtime = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
-        assertEquals(location, BlePermissions.bluetooth(29))
-        assertEquals(location, BlePermissions.bluetooth(30))
-        assertEquals(runtime, BlePermissions.bluetooth(31))
-        assertEquals(runtime, BlePermissions.bluetooth(36))
+    @Test fun `the strap needs scan and connect`() {
+        assertEquals(listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT), BlePermissions.bluetooth)
     }
 
-    @Test @Config(sdk = [30])
-    fun `on Android 11 the request asks for fine location only`() {
-        assertEquals(listOf(Manifest.permission.ACCESS_FINE_LOCATION), BlePermissions.required().toList())
-    }
-
-    @Test @Config(sdk = [30])
-    fun `on Android 11 granted follows fine location, not the Bluetooth permissions it doesn't have`() {
-        shadowOf(app).grantPermissions(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
-        assertFalse(BlePermissions.granted(app))
-        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
-        assertTrue(BlePermissions.granted(app))
-        assertTrue(BlePermissions.granted(mapOf(Manifest.permission.ACCESS_FINE_LOCATION to true)))
-        assertFalse(BlePermissions.granted(mapOf(Manifest.permission.BLUETOOTH_SCAN to true, Manifest.permission.BLUETOOTH_CONNECT to true)))
+    @Test @Config(sdk = [32])
+    fun `on Android 12 the request asks for scan and connect, not notifications`() {
+        assertEquals(
+            listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT),
+            BlePermissions.required().toList(),
+        )
     }
 
     @Test fun `the request asks for scan, connect and notifications`() {

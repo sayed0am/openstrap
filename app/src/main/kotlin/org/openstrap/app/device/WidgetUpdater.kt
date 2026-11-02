@@ -227,7 +227,7 @@ object WidgetUpdater {
         lastSyncDone?.let { it + SYNC_STALE_SECONDS + 1 }?.takeIf { placed && it > now }
 
     /**
-     * Exact while the app may set exact alarms (Android 11 and older always, later with "Alarms and reminders"),
+     * Exact while the app may set exact alarms ("Alarms and reminders" allows it),
      * otherwise inside [ALARM_WINDOW_MS]. Never `USE_EXACT_ALARM`: that's for clocks and calendars (spec 7).
      */
     /** Sets [action]'s alarm for [atMs]; one that doesn't [wake] is held until the phone is awake for something else. */
@@ -238,7 +238,7 @@ object WidgetUpdater {
             alarms.setWindow(AlarmManager.RTC, atMs, ALARM_WINDOW_MS, pending)
             return
         }
-        val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
+        val exact = alarms.canScheduleExactAlarms()
         try {
             if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pending)
             else alarms.setWindow(AlarmManager.RTC_WAKEUP, atMs, ALARM_WINDOW_MS, pending)

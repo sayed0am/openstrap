@@ -28,7 +28,7 @@ import org.openstrap.app.data.settings.SettingsStore
 /**
  * Registers the paired strap with Android's companion device manager (a plain association, no watch profile).
  * Associated, the app may run and start its service from the background, is left out of battery optimization,
- * and on Android 12+ is woken through [StrapPresenceService] when the strap comes into range.
+ * and is woken through [StrapPresenceService] when the strap comes into range.
  */
 class CompanionLink(private val context: Context, private val settings: SettingsStore) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -119,7 +119,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
         refresh()
     }
 
-    /** Has Android bind [StrapPresenceService] when the strap is in range (Android 12+). Android keeps this across reboots. */
+    /** Has Android bind [StrapPresenceService] when the strap is in range. Android keeps this across reboots. */
     private fun observePresence(address: String) {
         val cdm = cdm ?: return
         runCatching {
@@ -128,7 +128,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
                     val id = myAssociationId(address) ?: return
                     cdm.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(id).build())
                 }
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
+                else -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
             }
         }.onFailure { Log.w(TAG, "presence observing failed: $it") }
     }
