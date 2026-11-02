@@ -139,6 +139,8 @@ val appSrcMain = layout.projectDirectory.dir("src/main").asFile.absolutePath
 val testLocale = providers.gradleProperty("testLocale").orNull
 tasks.withType<Test>().configureEach {
     systemProperty("openstrap.srcRoot", appSrcMain)
+    // A failure prints its message and the assertion's values, so a CI only failure can be read from the log.
+    testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
     testLocale?.let { tag ->
         val locale = Locale.forLanguageTag(tag)
         systemProperty("user.language", locale.language)

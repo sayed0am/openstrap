@@ -45,6 +45,12 @@ jobs:
       - name: Tests under a German locale
         run: ./gradlew :app:testDebugUnitTest -PtestLocale=de-DE
 
+      - uses: actions/upload-artifact@v5
+        if: failure()
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+
       # Only when lint ran: a failed test step stops before it, and a missing report would hide that failure.
       - uses: github/codeql-action/upload-sarif@v4
         if: ${{ always() && hashFiles('app/build/reports/lint-results-debug.sarif') != '' }}
