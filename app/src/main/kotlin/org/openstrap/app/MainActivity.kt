@@ -90,8 +90,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import org.openstrap.app.ui.theme.OpenStrapTheme
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.GlowWorkoutSummaryScreen
-import org.openstrap.app.ui.workout.summary
-import org.openstrap.app.ui.workout.view
+import org.openstrap.app.presentation.summary
+import org.openstrap.app.presentation.view
 
 class MainActivity : ComponentActivity() {
     /** The latest `open_metric` link, until the app root has opened it. */
@@ -1378,7 +1378,7 @@ private fun AppRoot(
                     onContinue = { scope.launch { container.settings.historyBadgesShown() } },
                     face = { b ->
                         val goal = earned.firstOrNull { it.id == b.id }?.let { org.openstrap.app.data.Rewards.goalAt(it, weeks, container.rewards.firstDay, java.time.ZoneId.systemDefault()) }
-                        org.openstrap.app.ui.workout.RewardsCopy.face(b, goal)
+                        org.openstrap.app.presentation.RewardsCopy.face(b, goal)
                     },
                 )
             }
@@ -1531,7 +1531,7 @@ private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.
     val dao = container.database.healthDao()
     val bests by remember { dao.personalBests() }.collectAsStateWithLifecycle(emptyList())
     val earned by remember { dao.badges() }.collectAsStateWithLifecycle(emptyList())
-    val view by produceState<org.openstrap.app.ui.workout.RewardsView?>(null, workouts, goals.workoutsPerWeek, bests, earned) {
+    val view by produceState<org.openstrap.app.presentation.RewardsView?>(null, workouts, goals.workoutsPerWeek, bests, earned) {
         if (workouts.isNotEmpty()) value = runCatching { container.rewards.view(workouts, goals.workoutsPerWeek, bests, earned) }.getOrNull()
     }
     var editGoal by rememberSaveable { mutableStateOf(false) }
@@ -1685,7 +1685,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             // What it earned, from every workout and day (workouts spec 2.8), once the list holds it.
             val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
             val ended = workouts.firstOrNull { it.workout.start == state.start }
-            val rewards by produceState<org.openstrap.app.ui.workout.SummaryRewards?>(null, ended?.end, ended?.shownStart, goals.workoutsPerWeek) {
+            val rewards by produceState<org.openstrap.app.presentation.SummaryRewards?>(null, ended?.end, ended?.shownStart, goals.workoutsPerWeek) {
                 if (ended == null) return@produceState
                 value = runCatching { container.rewards.summary(state.start, workouts, goals.workoutsPerWeek) }.getOrNull()
             }

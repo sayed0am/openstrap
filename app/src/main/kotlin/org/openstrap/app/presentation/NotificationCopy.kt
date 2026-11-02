@@ -1,11 +1,9 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.presentation
 
-import androidx.compose.ui.graphics.toArgb
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.glow.PausedColor
-import org.openstrap.app.ui.glow.km
+import java.util.Locale
 
 /**
  * What the ongoing workout notification shows (spec 6.3, patterns D4): the black card with the time, bpm in the zone
@@ -20,7 +18,7 @@ data class WorkoutCard(
     val activeSeconds: Long,
     /** Whether the chronometer runs: stopped while paused. */
     val running: Boolean,
-    /** The bpm slot: "152 bpm", or "Paused", "Reconnecting", "Waiting" in grey. */
+    /** The bpm slot: "152 bpm", or "Paused", [WorkoutWords.STRAP_GONE], "Waiting" in grey. */
     val bpm: String,
     /** The zone colouring the bpm and [zoneLine]; null draws them grey. */
     val zone: Int?,
@@ -44,9 +42,6 @@ object NotificationCopy {
     /** The question while End waits for a second tap. */
     const val END_QUESTION = "End the workout? Tap Yes, end to save it."
 
-    /** Grey for the bpm slot without a zone: the live screen's paused colour. */
-    val MUTED = PausedColor
-
     /**
      * The card for a workout recording now. [bpm] is the live reading while the strap is [connected]. [distanceMeters]
      * counts only for a [gps] workout, marked ≈ when it came from steps (GPS refused after a restart). [confirming]
@@ -55,13 +50,13 @@ object NotificationCopy {
     fun card(
         sport: String, activeSeconds: Long, paused: Boolean, connected: Boolean, bpm: Int?, maxHr: Int, gps: Boolean,
         distanceMeters: Float?, distanceFromSteps: Boolean, target: WorkoutTarget?, zoneSeconds: List<Int>, confirming: Boolean,
-        activeKcal: Float? = null,
+        activeKcal: Float? = null, locale: Locale = Locale.getDefault(),
     ): WorkoutCard {
         val reading = bpm.takeIf { connected && !paused }
         val zone = WorkoutRecorder.liveZone(reading, maxHr)
         val slot = when {
             paused -> "Paused"
-            !connected -> "Reconnecting"
+            !connected -> WorkoutWords.STRAP_GONE
             reading == null -> "Waiting"
             else -> "$reading bpm"
         }
@@ -69,10 +64,10 @@ object NotificationCopy {
             confirming -> END_QUESTION
             paused -> null
             !connected -> "Still recording"
-            else -> zone?.let { WorkoutCopy.zoneLine(it) }
+            else -> zone?.let(WorkoutWords::zoneLine)
         }
         val detail = when {
-            gps -> distanceMeters?.takeIf { it >= 10 }?.let { (if (distanceFromSteps) "≈ " else "") + km(it) + if (it >= 1000) " km" else "" }
+            gps -> distanceMeters?.let { Units.distance(it, Units.Precision.Workout, distanceFromSteps, locale) }
             paused -> null
             target is WorkoutTarget.Zones -> {
                 val inTarget = zoneSeconds.withIndex().filter { it.index in target.low..target.high }.sumOf { it.value }
@@ -80,11 +75,11 @@ object NotificationCopy {
             }
             target is WorkoutTarget.Time -> "Goal ${target.label}"
             target is WorkoutTarget.Kcal -> "Goal ${target.label}"
-            zone != null -> WorkoutCopy.zoneTime(zoneSeconds.getOrElse(zone) { 0 })
+            zone != null -> WorkoutWords.zoneTime(zoneSeconds.getOrElse(zone) { 0 })
             else -> null
         }
-        val kcal = WorkoutCopy.kcalText(activeKcal)
-        val clock = org.openstrap.app.ui.glow.workoutClock(activeSeconds)
+        val kcal = WorkoutWords.kcalText(activeKcal)
+        val clock = Units.workoutClock(activeSeconds, locale)
         return WorkoutCard(
             sport, activeSeconds, !paused, slot, zone, zoneLine, detail, zoneSeconds,
             kcal, kcal != null && kcalFits(sport, clock, kcal, slot, reading = zone != null, collapsed = true),
@@ -105,8 +100,8 @@ object NotificationCopy {
     private const val COLLAPSED_CHARS = 32
     private const val EXPANDED_UNITS = 34
 
-    /** The colour of the bpm and the zone line: the zone's, or [MUTED]. */
-    fun accent(zone: Int?): Int = (zone?.let { ZONE_COLORS.getOrNull(it) } ?: MUTED).toArgb()
+    /** The colour of the bpm and the zone line: the zone's, or the app's paused grey without one. */
+    fun accent(zone: Int?): Int = WorkoutColors.zone(zone)
 
     /**
      * Each zone's share of a strip [width] pixels wide, in whole pixels that add up to it (largest remainder), so the

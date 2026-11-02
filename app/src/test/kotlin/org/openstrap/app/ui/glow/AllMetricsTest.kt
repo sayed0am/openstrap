@@ -5,6 +5,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.testing.LocaleRule
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail

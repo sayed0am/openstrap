@@ -14,6 +14,9 @@ import java.time.ZoneOffset
 import java.util.Locale
 
 class StartCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val today = LocalDate.of(2026, 10, 30)
 
     @Test fun `the strap line says it's ready, or what's wrong`() {
@@ -103,18 +106,25 @@ class StartCopyTest {
         val tuesday = LocalDate.of(2026, 10, 27).atTime(18, 0).toEpochSecond(ZoneOffset.UTC)
         val run = WorkoutAnalysis(Workout(tuesday, tuesday + 1800, 1, 1800, null, null, null, null, null, null, null, null, null),
             tuesday + 1800, emptyList(), null, null, null, null, List(5) { 0 }, 190, fromPhone = true, distanceMeters = 5210f)
-        assertEquals("Last time 5.21 km, Tuesday", StartCopy.lastTime(run, today, ZoneOffset.UTC))
+        assertEquals("Last time 5.21 km, Tuesday", StartCopy.lastTime(run, today, ZoneOffset.UTC, Locale.UK))
+        // The decimal mark is the language's.
+        assertEquals("Last time 5,21 km, Dienstag", StartCopy.lastTime(run, today, ZoneOffset.UTC, Locale.GERMANY))
         val lift = run.copy(workout = run.workout.copy(sportType = 52), distanceMeters = null, sets = 5)
-        assertEquals("Last time 5 sets, Tuesday", StartCopy.lastTime(lift, today, ZoneOffset.UTC))
+        assertEquals("Last time 5 sets, Tuesday", StartCopy.lastTime(lift, today, ZoneOffset.UTC, Locale.UK))
         val yoga = run.copy(workout = run.workout.copy(sportType = 60), distanceMeters = null)
-        assertEquals("Last time 30 min, Tuesday", StartCopy.lastTime(yoga, today, ZoneOffset.UTC))
+        assertEquals("Last time 30 min, Tuesday", StartCopy.lastTime(yoga, today, ZoneOffset.UTC, Locale.UK))
     }
 
     @Test fun `days are today, yesterday, a weekday, then a date`() {
-        assertEquals("today", StartCopy.dayWord(today, today, Locale.UK))
-        assertEquals("yesterday", StartCopy.dayWord(today.minusDays(1), today, Locale.UK))
-        assertEquals("Saturday", StartCopy.dayWord(today.minusDays(6), today, Locale.UK))
-        assertEquals("23 Oct", StartCopy.dayWord(today.minusDays(7), today, Locale.UK))
+        fun on(day: LocalDate) = WorkoutAnalysis(
+            Workout(day.atTime(18, 0).toEpochSecond(ZoneOffset.UTC), 0, 52, 1800, null, null, null, null, null, null, null, null, null),
+            0, emptyList(), null, null, null, null, List(5) { 0 }, 190, fromPhone = true, sets = 1,
+        )
+        assertEquals("Last time 1 set, today", StartCopy.lastTime(on(today), today, ZoneOffset.UTC, Locale.UK))
+        assertEquals("Last time 1 set, yesterday", StartCopy.lastTime(on(today.minusDays(1)), today, ZoneOffset.UTC, Locale.UK))
+        assertEquals("Last time 1 set, Saturday", StartCopy.lastTime(on(today.minusDays(6)), today, ZoneOffset.UTC, Locale.UK))
+        // A week back, the date with its weekday, as every day word reads.
+        assertEquals("Last time 1 set, Fri 23 Oct", StartCopy.lastTime(on(today.minusDays(7)), today, ZoneOffset.UTC, Locale.UK))
     }
 
     @Test fun `rounds are named by their preset, else by what they are`() {
@@ -197,7 +207,7 @@ class StartCopyTest {
     }
 
     @Test fun `a time reads in hours and minutes, steps by 5 minutes and parses two fields`() {
-        assertEquals("1 h 15 min", StartCopy.timeValue(4500))
+        assertEquals("1 h 15", StartCopy.timeValue(4500))
         assertEquals("45 min", StartCopy.timeValue(2700))
         assertEquals("1 h", StartCopy.timeValue(3600))
         assertEquals(listOf("1" to "h", "15" to "min"), StartCopy.timeParts(4500))

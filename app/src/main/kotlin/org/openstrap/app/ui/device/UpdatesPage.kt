@@ -38,6 +38,7 @@ import org.openstrap.app.update.NoteBlock
 import org.openstrap.app.update.NoteSpan
 import org.openstrap.app.update.Release
 import org.openstrap.app.update.ReleaseNotes
+import org.openstrap.app.presentation.UpdateCopy
 import org.openstrap.app.update.Releases
 import org.openstrap.app.update.UpdateState
 

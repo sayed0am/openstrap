@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery

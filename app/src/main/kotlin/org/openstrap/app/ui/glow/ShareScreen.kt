@@ -74,7 +74,7 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.workout.EarnedLine
+import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
 

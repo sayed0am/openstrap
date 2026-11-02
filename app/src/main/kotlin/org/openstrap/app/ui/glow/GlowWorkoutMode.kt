@@ -411,12 +411,6 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
     }
 }
 
-/**
- * "5.21" kilometres, or "820 m" under one. Nothing in ui/glow uses it any more: it stays for the ui/workout copy and
- * the notification until they move to [Units.distance], then goes.
- */
-internal fun km(meters: Float): String = if (meters < 1000) "${meters.toInt()} m" else String.format(java.util.Locale.ROOT, "%.2f", meters / 1000)
-
 /* ---------------------------------------------- Summary ---------------------------------------------- */
 
 

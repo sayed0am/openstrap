@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
@@ -56,9 +57,6 @@ import org.openstrap.app.ui.theme.MetricColors
  * worked out, the strap's own score and why it might be off are in the Recovery info sheet, behind the hero's (i).
  * The hero, the contributors and the Charge battery open their details on this tab's stack.
  */
-
-/** Charge as a whole number the way every screen shows it, cut rather than rounded, so they all agree. */
-fun chargeShown(value: Float): Int = value.toInt()
 
 @Composable
 fun GlowRecoveryScreen(

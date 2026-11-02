@@ -13,14 +13,13 @@ import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.workout.NotificationCopy
-import org.openstrap.app.ui.workout.WorkoutCard
-import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.presentation.NotificationCopy
+import org.openstrap.app.presentation.WorkoutCard
+import org.openstrap.app.presentation.WorkoutColors
 
 /**
  * The ongoing workout notification as the black card (patterns D4), for phones that don't show it as a Live Update,
@@ -152,7 +151,7 @@ object WorkoutNotification {
         var x = 0
         widths.forEachIndexed { zone, w ->
             if (w == 0) return@forEachIndexed
-            paint.color = ZONE_COLORS[zone].toArgb()
+            paint.color = WorkoutColors.ZONES[zone]
             canvas.drawRect(x.toFloat(), 0f, (x + w).toFloat(), 1f, paint)
             x += w
         }

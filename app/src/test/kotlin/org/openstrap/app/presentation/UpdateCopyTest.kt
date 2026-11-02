@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.device
+package org.openstrap.app.presentation
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

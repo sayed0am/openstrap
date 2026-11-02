@@ -4,6 +4,7 @@ import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.DecimalStyle
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
@@ -161,10 +162,13 @@ object ClockSetting {
  */
 fun dotFormat(format: String, vararg args: Any?): String = String.format(Units.DOT_LOCALE, format, *args)
 
-/** Date and time formatters by pattern and locale, built once each. */
+/**
+ * Date and time formatters by pattern and locale, built once each. They write the locale's own digits
+ * ([DecimalStyle.of]), so an Arabic phone's clocks and dates match its other numbers: a plain pattern would keep ASCII.
+ */
 internal object Formatters {
     private val cache = ConcurrentHashMap<Pair<String, Locale>, DateTimeFormatter>()
 
     fun of(pattern: String, locale: Locale): DateTimeFormatter =
-        cache.getOrPut(pattern to locale) { DateTimeFormatter.ofPattern(pattern, locale) }
+        cache.getOrPut(pattern to locale) { DateTimeFormatter.ofPattern(pattern, locale).withDecimalStyle(DecimalStyle.of(locale)) }
 }

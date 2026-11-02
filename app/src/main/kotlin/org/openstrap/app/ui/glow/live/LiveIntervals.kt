@@ -312,7 +312,7 @@ internal fun RepCard(r: WorkoutState.Recording, route: List<Route.Point>, readin
                 },
                 color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f),
             )
-            val pace = if (m.phase is Phase.Work) org.openstrap.app.ui.workout.Glance.paceClock(Route.currentPace(route)) else null
+            val pace = if (m.phase is Phase.Work) org.openstrap.app.presentation.Pace.clock(Route.currentPace(route)) else null
             if (pace != null) Text("$pace /km now", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         Spacer(Modifier.height(12.dp))

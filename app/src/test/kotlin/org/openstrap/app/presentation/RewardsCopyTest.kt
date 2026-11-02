@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.presentation
 
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -14,6 +14,9 @@ import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.WeekResult
 
 class RewardsCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val utc = ZoneOffset.UTC
 
     private fun at(date: String, hour: Int) = LocalDate.parse(date).atTime(hour, 0).toEpochSecond(utc)
@@ -28,7 +31,12 @@ class RewardsCopyTest {
         assertEquals("Fastest half marathon", RewardsCopy.bestTitle(Rewards.Kind.fastest(21097)))
         assertEquals("Heaviest bench press", RewardsCopy.bestTitle(Rewards.Kind.lift("Bench press"), Locale.UK))
         assertEquals("26:41", RewardsCopy.bestValue(Rewards.Kind.fastest(5000), 1601.0))
-        assertEquals("14.2 km", RewardsCopy.bestValue(Rewards.Kind.LONGEST_RUN, 14_200.0))
+        // The longest run is one workout's distance, written as a workout writes it.
+        assertEquals("14.21 km", RewardsCopy.bestValue(Rewards.Kind.LONGEST_RUN, 14_210.0, Locale.UK))
+        assertEquals("14,21 km", RewardsCopy.bestValue(Rewards.Kind.LONGEST_RUN, 14_210.0, Locale.GERMANY))
+        assertEquals("1.23 km farther", RewardsCopy.beatBy(PersonalBest(Rewards.Kind.LONGEST_RUN, 6230.0, 0), PersonalBest(Rewards.Kind.LONGEST_RUN, 5000.0, 0), Locale.UK))
+        assertEquals("820 m farther", RewardsCopy.beatBy(PersonalBest(Rewards.Kind.LONGEST_RUN, 5820.0, 0), PersonalBest(Rewards.Kind.LONGEST_RUN, 5000.0, 0), Locale.UK))
+        assertEquals("23.410", RewardsCopy.bestValue(Rewards.Kind.MOST_STEPS, 23_410.0, Locale.GERMANY))
         assertEquals("62.5 kg", RewardsCopy.bestValue(Rewards.Kind.lift("Squat"), 62.5))
         assertEquals("5K", RewardsCopy.bestShort(Rewards.Kind.fastest(5000)))
     }
@@ -83,8 +91,10 @@ class RewardsCopyTest {
     fun runsOfWeeksAndProgressRead() {
         assertEquals("Goal met 6 weeks in a row. Best is 9.", RewardsCopy.runLine(6, 9))
         assertEquals("Goal met 1 week in a row, your best yet.", RewardsCopy.runLine(1, 1))
-        assertEquals("712 of 1,000 km", RewardsCopy.progressLine(712, 1000, "km"))
-        assertEquals("4.2 of 5 km", RewardsCopy.progressLine(4200, 5000, "m"))
+        assertEquals("712 of 1,000 km", RewardsCopy.progressLine(712, 1000, "km", Locale.UK))
+        assertEquals("4.2 of 5 km", RewardsCopy.progressLine(4200, 5000, "m", Locale.UK))
+        assertEquals("712 of 1.000 km", RewardsCopy.progressLine(712, 1000, "km", Locale.GERMANY))
+        assertEquals("4,2 of 5 km", RewardsCopy.progressLine(4200, 5000, "m", Locale.GERMANY))
         assertEquals("27 October to 2 November", RewardsCopy.weekRange(LocalDate.parse("2026-10-27"), Locale.UK))
         assertEquals("5 of 4 workouts, goal met. 6 weeks in a row.", RewardsCopy.recapText(WeekResult(0, 4, 5, true), 6))
         assertEquals("2 of 4 workouts.", RewardsCopy.recapText(WeekResult(0, 4, 2, false), 0))

@@ -15,8 +15,9 @@ import org.openstrap.app.device.WorkoutSession
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.glow.km
-import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.presentation.Pace
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.WorkoutWords
 import java.util.Locale
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.map
@@ -189,7 +190,7 @@ private fun glanceTicks(
             GlanceInput(
                 w.sportType, now, active, w.pausedAt, bpm, connected, r.maxHeartRate, w.useGps, distance, w.distanceFromSteps,
                 pace = if (w.useGps) Route.currentPace(route) else null,
-                averagePace = distance?.takeIf { it >= 50 }?.let { active / (it / 1000.0) },
+                averagePace = Pace.of(distance, active),
                 target = WorkoutTarget.parse(w.target), activeKcal = kcal?.active,
                 stoppedSince = r.endPrompt, inCar = r.inCar, averageBpm = stats?.average,
                 lastSplit = last, lastSplitBpm = lastBpm, fastestSplit = whole.minByOrNull { it.pace }?.index,
@@ -271,17 +272,19 @@ object Glance {
         val bpm = i.bpm.takeIf { i.connected && i.pausedAt == null }
         val zone = WorkoutRecorder.liveZone(bpm, i.maxHr)
         val distance = Workouts.family(i.sportType) == Workouts.Family.Distance && i.gps
-        val clock = workoutClock(i.activeSeconds)
+        val clock = Units.workoutClock(i.activeSeconds)
         val figure = if (distance) i.distanceMeters?.let { kmFigure(it) } ?: "0.00" else bpm?.toString()
         val unit = if (distance) "km" else if (figure != null) "bpm" else null
         val progress = progress(i)
         val (goal, toGo) = goalLine(i)
         val figures = if (distance) listOf(
-            paceClock(i.pace) to "Pace /km",
+            Pace.clock(i.pace) to "Pace /km",
             bpm?.toString() to (zone?.let { "bpm, zone ${it + 1}" } ?: "bpm"),
             i.activeKcal?.toInt()?.toString() to "Active kcal",
         ) else listOfNotNull(
-            i.distanceMeters?.takeIf { it >= 10 }?.let { kmFigure(it) to if (i.distanceFromSteps) "km from steps" else "km" },
+            i.distanceMeters?.takeIf { it >= Units.SHOWN_FROM_METERS }?.let {
+                Units.km(it, Units.Precision.Workout) to if (i.distanceFromSteps) "km from steps" else "km"
+            },
             i.averageBpm?.toString() to "Avg bpm",
             i.activeKcal?.toInt()?.toString() to "Active kcal",
         )
@@ -299,12 +302,12 @@ object Glance {
         i.pausedAt?.let { at ->
             val done = if (distance && i.distanceMeters != null) "$sport, ${kmWithUnit(i.distanceMeters)} so far" else "$sport, $clock so far"
             return base.copy(
-                line1 = "Paused for ${workoutClock((i.now - at).coerceAtLeast(0))}", line2 = done,
+                line1 = "Paused for ${Units.workoutClock((i.now - at).coerceAtLeast(0))}", line2 = done,
                 tint = GlanceTint.Paused, zone = null, action = GlanceAction.Resume, actionLabel = "Resume",
             )
         }
         val state = when {
-            !i.connected -> "Strap reconnecting"
+            !i.connected -> WorkoutWords.STRAP_GONE
             bpm == null -> "Waiting for heart rate"
             else -> null
         }
@@ -313,8 +316,7 @@ object Glance {
         if (Workouts.family(i.sportType) == Workouts.Family.MindBody) return mind(base, i)
         if (Workouts.family(i.sportType) == Workouts.Family.Games) return game(base, null, bpm, i)
         if (distance) {
-            val pace = paceClock(i.pace)
-            val first = listOfNotNull(kmWithUnit(i.distanceMeters ?: 0f), pace?.let { "$it /km" }).joinToString(", ")
+            val first = listOfNotNull(kmWithUnit(i.distanceMeters ?: 0f), Pace.text(i.pace)).joinToString(", ")
             val second = listOfNotNull(clock, toGoShort(i) ?: state ?: zone?.let { "zone ${it + 1}" }).joinToString(", ")
             return base.copy(line1 = first, line2 = second, bpm = bpm, actionLabel = "Pause")
         }
@@ -344,16 +346,16 @@ object Glance {
         )
         return when {
             s.inSet -> base.copy(
-                figure = workoutClock(s.setSeconds), unit = "in this set",
-                line1 = "Set ${s.setNumber}$of, ${workoutClock(s.setSeconds)}",
+                figure = Units.workoutClock(s.setSeconds, Units.DOT_LOCALE), unit = "in this set",
+                line1 = "Set ${s.setNumber}$of, ${Units.workoutClock(s.setSeconds)}",
                 line2 = listOfNotNull(s.exercise, bpm?.let { "$it bpm" }).joinToString(", ").ifEmpty { null },
                 action = GlanceAction.SetDone, actionLabel = "Set done", figures = figures, progress = null, goal = null, toGo = null,
             )
             s.restLeft != null -> {
-                val left = workoutClock(s.restLeft.coerceAtLeast(0))
+                val left = Units.workoutClock(s.restLeft.coerceAtLeast(0))
                 val heart = bpm?.let { b -> "$b bpm" + (s.drop?.takeIf { it > 0 }?.let { ", down $it" } ?: "") }
                 start.copy(
-                    figure = left, unit = "left", tint = GlanceTint.Rest,
+                    figure = Units.workoutClock(s.restLeft.coerceAtLeast(0), Units.DOT_LOCALE), unit = "left", tint = GlanceTint.Rest,
                     line1 = "$left rest left", line2 = listOfNotNull(heart, "set ${s.setNumber} next").joinToString(", "),
                     progress = s.restTotal?.takeIf { it > 0 }?.let { GlanceProgress((s.restLeft.toFloat() / it).coerceIn(0f, 1f), drain = true) },
                     goal = listOfNotNull(heart?.let { "$it." }, s.restBelow?.let { "Ends sooner once you stay under $it." }).joinToString(" ").ifEmpty { null },
@@ -397,17 +399,19 @@ object Glance {
         if (m == null || m.periodLength == null) return game.copy(line1 = "${Workouts.sportName(i.sportType)}, ${base.clock}")
         return when (m.phase) {
             is org.openstrap.app.data.Phase.Work -> {
-                val inPeriod = workoutClock((m.periodLength - (m.left ?: 0)).coerceAtLeast(0))
+                val inPeriodS = (m.periodLength - (m.left ?: 0)).coerceAtLeast(0)
+                val inPeriod = Units.workoutClock(inPeriodS)
                 game.copy(
-                    figure = inPeriod, unit = StartCopy.periodName(m.round - 1, m.rounds).lowercase(),
+                    figure = Units.workoutClock(inPeriodS, Units.DOT_LOCALE),
+                    unit = StartCopy.periodName(m.round - 1, m.rounds).lowercase(),
                     line1 = "${StartCopy.periodName(m.round - 1, m.rounds)}, $inPeriod",
                     action = GlanceAction.Skip, actionLabel = StartCopy.breakName(m.rounds),
                 )
             }
             is org.openstrap.app.data.Phase.Rest -> {
-                val left = workoutClock(m.left ?: 0)
+                val left = Units.workoutClock(m.left ?: 0)
                 game.copy(
-                    figure = left, unit = "left", tint = GlanceTint.Rest,
+                    figure = Units.workoutClock(m.left ?: 0, Units.DOT_LOCALE), unit = "left", tint = GlanceTint.Rest,
                     line1 = "${StartCopy.breakName(m.rounds)}, $left left",
                     action = GlanceAction.Skip, actionLabel = "Start ${StartCopy.periodName(m.round - 1, m.rounds).lowercase()}",
                     shortLabel = "Start",
@@ -458,7 +462,7 @@ object Glance {
         val fastest = i.fastestSplit?.takeIf { it != s.index }?.let { "Fastest so far was km ${it + 1}." }
             ?: "Your fastest so far.".takeIf { s.index > 0 }
         val avg = i.lastSplitBpm?.let { "Avg $it bpm." }
-        return "Km ${s.index + 1} in ${workoutClock(s.seconds)}" to listOfNotNull(avg, fastest).joinToString(" ").ifEmpty { null }
+        return WorkoutWords.split(s.index, s.seconds) to listOfNotNull(avg, fastest).joinToString(" ").ifEmpty { null }
     }
 
     /** The goal's bar: how far toward a distance, time or kcal goal. A zone goal has none. */
@@ -506,16 +510,13 @@ object Glance {
     private fun minutesToGo(seconds: Double): String =
         if (seconds < 60) "Under a minute to go" else "${ceil(seconds / 60).toInt()} min to go"
 
-    /** "4.32" kilometres, as the figure. */
-    fun kmFigure(meters: Float): String = String.format(Locale.ROOT, "%.2f", meters / 1000f)
+    /** "4.32" kilometres, as the figure in the dot font, so always with a dot and ASCII digits. */
+    fun kmFigure(meters: Float): String = Units.km(meters, Units.Precision.Workout, Units.DOT_LOCALE)
 
-    /** "4.32 km", or "680 m" under one. */
-    fun kmWithUnit(meters: Float): String = km(meters.coerceAtLeast(0f)) + if (meters >= 1000) " km" else ""
+    /** "4.32 km", or "680 m" under one, down to "0 m" where a line needs a figure. */
+    fun kmWithUnit(meters: Float, locale: Locale = Locale.getDefault()): String =
+        Units.distance(meters, Units.Precision.Workout, locale = locale) ?: String.format(locale, "%d m", meters.coerceAtLeast(0f).toInt())
 
-    /** A pace as a clock, "5:42"; null with none, or one too slow to be moving. */
-    fun paceClock(secondsPerKm: Double?): String? {
-        if (secondsPerKm == null || secondsPerKm <= 0 || secondsPerKm > 3600) return null
-        val s = Math.round(secondsPerKm)
-        return "%d:%02d".format(s / 60, s % 60)
-    }
+    /** A pace as a clock in the dot font, "5:42" ([Pace.clock]); null with none, or one too slow to be moving. */
+    fun paceClock(secondsPerKm: Double?): String? = Pace.clock(secondsPerKm, Units.DOT_LOCALE)
 }

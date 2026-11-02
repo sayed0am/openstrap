@@ -8,6 +8,9 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 
 class LiveGlanceTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val now = 1_000_000L
 
     /** A run 24:51 in, at 4.32 km and 5:42 /km, 142 bpm (zone 3 of 190). */
@@ -81,7 +84,9 @@ class LiveGlanceTest {
 
     @Test fun `the strap away says so instead of a zone`() {
         val g = Glance.of(run(target = null).copy(sportType = 2, gps = false, connected = false))
-        assertEquals("Strap reconnecting", g.line2)
+        // The same words as every live screen and the notification.
+        assertEquals("Waiting for the strap", g.line2)
+        assertEquals(WorkoutCopy.noHeartRate(paused = false, connected = false), g.line2)
         assertNull(g.figure)
     }
 
@@ -178,8 +183,8 @@ class LiveGlanceTest {
         assertEquals("5:42", Glance.paceClock(342.0))
         assertNull(Glance.paceClock(null))
         assertNull(Glance.paceClock(4000.0))
-        assertEquals("680 m", Glance.kmWithUnit(680f))
-        assertEquals("4.32 km", Glance.kmWithUnit(4320f))
+        assertEquals("680 m", Glance.kmWithUnit(680f, java.util.Locale.UK))
+        assertEquals("4.32 km", Glance.kmWithUnit(4320f, java.util.Locale.UK))
     }
 
     @Test fun `no glance line uses banned punctuation`() {

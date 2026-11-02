@@ -54,7 +54,7 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.EarnedLine
+import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.ExerciseSets
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PeriodLine
@@ -100,7 +100,7 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters
             val gps = FamilySummary.gpsDistance(m, summary.distanceFromSteps)
-            val pace = Pace.clock(FamilySummary.pace(gps, active))
+            val pace = Pace.clock(Pace.of(gps, active))
             when {
                 m == null || m <= 0f -> byTime(listOf(avg to "Avg bpm", kcal to "Active kcal"))
                 else -> SummaryHero(

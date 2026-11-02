@@ -23,7 +23,7 @@ import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
 import org.openstrap.app.data.Rewards
 import org.openstrap.app.data.catching
-import org.openstrap.app.ui.workout.RewardsCopy
+import org.openstrap.app.presentation.RewardsCopy
 
 /**
  * The weekly recap (workouts spec 3.4): one notification on the first morning of the week about the week before, from
