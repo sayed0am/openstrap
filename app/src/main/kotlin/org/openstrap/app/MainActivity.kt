@@ -2,7 +2,6 @@ package org.openstrap.app
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.BackHandler
@@ -40,11 +39,8 @@ import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import dev.chrisbanes.haze.rememberHazeState
 import java.time.LocalDate
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
-import org.openstrap.app.device.StrapService
 import org.openstrap.app.device.WorkoutLocation
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.FloatingNavBar
@@ -152,14 +148,14 @@ class MainActivity : ComponentActivity() {
         if (BlePermissions.granted(this)) (application as OpenStrapApp).container.strap.autoConnect()
         // The association or battery setting may have changed in system settings meanwhile.
         (application as OpenStrapApp).container.companion.refresh()
-        handleDebugIntent()
+        handleDebugIntent(previews)
         showWorkoutFromIntent()
     }
 
-    override fun onNewIntent(intent: android.content.Intent) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        handleDebugIntent()
+        handleDebugIntent(previews)
         showWorkoutFromIntent()
     }
 
@@ -255,123 +251,6 @@ class MainActivity : ComponentActivity() {
 
         /** Debug: the workout notification with sample figures, "running", "paused", "indoor", "end" or "clear". */
         const val EXTRA_WORKOUT_NOTIFICATION = "workout_notification"
-    }
-
-    /** Debug: `am start -n org.openstrap.app/.MainActivity --ei dump_raw_days 7` dumps raw history to files/raw. */
-    private fun handleDebugIntent() {
-        // Debug: `--ez demo_data true` fills an empty database with sample data (for the emulator), and stands in a
-        // strap when none is paired, so the screens show a paired phone. Pair with `simulate_hr` to have it connected.
-        if (BuildConfig.DEBUG && intent.getBooleanExtra("demo_data", false)) {
-            intent.removeExtra("demo_data")
-            val container = (application as OpenStrapApp).container
-            kotlinx.coroutines.MainScope().launch {
-                DemoData.fill(container.database.healthDao())
-                if (container.settings.pairedDevice.first() == null) {
-                    container.settings.savePairedDevice(org.openstrap.app.data.settings.PairedDevice("00:00:00:00:00:00", "00", "Helio Strap"))
-                }
-            }
-        }
-        // Debug: `--ei probe_endpoint 73 --es probe_hex 00` sends raw bytes to a channel endpoint and logs replies.
-        val probeEndpoint = intent.getIntExtra("probe_endpoint", -1)
-        if (BuildConfig.DEBUG && probeEndpoint >= 0) {
-            val hex = intent.getStringExtra("probe_hex").orEmpty()
-            intent.removeExtra("probe_endpoint")
-            val bytes = hex.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
-            ((application as OpenStrapApp).container.strap as? org.openstrap.app.device.StrapManager)?.probe(probeEndpoint, bytes)
-        }
-        // Debug: `--ez strap_sessions false` stops phone workouts running a session on the strap (0x0019), `true` brings it back.
-        if (BuildConfig.DEBUG && intent.hasExtra("strap_sessions")) {
-            val on = intent.getBooleanExtra("strap_sessions", false)
-            intent.removeExtra("strap_sessions")
-            kotlinx.coroutines.MainScope().launch { (application as OpenStrapApp).container.settings.setStrapSessions(on) }
-            Toast.makeText(this, "Strap sessions ${if (on) "on" else "off"}", Toast.LENGTH_SHORT).show()
-        }
-        // Debug: `--es buzz AboveTarget` plays a cue's pattern on the strap (a Cue name, Stop or Offer), to feel it.
-        val buzz = intent.getStringExtra("buzz")
-        if (BuildConfig.DEBUG && buzz != null) {
-            intent.removeExtra("buzz")
-            val pattern = when (buzz) {
-                "Stop" -> org.openstrap.app.device.WorkoutSession.STOP_BUZZ
-                "Offer" -> org.openstrap.app.device.WorkoutSession.OFFER_BUZZ
-                else -> runCatching { org.openstrap.app.data.Cue.valueOf(buzz).pattern }.getOrNull()
-            }
-            val strap = (application as OpenStrapApp).container.strap
-            if (pattern != null) kotlinx.coroutines.MainScope().launch {
-                runCatching { strap.buzz(pattern) }.onFailure { Toast.makeText(this@MainActivity, "Buzz failed: ${it.message}", Toast.LENGTH_SHORT).show() }
-            }
-        }
-        // Debug: `--es simulate_hr 140x120,80x600 --ei simulate_steps 0 --ei simulate_battery 80` plays heart rate as a connected strap (emulator).
-        val simulate = intent.getStringExtra("simulate_hr")
-        if (BuildConfig.DEBUG && simulate != null) {
-            intent.removeExtra("simulate_hr")
-            val script = simulate.split(',').mapNotNull { p -> p.split('x').takeIf { it.size == 2 }?.let { (b, s) -> b.toIntOrNull()?.let { bpm -> s.toIntOrNull()?.let { bpm to it } } } }
-            ((application as OpenStrapApp).container.strap as? org.openstrap.app.device.StrapManager)?.simulate(script, intent.getIntExtra("simulate_steps", 0), intent.getIntExtra("simulate_battery", 80))
-        }
-        // Debug: `--es moment Evening` forces Today's moment (a Moment name), so each can be checked on a phone;
-        // `--es moment auto` goes back to the clock.
-        val moment = intent.getStringExtra(EXTRA_MOMENT)
-        if (BuildConfig.DEBUG && moment != null && moment != MOMENT_NOW) {
-            intent.removeExtra(EXTRA_MOMENT)
-            if (moment.equals("auto", ignoreCase = true)) previews.moment.value = null
-            else org.openstrap.app.data.Moment.entries.firstOrNull { it.name.equals(moment, ignoreCase = true) }
-                ?.let { previews.moment.value = it }
-                ?: android.util.Log.w("OpenStrap", "moment: no moment called $moment")
-        }
-        // Debug: `--ei recovery_score 78` shows that score on the Recovery detail (its arc gauge) while Recovery is still
-        // learning; `--ei recovery_score -1` goes back to the real one. Nothing is written.
-        if (BuildConfig.DEBUG && intent.hasExtra("recovery_score")) {
-            val score = intent.getIntExtra("recovery_score", -1)
-            intent.removeExtra("recovery_score")
-            org.openstrap.app.ui.glow.debugRecoveryScore.value = score.takeIf { it in 0..100 }
-        }
-        // Debug: `--es strap_state stuck` shows a strap state on a phone whose strap is fine, so each can be checked;
-        // `--es strap_state auto` goes back to the real one. Only what the screens are shown changes: no Bluetooth, no
-        // sync, nothing written.
-        val strapState = intent.getStringExtra(EXTRA_STRAP_STATE)
-        if (BuildConfig.DEBUG && strapState != null) {
-            intent.removeExtra(EXTRA_STRAP_STATE)
-            if (strapState.equals("auto", ignoreCase = true)) previews.strap.value = null
-            else StrapPreview.of(strapState)?.let { previews.strap.value = it }
-                ?: android.util.Log.w("OpenStrap", "strap_state: no state called $strapState")
-            android.util.Log.i("OpenStrap", "strap_state: showing ${previews.strap.value ?: "the real state"}")
-        }
-        // Debug: `--es data_state nosleep` shows a data state (the pairing stage's steps, first nights, no sleep, a
-        // partial day, the first score) on a phone whose data is fine; `--es data_state auto` goes back to the real
-        // one. Only what the screens are shown changes: no Bluetooth, no scan, no sync, nothing written.
-        val dataState = intent.getStringExtra(EXTRA_DATA_STATE)
-        if (BuildConfig.DEBUG && dataState != null) {
-            intent.removeExtra(EXTRA_DATA_STATE)
-            if (dataState.equals("auto", ignoreCase = true)) previews.data.value = null
-            else DataPreview.of(dataState)?.let { previews.data.value = it }
-                ?: android.util.Log.w("OpenStrap", "data_state: no state called $dataState")
-            android.util.Log.i("OpenStrap", "data_state: showing ${previews.data.value ?: "the real state"}")
-        }
-        // Debug: `--ez show_summary true` opens the summary right after a workout for the latest stored phone workout,
-        // with nothing live and nothing written.
-        if (BuildConfig.DEBUG && intent.getBooleanExtra(EXTRA_SHOW_SUMMARY, false)) {
-            intent.removeExtra(EXTRA_SHOW_SUMMARY)
-            val container = (application as OpenStrapApp).container
-            kotlinx.coroutines.MainScope().launch {
-                val latest = container.database.healthDao().appWorkouts().first().filter { it.end != null }.maxByOrNull { it.start }
-                if (latest != null) container.workout.showSummary(latest.start)
-                else Toast.makeText(this@MainActivity, "No phone workout to show", Toast.LENGTH_SHORT).show()
-            }
-        }
-        // Debug: `--es workout_notification running` posts the workout notification with sample figures, built as a
-        // real workout's is: running, paused, indoor, end or clear. Nothing records and nothing is written.
-        val sample = intent.getStringExtra(EXTRA_WORKOUT_NOTIFICATION)
-        if (BuildConfig.DEBUG && sample != null) {
-            intent.removeExtra(EXTRA_WORKOUT_NOTIFICATION)
-            startService(Intent(this, StrapService::class.java).setAction(StrapService.ACTION_SAMPLE).putExtra(StrapService.EXTRA_SAMPLE, sample))
-        }
-        val days = intent.getIntExtra("dump_raw_days", 0)
-        if (!BuildConfig.DEBUG || days <= 0) return
-        intent.removeExtra("dump_raw_days")
-        // Debug: `--es dump_types 5,6,70` limits the dump to these GDSP codes (even ones the strap doesn't advertise).
-        val types = intent.getStringExtra("dump_types")?.split(',')?.mapNotNull { it.trim().toIntOrNull() }?.toSet()
-        intent.removeExtra("dump_types")
-        android.util.Log.i("OpenStrap", "dump: requested $days days, types ${types ?: "all"}")
-        ((application as OpenStrapApp).container.strap as? org.openstrap.app.device.StrapManager)?.dumpRaw(days, types)
     }
 }
 
