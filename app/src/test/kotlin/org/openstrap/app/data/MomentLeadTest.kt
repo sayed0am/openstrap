@@ -2,7 +2,6 @@ package org.openstrap.app.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.openstrap.app.widget.WidgetKind
 
 /** Every row of widgets spec 3.1's duplicate table, and the moments around it. */
 class MomentLeadTest {

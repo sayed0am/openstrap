@@ -3,11 +3,13 @@ package org.openstrap.app.ui.dashboard
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.presentation.StrapBands
+import org.openstrap.app.presentation.TimeOfDay
 
 /*
  * Sync and strap states (spec 4.3, patterns E1, E2 and E5): quiet until they matter. A stopped sync turns the chip
@@ -16,10 +18,10 @@ import org.openstrap.app.device.SyncState
  */
 
 /**
- * Data older than this, while syncing has stopped, is stale. Connected, the strap syncs at least hourly by itself, so
- * an hour old is normal; the half hour on top covers a sync that's slow to start.
+ * Data older than this, while syncing has stopped, is stale: the one threshold the widgets use too
+ * ([StrapBands.STALE_AFTER_S]), so one missed sync in normal wear doesn't mark the cards.
  */
-const val STALE_AFTER_S = 90 * 60L
+const val STALE_AFTER_S = StrapBands.STALE_AFTER_S
 
 /** A sync still failing after this long takes Today's hero (spec 4.3). To be tuned on hardware (spec 9). */
 const val STUCK_AFTER_S = 3 * 3600L
@@ -30,15 +32,9 @@ val MORNING_START: LocalTime = LocalTime.of(4, 0)
 /** And ends at noon, where the rest of Today stops calling it the morning. */
 val MORNING_END: LocalTime = LocalTime.NOON
 
-/**
- * The app writes times in 24 h everywhere ("HH:mm"), whatever the phone is set to. This is the one switch for the
- * times these states show, so they change with the rest of the app when it follows the phone's setting.
- */
-const val APP_24_HOUR = true
-
-/** A clock time: "09:40", or "9:40 AM" in 12 h. */
-fun clockText(epoch: Long, zone: ZoneId, use24Hour: Boolean = APP_24_HOUR, locale: Locale = Locale.getDefault()): String =
-    Instant.ofEpochSecond(epoch).atZone(zone).format(DateTimeFormatter.ofPattern(if (use24Hour) "HH:mm" else "h:mm a", locale))
+/** A clock time on the phone's clock ([TimeOfDay]): "09:40", or "9:40 AM" in 12 h. Kept for callers that still name it. */
+fun clockText(epoch: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault()): String =
+    TimeOfDay.format(epoch, zone, use24Hour, locale)
 
 /**
  * Whether syncing has stopped: the last sync failed, or the strap isn't connected so nothing can sync. A sync
@@ -53,10 +49,10 @@ fun syncStopped(paired: Boolean, connection: ConnectionState, sync: SyncState): 
  */
 fun upToMarker(
     newest: Long?, now: Long, stopped: Boolean, isToday: Boolean, zone: ZoneId,
-    staleAfter: Long = STALE_AFTER_S, use24Hour: Boolean = APP_24_HOUR,
+    staleAfter: Long = STALE_AFTER_S, use24Hour: Boolean = ClockSetting.use24Hour,
 ): String? =
     if (!isToday || !stopped || newest == null || now - newest < staleAfter) null
-    else "Up to ${clockText(newest, zone, use24Hour)}"
+    else "Up to ${TimeOfDay.format(newest, zone, use24Hour)}"
 
 /**
  * Whether a failing sync takes Today's hero (spec 4.3): on today, still failing [STUCK_AFTER_S] after the first
@@ -85,8 +81,8 @@ fun stuckCopy(hasLastNight: Boolean, upTo: String?): StuckCopy =
     )
 
 /** "Last tried 07:42", for the stuck hero; null when no attempt was seen. */
-fun lastTried(record: SyncRecord, zone: ZoneId, use24Hour: Boolean = APP_24_HOUR): String? =
-    record.lastAttempt?.let { "Last tried ${clockText(it, zone, use24Hour)}" }
+fun lastTried(record: SyncRecord, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour): String? =
+    record.lastAttempt?.let { "Last tried ${TimeOfDay.format(it, zone, use24Hour)}" }
 
 /** Recovery couldn't be worked out (spec 4.3, E5): yesterday's score stays, dimmed, with this line and [TRY_AGAIN]. */
 const val RECOVERY_FAILED = "Couldn't work out today's score."

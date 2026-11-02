@@ -63,6 +63,8 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        // The phone's 12 or 24 hour clock, before anything writes a time, and from then on as it changes.
+        PhoneClock.follow(this)
         container = AppContainer(this)
         // Your heart rate zones, kept in use for everything that reads a zone, a restored backup's included.
         container.appScope.launch {

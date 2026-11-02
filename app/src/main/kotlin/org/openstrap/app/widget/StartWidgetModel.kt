@@ -2,16 +2,14 @@ package org.openstrap.app.widget
 
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.dashboard.clockText
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Weeks
 import org.openstrap.app.ui.glow.topSports
 import org.openstrap.app.ui.workout.WorkoutCopy
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import org.openstrap.app.presentation.Units
 
 /**
  * A sport on the Start widget. [sportType] is what a tap hands Ready (`EXTRA_READY_SPORT`), which then opens on the
@@ -141,9 +139,11 @@ data class StartWidgetModel(
             val next = sports.drop(1).map { sp -> if (said.add(sp.shortName)) sp else sp.copy(caption = sp.name).also { said += sp.name } }
             val gpsOffered = Workouts.gpsOffered(usual.sportType, Workouts.indoorSide(usual.sportType, sides))
             val today = now.atZone(zone).toLocalDate()
-            val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay(zone).toEpochSecond()
+            val weekStart = Weeks.start(today, Weeks.firstDay(locale)).atStartOfDay(zone).toEpochSecond()
             // As Today and Your week count them: the strap's own "Activity" records aren't workouts.
-            val week = workouts.filter { it.workout.sportType != Workouts.GENERIC_ACTIVITY && it.workout.start in monday..now.epochSecond }
+            val week = workouts.filter {
+                it.workout.sportType != Workouts.GENERIC_ACTIVITY && it.workout.start in weekStart..now.epochSecond
+            }
             val last = workouts.filter { Workouts.tileType(it.workout.sportType) == Workouts.tileType(usual.sportType) && it.workout.start <= now.epochSecond }
                 .maxByOrNull { it.workout.start }
             return StartWidgetModel(
@@ -159,11 +159,11 @@ data class StartWidgetModel(
                 lastLabel = lastLabel(usual.sportType),
                 lastLine = last?.let { a ->
                     val day = recentDay(Instant.ofEpochSecond(a.workout.start).atZone(zone).toLocalDate(), today, locale)
-                    "$day, ${fact(a)}"
+                    "$day, ${fact(a, locale)}"
                 } ?: NONE_YET,
                 recording = recording?.let { r ->
                     StartRecording(
-                        StartSport.recorded(r.sportType), "Since ${clockText(r.start, zone)}",
+                        StartSport.recorded(r.sportType), "Since ${TimeOfDay.format(r.start, zone, locale = locale)}",
                         if (r.paused) StartRecording.PAUSED else StartRecording.RECORDING,
                         r.activeSeconds * 1000L, now.toEpochMilli(), r.paused,
                     )
@@ -174,8 +174,8 @@ data class StartWidgetModel(
         /** "2 workouts, 1 h 35", "1 workout, 40 min", "No workouts yet". */
         fun weekLine(count: Int, seconds: Long): String = when (count) {
             0 -> NO_WORKOUTS
-            1 -> "1 workout, ${TodayCopy.duration(seconds)}"
-            else -> "$count workouts, ${TodayCopy.duration(seconds)}"
+            1 -> "1 workout, ${Units.duration(seconds)}"
+            else -> "$count workouts, ${Units.duration(seconds)}"
         }
 
         /** "Last run" for a run outdoors or on a treadmill, "Last HIIT", and "Last workout" for Other. */
@@ -185,10 +185,10 @@ data class StartWidgetModel(
         }
 
         /** A workout's one figure here: its distance ("5.2 km"), else its sets ("4 sets"), else how long it was. */
-        fun fact(a: WorkoutAnalysis): String {
-            a.distanceMeters?.takeIf { it >= 10f }?.let { return TabCopy.distanceText(it, a.distanceFromSteps) }
+        fun fact(a: WorkoutAnalysis, locale: Locale = Locale.getDefault()): String {
+            a.distanceMeters?.let { Units.distance(it, Units.Precision.Day, a.distanceFromSteps, locale) }?.let { return it }
             a.sets?.takeIf { it > 0 }?.let { return if (it == 1) "1 set" else "$it sets" }
-            return TodayCopy.duration(a.activeSeconds)
+            return Units.duration(a.activeSeconds)
         }
     }
 }

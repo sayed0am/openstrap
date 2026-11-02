@@ -85,6 +85,21 @@ class ActivityCopyTest {
         val today = LocalDate.of(2026, 10, 24)
         assertEquals("today at 18:30", ActivityCopy.ended(today, "18:30", today))
         assertEquals("yesterday at 07:10", ActivityCopy.ended(today.minusDays(1), "07:10", today))
-        assertEquals("Counted from your run, which ended Tue 20 Oct at 18:30.", ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK)))
+        assertEquals("Counted from your run, which ended Tuesday at 18:30.", ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK)))
+    }
+
+    @Test fun `time to recover names the day as every other line does`() {
+        val today = LocalDate.of(2026, 10, 24)
+        assertEquals("today at 18:30", ActivityCopy.ended(today, "18:30", today, Locale.UK))
+        assertEquals("yesterday at 07:10", ActivityCopy.ended(today.minusDays(1), "07:10", today, Locale.UK))
+        assertEquals("Tuesday at 18:30", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK))
+        assertEquals("Tue 13 Oct at 18:30", ActivityCopy.ended(LocalDate.of(2026, 10, 13), "18:30", today, Locale.UK))
+    }
+
+    @Test fun `Load's bar and band are Today's rule`() {
+        assertEquals(null, ActivityCopy.loadBar(40f, null))
+        assertEquals(listOf(0, 1, 1, 2), listOf(29f, 30f, 50f, 51f).map { ActivityCopy.loadBar(it, 40f) })
+        assertEquals(30f..50f, ActivityCopy.usualBand(40f))
+        assertEquals(listOf("Below your usual", "Usual", "Above your usual"), ActivityCopy.LOAD_SCALE)
     }
 }

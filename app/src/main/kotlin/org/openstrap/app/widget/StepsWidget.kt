@@ -42,11 +42,10 @@ import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
 import org.openstrap.app.ui.glow.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import kotlin.math.roundToInt
+import org.openstrap.app.presentation.Weeks
 
 /**
  * The Steps widget (widgets spec 3.3): today's steps against the goal, glanceable all day. The Wide adds what's to go
@@ -79,9 +78,9 @@ class StepsWidget : LoadingWidget<StepsWidget.Shown>(WidgetKind.Steps) {
                 val day = DayWindow.of(today, zone)
                 val minutes = container.database.healthDao().activityOnce(day.from, day.to)
                 val steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value)
-                val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val past = if (monday < today) {
-                    container.health.daily(DailyMetric.Steps, monday, today.minusDays(1), zone).first()
+                val weekStart = Weeks.start(today)
+                val past = if (weekStart < today) {
+                    container.health.daily(DailyMetric.Steps, weekStart, today.minusDays(1), zone).first()
                         .filter { it.date < today }.associate { it.date to it.value.roundToInt() }
                 } else emptyMap()
                 StepsWidgetModel.from(today, steps, Summaries.hourlySteps(minutes, day.from), at.hour, goal, past)
@@ -237,7 +236,7 @@ private fun GoalBar(progress: Float, f: WidgetFrame) {
     )
 }
 
-/** "This week" and how many days met the goal on one line, then a bar a day Monday to Sunday under it. */
+/** "This week" and how many days met the goal on one line, then a bar a day under it, from the week's first day. */
 @Composable
 private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float) {
     // One child of the Large's column: Glance drops a column's children past ten.

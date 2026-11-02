@@ -41,7 +41,6 @@ import org.openstrap.app.data.CheckIn
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.ui.components.cardNumber
-import org.openstrap.app.ui.components.formatDuration
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT

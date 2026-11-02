@@ -7,14 +7,19 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
 
 /** Widgets spec 3.3: what the Steps widget shows in each state, from the app's own sums and copy, and how it fits. */
 class StepsWidgetModelTest {
+    // TalkBack's words follow the phone's language, and these tests read them in English.
+    @get:Rule val phone = LocaleRule(Locale.UK)
+
     private val today = LocalDate.of(2026, 10, 24) // a Saturday
     private val monday = LocalDate.of(2026, 10, 19)
 
@@ -39,6 +44,23 @@ class StepsWidgetModelTest {
         assertFalse(m.goalMet)
         assertEquals("8,432 steps today, 84% of your goal", m.description)
         assertEquals(today, m.date)
+    }
+
+    @Test fun `the dots keep the dot font's marks, the words follow the phone's language`() {
+        Locale.setDefault(Locale.GERMANY)
+        val m = StepsWidgetModel.from(today, 8_432, hourly, 14, 10_000, past, Locale.GERMANY)
+        assertEquals("8,432", m.stepsText)
+        assertEquals("Goal 10.000", m.goalNote)
+        assertEquals("1.568 to go", m.toGo)
+        assertEquals("8.432 steps today, 84% of your goal", m.description)
+    }
+
+    @Test fun `the week starts on the locale's first day`() {
+        // Saturday the 24th: Monday the 19th first in the UK, Sunday the 18th in the US.
+        assertEquals(monday, model().week.first().date)
+        val us = StepsWidgetModel.from(today, 8_432, hourly, 14, 10_000, past, Locale.US)
+        assertEquals(LocalDate.of(2026, 10, 18), us.week.first().date)
+        assertEquals(today, us.week.last().date)
     }
 
     @Test fun `past the goal, Goal met replaces what's to go and the bar stays full`() {

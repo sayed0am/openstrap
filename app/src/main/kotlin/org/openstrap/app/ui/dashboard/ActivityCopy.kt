@@ -5,6 +5,11 @@ import org.openstrap.app.data.UsualSteps
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.LoadBand
+import org.openstrap.app.presentation.LoadBands
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 
 /*
  * The words of the Activity tab's details (spec 5.3 and 6.1): steps against your usual by now, Heart points, active
@@ -47,7 +52,12 @@ internal object ActivityCopy {
     }
 
     /** An hour's steps in the headline while it's tapped: "steps, 09:00 to 10:00". */
-    fun hourLabel(hour: Int): String = "steps, %02d:00 to %02d:00".format(hour, (hour + 1) % 24)
+    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String {
+        fun clock(h: Int) = TimeOfDay.minutes(h * MINUTES_PER_HOUR, locale = locale)
+        return "steps, ${clock(hour)} to ${clock(hour + 1)}"
+    }
+
+    private const val MINUTES_PER_HOUR = 60
 
     /* -------------------------------------------- Heart points ------------------------------------------ */
 
@@ -113,21 +123,18 @@ internal object ActivityCopy {
     /* ------------------------------------------------ Load ---------------------------------------------- */
 
     /** Load's scale in its info sheet, low to high, in the words beside it. */
-    val LOAD_SCALE = listOf("Below your usual", "Usual", "Above your usual")
+    val LOAD_SCALE = listOf(LoadBand.Below, LoadBand.Usual, LoadBand.Above).map { it.text }
 
-    /** Which bar of [LOAD_SCALE] a Load is in against your usual for a whole day; null without a usual. */
-    fun loadBar(load: Float, usual: Float?): Int? {
-        if (usual == null || usual <= 0f) return null
-        return when {
-            load > usual * (1 + TodayCopy.LOAD_BAND) -> 2
-            load < usual * (1 - TodayCopy.LOAD_BAND) -> 0
-            else -> 1
-        }
+    /** Which bar of [LOAD_SCALE] a Load is in against your usual for a whole day, by [LoadBands]. Null without a usual. */
+    fun loadBar(load: Float, usual: Float?): Int? = when (LoadBands.of(load, usual)) {
+        null -> null
+        LoadBand.Below -> 0
+        LoadBand.Usual, LoadBand.SoFar -> 1
+        LoadBand.Above -> 2
     }
 
-    /** Your usual as a band on Load's chart: within [TodayCopy.LOAD_BAND] of it, as Today reads a usual Load. */
-    fun usualBand(usual: Float?): ClosedFloatingPointRange<Float>? =
-        usual?.takeIf { it > 0f }?.let { it * (1 - TodayCopy.LOAD_BAND)..it * (1 + TodayCopy.LOAD_BAND) }
+    /** Your usual as a band on Load's chart: within [LoadBands.BAND] of it, as Today reads a usual Load. */
+    fun usualBand(usual: Float?): ClosedFloatingPointRange<Float>? = LoadBands.usualRange(usual)
 
     /** The band's label: "Your usual, 30 to 50". */
     fun usualBandLabel(band: ClosedFloatingPointRange<Float>): String = "Your usual, ${Math.round(band.start)} to ${Math.round(band.endInclusive)}"
@@ -177,12 +184,12 @@ internal object ActivityCopy {
 
     /* ------------------------------------------ Time to recover ----------------------------------------- */
 
-    /** When the workout time to recover counts from ended: "today at 18:30", "yesterday at 07:10", "Tue 20 Oct at 18:30". */
-    fun ended(date: LocalDate, clock: String, today: LocalDate, locale: Locale = Locale.getDefault()): String = when (date) {
-        today -> "today at $clock"
-        today.minusDays(1) -> "yesterday at $clock"
-        else -> "${date.format(java.time.format.DateTimeFormatter.ofPattern("EEE d MMM", locale))} at $clock"
-    }
+    /**
+     * When the workout time to recover counts from ended, by [DayWords]: "today at 18:30", "yesterday at 07:10",
+     * "Tuesday at 18:30", "Tue 13 Oct at 18:30".
+     */
+    fun ended(date: LocalDate, clock: String, today: LocalDate, locale: Locale = Locale.getDefault()): String =
+        "${DayWords.inSentence(date, today, locale)} at $clock"
 
     /** The sentence under the hours to go: which workout they count from. */
     fun recover(sport: String, ended: String): String = "Counted from your ${sport.lowercase()}, which ended $ended."
@@ -190,7 +197,7 @@ internal object ActivityCopy {
     /* ----------------------------------------------- Energy --------------------------------------------- */
 
     /** The sentence under the day's kcal: what your body uses at rest, before any movement. */
-    fun energy(atRest: Int): String = "Your body uses about ${"%,d".format(atRest)} kcal a day at rest, before any movement."
+    fun energy(atRest: Int): String = "Your body uses about ${Units.count(atRest.toLong())} kcal a day at rest, before any movement."
 
     /* ---------------------------------------------- Distance -------------------------------------------- */
 
@@ -198,5 +205,6 @@ internal object ActivityCopy {
     fun distanceSource(fromSteps: Boolean): String = if (fromSteps) "km, from your steps" else "km, from the strap"
 
     /** The sentence under the kilometres: the steps they come from. */
-    fun distance(steps: Int, today: Boolean): String = "Over ${"%,d".format(steps)} steps ${if (today) "so far today" else "that day"}."
+    fun distance(steps: Int, today: Boolean): String =
+        "Over ${Units.count(steps.toLong())} steps ${if (today) "so far today" else "that day"}."
 }

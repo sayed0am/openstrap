@@ -44,4 +44,24 @@ class StrapRowsTest {
         assertEquals("Notifications", phoneAlertsSummary(calls = false, notifications = true))
         assertEquals("Off", phoneAlertsSummary(calls = false, notifications = false))
     }
+
+    @Test fun `alarm and quiet hour times follow the phone's clock, the dots without letters`() {
+        val was = org.openstrap.app.presentation.ClockSetting.use24Hour
+        val locale = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.US)
+            assertEquals("06:40" to null, dotClock(6, 40, use24Hour = true))
+            assertEquals("6:40" to "AM", dotClock(6, 40, use24Hour = false))
+            assertEquals("10:00" to "PM", dotClock(22, 0, use24Hour = false))
+            org.openstrap.app.presentation.ClockSetting.use24Hour = false
+            val alarms = listOf(Alarm(0, 6, 40, Alarm.WEEKDAYS, enabled = true))
+            assertEquals("6:40 AM weekdays", alarmsSummary(AlarmsUiState(caps = caps, alarms = alarms)))
+            assertEquals("10:00 PM", quietClock(22 * 60))
+            org.openstrap.app.presentation.ClockSetting.use24Hour = true
+            assertEquals("22:00", quietClock(22 * 60))
+        } finally {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = was
+            java.util.Locale.setDefault(locale)
+        }
+    }
 }

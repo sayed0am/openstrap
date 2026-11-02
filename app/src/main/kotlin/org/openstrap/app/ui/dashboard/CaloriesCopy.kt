@@ -6,9 +6,11 @@ import org.openstrap.app.data.Workouts
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 
 /*
  * The words and sums of Calories (calories spec 4.4 to 4.6): the Activity row, the detail's day and its ranges, where
@@ -39,11 +41,17 @@ internal object CaloriesCopy {
     fun peak(hourly: List<Float>, locale: Locale = Locale.getDefault()): String? {
         val h = hourly.indices.maxByOrNull { hourly[it] } ?: return null
         val v = Math.round(hourly[h])
-        return if (v < 1) null else "Peak %02d:00, %,d".format(locale, h, v)
+        return if (v < 1) null else "Peak ${hourClock(h, locale)}, ${Units.count(v.toLong(), locale)}"
     }
 
     /** An hour's kcal in the headline while it's picked: "active kcal, 07:00 to 08:00". */
-    fun hourLabel(hour: Int): String = "active kcal, %02d:00 to %02d:00".format(hour, (hour + 1) % 24)
+    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String =
+        "active kcal, ${hourClock(hour, locale)} to ${hourClock(hour + 1, locale)}"
+
+    /** The start of [hour] on the phone's clock: "07:00", or "7:00 AM". */
+    private fun hourClock(hour: Int, locale: Locale) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR, locale = locale)
+
+    private const val MINUTES_PER_HOUR = 60
 
     /** One row of "Where it came from": a workout (opening it, by [workoutStart]), walking or everyday moving. */
     data class Source(val name: String, val line: String, val kcal: Int, val workoutStart: Long? = null, val sportType: Int? = null)
@@ -57,14 +65,13 @@ internal object CaloriesCopy {
         workouts: List<WorkoutAnalysis>, date: LocalDate, day: EnergyExpenditure.Day, bmrPerMinute: Float?,
         zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(),
     ): List<Source> {
-        val clock = DateTimeFormatter.ofPattern("HH:mm", locale)
         val onDay = workouts.filter { Instant.ofEpochSecond(it.shownStart).atZone(zone).toLocalDate() == date }
         val phone = onDay.filter { it.fromPhone }
         val shown = onDay.filter { w -> w.fromPhone || phone.none { p -> w.workout.start < p.end && p.shownStart < w.workout.end } }
             .sortedBy { it.shownStart }
         val rows = shown.mapNotNull { w ->
             val kcal = Workouts.activeKcal(w, bmrPerMinute) ?: return@mapNotNull null
-            val at = Instant.ofEpochSecond(w.shownStart).atZone(zone).format(clock)
+            val at = TimeOfDay.format(w.shownStart, zone, locale = locale)
             Source(w.sportName, "$at, ${minutes(w.activeSeconds)}", kcal, w.workout.start, w.workout.sportType)
         }
         return rows + listOf(
@@ -73,11 +80,10 @@ internal object CaloriesCopy {
         )
     }
 
-    /** A workout's length on its row: "42 min", "1 h 05". */
-    fun minutes(seconds: Long): String {
-        val m = (seconds + 30) / 60
-        return if (m < 60) "$m min" else "%d h %02d".format(m / 60, m % 60)
-    }
+    /** A workout's length on its row, to the nearest minute: "42 min", "1 h 05". */
+    fun minutes(seconds: Long): String = Units.duration(seconds + HALF_MINUTE_S)
+
+    private const val HALF_MINUTE_S = 30L
 
     /** The walking row's line, from its minutes at a walking cadence outside workouts. */
     fun walkingLine(minutes: Int): String = when (minutes) {
@@ -164,7 +170,8 @@ internal object CaloriesCopy {
         val busiest = s.busiest ?: return null
         val share = s.workoutShare
         return if (share != null && share >= 1) "Workouts made $share% of your active kcal, the rest came from walking and moving about."
-        else "Your busiest day was ${busiest.date.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))}, with %,d active kcal.".format(locale, Math.round(busiest.active))
+        else "Your busiest day was ${DayWords.short(busiest.date, locale)}, " +
+            "with ${Units.count(Math.round(busiest.active).toLong(), locale)} active kcal."
     }
 
     /* ------------------------------------------- A workout's day ---------------------------------------- */

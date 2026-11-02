@@ -5,6 +5,7 @@ import org.junit.Test
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
+import java.util.Locale
 
 /** The Strap page's state line and the You page's values. */
 class StrapPageTest {
@@ -24,10 +25,11 @@ class StrapPageTest {
     }
 
     @Test fun `You page values`() {
-        assertEquals("7 h 30", hoursMinutes(450))
-        assertEquals("8 h", hoursMinutes(480))
-        assertEquals("7 h 05", hoursMinutes(425))
-        assertEquals("8,000 steps, 450 active kcal, 8 active hours", goalsLine(Goals(steps = 8000, sleepMinutes = 450, activeHours = 8, calories = 450)))
-        assertEquals("7 h 30. Your sleep need is 8 h", sleepGoalLine(Goals(steps = 8000, sleepMinutes = 450, activeHours = 8), 480))
+        val goals = Goals(steps = 8000, sleepMinutes = 450, activeHours = 8, calories = 450)
+        assertEquals("8,000 steps, 450 active kcal, 8 active hours", goalsLine(goals, Locale.UK))
+        assertEquals("8.000 steps, 450 active kcal, 8 active hours", goalsLine(goals, Locale.GERMANY))
+        // The sleep goal and need read as every other length of time does.
+        assertEquals("7 h 30. Your sleep need is 8 h", sleepGoalLine(goals, 480))
+        assertEquals("7 h 05. Your sleep need is 8 h", sleepGoalLine(goals.copy(sleepMinutes = 425), 480))
     }
 }

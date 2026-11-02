@@ -74,4 +74,10 @@ class NarrativeTest {
         // Short nights still rate against need.
         assertEquals(Rating.LOW, total(5 * 60))
     }
+
+    @Test fun `the contributors write lengths of time as the rest of the app does`() {
+        val c = Narrative.sleepContributors(SleepSession(start = 0, end = 8 * 3600L), (7 * 60 + 40) * 60L, 480, 45)
+        assertEquals("7 h 40 of 8 h", c.first { it.label == "Total sleep" }.detail)
+        assertEquals("45 min awake after falling asleep", c.first { it.label == "Continuity" }.detail)
+    }
 }

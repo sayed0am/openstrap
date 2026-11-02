@@ -7,6 +7,8 @@ import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.ui.components.ChartPoint
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.TimeOfDay
 
 /*
  * The numbers and words of the Sleep tab's details (spec 5.2 and 6.1): the night-scoped vitals, the Sleep score, Sleep
@@ -161,8 +163,8 @@ internal object SleepCopy {
     fun factors(contributors: List<Narrative.Contributor>, asleepSeconds: Long, needMinutes: Int, wasoMinutes: Int?): List<Factor> =
         contributors.map { c ->
             val detail = when (c.label) {
-                "Total sleep" -> "${TodayCopy.duration(asleepSeconds)} of ${TodayCopy.duration(needMinutes * 60L)}"
-                else -> "${TodayCopy.duration((wasoMinutes ?: 0) * 60L)} awake after falling asleep"
+                "Total sleep" -> "${Units.duration(asleepSeconds)} of ${Units.duration(needMinutes * 60L)}"
+                else -> "${Units.duration((wasoMinutes ?: 0) * 60L)} awake after falling asleep"
             }
             val name = if (c.label == "Total sleep") "Time asleep" else "Staying asleep"
             Factor(name, detail, factorWord(c.rating), c.fraction, c.rating != Narrative.Rating.GOOD)
@@ -198,7 +200,8 @@ internal object SleepCopy {
             band == SleepRegularity.Band.Regular -> "Regular this week. Most days kept similar sleep times."
             band == SleepRegularity.Band.Fair -> "Fair this week. Your sleep times moved on some days."
             band == SleepRegularity.Band.Irregular -> "Irregular this week. Your sleep times moved a lot from day to day."
-            sd != null -> "The middle of your sleep moved about ${TodayCopy.duration(sd.roundToInt() * 60L)} this week. The full measure needs more wear."
+            sd != null ->
+                "The middle of your sleep moved about ${Units.duration(sd.roundToInt() * 60L)} this week. The full measure needs more wear."
             else -> "Regularity needs about 5 days of wear around the clock."
         }
     }
@@ -213,8 +216,8 @@ internal object SleepCopy {
         val diff = Math.floorMod(bedMinutes - usualBed + 12 * 60, 24 * 60) - 12 * 60
         return when {
             abs(diff) < USUAL_MINUTES -> "$base, close to your usual."
-            diff > 0 -> "$base, ${TodayCopy.duration(diff * 60L)} later than usual."
-            else -> "$base, ${TodayCopy.duration(-diff * 60L)} earlier than usual."
+            diff > 0 -> "$base, ${Units.duration(diff * 60L)} later than usual."
+            else -> "$base, ${Units.duration(-diff * 60L)} earlier than usual."
         }
     }
 
@@ -224,7 +227,7 @@ internal object SleepCopy {
     /** The night shown, without a sleep. */
     fun noNight(today: Boolean): String = if (today) "No sleep recorded last night." else "No sleep recorded that night."
 
-    private fun clock(m: Int) = Math.floorMod(m, 1440).let { "%02d:%02d".format(it / 60, it % 60) }
+    private fun clock(m: Int) = TimeOfDay.minutes(m)
 
     /* ----------------------------------------------- Naps ----------------------------------------------- */
 
@@ -236,7 +239,8 @@ internal object SleepCopy {
 
     /** The day's naps in a sentence: "One nap, 45 min." or "Two naps, 1 h 10 in all." */
     fun naps(count: Int, totalSeconds: Long): String =
-        if (count == 1) "One nap, ${TodayCopy.duration(totalSeconds)}." else "${DetailCopy.count(count, "nap").replaceFirstChar { it.uppercase() }}, ${TodayCopy.duration(totalSeconds)} in all."
+        if (count == 1) "One nap, ${Units.duration(totalSeconds)}."
+        else "${DetailCopy.count(count, "nap").replaceFirstChar { it.uppercase() }}, ${Units.duration(totalSeconds)} in all."
 
     /** Under a nap's heart rate line. */
     fun napHeart(lowest: Int, average: Int): String = "Lowest $lowest bpm, $average on average."
@@ -260,7 +264,7 @@ internal object SleepCopy {
 
     /** The sheet's result line for times that can be saved. */
     fun timesResult(nap: Boolean, seconds: Long): String =
-        if (nap) "A nap of ${TodayCopy.duration(seconds)}." else "Asleep for ${TodayCopy.duration(seconds)}."
+        if (nap) "A nap of ${Units.duration(seconds)}." else "Asleep for ${Units.duration(seconds)}."
 
     /** On a detail whose sleep or nap has the user's times. */
     fun yourTimes(from: String, to: String): String = "Your times. ${strapSaw(from, to)}"

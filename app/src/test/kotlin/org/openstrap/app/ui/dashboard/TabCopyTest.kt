@@ -4,14 +4,22 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.Recovery.Contributor
 import org.openstrap.app.data.Recovery.Factor
 import org.openstrap.app.data.SleepRegularity
+import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.testing.LocaleRule
+import org.openstrap.app.testing.assertCleanCopy
+import java.util.Locale
 
 /** The words on the Recovery, Sleep and Activity tabs (spec 5 and 7). */
 class TabCopyTest {
+    // The expected numbers are written the English way, and the German test below sets its own.
+    @get:Rule val locale = LocaleRule(Locale.US)
+
     private fun c(f: Factor, score: Int) = Contributor(f, score, "")
 
     @Test fun `recovery against yesterday`() {
@@ -188,8 +196,8 @@ class TabCopyTest {
         assertEquals(TabCopy.SportFact.Strength, TabCopy.sportFact(52))
         assertEquals(TabCopy.SportFact.Other, TabCopy.sportFact(4))
         assertEquals(TabCopy.SportFact.Other, TabCopy.sportFact(223))
-        // 5.2 km in 28:05 of running: 5:24 a km.
-        assertEquals("5.2 km, 5:24 a km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
+        // 5.2 km in 28:05 of running: 5:24 /km.
+        assertEquals("5.2 km, 5:24 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
         assertEquals("3.4 km", TabCopy.workoutFact(TabCopy.SportFact.Walk, 3400f, false, 2530, null, 108))
         assertEquals("14 sets", TabCopy.workoutFact(TabCopy.SportFact.Strength, null, false, 2100, 14, 121))
         assertEquals("1 set", TabCopy.workoutFact(TabCopy.SportFact.Strength, null, false, 300, 1, 121))
@@ -199,8 +207,9 @@ class TabCopyTest {
     @Test fun `a workout's fact falls back to the next one it has`() {
         // Distance from steps is approximate and gets no pace.
         assertEquals("≈ 5.2 km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, true, 1685, null, 152))
-        // Too short for a pace to mean much.
-        assertEquals("420 m", TabCopy.workoutFact(TabCopy.SportFact.Run, 420f, false, 150, null, 152))
+        // Under 100 m, too short for a pace to mean much. From 100 m it has one, as on the live screen.
+        assertEquals("80 m", TabCopy.workoutFact(TabCopy.SportFact.Run, 80f, false, 30, null, 152))
+        assertEquals("420 m, 5:57 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 420f, false, 150, null, 152))
         // A strap run carries no distance: its heart rate.
         assertEquals("Average 152 bpm", TabCopy.workoutFact(TabCopy.SportFact.Run, null, false, 1685, null, 152))
         assertEquals("Average 108 bpm", TabCopy.workoutFact(TabCopy.SportFact.Walk, null, false, 2530, null, 108))
@@ -214,8 +223,8 @@ class TabCopyTest {
     @Test fun `distance and pace`() {
         assertEquals("850 m", TabCopy.distanceText(850f, false))
         assertEquals("≈ 1.0 km", TabCopy.distanceText(1000f, true))
-        assertEquals("4:05 a km", TabCopy.paceText(245f))
-        assertEquals("10:00 a km", TabCopy.paceText(600f))
+        assertEquals("4:05 /km", TabCopy.paceText(245f))
+        assertEquals("10:00 /km", TabCopy.paceText(600f))
         assertNull(TabCopy.paceText(4000f))
         assertNull(TabCopy.paceText(0f))
     }
@@ -225,12 +234,13 @@ class TabCopyTest {
         assertEquals("09:04", TabCopy.workoutLine(null, "09:04"))
     }
 
-    @Test fun `workout days read as today, yesterday, then the date`() {
+    @Test fun `workout days read as today, yesterday, the weekday, then the date`() {
         val today = java.time.LocalDate.of(2026, 10, 23)
         val uk = java.util.Locale.UK
         assertEquals("Today", TabCopy.workoutDay(today, today, uk))
         assertEquals("Yesterday", TabCopy.workoutDay(today.minusDays(1), today, uk))
-        assertEquals("Wed 21 Oct", TabCopy.workoutDay(today.minusDays(2), today, uk))
+        assertEquals("Wednesday", TabCopy.workoutDay(today.minusDays(2), today, uk))
+        assertEquals("Fri 16 Oct", TabCopy.workoutDay(today.minusDays(7), today, uk))
         assertEquals("Sat 27 Dec 2025", TabCopy.workoutDay(java.time.LocalDate.of(2025, 12, 27), today, uk))
     }
 
@@ -245,5 +255,35 @@ class TabCopyTest {
     @Test fun `before Habit Age is learned your age stands in`() {
         assertEquals("Your age for now", TabCopy.habitAgeForNow(null))
         assertEquals("Your age for now. First estimate Sunday 1 Nov", TabCopy.habitAgeForNow("First estimate Sunday 1 Nov"))
+    }
+
+    @Test fun `numbers and pace follow the phone's language`() {
+        Locale.setDefault(Locale.GERMANY)
+        assertEquals("5,2 km, 5:24 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
+        assertEquals("≈ 1,0 km", TabCopy.distanceText(1000f, true))
+        assertEquals("Your usual is 2,1 an hour", TabCopy.breathing(Recovery.BreathingDisturbances(3.4f, 2.1f, 20)))
+    }
+
+    @Test fun `the night's times and usual times follow the phone's clock`() {
+        val zone = java.time.ZoneOffset.UTC
+        val start = java.time.LocalDateTime.of(2026, 10, 22, 22, 58).toEpochSecond(zone)
+        val end = java.time.LocalDateTime.of(2026, 10, 23, 6, 56).toEpochSecond(zone)
+        val was = ClockSetting.use24Hour
+        try {
+            ClockSetting.use24Hour = true
+            assertEquals("22:58–06:56", TabCopy.nightTimes(start, end, zone))
+            assertEquals("Usually asleep by 23:10, up at 06:50.", TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
+            ClockSetting.use24Hour = false
+            assertEquals("10:58 PM–6:56 AM", TabCopy.nightTimes(start, end, zone))
+            assertEquals("Usually asleep by 11:10 PM, up at 6:50 AM.", TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
+            assertCleanCopy(TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
+        } finally {
+            ClockSetting.use24Hour = was
+        }
+    }
+
+    @Test fun `the bands come from the shared definitions`() {
+        assertEquals(listOf("Poor", "Fair", "Good", "Great"), listOf(59, 60, 80, 90).map(TabCopy::sleepScoreWord))
+        assertEquals(listOf("Holding you back", "Holding back a little", "Usual", "Helping"), listOf(10, Recovery.FAIR_FROM, 70, 85).map(TabCopy::contributorWord))
     }
 }

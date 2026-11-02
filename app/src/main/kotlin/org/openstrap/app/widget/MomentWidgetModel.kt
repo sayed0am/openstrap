@@ -12,7 +12,6 @@ import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.TabCopy
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.WakingLead
-import org.openstrap.app.ui.dashboard.clockText
 import org.openstrap.app.ui.dashboard.momentMood
 import org.openstrap.app.ui.dashboard.sportNoun
 import org.openstrap.app.ui.dashboard.todayTitle
@@ -26,6 +25,7 @@ import org.openstrap.app.ui.glow.WINDOW_RIM
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.ui.glow.heroStyle
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -269,7 +269,7 @@ data class MomentWidgetModel(
         val t = now.epochSecond
         val energy = input.energy
 
-        fun clock(epoch: Long) = clockText(epoch, zone)
+        fun clock(epoch: Long) = TimeOfDay.format(epoch, zone)
 
         /** Waking: Recovery's score and word, the waking sentence, Energy at waking, the night's stages. */
         fun recovery(lead: MomentLead, name: String, mood: GlowMood): MomentWidgetModel {
@@ -422,7 +422,7 @@ data class MomentWidgetModel(
         fun night(lead: MomentLead, name: String, mood: GlowMood): MomentWidgetModel {
             val bed = input.inputs.usualBedtime
             val light = MomentLight(MetricColors.sleepDeep, LightAngle.Below)
-            val bedtime = bed?.let { "Bedtime %02d:%02d".format(it.hour, it.minute) }
+            val bedtime = bed?.let { "Bedtime ${TimeOfDay.format(it)}" }
             val clock = now.atZone(zone).toLocalTime()
             val left = bed?.let { afterNoon(it) - afterNoon(clock) }?.takeIf { it > 0 }
             if (left == null) {

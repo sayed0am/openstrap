@@ -59,7 +59,9 @@ class StrapStatusTest {
         assertEquals("Synced 09:10", line(StrapStatus.StaleSync(now - 2 * 3600 - 50 * 60)))
         assertEquals("Synced yesterday", line(StrapStatus.StaleSync(now - 86_400)))
         assertEquals("Synced Tuesday", line(StrapStatus.StaleSync(now - 3 * 86_400)))
-        assertEquals("Synced 13 Oct", line(StrapStatus.StaleSync(now - 10 * 86_400)))
+        assertEquals("Synced Tue 13 Oct", line(StrapStatus.StaleSync(now - 10 * 86_400)))
+        // A week back would repeat today's weekday, so it takes the date.
+        assertEquals("Synced Fri 16 Oct", line(StrapStatus.StaleSync(now - 7 * 86_400)))
     }
 
     @Test fun `the widgets hear of pairing, the low edge and charging, not every percent`() {

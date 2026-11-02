@@ -16,6 +16,9 @@ import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
+import java.util.concurrent.TimeUnit.MINUTES
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
@@ -25,19 +28,19 @@ import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
 
-/** "7 h 30", or "8 h" on the hour. */
-fun hoursMinutes(minutes: Int): String = if (minutes % 60 == 0) "${minutes / 60} h" else "${minutes / 60} h ${"%02d".format(minutes % 60)}"
-
 /** The Goals row's value: "8,000 steps, 300 active kcal, 8 active hours". */
-fun goalsLine(goals: Goals): String = "%,d steps, %,d active kcal, %d active hours".format(goals.steps, goals.calories, goals.activeHours)
+fun goalsLine(goals: Goals, locale: java.util.Locale = java.util.Locale.getDefault()): String =
+    "${Units.count(goals.steps.toLong(), locale)} steps, ${Units.count(goals.calories.toLong(), locale)} active kcal, " +
+        "${goals.activeHours} active hours"
 
 /** The Sleep goal row's value, with the sleep need Recovery uses beside it: "7 h 30. Your sleep need is 8 h". */
 fun sleepGoalLine(goals: Goals, needMinutes: Int): String =
-    "${hoursMinutes(goals.sleepMinutes)}. Your sleep need is ${hoursMinutes(needMinutes)}"
+    "${Units.duration(MINUTES.toSeconds(goals.sleepMinutes.toLong()))}. " +
+        "Your sleep need is ${Units.duration(MINUTES.toSeconds(needMinutes.toLong()))}"
 
 /**
- * The auto sync row's value: on and when it last wrote ("On. Last synced 10:42", "yesterday 10:42", "12 Oct"), off,
- * or stopped by itself and why. [now] in epoch seconds.
+ * The auto sync row's value: on and when it last wrote, by [DayWords.at] ("On. Last synced 10:42", "yesterday 10:42",
+ * "Tuesday 10:42", "Tue 12 Oct 10:42"), off, or stopped by itself and why. [now] in epoch seconds.
  */
 fun healthConnectLine(auto: HealthConnectAuto, now: Long, zone: java.time.ZoneId, locale: java.util.Locale = java.util.Locale.getDefault()): String {
     if (!auto.on) return when (auto.stopped) {
@@ -46,14 +49,7 @@ fun healthConnectLine(auto: HealthConnectAuto, now: Long, zone: java.time.ZoneId
         null -> "Off. Copies new data after each strap sync"
     }
     val last = auto.lastSynced ?: return "On. Copies new data after each strap sync"
-    val today = java.time.Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-    val day = java.time.Instant.ofEpochSecond(last).atZone(zone).toLocalDate()
-    val clock = org.openstrap.app.ui.dashboard.clockText(last, zone, locale = locale)
-    return "On. Last synced " + when (day) {
-        today -> clock
-        today.minusDays(1) -> "yesterday $clock"
-        else -> day.format(java.time.format.DateTimeFormatter.ofPattern("d MMM", locale))
-    }
+    return "On. Last synced " + DayWords.at(last, now, zone, locale = locale)
 }
 
 /** The You page's Health Connect row: on and when it last wrote, off, or stopped and why, in a few words. */

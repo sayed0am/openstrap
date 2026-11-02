@@ -1,32 +1,27 @@
 package org.openstrap.app.ui.dashboard
 
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.temporal.TemporalAdjusters
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
 import org.openstrap.app.data.Recovery
+import org.openstrap.app.presentation.LoadBand
+import org.openstrap.app.presentation.LoadBands
+import org.openstrap.app.presentation.RecoveryBands
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Weeks
 
 /*
  * The words on Today's hero and its small facts (spec 4.2 and 7). Built only from numbers the app already has: where
  * a number is missing the sentence says what it waits for, and nothing is guessed.
  */
 object TodayCopy {
-    /** A length of time the way Today says it: "40 min", "7 h 40", "8 h". */
-    fun duration(seconds: Long): String {
-        val minutes = seconds.coerceAtLeast(0) / 60
-        val h = minutes / 60
-        val m = minutes % 60
-        return when {
-            h == 0L -> "$m min"
-            m == 0L -> "$h h"
-            else -> "$h h %02d".format(m)
-        }
-    }
+    /** A length of time the way the app says it: "40 min", "7 h 40", "8 h". Kept for callers that still name it here. */
+    fun duration(seconds: Long): String = Units.duration(seconds)
 
     /** A value against your normal, from [org.openstrap.app.data.History.status]: null is no normal yet. */
     fun normalWord(direction: Int?): String = when {
@@ -39,20 +34,14 @@ object TodayCopy {
     /** What a Recovery score means for the day, in a sentence. */
     fun recoveryMeaning(score: Int, alert: Boolean): String = when {
         alert -> "Some overnight signals are off your normal. An easy day suits."
-        score >= 85 -> "Well recovered. A good day for a hard session."
-        score >= 70 -> "Recovered enough for your usual training."
-        score >= Recovery.FAIR_FROM -> "Not fully recovered. Keep the effort moderate."
+        score >= RecoveryBands.READY_FOR_MORE_FROM -> "Well recovered. A good day for a hard session."
+        score >= RecoveryBands.READY_FROM -> "Recovered enough for your usual training."
+        score >= RecoveryBands.MODERATE_FROM -> "Not fully recovered. Keep the effort moderate."
         else -> "Still catching up. An easy day helps."
     }
 
     /** The status word beside the score. */
-    fun recoveryWord(score: Int, alert: Boolean): String = when {
-        alert -> "Take it easy"
-        score >= 85 -> "Ready for more"
-        score >= 70 -> "Ready"
-        score >= Recovery.FAIR_FROM -> "Moderate"
-        else -> "Take it easy"
-    }
+    fun recoveryWord(score: Int, alert: Boolean): String = RecoveryBands.word(score, alert)
 
     /**
      * Why there's no Recovery score yet. [Learning] counts the nights OpenStrap has toward its first score ([nights] of
@@ -78,7 +67,7 @@ object TodayCopy {
         if (firstNights) return RECOVERY_FIRST_NIGHT
         if (asleepSeconds == null && deleted) return deletedNight(isToday)
         if (asleepSeconds == null) return if (isToday) NO_SLEEP else "No sleep recorded that night."
-        val slept = "Slept ${duration(asleepSeconds)}."
+        val slept = "Slept ${Units.duration(asleepSeconds)}."
         return when {
             score != null -> "$slept ${recoveryMeaning(score, alert)}"
             // The strap's estimate stands under the sentence with its label, so the sentence doesn't repeat it.
@@ -151,8 +140,8 @@ object TodayCopy {
     /** The workout window hero's title: what Recovery says about effort now. */
     fun windowTitle(score: Int?): String = when {
         score == null -> "Your usual workout time"
-        score >= 70 -> "Ready for effort"
-        score >= Recovery.FAIR_FROM -> "Fine for a steady session"
+        score >= RecoveryBands.READY_FROM -> "Ready for effort"
+        score >= RecoveryBands.MODERATE_FROM -> "Fine for a steady session"
         else -> "An easy session suits today"
     }
 
@@ -180,27 +169,23 @@ object TodayCopy {
     /** Within this many bpm of resting, the heart has settled. */
     const val SETTLED_BPM = 10
 
-    /** How a Load compares with your usual. */
+    /**
+     * How a Load compares with your usual, one for one with [LoadBand]. It stays here while screens outside the
+     * dashboard still name it, and its words are [LoadBand]'s.
+     */
     enum class LoadStatus(val text: String) {
-        Above("Above your usual"), Usual("Usual"), Below("Below your usual"), SoFar("So far today")
+        Above(LoadBand.Above.text), Usual(LoadBand.Usual.text), Below(LoadBand.Below.text), SoFar(LoadBand.SoFar.text)
     }
 
     /**
-     * [load] against your [usual] daily Load. Before the evening a low Load is only "so far today": compared with a
-     * whole usual day it would always look low (spec 2.7, compare by pace). Null before there's a usual.
+     * [load] against your [usual] daily Load by [LoadBands]. Before the evening a low Load is only "so far today":
+     * compared with a whole usual day it would always look low (spec 2.7, compare by pace). Null before there's a usual.
      */
-    fun loadStatus(load: Float, usual: Float?, endOfDay: Boolean): LoadStatus? {
-        if (usual == null || usual <= 0f) return null
-        return when {
-            load > usual * (1 + LOAD_BAND) -> LoadStatus.Above
-            !endOfDay -> LoadStatus.SoFar
-            load < usual * (1 - LOAD_BAND) -> LoadStatus.Below
-            else -> LoadStatus.Usual
-        }
-    }
+    fun loadStatus(load: Float, usual: Float?, endOfDay: Boolean): LoadStatus? =
+        LoadBands.of(load, usual, endOfDay)?.let { LoadStatus.valueOf(it.name) }
 
-    /** A Load within this share of your usual counts as usual. */
-    const val LOAD_BAND = 0.25f
+    /** A Load within this share of your usual counts as usual ([LoadBands.BAND]). */
+    const val LOAD_BAND = LoadBands.BAND
 
     /**
      * The evening hero: what kind of day it was, then what made it. [workouts] are the day's workouts as short nouns
@@ -221,7 +206,7 @@ object TodayCopy {
                 1 -> "a ${workouts[0] ?: "workout"}"
                 else -> "${workouts.size} workouts"
             },
-            if (stepCount || stepGoal <= 0) "%,d steps".format(locale, steps) else stepsAgainstGoal(steps, stepGoal),
+            if (stepCount || stepGoal <= 0) "${Units.count(steps.toLong(), locale)} steps" else stepsAgainstGoal(steps, stepGoal),
             when (load) {
                 LoadStatus.Above -> "a Load above your usual"
                 LoadStatus.Below -> "a Load below your usual"
@@ -245,7 +230,7 @@ object TodayCopy {
     fun bedtimeIn(now: LocalTime, bedtime: LocalTime?): String? {
         bedtime ?: return null
         val minutes = afterNoon(bedtime) - afterNoon(now)
-        return if (minutes <= 0) null else "Bedtime in ${duration(minutes * 60L)}"
+        return if (minutes <= 0) null else "Bedtime in ${Units.duration(minutes * 60L)}"
     }
 
     private fun afterNoon(t: LocalTime): Int = Math.floorMod(t.toSecondOfDay() / 60 - 720, 1440)
@@ -257,16 +242,16 @@ object TodayCopy {
      * Time to recover as a value and a status: "14" and "Hours left, ready tomorrow", "2" and "Hours left, ready by
      * 20:30". Recovered has no number, only the word (null value).
      */
-    fun recoverText(left: Long, now: Long, zone: ZoneId): Pair<String?, String> {
+    fun recoverText(left: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): Pair<String?, String> {
         if (left <= 0) return null to "Recovered"
         val hours = (left + 3599) / 3600
         val ready = Instant.ofEpochSecond(now + left).atZone(zone)
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
         val unit = if (hours == 1L) "Hour left" else "Hours left"
         val status = when (ready.toLocalDate()) {
-            today -> "ready by ${ready.format(DateTimeFormatter.ofPattern("HH:mm"))}"
+            today -> "ready by ${TimeOfDay.format(now + left, zone, locale = locale)}"
             today.plusDays(1) -> "ready tomorrow"
-            else -> "ready ${ready.dayOfWeek.getDisplayName(java.time.format.TextStyle.FULL, Locale.getDefault())}"
+            else -> "ready ${ready.dayOfWeek.getDisplayName(TextStyle.FULL, locale)}"
         }
         return "$hours" to "$unit, $status"
     }
@@ -280,13 +265,17 @@ object TodayCopy {
         LoadStatus.SoFar -> "Load so far today"
     }
 
-    /** Under Your week before there's a week before it to compare with. */
-    const val WEEK_FIRST = "Week on week comparisons start next Monday."
+    /** Under Your week before there's a week before it to compare with: the week starts on the locale's first day. */
+    val WEEK_FIRST: String get() = weekFirst()
 
-    /** The week Your week tells (spec 4.2): Monday to Sunday, the last full week before [date]. */
-    fun lastWeek(date: LocalDate): ClosedRange<LocalDate> {
-        val start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(1)
-        return start..start.plusDays(6)
+    /** [WEEK_FIRST] in [locale]: "Week on week comparisons start next Monday." */
+    fun weekFirst(locale: Locale = Locale.getDefault()): String =
+        "Week on week comparisons start next ${Weeks.firstDay(locale).getDisplayName(TextStyle.FULL, locale)}."
+
+    /** The week Your week tells (spec 4.2): the last full week before [date], from the locale's first day ([Weeks]). */
+    fun lastWeek(date: LocalDate, firstDay: java.time.DayOfWeek = Weeks.firstDay()): ClosedRange<LocalDate> {
+        val start = Weeks.start(date, firstDay).minusWeeks(1)
+        return start..Weeks.end(start, firstDay)
     }
 
     /** "Steps up 12%" and the like, comparing two weeks; null without both. */
@@ -298,7 +287,7 @@ object TodayCopy {
 
     /** The Last night strip: "7 h 40, score 83". */
     fun lastNight(asleepSeconds: Long?, score: Int?): String? = asleepSeconds?.let {
-        duration(it) + (score?.let { s -> ", score $s" } ?: "")
+        Units.duration(it) + (score?.let { s -> ", score $s" } ?: "")
     }
 
     /** A Small's word for Load against your usual: the [LoadStatus]'s, or that the usual is still being learned. */

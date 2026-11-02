@@ -59,7 +59,7 @@ class WidgetStatusLineTest {
         assertEquals(listOf("Synced 08:59", "08:59"), line(StrapStatus.StaleSync(now - 3 * 3600 - 60)).options)
         assertEquals(listOf("Synced yesterday", "Yesterday"), line(StrapStatus.StaleSync(now - 86_400)).options)
         assertEquals(listOf("Synced Wednesday", "Synced Wed", "Wednesday", "Wed"), line(StrapStatus.StaleSync(now - 3 * 86_400)).options)
-        assertEquals(listOf("Synced 13 Oct", "13 Oct"), line(StrapStatus.StaleSync(now - 11 * 86_400)).options)
+        assertEquals(listOf("Synced Tue 13 Oct", "Tue 13 Oct", "13 Oct"), line(StrapStatus.StaleSync(now - 11 * 86_400)).options)
         lines.forEach { l ->
             assertEquals(strapStatusLine(l.status, now, zone, Locale.UK), l.full)
             l.options.forEach { assertFalse(it, it.any { c -> c in "·;—–" }) }

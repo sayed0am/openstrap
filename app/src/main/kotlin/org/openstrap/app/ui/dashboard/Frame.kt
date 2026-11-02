@@ -1,12 +1,13 @@
 package org.openstrap.app.ui.dashboard
 
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import org.openstrap.app.data.Moment
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.StrapBands
 import org.openstrap.app.ui.glow.GlowMood
 import org.openstrap.app.ui.glow.LightAngle
 
@@ -15,12 +16,12 @@ import org.openstrap.app.ui.glow.LightAngle
  * taps and back. Plain functions, so the rules are tested without a screen.
  */
 
-/** The header's title for [date] on Today: "Today", "Yesterday", or the weekday ("Tuesday"). */
-fun dayTitle(date: LocalDate, today: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): String = when (date) {
-    today -> "Today"
-    today.minusDays(1) -> "Yesterday"
-    else -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
-}
+/**
+ * The header's title for [date] on Today, by [DayWords]: "Today", "Yesterday", the weekday within the week ("Tuesday"),
+ * then the date ("Tue 21 Oct").
+ */
+fun dayTitle(date: LocalDate, today: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault()): String =
+    DayWords.relative(date, today, locale)
 
 /**
  * The header's title on Today (spec 3.1): the [moment] for today, [dayTitle] for a past day, which keeps its name.
@@ -80,8 +81,7 @@ fun heroLightAngle(moment: Moment): Float = when (moment) {
 }
 
 /** The day under the header's title: "Thu 23 Oct". */
-fun dateLine(date: LocalDate, locale: Locale = Locale.getDefault()): String =
-    date.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
+fun dateLine(date: LocalDate, locale: Locale = Locale.getDefault()): String = DayWords.short(date, locale)
 
 /** A neighbouring day's short name, peeking in beside the title: "Wed". */
 fun peekDay(date: LocalDate, locale: Locale = Locale.getDefault()): String =
@@ -110,7 +110,7 @@ data class StrapChip(val text: String, val dot: Dot, val description: String) {
     }
 
     companion object {
-        const val LOW_BATTERY = 15
+        const val LOW_BATTERY = StrapBands.LOW_BATTERY
     }
 }
 
@@ -146,7 +146,8 @@ fun strapChip(paired: Boolean, connection: ConnectionState, sync: SyncState, las
                 connection.charging && battery != null -> StrapChip("Charging $battery%", StrapChip.Dot.Charging, "Strap charging, battery $battery percent")
                 sync is SyncState.Failed -> StrapChip("Not synced", StrapChip.Dot.Warn, "Strap connected, not synced")
                 battery == null -> StrapChip("", StrapChip.Dot.Fine, "Strap connected")
-                battery <= StrapChip.LOW_BATTERY -> StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
+                StrapBands.lowBattery(battery, connection.charging) ->
+                    StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
                 else -> StrapChip("$battery%", StrapChip.Dot.Fine, "Strap connected, battery $battery percent")
             }
         }

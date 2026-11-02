@@ -52,6 +52,19 @@ class CaloriesCopyTest {
         assertEquals("active kcal, 23:00 to 00:00", CaloriesCopy.hourLabel(23))
     }
 
+    @Test fun `hours follow the phone's clock`() {
+        val was = org.openstrap.app.presentation.ClockSetting.use24Hour
+        try {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = false
+            val hours = List(24) { if (it == 7) 228.4f else it.toFloat() }
+            assertEquals("Peak 7:00 AM, 228", CaloriesCopy.peak(hours, Locale.US))
+            assertEquals("active kcal, 11:00 PM to 12:00 AM", CaloriesCopy.hourLabel(23, Locale.US))
+            assertEquals("steps, 9:00 AM to 10:00 AM", ActivityCopy.hourLabel(9, Locale.US))
+        } finally {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = was
+        }
+    }
+
     @Test fun `a strap workout's active kcal is its kcal less rest for its minutes`() {
         // 300 kcal over 50 min, b = 1.2 a minute: 300 - 60 = 240.
         assertEquals(240, Workouts.activeKcal(strap(midnight + 7 * 3600, 50, 300), b))
@@ -78,6 +91,9 @@ class CaloriesCopyTest {
         assertEquals("38 min walking or running, outside workouts", rows[2].line)
         assertNull(rows[2].workoutStart)
         assertEquals("1 h 05", CaloriesCopy.minutes(65 * 60L))
+        // On the hour it reads as every length of time does, and to the nearest minute.
+        assertEquals("1 h", CaloriesCopy.minutes(60 * 60L - 20))
+        assertEquals("42 min", CaloriesCopy.minutes(41 * 60L + 30))
         assertEquals("No walking outside workouts", CaloriesCopy.walkingLine(0))
     }
 

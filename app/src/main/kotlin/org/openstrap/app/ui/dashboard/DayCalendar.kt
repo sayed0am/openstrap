@@ -47,8 +47,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
-import java.time.temporal.WeekFields
 import java.util.Locale
+import org.openstrap.app.presentation.Weeks
 
 /**
  * What the date header's calendar needs: the days that have data, and where a picked day goes. Immutable, so a header
@@ -90,7 +90,7 @@ fun DayCalendarSheet(selected: LocalDate, available: Set<LocalDate>, onPick: (Lo
             }
             Spacer(Modifier.height(12.dp))
 
-            val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+            val firstDay = Weeks.firstDay()
             Row(Modifier.fillMaxWidth()) {
                 for (i in 0 until 7) {
                     SectionLabel(

@@ -15,11 +15,15 @@ class FrameTest {
     private val today = LocalDate.of(2026, 10, 23) // a Friday
     private val uk = Locale.UK
 
-    @Test fun `title says today, yesterday, then the weekday`() {
+    @Test fun `title says today, yesterday, the weekday within the week, then the date`() {
         assertEquals("Today", dayTitle(today, today, uk))
         assertEquals("Yesterday", dayTitle(today.minusDays(1), today, uk))
         assertEquals("Wednesday", dayTitle(today.minusDays(2), today, uk))
-        assertEquals("Friday", dayTitle(today.minusDays(7), today, uk))
+        assertEquals("Saturday", dayTitle(today.minusDays(6), today, uk))
+        // A week back would read as today's weekday, so it takes its date, with the year from an earlier one.
+        assertEquals("Fri 16 Oct", dayTitle(today.minusDays(7), today, uk))
+        assertEquals("Wed 31 Dec 2025", dayTitle(LocalDate.of(2025, 12, 31), today, uk))
+        assertEquals("Fri 16 Oct", dateLine(today.minusDays(7), uk))
     }
 
     @Test fun `the day under the title is short and never has an interpunct`() {

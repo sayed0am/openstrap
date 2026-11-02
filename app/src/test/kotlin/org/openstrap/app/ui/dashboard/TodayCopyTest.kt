@@ -137,11 +137,38 @@ class TodayCopyTest {
         assertEquals("14" to "Hours left, ready tomorrow", TodayCopy.recoverText(14 * 3600L, at(18), zone))
     }
 
-    @Test fun `your week is the last full monday to sunday`() {
+    @Test fun `your week is the last full week, monday to sunday where the week starts on monday`() {
         // 23 Oct 2026 is a Friday.
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 19)))
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 25)))
+        val monday = java.time.DayOfWeek.MONDAY
+        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23), monday))
+        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 19), monday))
+        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 25), monday))
+    }
+
+    @Test fun `your week follows the locale's first day`() {
+        val was = Locale.getDefault()
+        try {
+            Locale.setDefault(Locale.US)
+            // In the US the week starts on Sunday: the week before Friday 23 Oct is Sunday 11 to Saturday 17.
+            assertEquals(LocalDate.of(2026, 10, 11)..LocalDate.of(2026, 10, 17), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
+            assertEquals("Week on week comparisons start next Sunday.", TodayCopy.WEEK_FIRST)
+            Locale.setDefault(Locale.UK)
+            assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
+            assertEquals("Week on week comparisons start next Monday.", TodayCopy.WEEK_FIRST)
+        } finally {
+            Locale.setDefault(was)
+        }
+    }
+
+    @Test fun `ready by follows the phone's clock`() {
+        val was = org.openstrap.app.presentation.ClockSetting.use24Hour
+        try {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = false
+            assertEquals("2" to "Hours left, ready by 8:30 PM", TodayCopy.recoverText(90 * 60L, at(19), zone, Locale.US))
+            assertCleanCopy(TodayCopy.recoverText(90 * 60L, at(19), zone, Locale.US).second)
+        } finally {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = was
+        }
     }
 
     @Test fun `steps change and last night line`() {
