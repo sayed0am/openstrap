@@ -24,7 +24,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import org.openstrap.app.ui.glow.chargeShown
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.MainActivity
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
@@ -32,9 +32,12 @@ import org.openstrap.app.R
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.workout.NotificationCopy
-import org.openstrap.app.ui.workout.ZONE_COLORS
-import androidx.compose.ui.graphics.toArgb
+import org.openstrap.app.presentation.NotificationCopy
+import org.openstrap.app.presentation.StrapBands
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.WorkoutColors
+import org.openstrap.app.presentation.WorkoutWords
 
 /**
  * Keeps the process alive while connected so syncing and live HR survive the app being backgrounded, and for the
@@ -243,7 +246,7 @@ class StrapService : LifecycleService() {
             ?.ifEmpty { null } ?: "Helio Strap"
         val connected = c as? ConnectionState.Connected
         val battery = connected?.batteryPercent
-        val low = connected != null && !connected.charging && battery != null && battery <= LOW_BATTERY
+        val low = connected != null && StrapBands.lowBattery(battery, connected.charging)
         val text = when {
             c is ConnectionState.Failed -> "Couldn't reach the strap"
             c is ConnectionState.Connecting -> "Connecting…"
@@ -325,9 +328,9 @@ class StrapService : LifecycleService() {
         val actions = WorkoutNotification.actions(r.paused, confirming, ::service)
         if (!liveUpdatesShown()) return WorkoutNotification.build(this, card, actions, openApp()).unsaved(r).build()
         val color = when {
-            r.paused || !connected -> PAUSED_GREY
-            zone != null -> ZONE_COLORS[zone].toArgb()
-            else -> PAUSED_GREY
+            r.paused || !connected -> WorkoutColors.PAUSED_GREY
+            zone != null -> WorkoutColors.zone(zone)
+            else -> WorkoutColors.PAUSED_GREY
         }
         val bar = NotificationCompat.ProgressStyle()
             .setStyledByProgress(false)
@@ -346,9 +349,10 @@ class StrapService : LifecycleService() {
                 } else {
                     // Bright up to the heart rate, faded after, like the app's zone bar and its gauges.
                     style.setStyledByProgress(true)
-                    style.setProgressSegments(ZONE_COLORS.map { NotificationCompat.ProgressStyle.Segment(ZONE_SPAN).setColor(it.toArgb()) })
+                    style.setProgressSegments(WorkoutColors.ZONES.map { NotificationCompat.ProgressStyle.Segment(ZONE_SPAN).setColor(it) })
                     if (bpm != null && !r.paused) {
-                        style.setProgress((WorkoutRecorder.zonePosition(bpm, r.maxHeartRate) * ZONE_SPAN * ZONE_COLORS.size).toInt())
+                        val span = ZONE_SPAN * WorkoutColors.ZONES.size
+                        style.setProgress((WorkoutRecorder.zonePosition(bpm, r.maxHeartRate) * span).toInt())
                         WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { z -> style.setProgressTrackerIcon(tracker(z)) }
                     }
                 }
@@ -409,13 +413,13 @@ class StrapService : LifecycleService() {
         val end = w.end ?: System.currentTimeMillis() / 1000
         val duration = WorkoutRecorder.activeSeconds(w.copy(end = null, pausedAt = null), end)
         val facts = listOfNotNull(
-            clock(duration),
-            w.distanceMeters?.takeIf { it >= 10 }?.let { (if (w.distanceFromSteps) "≈ " else "") + org.openstrap.app.ui.glow.km(it) + if (it >= 1000) " km" else "" },
+            Units.workoutClock(duration),
+            w.distanceMeters?.let { Units.distance(it, Units.Precision.Workout, w.distanceFromSteps) },
             w.averageHeartRate?.let { "$it bpm avg" },
         ).joinToString(", ")
         val auto = w.endReason == org.openstrap.app.data.db.AppWorkout.END_AUTO || w.endReason == org.openstrap.app.data.db.AppWorkout.END_CAR
         val cut = w.recordedEnd?.let { it - end }?.takeIf { auto && it >= 60 }
-        val time = java.time.Instant.ofEpochSecond(end).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+        val time = TimeOfDay.format(end, java.time.ZoneId.systemDefault())
         val text = if (cut != null) "$facts\nEnded at $time, when you'd stopped. The ${cut / 60} min after were left out." else facts
         val b = NotificationCompat.Builder(this, SAVED_CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
@@ -453,10 +457,10 @@ class StrapService : LifecycleService() {
             .setSmallIcon(R.drawable.ic_stat_openstrap)
             .setContentTitle(title)
             .setContentText(
-                if (!connected) "Still recording, reconnecting…"
+                if (!connected) "${WorkoutWords.STRAP_GONE}. Still recording."
                 else listOfNotNull(bpm?.let { "$it bpm" }, r.workout.setsTarget?.let { "$done of $it sets" }).joinToString(", "),
             )
-            .setColor(if (connected) (WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { ZONE_COLORS[it].toArgb() } ?: PAUSED_GREY) else PAUSED_GREY)
+            .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate)) else WorkoutColors.PAUSED_GREY)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
@@ -484,7 +488,7 @@ class StrapService : LifecycleService() {
 
     /** "Looks like you've stopped": the same notification, asking whether to end where the wearer stopped. */
     private fun stoppedNotification(r: WorkoutState.Recording, at: Long): Notification {
-        val time = java.time.Instant.ofEpochSecond(at).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+        val time = TimeOfDay.format(at, java.time.ZoneId.systemDefault())
         val sport = Workouts.sportName(r.workout.sportType).lowercase()
         val text = if (r.inCar) "You last moved at $time. End the $sport there, so the drive isn't counted?"
         else "Your heart rate has been back near resting since $time. End the $sport at $time?"
@@ -506,7 +510,7 @@ class StrapService : LifecycleService() {
 
     /** "Looks like a workout": record it from where the effort began, or not. Swiping it away is "Not now". */
     private fun offerNotification(o: org.openstrap.app.data.AutoStart.Offer): Notification {
-        val time = java.time.Instant.ofEpochSecond(o.start).atZone(java.time.ZoneId.systemDefault()).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+        val time = TimeOfDay.format(o.start, java.time.ZoneId.systemDefault())
         val sport = Workouts.sportName(o.sportType).lowercase()
         val text = "Your heart rate has been up since $time, ${o.averageHeartRate} bpm on average. Record a $sport from $time?"
         return NotificationCompat.Builder(this, OFFER_CHANNEL)
@@ -524,7 +528,7 @@ class StrapService : LifecycleService() {
     }
 
     /** The app's gauge marker in each zone's colour: a solid dot in a soft halo of itself, drawn once per zone. */
-    private val trackers = arrayOfNulls<androidx.core.graphics.drawable.IconCompat>(ZONE_COLORS.size)
+    private val trackers = arrayOfNulls<androidx.core.graphics.drawable.IconCompat>(WorkoutColors.ZONES.size)
 
     private fun tracker(zone: Int): androidx.core.graphics.drawable.IconCompat = trackers[zone] ?: run {
         val d = resources.displayMetrics.density
@@ -532,7 +536,7 @@ class StrapService : LifecycleService() {
         val bitmap = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(bitmap)
         val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
-        val color = ZONE_COLORS[zone].toArgb()
+        val color = WorkoutColors.ZONES[zone]
         paint.color = androidx.core.graphics.ColorUtils.setAlphaComponent(color, 77)
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
         paint.color = color
@@ -567,12 +571,8 @@ class StrapService : LifecycleService() {
         private const val CONFIRM_MS = 6_000L
         private const val NOT_SAVED = "Not saved yet"
         private const val FIGURES_REFRESH_MS = 30 * 60_000L
-        /** Battery percent at which the everyday notification says to charge. */
-        private const val LOW_BATTERY = 15
-        /** The live screen's paused grey, for a paused or disconnected workout. */
-        private const val PAUSED_GREY = 0xFF5A5F6A.toInt()
-        /** The red dot in the "OS." logo, the app's heart colour. */
-        private val BRAND_DOT = org.openstrap.app.ui.theme.MetricColors.heart.toArgb()
+        /** The red dot in the "OS." logo, the app's heart colour: zone 5's red. */
+        private const val BRAND_DOT = WorkoutColors.ZONE_5
         private const val ACTION_RECORD = "org.openstrap.app.workout.RECORD"
         private const val ACTION_DECLINE = "org.openstrap.app.workout.DECLINE"
         private const val WORKOUT_REFRESH_MS = 10_000L
@@ -612,7 +612,5 @@ class StrapService : LifecycleService() {
             context.startForegroundService(intent)
         }
 
-        private fun clock(seconds: Long) = if (seconds >= 3600) "%d:%02d:%02d".format(seconds / 3600, seconds / 60 % 60, seconds % 60)
-        else "%d:%02d".format(seconds / 60, seconds % 60)
     }
 }

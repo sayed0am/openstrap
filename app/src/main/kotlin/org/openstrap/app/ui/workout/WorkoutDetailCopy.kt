@@ -3,15 +3,14 @@ package org.openstrap.app.ui.workout
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.dashboard.Info
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.sportNoun
-import org.openstrap.app.ui.glow.km
-import org.openstrap.app.ui.glow.workoutClock
 
 /*
  * What the page of a past workout says (spec 6.3, "Workout detail"): the sentence first ("Hard run, mostly in zone
@@ -19,8 +18,13 @@ import org.openstrap.app.ui.glow.workoutClock
  * without a workout.
  */
 
-/** A small fact on the workout's list: [name], [value] in dot-matrix digits, and the [status] under the name. */
-data class WorkoutFact(val name: String, val value: String, val status: String?)
+/**
+ * A small fact on the workout's list: [name], [value] in dot-matrix digits, and the [status] under the name. [kind] is
+ * what its colour and icon go by, so a change to the words can't change them.
+ */
+data class WorkoutFact(val name: String, val value: String, val status: String?, val kind: Kind) {
+    enum class Kind { Distance, Paused, Steps, Calories, Target }
+}
 
 /** What a workout's other figures look like, for the strap's own record of a phone workout; [from] its start, "22:53". */
 data class EffectFigures(val aerobic: Float?, val anaerobic: Float?, val load: Int?, val recoveryMinutes: Int?, val from: String? = null)
@@ -85,16 +89,9 @@ object WorkoutDetailCopy {
         return head + (mostlyZone(zoneSeconds)?.let { ", mostly in zone ${it + 1}" } ?: "") + "."
     }
 
-    /** The hero's day: "Today", "Yesterday", "Tue 21 Oct", with the year when it isn't [today]'s. */
-    fun day(start: Long, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
-        val d = Instant.ofEpochSecond(start).atZone(zone).toLocalDate()
-        return when {
-            d == today -> "Today"
-            d == today.minusDays(1) -> "Yesterday"
-            d.year == today.year -> d.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
-            else -> d.format(DateTimeFormatter.ofPattern("EEE d MMM yyyy", locale))
-        }
-    }
+    /** The hero's day ([DayWords.relative]): "Today", "Yesterday", "Tuesday", "Tue 21 Oct", "Tue 21 Oct 2025". */
+    fun day(start: Long, today: LocalDate, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
+        DayWords.relative(Instant.ofEpochSecond(start).atZone(zone).toLocalDate(), today, locale)
 
     /**
      * The workout's small facts, each left out when there's nothing to say: distance (from GPS, or estimated from
@@ -106,15 +103,22 @@ object WorkoutDetailCopy {
         locale: Locale = Locale.getDefault(),
     ): List<WorkoutFact> =
         listOfNotNull(
-            meters?.takeIf { it >= 10f }?.let { m ->
-                val unit = if (m >= 1000) "Kilometres" else "Metres"
-                WorkoutFact("Distance", if (m >= 1000) km(m) else m.toInt().toString(), if (fromSteps) "$unit, estimated from your steps" else unit)
+            meters?.takeIf { it >= Units.SHOWN_FROM_METERS }?.let { m ->
+                val unit = if (m >= Units.METERS_PER_KM) "Kilometres" else "Metres"
+                // The value is drawn in the dot font, so it keeps the dot and ASCII digits.
+                val value = if (m >= Units.METERS_PER_KM) Units.km(m, Units.Precision.Workout, Units.DOT_LOCALE) else m.toInt().toString()
+                WorkoutFact("Distance", value, if (fromSteps) "$unit, estimated from your steps" else unit, WorkoutFact.Kind.Distance)
             },
-            pausedSeconds.takeIf { it >= MIN_PAUSED_S }?.let { WorkoutFact("Paused", workoutClock(it), "Not counted in the time") },
-            steps?.takeIf { it > 0 }?.let { WorkoutFact("Steps", "%,d".format(locale, it), null) },
+            pausedSeconds.takeIf { it >= MIN_PAUSED_S }?.let {
+                WorkoutFact("Paused", Units.workoutClock(it, Units.DOT_LOCALE), "Not counted in the time", WorkoutFact.Kind.Paused)
+            },
+            steps?.takeIf { it > 0 }?.let { WorkoutFact("Steps", "%,d".format(locale, it), null, WorkoutFact.Kind.Steps) },
             calories?.takeIf { it > 0 }?.let { total ->
-                if (activeKcal != null && activeKcal != total) WorkoutFact("Calories", "%,d".format(locale, activeKcal), "Total %,d".format(locale, total))
-                else WorkoutFact("Calories", "%,d".format(locale, total), "kcal")
+                if (activeKcal != null && activeKcal != total) {
+                    WorkoutFact("Calories", "%,d".format(locale, activeKcal), "Total %,d".format(locale, total), WorkoutFact.Kind.Calories)
+                } else {
+                    WorkoutFact("Calories", "%,d".format(locale, total), "kcal", WorkoutFact.Kind.Calories)
+                }
             },
         )
 
@@ -125,12 +129,12 @@ object WorkoutDetailCopy {
     fun targetFact(target: String?, reachedSeconds: Long?, activeKcal: Int?, locale: Locale = Locale.getDefault()): WorkoutFact? {
         val k = WorkoutTarget.parse(target) as? WorkoutTarget.Kcal ?: return null
         val status = when {
-            reachedSeconds != null -> "Reached at ${workoutClock(reachedSeconds)}"
+            reachedSeconds != null -> "Reached at ${Units.workoutClock(reachedSeconds, locale)}"
             activeKcal != null && activeKcal >= k.kcal -> "Reached"
             activeKcal != null -> "Not reached, %,d of %,d".format(locale, activeKcal, k.kcal)
             else -> "Not reached"
         }
-        return WorkoutFact("Target", "%,d kcal".format(locale, k.kcal), status)
+        return WorkoutFact("Target", "%,d kcal".format(locale, k.kcal), status, WorkoutFact.Kind.Target)
     }
 
     /**

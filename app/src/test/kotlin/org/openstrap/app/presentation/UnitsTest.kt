@@ -167,12 +167,20 @@ class UnitsTest(private val locale: Locale) {
     private fun amPm(time: LocalTime) = DateTimeFormatter.ofPattern("a", locale).format(time)
 
     @Test
+    fun clocksUseTheLanguagesDigits() {
+        val t = epoch("2026-06-10T19:40:00Z")
+        val clock = TimeOfDay.format(t, BERLIN, use24Hour = true)
+        if (locale.language == "ar") assertEquals("\u0662\u0661:\u0664\u0660", clock)
+        assertEquals(String.format(locale, "%02d:%02d", 21, 40), clock)
+    }
+
+    @Test
     fun timeOfDayFollowsThe24HourSetting() {
         val t = epoch("2026-06-10T19:40:00Z") // 21:40 in Berlin
-        assertEquals("21:40", TimeOfDay.format(t, BERLIN, use24Hour = true).kept())
-        assertEquals("9:40 " + amPm(LocalTime.of(21, 40)), TimeOfDay.format(t, BERLIN, use24Hour = false).kept())
-        assertEquals("08:05", TimeOfDay.format(LocalTime.of(8, 5), use24Hour = true))
-        assertEquals("8:05 " + amPm(LocalTime.of(8, 5)), TimeOfDay.format(LocalTime.of(8, 5), use24Hour = false))
+        assertEquals(n("21:40"), TimeOfDay.format(t, BERLIN, use24Hour = true).kept())
+        assertEquals(n("9:40 ") + amPm(LocalTime.of(21, 40)), TimeOfDay.format(t, BERLIN, use24Hour = false).kept())
+        assertEquals(n("08:05"), TimeOfDay.format(LocalTime.of(8, 5), use24Hour = true))
+        assertEquals(n("8:05 ") + amPm(LocalTime.of(8, 5)), TimeOfDay.format(LocalTime.of(8, 5), use24Hour = false))
         if (locale.language == "en") assertEquals("9:40 PM", TimeOfDay.format(t, BERLIN, use24Hour = false))
     }
 
@@ -184,7 +192,7 @@ class UnitsTest(private val locale: Locale) {
             ClockSetting.use24Hour = false
             assertEquals(TimeOfDay.format(t, BERLIN, use24Hour = false), TimeOfDay.format(t, BERLIN))
             ClockSetting.use24Hour = true
-            assertEquals("21:40", TimeOfDay.format(t, BERLIN))
+            assertEquals(n("21:40"), TimeOfDay.format(t, BERLIN))
         } finally {
             ClockSetting.use24Hour = saved
         }
@@ -193,27 +201,27 @@ class UnitsTest(private val locale: Locale) {
     @Test
     fun timeOfDayOnTheDayTheClocksGoForward() {
         // 2026-03-29: 02:00 CET becomes 03:00 CEST.
-        assertEquals("01:30", TimeOfDay.format(epoch("2026-03-29T00:30:00Z"), BERLIN, use24Hour = true))
-        assertEquals("03:30", TimeOfDay.format(epoch("2026-03-29T01:30:00Z"), BERLIN, use24Hour = true))
-        assertEquals("3:30 " + amPm(LocalTime.of(3, 30)), TimeOfDay.format(epoch("2026-03-29T01:30:00Z"), BERLIN, use24Hour = false).kept())
+        assertEquals(n("01:30"), TimeOfDay.format(epoch("2026-03-29T00:30:00Z"), BERLIN, use24Hour = true))
+        assertEquals(n("03:30"), TimeOfDay.format(epoch("2026-03-29T01:30:00Z"), BERLIN, use24Hour = true))
+        assertEquals(n("3:30 ") + amPm(LocalTime.of(3, 30)), TimeOfDay.format(epoch("2026-03-29T01:30:00Z"), BERLIN, use24Hour = false).kept())
     }
 
     @Test
     fun timeOfDayOnTheDayTheClocksGoBack() {
         // 2026-10-25: 03:00 CEST becomes 02:00 CET, so 02:30 happens twice.
-        assertEquals("02:30", TimeOfDay.format(epoch("2026-10-25T00:30:00Z"), BERLIN, use24Hour = true))
-        assertEquals("02:30", TimeOfDay.format(epoch("2026-10-25T01:30:00Z"), BERLIN, use24Hour = true))
-        assertEquals("03:30", TimeOfDay.format(epoch("2026-10-25T02:30:00Z"), BERLIN, use24Hour = true))
-        assertEquals("2:30 " + amPm(LocalTime.of(2, 30)), TimeOfDay.format(epoch("2026-10-25T01:30:00Z"), BERLIN, use24Hour = false).kept())
+        assertEquals(n("02:30"), TimeOfDay.format(epoch("2026-10-25T00:30:00Z"), BERLIN, use24Hour = true))
+        assertEquals(n("02:30"), TimeOfDay.format(epoch("2026-10-25T01:30:00Z"), BERLIN, use24Hour = true))
+        assertEquals(n("03:30"), TimeOfDay.format(epoch("2026-10-25T02:30:00Z"), BERLIN, use24Hour = true))
+        assertEquals(n("2:30 ") + amPm(LocalTime.of(2, 30)), TimeOfDay.format(epoch("2026-10-25T01:30:00Z"), BERLIN, use24Hour = false).kept())
     }
 
     @Test
     fun minutesOfDayWrap() {
-        assertEquals("22:30", TimeOfDay.minutes(22 * 60 + 30, use24Hour = true).kept())
-        assertEquals("00:30", TimeOfDay.minutes(1470, use24Hour = true))
-        assertEquals("23:30", TimeOfDay.minutes(-30, use24Hour = true))
-        assertEquals("00:00", TimeOfDay.minutes(0, use24Hour = true))
-        assertEquals("10:30 " + amPm(LocalTime.of(22, 30)), TimeOfDay.minutes(22 * 60 + 30, use24Hour = false).kept())
+        assertEquals(n("22:30"), TimeOfDay.minutes(22 * 60 + 30, use24Hour = true).kept())
+        assertEquals(n("00:30"), TimeOfDay.minutes(1470, use24Hour = true))
+        assertEquals(n("23:30"), TimeOfDay.minutes(-30, use24Hour = true))
+        assertEquals(n("00:00"), TimeOfDay.minutes(0, use24Hour = true))
+        assertEquals(n("10:30 ") + amPm(LocalTime.of(22, 30)), TimeOfDay.minutes(22 * 60 + 30, use24Hour = false).kept())
         assertFalse(TimeOfDay.minutes(22 * 60 + 30, use24Hour = false).startsWith("22"))
     }
 }

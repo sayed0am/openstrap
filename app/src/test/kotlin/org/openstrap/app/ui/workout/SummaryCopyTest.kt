@@ -10,6 +10,9 @@ import org.openstrap.app.data.Route
 
 /** The summary right after a workout: the heart rate drop, Load, splits and a personal best (spec 6.3). */
 class SummaryCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val end = 1_000_000L
     private val maxHr = 190
 
@@ -95,6 +98,9 @@ class SummaryCopyTest {
         val rows = SummaryCopy.splitRows(splits, hr, firstT = 100L)
         assertEquals(listOf("Km 1", "Km 2", "Last 430 m"), rows.map { it.name })
         assertEquals("5:42", rows[0].time)
+        // The seconds and the kind travel with each row, for the fastest mark and the bars.
+        assertEquals(listOf(342L, 358L, 150L), rows.map { it.seconds })
+        assertEquals(listOf(SplitRow.Kind.Whole, SplitRow.Kind.Whole, SplitRow.Kind.Last), rows.map { it.kind })
         assertEquals(150, rows[0].averageBpm)
         assertEquals(160, rows[1].averageBpm)
         // A last bit under 100 m is left out.

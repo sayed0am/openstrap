@@ -12,7 +12,9 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
-import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 
 /*
  * What each kind of workout's summary says under its hero (workouts spec 2.8): the fastest split, sets per exercise
@@ -32,16 +34,17 @@ data class RoundLine(val number: Int, val peak: Int?, val drop: Int?)
 /** One period of a game: its name, average heart rate and hard efforts. */
 data class PeriodLine(val name: String, val averageBpm: Int?, val hardEfforts: Int, val seconds: Long)
 
-/** A row under Earned: a new best, a badge, or the weekly goal ([met] once this week's is). */
-data class EarnedLine(val kind: Kind, val text: String, val value: String? = null, val note: String? = null, val met: Boolean = false) {
-    enum class Kind { Best, Badge, Goal }
-}
-
 object FamilySummary {
-    /** "This morning, 07:12", "Today, 18:40" (the afternoon), "This evening, 19:05"; another day "Saturday 10:00". */
-    fun whenLine(start: Long, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
+    /**
+     * "This morning, 07:12", "Today, 18:40" (the afternoon), "This evening, 19:05", "Yesterday, 07:12"; another day by
+     * [DayWords.relative]: "Saturday 10:00", "Tue 21 Oct 10:00". The time follows the phone's 12 or 24 hour setting.
+     */
+    fun whenLine(
+        start: Long, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(),
+        use24Hour: Boolean = org.openstrap.app.presentation.ClockSetting.use24Hour,
+    ): String {
         val t = Instant.ofEpochSecond(start).atZone(zone)
-        val clock = t.format(DateTimeFormatter.ofPattern("HH:mm", locale))
+        val clock = TimeOfDay.format(start, zone, use24Hour, locale)
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
         return when (t.toLocalDate()) {
             today -> when (t.hour) {
@@ -50,18 +53,16 @@ object FamilySummary {
                 else -> "Today, $clock"
             }
             today.minusDays(1) -> "Yesterday, $clock"
-            else -> t.format(DateTimeFormatter.ofPattern("EEEE", locale)) + " " + clock
+            else -> DayWords.relative(t.toLocalDate(), today, locale) + " " + clock
         }
     }
 
     /** The fastest whole kilometre among [rows] (by its time), when there are two or more to choose from. */
     fun fastestSplit(rows: List<SplitRow>): Int? {
-        val whole = rows.withIndex().filter { it.value.name.startsWith("Km ") }
+        val whole = rows.withIndex().filter { it.value.kind == SplitRow.Kind.Whole }
         if (whole.size < 2) return null
-        return whole.minByOrNull { seconds(it.value.time) }?.index
+        return whole.minByOrNull { it.value.seconds }?.index
     }
-
-    private fun seconds(clock: String): Long = clock.split(":").fold(0L) { acc, p -> acc * 60 + (p.toLongOrNull() ?: 0) }
 
     /**
      * Finished [sets] by exercise, in the order each was first done, with the peak of [readings] (time, bpm) in each set.
@@ -74,7 +75,7 @@ object FamilySummary {
             val mine = done.filter { it.exercise?.trim()?.takeIf(String::isNotEmpty)?.lowercase() == name?.lowercase() }
             ExerciseSets(name, mine.mapIndexed { i, s ->
                 val text = if (s.reps != null && s.weightKg != null) "${s.reps} × ${Strength.kgText(s.weightKg)} kg"
-                else if (s.reps != null) "${s.reps} reps" else workoutClock(s.end!! - s.start)
+                else if (s.reps != null) "${s.reps} reps" else Units.workoutClock(s.end!! - s.start)
                 SetLine(if (name == null) s.index + 1 else i + 1, text, Strength.peak(readings, s.start, s.end!!))
             })
         }
@@ -118,7 +119,7 @@ object FamilySummary {
         }
     }
 
-    private fun clockOrSeconds(s: Long) = if (s < 60) "$s s" else workoutClock(s)
+    private fun clockOrSeconds(s: Long) = Units.secondsOrClock(s)
 
     /**
      * Each finished round's peak, and the drop in the rest after it: the peak less the lowest reading of [readings]
@@ -335,9 +336,6 @@ object FamilySummary {
 
     /** Whether [a] is a run whose distance came from GPS, the only one whose pace means something. */
     fun gpsDistance(meters: Float?, fromSteps: Boolean): Float? = meters?.takeIf { !fromSteps && it > 0f }
-
-    /** Seconds per km from [meters] in [seconds]; null under 100 m. */
-    fun pace(meters: Float?, seconds: Long): Double? = meters?.takeIf { it >= 100f }?.let { seconds / (it / 1000.0) }
 
     /** The family a summary takes for [sportType] with its [structure]: rounds make any sport's summary an intervals one. */
     fun familyOf(sportType: Int, structure: org.openstrap.app.data.Structure?): Workouts.Family = when (structure) {

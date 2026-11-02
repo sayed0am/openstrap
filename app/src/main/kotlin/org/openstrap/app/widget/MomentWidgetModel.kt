@@ -22,7 +22,7 @@ import org.openstrap.app.ui.glow.GlowMood
 import org.openstrap.app.ui.glow.GlowStyle
 import org.openstrap.app.ui.glow.LightAngle
 import org.openstrap.app.ui.glow.WINDOW_RIM
-import org.openstrap.app.ui.glow.chargeShown
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.ui.glow.heroStyle
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.TimeOfDay

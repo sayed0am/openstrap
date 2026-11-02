@@ -89,3 +89,9 @@ object StrapBands {
     /** Whether [percent] is low: at or under [LOW_BATTERY] and not [charging]. */
     fun lowBattery(percent: Int?, charging: Boolean): Boolean = percent != null && !charging && percent <= LOW_BATTERY
 }
+
+/**
+ * Charge as a whole number the way every screen, widget and the notification show it, cut rather than rounded, so they
+ * all agree.
+ */
+fun chargeShown(value: Float): Int = value.toInt()

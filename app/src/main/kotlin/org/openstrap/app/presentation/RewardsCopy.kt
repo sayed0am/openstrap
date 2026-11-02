@@ -1,21 +1,25 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.presentation
 
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import org.openstrap.app.data.Rewards
 import org.openstrap.app.data.db.BadgeRow
 import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.WeekResult
-import org.openstrap.app.ui.glow.workoutClock
 
 /*
  * What the weekly goal, bests and badges say (workouts spec 3): the Earned rows on a summary, the best card, the goal
- * moment, the weekly recap and the Goals and bests page. Pure, so it's tested without a workout ending.
+ * moment, the weekly recap and the Goals and bests page. Pure, so it's tested without a workout ending. Here rather than
+ * in ui, so the weekly recap notification reads it without depending on the screens.
  */
+
+/** A row under Earned: a new best, a badge, or the weekly goal ([met] once this week's is). */
+data class EarnedLine(val kind: Kind, val text: String, val value: String? = null, val note: String? = null, val met: Boolean = false) {
+    enum class Kind { Best, Badge, Goal }
+}
 
 /** What a just ended workout earned and what follows the summary. */
 data class SummaryRewards(
@@ -57,14 +61,18 @@ object RewardsCopy {
         }
     }
 
-    /** A best's value: "26:41", "14.2 km", "1:32:10", "23,410", "65 kg". */
-    fun bestValue(kind: String, value: Double): String = when {
-        Rewards.Kind.fastestMeters(kind) != null -> workoutClock(Math.round(value))
+    /** A best's value: "26:41", "14.21 km", "1 h 32", "23,410", "65 kg". The longest run is one workout's distance. */
+    fun bestValue(kind: String, value: Double, locale: Locale = Locale.getDefault()): String = when {
+        Rewards.Kind.fastestMeters(kind) != null -> Units.workoutClock(Math.round(value), locale)
         Rewards.Kind.liftName(kind) != null -> org.openstrap.app.data.Strength.kgText(value.toFloat()) + " kg"
-        kind == Rewards.Kind.LONGEST_RUN -> String.format(Locale.ROOT, "%.1f km", value / 1000)
-        kind == Rewards.Kind.LONGEST_WORKOUT -> org.openstrap.app.ui.dashboard.TodayCopy.duration(Math.round(value))
-        else -> "%,d".format(Math.round(value))
+        kind == Rewards.Kind.LONGEST_RUN -> workoutDistance(value, locale)
+        kind == Rewards.Kind.LONGEST_WORKOUT -> Units.duration(Math.round(value), locale)
+        else -> Units.count(Math.round(value), locale)
     }
+
+    /** A run's distance as a workout shows it, and "0 m" for nothing, where a best has to show a figure. */
+    private fun workoutDistance(meters: Double, locale: Locale): String =
+        Units.distance(meters.toFloat(), Units.Precision.Workout, locale = locale) ?: String.format(locale, "%d m", 0)
 
     /**
      * What a badge's art reads: its short text, except the first weekly goal, which shows the goal it was met at
@@ -73,14 +81,14 @@ object RewardsCopy {
     fun face(b: Rewards.Badge, goalAt: Int?): String = if (b.id == "goal_first" && goalAt != null) "$goalAt/$goalAt" else b.short
 
     /** "22 s faster", "2.5 kg more", "1.2 km farther", "4 min longer": how far [b] beat [before]. */
-    fun beatBy(b: PersonalBest, before: PersonalBest): String {
+    fun beatBy(b: PersonalBest, before: PersonalBest, locale: Locale = Locale.getDefault()): String {
         val diff = kotlin.math.abs(b.value - before.value)
         return when {
-            Rewards.Kind.fastestMeters(b.kind) != null -> Math.round(diff).let { if (it < 60) "$it s" else workoutClock(it) } + " faster"
+            Rewards.Kind.fastestMeters(b.kind) != null -> Units.secondsOrClock(Math.round(diff), locale) + " faster"
             Rewards.Kind.liftName(b.kind) != null -> org.openstrap.app.data.Strength.kgText(diff.toFloat()) + " kg more"
-            b.kind == Rewards.Kind.LONGEST_RUN -> String.format(Locale.ROOT, "%.1f km", diff / 1000) + " farther"
+            b.kind == Rewards.Kind.LONGEST_RUN -> workoutDistance(diff, locale) + " farther"
             b.kind == Rewards.Kind.LONGEST_WORKOUT -> "${Math.round(diff / 60).coerceAtLeast(1)} min longer"
-            else -> "%,d".format(Math.round(diff)) + " more"
+            else -> Units.count(Math.round(diff), locale) + " more"
         }
     }
 
@@ -88,7 +96,8 @@ object RewardsCopy {
     fun beatLine(n: Rewards.NewBest, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
         val d = Instant.ofEpochSecond(n.before.date).atZone(zone)
         val pattern = if (d.year == Instant.ofEpochSecond(now).atZone(zone).year) "MMMM" else "MMMM yyyy"
-        return "${beatBy(n.best, n.before).replaceFirstChar { it.uppercase() }} than your best from ${d.format(DateTimeFormatter.ofPattern(pattern, locale))}."
+        val by = beatBy(n.best, n.before, locale).replaceFirstChar { it.uppercase() }
+        return "$by than your best from ${d.format(Formatters.of(pattern, locale))}."
     }
 
     /** Which new best leads: the fastest stretches first, then the longest run, a lift, the longest workout. */
@@ -144,12 +153,12 @@ object RewardsCopy {
     fun whenSet(date: Long, sportName: String, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
         val t = Instant.ofEpochSecond(date).atZone(zone)
         val part = when (t.hour) { in 4..11 -> "morning"; in 12..16 -> "afternoon"; in 17..21 -> "evening"; else -> "night" }
-        return t.format(DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", locale)) + ", $part ${sportName.lowercase(locale)}"
+        return t.format(Formatters.of("EEEE, d MMMM yyyy", locale)) + ", $part ${sportName.lowercase(locale)}"
     }
 
     /** "27 October to 2 November": a week from its first day. */
     fun weekRange(first: LocalDate, locale: Locale = Locale.getDefault()): String {
-        val f = DateTimeFormatter.ofPattern("d MMMM", locale)
+        val f = Formatters.of("d MMMM", locale)
         return "${first.format(f)} to ${first.plusDays(6).format(f)}"
     }
 
@@ -163,10 +172,10 @@ object RewardsCopy {
 
     private fun weeks(n: Int) = if (n == 1) "week" else "weeks"
 
-    /** A locked badge's need: "712 of 1,000 km", "3 of 10 workouts". */
-    fun progressLine(have: Long, need: Long, unit: String): String = when (unit) {
-        "m" -> String.format(Locale.ROOT, "%.1f of %d km", have / 1000.0, need / 1000)
-        else -> "%,d of %,d %s".format(have, need, unit)
+    /** A locked badge's need: "712 of 1,000 km", "3 of 10 workouts", and metres as km over many days: "4.2 of 5 km". */
+    fun progressLine(have: Long, need: Long, unit: String, locale: Locale = Locale.getDefault()): String = when (unit) {
+        "m" -> "${Units.km(have.toFloat(), Units.Precision.Day, locale)} of ${Units.count(need / 1000, locale)} km"
+        else -> "${Units.count(have, locale)} of ${Units.count(need, locale)} $unit"
     }
 
     /** The recap notification: "4 of 4 workouts, goal met. 6 weeks in a row." */

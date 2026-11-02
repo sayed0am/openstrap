@@ -359,18 +359,17 @@ private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
 private fun FactsList(facts: List<WorkoutFact>, summary: PhoneSummary?) {
     ListPanel(title = "The workout") {
         facts.forEachIndexed { i, f ->
-            val color = when (f.name) {
-                "Paused" -> PausedColor
-                "Calories", "Target" -> MetricColors.calories
+            val color = when (f.kind) {
+                WorkoutFact.Kind.Paused -> PausedColor
+                WorkoutFact.Kind.Calories, WorkoutFact.Kind.Target -> MetricColors.calories
                 else -> MetricColors.steps
             }
-            val icon = when (f.name) {
-                "Distance" -> Score.Distance.rowIcon()
-                "Paused" -> AppIcons.Hourglass
-                "Steps" -> Metric.Steps.rowIcon()
-                "Calories" -> Score.Energy.rowIcon()
-                "Target" -> AppIcons.Target
-                else -> null
+            val icon = when (f.kind) {
+                WorkoutFact.Kind.Distance -> Score.Distance.rowIcon()
+                WorkoutFact.Kind.Paused -> AppIcons.Hourglass
+                WorkoutFact.Kind.Steps -> Metric.Steps.rowIcon()
+                WorkoutFact.Kind.Calories -> Score.Energy.rowIcon()
+                WorkoutFact.Kind.Target -> AppIcons.Target
             }
             ListRow(f.name, color, f.value, f.status, divider = i > 0, icon = icon)
         }

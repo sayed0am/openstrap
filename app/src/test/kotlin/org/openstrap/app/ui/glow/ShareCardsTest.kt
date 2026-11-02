@@ -9,7 +9,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.AppWorkoutSet
-import org.openstrap.app.ui.workout.EarnedLine
+import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.PhoneSummary
 
 /** The share card's route hides its ends and fits its box, and each kind of card says what its board does. */

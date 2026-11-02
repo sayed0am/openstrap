@@ -57,8 +57,8 @@ import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.CalmDownLine
-import org.openstrap.app.ui.workout.EarnedLine
-import org.openstrap.app.ui.workout.SummaryRewards
+import org.openstrap.app.presentation.EarnedLine
+import org.openstrap.app.presentation.SummaryRewards
 import org.openstrap.app.ui.workout.FamilySummary
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
@@ -433,8 +433,8 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
  */
 @Composable
 private fun SplitBars(rows: List<SplitRow>, fastest: Int?) {
-    val seconds = rows.map { r -> r.time.split(":").fold(0L) { acc, p -> acc * 60 + (p.toLongOrNull() ?: 0) } }
-    val best = rows.indices.filter { rows[it].name.startsWith("Km ") && seconds[it] > 0 }.minOfOrNull { seconds[it] }
+    val seconds = rows.map { it.seconds }
+    val best = rows.indices.filter { rows[it].kind == SplitRow.Kind.Whole && seconds[it] > 0 }.minOfOrNull { seconds[it] }
     val bar = familyColor(Workouts.Family.Distance).copy(alpha = 0.5f)
     rows.forEachIndexed { i, r ->
         val lit = i == fastest

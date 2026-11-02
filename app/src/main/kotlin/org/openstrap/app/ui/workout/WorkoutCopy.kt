@@ -4,7 +4,10 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
-import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.presentation.StrapBands
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.WorkoutWords
+import java.util.Locale
 
 /*
  * What the Ready and live workout screens say (spec 6.3), and the small rules behind what they show: the split line's
@@ -28,8 +31,11 @@ object WorkoutCopy {
     /** How long a split line stays under the stats. */
     const val SPLIT_LINE_S = 10L
 
-    /** At or under this, the Ready line mentions the strap's battery. */
-    const val LOW_BATTERY = 20
+    /**
+     * At or under this, Ready's line mentions the strap's battery. Earlier on purpose than the low battery everywhere
+     * else ([StrapBands.LOW_BATTERY], 15): before a workout, a strap at 20% may not last a long one.
+     */
+    const val READY_LOW_BATTERY = 20
 
     private const val KM = 1000.0
 
@@ -45,7 +51,7 @@ object WorkoutCopy {
             "Strap connected",
             listOfNotNull(
                 if (bpm != null) "Live from your strap." else "Waiting for heart rate.",
-                connection.batteryPercent?.takeIf { it <= LOW_BATTERY && !connection.charging }?.let { "Battery $it%." },
+                connection.batteryPercent?.takeIf { it <= READY_LOW_BATTERY && !connection.charging }?.let { "Battery $it%." },
             ).joinToString(" "),
             live = true,
         )
@@ -79,28 +85,27 @@ object WorkoutCopy {
     /** A set done, as the live screen lists it: "10 × 60 kg, 0:51, peak 148", or without the log "0:51, peak 148". */
     fun setLine(s: org.openstrap.app.data.db.AppWorkoutSet, peak: Int?): String = listOfNotNull(
         s.reps?.let { r -> s.weightKg?.let { "$r × ${org.openstrap.app.data.Strength.kgText(it)} kg" } ?: "$r reps" },
-        s.end?.let { workoutClock(it - s.start) },
+        s.end?.let { Units.workoutClock(it - s.start) },
         peak?.let { "peak $it" },
     ).joinToString(", ")
 
     /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
     fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
 
-    /** "Zone 3, aerobic" as its two parts, drawn as two text elements. */
-    fun zoneTitle(zone: Int): Pair<String, String> = "Zone ${zone + 1}," to ZONE_NAMES[zone].lowercase()
+    /** "Zone 3, aerobic" as its two parts ([WorkoutWords.zoneTitle]). */
+    fun zoneTitle(zone: Int): Pair<String, String> = WorkoutWords.zoneTitle(zone)
 
-    /** [zoneTitle] as one line: "Zone 3, aerobic". */
-    fun zoneLine(zone: Int): String = zoneTitle(zone).let { (name, word) -> "$name $word" }
+    /** [zoneTitle] as one line: "Zone 3, aerobic" ([WorkoutWords.zoneLine]). */
+    fun zoneLine(zone: Int): String = WorkoutWords.zoneLine(zone)
 
-    /** What a live screen says where the heart rate goes and there's none: the same words on every screen. */
-    fun noHeartRate(paused: Boolean, connected: Boolean = true): String = when {
-        paused -> "Paused"
-        !connected -> "Waiting for the strap"
-        else -> "Waiting for heart rate"
-    }
+    /** What a live screen says where the heart rate goes and there's none, the same words on every screen and the notification. */
+    fun noHeartRate(paused: Boolean, connected: Boolean = true): String = WorkoutWords.noHeartRate(paused, connected)
 
-    /** "9 min in this zone". */
-    fun zoneTime(seconds: Int): String = if (seconds < 60) "Under a minute in this zone" else "${seconds / 60} min in this zone"
+    /** The live screen's note while the strap is away ([WorkoutWords.STRAP_GONE_NOTE]). */
+    const val STRAP_GONE_NOTE = WorkoutWords.STRAP_GONE_NOTE
+
+    /** "9 min in this zone" ([WorkoutWords.zoneTime]). */
+    fun zoneTime(seconds: Int): String = WorkoutWords.zoneTime(seconds)
 
     /**
      * The line for the latest whole kilometre in [splits], for [SPLIT_LINE_S] after it ended, else null: "Km 3 in 5:42,
@@ -115,7 +120,7 @@ object WorkoutCopy {
         if (now - sp.endT >= SPLIT_LINE_S || sp.endT - now > SPLIT_LINE_S) return null
         val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
         val avg = averageOver(history, from, sp.endT)
-        return SplitLine(i, sp.endT, "Km ${i + 1} in ${workoutClock(sp.seconds)}" + (avg?.let { ", avg $it" } ?: ""))
+        return SplitLine(i, sp.endT, WorkoutWords.split(i, sp.seconds) + (avg?.let { ", avg $it" } ?: ""))
     }
 
     /**
@@ -129,7 +134,7 @@ object WorkoutCopy {
         val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
         val avg = averageOver(history, from, sp.endT)
         val ago = (now - sp.endT).coerceAtLeast(0) / 60
-        return "Km ${i + 1} in ${workoutClock(sp.seconds)}" + (avg?.let { ", avg $it" } ?: "") to if (ago < 1) "just now" else "$ago min ago"
+        return WorkoutWords.split(i, sp.seconds) + (avg?.let { ", avg $it" } ?: "") to if (ago < 1) "just now" else "$ago min ago"
     }
 
     /** The average of the [readings] (time, bpm) from [from] to [to], whole bpm; null without any. */
@@ -161,13 +166,14 @@ object WorkoutCopy {
     fun gpsPill(accuracy: Float?): String = if (accuracy == null || accuracy > 1000) "Finding GPS" else "GPS ±${accuracy.toInt()} m"
 
     /** The same toward a distance goal, in the goal's unit: "2.15 of 5 km", "640 of 800 m". */
-    fun distanceProgress(meters: Float?, target: WorkoutTarget.Distance): String {
+    fun distanceProgress(meters: Float?, target: WorkoutTarget.Distance, locale: Locale = Locale.getDefault()): String {
         val m = meters ?: 0f
-        return if (target.meters < 1000) "${m.toInt()} of ${target.label}" else String.format(java.util.Locale.ROOT, "%.2f of %s", m / 1000f, target.label)
+        return if (target.meters < 1000) String.format(locale, "%d of %s", m.toInt(), target.label)
+        else "${Units.km(m, Units.Precision.Workout, locale)} of ${target.label}"
     }
 
-    /** "312 kcal" for the notification and the capsule; null before there's a figure. */
-    fun kcalText(activeKcal: Float?): String? = activeKcal?.let { "${it.toInt()} kcal" }
+    /** "312 kcal" for the notification and the capsule ([WorkoutWords.kcalText]); null before there's a figure. */
+    fun kcalText(activeKcal: Float?): String? = WorkoutWords.kcalText(activeKcal)
 
     /**
      * How high the live heart card's light reaches for [zone] (spec 2.5): about a third of the card in zone 1, all of it

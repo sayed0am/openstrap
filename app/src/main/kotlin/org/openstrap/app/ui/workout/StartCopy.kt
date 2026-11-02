@@ -7,11 +7,11 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
-import org.openstrap.app.ui.glow.km
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.theme.AppIcons
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -134,7 +134,7 @@ object StartCopy {
     }
 
     /** All of a timed structure's time, in a line beside its rounds: "4:00 in all"; null where it has none. */
-    fun totalLine(s: org.openstrap.app.data.Structure): String? = totalTime(s)?.let { "${org.openstrap.app.ui.glow.workoutClock(it)} in all" }
+    fun totalLine(s: org.openstrap.app.data.Structure): String? = totalTime(s)?.let { "${Units.workoutClock(it)} in all" }
 
     /** Typed work, rest and rounds over [s]: work 5 s to 10 min, rest up to 10 min, 1 to [MAX_ROUNDS]; what doesn't read stays. */
     fun typedTimed(s: org.openstrap.app.data.Structure.Timed, typed: List<String>): org.openstrap.app.data.Structure.Timed = s.copy(
@@ -232,23 +232,15 @@ object StartCopy {
      * Your usual's line: what you did last time and when ("Last time 5.2 km, Tuesday"): the distance for a distance
      * sport that has one, the sets for strength, else the minutes.
      */
-    fun lastTime(a: WorkoutAnalysis, today: LocalDate, zone: java.time.ZoneId): String {
+    fun lastTime(a: WorkoutAnalysis, today: LocalDate, zone: java.time.ZoneId, locale: Locale = Locale.getDefault()): String {
         val what = when {
             a.distanceMeters != null && a.distanceMeters >= 100 && Workouts.family(a.workout.sportType) == Workouts.Family.Distance ->
-                km(a.distanceMeters) + if (a.distanceMeters >= 1000) " km" else ""
+                Units.distance(a.distanceMeters, Units.Precision.Workout, locale = locale).orEmpty()
             a.sets != null && a.sets > 0 -> if (a.sets == 1) "1 set" else "${a.sets} sets"
             else -> "${(a.activeSeconds / 60).coerceAtLeast(1)} min"
         }
         val day = java.time.Instant.ofEpochSecond(a.workout.start).atZone(zone).toLocalDate()
-        return "Last time $what, ${dayWord(day, today)}"
-    }
-
-    /** "today", "yesterday", a weekday within the last week ("Tuesday"), else the date ("12 Oct"). */
-    fun dayWord(day: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String = when {
-        day == today -> "today"
-        day == today.minusDays(1) -> "yesterday"
-        day.isAfter(today.minusDays(7)) -> day.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
-        else -> day.format(DateTimeFormatter.ofPattern("d MMM", locale))
+        return "Last time $what, ${DayWords.inSentence(day, today, locale)}"
     }
 
     /* -------------------------------------------- Ready's where --------------------------------------------- */
@@ -336,8 +328,8 @@ object StartCopy {
         return listOfNotNull(("$h" to "h").takeIf { h > 0 }, ("$m" to "min").takeIf { m > 0 || h == 0L })
     }
 
-    /** [timeParts] in one line: "1 h 15 min", "45 min". */
-    fun timeValue(seconds: Long): String = timeParts(seconds).joinToString(" ") { (n, u) -> "$n $u" }
+    /** A time goal in one line, as every duration reads ([Units.duration]): "1 h 15", "1 h", "45 min". */
+    fun timeValue(seconds: Long): String = Units.duration(seconds)
 
     /** Minus or plus ([up]) on a time: to the next 5 minutes, from 5 min to [MAX_HOURS] h. */
     fun stepTime(seconds: Long, up: Boolean): Long {
@@ -360,7 +352,7 @@ object StartCopy {
 
     /** A time goal's note: when it would end if you started now, "Ends near 19:15". */
     fun endsNear(now: java.time.LocalTime, seconds: Long, is24Hour: Boolean): String =
-        "Ends near " + now.plusSeconds(seconds).format(DateTimeFormatter.ofPattern(if (is24Hour) "HH:mm" else "h:mm a", Locale.getDefault()))
+        "Ends near " + TimeOfDay.format(now.plusSeconds(seconds), is24Hour)
 
     /** While a time is typed: "Type hours, then minutes. Ends near 19:15". */
     fun timeTypingNote(endsNear: String): String = "Type hours, then minutes. $endsNear"
