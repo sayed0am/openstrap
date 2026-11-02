@@ -2,8 +2,8 @@ package org.openstrap.app.ui.glow
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import org.openstrap.app.ui.dashboard.DetailCopy
-import org.openstrap.app.ui.dashboard.Range
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.OpenStrapTheme
 import org.openstrap.app.widget.WidgetSamples

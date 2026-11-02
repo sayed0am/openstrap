@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.openstrap.app.ui.dashboard.DetailCopy
+import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.widget.RecoveryWidgetModel
 import org.openstrap.app.widget.WidgetSamples
