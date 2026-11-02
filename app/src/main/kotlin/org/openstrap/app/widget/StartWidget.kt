@@ -40,7 +40,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
-import kotlinx.coroutines.CancellationException
+import org.openstrap.app.data.catching
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
 import org.openstrap.app.OpenStrapApp
@@ -91,26 +91,20 @@ class StartWidget : LoadingWidget<StartWidget.Shown>(WidgetKind.Start) {
                 val w = r.workout
                 StartRecordingInput(w.sportType, w.start, WorkoutRecorder.activeSeconds(w, now.epochSecond), r.paused)
             }
-            val model = try {
+            val model = catching {
                 val dao = container.database.healthDao()
                 val workouts = Workouts.listed(
                     dao.workouts().first(), dao.sportEffects().first(), dao.lastWorkoutHeartRates().first(), dao.appWorkouts().first(),
                     dao.setCounts().first().associate { it.workoutStart to it.sets }, LIST_MAX_HR,
                 )
                 StartWidgetModel.from(workouts, container.settings.workoutSides.first(), locationAvailable(context), recording, now, zone)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+            }.getOrElse { e ->
                 Log.w(WIDGET_TAG, "widgets: workouts for Start not read: $e")
                 StartWidgetModel.from(emptyList(), emptyMap(), false, recording, now, zone)
             }
-            val bedtime = try {
+            val bedtime = catching {
                 container.health.usualBedtime(now.atZone(zone).toLocalDate())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                null
-            }
+            }.onFailure { Log.w(WIDGET_TAG, "widgets: usual bedtime for Start not read: $it") }.getOrNull()
             return Shown(model, widgetMood(container, bedtime, now, zone))
         }
 

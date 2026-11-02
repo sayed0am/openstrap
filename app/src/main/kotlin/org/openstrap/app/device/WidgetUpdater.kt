@@ -19,6 +19,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.MomentInputs
 import org.openstrap.app.widget.MomentWidget
 import org.openstrap.app.widget.MomentWidgetReceiver
@@ -93,10 +94,10 @@ object WidgetUpdater {
     }
 
     /** The widgets on the home screen, any page: a kind counts once its receiver has an id (spec 3.1). */
-    fun placed(context: Context): Set<WidgetKind> = try {
+    fun placed(context: Context): Set<WidgetKind> = runCatching {
         val manager = AppWidgetManager.getInstance(context) ?: return emptySet()
         widgets.filter { (_, r) -> manager.getAppWidgetIds(ComponentName(context, r.receiver)).isNotEmpty() }.keys
-    } catch (e: Exception) {
+    }.getOrElse { e ->
         Log.w(TAG, "widgets: placed check failed: $e")
         emptySet()
     }
@@ -109,13 +110,11 @@ object WidgetUpdater {
      * never wakes the phone ([momentWakes]): it's only worth drawing while the screen is on, so it waits for that.
      */
     fun scheduleMoment(context: Context, inputs: MomentInputs, tick: Instant? = null, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()) {
-        try {
+        runCatching {
             val next = inputs.nextChange(now, zone)
             val at = momentAlarm(WidgetKind.Moment in placed(context), next, tick)
             if (at == null) cancel(context, ACTION_MOMENT) else setAlarm(context, ACTION_MOMENT, at.toEpochMilli(), wake = momentWakes(next, tick))
-        } catch (e: Exception) {
-            Log.w(TAG, "widgets: moment alarm not set: $e")
-        }
+        }.onFailure { Log.w(TAG, "widgets: moment alarm not set: $it") }
     }
 
     /**
@@ -136,11 +135,8 @@ object WidgetUpdater {
     fun placedChanged(context: Context) {
         val app = context.applicationContext
         scheduleMidnight(app)
-        try {
-            if (WidgetKind.Moment !in placed(app)) cancel(app, ACTION_MOMENT)
-        } catch (e: Exception) {
-            Log.w(TAG, "widgets: moment alarm not cleared: $e")
-        }
+        runCatching { if (WidgetKind.Moment !in placed(app)) cancel(app, ACTION_MOMENT) }
+            .onFailure { Log.w(TAG, "widgets: moment alarm not cleared: $it") }
         changed(app, setOf(WidgetKind.Moment))
     }
 
@@ -157,7 +153,7 @@ object WidgetUpdater {
         val version = org.openstrap.app.BuildConfig.VERSION_CODE
         if (prefs.getInt(PREVIEW_VERSION, -1) == version) return
         scope.launch {
-            try {
+            catching {
                 val manager = androidx.glance.appwidget.GlanceAppWidgetManager(app)
                 val results = widgets.values.map { manager.setWidgetPreviews(it.receiver.kotlin) }
                 if (results.all { it == androidx.glance.appwidget.GlanceAppWidgetManager.SET_WIDGET_PREVIEWS_RESULT_SUCCESS }) {
@@ -165,9 +161,7 @@ object WidgetUpdater {
                 } else {
                     Log.i(TAG, "widgets: previews not all set ($results), trying again next start")
                 }
-            } catch (e: Exception) {
-                Log.w(TAG, "widgets: previews not set: $e")
-            }
+            }.onFailure { Log.w(TAG, "widgets: previews not set: $it") }
         }
     }
 
@@ -176,26 +170,21 @@ object WidgetUpdater {
 
     /** Sets the alarm for the next local midnight while any widget is placed, and clears it when none is. */
     fun scheduleMidnight(context: Context, zone: ZoneId = ZoneId.systemDefault()) {
-        try {
+        runCatching {
             if (placed(context).isEmpty()) { cancel(context, ACTION_MIDNIGHT); return }
             val midnight = LocalDate.now(zone).plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
             setAlarm(context, ACTION_MIDNIGHT, midnight)
-        } catch (e: Exception) {
-            Log.w(TAG, "widgets: midnight alarm not set: $e")
-        }
+        }.onFailure { Log.w(TAG, "widgets: midnight alarm not set: $it") }
     }
 
     internal suspend fun update(context: Context, kinds: Set<WidgetKind>) {
         val shown = placed(context).intersect(kinds)
         for (kind in shown) {
-            try {
+            catching {
                 // A running session loads again on its version; one that isn't loads as it starts.
                 WidgetRefresh.bump(kind)
                 widgets.getValue(kind).widget().updateAll(context)
-            } catch (e: Exception) {
-                if (e is kotlinx.coroutines.CancellationException) throw e
-                Log.w(TAG, "widgets: $kind not updated: $e")
-            }
+            }.onFailure { Log.w(TAG, "widgets: $kind not updated: $it") }
         }
         if (shown.isNotEmpty()) {
             scheduleMidnight(context)
@@ -208,15 +197,11 @@ object WidgetUpdater {
      * away and nothing else refreshing (spec 5), while any widget is placed; clears it otherwise.
      */
     suspend fun scheduleStale(context: Context) {
-        try {
+        catching {
             val done = (context.applicationContext as OpenStrapApp).container.settings.strapSnapshot.first().lastSyncDone
             val at = staleAt(placed(context).isNotEmpty(), done, System.currentTimeMillis() / 1000)
             if (at == null) cancel(context, ACTION_STALE) else setAlarm(context, ACTION_STALE, at * 1000)
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "widgets: stale alarm not set: $e")
-        }
+        }.onFailure { Log.w(TAG, "widgets: stale alarm not set: $it") }
     }
 
     /**
@@ -244,6 +229,7 @@ object WidgetUpdater {
             else alarms.setWindow(AlarmManager.RTC_WAKEUP, atMs, ALARM_WINDOW_MS, pending)
         } catch (e: SecurityException) {
             // The exact-alarm access was taken back between the check and the call.
+            Log.i(TAG, "widgets: exact alarm refused, setting a window: $e")
             alarms.setWindow(AlarmManager.RTC_WAKEUP, atMs, ALARM_WINDOW_MS, pending)
         }
     }
@@ -273,16 +259,10 @@ class WidgetAlarmReceiver : BroadcastReceiver() {
         }
         val app = context.applicationContext
         val done = goAsync()
-        CoroutineScope(Dispatchers.Default).launch {
-            try {
-                WidgetUpdater.update(app, kinds)
-                // The update sets the next midnight only when something was placed; this one has passed either way.
-                if (intent.action == WidgetUpdater.ACTION_MIDNIGHT) WidgetUpdater.scheduleMidnight(app)
-            } catch (e: Exception) {
-                Log.w("OpenStrap", "widgets: alarm ${intent.action} failed: $e")
-            } finally {
-                done.finish()
-            }
+        launchForBroadcast((app as OpenStrapApp).container.appScope, "widgets: alarm ${intent.action}", done::finish) {
+            WidgetUpdater.update(app, kinds)
+            // The update sets the next midnight only when something was placed, and this one has passed either way.
+            if (intent.action == WidgetUpdater.ACTION_MIDNIGHT) WidgetUpdater.scheduleMidnight(app)
         }
     }
 }

@@ -5,10 +5,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
 import android.os.Build
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.device.launchForBroadcast
 
 /**
  * Android's package installer reporting on an install ([AppUpdater.install]), and Android saying the app was replaced.
@@ -31,16 +29,12 @@ class UpdateReceiver : BroadcastReceiver() {
             }
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 val pending = goAsync()
-                CoroutineScope(Dispatchers.Default).launch {
-                    try {
-                        val tag = container.settings.updateInstalling() ?: return@launch
-                        container.settings.setUpdateInstalling(null)
-                        val version = Releases.version(tag)
-                        if (version != null && version == Releases.version(container.updater.installed)) {
-                            UpdateNotifier(context).installed(version.joinToString("."))
-                        }
-                    } finally {
-                        pending.finish()
+                launchForBroadcast(container.appScope, "update: package replaced", pending::finish) {
+                    val tag = container.settings.updateInstalling() ?: return@launchForBroadcast
+                    container.settings.setUpdateInstalling(null)
+                    val version = Releases.version(tag)
+                    if (version != null && version == Releases.version(container.updater.installed)) {
+                        UpdateNotifier(context).installed(version.joinToString("."))
                     }
                 }
             }

@@ -11,15 +11,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
 import org.openstrap.app.AppContainer
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.ZeppAccount
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.device.StrapManager
 import org.openstrap.app.firmware.FirmwareCloud
 import org.openstrap.app.firmware.FirmwareCloudException
 import org.openstrap.app.firmware.FirmwarePart
 import org.openstrap.app.firmware.StrapIdentity
 import org.openstrap.app.firmware.StrapResources
 import org.openstrap.app.firmware.UpdateCheck
+import org.openstrap.app.ui.device.ErrorCopy
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
 import org.openstrap.app.zepp.ZeppCloud
@@ -84,7 +88,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
         val firmware = info?.firmware ?: return fail("Connect the strap first so its firmware version is known.")
         _step.value = FirmwareStep.Checking
         viewModelScope.launch {
-            _step.value = runCatching {
+            _step.value = catching {
                 val identity = StrapIdentity(
                     firmwareVersion = firmware,
                     hardwareVersion = info.hardware,
@@ -101,7 +105,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                     cloud.check(current.apiBase, current.appToken, current.userId, identity)
                 }
                 FirmwareStep.Checked(result)
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Update check failed") }
+            }.getOrElse { failed("firmware check", it, "Update check failed") }
         }
     }
 
@@ -111,7 +115,9 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
      */
     private suspend fun renewed(acc: ZeppAccount, rejected: Boolean): ZeppAccount {
         if (!ZeppCloud.needsAppTokenRefresh(acc, System.currentTimeMillis(), rejected)) return acc
-        val fresh = if (rejected) ZeppCloud.refreshAppToken(acc) else runCatching { ZeppCloud.refreshAppToken(acc) }.getOrNull() ?: return acc
+        val fresh = if (rejected) ZeppCloud.refreshAppToken(acc) else catching { ZeppCloud.refreshAppToken(acc) }
+            .onFailure { log("firmware: early token renewal failed, keeping the old one: $it") }
+            .getOrNull() ?: return acc
         container.settings.saveZeppAccount(fresh)
         return fresh
     }
@@ -121,7 +127,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
         val type = part.type ?: return fail("Unknown part type ${part.prefix}")
         _step.value = FirmwareStep.Downloading(part, 0f)
         viewModelScope.launch {
-            _step.value = runCatching {
+            _step.value = catching {
                 val bytes = cloud.download(part) { done, total ->
                     if (total > 0) _step.value = FirmwareStep.Downloading(part, done.toFloat() / total)
                 }
@@ -129,17 +135,20 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                 FirmwareStep.Ready(
                     ReadyImage(bytes, type, "${part.label} ${part.version}", part.version, fromCloud = true, trailer, trailerWarnings(bytes, trailer, type)),
                 )
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Download failed") }
+            }.getOrElse { failed("firmware download", it, "Download failed") }
         }
     }
 
     /** Stages a file the user picked. Only plain firmware images are accepted from files. */
     fun loadFile(uri: Uri) = viewModelScope.launch {
-        _step.value = runCatching {
+        _step.value = catching {
             val bytes = withContext(Dispatchers.IO) {
-                container.app.contentResolver.openInputStream(uri)!!.use { it.readBytes() }
+                val input = container.app.contentResolver.openInputStream(uri) ?: throw FileNotFoundException("no input stream for $uri")
+                input.use { it.readBytes() }
             }
-            require(bytes.size in 1024..16 * 1024 * 1024) { "That file is ${bytes.size} bytes, which isn't a plausible firmware image." }
+            if (bytes.size !in 1024..16 * 1024 * 1024) {
+                return@catching FirmwareStep.Failed("That file is ${bytes.size} bytes, which isn't a plausible firmware image.")
+            }
             val trailer = HmfwTrailer.read(bytes)
             val warnings = buildList {
                 add("This file didn't come from Zepp's update server for this strap. Only install files you trust.")
@@ -147,7 +156,10 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                 addAll(trailerWarnings(bytes, trailer, FirmwareType.FIRMWARE))
             }
             FirmwareStep.Ready(ReadyImage(bytes, FirmwareType.FIRMWARE, "Firmware from file", null, fromCloud = false, trailer, warnings))
-        }.getOrElse { FirmwareStep.Failed(it.message ?: "Couldn't read the file") }
+        }.getOrElse {
+            log("firmware: file not read: $it")
+            FirmwareStep.Failed("Couldn't read the file. Choose it again.")
+        }
     }
 
     /** Problems that make an image look wrong for this strap (docs/protocol/03 §2.2, advisory). */
@@ -176,7 +188,7 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
         if (blocking.isNotEmpty()) return fail(blocking.joinToString(" "))
         _step.value = FirmwareStep.Installing("Starting…", null)
         viewModelScope.launch {
-            _step.value = runCatching {
+            _step.value = catching {
                 strap.installFirmware(image.bytes, image.type) { p ->
                     _step.value = when (p) {
                         is DfuProgress.Transferring -> FirmwareStep.Installing("Sending to strap", p.sent.toFloat() / p.total)
@@ -186,11 +198,22 @@ class FirmwareViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 FirmwareStep.Installed
-            }.getOrElse { FirmwareStep.Failed(it.message ?: "Install failed") }
+            }.getOrElse { failed("firmware install", it, "Install failed") }
         }
     }
 
     private fun fail(message: String) { _step.value = FirmwareStep.Failed(message) }
+
+    /** The raw failure goes to Diagnostics, and the screen says it in plain words ([ErrorCopy.firmware]). */
+    private fun failed(what: String, e: Throwable, fallback: String): FirmwareStep.Failed {
+        log("$what failed: $e")
+        return FirmwareStep.Failed(ErrorCopy.firmware(e, fallback))
+    }
+
+    private fun log(message: String) {
+        android.util.Log.w("OpenStrap", message)
+        (container.strap as? StrapManager)?.log(message)
+    }
 
     companion object {
         /** Zepp's upgrade page refuses at this level or below (07 §1.1). */
