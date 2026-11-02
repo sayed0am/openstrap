@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.TimeOfDay
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -182,7 +183,7 @@ private fun PastSummary(
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
                 PageHeader(
-                    a.sportName, onBack, subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${clockAt(a.shownStart)} to ${clockAt(a.end)}",
+                    a.sportName, onBack, subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${clock(a.shownStart)} to ${clock(a.end)}",
                     trailing = if (foundTag) ({ FoundTag() }) else null,
                 )
             }
@@ -243,9 +244,9 @@ private fun WorkoutHero(a: WorkoutAnalysis, usual: Float?, zones: List<Int>) {
     val style = GlowStyle.chart(MetricColors.heart).copy(lightAngle = LightAngle.Below, lightLevel = Workouts.effort(w.trainingLoad, usual))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
-            GlowHeader(WorkoutDetailCopy.day(a.shownStart, LocalDate.now()), trailing = "${clockAt(a.shownStart)}–${clockAt(a.end)}")
+            GlowHeader(WorkoutDetailCopy.day(a.shownStart, LocalDate.now()), trailing = "${clock(a.shownStart)}–${clock(a.end)}")
             HeroSentence(WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones))
-            DotMatrixText(workoutClock(a.activeSeconds), Modifier.padding(top = 16.dp), dot = DotSize.Hero)
+            DotMatrixText(dotClock(a.activeSeconds), Modifier.padding(top = 16.dp), dot = DotSize.Hero)
         }
     }
 }
@@ -269,7 +270,9 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
     EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         EdgeTitle("Heart rate", if (a.heartRate.isNotEmpty()) "Coloured by zone" else null)
         if (at != null) {
-            EdgeValue(at.second.toString(), "bpm", if (at.first > a.end) "At ${clockAt(at.first)}, after the end" else "At ${clockAt(at.first)}")
+            EdgeValue(
+                at.second.toString(), "bpm", if (at.first > a.end) "At ${clock(at.first)}, after the end" else "At ${clock(at.first)}",
+            )
         } else {
             val range = listOfNotNull(w.maxHeartRate?.let { "Max $it" }, w.minHeartRate?.let { "lowest $it" }).joinToString(", ")
             EdgeValue(w.averageHeartRate?.toString(), "bpm average", range.ifEmpty { null }?.let { "$it bpm" }, waiting = false)
@@ -283,12 +286,13 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
         }
         ZoneHeartLine(values, first, a.end, a.maxHeartRate, a.historyRanges, scrubbed, { scrubbed = it }, Modifier.padding(top = 16.dp))
         Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            Note(clockAt(first))
+            Note(clock(first))
             Spacer(Modifier.weight(1f))
-            Note(if (last > a.end + HeartStep) "Drop after ${clockAt(a.end)}" else clockAt(a.end))
+            Note(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
         }
         if (a.historyRanges.isNotEmpty()) Text(
-            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clockAt(it.first)}–${clockAt(it.last + 1)}" } + " came from the strap's history.",
+            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clock(it.first)}–${clock(it.last + 1)}" } +
+                " came from the strap's history.",
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
         )
     }
@@ -388,7 +392,7 @@ private fun EffectInfo(a: WorkoutAnalysis, usual: Float?, strap: List<WorkoutAna
         strap = strap.map { s ->
             EffectFigures(
                 s.workout.aerobicTrainingEffect, s.workout.anaerobicTrainingEffect, s.workout.trainingLoad, s.recoveryMinutes,
-                from = Instant.ofEpochSecond(s.workout.start).atZone(ZoneId.systemDefault()).toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")),
+                from = TimeOfDay.format(s.workout.start, ZoneId.systemDefault()),
             )
         },
         effectFromStrap = fromStrap, ownRecoveryMinutes = a.ownRecoveryMinutes, sportType = w.sportType,

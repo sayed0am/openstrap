@@ -1,5 +1,10 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.DayWords
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -56,9 +61,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.util.Locale
 
 /*
  * The Activity tab's details (spec 5.3 and 6.1) in the metric template: Heart points, active minutes, Load, VO2 max,
@@ -103,10 +105,8 @@ internal fun ActivityScoreDetail(score: Score, ctx: ActivityDetailContext) {
     }
 }
 
-private val DAY = DateTimeFormatter.ofPattern("EEE d MMM")
-private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
-
-private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
+/** A time of day at [zone], following the phone's 12 or 24 hour setting. */
+private fun clockOf(t: java.time.ZonedDateTime): String = TimeOfDay.format(t.toLocalTime())
 
 /** The seven days ending on [end], oldest first. */
 private fun weekOf(end: LocalDate): List<LocalDate> = (6 downTo 0).map { end.minusDays(it.toLong()) }
@@ -150,7 +150,7 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
             DetailHeadline(Math.round(totals.filterNotNull().average()).toString(), "points, 7-day total on average", null)
         range == Range.Month -> DetailHeadline.none("No points", "In the last 30 days")
         total != null -> DetailHeadline(total.toString(), "points, last 7 days", ActivityCopy.heartPointsWord(total))
-        else -> DetailHeadline.none("No points yet", "After the strap's next sync")
+        else -> DetailHeadline.none("No points yet", AFTER_NEXT_SYNC)
     }
     val strip = DetailCopy.strip(date, ctx.today, stored.keys)
 
@@ -163,10 +163,12 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
             item {
                 if (daily.all { it == null }) DetailEmpty("No Heart points from the strap for these days yet.")
                 else StackedDayBars(
-                    daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map(::shortDay),
+                    daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map { weekdayShort(it) },
                     Modifier.padding(top = 8.dp),
                 ) { i ->
-                    scrub = i?.let { DetailHeadline(Math.round(daily[it] ?: 0f).toString(), ActivityCopy.earnedLabel(week[it].format(DAY)), null) }
+                    scrub = i?.let {
+                        DetailHeadline(Math.round(daily[it] ?: 0f).toString(), ActivityCopy.earnedLabel(DayWords.short(week[it])), null)
+                    }
                 }
             }
             if (total != null) item {
@@ -182,8 +184,12 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
                     val values = totals.map { it?.toFloat() }
                     NormalTrend(
                         values, DetailCopy.levels(values, null), color,
-                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { month[((month.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("d MMM")) },
-                        onScrub = { i -> scrub = i?.let { totals[it] }?.let { v -> DetailHeadline(v.toString(), "7-day total, ${month[i].format(DAY)}", ActivityCopy.heartPointsWord(v)) } },
+                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(month[((month.size - 1) * it).toInt()]) },
+                        onScrub = { i ->
+                            scrub = i?.let { totals[it] }?.let { v ->
+                                DetailHeadline(v.toString(), "7-day total, ${DayWords.short(month[i])}", ActivityCopy.heartPointsWord(v))
+                            }
+                        },
                     )
                 }
             }
@@ -291,8 +297,10 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
             val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
             item {
                 GlowBars(
-                    values, height = 200.dp, labels = week.map(::shortDay), accent = color, modifier = Modifier.padding(top = 8.dp),
-                    onScrub = { i -> scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "minutes, ${week[it].format(DAY)}", null) } },
+                    values, height = 200.dp, labels = week.map { weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
+                    onScrub = { i ->
+                        scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "minutes, ${DayWords.short(week[it])}", null) }
+                    },
                 )
             }
             item { DetailSentence(ActivityCopy.activeWeek(a.weekEquivalent)) }
@@ -356,7 +364,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                         listOf(
                             Math.round(r.workoutLoad).toString() to "From workouts",
                             Math.round(r.everydayLoad).toString() to "Moving about",
-                            "%.1f".format(r.strain) to "Strain",
+                            decimal(r.strain, 1) to "Strain",
                         ),
                     )
                     DetailSentence(ActivityCopy.loadDay(r.strainPercentile, ctx.isToday))
@@ -367,10 +375,14 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                 if (known.isEmpty()) DetailEmpty("No Load in the last ${range.days} days yet.")
                 else NormalTrend(
                     values, levels(values, band), color,
-                    labels = if (range == Range.Week) days.map(::shortDay)
-                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { days[((days.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("d MMM")) },
+                    labels = if (range == Range.Week) days.map { weekdayShort(it) }
+                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(days[((days.size - 1) * it).toInt()]) },
                     band = band, bandLabel = band?.let(ActivityCopy::usualBandLabel),
-                    onScrub = { i -> scrub = i?.let { values[it] }?.let { v -> DetailHeadline(Math.round(v).toString(), days[i].format(DAY), loadWordOf(v, usual)) } },
+                    onScrub = { i ->
+                        scrub = i?.let { values[it] }?.let { v ->
+                            DetailHeadline(Math.round(v).toString(), DayWords.short(days[i]), loadWordOf(v, usual))
+                        }
+                    },
                 )
             }
             val sentence = if (range == Range.Week) ActivityCopy.balance(balance) ?: ActivityCopy.loadSpan(levels(values, band), range)
@@ -445,7 +457,7 @@ private fun Vo2Detail(ctx: ActivityDetailContext) {
                 readings.take(5).forEach { (w, v) ->
                     val start = Instant.ofEpochSecond(w.shownStart).atZone(zone)
                     ListRow(
-                        w.sportName, color, v.toString(), start.format(DAY) + ", " + start.format(CLOCK), divider = !first,
+                        w.sportName, color, v.toString(), DayWords.short(start.toLocalDate()) + ", " + clockOf(start), divider = !first,
                         onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.workout.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
                     )
                     first = false
@@ -474,11 +486,13 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
     val zone = ZoneId.systemDefault()
     val now = System.currentTimeMillis() / 1000
     val rated = ctx.workouts.filter { it.recoveryMinutes != null }.sortedByDescending { it.end }
-    val last = rated.firstOrNull()
+    val last = latestRecoveryEstimate(ctx.workouts)
     val left = last?.let { TodayCopy.recoverLeft(it.end, it.recoveryMinutes ?: 0, now) }
     val shown = left?.let { TodayCopy.recoverShort(it, now, zone) }
     val source = org.openstrap.app.data.Workouts.recoverySource(rated)
-    val ended = source?.let { w -> Instant.ofEpochSecond(w.end).atZone(zone).let { ActivityCopy.ended(it.toLocalDate(), it.format(CLOCK), ctx.today) } }
+    val ended = source?.let { w ->
+        Instant.ofEpochSecond(w.end).atZone(zone).let { ActivityCopy.ended(it.toLocalDate(), clockOf(it), ctx.today) }
+    }
     val headline = when {
         last == null -> DetailHeadline.none("No estimate", "After a workout the strap rates")
         shown?.first == null -> DetailHeadline.none("Recovered", "After your ${(source ?: last).sportName.lowercase()}, $ended")
@@ -499,7 +513,7 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
                     // Its own, not what earlier workouts left on top ([SummaryCopy.carriedOver]).
                     val own = org.openstrap.app.ui.workout.SummaryCopy.recoverSpan(w.ownRecoveryMinutes ?: w.recoveryMinutes) ?: "None"
                     ListRow(
-                        w.sportName, color, own, "On its own, ${start.format(DAY)}, ${start.format(CLOCK)}",
+                        w.sportName, color, own, "On its own, ${DayWords.short(start.toLocalDate())}, ${clockOf(start)}",
                         divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.workout.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
                     )
                 }
@@ -551,9 +565,11 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     val headline = when {
         ctx.r == null -> DetailHeadline.none("No reading", DetailCopy.noValue(Metric.Steps, Range.Day, ctx.isToday))
         e == null || active == null -> DetailHeadline.none("No estimate", "Needs your age, weight and height")
-        range == Range.Day -> DetailHeadline("%,d".format(active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
+        range == Range.Day ->
+            DetailHeadline(dotFormat("%,d", active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
         summary == null -> DetailHeadline.none("Loading", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
-        summary.activeADay != null -> DetailHeadline("%,d".format(summary.activeADay), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary))
+        summary.activeADay != null ->
+            DetailHeadline(dotFormat("%,d", summary.activeADay), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary))
         else -> DetailHeadline.none("No full days yet", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
     }
     DetailTemplate(
@@ -563,19 +579,24 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     ) {
         if (e == null || active == null) {
             if (ctx.r != null) item {
-                ListPanel(Modifier.padding(top = 8.dp)) { LinkRow("Add age, weight and height", ctx.onEditProfile, divider = false) }
+                ListPanel(Modifier.padding(top = 8.dp)) { LinkRow(ADD_PROFILE, ctx.onEditProfile, divider = false) }
             }
         } else if (range == Range.Day) {
             item { GoalBar(CaloriesCopy.share(active, goal), CaloriesCopy.toGoal(active, goal), color) }
-            item { HourlyKcal(e, color) { h -> scrub = h?.let { DetailHeadline("%,d".format(Math.round(e.hourly.total[it])), CaloriesCopy.hourLabel(it), null) } } }
+            item {
+                HourlyKcal(e, color) { h ->
+                    scrub = h?.let { DetailHeadline(dotFormat("%,d", Math.round(e.hourly.total[it])), CaloriesCopy.hourLabel(it), null) }
+                }
+            }
             item {
                 Column {
                     // So far today both are; the activity level only means something for a whole day, in the goal's place.
                     DetailFigures(
                         listOf(
-                            "%,d".format(Math.round(e.totalKcal)) to "Total kcal",
-                            "%,d".format(Math.round(e.totalKcal - e.activeKcal)) to "At rest",
-                            (e.pal?.takeIf { !ctx.isToday }?.let { "%.2f".format(it) to "Activity level" } ?: ("%,d".format(goal) to "Goal")),
+                            Units.count(Math.round(e.totalKcal)) to "Total kcal",
+                            Units.count(Math.round(e.totalKcal - e.activeKcal)) to "At rest",
+                            e.pal?.takeIf { !ctx.isToday }?.let { decimal(it, 2) to "Activity level" }
+                                ?: (Units.count(goal) to "Goal"),
                         ),
                     )
                     DetailSentence(ActivityCopy.energy(Math.round(e.bmrKcal)))
@@ -591,10 +612,10 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                     sources.forEachIndexed { i, s ->
                         val start = s.workoutStart
                         if (start != null) ListRow(
-                            s.name, color, "%,d".format(s.kcal), s.line, divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(start)) },
+                            s.name, color, Units.count(s.kcal), s.line, divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(start)) },
                             icon = org.openstrap.app.ui.workout.SportIcons.of(s.sportType ?: 0), iconTint = SportIconTint,
                         ) else ListRow(
-                            s.name, color, "%,d".format(s.kcal), s.line, divider = i > 0,
+                            s.name, color, Units.count(s.kcal), s.line, divider = i > 0,
                             icon = if (s.name == "Walking") Metric.Steps.rowIcon() else AppIcons.PersonArmsSpread,
                         )
                     }
@@ -612,8 +633,8 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                 item {
                     DetailFigures(
                         listOfNotNull(
-                            "%,d".format(summary.activeTotal) to "Active kcal in all",
-                            summary.totalADay?.let { "%,d".format(it) to "Total a day" },
+                            Units.count(summary.activeTotal) to "Active kcal in all",
+                            summary.totalADay?.let { Units.count(it) to "Total a day" },
                             summary.vsBefore?.let { CaloriesCopy.signed(it) to CaloriesCopy.vsLabel(range) },
                         ),
                         Modifier.padding(top = 18.dp),
@@ -676,18 +697,18 @@ private fun RangeKcal(
     val bars = remember(rows, range, start, end) {
         val days = generateSequence(start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }.toList()
         if (range != Range.Year) days.map { d -> d to rows[d]?.let { listOf(it.workout, (it.active - it.workout).coerceAtLeast(0f)) } }
-        else days.groupBy { it.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY)) }.map { (monday, week) ->
+        else days.groupBy { Weeks.start(it) }.map { (first, week) ->
             val have = week.mapNotNull { rows[it] }
-            monday to have.takeIf { it.isNotEmpty() }?.let { w ->
+            first to have.takeIf { it.isNotEmpty() }?.let { w ->
                 val workout = w.sumOf { it.workout.toDouble() }.toFloat() / w.size
                 listOf(workout, (w.sumOf { it.active.toDouble() }.toFloat() / w.size - workout).coerceAtLeast(0f))
             }
         }
     }
     val labels = when (range) {
-        Range.Week -> bars.map { shortDay(it.first) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { bars[((bars.size - 1) * it).toInt()].first.format(DateTimeFormatter.ofPattern("d MMM")) }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { bars[((bars.size - 1) * it).toInt()].first.format(DateTimeFormatter.ofPattern("MMM")) }
+        Range.Week -> bars.map { weekdayShort(it.first) }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(bars[((bars.size - 1) * it).toInt()].first) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { monthShort(bars[((bars.size - 1) * it).toInt()].first) }
     }
     Column(Modifier.padding(top = 8.dp)) {
         KcalBars(
@@ -695,8 +716,9 @@ private fun RangeKcal(
             onPick = { i ->
                 onScrub(i?.let { bars[it] }?.let { (d, parts) ->
                     parts?.let {
-                        val label = if (range == Range.Year) "active kcal a day, week of ${d.format(DateTimeFormatter.ofPattern("d MMM"))}" else "active kcal, ${d.format(DAY)}"
-                        DetailHeadline("%,d".format(Math.round(it.sum())), label, null)
+                        val label =
+                            if (range == Range.Year) "active kcal a day, week of ${dayMonth(d)}" else "active kcal, ${DayWords.short(d)}"
+                        DetailHeadline(dotFormat("%,d", Math.round(it.sum())), label, null)
                     }
                 })
             },
@@ -798,8 +820,8 @@ private fun DistanceDetail(ctx: ActivityDetailContext) {
     // TODO(step 6): Week and longer need each day's distance, which the engine works out only for the day shown.
     val ours = ctx.r?.activity?.distanceMeters
     val meters = ours ?: ctx.state.distanceMeters?.toFloat()
-    val km = meters?.div(1000f)
-    val headline = if (km != null) DetailHeadline("%.1f".format(km), ActivityCopy.distanceSource(ours != null), null)
+    val km = meters?.let { Units.km(it, Units.Precision.Day, Units.DOT_LOCALE) }
+    val headline = if (km != null) DetailHeadline(km, ActivityCopy.distanceSource(ours != null), null)
     else DetailHeadline.none("No reading", DetailCopy.noValue(Metric.Steps, Range.Day, ctx.isToday))
     DetailTemplate(
         Score.Distance.title, color, siblings(Detail.OfScore(Score.Distance), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
@@ -828,23 +850,23 @@ private fun ActivityRelated(current: Score, ctx: ActivityDetailContext, heartPoi
         var first = true
         fun divider() = !first.also { first = false }
         ListRow(
-            Metric.Steps.title, MetricColors.steps, ctx.state.steps.takeIf { it > 0 }?.let { "%,d".format(it) },
+            Metric.Steps.title, MetricColors.steps, ctx.state.steps.takeIf { it > 0 }?.let { Units.count(it) },
             ActivityCopy.goalShare(ctx.state.steps, goal), onClick = { ctx.onOpen(Detail.OfMetric(Metric.Steps)) }, divider = divider(),
             icon = Metric.Steps.rowIcon(),
         )
         if (current != Score.ActiveMinutes) ListRow(
             Score.ActiveMinutes.title, MetricColors.steps, a?.weekEquivalent?.toString(),
-            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: "Nothing for this day",
+            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: NO_VALUE,
             onClick = { ctx.onOpen(Detail.OfScore(Score.ActiveMinutes)) }, divider = divider(), icon = Score.ActiveMinutes.rowIcon(),
         )
         if (current != Score.HeartPoints) ListRow(
             Score.HeartPoints.title, MetricColors.heart, points?.toString(),
-            points?.let { TabCopy.heartPoints(it, ActivityCopy.HEART_POINTS_TARGET) } ?: "After the strap's next sync",
+            points?.let { TabCopy.heartPoints(it, ActivityCopy.HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC,
             onClick = { ctx.onOpen(Detail.OfScore(Score.HeartPoints)) }, divider = divider(), icon = Score.HeartPoints.rowIcon(),
         )
         if (current != Score.Load) ListRow(
             Score.Load.title, MetricColors.load, ctx.r?.load?.let(Math::round)?.toString(),
-            ctx.r?.let { TabCopy.loadUsual(it.chronicLoad) } ?: "Nothing for this day",
+            ctx.r?.let { TabCopy.loadUsual(it.chronicLoad) } ?: NO_VALUE,
             onClick = { ctx.onOpen(Detail.OfScore(Score.Load)) }, divider = divider(), icon = Score.Load.rowIcon(),
         )
     }
@@ -885,7 +907,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         dayOf(it) in before..start.minusDays(1) && it.workout.sportType != org.openstrap.app.data.Workouts.GENERIC_ACTIVITY
     } else null
     val headline = when {
-        totals.stepsADay != null -> DetailHeadline("%,d".format(totals.stepsADay), WeekStory.label(week), change)
+        totals.stepsADay != null -> DetailHeadline(dotFormat("%,d", totals.stepsADay), WeekStory.label(week), change)
         steps == null -> DetailHeadline.none("Loading", WeekStory.label(week).replaceFirstChar { it.uppercase() })
         else -> DetailHeadline.none("No steps", "Monday to Sunday last week")
     }
@@ -897,8 +919,10 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         val values = days.map { (it.steps ?: 0).toFloat() }
         if (values.any { it > 0f }) item {
             GlowBars(
-                values, height = 180.dp, labels = days.map { shortDay(it.date) }, accent = MetricColors.steps, modifier = Modifier.padding(top = 8.dp),
-                onScrub = { i -> scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "steps, ${days[it].date.format(DAY)}", null) } },
+                values, height = 180.dp, labels = days.map { weekdayShort(it.date) }, accent = MetricColors.steps, modifier = Modifier.padding(top = 8.dp),
+                onScrub = { i ->
+                    scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "steps, ${DayWords.short(days[it].date)}", null) }
+                },
             )
         }
         item {
@@ -906,7 +930,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
                 listOf(
                     totals.activeMinutes?.toString() to "Active minutes",
                     totals.workouts.toString() to "Workouts",
-                    totals.asleepANight?.let(::clockDuration) to "Asleep a night",
+                    totals.asleepANight?.let { Units.duration(it) } to "Asleep a night",
                 ).filter { it.first != null },
                 Modifier.padding(top = 18.dp),
             )
@@ -916,7 +940,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         item {
             ListPanel(Modifier.padding(top = 8.dp), title = "Day by day") {
                 WeekStory.rows(days).forEachIndexed { i, r ->
-                    ListRow(r.title, MetricColors.steps, r.steps?.let { "%,d".format(it) }, r.line, divider = i > 0, dash = false)
+                    ListRow(r.title, MetricColors.steps, r.steps?.let { Units.count(it) }, r.line, divider = i > 0, dash = false)
                 }
             }
         }

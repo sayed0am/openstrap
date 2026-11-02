@@ -94,7 +94,7 @@ fun GlowRecoveryScreen(
     val failure = recoveryFailure?.takeIf { it.date == state.date && r == null }
     val learning = r?.readiness?.calibrating == true
     val firstNights = r != null && !r.charge.anchored
-    val waiting = if (firstNights) AFTER_FIRST_NIGHT else "No reading yet"
+    val waiting = if (firstNights) AFTER_FIRST_NIGHT else NO_READING
     val slots = recoveryCards(RecoveryFacts(habitAge = healthspan != null, learning = learning, hasRecovery = r != null))
     var info by rememberSaveable { mutableStateOf(false) }
     var partialInfo by rememberSaveable { mutableStateOf(false) }
@@ -259,7 +259,7 @@ private fun ChargeTall(
     val step = 15 * 60L
     val values = remember(c?.points, day) { c?.points?.let { bucket(it, day, step) }.orEmpty() }
     var picked by remember(values) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clockAt(day.first + i * step) } }
+    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clock(day.first + i * step) } }
     GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, second = true), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
             GlowHeader("Energy", tag = tag)
@@ -301,10 +301,6 @@ private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Mo
     }
     SmallCard(MetricColors.charge, if (recharged) "Recharged" else "Drained", value, null, status, modifier, plain = true)
 }
-
-/** Averages charge samples into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun bucket(points: List<Recovery.ChargePoint>, range: LongRange, seconds: Long): List<Float?> =
-    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.t }, { it.value })
 
 /* ------------------------------------------- Body signals ------------------------------------------- */
 

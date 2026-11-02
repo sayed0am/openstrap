@@ -96,5 +96,8 @@ fun Modifier.glass(shape: Shape, onClick: (() -> Unit)? = null, scale: Float = 0
 /** The shape of a glass row inside a quiet panel. */
 val GlassRowShape = GlowLayout.TileShape
 
-internal val TrendGood = Color(0xFF3DDC97)
-internal val TrendBad = Color(0xFFFFB547)
+/** A change for the better, or a GPS fix good enough: the app's good green. */
+internal val TrendGood = MetricColors.good
+
+/** A change for the worse, or a GPS fix too poor: the app's warning amber. */
+internal val TrendBad = MetricColors.warn

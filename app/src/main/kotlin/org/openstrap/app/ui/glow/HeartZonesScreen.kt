@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -83,14 +83,10 @@ fun HeartZonesScreen(
 @Composable
 private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(HeroBase)
+        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
             .drawBehind {
-                drawRect(
-                    Brush.radialGradient(
-                        0f to MetricColors.heart.copy(alpha = 0.55f), 0.5f to MetricColors.heart.copy(alpha = 0.12f), 1f to Color.Transparent,
-                        center = Offset(0f, size.height / 2), radius = size.width * 1.1f,
-                    ),
-                )
+                val r = size.width * HERO_LIGHT_REACH
+                drawCardLight(MetricColors.heart, Offset(0f, size.height / 2), r, r, HeroLight)
             }
             .border(1.dp, MetricColors.heart.copy(alpha = 0.3f), GlowLayout.CardShape)
             .padding(horizontal = 20.dp, vertical = 18.dp),
@@ -107,8 +103,11 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
     }
 }
 
-/** The hero's dark base under its light. */
-private val HeroBase = org.openstrap.app.ui.glow.draw.EdgeSurface
+/** How far the max hero's light reaches from the left edge, in card widths. */
+private const val HERO_LIGHT_REACH = 1.1f
+
+/** The max hero's light: heart red at 55% on the edge, 12% halfway out. */
+private val HeroLight = listOf(0f to 0.55f, 0.5f to 0.12f)
 
 /** A zone on the list: its colour as a short bar, its number and name, and its heart rates. */
 @Composable

@@ -61,9 +61,6 @@ data class IndexRow(val name: String, val color: Color, val value: String?, val 
 
 data class IndexGroup(val title: String, val rows: List<IndexRow>)
 
-/** Shown under a row's name when the day has no value for it. */
-internal const val NO_VALUE = "Nothing for this day"
-
 /**
  * What the Recovery row says under its name: the learning state while the baselines fill, as on the Recovery card
  * ("Learning, 5 of 7 nights"); otherwise that it's the day's score, or null when there's nothing to say.

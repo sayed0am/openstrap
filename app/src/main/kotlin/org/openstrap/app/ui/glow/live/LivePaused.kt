@@ -21,7 +21,7 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.DotSize
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.ui.glow.dotClock
 
 /**
  * A paused workout (workouts spec 2.3, board Paused): the time stops and the pause counts up in dots, "Paused for",
@@ -37,7 +37,7 @@ internal fun ColumnScope.LivePaused(r: WorkoutState.Recording, liveHeartRate: In
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Text("Paused for", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-        DotMatrixText(workoutClock((now - at).coerceAtLeast(0)), dot = DotSize.Detail)
+        DotMatrixText(dotClock((now - at).coerceAtLeast(0)), dot = DotSize.Detail)
         val before = Workouts.heartRateAt(recent, at) ?: recent.lastOrNull { it.first <= at }?.second
         val drop = if (before != null && liveHeartRate != null) before - liveHeartRate else null
         if (liveHeartRate != null) Text(

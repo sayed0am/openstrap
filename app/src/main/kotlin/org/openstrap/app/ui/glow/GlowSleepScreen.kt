@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -319,14 +320,17 @@ private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbanc
     // As high as its content: a number and a line, so a unit high would leave an empty band under them (spec 2.4).
     EdgeCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), kind = EdgeKind.Value, onClick = onInfo) {
         EdgeTitle("Breathing disturbances", "Early estimate")
-        EdgeValue("%.1f".format(b.perHour), "an hour", TabCopy.breathing(b))
+        EdgeValue(dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathing(b))
     }
 }
 
 /** Breathing disturbances as a Small beside the naps: the count an hour and your usual. Lit from below, a value. */
 @Composable
 private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) =
-    SmallCard(MetricColors.sleepLight, "Breathing disturbances", "%.1f".format(b.perHour), "an hour", TabCopy.breathingShort(b), modifier, onClick = onInfo)
+    SmallCard(
+        MetricColors.sleepLight, "Breathing disturbances", dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathingShort(b), modifier,
+        onClick = onInfo,
+    )
 
 /**
  * The day's naps as a Small (a Wide when alone): the time napped, a strip of the latest nap's stages and when it was.

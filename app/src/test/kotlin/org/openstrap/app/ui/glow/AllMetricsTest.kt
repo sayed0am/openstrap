@@ -2,20 +2,19 @@ package org.openstrap.app.ui.glow
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Metric
-import org.junit.Rule
-import org.openstrap.app.testing.LocaleRule
-import java.util.Locale
 
 /** The All metrics index is a map of what exists: every metric detail once, and the screens without one. */
 class AllMetricsTest {
-    // The expected numbers are written the English way, whatever the machine's language.
-    @get:Rule val locale = LocaleRule(Locale.US)
+    // The values are checked as an English phone writes them: a German one groups steps with a dot.
+    @get:Rule val locale = LocaleRule()
 
     private val empty = DayUiState()
 

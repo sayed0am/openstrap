@@ -257,7 +257,7 @@ private fun glowFill(light: org.openstrap.app.ui.glow.GlowLight, p: GlowPalette,
 /* Edge light                                                                                        */
 /* ------------------------------------------------------------------------------------------------ */
 
-/** The edge card's surface, under its light. */
+/** The edge card's surface, under its light, and the one near-black every lit card and share card sits on. */
 val EdgeSurface = Color(0xFF0A0A0B)
 
 /** A level edge card's lowest light, so an empty one still shows where it fills from. */

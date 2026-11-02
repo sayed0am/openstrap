@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow.live
 
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Pace
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -62,11 +64,11 @@ import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.glow.draw.dotLayout
-import org.openstrap.app.ui.workout.Glance
 import org.openstrap.app.ui.workout.LiveView
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.ui.glow.WaitingDash
 import org.openstrap.app.ui.glow.workoutClock
+import org.openstrap.app.ui.glow.dotClock
 
 /**
  * A distance workout with GPS (workouts spec 2.3, boards Run and Map): two views, swiped, under the moving time. Pace:
@@ -120,7 +122,7 @@ internal fun LiveDistanceScreen(
     val pace = remember(route) { Route.currentPace(route) }
     val active = activeSecondsState(r)
     // Read where it shows, so the screen holds still between seconds.
-    val averagePace = { if (distance >= 50) active.value / (distance / 1000.0) else null }
+    val averagePace = { Pace.of(distance, active.value) }
     val accuracy = route.lastOrNull()?.accuracy
     val reps = r.structure is org.openstrap.app.data.Structure.Reps
     val gps = WorkoutCopy.gpsPill(accuracy) to if (accuracy != null && accuracy <= Route.MAX_ACCURACY_M) TrendGood else TrendBad
@@ -139,8 +141,8 @@ internal fun LiveDistanceScreen(
             r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = status,
             paused = {
                 LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
-                    Glance.kmFigure(distance) to "km",
-                    (if (speed) speedText(averagePace()) else Glance.paceClock(averagePace())) to if (speed) "Avg km/h" else "Avg pace",
+                    Units.km(distance, Units.Precision.Workout) to "km",
+                    (if (speed) speedText(averagePace()) else Pace.clock(averagePace())) to if (speed) "Avg km/h" else "Avg pace",
                     stats?.average?.toString() to "Avg bpm",
                 ))
             },
@@ -168,15 +170,15 @@ internal fun LiveDistanceScreen(
                 ) {
                     if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         LiveFigures(listOf(
-                            Glance.kmFigure(distance) to "km",
-                            (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
+                            Units.km(distance, Units.Precision.Workout) to "km",
+                            (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
                             kcal?.active?.toInt()?.toString() to "Active kcal",
                         ))
                     } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
                         if (!split) LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
-                            Glance.kmFigure(distance) to "km",
+                            Units.km(distance, Units.Precision.Workout) to "km",
                             climb?.toInt()?.toString() to "Climb m",
                             kcal?.active?.toInt()?.toString() to "Active kcal",
                         ))
@@ -188,8 +190,8 @@ internal fun LiveDistanceScreen(
                 LiveView.Map -> LiveMapScreen(
                     r, route, readings, bpm, color, contentPadding, controls,
                     figures = listOf(
-                        Glance.kmFigure(distance) to "km",
-                        (if (speed) speedText(pace) else Glance.paceClock(pace)) to if (speed) "km/h" else "Pace /km",
+                        Units.km(distance, Units.Precision.Workout) to "km",
+                        (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
                     ),
                     time = { active.value }, bottomRoom = bar, heartPill = !split,
                 )
@@ -250,7 +252,7 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
             )
             val (value, unit) = when {
                 work && m.metersLeft != null -> "${m.metersLeft.toInt()}" to "m to go"
-                m.left != null -> workoutClock(m.left) to if (rest) "rest left" else "left"
+                m.left != null -> dotClock(m.left) to if (rest) "rest left" else "left"
                 else -> null to ""
             }
             if (value != null) {
@@ -260,7 +262,7 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
             val line = when {
                 work -> Route.currentPace(route)?.let { pace ->
                     structure.meters?.let { "Pace ${workoutClock((pace * it / 1000).toLong())} per $repName" }
-                        ?: org.openstrap.app.ui.workout.Glance.paceClock(pace)?.let { "Pace $it /km" }
+                        ?: Pace.clock(pace)?.let { "Pace $it /km" }
                 }
                 m.phase == org.openstrap.app.data.Phase.WarmUp -> "Skip starts the reps when you're ready"
                 m.phase == org.openstrap.app.data.Phase.Done -> "Hold the square to end, or keep going"
@@ -301,8 +303,8 @@ internal fun ZoneTick(bpm: Int?, r: WorkoutState.Recording) {
 }
 
 /** km/h from seconds per kilometre, one decimal; null with no pace. */
-internal fun speedText(secondsPerKm: Double?): String? =
-    secondsPerKm?.takeIf { it > 0 && it < 3600 }?.let { String.format(java.util.Locale.ROOT, "%.1f", 3600 / it) }
+internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.util.Locale.getDefault()): String? =
+    secondsPerKm?.takeIf { it > 0 && it < Pace.SLOWEST_S }?.let { String.format(locale, "%.1f", 3600 / it) }
 
 /**
  * The Pace card: "Pace" with the average beside it, the pace now in the card's one dotted number, and a bar per
@@ -322,7 +324,7 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
             val room = maxWidth.value
             // Centred, as the board has it: the one number the card is for.
             Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.Bottom) {
-                val now = if (speed) speedText(pace) else Glance.paceClock(pace)
+                val now = if (speed) speedText(pace, Units.DOT_LOCALE) else Pace.clock(pace, Units.DOT_LOCALE)
                 // The live size, shrunk only as far as a walk's 12:30 needs to fit beside its unit.
                 val fit = now?.let { ((room - UNIT_ROOM) / dotLayout(it, DotSize.Live, 1f).width).coerceIn(0.5f, 1f) } ?: 1f
                 if (now != null) DotMatrixText(now, dot = DotSize.Live, scale = fit) else WaitingDash(Modifier.padding(vertical = 18.dp))
@@ -341,7 +343,7 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
 @Composable
 private fun AveragePace(averagePace: () -> Double?, speed: Boolean) {
     val average = averagePace()
-    val avg = if (speed) speedText(average)?.let { "Avg $it" } else Glance.paceClock(average)?.let { "Avg $it" }
+    val avg = if (speed) speedText(average)?.let { "Avg $it" } else Pace.clock(average)?.let { "Avg $it" }
     if (avg != null) Text(avg, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
 }
 

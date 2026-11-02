@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.data.Stats
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
@@ -38,7 +40,6 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.StrapReadinessRow
 import org.openstrap.app.device.SyncRecord
-import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.dashboard.DailyHistory
@@ -342,7 +343,7 @@ private data class TodayContext(
         get() = when {
             firstNights -> AFTER_FIRST_NIGHT
             stuck -> WAITING_LAST_NIGHT
-            else -> "No reading yet"
+            else -> NO_READING
         }
 
     /** The day's workouts you'd call workouts, oldest first: the strap's own "Activity" records aren't. */
@@ -365,7 +366,7 @@ private data class TodayContext(
     /** Time to recover from the latest workout that says how long it needs, or null when none does. */
     val recover: Pair<String?, String>?
         get() {
-            val w = workouts.filter { it.recoveryMinutes != null }.maxByOrNull { it.end } ?: return null
+            val w = latestRecoveryEstimate(workouts) ?: return null
             return TodayCopy.recoverText(TodayCopy.recoverLeft(w.end, w.recoveryMinutes ?: 0, now), now, zone)
         }
 
@@ -600,8 +601,8 @@ private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Lon
                 // About 40 points over whatever time has passed, and never narrower than the strap's usual gap between
                 // readings (it keeps one every few minutes outside a workout): a slot with no reading between two that
                 // have one breaks the line into lone dots.
-                val gaps = since.zipWithNext { a, b -> b.x - a.x }.filter { it > 0 }.sorted()
-                val typical = gaps.getOrNull(gaps.size / 2) ?: 0L
+                val gaps = since.zipWithNext { a, b -> (b.x - a.x).toInt() }.filter { it > 0 }
+                val typical = Stats.upperMiddle(gaps)?.toLong() ?: 0L
                 // Half as wide again, so a reading a little late still lands in its own slot.
                 val step = maxOf(60L, (ctx.now - w.end) / 40, typical * 3 / 2)
                 val values = remember(since, w.end, step) { bucket(since, w.end..ctx.now, step) }
@@ -637,7 +638,7 @@ private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTim
             // The count is in dots below, so the sentence says the steps against the goal instead.
             HeroSentence(TodayCopy.evening(nouns, ctx.state.steps, goals.steps, ctx.loadStatus, stepCount = false))
             Spacer(Modifier.height(24.dp))
-            HeroNumber("%,d".format(ctx.state.steps), listOf("steps"))
+            HeroNumber(dotFormat("%,d", ctx.state.steps), listOf("steps"))
             // Load is said in the sentence, and Energy has its own card right under the hero. Only with that card
             // hidden in Edit Today does Energy come back here, last and full width, never a lone dash.
             val energy = ctx.charge?.takeIf { energyHidden }
@@ -827,7 +828,7 @@ private fun TodayRow(
             onLoad = { openScore(org.openstrap.app.ui.dashboard.Score.Load) }, onRecover = { openScore(org.openstrap.app.ui.dashboard.Score.Recover) },
         )
         TodayCard.Recover -> {
-            val left = ctx.workouts.filter { it.recoveryMinutes != null }.maxByOrNull { it.end }
+            val left = latestRecoveryEstimate(ctx.workouts)
                 ?.let { w -> TodayCopy.recoverShort(TodayCopy.recoverLeft(w.end, w.recoveryMinutes ?: 0, ctx.now), ctx.now, ctx.zone) }
             SmallCard(
                 MetricColors.load, "To recover", left?.first, "h", left?.second ?: "No estimate from the strap", modifier,
@@ -851,6 +852,3 @@ internal fun chargeSoFar(points: List<Recovery.ChargePoint>, day: LongRange, now
     return org.openstrap.app.data.Summaries.evenly(points.filter { it.t <= now }, day, step, { it.t }, { it.value })
 }
 
-/** Averages timed points into evenly spaced buckets across [range]; empty buckets are null (gaps). */
-internal fun bucket(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> =
-    org.openstrap.app.data.Summaries.evenly(points, range, seconds, { it.x }, { it.y })

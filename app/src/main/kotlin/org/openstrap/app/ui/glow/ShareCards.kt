@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Formatters
+import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
@@ -44,7 +46,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.cos
 import org.openstrap.app.data.Phases
@@ -136,10 +137,10 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
     val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
-    val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(DateTimeFormatter.ofPattern("MMM d", Locale.getDefault()))
+    val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(Formatters.of("MMM d", Locale.getDefault()))
     val avg = a.workout.averageHeartRate
-    val kcal = a.activeKcal?.let { "%,d".format(Math.round(it)) }
-    val (minutes, minUnit) = if (active >= 60) "${active / 60}" to "min" else "$active" to "s"
+    val kcal = kcalFigure(a)
+    val (minutes, minUnit) = minutesFigure(active)
     val chip = earned.firstOrNull { it.kind == EarnedLine.Kind.Best }?.let { StoryChip(it.text, best = true, met = false) }
         ?: earned.firstOrNull { it.kind == EarnedLine.Kind.Goal }?.let { StoryChip(listOfNotNull(it.text, it.value).joinToString(", "), best = false, met = it.met) }
     return when (family) {
@@ -167,7 +168,7 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
             )
         }
         Workouts.Family.IndoorCardio -> StoryCard.Indoor(
-            date, a.sportName, workoutClock(active), a.zoneSeconds,
+            date, a.sportName, dotClock(active), a.zoneSeconds,
             listOfNotNull(avg?.let { "$it avg bpm" }, kcal?.let { "$it kcal" }).joinToString(", ").ifEmpty { null }, chip,
         )
         Workouts.Family.Intervals -> {
@@ -282,7 +283,7 @@ internal object StoryRouteShape {
  */
 @Composable
 internal fun StoryCardView(card: StoryCard, photo: ImageBitmap?, route: List<Route.Point>, modifier: Modifier = Modifier) {
-    Box(modifier.size(StoryWidth, StoryHeight).background(StoryBlack)) {
+    Box(modifier.size(StoryWidth, StoryHeight).background(EdgeSurface)) {
         if (photo != null) {
             Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
             PhotoFade(top = card !is StoryCard.Run && card !is StoryCard.Game)
@@ -309,8 +310,16 @@ private fun storyColor(card: StoryCard): Color = when (card) {
     else -> familyColor(card.family)
 }
 
-/** The card's black, a touch off pure so a dark photo's edge still shows. */
-private val StoryBlack = org.openstrap.app.ui.glow.draw.EdgeSurface
+/** Where the board's light sits, in card heights from the top, and its size in card widths and heights. */
+private const val STORY_LIGHT_BELOW = 1.12f
+private const val STORY_LIGHT_WIDTH = 1.3f
+private const val STORY_LIGHT_HEIGHT = 0.65f
+
+/** The light's middle stop, as a share of its strength, and its fixed rim before it fades out. */
+private const val STORY_LIGHT_MID_AT = 0.38f
+private const val STORY_LIGHT_MID = 0.47f
+private const val STORY_LIGHT_RIM_AT = 0.7f
+private const val STORY_LIGHT_RIM = 0.08f
 
 /**
  * The board's light from below: an ellipse wider than the card centred under its foot, from [strength] of [color] to
@@ -320,18 +329,11 @@ private val StoryBlack = org.openstrap.app.ui.glow.draw.EdgeSurface
 private fun StoryGlow(color: Color, strength: Float) {
     Box(
         Modifier.fillMaxSize().drawBehind {
-            val rx = size.width * 1.3f
-            val ry = size.height * 0.65f
-            val center = Offset(size.width / 2, size.height * 1.12f)
-            scale(1f, ry / rx, pivot = center) {
-                drawCircle(
-                    Brush.radialGradient(
-                        0f to color.copy(alpha = strength), 0.38f to color.copy(alpha = strength * 0.47f), 0.7f to color.copy(alpha = 0.08f), 1f to Color.Transparent,
-                        center = center, radius = rx,
-                    ),
-                    radius = rx, center = center,
-                )
-            }
+            drawCardLight(
+                color, Offset(size.width / 2, size.height * STORY_LIGHT_BELOW),
+                size.width * STORY_LIGHT_WIDTH, size.height * STORY_LIGHT_HEIGHT,
+                listOf(0f to strength, STORY_LIGHT_MID_AT to strength * STORY_LIGHT_MID, STORY_LIGHT_RIM_AT to STORY_LIGHT_RIM),
+            )
         },
     )
 }

@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.TimeOfDay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,9 +66,7 @@ import org.openstrap.app.ui.components.GlassSheet
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
-import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /*
  * The settings pages (the Strap page and what it opens, Profile, You) in the glow language's quiet tier: black, with
@@ -597,7 +596,5 @@ fun PageNote(text: String, color: Color = Color.White.copy(alpha = 0.6f)) {
 internal fun Modifier.topHairline(show: Boolean, color: Color = RowHairline): Modifier =
     if (show) drawBehind { drawLine(color, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else this
 
-/** A time of day from [epoch] seconds, "07:45", in the phone's zone. */
-internal fun clock(epoch: Long): String = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(CLOCK_FORMAT)
-
-private val CLOCK_FORMAT = DateTimeFormatter.ofPattern("HH:mm")
+/** A time of day from [epoch] seconds in the phone's zone, "07:45" or "7:45 AM" by the phone's setting. */
+internal fun clock(epoch: Long): String = TimeOfDay.format(epoch, ZoneId.systemDefault())

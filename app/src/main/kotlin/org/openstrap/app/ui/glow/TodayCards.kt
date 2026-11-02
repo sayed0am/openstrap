@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 import org.openstrap.app.data.CheckIn
 import org.openstrap.app.data.Workouts
@@ -59,9 +60,6 @@ import org.openstrap.app.ui.theme.AppIcons
  * The pieces Today is built from (spec 4.2): the hero's parts, strips, edge cards and lists. Each card has one home
  * on the screen and opens its detail. The words come from [TodayCopy].
  */
-
-private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
-internal fun clockAt(epoch: Long): String = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(CLOCK)
 
 /** The smallest height a card of [size] takes: its grid height, so long text grows the card instead of clipping. */
 internal fun Modifier.gridSize(size: CardSize): Modifier = GlowGrid.height(size)?.let { heightIn(min = it) } ?: this
@@ -241,9 +239,9 @@ private fun alertMetric(a: HealthAlertRow) = when (a.type) { 3 -> Metric.Stress;
 internal fun AlertsStrip(alerts: List<HealthAlertRow>, onOpenMetric: (Metric) -> Unit, modifier: Modifier = Modifier) {
     val newest = alerts.maxByOrNull { it.timestamp } ?: return
     TodayStrip(MetricColors.heart, EdgeKind.Value, modifier, status = EdgeStatus.Above, onClick = { onOpenMetric(alertMetric(newest)) }) {
-        StripLine("From your strap", if (alerts.size > 1) "${alerts.size - 1} more today" else clockAt(newest.timestamp))
+        StripLine("From your strap", if (alerts.size > 1) "${alerts.size - 1} more today" else clock(newest.timestamp))
         Text(
-            alertText(newest) + if (alerts.size > 1) " at ${clockAt(newest.timestamp)}." else ".",
+            alertText(newest) + if (alerts.size > 1) " at ${clock(newest.timestamp)}." else ".",
             color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary,
         )
         Text(
@@ -286,8 +284,8 @@ internal fun EdgeValue(
     if (status != null) Text(status, color = statusColor, style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
 }
 
-/** A length of time as dot-matrix digits: "7:40". */
-internal fun clockDuration(seconds: Long): String = "%d:%02d".format(seconds / 3600, (seconds % 3600) / 60)
+/** A length of time as dot-matrix digits, the clock look the big figures have: "7:40". Text uses [Units.duration]. */
+internal fun clockDuration(seconds: Long): String = Units.clockDuration(seconds, Units.DOT_LOCALE)
 
 /**
  * Last night in full, on waking: the score in dots with its word and time asleep under it, as the Sleep tab's hero has
@@ -298,7 +296,7 @@ internal fun clockDuration(seconds: Long): String = "%d:%02d".format(seconds / 3
 internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false) {
     val s = state.sleep
     EdgeCard(MetricColors.sleepDeep, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onClick) {
-        EdgeTitle("Last night", s?.let { "${clockAt(it.start)}–${clockAt(it.end)}" })
+        EdgeTitle("Last night", s?.let { "${clock(it.start)}–${clock(it.end)}" })
         val asleep = state.asleepSeconds
         val score = s?.score
         // A night the strap gave no score says so in words, with no dash where the score would be.
@@ -343,7 +341,7 @@ internal fun HeartCard(
     ) {
         EdgeTitle("Heart rate", state.restingHeartRate?.let { "Resting $it" }, marker = upTo)
         val at = scrubbed?.second ?: state.heartRate.lastOrNull()?.x
-        EdgeValue(now?.toString(), "bpm", TodayCopy.heartAt(live != null && scrubbed == null, at?.let(::clockAt)))
+        EdgeValue(now?.toString(), "bpm", TodayCopy.heartAt(live != null && scrubbed == null, at?.let(::clock)))
         if (state.heartRate.size >= 2) {
             Spacer(Modifier.height(10.dp))
             GlowLineChart(
@@ -386,9 +384,9 @@ internal fun ActivityCard(
         // already climbs toward the goal, and the sentence gives the share.
         progress = if (chart || goal <= 0) null else state.steps / goal.toFloat(), onClick = onClick,
     ) {
-        EdgeTitle("Steps", "Goal %,d".format(goal), marker = upTo, tag = tag)
+        EdgeTitle("Steps", "Goal ${Units.count(goal)}", marker = upTo, tag = tag)
         val sentence = org.openstrap.app.ui.dashboard.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
-        if (count) EdgeValue("%,d".format(state.steps), "steps", sentence)
+        if (count) EdgeValue(dotFormat("%,d", state.steps), "steps", sentence)
         else Text(sentence, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 10.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (chart) {
             Spacer(Modifier.height(10.dp))
@@ -470,10 +468,10 @@ internal fun ChargeWideCard(
 @Composable
 internal fun WorkoutCard(w: org.openstrap.app.data.WorkoutAnalysis, onClick: () -> Unit, modifier: Modifier = Modifier) {
     EdgeCard(MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Earlier, onClick = onClick) {
-        EdgeTitle(Workouts.sportName(w.workout.sportType), "${clockAt(w.shownStart)}–${clockAt(w.end)}")
+        EdgeTitle(Workouts.sportName(w.workout.sportType), "${clock(w.shownStart)}–${clock(w.end)}")
         val mostly = w.zoneSeconds.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.index
         EdgeValue(
-            workoutClock(w.activeSeconds.coerceAtLeast(0)), "long",
+            dotClock(w.activeSeconds.coerceAtLeast(0)), "long",
             listOfNotNull(w.workout.averageHeartRate?.let { "Average $it bpm" }, mostly?.let { "mostly zone ${it + 1}" })
                 .joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null },
         )
@@ -506,10 +504,9 @@ internal fun WeekCard(
     val asleep = state.nights.filter { it.date in start.plusDays(1)..end.plusDays(1) }.mapNotNull { it.asleepSeconds }
     val zone = ZoneId.systemDefault()
     val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
-    val range = DateTimeFormatter.ofPattern("d MMM")
     EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
-        EdgeTitle("Your week", "${start.format(range)}–${end.format(range)}")
-        EdgeValue(stepsNow?.let { "%,d".format(it.roundToInt()) }, "steps a day", null)
+        EdgeTitle("Your week", "${dayMonth(start)}–${dayMonth(end)}")
+        EdgeValue(stepsNow?.let { dotFormat("%,d", it.roundToInt()) }, "steps a day", null)
         val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { TodayCopy.duration(it) + " asleep a night" }
         val workoutsDone = if (done == 1) "1 workout" else "$done workouts"
         Text(
