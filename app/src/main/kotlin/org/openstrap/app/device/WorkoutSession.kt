@@ -151,15 +151,6 @@ class WorkoutSession(
     val calmDown: StateFlow<CalmDown?> = _calmDown
     private var calmJob: Job? = null
 
-    /** A sport a launcher shortcut or the Quick Settings tile asked the ready screen to open with; the screen clears it. */
-    val readyRequest = MutableStateFlow<Int?>(null)
-
-    /** The Start widget's All sports asked for the ready screen on its sport picker; the screen clears it. */
-    val readyPickRequest = MutableStateFlow(false)
-
-    /** The start of a strap workout a notification asked to open on the Activity tab; the screen clears it. */
-    val openRequest = MutableStateFlow<Long?>(null)
-
     /** The live screen is tucked away to use the rest of the app; the notification brings it back. */
     val minimized = MutableStateFlow(false)
 

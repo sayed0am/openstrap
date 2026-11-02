@@ -30,10 +30,7 @@ import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
@@ -43,12 +40,10 @@ import org.openstrap.app.ui.dashboard.DayViewModel
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.components.FloatingNavBar
 import dev.chrisbanes.haze.hazeSource
-import org.openstrap.app.ui.components.NavItem
 import org.openstrap.app.ui.device.DeviceScreen
 import org.openstrap.app.ui.device.DeviceViewModel
 import org.openstrap.app.ui.dashboard.MomentHeader
 import org.openstrap.app.ui.dashboard.Reselect
-import org.openstrap.app.ui.dashboard.TabNav
 import org.openstrap.app.ui.dashboard.todayTitle
 import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.StrapPreview
@@ -61,7 +56,6 @@ import org.openstrap.app.ui.dashboard.firstScore
 import org.openstrap.app.ui.dashboard.pairStep
 import org.openstrap.app.ui.dashboard.wear
 import org.openstrap.app.data.Recovery
-import java.time.LocalDate
 import org.openstrap.app.ui.dashboard.StrapView
 import org.openstrap.app.ui.dashboard.previewed
 import org.openstrap.app.ui.dashboard.strapChip
@@ -88,32 +82,31 @@ import androidx.compose.foundation.pager.HorizontalPager
 import org.openstrap.app.ui.components.sinkBehind
 import androidx.compose.foundation.pager.rememberPagerState
 import org.openstrap.app.ui.theme.OpenStrapTheme
-import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.GlowWorkoutSummaryScreen
-import org.openstrap.app.presentation.summary
-import org.openstrap.app.presentation.view
+
+import org.openstrap.app.ui.firmware.FirmwareStep
+import org.openstrap.app.ui.root.AppNavState
+import org.openstrap.app.ui.root.AppRootViewModel
+import org.openstrap.app.ui.root.BackResult
+import org.openstrap.app.ui.root.DebugPreviews
+import org.openstrap.app.ui.root.FirstScoreDay
+import org.openstrap.app.ui.root.HcState
+import org.openstrap.app.ui.root.Page
+import org.openstrap.app.ui.root.Tab
+import org.openstrap.app.ui.root.ViewModelFactories
+import org.openstrap.app.ui.root.WorkoutOverlay
+import org.openstrap.app.ui.root.tabItems
+import org.openstrap.app.ui.workout.WorkoutsViewModel
 
 class MainActivity : ComponentActivity() {
-    /** The latest `open_metric` link, until the app root has opened it. */
-    private val metricRequests = kotlinx.coroutines.flow.MutableStateFlow<MetricRequest?>(null)
-
-    /** The Moment widget's tap: Today, at its root, until the app root has opened it. */
-    private val todayRequests = kotlinx.coroutines.flow.MutableStateFlow(false)
-
-    /** A widget's strap status line (not paired, battery low): the Strap page, until the app root has opened it. */
-    private val strapRequests = kotlinx.coroutines.flow.MutableStateFlow(false)
-
-    /** Debug: the moment forced by the `moment` extra, null to follow the clock. */
-    private val forcedMoment = kotlinx.coroutines.flow.MutableStateFlow<org.openstrap.app.data.Moment?>(null)
-
-    /** Debug: the strap state previewed by the `strap_state` extra, null for the real one. */
-    private val strapPreview = kotlinx.coroutines.flow.MutableStateFlow<StrapPreview?>(null)
-
-    /** Debug: the data state previewed by the `data_state` extra, null for the real one. */
-    private val dataPreview = kotlinx.coroutines.flow.MutableStateFlow<DataPreview?>(null)
+    /** Debug: what the screens are shown in place of the real state, from the debug extras. */
+    private val previews = DebugPreviews()
 
     /** A Strap page action waiting on the Bluetooth answer, kept across a fold or a rotation. */
     private val pendingStrap: PendingStrapAction by viewModels()
+
+    /** What notifications, widgets, the tile and shortcuts asked to show, until the app root has shown it. */
+    private val navRequests: NavigationRequests by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -125,7 +118,7 @@ class MainActivity : ComponentActivity() {
         val container = (application as OpenStrapApp).container
         setContent {
             OpenStrapTheme {
-                AppRoot(container, metricRequests, todayRequests, strapRequests, forcedMoment, strapPreview, dataPreview, pendingStrap)
+                AppRoot(container, navRequests, previews, pendingStrap)
             }
         }
     }
@@ -166,43 +159,43 @@ class MainActivity : ComponentActivity() {
         // The Moment widget: Today as it is now, never a forced moment.
         if (intent.getStringExtra(EXTRA_MOMENT) == MOMENT_NOW) {
             intent.removeExtra(EXTRA_MOMENT)
-            todayRequests.value = true
+            navRequests.send(NavRequest.OpenToday)
         }
         if (intent.getBooleanExtra(EXTRA_OPEN_STRAP, false)) {
             intent.removeExtra(EXTRA_OPEN_STRAP)
-            strapRequests.value = true
+            navRequests.send(NavRequest.OpenStrap)
         }
         if (intent.getBooleanExtra(EXTRA_OPEN_RECAP, false)) {
             intent.removeExtra(EXTRA_OPEN_RECAP)
-            (application as OpenStrapApp).container.rewards.openRecap.value = true
+            navRequests.send(NavRequest.OpenRecap)
         }
         if (intent.getBooleanExtra(EXTRA_OPEN_UPDATES, false)) {
             intent.removeExtra(EXTRA_OPEN_UPDATES)
-            (application as OpenStrapApp).container.updater.openRequest.value = true
+            navRequests.send(NavRequest.OpenUpdates)
         }
         intent.getStringExtra(EXTRA_OPEN_METRIC)?.let { route ->
             val day = intent.getStringExtra(EXTRA_METRIC_DAY)?.let { runCatching { java.time.LocalDate.parse(it) }.getOrNull() }
             intent.removeExtra(EXTRA_OPEN_METRIC)
             intent.removeExtra(EXTRA_METRIC_DAY)
-            metricRequests.value = MetricRequest(route, day)
+            navRequests.send(NavRequest.OpenDetail(route, day))
         }
         val open = intent.getLongExtra(EXTRA_OPEN_WORKOUT, -1)
         if (open >= 0) {
             intent.removeExtra(EXTRA_OPEN_WORKOUT)
-            (application as OpenStrapApp).container.workout.openRequest.value = open
+            navRequests.send(NavRequest.OpenWorkout(open))
         }
         val ready = intent.getStringExtra(EXTRA_READY_SPORT)?.toIntOrNull() ?: intent.getIntExtra(EXTRA_READY_SPORT, -1)
         if (ready >= 0) {
             intent.removeExtra(EXTRA_READY_SPORT)
-            (application as OpenStrapApp).container.workout.readyRequest.value = ready
+            navRequests.send(NavRequest.OpenReady(ready))
         }
         if (intent.getBooleanExtra(EXTRA_READY_PICK, false)) {
             intent.removeExtra(EXTRA_READY_PICK)
-            (application as OpenStrapApp).container.workout.readyPickRequest.value = true
+            navRequests.send(NavRequest.OpenChoose)
         }
         if (!intent.getBooleanExtra(EXTRA_SHOW_WORKOUT, false)) return
         intent.removeExtra(EXTRA_SHOW_WORKOUT)
-        (application as OpenStrapApp).container.workout.minimized.value = false
+        navRequests.send(NavRequest.ShowWorkout)
     }
 
     companion object {
@@ -306,9 +299,9 @@ class MainActivity : ComponentActivity() {
         val moment = intent.getStringExtra(EXTRA_MOMENT)
         if (BuildConfig.DEBUG && moment != null && moment != MOMENT_NOW) {
             intent.removeExtra(EXTRA_MOMENT)
-            if (moment.equals("auto", ignoreCase = true)) forcedMoment.value = null
+            if (moment.equals("auto", ignoreCase = true)) previews.moment.value = null
             else org.openstrap.app.data.Moment.entries.firstOrNull { it.name.equals(moment, ignoreCase = true) }
-                ?.let { forcedMoment.value = it }
+                ?.let { previews.moment.value = it }
                 ?: android.util.Log.w("OpenStrap", "moment: no moment called $moment")
         }
         // Debug: `--ei recovery_score 78` shows that score on the Recovery detail (its arc gauge) while Recovery is still
@@ -324,10 +317,10 @@ class MainActivity : ComponentActivity() {
         val strapState = intent.getStringExtra(EXTRA_STRAP_STATE)
         if (BuildConfig.DEBUG && strapState != null) {
             intent.removeExtra(EXTRA_STRAP_STATE)
-            if (strapState.equals("auto", ignoreCase = true)) strapPreview.value = null
-            else StrapPreview.of(strapState)?.let { strapPreview.value = it }
+            if (strapState.equals("auto", ignoreCase = true)) previews.strap.value = null
+            else StrapPreview.of(strapState)?.let { previews.strap.value = it }
                 ?: android.util.Log.w("OpenStrap", "strap_state: no state called $strapState")
-            android.util.Log.i("OpenStrap", "strap_state: showing ${strapPreview.value ?: "the real state"}")
+            android.util.Log.i("OpenStrap", "strap_state: showing ${previews.strap.value ?: "the real state"}")
         }
         // Debug: `--es data_state nosleep` shows a data state (the pairing stage's steps, first nights, no sleep, a
         // partial day, the first score) on a phone whose data is fine; `--es data_state auto` goes back to the real
@@ -335,10 +328,10 @@ class MainActivity : ComponentActivity() {
         val dataState = intent.getStringExtra(EXTRA_DATA_STATE)
         if (BuildConfig.DEBUG && dataState != null) {
             intent.removeExtra(EXTRA_DATA_STATE)
-            if (dataState.equals("auto", ignoreCase = true)) dataPreview.value = null
-            else DataPreview.of(dataState)?.let { dataPreview.value = it }
+            if (dataState.equals("auto", ignoreCase = true)) previews.data.value = null
+            else DataPreview.of(dataState)?.let { previews.data.value = it }
                 ?: android.util.Log.w("OpenStrap", "data_state: no state called $dataState")
-            android.util.Log.i("OpenStrap", "data_state: showing ${dataPreview.value ?: "the real state"}")
+            android.util.Log.i("OpenStrap", "data_state: showing ${previews.data.value ?: "the real state"}")
         }
         // Debug: `--ez show_summary true` opens the summary right after a workout for the latest stored phone workout,
         // with nothing live and nothing written.
@@ -369,101 +362,43 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Tab(
-    val label: String,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val selectedIcon: androidx.compose.ui.graphics.vector.ImageVector,
-    /** The capsule's colour while this tab shows (spec 3.2). */
-    val tint: androidx.compose.ui.graphics.Color,
-) {
-    Today("Today", AppIcons.HouseSimple, AppIcons.HouseSimpleFill, androidx.compose.ui.graphics.Color.White),
-    Recovery("Recovery", AppIcons.Plant, AppIcons.PlantFill, org.openstrap.app.ui.theme.MetricColors.readiness),
-    Sleep("Sleep", AppIcons.Moon, AppIcons.MoonFill, org.openstrap.app.ui.theme.MetricColors.sleepDeep),
-    Activity("Activity", AppIcons.SneakerMove, AppIcons.SneakerMoveFill, org.openstrap.app.ui.theme.MetricColors.steps),
-}
-
-/**
- * The pages that open over whichever tab is showing and close back to it (spec 3.3): the You page and what it opens,
- * and the Strap page and what it opens. Shallowest first.
- */
-private enum class Page(
-    /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
-    val row: String? = null,
-) {
-    You, Profile("Profile"), HeartZones("Heart rate zones"), HealthConnect("Health Connect"), Backup("Backup"), DeletedSleep("Deleted sleep"), Updates("Updates"), Diagnostics("Diagnostics"),
-    GoalsAndBests("Goals and bests"), AllBadges, WeeklyRecap,
-    Strap, Alarms("Alarms"), PhoneAlerts("Phone alerts"), HealthAlerts("Health alerts"), Firmware("Firmware"), ZeppAccount("Zepp account"),
-}
-
-/** Keeps the open pages across process death, as their names ("Strap,Alarms"). */
-private val PagesSaver: androidx.compose.runtime.saveable.Saver<List<Page>, String> = androidx.compose.runtime.saveable.Saver(
-    save = { pages -> pages.joinToString(",") { it.name } },
-    restore = { s -> s.split(',').mapNotNull { n -> Page.entries.firstOrNull { it.name == n } } },
-)
-
-/** What an `open_metric` link asked for: the screen and the day to show it for. */
-internal data class MetricRequest(val route: String, val day: java.time.LocalDate?)
-
 private fun epochNow() = System.currentTimeMillis() / 1000
 
-/** The first score's day before the settings store has answered: nothing is decided until it has. */
-private const val FIRST_SCORE_LOADING = Long.MIN_VALUE
+private const val HC_UNAVAILABLE = "Health Connect isn't available on this phone."
 
+// AppRoot hands its view models to the parts of the screen it is split into, which read from them. It still holds
+// every part's body until they move to ui/root (audit section 2).
+@Suppress("ViewModelForwarding", "ComposeViewModelForwarding", "CyclomaticComplexMethod")
 @Composable
 private fun AppRoot(
     container: AppContainer,
-    metricRequests: kotlinx.coroutines.flow.MutableStateFlow<MetricRequest?>,
-    todayRequests: kotlinx.coroutines.flow.MutableStateFlow<Boolean>,
-    strapRequests: kotlinx.coroutines.flow.MutableStateFlow<Boolean>,
-    forcedMoment: kotlinx.coroutines.flow.StateFlow<org.openstrap.app.data.Moment?>,
-    strapPreview: kotlinx.coroutines.flow.StateFlow<StrapPreview?>,
-    dataPreviews: kotlinx.coroutines.flow.StateFlow<DataPreview?>,
+    navRequests: NavigationRequests,
+    previews: DebugPreviews,
     pendingStrap: PendingStrapAction,
+    dayVm: DayViewModel = viewModel(factory = ViewModelFactories.day(container)),
+    deviceVm: DeviceViewModel = viewModel(factory = ViewModelFactories.device(container)),
+    firmwareVm: FirmwareViewModel = viewModel(factory = ViewModelFactories.firmware(container)),
+    workoutsVm: WorkoutsViewModel = viewModel(factory = ViewModelFactories.workouts(container)),
+    rootVm: AppRootViewModel = viewModel(factory = ViewModelFactories.root(container, workoutsVm.workouts)),
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })
-    val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })
 
-    // Which tab shows and the one before it, for back; every tab keeps its own stack of details.
-    var nav by rememberSaveable(stateSaver = TabNav.Saver) { mutableStateOf(TabNav()) }
-    val tab = nav.current
-    val liveEnabled by container.strap.liveHeartRateEnabled.collectAsStateWithLifecycle()
-    val firmwareVm: FirmwareViewModel = viewModel(factory = viewModelFactory { initializer { FirmwareViewModel(container) } })
-    // Pages over the tab showing (the You page and the Strap page, and what they open), deepest last.
-    var pages by rememberSaveable(stateSaver = PagesSaver) { mutableStateOf(emptyList<Page>()) }
-    // The All metrics sheet, from the grid button in the header: over the tab, never a place.
-    var allMetricsOpen by rememberSaveable { mutableStateOf(false) }
-    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
-    })
+    // Where the app is: the tab, the pages over it, each tab's details, the sheets and the workout screens.
+    val nav = rememberSaveable(saver = AppNavState.Saver) { AppNavState() }
+    val tab = nav.tab.current
+    val liveEnabled by rootVm.liveEnabled.collectAsStateWithLifecycle()
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val openWorkout by workoutsVm.open.collectAsStateWithLifecycle()
-    // Each tab's stack of details, deepest last; back pops one. Opening a detail never moves you to another tab.
-    var todayStack by rememberSaveable(stateSaver = Detail.StackSaver) { mutableStateOf(emptyList<Detail>()) }
-    var activityStack by rememberSaveable(stateSaver = Detail.StackSaver) { mutableStateOf(emptyList<Detail>()) }
-    var recoveryStack by rememberSaveable(stateSaver = Detail.StackSaver) { mutableStateOf(emptyList<Detail>()) }
-    var sleepStack by rememberSaveable(stateSaver = Detail.StackSaver) { mutableStateOf(emptyList<Detail>()) }
-    fun stackOf(t: Int): List<Detail> = when (Tab.entries[t]) {
-        Tab.Today -> todayStack; Tab.Recovery -> recoveryStack; Tab.Sleep -> sleepStack; Tab.Activity -> activityStack
-    }
-    fun setStack(t: Int, stack: List<Detail>) = when (Tab.entries[t]) {
-        Tab.Today -> todayStack = stack; Tab.Recovery -> recoveryStack = stack; Tab.Sleep -> sleepStack = stack; Tab.Activity -> activityStack = stack
-    }
+    fun stackOf(t: Int): List<Detail> = nav.stack(Tab.entries[t])
     // The All metrics Charge row asks the Recovery tab to scroll to its Charge card, once.
     var showCharge by remember { mutableStateOf(false) }
     // Each tap on the tab showing bumps its count, and its lists scroll to the top.
     val scrollToTop = remember { androidx.compose.runtime.mutableStateListOf(*Array(Tab.entries.size) { 0 }) }
     val history: org.openstrap.app.ui.dashboard.DailyHistory = { m, from, to -> container.health.daily(m, from, to) }
-    var editGoals by rememberSaveable { mutableStateOf(false) }
-    val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
-    val todayHidden by container.settings.todayHiddenNames.collectAsStateWithLifecycle(null)
-    val todayPinned by container.settings.todayPinnedNames.collectAsStateWithLifecycle(null)
-    // Remembered, like the picker below: a new object each time the root recomposes (on every tab change) would
-    // recompose every tab.
-    val todayEdits = remember(todayHidden, todayPinned) { org.openstrap.app.ui.dashboard.TodayEdits.parse(todayHidden, todayPinned) }
-    val strapState by strapPreview.collectAsStateWithLifecycle()
-    val dataPreview by dataPreviews.collectAsStateWithLifecycle()
+    val goals by rootVm.goals.collectAsStateWithLifecycle()
+    val todayEdits by rootVm.todayEdits.collectAsStateWithLifecycle()
+    val strapState by previews.strap.collectAsStateWithLifecycle()
+    val dataPreview by previews.data.collectAsStateWithLifecycle()
     // The pairing steps before a strap is paired show with no strap, as `strap_state notpaired` does.
     val preview = strapState ?: StrapPreview.NotPaired.takeIf { dataPreview?.unpaired == true }
     val realRecovery by dayVm.recovery.collectAsStateWithLifecycle()
@@ -476,9 +411,9 @@ private fun AppRoot(
     val recovery = if (previewFailure != null) null else realRecovery?.previewed(dataPreview)
     val recoveryFailure = previewFailure ?: realRecoveryFailure
     val healthspan by dayVm.healthspan.collectAsStateWithLifecycle()
-    val habitAgeSeen by container.settings.habitAgeSeenAsOf.collectAsStateWithLifecycle(null)
+    val habitAgeSeen by rootVm.habitAgeSeenAsOf.collectAsStateWithLifecycle()
     // Opening Habit Age marks the estimate seen, so Today stops offering it.
-    val seeHabitAge: () -> Unit = { healthspan?.result?.asOf?.let { a -> scope.launch { container.settings.setHabitAgeSeen(a) } } }
+    val seeHabitAge: () -> Unit = { healthspan?.result?.asOf?.let(rootVm::seeHabitAge) }
     val profile by deviceVm.profile.collectAsStateWithLifecycle()
     val realDay by dayVm.state.collectAsStateWithLifecycle()
     val day = remember(realDay, dataPreview) { realDay.previewed(dataPreview) }
@@ -486,28 +421,21 @@ private fun AppRoot(
     val usualSteps by dayVm.usualSteps.collectAsStateWithLifecycle()
     val paiHistory: org.openstrap.app.ui.glow.PaiHistory = remember(container) { { from, to -> container.health.dailyPai(from, to) } }
     val energyHistory: org.openstrap.app.ui.glow.EnergyHistory = remember(container) { { from, to -> container.health.dailyEnergy(from, to) } }
-    val strapReadiness by remember(day.dayStart) { container.database.healthDao().strapReadiness(day.dayStart) }.collectAsStateWithLifecycle(null)
-    val checkIn by remember(day.date) { container.health.checkIn(day.date) }.collectAsStateWithLifecycle(null)
+    LaunchedEffect(day.date, day.dayStart) { rootVm.dayShown(day.date, day.dayStart) }
+    val dayExtras by rootVm.dayExtras.collectAsStateWithLifecycle()
+    val strapReadiness = dayExtras.strapReadiness
     val daysWithData by dayVm.daysWithData.collectAsStateWithLifecycle()
     val picker = remember(daysWithData, dayVm) { DayPicker(daysWithData, dayVm::select) }
-    val live by container.strap.liveHeartRate.collectAsStateWithLifecycle()
-    val realConnection by container.strap.connection.collectAsStateWithLifecycle()
-    val realSync by container.strap.sync.collectAsStateWithLifecycle()
-    val syncRecord by container.strap.syncRecord.collectAsStateWithLifecycle()
+    val live by rootVm.liveHeartRate.collectAsStateWithLifecycle()
+    val strapFacts by rootVm.strap.collectAsStateWithLifecycle()
+    val realConnection = strapFacts.connection
+    val realSync = strapFacts.sync
     val message by deviceVm.message.collectAsStateWithLifecycle()
     val workoutState by container.workout.state.collectAsStateWithLifecycle()
     val workoutMinimized by container.workout.minimized.collectAsStateWithLifecycle()
-    // The ready screen's sport while it is open, and whether it opened on the sport list ("All sports").
-    var readySport by rememberSaveable { mutableStateOf<Int?>(null) }
-    var readyPicking by rememberSaveable { mutableStateOf(false) }
-    // Choose, the first screen of a workout (workouts spec 2.1), open under Ready while it shows.
-    var choosing by rememberSaveable { mutableStateOf(false) }
-    // The rounds Ready opens on when a saved workout was picked on Choose.
-    var readyStructure by rememberSaveable { mutableStateOf<String?>(null) }
     // The workout at a glance for the Today hero and the floating bar (workouts spec 2.10). Its State is passed down,
     // not read here, so only those two recompose as it ticks.
-    val liveGlance = remember { org.openstrap.app.ui.workout.liveGlance(container.workout, container.strap.liveHeartRate, container.strap.connection) }
-        .collectAsStateWithLifecycle(null)
+    val liveGlance = rootVm.liveGlance.collectAsStateWithLifecycle()
     // The Today hero shows the workout: the floating bar stays away meanwhile.
     var liveHeroShown by remember { mutableStateOf(false) }
     val onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = { a ->
@@ -527,108 +455,42 @@ private fun AppRoot(
     // Hidden while a workout records: the strap's history may show the one under way.
     val suggestion = suggestions.firstOrNull().takeIf { workoutState !is org.openstrap.app.device.WorkoutState.Recording }
     val offer by container.workout.offer.collectAsStateWithLifecycle()
-    // A stretch being saved as a workout waits here while its sport is chosen.
-    var savingSuggestion by remember { mutableStateOf<org.openstrap.app.data.WorkoutSuggestions.Suggestion?>(null) }
-    val firmwareInstalling: () -> Boolean = { Page.Firmware in pages && firmwareVm.step.value is org.openstrap.app.ui.firmware.FirmwareStep.Installing }
-    // Closes the pages over the tab, unless an update is being installed there; true if any closed.
+    val firmwareInstalling: () -> Boolean = { Page.Firmware in nav.pages && firmwareVm.step.value is FirmwareStep.Installing }
+    // Closes the pages over the tab, unless an update is being installed there; true if any closed. Firmware starts
+    // again from the top once it closes.
     val closePages: () -> Boolean = {
-        if (pages.isEmpty() || firmwareInstalling()) false
-        else { if (Page.Firmware in pages) firmwareVm.reset(); pages = emptyList(); true }
+        val firmware = Page.Firmware in nav.pages
+        nav.closePages(firmwareInstalling()).also { closed -> if (closed && firmware) firmwareVm.reset() }
     }
     // The first page over the tab grows out of the header button tapped for it, if one was (spec 3.5).
     val growOrigin = remember { org.openstrap.app.ui.components.GrowOrigin() }
     var growFrom by remember { mutableStateOf<androidx.compose.ui.geometry.Rect?>(null) }
     // How far that page is open, for the tab behind it to sink as it comes forward.
-    val pageGrow = org.openstrap.app.ui.components.rememberGrowProgress(pages.isNotEmpty())
+    val pageGrow = org.openstrap.app.ui.components.rememberGrowProgress(nav.pages.isNotEmpty())
     val openPage: (Page) -> Unit = { p ->
         val tapped = growOrigin.take()
-        if (pages.isEmpty()) growFrom = tapped
-        if (pages.lastOrNull() != p) pages = pages + p
+        if (nav.pages.isEmpty()) growFrom = tapped
+        nav.openPage(p)
     }
-    val closePage: () -> Unit = { pages = pages.dropLast(1) }
-    // A launcher shortcut or the Quick Settings tile asked for the ready screen.
-    val readyRequest by container.workout.readyRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(readyRequest) {
-        readyRequest?.let { sport ->
-            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) { readySport = sport; readyPicking = false }
-            container.workout.readyRequest.value = null
-        }
-    }
-    // The Start widget's All sports: Choose with every sport, as the Activity tab's All sports opens it.
-    val readyPickRequest by container.workout.readyPickRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(readyPickRequest) {
-        if (readyPickRequest) {
-            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) {
-                choosing = true
+    // What a notification, a widget, the tile or a shortcut asked for, each once, in the order asked.
+    LaunchedEffect(navRequests) {
+        navRequests.requests.collect { r ->
+            val firmware = Page.Firmware in nav.pages
+            val before = nav.pages
+            nav.apply(r, container.workout.state.value is org.openstrap.app.device.WorkoutState.Recording, firmwareInstalling())
+            if (firmware && Page.Firmware !in nav.pages) firmwareVm.reset()
+            when (r) {
+                // A health alert or body-signal notification: its metric's screen, for the alert's day.
+                is NavRequest.OpenDetail -> if (Detail.fromRoute(r.route) != null) r.day?.let(dayVm::select)
+                // The Moment widget: Today at its root, on today.
+                NavRequest.OpenToday -> dayVm.select(java.time.LocalDate.now())
+                // A widget's strap status line opens the Strap page as the header's strap chip does.
+                NavRequest.OpenStrap -> if (nav.pages != before && nav.pages == listOf(Page.Strap)) growFrom = growOrigin.take()
+                NavRequest.ShowWorkout -> container.workout.minimized.value = false
+                else -> Unit
             }
-            container.workout.readyPickRequest.value = false
         }
     }
-    // The Moment widget: Today at its root, on today, over whatever showed.
-    val todayRequest by todayRequests.collectAsStateWithLifecycle()
-    LaunchedEffect(todayRequest) {
-        if (todayRequest) {
-            closePages()
-            allMetricsOpen = false
-            if (workoutState !is org.openstrap.app.device.WorkoutState.Recording) { readySport = null; choosing = false }
-            todayStack = emptyList()
-            dayVm.select(java.time.LocalDate.now())
-            nav = nav.select(Tab.Today.ordinal)
-            todayRequests.value = false
-        }
-    }
-    // A widget's strap status line: the Strap page, over the tab showing, as the header's strap chip opens it.
-    val strapRequest by strapRequests.collectAsStateWithLifecycle()
-    LaunchedEffect(strapRequest) {
-        if (strapRequest) {
-            allMetricsOpen = false
-            if (pages.lastOrNull() != Page.Strap && (pages.isEmpty() || closePages())) openPage(Page.Strap)
-            strapRequests.value = false
-        }
-    }
-    // An update notification: the Updates page, over the You page as its row opens it.
-    val updatesRequest by container.updater.openRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(updatesRequest) {
-        if (updatesRequest) {
-            allMetricsOpen = false
-            if (pages.lastOrNull() != Page.Updates && (pages.isEmpty() || closePages())) pages = listOf(Page.You, Page.Updates)
-            container.updater.openRequest.value = false
-        }
-    }
-    // The weekly recap's notification: the recap, over Goals and bests as its button opens it.
-    val recapRequest by container.rewards.openRecap.collectAsStateWithLifecycle()
-    LaunchedEffect(recapRequest) {
-        if (recapRequest) {
-            allMetricsOpen = false
-            if (pages.lastOrNull() != Page.WeeklyRecap && (pages.isEmpty() || closePages())) pages = listOf(Page.You, Page.GoalsAndBests, Page.WeeklyRecap)
-            container.rewards.openRecap.value = false
-        }
-    }
-    // An auto-detected workout's notification: that workout, on the Activity tab, its home.
-    val openRequest by container.workout.openRequest.collectAsStateWithLifecycle()
-    LaunchedEffect(openRequest) {
-        openRequest?.let { start ->
-            closePages()
-            activityStack = listOf(Detail.Workout(start))
-            nav = nav.select(Tab.Activity.ordinal)
-            container.workout.openRequest.value = null
-        }
-    }
-    // A health alert or body-signal notification: its metric's screen, for the alert's day, over the tab showing.
-    val metricRequest by metricRequests.collectAsStateWithLifecycle()
-    LaunchedEffect(metricRequest) {
-        metricRequest?.let { r ->
-            Detail.fromRoute(r.route)?.let { detail ->
-                closePages()
-                allMetricsOpen = false
-                r.day?.let(dayVm::select)
-                if (stackOf(tab).lastOrNull() != detail) setStack(tab, stackOf(tab) + detail)
-            }
-            metricRequests.value = null
-        }
-    }
-    // The day a workout is being added to after the fact.
-    var addingOn by rememberSaveable { mutableStateOf<java.time.LocalDate?>(null) }
 
     // When the strap was last heard from, for the header chip: kept fresh while connected, then left where it stopped.
     // Without that in this run, the last synced reading or the last sync stand in.
@@ -646,8 +508,8 @@ private fun AppRoot(
     val now by androidx.compose.runtime.produceState(epochNow()) { while (true) { kotlinx.coroutines.delay(30_000); value = epochNow() } }
     // What the screens are shown of the strap: the real state, or a debug preview's (nothing else changes).
     // Paired until the store says otherwise, so a paired strap never flashes the pairing hero or "Not paired" on start.
-    val realPairedKnown by remember { container.settings.pairedDevice.map { it != null } }.collectAsStateWithLifecycle(true)
-    val strapView = StrapView(realPairedKnown, realConnection, realSync, syncRecord, realLastSeen).previewed(preview, now)
+    val realPairedKnown = strapFacts.pairedKnown
+    val strapView = StrapView(realPairedKnown, realConnection, realSync, strapFacts.syncRecord, realLastSeen).previewed(preview, now)
     val connection = strapView.connection
     val sync = strapView.sync
     val lastSeen = strapView.lastSeen
@@ -678,13 +540,6 @@ private fun AppRoot(
     // Your usual workout time comes from workouts you started, not walks the strap noticed by itself.
     val workoutStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.workout.start } }
     val lastWorkout = remember(workouts) { workouts.maxByOrNull { it.end } }
-    // The weekly goal, bests and badges follow the workouts, worked out again on a new one, a trim or a delete
-    // (workouts spec 4), and on a new goal. The one recording isn't in it until it ends.
-    val recordingStart = (workoutState as? org.openstrap.app.device.WorkoutState.Recording)?.workout?.start
-    val rewardsKey = remember(workouts, recordingStart) { workouts.filter { it.workout.start != recordingStart }.map { Triple(it.workout.start, it.shownStart, it.end) } }
-    LaunchedEffect(rewardsKey, goals.workoutsPerWeek) {
-        runCatching { container.rewards.refresh(workouts.filter { it.workout.start != recordingStart }, goals.workoutsPerWeek) }
-    }
     val recording = workoutState is org.openstrap.app.device.WorkoutState.Recording
     // The moment is the clock's, whichever day is shown: browsing yesterday at night is still night (the mood follows
     // it), and only Today's layout goes back to waking for a past day. Today's wake and usual bedtime are kept from
@@ -703,7 +558,7 @@ private fun AppRoot(
             org.openstrap.app.data.MomentResolver.resolve(clock, zone, clockDate, recording, lastWorkout?.end, sleepEnd, bedtime, workoutStarts)
         }
     }
-    val forced by forcedMoment.collectAsStateWithLifecycle()
+    val forced by previews.moment.collectAsStateWithLifecycle()
     val moment = forced ?: clockMoment
     // What Today is laid out for: the moment today, the waking layout for a past day.
     val todayMoment = org.openstrap.app.ui.dashboard.layoutMoment(moment, day.date == clockDate)
@@ -729,14 +584,14 @@ private fun AppRoot(
         .previewed(dataPreview, (((if (dayIsToday) now else day.dayEnd + 1) - day.dayStart) / 60).toInt())
 
     // The first real score is marked once (E4): its day is kept, and never written while a preview shows.
-    val firstScoreDay by container.settings.firstScoreDay.collectAsStateWithLifecycle(FIRST_SCORE_LOADING)
+    val firstScoreDay by rootVm.firstScoreDay.collectAsStateWithLifecycle()
     val dayRecovery = recovery?.takeIf { it.date == day.date }
-    val first = if (firstScoreDay == FIRST_SCORE_LOADING) FirstScore(false) else firstScore(
+    val first = if (firstScoreDay == FirstScoreDay.Loading) FirstScore(false) else firstScore(
         dayRecovery?.readiness?.score, day.date, dayIsToday, dayRecovery?.readiness?.phase == Recovery.Phase.Learning,
-        dayRecovery?.let { earliestScore(it.readinessTrend, day.date) }, firstScoreDay?.let(LocalDate::ofEpochDay),
+        dayRecovery?.let { earliestScore(it.readinessTrend, day.date) }, (firstScoreDay as? FirstScoreDay.Day)?.date,
     )
     LaunchedEffect(first.remember, preview, dataPreview) {
-        if (preview == null && dataPreview == null) first.remember?.let { container.settings.setFirstScoreDay(it.toEpochDay()) }
+        if (preview == null && dataPreview == null) first.remember?.let(rootVm::markFirstScore)
     }
     val showFirstScore = first.show || dataPreview == DataPreview.FirstScoreShown
 
@@ -751,9 +606,8 @@ private fun AppRoot(
             plan.sportType, plan.askToEnd, plan.target, plan.useGps, plan.keepRoute, plan.rest, plan.setsTarget,
             logSets = plan.logSets, structure = plan.structure,
         )
-        saved?.let { s -> scope.launch { container.settings.setSportSettings(plan.sportType, s) } }
-        readySport = null; readyPicking = false; readyStructure = null
-        choosing = false
+        saved?.let { s -> rootVm.saveSportSettings(plan.sportType, s) }
+        nav.workoutStarted()
     }
     // Bluetooth permission gate. A workout waits here as saveable data, so the answer still starts it after the
     // activity was recreated behind the dialog. A Strap page action waits in [pendingStrap], which outlives a fold.
@@ -805,13 +659,15 @@ private fun AppRoot(
     // The write permissions are asked for the manual copy and for turning auto sync on; this says which, and survives
     // the activity being recreated behind the permission screen.
     var hcForAuto by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val hcLauncher = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
         val auto = hcForAuto
         hcForAuto = false
         scope.launch {
             // The needed ones may have been granted before, outside what this screen returns; the calorie ones may stay off.
-            val ok = granted.containsAll(container.healthConnect.permissions) || runCatching { container.healthConnect.hasPermissions() }.getOrDefault(false)
-            if (!ok) Toast.makeText(context, "Health Connect permissions were not granted.", Toast.LENGTH_LONG).show()
+            if (!rootVm.healthConnectWriteGranted(granted)) {
+                Toast.makeText(context, "Health Connect permissions were not granted.", Toast.LENGTH_LONG).show()
+            }
             else if (auto) deviceVm.setAutoHealthConnect(true) else deviceVm.exportHealthConnect()
         }
     }
@@ -823,29 +679,30 @@ private fun AppRoot(
         uri?.let(deviceVm::importCsv)
     }
     val hcReadLauncher = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { granted ->
-        if (granted.any { it in container.healthConnect.readPermissions }) deviceVm.importHealthConnect()
+        if (rootVm.healthConnectReadGranted(granted)) deviceVm.importHealthConnect()
         else Toast.makeText(context, "Health Connect permissions were not granted.", Toast.LENGTH_LONG).show()
     }
     val importHealthConnect: () -> Unit = {
-        if (!container.healthConnect.isAvailable()) {
-            Toast.makeText(context, "Health Connect isn't available on this phone.", Toast.LENGTH_LONG).show()
-        } else scope.launch {
-            if (container.healthConnect.hasReadPermissions()) deviceVm.importHealthConnect()
-            else hcReadLauncher.launch(container.healthConnect.readPermissions)
+        scope.launch {
+            when (val hc = rootVm.healthConnectRead()) {
+                HcState.Unavailable -> Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
+                HcState.Granted -> deviceVm.importHealthConnect()
+                is HcState.Needs -> hcReadLauncher.launch(hc.permissions)
+            }
         }
     }
     // The manual copy, or turning auto sync on ([forAuto]): with the write permissions, asked for first when missing.
     val writeHealthConnect: (Boolean) -> Unit = { forAuto ->
-        if (!container.healthConnect.isAvailable()) {
-            Toast.makeText(context, "Health Connect isn't available on this phone.", Toast.LENGTH_LONG).show()
-        } else scope.launch {
+        scope.launch {
             // The calorie permissions are optional, but asked for again until granted: the launcher goes on with the
             // ones it needs.
-            if (container.healthConnect.hasRequestedPermissions()) {
-                if (forAuto) deviceVm.setAutoHealthConnect(true) else deviceVm.exportHealthConnect()
-            } else {
-                hcForAuto = forAuto
-                hcLauncher.launch(container.healthConnect.requestedPermissions)
+            when (val hc = rootVm.healthConnectWrite()) {
+                HcState.Unavailable -> Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
+                HcState.Granted -> if (forAuto) deviceVm.setAutoHealthConnect(true) else deviceVm.exportHealthConnect()
+                is HcState.Needs -> {
+                    hcForAuto = forAuto
+                    hcLauncher.launch(hc.permissions)
+                }
             }
         }
     }
@@ -865,22 +722,22 @@ private fun AppRoot(
     }
     LaunchedEffect(pager) {
         launch { pager.interactionSource.interactions.collect { if (it is androidx.compose.foundation.interaction.DragInteraction.Start) swiped.set(true) } }
-        snapshotFlow { pager.settledPage }.collect { nav = nav.settled(it, swiped.get()) }
+        snapshotFlow { pager.settledPage }.collect { nav.settled(it, swiped.get()) }
     }
     // A detail screen open on this tab keeps the swipe for itself (and for its back gesture).
     val currentDetail = stackOf(tab).lastOrNull()
     LaunchedEffect(currentDetail) {
         workoutsVm.open((currentDetail as? Detail.Workout)?.start)
         // A screen opened or closed: the next tap on the tab scrolls before it pops.
-        nav = nav.moved()
+        nav.moved()
     }
-    val subScreenOpen = currentDetail != null || pages.isNotEmpty()
+    val subScreenOpen = currentDetail != null || nav.pages.isNotEmpty()
     // Back closes what's open first (those screens handle it, registered later so they win). From a tab's root it
     // goes to the tab before, then to Today; on Today looking at a past day, back first returns to today. Only
     // Today's back leaves the app.
     val today = java.time.LocalDate.now()
     androidx.activity.compose.BackHandler(enabled = !subScreenOpen && (tab != Tab.Today.ordinal || day.date != today)) {
-        if (tab == Tab.Today.ordinal) dayVm.select(today) else nav.back()?.let { nav = it }
+        if (nav.back(firmwareInstalling(), recording) == BackResult.AtHome) dayVm.select(today)
     }
     // Back handlers on tabs that aren't showing (they stay composed, stacks and all) answer to a dispatcher nobody
     // presses, so back only ever closes what's on screen.
@@ -932,7 +789,7 @@ private fun AppRoot(
         // Wider than tall (a phone on its side, an unfolded foldable turned sideways): the tabs stand down the
         // left edge, so the pages keep their height.
         val rail = maxWidth > maxHeight && maxWidth >= 600.dp
-        val navItems = Tab.entries.map { NavItem(it.label, it.icon, it.selectedIcon, it.tint) }
+        val navItems = remember { tabItems() }
         // A detail covering the tab is a screen stepped into: no tab bar, only its back button (spec 3.2). Wide
         // enough for the detail to open beside the tab, the bar stays with the tab it belongs to.
         var barHidden by remember { mutableStateOf(false) }
@@ -943,16 +800,9 @@ private fun AppRoot(
             val closed = closePages()
             when {
                 firmwareInstalling() -> Unit
-                t != nav.current -> nav = nav.select(t)
+                t != nav.tab.current -> nav.select(Tab.entries[t])
                 closed -> Unit
-                else -> {
-                    val (next, action) = nav.reselect(stackOf(t).size)
-                    nav = next
-                    when (action) {
-                        Reselect.ScrollToTop -> scrollToTop[t] = scrollToTop[t] + 1
-                        Reselect.PopToRoot -> setStack(t, emptyList())
-                    }
-                }
+                nav.reselect(Tab.entries[t]) == Reselect.ScrollToTop -> scrollToTop[t] = scrollToTop[t] + 1
             }
         }
         Scaffold(
@@ -965,19 +815,15 @@ private fun AppRoot(
             },
             containerColor = MaterialTheme.colorScheme.background,
         ) { padding -> androidx.compose.runtime.CompositionLocalProvider(org.openstrap.app.ui.glow.LocalHideTabBar provides { barHidden = it }) {
-            if (editGoals) {
+            if (nav.editGoals) {
                 // The calorie goal your last four weeks suggest, read as the sheet opens (calories spec 3.4).
-                val suggestedCalories by produceState<Int?>(null) { value = runCatching { container.health.suggestedCalorieGoal() }.getOrNull() }
+                val suggestedCalories by produceState<Int?>(null) { value = rootVm.suggestedCalorieGoal() }
                 org.openstrap.app.ui.device.GoalsSheet(goals, suggestedCalories = suggestedCalories, onSave = { g ->
-                    scope.launch {
-                        container.settings.saveGoals(g)
-                        // The Steps widget's goal, and the evening sentence's on Moment (widgets spec 7).
-                        org.openstrap.app.device.WidgetUpdater.changed(container.app, setOf(org.openstrap.app.widget.WidgetKind.Steps, org.openstrap.app.widget.WidgetKind.Moment))
-                    }
-                    editGoals = false
-                }, onDismiss = { editGoals = false })
+                    rootVm.saveGoals(g)
+                    nav.setEditGoals(false)
+                }, onDismiss = { nav.setEditGoals(false) })
             }
-            val updateWaiting by container.updater.waiting.collectAsStateWithLifecycle()
+            val updateWaiting by rootVm.updateWaiting.collectAsStateWithLifecycle()
             // The header on every tab: the moment on Today (a past day's name for a past day), the tab's name elsewhere.
             val header: @Composable (Tab) -> Unit = { t ->
                 MomentHeader(
@@ -987,7 +833,7 @@ private fun AppRoot(
                         todayTitle(m, day.date, sport)
                     } ?: org.openstrap.app.ui.dashboard.dayTitle(day.date), day.date, chip, dayVm::previousDay, dayVm::nextDay, picker,
                     onOpenYou = { openPage(Page.You) }, onOpenStrap = { openPage(Page.Strap) },
-                    // All metrics is hidden for now (spec 3.1). Passing { allMetricsOpen = true } brings the button
+                    // All metrics is hidden for now (spec 3.1). Passing { nav.setAllMetrics(true) } brings the button
                     // back; the sheet opens over whatever shows, and no tab hears of it (spec 3.2).
                     onOpenAllMetrics = null,
                     updateWaiting = updateWaiting,
@@ -995,20 +841,21 @@ private fun AppRoot(
             }
             // What a tab's stack shows on top: the same screens on every tab, each pushing onto the stack it's on.
             val detailPage: @Composable (Int, List<Detail>) -> Unit = { t, stack ->
-                val pop: () -> Unit = { setStack(t, stack.dropLast(1)) }
-                val push: (Detail) -> Unit = { setStack(t, stack + it) }
+                val pop: () -> Unit = { nav.pop(Tab.entries[t]) }
+                val push: (Detail) -> Unit = { nav.push(Tab.entries[t], it) }
+                val onSwitch: (Detail) -> Unit = { nav.replaceTop(Tab.entries[t], it) }
                 when (val detail = stack.last()) {
                     // A switcher pick takes the detail's place; anything else it opens goes on top.
                     is Detail.OfMetric -> MetricDetail(
                         detail.metric, detail.night, day, history = history,
                         liveHeartRate = live, liveEnabled = liveEnabled, canUseLive = realConnection is ConnectionState.Connected,
                         onLiveToggle = { container.strap.setLiveHeartRate(it) },
-                        onOpen = push, onSwitch = { setStack(t, stack.dropLast(1) + it) }, onSelectDay = dayVm::select,
+                        onOpen = push, onSwitch = onSwitch, onSelectDay = dayVm::select,
                         contentPadding = padding, onBack = pop,
                     )
                     is Detail.OfScore -> org.openstrap.app.ui.glow.GlowScoreDetailScreen(
                         detail.score, day, recovery, strapReadiness?.takeIf { it.day == day.dayStart }?.score, history,
-                        onOpen = push, onSwitch = { setStack(t, stack.dropLast(1) + it) }, onSelectDay = dayVm::select,
+                        onOpen = push, onSwitch = onSwitch, onSelectDay = dayVm::select,
                         contentPadding = padding, onBack = pop,
                         workouts = workouts, paiHistory = paiHistory, onEditProfile = { openPage(Page.Profile) }, energyHistory = energyHistory,
                         sleepEditing = org.openstrap.app.ui.glow.SleepEditing(dayVm::setSleepTimes, dayVm::deleteSleep, dayVm::restoreSleep),
@@ -1083,28 +930,28 @@ private fun AppRoot(
                             ) { org.openstrap.app.ui.glow.GlowTodayScreen(
                                 day, live, header = { header(Tab.Today) }, contentPadding = padding, moment = todayMoment,
                                 // Cards about other tabs open those screens here, on Today; none switches tab.
-                                onOpenMetric = { todayStack = listOf(Detail.OfMetric(it)) },
-                                onOpen = { todayStack = listOf(it) }, usualSteps = usualSteps,
+                                onOpenMetric = { nav.setStack(Tab.Today, listOf(Detail.OfMetric(it))) },
+                                onOpen = { nav.setStack(Tab.Today, listOf(it)) }, usualSteps = usualSteps,
                                 recovery = recovery,
                                 strapReadiness = strapReadiness,
-                                checkIn = checkIn?.feeling,
-                                onCheckIn = { v -> scope.launch { container.health.saveCheckIn(day.date, v) } },
-                                onOpenRecovery = { todayStack = listOf(Detail.Recovery) },
+                                checkIn = dayExtras.checkIn,
+                                onCheckIn = { v -> rootVm.saveCheckIn(day.date, v) },
+                                onOpenRecovery = { nav.setStack(Tab.Today, listOf(Detail.Recovery)) },
                                 workouts = workouts,
-                                onOpenWorkout = { todayStack = listOf(Detail.Workout(it)) },
-                                onOpenHealthspan = { seeHabitAge(); todayStack = listOf(Detail.Healthspan) },
+                                onOpenWorkout = { nav.setStack(Tab.Today, listOf(Detail.Workout(it))) },
+                                onOpenHealthspan = { seeHabitAge(); nav.setStack(Tab.Today, listOf(Detail.Healthspan)) },
                                 healthspan = healthspan,
                                 habitAgeSeenAsOf = habitAgeSeen,
                                 onOpenProfile = { openPage(Page.Profile) },
                                 history = history,
                                 edits = todayEdits,
-                                onEditsChange = { e -> scope.launch { container.settings.saveTodayEdits(e.hidden.map { it.name }, e.pinned.map { it.name }) } },
+                                onEditsChange = rootVm::saveTodayEdits,
                                 suggestion = suggestion,
-                                onSaveSuggestion = { savingSuggestion = suggestion },
+                                onSaveSuggestion = { nav.setSavingStretch(suggestion?.let { it.start..it.end }) },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
                                 // The same way in as Activity's start card: the ready screen for the sport, or Choose with every sport.
-                                onStartSport = { readySport = it; readyPicking = false },
-                                onOtherSport = { choosing = true },
+                                onStartSport = { nav.openReady(it) },
+                                onOtherSport = nav::openChoose,
                                 offer = offer,
                                 onRecordOffer = { container.workout.recordOffer() },
                                 onDeclineOffer = { container.workout.declineOffer() },
@@ -1126,10 +973,11 @@ private fun AppRoot(
                             ) }
                             Tab.Recovery -> org.openstrap.app.ui.glow.GlowRecoveryScreen(
                                 day, recovery, history, header = { header(Tab.Recovery) }, contentPadding = padding,
-                                onOpenMetric = { recoveryStack = listOf(Detail.OfMetric(it)) },
-                                onOpenScore = { recoveryStack = listOf(Detail.OfScore(it)) },
+                                onOpenMetric = { nav.setStack(Tab.Recovery, listOf(Detail.OfMetric(it))) },
+                                onOpenScore = { nav.setStack(Tab.Recovery, listOf(Detail.OfScore(it))) },
                                 strapScore = strapReadiness?.takeIf { it.day == day.dayStart }?.score,
-                                healthspan = healthspan, onOpenHealthspan = { seeHabitAge(); recoveryStack = listOf(Detail.Healthspan) },
+                                healthspan = healthspan,
+                                onOpenHealthspan = { seeHabitAge(); nav.setStack(Tab.Recovery, listOf(Detail.Healthspan)) },
                                 onOpenProfile = { openPage(Page.Profile) },
                                 showCharge = showCharge, onChargeShown = { showCharge = false },
                                 recoveryFailure = recoveryFailure, onRetryRecovery = dayVm::retryRecovery,
@@ -1137,23 +985,23 @@ private fun AppRoot(
                             )
                             Tab.Sleep -> org.openstrap.app.ui.glow.GlowSleepScreen(
                                 day, header = { header(Tab.Sleep) }, contentPadding = padding,
-                                onOpen = { sleepStack = listOf(it) }, onRestore = dayVm::restoreSleep,
+                                onOpen = { nav.setStack(Tab.Sleep, listOf(it)) }, onRestore = dayVm::restoreSleep,
                                 recovery = recovery,
                             )
                             Tab.Activity -> org.openstrap.app.ui.glow.GlowActivityScreen(
                                 day, recovery, workouts, paiHistory,
                                 header = { header(Tab.Activity) }, contentPadding = padding,
-                                onOpenMetric = { activityStack = listOf(Detail.OfMetric(it)) },
-                                onOpen = { activityStack = listOf(it) }, usualSteps = usualSteps,
-                                onOpenWorkout = { activityStack = listOf(Detail.Workout(it)) },
-                                onAllWorkouts = { activityStack = listOf(Detail.AllWorkouts) },
+                                onOpenMetric = { nav.setStack(Tab.Activity, listOf(Detail.OfMetric(it))) },
+                                onOpen = { nav.setStack(Tab.Activity, listOf(it)) }, usualSteps = usualSteps,
+                                onOpenWorkout = { nav.setStack(Tab.Activity, listOf(Detail.Workout(it))) },
+                                onAllWorkouts = { nav.setStack(Tab.Activity, listOf(Detail.AllWorkouts)) },
                                 onEditProfile = { openPage(Page.Profile) },
-                                onStartWorkout = { readySport = it; readyPicking = false },
+                                onStartWorkout = { nav.openReady(it) },
                                 suggestion = suggestion,
-                                onSaveSuggestion = { savingSuggestion = suggestion },
+                                onSaveSuggestion = { nav.setSavingStretch(suggestion?.let { it.start..it.end }) },
                                 onDismissSuggestion = { suggestion?.let { container.workout.dismissSuggestion(it.start, it.end) } },
-                                onAllSports = { choosing = true },
-                                onAddWorkout = { addingOn = day.date },
+                                onAllSports = nav::openChoose,
+                                onAddWorkout = { nav.setAddingOn(day.date) },
                                 liveHeartRate = live, history = history, wear = wear,
                             )
                         }
@@ -1163,11 +1011,11 @@ private fun AppRoot(
             // The pages over the tab: the You page and the Strap page, and what they open. They grow out of the
             // button that opened them and shrink back into it, drawn as they were while they go; meanwhile back and
             // taps belong to the tab again.
-            val keptPages = remember { arrayOf(pages) }
-            if (pages.isNotEmpty()) keptPages[0] = pages
+            val keptPages = remember { arrayOf(nav.pages) }
+            if (nav.pages.isNotEmpty()) keptPages[0] = nav.pages
             val tabBack = androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner.current
             org.openstrap.app.ui.components.GrowFromButton(
-                pages.isNotEmpty(), growFrom,
+                nav.pages.isNotEmpty(), growFrom,
                 androidx.compose.ui.Modifier.fillMaxSize().padding(start = if (rail) org.openstrap.app.ui.components.NavRailWidth else 0.dp),
                 progress = pageGrow,
             ) { closing -> androidx.compose.foundation.layout.Box(
@@ -1176,18 +1024,19 @@ private fun AppRoot(
                 CompositionLocalProvider(androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner provides (if (closing || tabBack == null) idleBack else tabBack)) {
                 org.openstrap.app.ui.components.OledSurfaces {
                     OverPages(
-                        pages.ifEmpty { keptPages[0] }, container, deviceVm, firmwareVm, profile, padding, requestBluetooth, lastSeen, strapView.takeIf { preview != null },
-                        open = openPage, close = closePage,
+                        nav.pages.ifEmpty { keptPages[0] }, container, deviceVm, firmwareVm, profile, padding, requestBluetooth, lastSeen,
+                        strapView.takeIf { preview != null },
+                        open = openPage, close = nav::closePage,
                         // A row on a wide screen's list: its page beside the list, in place of the one there, unless
                         // an update is being installed there.
-                        openBeside = { p -> if (!firmwareInstalling()) pages = org.openstrap.app.ui.dashboard.openBeside(pages, p) },
+                        openBeside = { p -> nav.openBeside(p, firmwareInstalling()) },
                         closeAll = { closePages() },
                         youPage = { open, selected, onBack ->
                             val log by container.strap.log.collectAsStateWithLifecycle()
                             val hcAuto by deviceVm.healthConnectAuto.collectAsStateWithLifecycle()
                             val backup by deviceVm.backup.collectAsStateWithLifecycle()
                             val updates by container.updater.state.collectAsStateWithLifecycle()
-                            val updateWaiting by container.updater.waiting.collectAsStateWithLifecycle()
+                            val updateWaiting by rootVm.updateWaiting.collectAsStateWithLifecycle()
                             val deletedSleep by dayVm.deletedSleep.collectAsStateWithLifecycle()
                             val youMaxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
                             // Permissions can be taken back in Health Connect while away: the row says so on return.
@@ -1197,7 +1046,7 @@ private fun AppRoot(
                                 onProfile = { open(Page.Profile) },
                                 maxHeartRate = youMaxHr,
                                 onHeartZones = { open(Page.HeartZones) },
-                                onGoals = { editGoals = true },
+                                onGoals = { nav.setEditGoals(true) },
                                 onGoalsAndBests = { open(Page.GoalsAndBests) },
                                 healthConnectAuto = hcAuto,
                                 onHealthConnect = { open(Page.HealthConnect) },
@@ -1252,7 +1101,7 @@ private fun AppRoot(
                                 Page.Updates -> {
                                     val updater = container.updater
                                     val updates by updater.state.collectAsStateWithLifecycle()
-                                    val auto by container.settings.updateAuto.collectAsStateWithLifecycle(true)
+                                    val auto by rootVm.updateAuto.collectAsStateWithLifecycle()
                                     val workoutNow by container.workout.state.collectAsStateWithLifecycle()
                                     // Seen: the dots on the avatar and the Updates row go, and again for a release found while it's open.
                                     LaunchedEffect(org.openstrap.app.update.Releases.newer(updates.releases, updater.installed).firstOrNull()?.tag) { updater.markSeen() }
@@ -1296,6 +1145,12 @@ private fun AppRoot(
                                 else -> Unit
                             }
                         },
+                        rewardsPage = { shown, open, onBack ->
+                            RewardsPage(shown, rootVm, container.rewards.firstDay, padding, open, onBack)
+                        },
+                        heartZonesPage = { onBack ->
+                            HeartZonesPage(container, padding, rootVm::setMaxHeartRate, rootVm::setHeartZones, onBack)
+                        },
                     )
                 }
                 }
@@ -1307,81 +1162,68 @@ private fun AppRoot(
         )
         // A map, not a card: rows whose home is a tab go there, at its root and top (Charge to its card); the rest open
         // their detail on the tab showing. The day is shared, so the tab shows the same one. The sheet closes first.
-        if (allMetricsOpen) org.openstrap.app.ui.glow.AllMetricsSheet(
+        if (nav.allMetricsOpen) org.openstrap.app.ui.glow.AllMetricsSheet(
             org.openstrap.app.ui.glow.metricIndex(day, recovery, healthspan, workouts, strapScore = strapReadiness?.takeIf { it.day == day.dayStart }?.score), day.date,
-            onDismiss = { allMetricsOpen = false },
+            onDismiss = { nav.setAllMetrics(false) },
             onOpen = { target ->
-                allMetricsOpen = false
+                nav.setAllMetrics(false)
                 closePages()
                 when (target) {
-                    is org.openstrap.app.ui.glow.IndexTarget.Open ->
-                        if (stackOf(tab).lastOrNull() != target.detail) setStack(tab, stackOf(tab) + target.detail)
+                    is org.openstrap.app.ui.glow.IndexTarget.Open -> nav.push(nav.current, target.detail)
                     is org.openstrap.app.ui.glow.IndexTarget.Home -> {
                         val home = when (target.tab) {
                             org.openstrap.app.ui.glow.HomeTab.Recovery -> Tab.Recovery
                             org.openstrap.app.ui.glow.HomeTab.Sleep -> Tab.Sleep
                         }.ordinal
-                        setStack(home, emptyList())
-                        nav = nav.select(home)
+                        nav.setStack(Tab.entries[home], emptyList())
+                        nav.select(Tab.entries[home])
                         if (target.charge) showCharge = true else scrollToTop[home] = scrollToTop[home] + 1
                     }
                 }
             },
         )
-        addingOn?.let { date ->
+        nav.addingOn?.let { date ->
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                 val series by androidx.compose.runtime.produceState<List<Pair<Long, Int>>?>(null, date) { value = workoutsVm.dayMinuteHeartRate(date) }
                 val maxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
-                val (recent, sides) = pickerSports(container, workoutsVm)
+                val (recent, sides) = pickerSports(workoutsVm, rootVm)
                 org.openstrap.app.ui.glow.GlowAddWorkoutScreen(
                     date, series, maxHr ?: 190, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
-                    onSave = { from, to, sport -> container.workout.saveFromHistory(from, to, sport); addingOn = null },
-                    onBack = { addingOn = null },
+                    onSave = { from, to, sport -> container.workout.saveFromHistory(from, to, sport); nav.setAddingOn(null) },
+                    onBack = { nav.setAddingOn(null) },
                     recentSports = recent, sides = sides,
                 )
             }
         }
-        savingSuggestion?.let { s ->
+        nav.savingStretch?.let { s ->
             androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                val (recent, sides) = pickerSports(container, workoutsVm)
+                val (recent, sides) = pickerSports(workoutsVm, rootVm)
                 org.openstrap.app.ui.glow.GlowSportPickerScreen(
                     androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
-                    onPick = { sport -> container.workout.saveFromHistory(s.start, s.end, sport); savingSuggestion = null },
-                    onBack = { savingSuggestion = null },
+                    onPick = { sport -> container.workout.saveFromHistory(s.first, s.last, sport); nav.setSavingStretch(null) },
+                    onBack = { nav.setSavingStretch(null) },
                     recentSports = recent, sides = sides,
                 )
             }
         }
         WorkoutLayer(
-            container, workoutState, workoutMinimized, readySport, readyPicking, live, realConnection, workoutsVm, startPlan, requestLocation,
-            onReadySport = { readySport = it },
-            onCloseReady = { readySport = null; readyPicking = false; readyStructure = null },
-            choosing = choosing,
-            onOpenReady = { sport, pick -> readySport = sport; readyPicking = pick; readyStructure = null },
-            readyStructure = readyStructure,
+            container, nav, workoutState, workoutMinimized, live, realConnection, workoutsVm, rootVm, startPlan, requestLocation,
             glass = navGlass,
-            onOpenSaved = { sport, structure -> readySport = sport; readyPicking = false; readyStructure = structure },
-            onCloseChoose = { choosing = false },
             glance = liveGlance, onGlanceAction = onGlanceAction,
-            capsuleHidden = liveHeroShown && tab == Tab.Today.ordinal && todayStack.isEmpty() && pages.isEmpty(),
+            capsuleHidden = liveHeroShown && tab == Tab.Today.ordinal && nav.stack(Tab.Today).isEmpty() && nav.pages.isEmpty(),
             capsuleBottom = if (showBar) 104.dp else 16.dp,
             tabletop = hinge != null, bookHinge = bookHinge,
         )
         // The badges past history earned, once, all on one screen (requests spec 7.2), when no workout is on screen.
-        val historyBadges by container.settings.historyBadgesWaiting.collectAsStateWithLifecycle(false)
-        if (historyBadges && workoutState is org.openstrap.app.device.WorkoutState.Idle && readySport == null && !choosing) {
-            val earned by remember { container.database.healthDao().badges() }.collectAsStateWithLifecycle(emptyList())
-            val weeks by remember { container.database.healthDao().weekResults() }.collectAsStateWithLifecycle(emptyList())
-            if (earned.isNotEmpty()) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
-                org.openstrap.app.ui.glow.HistoryBadgesScreen(
-                    earned.mapNotNull { org.openstrap.app.data.Rewards.badge(it.id) }, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
-                    onContinue = { scope.launch { container.settings.historyBadgesShown() } },
-                    face = { b ->
-                        val goal = earned.firstOrNull { it.id == b.id }?.let { org.openstrap.app.data.Rewards.goalAt(it, weeks, container.rewards.firstDay, java.time.ZoneId.systemDefault()) }
-                        org.openstrap.app.presentation.RewardsCopy.face(b, goal)
-                    },
-                )
-            }
+        val historyBadges by rootVm.historyBadges.collectAsStateWithLifecycle()
+        val earned = historyBadges
+            ?.takeIf { workoutState is org.openstrap.app.device.WorkoutState.Idle && nav.workout == WorkoutOverlay.None }
+        if (!earned.isNullOrEmpty()) androidx.compose.foundation.layout.Box(androidx.compose.ui.Modifier.fillMaxSize()) {
+            org.openstrap.app.ui.glow.HistoryBadgesScreen(
+                earned.map { it.badge }, androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues(),
+                onContinue = rootVm::historyBadgesShown,
+                face = { b -> org.openstrap.app.presentation.RewardsCopy.face(b, earned.firstOrNull { it.badge.id == b.id }?.goal) },
+            )
         }
         if (bluetoothBlocked) {
             org.openstrap.app.ui.components.GlassAlertDialog(
@@ -1439,11 +1281,15 @@ private fun OverPages(
     youPage: @Composable (open: (Page) -> Unit, selected: Page?, onBack: () -> Unit) -> Unit,
     /** The Health Connect and Backup pages, built there too for the same reason: the page shown and its back. */
     dataPage: @Composable (shown: Page, onBack: () -> Unit) -> Unit,
+    /** Goals and bests, All badges and the recap: the page shown, how it opens the next, its back. */
+    rewardsPage: @Composable (shown: Page, open: (Page) -> Unit, onBack: () -> Unit) -> Unit,
+    /** The Heart rate zones page, with its back. */
+    heartZonesPage: @Composable (onBack: () -> Unit) -> Unit,
 ) {
     // Read from the strap when first needed (the Strap page's rows show what it holds), and again on each page that edits it.
     val needsAlarms = pages.any { it == Page.Strap || it == Page.Alarms || it == Page.HealthAlerts }
     val alarmsVm: org.openstrap.app.ui.alarms.AlarmsViewModel? = if (needsAlarms) viewModel(
-        key = "alarms", factory = viewModelFactory { initializer { org.openstrap.app.ui.alarms.AlarmsViewModel(container.strap) } },
+        key = "alarms", factory = ViewModelFactories.alarms(container),
     ) else null
     // One page. [list] is set for the You or Strap page as the list beside a pane: its rows open there, the row whose
     // page is open is marked, and its back closes everything.
@@ -1491,11 +1337,11 @@ private fun OverPages(
             Page.Firmware -> FirmwareScreen(firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })
             Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)
             Page.HealthConnect, Page.Backup, Page.DeletedSleep, Page.Updates -> dataPage(shown, close)
-            Page.GoalsAndBests, Page.AllBadges, Page.WeeklyRecap -> RewardsPage(shown, container, padding, open, close)
+            Page.GoalsAndBests, Page.AllBadges, Page.WeeklyRecap -> rewardsPage(shown, open, close)
             Page.Profile -> org.openstrap.app.ui.device.ProfileScreen(
                 profile, padding, onSave = { deviceVm.saveProfile(it); close() }, onBack = close, onHeartZones = { open(Page.HeartZones) },
             )
-            Page.HeartZones -> HeartZonesPage(container, padding, close)
+            Page.HeartZones -> heartZonesPage(close)
             Page.Diagnostics -> {
                 val log by container.strap.log.collectAsStateWithLifecycle()
                 org.openstrap.app.ui.device.DiagnosticsScreen(log, padding, onBack = close)
@@ -1520,20 +1366,16 @@ private fun OverPages(
  * with the weekly goal and celebrations sheets they open.
  */
 @Composable
-private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, open: (Page) -> Unit, close: () -> Unit) {
-    val scope = rememberCoroutineScope()
-    // The app root's, already made.
-    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
-    })
-    val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
-    val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
-    val dao = container.database.healthDao()
-    val bests by remember { dao.personalBests() }.collectAsStateWithLifecycle(emptyList())
-    val earned by remember { dao.badges() }.collectAsStateWithLifecycle(emptyList())
-    val view by produceState<org.openstrap.app.presentation.RewardsView?>(null, workouts, goals.workoutsPerWeek, bests, earned) {
-        if (workouts.isNotEmpty()) value = runCatching { container.rewards.view(workouts, goals.workoutsPerWeek, bests, earned) }.getOrNull()
-    }
+private fun RewardsPage(
+    shown: Page,
+    rootVm: AppRootViewModel,
+    firstDay: java.time.DayOfWeek,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    open: (Page) -> Unit,
+    close: () -> Unit,
+) {
+    val view by rootVm.rewardsView.collectAsStateWithLifecycle()
+    val goals by rootVm.goals.collectAsStateWithLifecycle()
     var editGoal by rememberSaveable { mutableStateOf(false) }
     var celebrations by rememberSaveable { mutableStateOf(false) }
     when (shown) {
@@ -1543,21 +1385,21 @@ private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.
         )
         Page.AllBadges -> org.openstrap.app.ui.glow.AllBadgesPage(view, padding, onBack = close)
         else -> {
-            val first = view?.thisWeek?.minusWeeks(1) ?: org.openstrap.app.data.Rewards.weekStart(java.time.LocalDate.now(), container.rewards.firstDay).minusWeeks(1)
+            val first = view?.thisWeek?.minusWeeks(1)
+                ?: org.openstrap.app.data.Rewards.weekStart(java.time.LocalDate.now(), firstDay).minusWeeks(1)
             org.openstrap.app.ui.glow.WeeklyRecapPage(view, first, padding, onGoal = { editGoal = true }, onBack = close)
         }
     }
     if (editGoal) org.openstrap.app.ui.glow.WeeklyGoalSheet(goals.workoutsPerWeek, onSave = { n ->
-        scope.launch { container.settings.saveGoals(goals.copy(workoutsPerWeek = n)) }
+        rootVm.saveGoals(goals.copy(workoutsPerWeek = n))
         editGoal = false
     }, onDismiss = { editGoal = false })
     if (celebrations) {
-        val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
-        val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
+        val settings by rootVm.celebrations.collectAsStateWithLifecycle()
         org.openstrap.app.ui.glow.CelebrationsSheet(
-            goalMoment, weeklyRecap,
-            onGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
-            onWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
+            settings.goalMoment, settings.weeklyRecap,
+            onGoalMoment = rootVm::setGoalMoment,
+            onWeeklyRecap = rootVm::setWeeklyRecap,
             onDismiss = { celebrations = false },
         )
     }
@@ -1568,9 +1410,9 @@ private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.
  * started, and the Outdoor or Indoor side last chosen per sport on Ready.
  */
 @Composable
-private fun pickerSports(container: AppContainer, workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel): Pair<List<Int>, Map<Int, Boolean>> {
+private fun pickerSports(workoutsVm: WorkoutsViewModel, rootVm: AppRootViewModel): Pair<List<Int>, Map<Int, Boolean>> {
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
-    val sides by container.settings.workoutSides.collectAsStateWithLifecycle(emptyMap())
+    val sides by rootVm.workoutSides.collectAsStateWithLifecycle()
     val recent = remember(workouts) {
         org.openstrap.app.data.Workouts.recentSports(workouts.filter { it.startedByYou }.sortedByDescending { it.workout.start }.map { it.workout.sportType })
     }
@@ -1584,30 +1426,21 @@ private fun pickerSports(container: AppContainer, workoutsVm: org.openstrap.app.
 @Composable
 private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     container: AppContainer,
+    nav: AppNavState,
     state: org.openstrap.app.device.WorkoutState,
     minimized: Boolean,
-    readySport: Int?,
-    readyPicking: Boolean,
     live: Int?,
     connection: ConnectionState,
-    workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel,
+    workoutsVm: WorkoutsViewModel,
+    rootVm: AppRootViewModel,
     /** Starts a plan once Bluetooth (and location, for GPS) may be used, then closes Ready and Choose. */
     startPlan: (org.openstrap.app.data.WorkoutPlan, org.openstrap.app.data.SportSettings?) -> Unit,
     requestLocation: (() -> Unit) -> Unit,
-    onReadySport: (Int) -> Unit,
-    onCloseReady: () -> Unit,
     capsuleBottom: androidx.compose.ui.unit.Dp,
     tabletop: Boolean = false,
     bookHinge: androidx.window.layout.FoldingFeature? = null,
-    choosing: Boolean = false,
     /** What popups blur: Choose, Ready and the zones page join it over the pages, so a sheet blurs the screen it opened from. */
     glass: dev.chrisbanes.haze.HazeState? = null,
-    /** Opens Ready over Choose for a sport, or on its sport picker ([pick]). */
-    onOpenReady: (sport: Int, pick: Boolean) -> Unit = { s, _ -> onReadySport(s) },
-    onCloseChoose: () -> Unit = {},
-    /** The rounds Ready opens on, from a saved workout picked on Choose; null for last time's. */
-    readyStructure: String? = null,
-    onOpenSaved: (sport: Int, structure: String) -> Unit = { s, _ -> onReadySport(s) },
     /** The workout at a glance, for the floating bar, read only there. */
     glance: androidx.compose.runtime.State<org.openstrap.app.ui.workout.LiveGlance?> = androidx.compose.runtime.mutableStateOf(null),
     onGlanceAction: (org.openstrap.app.ui.workout.GlanceAction) -> Unit = {},
@@ -1615,14 +1448,12 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     capsuleHidden: Boolean = false,
 ) {
     val session = container.workout
-    // Your zones, opened from Ready's zone goal.
-    var zonesOpen by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    val sportSettings by container.settings.sportSettings.collectAsStateWithLifecycle(emptyMap())
+    val ready = nav.workout as? WorkoutOverlay.Ready
+    val sportSettings by rootVm.sportSettings.collectAsStateWithLifecycle()
     val saved by remember { session.savedWorkouts() }.collectAsStateWithLifecycle(emptyList())
     val context = androidx.compose.ui.platform.LocalContext.current
-    val viewScope = rememberCoroutineScope()
     // Read here, ahead of a workout, so the live screen usually opens on the right view at once.
-    val liveView by container.settings.workoutLiveView.collectAsStateWithLifecycle(null)
+    val liveView by rootVm.workoutLiveView.collectAsStateWithLifecycle()
     val kcal by session.kcal.collectAsStateWithLifecycle()
     val padding = androidx.compose.foundation.layout.WindowInsets.navigationBars.asPaddingValues()
     val full = androidx.compose.ui.Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
@@ -1653,7 +1484,7 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                             exercises = exercises, onExercise = session::setExercise, onLogSet = session::logSet,
                             onSkip = session::skipPhase, onAddRest = session::addRest,
                             split = tabletop || bookHinge != null,
-                            liveView = liveView, onLiveView = { v -> viewScope.launch { container.settings.setWorkoutLiveView(v) } },
+                            liveView = liveView, onLiveView = rootVm::setWorkoutLiveView,
                             kcal = kcal,
                         )
                     }
@@ -1683,26 +1514,23 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
             val usualDrop by produceState<Int?>(null, state.start) { value = workoutsVm.usualDrop(state.start) }
             // What it earned, from every workout and day (workouts spec 2.8), once the list holds it.
-            val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())
+            val goals by rootVm.goals.collectAsStateWithLifecycle()
             val ended = workouts.firstOrNull { it.workout.start == state.start }
             val rewards by produceState<org.openstrap.app.presentation.SummaryRewards?>(null, ended?.end, ended?.shownStart, goals.workoutsPerWeek) {
                 if (ended == null) return@produceState
-                value = runCatching { container.rewards.summary(state.start, workouts, goals.workoutsPerWeek) }.getOrNull()
+                value = rootVm.summaryRewards(state.start)
             }
-            val scope = rememberCoroutineScope()
-            val goalMoment by container.settings.goalMoment.collectAsStateWithLifecycle(true)
-            val weeklyRecap by container.settings.weeklyRecap.collectAsStateWithLifecycle(true)
-            val momentWeek by container.settings.goalMomentWeek.collectAsStateWithLifecycle(null)
+            val celebrations by rootVm.celebrations.collectAsStateWithLifecycle()
             GlowWorkoutSummaryScreen(
                 summary, calmDown.takeIf { !state.preview }, if (state.preview) emptyList() else route, workouts, usualDrop, padding,
                 onDone = session::dismissSummary, onDelete = { session.discard(state.start) },
                 onTrim = { from, to -> session.trim(state.start, from, to) }, onUndoTrim = { session.undoTrim(state.start) },
                 rewards = rewards.takeIf { !state.preview },
                 celebrations = org.openstrap.app.ui.glow.Celebrations(
-                    goalMoment, weeklyRecap, momentWeek,
-                    setGoalMoment = { on -> scope.launch { container.settings.setGoalMoment(on) } },
-                    setWeeklyRecap = { on -> scope.launch { container.settings.setWeeklyRecap(on) } },
-                    markMoment = { week -> scope.launch { container.settings.setGoalMomentWeek(week) } },
+                    celebrations.goalMoment, celebrations.weeklyRecap, celebrations.momentWeek,
+                    setGoalMoment = rootVm::setGoalMoment,
+                    setWeeklyRecap = rootVm::setWeeklyRecap,
+                    markMoment = rootVm::setGoalMomentWeek,
                 ),
             )
         }
@@ -1710,10 +1538,10 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
     // The ready screen comes and goes like any other screen; a workout starting replaces it at once.
     val recording = state is org.openstrap.app.device.WorkoutState.Recording || state is org.openstrap.app.device.WorkoutState.Ended
     // Choose sits under Ready, so closing Ready comes back to it.
-    org.openstrap.app.ui.glow.PushOverlay(choosing.takeIf { it && !recording }, cut = recording) {
+    org.openstrap.app.ui.glow.PushOverlay(nav.choosing.takeIf { it && !recording }, cut = recording) {
         androidx.compose.foundation.layout.Box(over(2f)) {
             val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
-            val (_, sides) = pickerSports(container, workoutsVm)
+            val (_, sides) = pickerSports(workoutsVm, rootVm)
             val zone = java.time.ZoneId.systemDefault()
             val mine = remember(workouts) { workouts.filter { it.startedByYou }.sortedByDescending { it.workout.start } }
             val sports = remember(mine) { org.openstrap.app.data.WorkoutSetup.choose(mine.map { it.workout.sportType to it.workout.start }, System.currentTimeMillis() / 1000) }
@@ -1729,38 +1557,34 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
                     val settings = sportSettings[type] ?: org.openstrap.app.data.SportSettings()
                     startPlan(org.openstrap.app.data.WorkoutSetup.plan(type, settings, sides, org.openstrap.app.ui.glow.locationAvailable(context)), null)
                 },
-                onReady = { onOpenReady(it, false) },
-                onSaved = { w -> onOpenSaved(w.sport, w.structure) },
-                onBack = onCloseChoose,
+                onReady = { nav.openReady(it, picking = false, structure = null) },
+                onSaved = { w -> nav.openReady(w.sport, picking = false, structure = w.structure) },
+                onBack = nav::closeChoose,
             )
         }
     }
-    org.openstrap.app.ui.glow.PushOverlay(readySport.takeIf { !recording }, cut = recording) { sport ->
+    org.openstrap.app.ui.glow.PushOverlay(ready?.sport.takeIf { !recording }, cut = recording) { sport ->
         androidx.compose.foundation.layout.Box(over(2.5f)) {
-            val (recentSports, sides) = pickerSports(container, workoutsVm)
+            val (recentSports, sides) = pickerSports(workoutsVm, rootVm)
             val key = org.openstrap.app.data.Workouts.tileType(sport)
             val maxHr by workoutsVm.maxHeartRate.collectAsStateWithLifecycle()
             org.openstrap.app.ui.glow.GlowWorkoutReadyScreen(
-                sport, readyPicking, connection, live, padding,
+                sport, ready?.picking == true, connection, live, padding,
                 settings = sportSettings[key] ?: org.openstrap.app.data.SportSettings(),
-                saved = saved, onSaveIntervals = { name, code -> session.saveWorkout(name, sport, code) }, structure = readyStructure,
+                saved = saved, onSaveIntervals = { name, code -> session.saveWorkout(name, sport, code) }, structure = ready?.structure,
                 recentSports = recentSports, sides = sides,
-                maxHeartRate = maxHr, onYourZones = { zonesOpen = true },
-                onSide = { s, indoor ->
-                    viewScope.launch {
-                        container.settings.setWorkoutSide(s, indoor)
-                        // The Start widget names the side Ready opens on and says whether GPS is on (widgets spec 7).
-                        org.openstrap.app.device.WidgetUpdater.changed(container.app, setOf(org.openstrap.app.widget.WidgetKind.Start))
-                    }
-                },
+                maxHeartRate = maxHr, onYourZones = nav::openZones,
+                onSide = rootVm::setWorkoutSide,
                 onTurnOnLocation = requestLocation,
-                onSport = onReadySport,
+                onSport = nav::readySport,
                 onStart = startPlan,
-                onBack = onCloseReady,
+                onBack = nav::closeReady,
             )
             // Your zones, over Ready; back comes back to it.
-            org.openstrap.app.ui.glow.PushOverlay(Unit.takeIf { zonesOpen }, cut = false) {
-                androidx.compose.foundation.layout.Box(over(3f)) { HeartZonesPage(container, padding, onBack = { zonesOpen = false }) }
+            org.openstrap.app.ui.glow.PushOverlay(Unit.takeIf { ready?.zones == true }, cut = false) {
+                androidx.compose.foundation.layout.Box(over(3f)) {
+                    HeartZonesPage(container, padding, rootVm::setMaxHeartRate, rootVm::setHeartZones, onBack = nav::closeZones)
+                }
             }
         }
     }
@@ -1771,20 +1595,21 @@ private fun androidx.compose.foundation.layout.BoxScope.WorkoutLayer(
  * zones. Both are stored in the settings, which every zone and max HR reader goes by; moved zones are in use at once.
  */
 @Composable
-private fun HeartZonesPage(container: AppContainer, padding: androidx.compose.foundation.layout.PaddingValues, onBack: () -> Unit) {
-    val scope = rememberCoroutineScope()
+private fun HeartZonesPage(
+    container: AppContainer,
+    padding: androidx.compose.foundation.layout.PaddingValues,
+    onMax: (Int?) -> Unit,
+    onZones: (org.openstrap.app.data.HeartZones) -> Unit,
+    onBack: () -> Unit,
+) {
     val zones by org.openstrap.app.data.HeartZones.current.collectAsStateWithLifecycle()
     val max by container.maxHeartRates.current.collectAsStateWithLifecycle()
     // Afresh as the page opens, as it always was; a profile change works it out again on its own.
     LaunchedEffect(Unit) { container.maxHeartRates.now() }
     org.openstrap.app.ui.glow.HeartZonesScreen(
         max, zones, padding,
-        onMax = { bpm -> scope.launch { container.settings.setMaxHeartRate(bpm) } },
-        onZones = { z ->
-            // In use before it's stored, so a quick second tap moves on from this one.
-            org.openstrap.app.data.HeartZones.use(z)
-            scope.launch { container.settings.setHeartZones(z) }
-        },
+        onMax = onMax,
+        onZones = onZones,
         onBack = onBack,
     )
 }

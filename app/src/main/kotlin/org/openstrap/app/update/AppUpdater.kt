@@ -84,9 +84,6 @@ class AppUpdater(
     private val _state = MutableStateFlow(UpdateState())
     val state: StateFlow<UpdateState> = _state
 
-    /** An update notification was tapped: the Updates page opens over the tab showing. */
-    val openRequest = MutableStateFlow(false)
-
     /** The version running, "2.1.0". */
     val installed: String = BuildConfig.VERSION_NAME
 

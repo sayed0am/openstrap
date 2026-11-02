@@ -23,9 +23,6 @@ class RewardsKeeper(
     /** Everything the rewards read: the workouts as [Rewards.Done], the days' steps, the weeks stored. */
     data class Facts(val workouts: List<Rewards.Done>, val days: List<Rewards.Day>, val firstDay: DayOfWeek, val zone: ZoneId)
 
-    /** The weekly recap notification's tap, until the app root has opened the recap. */
-    val openRecap = kotlinx.coroutines.flow.MutableStateFlow(false)
-
     /** The locale's first day of the week (workouts spec 3.1, [Weeks]). */
     val firstDay: DayOfWeek get() = Weeks.firstDay()
 
