@@ -196,7 +196,7 @@
 
         <!-- The widgets' moment and midnight alarms (WidgetUpdater). Not a widget. -->
         <receiver
-            android:name=".device.WidgetAlarmReceiver"
+            android:name=".widget.WidgetAlarmReceiver"
             android:exported="false" />
 
         <service

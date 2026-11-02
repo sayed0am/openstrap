@@ -9,6 +9,7 @@ import kotlin.math.sign
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowStage
+import org.openstrap.app.ui.theme.MetricColors
 
 /*
  * The charts widgets share with their cards (widgets spec 6.2), as plain geometry: the points of a line and its end
@@ -471,4 +472,12 @@ fun stageStripSegments(spans: List<org.openstrap.app.ui.components.StageSpan>, w
         val x1 = height / 2 + (width - height) * (s.end - start) / (end - start)
         StageStripSegment(s.stage, x0, x1.coerceAtLeast(x0 + 0.5f))
     }
+}
+
+/** A sleep stage's colour, as on the strap's own charts. */
+internal fun stageColor(stage: Int): Color = when (stage) {
+    org.openstrap.app.data.db.SleepStage.DEEP -> MetricColors.sleepDeep
+    org.openstrap.app.data.db.SleepStage.REM -> MetricColors.sleepRem
+    org.openstrap.app.data.db.SleepStage.AWAKE -> MetricColors.sleepAwake
+    else -> MetricColors.sleepLight
 }

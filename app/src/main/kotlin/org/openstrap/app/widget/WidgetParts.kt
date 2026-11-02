@@ -60,26 +60,20 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
-import org.openstrap.app.AppContainer
 import org.openstrap.app.MainActivity
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.device.SyncState
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.glow.ControlSurface
-import org.openstrap.app.device.WidgetUpdater
+import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.dashboard.momentMood
-import org.openstrap.app.ui.glow.EdgeLight
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeLight
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.drawGlow
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
@@ -87,10 +81,8 @@ import org.openstrap.app.ui.glow.draw.dotLayout
 import org.openstrap.app.ui.glow.draw.edgePaint
 import org.openstrap.app.ui.glow.draw.renderDots
 import org.openstrap.app.ui.glow.draw.renderEdge
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
 
 /*
  * What every widget shares (widgets spec 6): loading and reloading in provideGlance, the receiver's placed callbacks,
@@ -108,8 +100,8 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
     /** The picker's generated preview (spec 6.4, Android 15 and later) has the three sizes too. */
     override val previewSizeMode = SizeMode.Responsive(WidgetSizes.all)
 
-    /** What the widget shows now. */
-    protected abstract suspend fun loadShown(context: Context): T
+    /** What the widget shows from [data], a read for its kind ([WidgetSnapshot.gather]). */
+    protected abstract fun shown(data: WidgetData, context: Context): T
 
     /** The mockups' sample ([WidgetSamples]) for the picker's preview, lit by day. */
     protected abstract fun sample(): T
@@ -125,13 +117,16 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
     protected abstract fun Content(data: T)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) = coroutineScope {
-        val shown = MutableStateFlow(loadShown(context))
-        val status = MutableStateFlow(loadStatusLine(context))
+        val widgets = context.widgets
+        val first = widgets.data(kind)
+        val shown = MutableStateFlow(shown(first, context))
+        val status = MutableStateFlow(statusLine(first))
         val resized = WidgetRefresh.resized(kind)
         launch {
             WidgetRefresh.version(kind).drop(1).collectLatest {
-                shown.value = loadShown(context)
-                status.value = loadStatusLine(context)
+                val data = widgets.data(kind)
+                shown.value = shown(data, context)
+                status.value = statusLine(data)
             }
         }
         provideContent {
@@ -153,22 +148,15 @@ internal val LocalResized = staticCompositionLocalOf { 0 }
 internal val LocalStatusLine = staticCompositionLocalOf<StatusLine?> { null }
 
 /**
- * The strap status line now (spec 5), from what settings keep of the strap so it reads with the strap away, and
- * whether a sync is running; or the debug gallery's ([WidgetRefresh.statusOverride]). Null while all is well.
+ * The strap status line (spec 5) as [data] read it, from what settings keep of the strap so it reads with the strap
+ * away, and whether a sync is running, or the debug gallery's ([WidgetRefresh.statusOverride]). Null while all is well.
  */
-internal suspend fun loadStatusLine(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): StatusLine? = try {
-    val t = now.epochSecond
+internal fun statusLine(data: WidgetData): StatusLine? {
+    val t = data.now.epochSecond
     val status = if (WidgetRefresh.statusOverride != null) WidgetRefresh.debugStatus(t) else {
-        val container = (context.applicationContext as OpenStrapApp).container
-        val s = container.settings.strapSnapshot.first()
-        strapStatus(s.paired, s.battery, s.charging, s.lastSyncDone, t, syncing = container.strap.sync.value is SyncState.Running)
+        data.strap?.let { s -> strapStatus(s.paired, s.battery, s.charging, s.lastSyncDone, t, syncing = data.syncing) }
     }
-    status?.let { StatusLine.of(it, t, zone) }
-} catch (e: CancellationException) {
-    throw e
-} catch (e: Exception) {
-    Log.w(WIDGET_TAG, "widgets: strap status not read: $e")
-    null
+    return status?.let { StatusLine.of(it, t, data.zone) }
 }
 
 /**
@@ -202,19 +190,17 @@ abstract class PlacedWidgetReceiver : GlanceAppWidgetReceiver() {
         (glanceAppWidget as? LoadingWidget<*>)?.let { WidgetRefresh.resize(it.kind) }
     }
 
-    private fun placedChanged(context: Context) = WidgetUpdater.placedChanged(context)
+    private fun placedChanged(context: Context) = context.widgets.placedChanged()
 }
 
 /**
- * The mood to light a widget in (spec 2.2): the moment's now, from the same inputs Today reads ([widgetMomentInputs])
- * with [usualBedtime] from Recovery, or the debug gallery's. Day when the moment can't be worked out.
+ * The mood to light a widget in (spec 2.2): the moment at [data]'s time, from the same inputs Today reads
+ * ([WidgetData.moment]) with [usualBedtime] from Recovery, or the debug gallery's. Day when the moment can't be worked out.
  */
-internal suspend fun widgetMood(container: AppContainer, usualBedtime: LocalTime?, now: Instant, zone: ZoneId): GlowMood =
-    WidgetRefresh.moodOverride ?: try {
-        momentMood(widgetMomentInputs(container, usualBedtime, now, zone).resolve(now, zone))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
+internal fun widgetMood(data: WidgetData, usualBedtime: LocalTime?): GlowMood =
+    WidgetRefresh.moodOverride ?: runCatching {
+        momentMood(checkNotNull(data.momentInputs(usualBedtime)) { "no moment inputs" }.resolve(data.now, data.zone))
+    }.getOrElse { e ->
         Log.w(WIDGET_TAG, "widgets: moment for the mood not worked out: $e")
         GlowMood.Day
     }
@@ -223,7 +209,7 @@ internal suspend fun widgetMood(container: AppContainer, usualBedtime: LocalTime
 internal fun openStrap(context: Context): Intent =
     Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_STRAP, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-/** Opens the detail at [route] (`open_metric`, [org.openstrap.app.ui.dashboard.Detail.fromRoute]) for [day]. */
+/** Opens the detail at [route] (`open_metric`, one of [org.openstrap.app.data.DetailRoutes]) for [day]. */
 internal fun openMetric(context: Context, route: String, day: LocalDate?): Intent =
     Intent(context, MainActivity::class.java)
         .putExtra(MainActivity.EXTRA_OPEN_METRIC, route)

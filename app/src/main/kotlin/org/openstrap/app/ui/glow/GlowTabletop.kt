@@ -18,6 +18,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.chart
 
 /**
  * The top half of a foldable standing half-open on a table: your heart rate, big enough to read from across

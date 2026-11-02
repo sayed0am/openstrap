@@ -29,7 +29,7 @@ import androidx.compose.ui.graphics.Color
 import org.openstrap.app.ui.glow.DestructiveInk
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
-import org.openstrap.app.ui.glow.ControlSurface
+import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageChip
 import org.openstrap.app.ui.glow.PageConfirm
@@ -182,7 +182,7 @@ private fun AlarmsPanel(
                     val ink = if (a.enabled) Color.White else Color.White.copy(alpha = 0.45f)
                     val (digits, marker) = dotClock(a.hour, a.minute)
                     Row(verticalAlignment = Alignment.Bottom) {
-                        org.openstrap.app.ui.glow.DotMatrixText(digits, dot = org.openstrap.app.ui.glow.DotSize.Edge, color = ink)
+                        org.openstrap.app.ui.glow.DotMatrixText(digits, dot = org.openstrap.app.ui.glow.draw.DotSize.Edge, color = ink)
                         marker?.let { Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp)) }
                     }
                     Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(top = 6.dp))

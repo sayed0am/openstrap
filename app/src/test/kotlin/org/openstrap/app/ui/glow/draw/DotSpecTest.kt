@@ -4,8 +4,6 @@ import androidx.compose.ui.geometry.Offset
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.ui.glow.DotSize
-
 /** The dot numerals' shared geometry (widgets spec 6.2): what DotMatrixText and a widget's bitmap both draw. */
 class DotSpecTest {
     @Test fun `8,432 in the second glow's dots`() {

@@ -9,14 +9,14 @@ import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.SLEEP_NAMES
 import org.openstrap.app.ui.dashboard.TabCopy
 import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.stageTotals
 import java.time.LocalDate
 import java.time.ZoneId
 import org.openstrap.app.presentation.Units
 
 /**
- * One night as the Sleep tab's hero reads it ([org.openstrap.app.ui.dashboard.DayUiState]): the night's main sleep, its
+ * One night as the Sleep tab's hero reads it: the night's main sleep, its
  * stages and their totals, and the week's other nights for the longest or shortest rule.
  */
 data class SleepWidgetNight(

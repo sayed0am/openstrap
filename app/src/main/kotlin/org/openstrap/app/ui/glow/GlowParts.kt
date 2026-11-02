@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.glow.draw.DotFont
 import org.openstrap.app.ui.glow.draw.dotLayout
 import org.openstrap.app.ui.glow.draw.drawDots
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /* ------------------------------------------------------------------------------------------------ */
 /* Dot-matrix numerals                                                                               */

@@ -17,16 +17,15 @@ import org.openstrap.app.data.MomentLead
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.device.WidgetUpdater
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.TabCopy
 import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.glow.AFTER_RIM
-import org.openstrap.app.ui.glow.EVENING_BODY
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.LightAngle
-import org.openstrap.app.ui.glow.WINDOW_RIM
+import org.openstrap.app.ui.glow.draw.AFTER_RIM
+import org.openstrap.app.ui.glow.draw.EVENING_BODY
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.WINDOW_RIM
 import org.openstrap.app.ui.theme.MetricColors
 
 /**

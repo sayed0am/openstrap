@@ -63,6 +63,8 @@ import org.openstrap.app.ui.workout.RoundLine
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The summary's parts that differ by kind of workout (workouts spec 2.8, boards SummaryRun to SummaryGame): the hero's

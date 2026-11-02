@@ -2,8 +2,6 @@ package org.openstrap.app.ui.glow
 
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import org.openstrap.app.ui.theme.FunnelDisplay
@@ -89,37 +87,4 @@ object GlowType {
 
     /** The smaller numbers beside a [goalValue] (the rest in "with 90 s rest between", the ×): Display 300, 26 on 28. */
     val goalValueMinor = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Light, fontSize = 26.sp, lineHeight = 28.sp, fontFeatureSettings = "tnum")
-}
-
-/**
- * The six dot sizes of dot-matrix numbers (spec 2.3), by where the number sits. [DotMatrixText] takes only these, so
- * the same kind of number is the same size on every screen.
- */
-enum class DotSize(val dot: Dp) {
-    /** Four or more figures side by side ([FigureRow]). List rows are plain text ([GlowType.rowValue]). */
-    Row(2.4.dp),
-
-    /** Edge cards and Smalls. */
-    Edge(3.dp),
-
-    /** Talls, the second glow, glow cards that aren't the hero. */
-    Second(3.6.dp),
-
-    /** The hero's number. */
-    Hero(4.5.dp),
-
-    /** A detail's header. */
-    Detail(6.dp),
-
-    /** The live workout. */
-    Live(9.dp),
-    ;
-
-    /** The space between dots: a fixed share of the dot, so every size has the same texture. */
-    val gap: Dp get() = dot * DOT_GAP
-
-    companion object {
-        /** The gap between dots as a share of the dot. */
-        const val DOT_GAP = 0.38f
-    }
 }

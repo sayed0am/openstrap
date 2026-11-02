@@ -67,6 +67,7 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import java.time.ZoneId
+import org.openstrap.app.ui.theme.ControlSurface
 
 /*
  * The settings pages (the Strap page and what it opens, Profile, You) in the glow language's quiet tier: black, with
@@ -76,8 +77,6 @@ import java.time.ZoneId
 
 private val PanelShape = GlowLayout.CardShape
 private val PanelSurface = ListSurface
-/** The Control surface (spec 2.2): buttons, chips, pills and text fields on a page. */
-internal val ControlSurface = Color(0xFF1F1F22)
 private val Hairline = Color.White.copy(alpha = 0.05f)
 /** A [PageRow] whose page is open beside the list. */
 private val SelectedTint = Color.White.copy(alpha = 0.08f)

@@ -1,7 +1,7 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.data.DetailRoutes
 import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -18,22 +18,16 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.data.DayWindow
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
-import org.openstrap.app.ui.glow.GlowMood
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawWeekBars
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.weekBars
-import org.openstrap.app.ui.glow.edgeLight
+import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
 
 /**
  * The Recovery widget (widgets spec 3.4): this morning's score and word in the same spot every day, with what's
@@ -42,7 +36,7 @@ import java.time.ZoneId
  * the Recovery screen.
  */
 class RecoveryWidget : LoadingWidget<RecoveryWidget.Shown>(WidgetKind.Recovery) {
-    override suspend fun loadShown(context: Context): Shown = load(context)
+    override fun shown(data: WidgetData, context: Context): Shown = load(data)
 
     override fun sample(): Shown = Shown(WidgetSamples.recovery(LocalDate.now()), GlowMood.Day)
 
@@ -55,27 +49,12 @@ class RecoveryWidget : LoadingWidget<RecoveryWidget.Shown>(WidgetKind.Recovery) 
     companion object {
         /**
          * Today's Recovery, worked out as the app does ([org.openstrap.app.data.HealthRepository.recovery]), and
-         * yesterday's while this morning's isn't in; the mood from the moment now ([widgetMood]).
+         * yesterday's while this morning's isn't in. The mood from the moment then ([widgetMood]).
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): Shown {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val profile = container.settings.profile.first()
-            val dao = container.database.healthDao()
-            suspend fun day(date: LocalDate) = try {
-                val r = container.health.recovery(date, profile)
-                val dayStart = DayWindow.of(date, zone).from
-                r to RecoveryDay.of(r, dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(WIDGET_TAG, "widgets: Recovery for $date not worked out: $e")
-                null
-            }
-            val today = now.atZone(zone).toLocalDate()
-            val result = day(today)
-            val yesterday = if (result?.second?.shown?.value == null) day(today.minusDays(1))?.second else null
-            val model = RecoveryWidgetModel.from(result?.second, yesterday)
-            return Shown(model, widgetMood(container, result?.first?.usualBedtime, now, zone))
+        internal fun load(data: WidgetData): Shown {
+            val read = checkNotNull(data.recovery) { "not read for Recovery" }
+            val model = RecoveryWidgetModel.from(read.today, read.yesterday)
+            return Shown(model, widgetMood(data, read.today?.let { read.todayResult?.usualBedtime }))
         }
     }
 }
@@ -99,7 +78,7 @@ private val Ink = MetricColors.readiness
 @Composable
 private fun RecoveryContent(data: RecoveryWidget.Shown) {
     val model = data.model
-    val open = openMetric(LocalContext.current, RECOVERY_ROUTE, model.date)
+    val open = openMetric(LocalContext.current, DetailRoutes.RECOVERY, model.date)
     EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Earlier), Ink, data.mood, open, BITMAP_EXTRA) { frame ->
         when {
             model.score == null -> WaitingContent(model.title, model.waiting, frame)
@@ -209,9 +188,6 @@ private fun Week(week: List<RecoveryWeekDay>, column: Float, density: Float) {
 /* ------------------------------------------------------------------------------------------------ */
 /* Bitmaps                                                                                           */
 /* ------------------------------------------------------------------------------------------------ */
-
-/** The route `open_metric` takes for the Recovery screen ([org.openstrap.app.ui.dashboard.Detail.fromRoute]). */
-internal const val RECOVERY_ROUTE = "Recovery"
 
 /** Room for the dots and the week beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.25

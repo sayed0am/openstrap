@@ -82,6 +82,13 @@ import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
 import androidx.compose.foundation.layout.BoxWithConstraints
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.level
+import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.presentation.topSports
 
 /** Heart points' weekly aim: 100 or more over the last seven days. */
 private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET

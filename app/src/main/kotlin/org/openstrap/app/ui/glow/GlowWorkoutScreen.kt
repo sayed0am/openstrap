@@ -54,6 +54,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.chart
+import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The page of a past workout (spec 6.3, "Workout detail"), one for the strap's and the phone's: the sentence first on

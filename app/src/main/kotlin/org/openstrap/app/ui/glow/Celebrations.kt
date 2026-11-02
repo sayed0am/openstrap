@@ -29,6 +29,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * The celebrations (workouts spec 3.4, boards GoalMoment and BadgeUnlocked): the full screen goal moment, once a week,

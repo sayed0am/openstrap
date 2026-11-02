@@ -65,6 +65,7 @@ import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.shape.RoundedCornerShape
 import org.openstrap.app.ui.workout.WorkoutCopy
 import org.openstrap.app.data.WorkoutRecorder
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /**
  * The live stats row's figures, unchanged from before spec 6.3 ("Stats row unchanged"): the moving time large in the

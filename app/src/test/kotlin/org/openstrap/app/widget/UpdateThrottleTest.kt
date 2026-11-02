@@ -1,4 +1,4 @@
-package org.openstrap.app.device
+package org.openstrap.app.widget
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

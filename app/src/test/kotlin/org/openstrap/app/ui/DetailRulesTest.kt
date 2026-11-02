@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.openstrap.app.ui.glow.BackButtonSize
-import org.openstrap.app.ui.glow.ControlSurface
+import org.openstrap.app.ui.theme.ControlSurface
 import java.io.File
 
 /**

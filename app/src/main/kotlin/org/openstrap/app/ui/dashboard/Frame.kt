@@ -8,8 +8,8 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.StrapBands
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.LightAngle
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.LightAngle
 
 /*
  * The frame around every tab (spec 3): what the header says about the day and the strap, and how the tabs answer

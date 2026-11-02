@@ -8,12 +8,6 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 
-/** At or under this battery level, while not charging, every widget says so (widgets spec 5), as the app does. */
-const val STRAP_LOW_PERCENT = StrapBands.LOW_BATTERY
-
-/** A last sync older than this takes the status line, and a tap syncs: the app's one threshold. */
-const val SYNC_STALE_SECONDS = StrapBands.STALE_AFTER_S
-
 /** The strap status line a widget shows in its top row (widgets spec 5); none while all is well. */
 sealed interface StrapStatus {
     /** Opens the Strap page. */
@@ -30,8 +24,8 @@ sealed interface StrapStatus {
 }
 
 /**
- * The status line, first match wins: not [paired], then [battery] at [STRAP_LOW_PERCENT] or less and not [charging],
- * then [lastSync] (epoch seconds) more than [SYNC_STALE_SECONDS] before [now]. While [syncing] the stale line reads
+ * The status line, first match wins: not [paired], then [battery] at [StrapBands.LOW_BATTERY] or less and not [charging],
+ * then [lastSync] (epoch seconds) more than [StrapBands.STALE_AFTER_S] before [now]. While [syncing] the stale line reads
  * Syncing instead; a sync while all is well shows nothing, so the background syncs don't flash a line. Before the
  * first sync is known there's no time to give, so no line.
  */
@@ -42,12 +36,12 @@ fun strapStatus(paired: Boolean, battery: Int?, charging: Boolean, lastSync: Lon
     else -> null
 }
 
-/** True when the last sync ended more than [SYNC_STALE_SECONDS] before [now] ([StrapBands.stale]). */
+/** True when the last sync ended more than [StrapBands.STALE_AFTER_S] before [now] ([StrapBands.stale]). */
 fun syncStale(lastSync: Long?, now: Long): Boolean = StrapBands.stale(lastSync, now)
 
 /** True when the line for the strap's state could read otherwise: pairing, the low battery edge or charging changed. */
 fun strapStateChanged(paired: Boolean, battery: Int?, charging: Boolean, wasPaired: Boolean, wasBattery: Int?, wasCharging: Boolean): Boolean {
-    fun low(b: Int?) = b != null && b <= STRAP_LOW_PERCENT
+    fun low(b: Int?) = b != null && b <= StrapBands.LOW_BATTERY
     return paired != wasPaired || charging != wasCharging || low(battery) != low(wasBattery)
 }
 

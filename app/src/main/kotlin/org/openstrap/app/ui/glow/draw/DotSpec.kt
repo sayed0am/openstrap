@@ -2,8 +2,8 @@ package org.openstrap.app.ui.glow.draw
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Offset
-import org.openstrap.app.ui.glow.DotSize
-
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 /*
  * The dot-matrix numerals as plain geometry: which dots a string lights and where, for a dot size. DotMatrixText draws
  * them in Compose and CanvasDraw on an android.graphics.Canvas, so a widget's number is the card's (widgets spec 6.2).
@@ -89,3 +89,36 @@ fun dotLayout(text: String, dot: Float, density: Float): DotLayout {
 
 /** [dotLayout] for one of the six [DotSize]s. */
 fun dotLayout(text: String, size: DotSize, density: Float): DotLayout = dotLayout(text, size.dot.value, density)
+
+/**
+ * The six dot sizes of dot-matrix numbers (spec 2.3), by where the number sits. [DotMatrixText] takes only these, so
+ * the same kind of number is the same size on every screen.
+ */
+enum class DotSize(val dot: Dp) {
+    /** Four or more figures side by side ([FigureRow]). List rows are plain text ([GlowType.rowValue]). */
+    Row(2.4.dp),
+
+    /** Edge cards and Smalls. */
+    Edge(3.dp),
+
+    /** Talls, the second glow, glow cards that aren't the hero. */
+    Second(3.6.dp),
+
+    /** The hero's number. */
+    Hero(4.5.dp),
+
+    /** A detail's header. */
+    Detail(6.dp),
+
+    /** The live workout. */
+    Live(9.dp),
+    ;
+
+    /** The space between dots: a fixed share of the dot, so every size has the same texture. */
+    val gap: Dp get() = dot * DOT_GAP
+
+    companion object {
+        /** The gap between dots as a share of the dot. */
+        const val DOT_GAP = 0.38f
+    }
+}

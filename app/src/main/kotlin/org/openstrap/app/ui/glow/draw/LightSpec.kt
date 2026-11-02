@@ -6,21 +6,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import kotlin.math.abs
-import org.openstrap.app.ui.glow.CoreShape
-import org.openstrap.app.ui.glow.Edge
-import org.openstrap.app.ui.glow.EdgeLight
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowPalette
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.LEVEL_STEP
 import org.openstrap.app.ui.glow.LevelFade
 import org.openstrap.app.ui.glow.SoftGlow
 import org.openstrap.app.ui.glow.StrongGlow
-import org.openstrap.app.ui.glow.levelEdge
-import org.openstrap.app.ui.glow.light
-import org.openstrap.app.ui.glow.lightVector
-
 /*
  * The light of the glow and edge cards as plain numbers: where each gradient runs, its colours and stops, the rim
  * shadows, the core and the hairline. Nothing here draws. A card in the app and a widget's bitmap both read these, so
@@ -242,7 +231,7 @@ private const val LEVEL_STEP_SHARE = 0.08f
  * linearly through the level's fill stops (spec 2.1): on L4 the light holds for the first part of the card and reaches
  * the body by 45%, on L3 it starts at 70% and is gone by 28%. Light all the way round: the body alone.
  */
-private fun glowFill(light: org.openstrap.app.ui.glow.GlowLight, p: GlowPalette, w: Float, h: Float): LinearGradientSpec {
+private fun glowFill(light: org.openstrap.app.ui.glow.draw.GlowLight, p: GlowPalette, w: Float, h: Float): LinearGradientSpec {
     val angle = light.angle ?: return LinearGradientSpec(0f, 0f, 0f, h, listOf(p.mid, p.mid), null)
     val points = light.fillStops.map { it.at.coerceIn(0f, 1f) to it.light.coerceIn(0f, 1f) }
     val colors = points.map { (_, k) -> lerp(p.mid, p.light, k) } + p.mid

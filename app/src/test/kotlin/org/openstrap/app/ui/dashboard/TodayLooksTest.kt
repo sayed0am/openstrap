@@ -16,7 +16,7 @@ import org.openstrap.app.ui.dashboard.TodayCard.Recovery
 import org.openstrap.app.ui.dashboard.TodayCard.RightNow
 import org.openstrap.app.ui.dashboard.TodayCard.Week
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.Edge
+import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.Pane
 
 /** No two Today cards next to each other look the same (spec 2.4), whatever the moment, the pins and the hides. */

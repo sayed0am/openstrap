@@ -2,7 +2,7 @@ package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.ui.glow.CardSize
 import org.openstrap.app.ui.glow.GridRow
-import org.openstrap.app.ui.glow.Edge
+import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.Pane
 import org.openstrap.app.ui.glow.packGrid
 
