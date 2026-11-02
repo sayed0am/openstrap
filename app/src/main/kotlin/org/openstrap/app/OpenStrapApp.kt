@@ -51,6 +51,16 @@ class AppContainer(val app: Application) {
     val updater = org.openstrap.app.update.AppUpdater(
         app, settings, recording = { workout.state.value is org.openstrap.app.device.WorkoutState.Recording }, scope = appScope,
     )
+    /** Each day as Today and the tabs show it, read and resolved. */
+    val days: org.openstrap.app.data.DayRepository = org.openstrap.app.data.RoomDayRepository(health, strap.todaySteps)
+    /** The workouts, analysed, for the lists, pages and summaries. */
+    val workouts: org.openstrap.app.data.WorkoutRepository =
+        org.openstrap.app.data.RoomWorkoutRepository(database.healthDao(), settings.profile, maxHeartRates)
+
+    init {
+        // The Recovery cache follows the data from here on.
+        health.start(appScope)
+    }
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {

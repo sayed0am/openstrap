@@ -27,7 +27,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -55,6 +55,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import org.openstrap.app.data.Activity
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
@@ -62,6 +63,9 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.DailyPai
 import org.openstrap.app.ui.dashboard.ActivityCard
 import org.openstrap.app.ui.dashboard.ActivityCopy
+import org.openstrap.app.ui.dashboard.ActivityHistory
+import org.openstrap.app.ui.dashboard.EnergyDay
+import org.openstrap.app.ui.dashboard.HeartPointsDay
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.ActivityFacts
@@ -89,11 +93,65 @@ private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
 /** Workouts the list shows, the day's first, before "All workouts". */
 private const val LISTED_WORKOUTS = 5
 
-/** Each day's Heart points (the strap's PAI) between two dates, keyed by date. */
+/** Each day's Heart points (the strap's PAI) between two dates, keyed by date. Only for the deprecated overloads now. */
 typealias PaiHistory = (LocalDate, LocalDate) -> Flow<Map<LocalDate, DailyPai>>
 
 /** Each day's stored energy ([org.openstrap.app.data.DailyEnergyHistory]) between two dates, keyed by date. */
 typealias EnergyHistory = (LocalDate, LocalDate) -> Flow<Map<LocalDate, org.openstrap.app.data.db.DailyEnergyRow>>
+
+/**
+ * [paiHistory] and [energyHistory] read as an [ActivityHistory] for [date], with the windows the view model reads, for
+ * the deprecated overloads until the app root hands in the view model's.
+ */
+@Composable
+internal fun rememberActivityHistory(date: LocalDate, paiHistory: PaiHistory?, energyHistory: EnergyHistory?): ActivityHistory {
+    val pai by remember(date, paiHistory) {
+        paiHistory?.invoke(date.minusDays(ActivityHistory.HEART_POINTS_DAYS - 1L), date) ?: flowOf(emptyMap())
+    }.collectAsStateWithLifecycle(emptyMap())
+    val energy by remember(date, energyHistory) {
+        energyHistory?.invoke(date.minusDays(ActivityHistory.ENERGY_DAYS - 1L), date) ?: flowOf(null)
+    }.collectAsStateWithLifecycle(null)
+    return remember(date, pai, energy) {
+        ActivityHistory(
+            date,
+            pai.mapValues { (_, p) -> HeartPointsDay(p.daily, p.total) },
+            energy?.mapValues { (_, e) -> EnergyDay(e.activeKcal, e.totalKcal, e.workoutKcal, e.partial) },
+        )
+    }
+}
+
+/** Today's shape, over [paiHistory], until the app root hands in the day view model's [ActivityHistory]. */
+@Deprecated("Pass the day view model's ActivityHistory")
+// Today's parameters as they are, the baselined lists included, until the app root moves over and this goes.
+@Suppress("ComposeUnstableCollections")
+@Composable
+fun GlowActivityScreen(
+    state: DayUiState,
+    recovery: RecoveryResult?,
+    workouts: List<WorkoutAnalysis>,
+    paiHistory: PaiHistory,
+    header: @Composable () -> Unit,
+    contentPadding: PaddingValues,
+    onOpenMetric: (Metric) -> Unit,
+    onOpenWorkout: (Long) -> Unit,
+    onAllWorkouts: () -> Unit,
+    onEditProfile: () -> Unit,
+    onStartWorkout: (Int) -> Unit = {},
+    onAllSports: () -> Unit = {},
+    suggestion: org.openstrap.app.data.WorkoutSuggestions.Suggestion? = null,
+    onSaveSuggestion: () -> Unit = {},
+    onDismissSuggestion: () -> Unit = {},
+    onAddWorkout: () -> Unit = {},
+    liveHeartRate: Int? = null,
+    history: org.openstrap.app.ui.dashboard.DailyHistory? = null,
+    onOpen: (org.openstrap.app.ui.dashboard.Detail) -> Unit = {},
+    usualSteps: List<Float>? = null,
+    wear: Wear? = null,
+) = GlowActivityScreen(
+    state, recovery, workouts, rememberActivityHistory(state.date, paiHistory, null), header, contentPadding, onOpenMetric, onOpenWorkout,
+    onAllWorkouts, onEditProfile, onStartWorkout, onAllSports, suggestion, onSaveSuggestion, onDismissSuggestion, onAddWorkout,
+    liveHeartRate, history, onOpen, usualSteps, wear,
+)
 
 /*
  * The Activity tab (spec 5.3): "how much did I move and train". A card to start a sport today, steps glowing, Load
@@ -106,7 +164,8 @@ fun GlowActivityScreen(
     state: DayUiState,
     recovery: RecoveryResult?,
     workouts: List<WorkoutAnalysis>,
-    paiHistory: PaiHistory,
+    /** Each day's Heart points, for today's total until the strap's own comes. */
+    activity: ActivityHistory,
     header: @Composable () -> Unit,
     contentPadding: PaddingValues,
     onOpenMetric: (Metric) -> Unit,
@@ -142,7 +201,7 @@ fun GlowActivityScreen(
         }
         shown.toList()
     }
-    val stored = remember(state.date, paiHistory) { paiHistory(state.date, state.date) }.collectAsState(emptyMap()).value
+    val stored = activity.heartPointsOn(state.date)
     val heartPoints = state.pai?.total ?: stored[state.date]?.total
     val r = recovery?.takeIf { it.date == state.date }
     val live = liveHeartRate?.takeIf { isToday }

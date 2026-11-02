@@ -16,8 +16,8 @@ class SleepReadersTest {
     /** A call of a sleep session or stage read, with what it's called on. */
     private val call = Regex("""(\w+)(\(\))?\.sleep(Sessions|Stages)\w*\(""")
 
-    /** Receivers that are the repository's wrappers, not the DAO. */
-    private val wrappers = setOf("repo")
+    /** Receivers that are the repository's wrappers, not the DAO: a view model's and the day repository's. */
+    private val wrappers = setOf("repo", "health")
 
     @Test fun `nothing reads the DAO's sleep outside the source, the sync and the backup`() {
         val roots = listOf("src/main", "src/debug", "app/src/main", "app/src/debug").map(::File).filter { it.isDirectory }

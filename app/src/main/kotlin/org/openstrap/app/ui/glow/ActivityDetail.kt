@@ -37,7 +37,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.flowOf
 import org.openstrap.app.data.Activity
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.RecoveryResult
@@ -45,6 +44,7 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.ui.components.rememberScrubHaptics
 import org.openstrap.app.ui.components.scrub
 import org.openstrap.app.ui.dashboard.ActivityCopy
+import org.openstrap.app.ui.dashboard.ActivityHistory
 import org.openstrap.app.ui.dashboard.CaloriesCopy
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
@@ -76,7 +76,8 @@ internal class ActivityDetailContext(
     val state: DayUiState,
     val r: RecoveryResult?,
     val workouts: List<WorkoutAnalysis>,
-    val paiHistory: PaiHistory?,
+    /** Each day's Heart points, and stored energy for Calories' week, month and year. */
+    val activity: ActivityHistory,
     val history: DailyHistory,
     val onOpen: (Detail) -> Unit,
     val onSwitch: (Detail) -> Unit,
@@ -84,9 +85,29 @@ internal class ActivityDetailContext(
     val onEditProfile: () -> Unit,
     val contentPadding: PaddingValues,
     val onBack: () -> Unit,
-    /** Each day's stored energy, for Calories' week, month and year. */
-    val energyHistory: EnergyHistory? = null,
 ) {
+    /**
+     * Today's shape, for the Week detail the app root opens, which reads neither Heart points nor energy, so they're
+     * left empty here.
+     */
+    @Deprecated("Pass the day view model's ActivityHistory")
+    // Kept only so the app root's call builds until it moves over, so its shape is today's and the factories go unread.
+    @Suppress("UNUSED_PARAMETER", "UnusedPrivateProperty", "LongParameterList")
+    constructor(
+        state: DayUiState,
+        r: RecoveryResult?,
+        workouts: List<WorkoutAnalysis>,
+        paiHistory: PaiHistory?,
+        history: DailyHistory,
+        onOpen: (Detail) -> Unit,
+        onSwitch: (Detail) -> Unit,
+        onSelectDay: (LocalDate) -> Unit,
+        onEditProfile: () -> Unit,
+        contentPadding: PaddingValues,
+        onBack: () -> Unit,
+        energyHistory: EnergyHistory? = null,
+    ) : this(state, r, workouts, ActivityHistory(), history, onOpen, onSwitch, onSelectDay, onEditProfile, contentPadding, onBack)
+
     val today: LocalDate get() = LocalDate.now()
     val isToday: Boolean get() = state.date == today
 }
@@ -136,9 +157,7 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
     val range = ranges[rangeIndex.coerceIn(ranges.indices)]
     var scrub by remember(range, date) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable { mutableStateOf(false) }
-    val stored by remember(date, ctx.paiHistory) {
-        ctx.paiHistory?.invoke(date.minusDays(29), maxOf(date, ctx.today)) ?: flowOf(emptyMap())
-    }.collectAsState(emptyMap())
+    val stored = ctx.activity.heartPointsOn(date)
     // Worked out once per load, not on every pass of the screen (audit K4).
     val week = remember(date) { weekOf(date) }
     val daily = remember(week, stored) { week.map { stored[it]?.daily } }
@@ -530,7 +549,7 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
 /**
  * Calories (calories spec 4.5): active kcal as the headline with the goal under it. Day has the hours split by where the
  * kcal came from, the total and your use at rest, and a row per workout, walking and everyday moving. Week, Month and
- * Year read each day's stored row ([EnergyHistory]): the active kcal a day, the goal days, day bars split into
+ * Year read each day's stored row ([ActivityHistory.energy]): the active kcal a day, the goal days, day bars split into
  * workouts and the rest against the goal (weekly over a year), and the change against the range before. The averages
  * read full days only; the total and the busiest day take today too ([CaloriesCopy.summary]). No profile: as before,
  * the way to add one.
@@ -549,14 +568,14 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     val active = e?.activeKcal?.let(Math::round)
     val start = date.minusDays(range.days - 1L)
     // A range reads twice its length, for the change against the one before.
-    val stored by remember(range, date, ctx.energyHistory) {
-        if (range == Range.Day) flowOf(null) else ctx.energyHistory?.invoke(start.minusDays(range.days.toLong()), date) ?: flowOf(emptyMap())
-    }.collectAsState(null)
+    val stored = remember(range, date, ctx.activity) {
+        if (range == Range.Day) null else ctx.activity.energyOn(date, start.minusDays(range.days.toLong()))
+    }
     // The day shown is worked out afresh, so it stands in for its row.
     // Worked out once per load, not on every pass of the screen (audit K4).
     val rows = remember(stored, e, date) {
         stored?.let { m ->
-            m.mapValues { (d, r) -> CaloriesCopy.DayKcal(d, r.activeKcal, r.totalKcal, r.workoutKcal, r.partial) } +
+            m.mapValues { (d, r) -> CaloriesCopy.DayKcal(d, r.active, r.total, r.workout, r.partial) } +
             (e?.let { mapOf(date to CaloriesCopy.DayKcal(date, it.activeKcal, it.totalKcal, it.workoutKcal, it.partial)) } ?: emptyMap())
         }
     }

@@ -1,9 +1,13 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.DailyAggregate
@@ -26,9 +30,11 @@ import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.db.Spo2Sample
 import org.openstrap.app.data.db.StressSample
+import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
+import java.util.concurrent.atomic.AtomicLong
 
 /** A [from, to] window in epoch seconds covering one local calendar day. */
 data class DayWindow(val from: Long, val to: Long) {
@@ -55,11 +61,57 @@ class HealthRepository(private val dao: HealthDao) {
     /** The one reader of sleep for everything shown ([SleepSource]). */
     val sleep = SleepSource(dao)
 
+    /** A Recovery worked out, and the data version it was worked out from. */
+    private class CachedRecovery(val version: Long, val result: RecoveryResult)
+
+    /**
+     * Recovery by day and profile, so Today and the widgets work a day out once per data version, not once each. The
+     * profile is part of the key because age, weight and the sleep need change the result. The oldest goes past
+     * [RECOVERY_CACHE_SIZE]. Only read and written under [recoveryLock].
+     */
+    private val recoveries = LinkedHashMap<Pair<LocalDate, UserProfile>, CachedRecovery>()
+    private val recoveryLock = Mutex()
+
+    /** Moves on every emission of [changes], so a cached Recovery is never older than the data under it. */
+    private val dataVersion = AtomicLong()
+
+    /** How many times [changes] has emitted since [start], the first emission included. */
+    @get:androidx.annotation.VisibleForTesting
+    internal val recoveryVersion: Long get() = dataVersion.get()
+
+    /** False until [start]: with nothing following [changes], every Recovery is worked out afresh. */
+    @Volatile private var caching = false
+
+    /**
+     * Follows [changes] for as long as [scope] lives, so the Recovery cache knows when new data lands: a sync, a
+     * restore, a sleep edit or a trim. Called once, from the app's container.
+     */
+    fun start(scope: CoroutineScope) {
+        caching = true
+        scope.launch { changes().collect { dataVersion.incrementAndGet() } }
+    }
+
     /**
      * Readiness and charge for [date]; heavy, so call it off the main thread. Also logs the night's own inputs next to
      * the strap's ([NightMetricsRow]) for the calibration review, and keeps the day's energy ([DailyEnergyHistory]).
+     * Once [start]ed, a result is kept until the data changes, and a kept one writes nothing: its rows were written
+     * when it was first worked out. A failure is never kept, so asking again works it out again.
      */
-    suspend fun recovery(date: LocalDate, profile: org.openstrap.app.data.settings.UserProfile): RecoveryResult {
+    suspend fun recovery(date: LocalDate, profile: UserProfile): RecoveryResult {
+        if (!caching) return computeRecovery(date, profile)
+        val key = date to profile
+        val version = dataVersion.get()
+        return recoveryLock.withLock { recoveries[key]?.takeIf { it.version == version }?.result }
+            ?: computeRecovery(date, profile).also { r ->
+                recoveryLock.withLock {
+                    recoveries.remove(key)
+                    recoveries[key] = CachedRecovery(version, r)
+                    while (recoveries.size > RECOVERY_CACHE_SIZE) recoveries.remove(recoveries.keys.first())
+                }
+            }
+    }
+
+    private suspend fun computeRecovery(date: LocalDate, profile: UserProfile): RecoveryResult {
         val r = recoveryEngine.compute(date, profile)
         r.tonight?.let { logNight(it) }
         r.energy?.let { dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(DayWindow.of(date).from, it, System.currentTimeMillis() / 1000))) }
@@ -70,7 +122,7 @@ class HealthRepository(private val dao: HealthDao) {
     suspend fun usualBedtime(date: LocalDate): java.time.LocalTime? = recoveryEngine.usualBedtime(date)
 
     /** The weekly Healthspan estimate shown on [date] (made the Sunday on or before it), or why it's withheld; heavy. */
-    suspend fun healthspan(date: LocalDate, profile: org.openstrap.app.data.settings.UserProfile): Healthspan.Outcome =
+    suspend fun healthspan(date: LocalDate, profile: UserProfile): Healthspan.Outcome =
         healthspanEngine.compute(date, profile)
 
     private suspend fun logNight(n: Recovery.Night) {
@@ -252,6 +304,9 @@ class HealthRepository(private val dao: HealthDao) {
     companion object {
         /** The days [daysWithData] watches as they change: well past how far back a strap's history sync reaches. */
         const val RECENT_DATA_DAYS = 14
+
+        /** Recoveries kept: today, yesterday and a few days browsed. */
+        const val RECOVERY_CACHE_SIZE = 8
     }
 }
 
