@@ -45,8 +45,9 @@ jobs:
       - name: Tests under a German locale
         run: ./gradlew :app:testDebugUnitTest -PtestLocale=de-DE
 
-      - uses: github/codeql-action/upload-sarif@v3
-        if: always()
+      # Only when lint ran: a failed test step stops before it, and a missing report would hide that failure.
+      - uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles('app/build/reports/lint-results-debug.sarif') != '' }}
         with:
           sarif_file: app/build/reports/lint-results-debug.sarif
 

@@ -18,6 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlin.math.abs
 
 /**
  * [HealthspanEngine.compute] end to end on a real database: six weeks of minutes with heart rate and steps, a night's
@@ -74,7 +75,19 @@ class HealthspanEngineComputeTest {
         val outcome = HealthspanEngine(dao).compute(sunday, profile(birthYear = 1986), zone)
         assertNotNull(outcome.result)
         assertEquals(39, outcome.age)
-        assertEquals(SNAPSHOT, outcome.toString())
+        assertMatchesSnapshot(SNAPSHOT, outcome.toString())
+    }
+
+    /**
+     * The snapshot with its decimals compared to a part in ten thousand, not as text: `Math.exp`, `pow` and `log` may
+     * differ in the last bit between CPUs, which changes a printed Float on CI's x86 runners but not on an ARM Mac.
+     */
+    private fun assertMatchesSnapshot(expected: String, actual: String) {
+        val decimal = Regex("-?\\d+\\.\\d+(E-?\\d+)?")
+        assertEquals(expected.replace(decimal, "#"), actual.replace(decimal, "#"))
+        val want = decimal.findAll(expected).map { it.value.toDouble() }.toList()
+        val got = decimal.findAll(actual).map { it.value.toDouble() }.toList()
+        want.zip(got).forEach { (w, g) -> assertEquals("in $actual", w, g, maxOf(1e-4, abs(w) * 1e-4)) }
     }
 
     private companion object {
