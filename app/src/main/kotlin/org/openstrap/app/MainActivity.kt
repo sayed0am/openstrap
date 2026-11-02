@@ -331,11 +331,7 @@ private fun AppRoot(
     val strap = rememberStrapHeader(strapFacts, day, preview)
     val shown = rememberShownDay(previewed, dayVm, rootVm, today.clockDate, strap.now, preview, dataPreview)
     val histories = remember(container) {
-        Histories(
-            { m, from, to -> container.health.daily(m, from, to) },
-            { from, to -> container.health.dailyPai(from, to) },
-            { from, to -> container.health.dailyEnergy(from, to) },
-        )
+        Histories { m, from, to -> container.health.daily(m, from, to) }
     }
     val liveHeart = LiveHeart(live, liveEnabled, connected) { container.strap.setLiveHeartRate(it) }
     val pairedKnown = strapFacts.pairedKnown && preview != StrapPreview.NotPaired

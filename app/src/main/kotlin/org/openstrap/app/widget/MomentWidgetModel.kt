@@ -5,6 +5,7 @@ import org.openstrap.app.data.Moment
 import org.openstrap.app.data.MomentInputs
 import org.openstrap.app.data.MomentLead
 import org.openstrap.app.data.Recovery
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.momentLead
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.StageSpan

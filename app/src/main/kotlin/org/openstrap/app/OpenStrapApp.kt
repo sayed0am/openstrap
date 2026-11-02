@@ -54,8 +54,10 @@ class AppContainer(val app: Application) {
     /** Save a copy, Restore and automatic backup's zip. What a restore couldn't do goes to Diagnostics. */
     val backups: org.openstrap.app.data.BackupRepository =
         org.openstrap.app.export.CsvBackups(app, database, settings, csv, log = { (strap as? StrapManager)?.log(it) })
+    /** Today's steps with the strap's live counter on top: one anchor, so Today and the widgets count alike (audit A5). */
+    val liveSteps = org.openstrap.app.data.LiveSteps()
     /** Each day as Today and the tabs show it, read and resolved. */
-    val days: org.openstrap.app.data.DayRepository = org.openstrap.app.data.RoomDayRepository(health, strap.todaySteps)
+    val days: org.openstrap.app.data.DayRepository = org.openstrap.app.data.RoomDayRepository(health, liveSteps, strap.todaySteps)
     /** The workouts, analysed, for the lists, pages and summaries. */
     val workouts: org.openstrap.app.data.WorkoutRepository =
         org.openstrap.app.data.RoomWorkoutRepository(database.healthDao(), settings.profile, maxHeartRates)
@@ -64,8 +66,6 @@ class AppContainer(val app: Application) {
         // The Recovery cache follows the data from here on.
         health.start(appScope, HealthRepository.recoveryInputs(database))
     }
-    /** Today's steps with the strap's live counter on top: one anchor, so Today and the widgets count alike (audit A5). */
-    val liveSteps = org.openstrap.app.data.LiveSteps()
     /** The home screen widgets' refreshes. Built last: it watches the strap, the workout and settings. */
     val widgets = org.openstrap.app.widget.WidgetUpdater(
         app, appScope, settings, strap, workout,

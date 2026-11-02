@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.StrapSnapshot
 import org.openstrap.app.device.SyncState

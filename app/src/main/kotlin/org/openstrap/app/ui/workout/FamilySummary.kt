@@ -9,6 +9,7 @@ import java.util.Locale
 import org.openstrap.app.data.Games
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
+import org.openstrap.app.data.WorkoutSummaryData
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
@@ -90,19 +91,9 @@ object FamilySummary {
         return if (rests.isEmpty()) null else rests.sum() / rests.size
     }
 
-    /**
-     * How long the heart rate took to fall under [below] after each set, on average over the rests where it did: from
-     * the set's end to the first reading under the level before the rest ended. Null without a level or such a rest.
-     */
-    fun restRecovery(sets: List<AppWorkoutSet>, readings: List<Pair<Long, Int>>, below: Int?): Long? {
-        below ?: return null
-        val times = sets.mapNotNull { s ->
-            val end = s.end ?: return@mapNotNull null
-            val until = s.restEnd ?: return@mapNotNull null
-            readings.firstOrNull { it.first in end..until && it.second < below }?.let { it.first - end }
-        }
-        return if (times.isEmpty()) null else times.sum() / times.size
-    }
+    /** How long the heart rate took to fall under [below] after each set, as [WorkoutSummaryData.restRecovery] works it out. */
+    fun restRecovery(sets: List<AppWorkoutSet>, readings: List<Pair<Long, Int>>, below: Int?): Long? =
+        WorkoutSummaryData.restRecovery(sets, readings, below)
 
     /**
      * "Your heart rate dropped under 110 in 58 s on average", and against the last strength session's [before]: "9 s

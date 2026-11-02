@@ -18,6 +18,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.GlowMood

@@ -57,9 +57,7 @@ import org.openstrap.app.ui.dashboard.heroLightAngle
 import org.openstrap.app.ui.dashboard.momentMood
 import org.openstrap.app.ui.dashboard.todayTitle
 import org.openstrap.app.ui.glow.AllMetricsSheet
-import org.openstrap.app.ui.glow.EnergyHistory
 import org.openstrap.app.ui.glow.GlowActivityScreen
-import org.openstrap.app.ui.glow.GlowMood
 import org.openstrap.app.ui.glow.GlowRecoveryScreen
 import org.openstrap.app.ui.glow.GlowSleepScreen
 import org.openstrap.app.ui.glow.GlowTodayScreen
@@ -68,8 +66,8 @@ import org.openstrap.app.ui.glow.IndexTarget
 import org.openstrap.app.ui.glow.LiveHeroHooks
 import org.openstrap.app.ui.glow.LocalGlowMood
 import org.openstrap.app.ui.glow.LocalGlowPagePaused
-import org.openstrap.app.ui.glow.PaiHistory
 import org.openstrap.app.ui.glow.TodayStrap
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.metricIndex
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -103,7 +101,7 @@ class ShownDay(
 }
 
 /** The stored histories the charts read. */
-class Histories(val daily: DailyHistory, val pai: PaiHistory, val energy: EnergyHistory)
+class Histories(val daily: DailyHistory)
 
 /** Live heart rate, whether it's on, whether it can be (the strap connected), and the switch. */
 class LiveHeart(val bpm: Int?, val enabled: Boolean, val canUse: Boolean, val toggle: (Boolean) -> Unit)
@@ -236,6 +234,7 @@ private fun TabRoot(
     val day = shown.day
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val usualSteps by dayVm.usualSteps.collectAsStateWithLifecycle()
+    val activity by dayVm.activityHistory.collectAsStateWithLifecycle()
     val suggestions by workoutsVm.suggestions.collectAsStateWithLifecycle()
     // Hidden while a workout records: the strap's history may show the one under way.
     val suggestion = suggestions.firstOrNull().takeIf { today.running == null }
@@ -306,7 +305,7 @@ private fun TabRoot(
             recovery = shown.recovery,
         )
         Tab.Activity -> GlowActivityScreen(
-            day, shown.recovery, workouts, histories.pai,
+            day, shown.recovery, workouts, activity,
             header = { TabHeader(Tab.Activity, header) }, contentPadding = padding,
             onOpenMetric = { openStack(Tab.Activity, Detail.OfMetric(it)) },
             onOpen = { openStack(Tab.Activity, it) }, usualSteps = usualSteps,

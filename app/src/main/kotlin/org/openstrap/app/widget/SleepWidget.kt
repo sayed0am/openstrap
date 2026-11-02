@@ -31,6 +31,7 @@ import androidx.glance.unit.ColorProvider
 import java.time.LocalDate
 import java.time.ZoneId
 import org.openstrap.app.data.DetailRoutes
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.GlowMood

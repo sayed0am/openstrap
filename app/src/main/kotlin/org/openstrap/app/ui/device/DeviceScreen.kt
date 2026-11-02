@@ -27,7 +27,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.NonRestartableComposable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,7 +48,6 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.graphics.Color
-import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.ui.alarms.AlarmsUiState
 import org.openstrap.app.ui.alarms.alarmsSummary
 import org.openstrap.app.ui.alarms.healthAlertsSummary
@@ -103,35 +101,6 @@ internal fun strapStateLine(connection: ConnectionState, sync: SyncState, lastSe
     ConnectionState.NotPaired -> "Not paired"
     ConnectionState.Disconnected -> lastSeen?.let { "Last seen ${agoText(now - it).lowercase()}" } ?: "Not connected"
 }
-
-/** The page as it was called before the view model held the settings. Kept until MainActivity calls the new one. */
-@Deprecated("The view model holds the settings now. Drop the settings argument.")
-// A shim over the real page, deleted once MainActivity calls the new signature.
-@Suppress(
-    "ComposeModifierMissing", "ModifierMissing", "ComposeViewModelForwarding", "ViewModelForwarding", "UNUSED_PARAMETER", "UnusedParameter",
-)
-@NonRestartableComposable
-@Composable
-fun DeviceScreen(
-    vm: DeviceViewModel,
-    contentPadding: PaddingValues,
-    onRequestBluetooth: (then: () -> Unit) -> Unit,
-    settings: SettingsStore,
-    alarms: AlarmsUiState,
-    zeppSignedIn: Boolean,
-    lastSeen: Long?,
-    onAlarms: () -> Unit,
-    onPhoneAlerts: () -> Unit,
-    onHealthAlerts: () -> Unit,
-    onFirmware: () -> Unit,
-    onZeppAccount: () -> Unit,
-    onBack: () -> Unit,
-    preview: StrapView? = null,
-    selected: String? = null,
-) = DeviceScreen(
-    vm, contentPadding, onRequestBluetooth, alarms, zeppSignedIn, lastSeen,
-    onAlarms, onPhoneAlerts, onHealthAlerts, onFirmware, onZeppAccount, onBack, preview, selected,
-)
 
 /**
  * The Strap page (spec 3.4), opened from the header chip on any tab: the strap with its state and battery, Sync now and

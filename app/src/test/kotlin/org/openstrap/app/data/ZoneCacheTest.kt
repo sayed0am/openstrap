@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.data
 
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

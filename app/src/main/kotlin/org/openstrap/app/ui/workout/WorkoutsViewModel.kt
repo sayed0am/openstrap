@@ -19,8 +19,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.openstrap.app.data.DayWindow
-import org.openstrap.app.data.MaxHeartRates
-import org.openstrap.app.data.RoomWorkoutRepository
 import org.openstrap.app.data.Today
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.WorkoutRepository
@@ -28,7 +26,6 @@ import org.openstrap.app.data.WorkoutSuggestions
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SportEffectRow
-import org.openstrap.app.data.settings.UserProfile
 import java.time.Clock
 import java.time.LocalDate
 
@@ -46,17 +43,6 @@ class WorkoutsViewModel(
     /** Where rows are worked into what the screens show, off the main thread (audit C7). */
     private val work: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    /** Today's shape, over a [RoomWorkoutRepository] built here, until the app root hands in the container's [WorkoutRepository]. */
-    @Deprecated("Pass the container's WorkoutRepository")
-    constructor(
-        dao: HealthDao,
-        profile: Flow<UserProfile>,
-        maxHeartRates: MaxHeartRates,
-        clock: () -> Clock = { Clock.systemDefaultZone() },
-        dateChanges: Flow<Unit> = emptyFlow(),
-        work: CoroutineDispatcher = Dispatchers.Default,
-    ) : this(RoomWorkoutRepository(dao, profile, maxHeartRates), clock, dateChanges, work)
-
     /** Today as it moves, so the suggestions' window moves on at midnight (audit C10). */
     private val today: Flow<LocalDate> = Today.dates(clock, dateChanges)
 

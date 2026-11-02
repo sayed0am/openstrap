@@ -30,10 +30,6 @@ class LiveSteps {
         return count(history, live)
     }
 
-    @Deprecated("Pass the date, so one instance can serve every day", ReplaceWith("today(date, history, live)"))
-    @Synchronized
-    fun today(history: Int, live: StepTotals?): Int = count(history, live)
-
     private fun count(history: Int, live: StepTotals?): Int = when {
         live == null -> history
         live.isPlausible -> maxOf(history, live.steps)

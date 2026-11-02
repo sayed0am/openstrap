@@ -44,6 +44,7 @@ import org.openstrap.app.data.db.SavedWorkout
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutSession
 import org.openstrap.app.device.WorkoutState
+import org.openstrap.app.device.locationAvailable
 import org.openstrap.app.presentation.SummaryRewards
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.glow.Celebrations
@@ -59,7 +60,6 @@ import org.openstrap.app.ui.glow.WorkoutCapsule
 import org.openstrap.app.ui.glow.WorkoutMorph
 import org.openstrap.app.ui.glow.live.GlowWorkoutGlance
 import org.openstrap.app.ui.glow.live.GlowWorkoutLiveScreen
-import org.openstrap.app.ui.glow.locationAvailable
 import org.openstrap.app.ui.workout.GlanceAction
 import org.openstrap.app.ui.workout.LiveGlance
 import org.openstrap.app.ui.workout.StartCopy

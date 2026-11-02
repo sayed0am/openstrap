@@ -52,7 +52,7 @@ class RoomDayRepositoryTest {
 
     @After fun tearDown() = db.close()
 
-    private fun repo(strapSteps: Flow<StepTotals?> = flowOf(null)) = RoomDayRepository(HealthRepository(db.healthDao()), strapSteps)
+    private fun repo(strapSteps: Flow<StepTotals?> = flowOf(null)) = RoomDayRepository(HealthRepository(db.healthDao()), LiveSteps(), strapSteps)
 
     private fun day(repo: RoomDayRepository = repo(), isToday: Boolean = false, check: (DayData) -> Boolean = { true }): DayData =
         runBlocking { withTimeout(10_000) { repo.day(date, isToday).first(check) } }

@@ -87,28 +87,6 @@ internal class ActivityDetailContext(
     val contentPadding: PaddingValues,
     val onBack: () -> Unit,
 ) {
-    /**
-     * Today's shape, for the Week detail the app root opens, which reads neither Heart points nor energy, so they're
-     * left empty here.
-     */
-    @Deprecated("Pass the day view model's ActivityHistory")
-    // Kept only so the app root's call builds until it moves over, so its shape is today's and the factories go unread.
-    @Suppress("UNUSED_PARAMETER", "UnusedPrivateProperty", "LongParameterList")
-    constructor(
-        state: DayUiState,
-        r: RecoveryResult?,
-        workouts: List<WorkoutAnalysis>,
-        paiHistory: PaiHistory?,
-        history: DailyHistory,
-        onOpen: (Detail) -> Unit,
-        onSwitch: (Detail) -> Unit,
-        onSelectDay: (LocalDate) -> Unit,
-        onEditProfile: () -> Unit,
-        contentPadding: PaddingValues,
-        onBack: () -> Unit,
-        energyHistory: EnergyHistory? = null,
-    ) : this(state, r, workouts, ActivityHistory(), history, onOpen, onSwitch, onSelectDay, onEditProfile, contentPadding, onBack)
-
     val today: LocalDate get() = LocalDate.now()
     val isToday: Boolean get() = state.date == today
 }

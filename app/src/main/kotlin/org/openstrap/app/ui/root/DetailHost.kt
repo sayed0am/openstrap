@@ -15,6 +15,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.flowOf
 import org.openstrap.app.AppContainer
+import org.openstrap.app.data.DayRepository
 import org.openstrap.app.data.EnergyExpenditure
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
@@ -24,7 +25,6 @@ import org.openstrap.app.ui.dashboard.DayViewModel
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.glow.ActivityDetailContext
-import org.openstrap.app.ui.glow.EnergyHistory
 import org.openstrap.app.ui.glow.GlowHealthspanScreen
 import org.openstrap.app.ui.glow.GlowMetricDetailScreen
 import org.openstrap.app.ui.glow.GlowRecoveryScreen
@@ -63,6 +63,7 @@ internal fun DetailHost(
     val push: (Detail) -> Unit = { nav.push(tab, it) }
     val onSwitch: (Detail) -> Unit = { nav.replaceTop(tab, it) }
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
+    val activity by dayVm.activityHistory.collectAsStateWithLifecycle()
     when (detail) {
         is Detail.OfMetric -> GlowMetricDetailScreen(
             detail.metric, detail.night, day, histories.daily, live.bpm, live.enabled, live.canUse, live.toggle,
@@ -72,12 +73,12 @@ internal fun DetailHost(
             detail.score, day, shown.recovery, shown.strapScore, histories.daily,
             onOpen = push, onSwitch = onSwitch, onSelectDay = dayVm::select,
             contentPadding = padding, onBack = pop,
-            workouts = workouts, paiHistory = histories.pai, onEditProfile = onOpenProfile, energyHistory = histories.energy,
+            workouts = workouts, activity = activity, onEditProfile = onOpenProfile,
             sleepEditing = SleepEditing(dayVm::setSleepTimes, dayVm::deleteSleep, dayVm::restoreSleep),
         )
         Detail.Week -> WeekDetail(
             ActivityDetailContext(
-                day, shown.recovery?.takeIf { it.date == day.date }, workouts, histories.pai, histories.daily, onOpen = push, onSwitch = {},
+                day, shown.recovery?.takeIf { it.date == day.date }, workouts, activity, histories.daily, onOpen = push, onSwitch = {},
                 onSelectDay = dayVm::select, onEditProfile = onOpenProfile, contentPadding = padding, onBack = pop,
             ),
         )
@@ -88,7 +89,7 @@ internal fun DetailHost(
                 onDelete = { container.workout.discard(detail.start); pop() },
                 workoutsVm = workoutsVm, session = container.workout,
                 bmrPerMinute = EnergyExpenditure.bmrPerMinute(profile, profile.age()),
-                recovery = shown.recovery, energyHistory = histories.energy,
+                recovery = shown.recovery, days = container.days,
                 // Its day's Calories: the day shown moves to it, as a strip pick does.
                 onOpenDay = { d -> dayVm.select(d); push(Detail.OfScore(Score.Energy)) },
             )
@@ -129,7 +130,7 @@ private fun WorkoutDetail(
     session: WorkoutSession,
     bmrPerMinute: Float?,
     recovery: RecoveryResult?,
-    energyHistory: EnergyHistory,
+    days: DayRepository,
     onOpenDay: (LocalDate) -> Unit,
 ) {
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
@@ -143,8 +144,8 @@ private fun WorkoutDetail(
     val usualDrop by produceState<Int?>(null, start, fromPhone) { value = start?.takeIf { !fromPhone }?.let { workoutsVm.usualDrop(it) } }
     // The workout's day: its active kcal as just worked out when it's the day shown, else as stored.
     val date = a?.let { Instant.ofEpochSecond(it.shownStart).atZone(ZoneId.systemDefault()).toLocalDate() }
-    val stored by remember(date, energyHistory) {
-        date?.let { d -> energyHistory(d, d) } ?: flowOf(emptyMap())
+    val stored by remember(date, days) {
+        date?.let { d -> days.dailyEnergy(d, d) } ?: flowOf(emptyMap())
     }.collectAsStateWithLifecycle(emptyMap())
     val dayActive = recovery?.takeIf { it.date == date }?.energy?.activeKcal ?: date?.let { stored[it]?.activeKcal }
     GlowWorkoutDetailScreen(

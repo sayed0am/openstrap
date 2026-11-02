@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.text.format.DateFormat
 import androidx.core.content.ContextCompat
-import org.openstrap.app.device.WidgetUpdater
 import org.openstrap.app.presentation.ClockSetting
 
 /**
@@ -29,7 +28,7 @@ internal object PhoneClock {
     private val changed = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             read(context)
-            WidgetUpdater.changedAll(context)
+            (context.applicationContext as? OpenStrapApp)?.container?.widgets?.changedAll()
         }
     }
 }

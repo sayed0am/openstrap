@@ -85,32 +85,6 @@ fun GlowScoreDetailScreen(
     }
 }
 
-/** Today's shape, over [paiHistory] and [energyHistory], until the app root hands in the day view model's [ActivityHistory]. */
-@Deprecated("Pass the day view model's ActivityHistory")
-// Today's parameters as they are, the baselined lists included, until the app root moves over and this goes.
-@Suppress("ComposeUnstableCollections")
-@Composable
-fun GlowScoreDetailScreen(
-    score: Score,
-    state: DayUiState,
-    recovery: RecoveryResult?,
-    strapScore: Int?,
-    history: DailyHistory,
-    onOpen: (Detail) -> Unit,
-    onSwitch: (Detail) -> Unit,
-    onSelectDay: (LocalDate) -> Unit,
-    contentPadding: PaddingValues,
-    onBack: () -> Unit,
-    workouts: List<org.openstrap.app.data.WorkoutAnalysis>,
-    paiHistory: PaiHistory?,
-    onEditProfile: () -> Unit,
-    energyHistory: EnergyHistory?,
-    sleepEditing: SleepEditing = SleepEditing(),
-) = GlowScoreDetailScreen(
-    score, state, recovery, strapScore, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack, workouts,
-    rememberActivityHistory(state.date, paiHistory, energyHistory), onEditProfile, sleepEditing,
-)
-
 /** The days a metric has data for, from the day after [from] to [to]; none when [from] isn't before [to]. */
 @Composable
 internal fun daysWithData(metric: DailyMetric, from: LocalDate, to: LocalDate, history: DailyHistory): Set<LocalDate> {

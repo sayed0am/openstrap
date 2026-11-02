@@ -28,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.MaxHeartRates
+import org.openstrap.app.data.RoomWorkoutRepository
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.HealthDao
@@ -93,7 +94,7 @@ class WorkoutsViewModelThreadsTest {
 
     private fun vm(profile: Flow<UserProfile> = flowOf(profile()), onTestTime: Boolean = false): WorkoutsViewModel {
         val work = if (onTestTime) UnconfinedTestDispatcher(scheduler) else Dispatchers.Default
-        return WorkoutsViewModel(dao, profile, MaxHeartRates(dao, flowOf(profile())), clock = { clock.clock }, work = work).also { vms += it }
+        return WorkoutsViewModel(RoomWorkoutRepository(dao, profile, MaxHeartRates(dao, flowOf(profile()))), clock = { clock.clock }, work = work).also { vms += it }
     }
 
     private fun <T> Flow<T>.watched() {

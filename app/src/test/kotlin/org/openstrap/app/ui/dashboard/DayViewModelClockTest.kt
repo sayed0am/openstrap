@@ -22,6 +22,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.HealthRepository
+import org.openstrap.app.data.LiveSteps
+import org.openstrap.app.data.RoomDayRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.ZoneRule
@@ -80,14 +82,14 @@ class DayViewModelClockTest {
             threads += Thread.currentThread().name
             emit(null)
         }
-        val vm = DayViewModel(HealthRepository(db.healthDao()), strapSteps = steps, clock = { clock.clock }).watched()
+        val vm = DayViewModel(RoomDayRepository(HealthRepository(db.healthDao()), LiveSteps(), steps), clock = { clock.clock }).watched()
         vm.awaitDay(jan15)
         assertTrue("read on $threads", threads.isNotEmpty() && threads.all { it.startsWith("DefaultDispatcher") })
         vm.viewModelScope.coroutineContext[Job]?.cancel()
     }
 
     @Test fun `a screen left open on today moves to the new day at midnight`() {
-        val vm = DayViewModel(HealthRepository(db.healthDao()), clock = { clock.clock }).watched()
+        val vm = DayViewModel(RoomDayRepository(HealthRepository(db.healthDao()), LiveSteps()), clock = { clock.clock }).watched()
         vm.awaitDay(jan15)
         nextMinute()
         val s = vm.awaitDay(jan15.plusDays(1))
@@ -96,7 +98,7 @@ class DayViewModelClockTest {
     }
 
     @Test fun `a day picked in the past stays put at midnight, and next day stops at the new today`() {
-        val vm = DayViewModel(HealthRepository(db.healthDao()), clock = { clock.clock }).watched()
+        val vm = DayViewModel(RoomDayRepository(HealthRepository(db.healthDao()), LiveSteps()), clock = { clock.clock }).watched()
         vm.select(jan15.minusDays(1))
         vm.awaitDay(jan15.minusDays(1))
         nextMinute()

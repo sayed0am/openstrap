@@ -26,9 +26,7 @@ import kotlinx.coroutines.withContext
 import org.openstrap.app.data.DayData
 import org.openstrap.app.data.DayRepository
 import org.openstrap.app.data.DayValue
-import org.openstrap.app.data.HealthRepository
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.data.RoomDayRepository
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
@@ -44,7 +42,6 @@ import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.StageSpan
 import org.openstrap.app.ui.components.TrendPoint
-import org.openstrap.protocol.services.StepTotals
 import java.time.Clock
 import java.time.LocalDate
 import java.time.format.TextStyle
@@ -188,18 +185,6 @@ class DayViewModel(
     /** Where the day's rows are worked into its state, off the main thread (audit C7). */
     private val work: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    /** Today's shape, over a [RoomDayRepository] built here, until the app root hands in the container's [DayRepository]. */
-    @Deprecated("Pass the container's DayRepository")
-    constructor(
-        repo: HealthRepository,
-        strapSteps: Flow<StepTotals?> = flowOf(null),
-        profile: Flow<UserProfile> = flowOf(UserProfile()),
-        onSleepEdited: (Long) -> Unit = {},
-        clock: () -> Clock = { Clock.systemDefaultZone() },
-        dateChanges: Flow<Unit> = emptyFlow(),
-        work: CoroutineDispatcher = Dispatchers.Default,
-    ) : this(RoomDayRepository(repo, strapSteps), profile, onSleepEdited, clock, dateChanges, work)
-
     /** Today as it moves, so a screen left open past midnight moves on to the new day (audit C10). */
     private val today: StateFlow<LocalDate> = Today.dates(clock, dateChanges)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Today.on(clock()))

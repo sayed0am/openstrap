@@ -15,13 +15,14 @@ import java.time.ZoneId
 
 /**
  * The [DayRepository] over Room, through [health]. [strapSteps] is the strap's own running step total, which today's
- * steps add when it's ahead of the synced minutes.
+ * steps add when it's ahead of the synced minutes, through the app's one [liveSteps], so Today and the widgets count alike.
  */
 // Most of its functions are one-line overrides of the interface's, which detekt counts too.
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalCoroutinesApi::class)
 class RoomDayRepository(
     private val health: HealthRepository,
+    private val liveSteps: LiveSteps,
     private val strapSteps: Flow<StepTotals?> = flowOf(null),
 ) : DayRepository {
     override fun daysWithData(): Flow<Set<LocalDate>> = health.daysWithData()
@@ -50,9 +51,8 @@ class RoomDayRepository(
         val sleepAndExtras = combine(nights(date, night, span, zone), extras, baselines(date)) { s, e, b -> Triple(s, e, b) }
 
         // The strap's own running total covers steps whose minute records were already taken by another app.
-        val liveSteps = if (isToday) strapSteps else flowOf(null)
-        val liveCounter = LiveSteps()
-        val actAndLive = combine(activityAndHr, liveSteps) { a, live -> a to live }
+        val todayLive = if (isToday) strapSteps else flowOf(null)
+        val actAndLive = combine(activityAndHr, todayLive) { a, l -> a to l }
 
         return combine(
             actAndLive, vitals, sleepAndExtras, weekly(date, zone), more(date, day, night),
@@ -65,7 +65,8 @@ class RoomDayRepository(
                 night = night,
                 minutes = act,
                 heartRate = hr,
-                steps = liveCounter.today(Summaries.totalSteps(act), live),
+                // Only today's count touches the shared anchor: another day's would move it off today.
+                steps = Summaries.totalSteps(act).let { total -> if (isToday) liveSteps.today(date, total, live) else total },
                 restingTrend = weeklyParts.resting,
                 restingEstimated = weeklyParts.restingEstimated,
                 hrvTrend = weeklyParts.hrv,

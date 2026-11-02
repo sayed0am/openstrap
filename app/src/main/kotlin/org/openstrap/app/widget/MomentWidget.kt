@@ -29,6 +29,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
 import org.openstrap.app.MainActivity
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.drawGhostLine
 import org.openstrap.app.ui.glow.draw.drawStageStrip
 import org.openstrap.app.ui.glow.draw.ghostLineGeometry

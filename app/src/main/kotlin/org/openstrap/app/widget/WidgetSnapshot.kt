@@ -11,6 +11,7 @@ import org.openstrap.app.data.MomentResolver
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Weeks
 import org.openstrap.app.data.Workouts

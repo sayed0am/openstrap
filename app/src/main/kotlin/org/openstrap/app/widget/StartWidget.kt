@@ -42,6 +42,7 @@ import androidx.glance.unit.ColorProvider
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState

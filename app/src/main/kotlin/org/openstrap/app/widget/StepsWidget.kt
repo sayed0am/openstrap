@@ -25,6 +25,7 @@ import androidx.glance.text.Text
 import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.GlowMood

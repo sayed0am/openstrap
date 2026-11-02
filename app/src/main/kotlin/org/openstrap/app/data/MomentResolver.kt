@@ -198,7 +198,7 @@ object MomentResolver {
 
 /**
  * What [MomentResolver] reads, kept together for the Moment widget: it renders from these and schedules its next
- * update from the same ones ([org.openstrap.app.device.WidgetUpdater.scheduleMoment]).
+ * update from the same ones ([org.openstrap.app.widget.WidgetUpdater.scheduleMoment]).
  */
 data class MomentInputs(
     val day: LocalDate,

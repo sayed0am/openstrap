@@ -27,15 +27,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
-import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.BlePermissions
-import org.openstrap.app.device.PhoneAlerts
 import org.openstrap.app.device.StrapNotificationListener
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
@@ -72,18 +67,6 @@ internal fun quietHoursSummary(q: QuietHours, callsOn: Boolean): String = when {
     q.from == q.to -> "Pick different start and end times."
     q.calls && callsOn -> "No buzz from ${quietClock(q.from)} to ${quietClock(q.to)}, calls included."
     else -> "No notification buzz from ${quietClock(q.from)} to ${quietClock(q.to)}."
-}
-
-/** The page as it was called before it had a view model. Kept until MainActivity calls the view model version. */
-@Deprecated("Pass a PhoneAlertsViewModel", ReplaceWith("PhoneAlertsScreen(vm, contentPadding, onBack)"))
-// A shim over the real page, deleted once MainActivity builds the view model itself.
-@Suppress("ComposeModifierMissing", "ModifierMissing", "ComposeViewModelInjection", "ViewModelInjection")
-@Composable
-fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPadding: PaddingValues, onBack: () -> Unit) {
-    val vm: PhoneAlertsViewModel = viewModel(
-        key = "phoneAlerts", factory = viewModelFactory { initializer { PhoneAlertsViewModel(alerts, settings) } },
-    )
-    PhoneAlertsScreen(vm, contentPadding, onBack)
 }
 
 /**

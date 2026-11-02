@@ -66,6 +66,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import org.openstrap.app.MainActivity
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors

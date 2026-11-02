@@ -17,7 +17,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.openstrap.app.AppContainer
 import org.openstrap.app.ble.FoundDevice
 import org.openstrap.app.data.BackupRepository
 import org.openstrap.app.data.BackupResult
@@ -61,13 +60,6 @@ class DeviceViewModel(
     private val autoHealthConnect: HealthConnectAutoSync,
     private val sampleData: suspend () -> Unit,
 ) : ViewModel() {
-    constructor(container: AppContainer) : this(
-        container.settings, container.strap, container.companion, container.scanner::scan, container.backups,
-        AutoBackup(container.app, container.settings, container.workout.restored, container.workout.state, container.backups),
-        container.healthConnect, container.autoHealthConnect,
-        { org.openstrap.app.data.SampleData.load(container.database.healthDao()) },
-    )
-
     val paired: StateFlow<PairedDevice?> =
         settings.pairedDevice.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 

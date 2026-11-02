@@ -18,6 +18,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.HealthRepository
+import org.openstrap.app.data.LiveSteps
+import org.openstrap.app.data.RoomDayRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.SleepSession
 import org.robolectric.RobolectricTestRunner
@@ -50,7 +52,7 @@ class DeletedNightStateTest {
         val before = SleepSession(at(today.minusDays(2), 23, 0), at(today.minusDays(1), 7, 0), score = 80)
         db.healthDao().insertSleepSessions(listOf(before, night))
         val repo = HealthRepository(db.healthDao())
-        val vm = DayViewModel(repo)
+        val vm = DayViewModel(RoomDayRepository(repo, LiveSteps()))
         val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.state.collect {} }
         suspend fun settled(check: (DayUiState) -> Boolean) = vm.state.first { it.loaded && check(it) }
 

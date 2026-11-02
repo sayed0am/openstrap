@@ -199,7 +199,9 @@ private fun StrapPage(
     when (shown) {
         Page.Strap -> alarmsVm?.let { StrapPageHost(hooks, it, requestBluetooth, padding, lastSeen, preview, rowOpens, selected, back) }
         Page.Alarms, Page.HealthAlerts -> alarmsVm?.let { AlarmsPage(it, health = shown == Page.HealthAlerts, padding, close) }
-        Page.PhoneAlerts -> PhoneAlertsScreen(container.phoneAlerts, container.settings, padding, onBack = close)
+        Page.PhoneAlerts -> PhoneAlertsScreen(
+            viewModel(key = "phoneAlerts", factory = ViewModelFactories.phoneAlerts(container)), padding, onBack = close,
+        )
         Page.Firmware -> FirmwareScreen(hooks.firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })
         Page.ZeppAccount -> ZeppAccountScreen(hooks.firmwareVm, padding, onBack = close)
         else -> Unit
@@ -324,7 +326,7 @@ private fun StrapPageHost(
         if (connection is ConnectionState.Connected && alarmsState.caps == null && !alarmsState.busy) alarms.refresh()
     }
     DeviceScreen(
-        hooks.deviceVm, padding, requestBluetooth, container.settings, alarmsState, account != null, lastSeen,
+        hooks.deviceVm, padding, requestBluetooth, alarmsState, account != null, lastSeen,
         onAlarms = { open(Page.Alarms) },
         onPhoneAlerts = { open(Page.PhoneAlerts) },
         onHealthAlerts = { open(Page.HealthAlerts) },

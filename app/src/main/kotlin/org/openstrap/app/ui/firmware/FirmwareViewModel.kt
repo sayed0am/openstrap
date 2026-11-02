@@ -14,7 +14,6 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
-import org.openstrap.app.AppContainer
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.settings.ZeppAccount
@@ -69,10 +68,6 @@ class FirmwareViewModel(
     cacheDir: File,
     private val openFile: (Uri) -> InputStream?,
 ) : ViewModel() {
-    constructor(container: AppContainer) : this(
-        container.strap, container.settings, container.app.cacheDir, { container.app.contentResolver.openInputStream(it) },
-    )
-
     private val cloud = FirmwareCloud(cacheDir)
 
     /** The strap's link, for what the page offers. */

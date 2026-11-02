@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.MomentInputs
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.StrapController

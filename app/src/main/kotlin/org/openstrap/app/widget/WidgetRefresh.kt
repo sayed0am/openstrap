@@ -3,6 +3,7 @@ package org.openstrap.app.widget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.openstrap.app.BuildConfig
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.GlowMood
 
 /**
