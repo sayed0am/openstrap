@@ -64,7 +64,7 @@ class RewardsKeeperTest {
         assertFalse(settings.rewardsStarted.first())
         assertFalse(settings.historyBadgesWaiting.first())
 
-        val listed = history.map { WorkoutRecorder.analyse(it, emptyList(), 190) }
+        val listed = history.map { WorkoutRecorder.analyse(it, emptyList(), 190, HeartZones.STANDARD) }
         keeper.refresh(listed, 3)
         assertTrue(settings.rewardsStarted.first())
         assertTrue(settings.historyBadgesWaiting.first())
@@ -74,14 +74,14 @@ class RewardsKeeperTest {
         settings.historyBadgesShown()
         val next = workout(3)
         dao.insertAppWorkouts(listOf(next))
-        keeper.refresh(listed + WorkoutRecorder.analyse(next, emptyList(), 190), 3)
+        keeper.refresh(listed + WorkoutRecorder.analyse(next, emptyList(), 190, HeartZones.STANDARD), 3)
         assertFalse(settings.historyBadgesWaiting.first())
         assertEquals(4, dao.weekResultsOnce().sumOf { it.count })
     }
     @Test fun `the steps per day it keeps follow new minutes, older ones and a rewritten one`() = runBlocking {
         val dao = db.healthDao()
         val keeper = RewardsKeeper(dao, settings)
-        val listed = listOf(WorkoutRecorder.analyse(workout(0), emptyList(), 190))
+        val listed = listOf(WorkoutRecorder.analyse(workout(0), emptyList(), 190, HeartZones.STANDARD))
         fun minute(t: Long, steps: Int) = ActivityMinute(t, steps, 0, 0, null)
         suspend fun steps() = keeper.facts(listed).days.sumOf { it.steps }
         dao.insertActivity(listOf(minute(start, 100), minute(start + 60, 100)))
@@ -126,7 +126,7 @@ class RewardsKeeperTest {
         val real = db.healthDao()
         val history = (0 until 3).map(::workout)
         real.insertAppWorkouts(history)
-        val listed = history.map { WorkoutRecorder.analyse(it, emptyList(), 190) }
+        val listed = history.map { WorkoutRecorder.analyse(it, emptyList(), 190, HeartZones.STANDARD) }
         val events = java.util.Collections.synchronizedList(mutableListOf<String>())
         // The first read of the stored weeks waits a moment for a second refresh to read them too, as it could if
         // nothing kept the two apart: then both would write against the same weeks.

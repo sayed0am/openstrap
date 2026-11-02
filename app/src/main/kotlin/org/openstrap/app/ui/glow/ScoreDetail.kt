@@ -29,14 +29,14 @@ import org.openstrap.app.ui.dashboard.ActivityHistory
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.DetailCopy
+import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Narrative
-import org.openstrap.app.ui.dashboard.Range
+import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
@@ -104,7 +104,7 @@ private fun RecoveryDetail(
     onOpen: (Detail) -> Unit, onSwitch: (Detail) -> Unit, onSelectDay: (LocalDate) -> Unit, contentPadding: PaddingValues, onBack: () -> Unit,
 ) {
     val ready = r?.readiness
-    val score = debugRecoveryScore.value ?: ready?.score
+    val score = debugRecoveryScore() ?: ready?.score
     // While OpenStrap's own score is withheld, the strap's stands in, as on Today and the Recovery tab.
     val estimate = if (score == null) TodayCopy.recoveryShown(ready, strapScore, "").takeIf { it.estimate }?.value else null
     val alert = ready?.strainAlert == true
@@ -311,7 +311,7 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
     val ready = r?.readiness
     // Before the first night Charge is only the simulation's starting guess: a dash, as on the Recovery tab's battery.
     val charge = r?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)
-    val chargeWaiting = if (r?.charge?.anchored == false) org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT else NO_VALUE
+    val chargeWaiting = if (r?.charge?.anchored == false) org.openstrap.app.presentation.AFTER_FIRST_NIGHT else NO_VALUE
     val asleep = state.asleepSeconds
     val metrics = if (score == Score.Recovery) listOf(Metric.Hrv, Metric.RestingHr) else listOf(Metric.Stress)
     ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
@@ -338,12 +338,6 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
         }
     }
 }
-
-/**
- * Debug only: a Recovery score the detail shows in place of the real one, so the arc gauge can be checked on a phone
- * whose Recovery is still learning. Set from MainActivity's `recovery_score` extra; null is the real score.
- */
-internal val debugRecoveryScore = androidx.compose.runtime.mutableStateOf<Int?>(null)
 
 /** The score in a score gauge on a detail header ([ArcGauge], [HorizonArc]): the header's one dotted number. */
 @Composable

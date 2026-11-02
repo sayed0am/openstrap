@@ -49,19 +49,6 @@ const val PAIRED_HOLD_MS = 3_000L
 
 /* ------------------------------------------ No sleep, first ------------------------------------------ */
 
-/** What a card waiting for the first night says in place of its value (spec 4.3). */
-const val AFTER_FIRST_NIGHT = "After your first night"
-
-/** What leads the waking hero: Recovery, or Charge when there was no sleep to score (spec 4.3). */
-enum class WakingLead { Recovery, Charge }
-
-/**
- * The waking hero's lead: Charge on today when no sleep was recorded last night ([asleepSeconds] null), since there's
- * no night for Recovery to score. Before the first night, and on past days, Recovery keeps the hero and says why.
- */
-fun wakingLead(firstNights: Boolean, asleepSeconds: Long?, isToday: Boolean): WakingLead =
-    if (!firstNights && isToday && asleepSeconds == null) WakingLead.Charge else WakingLead.Recovery
-
 /** The tag on the Recovery hero the day the first real score shows (E4). */
 const val FIRST_SCORE = "First score"
 

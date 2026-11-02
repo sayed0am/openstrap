@@ -31,6 +31,7 @@ import org.openstrap.app.device.WorkoutState
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import org.openstrap.app.data.settings.BackupFailure
 
 /**
  * Automatic backup: once a day, while the phone charges, the same zip as Save a copy (every table and the settings)
@@ -55,7 +56,7 @@ class AutoBackup(
         data object Recording : Outcome
         /** Automatic backup is off. */
         data object Off : Outcome
-        data class Failed(val failure: BackupFiles.Failure) : Outcome
+        data class Failed(val failure: BackupFailure) : Outcome
     }
 
     suspend fun run(): Outcome = lock.withLock {
@@ -106,22 +107,22 @@ class AutoBackup(
         runCatching { context.contentResolver.releasePersistableUriPermission(folder.toUri(), FOLDER_ACCESS) }
     }
 
-    private class Failed(val failure: BackupFiles.Failure) : Exception(failure.name)
+    private class Failed(val failure: BackupFailure) : Exception(failure.name)
 
     private suspend fun write(folder: Uri): String {
         val resolver = context.contentResolver
-        if (resolver.persistedUriPermissions.none { it.uri == folder && it.isWritePermission }) throw Failed(BackupFiles.Failure.PermissionLost)
+        if (resolver.persistedUriPermissions.none { it.uri == folder && it.isWritePermission }) throw Failed(BackupFailure.PermissionLost)
         val dir = DocumentFile.fromTreeUri(context, folder)
-        if (dir == null || !dir.exists() || !dir.isDirectory) throw Failed(BackupFiles.Failure.FolderGone)
+        if (dir == null || !dir.exists() || !dir.isDirectory) throw Failed(BackupFailure.FolderGone)
         val today = LocalDate.now(zone)
         val name = BackupFiles.name(today)
         // What a run that died part way left.
         dir.listFiles().filter { it.name?.let(BackupFiles::isTemp) == true }.forEach { it.delete() }
 
-        val temp = dir.createFile(TEMP_MIME, BackupFiles.tempName(today)) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        val temp = dir.createFile(TEMP_MIME, BackupFiles.tempName(today)) ?: throw Failed(BackupFailure.CantWrite)
         var written = false
         try {
-            (resolver.openOutputStream(temp.uri, "w") ?: throw Failed(BackupFiles.Failure.CantWrite)).use { backups.writeZip(it) }
+            (resolver.openOutputStream(temp.uri, "w") ?: throw Failed(BackupFailure.CantWrite)).use { backups.writeZip(it) }
             // A second run on the same day replaces the first.
             dir.findFile(name)?.delete()
             if (!temp.renameTo(name)) copyAs(dir, temp, name)
@@ -138,14 +139,14 @@ class AutoBackup(
     /** For a provider that can't rename: the complete temp copied to [name], then deleted. A failed copy leaves nothing. */
     private fun copyAs(dir: DocumentFile, temp: DocumentFile, name: String) {
         val resolver = context.contentResolver
-        val target = dir.createFile(ZIP_MIME, name) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        val target = dir.createFile(ZIP_MIME, name) ?: throw Failed(BackupFailure.CantWrite)
         var copied = false
         try {
             val input = resolver.openInputStream(temp.uri)
             val output = input?.let { resolver.openOutputStream(target.uri, "w") }
             if (input == null || output == null) {
                 input?.close()
-                throw Failed(BackupFiles.Failure.CantWrite)
+                throw Failed(BackupFailure.CantWrite)
             }
             input.use { i -> output.use { i.copyTo(it) } }
             copied = true

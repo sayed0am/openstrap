@@ -23,6 +23,7 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * Indoor cardio, and a distance sport without GPS (workouts spec 2.3, board Main): one view under the moving time.
@@ -46,8 +47,9 @@ internal fun LiveIndoorScreen(
     /** A short half: the total small on top, so the controls keep their labels. */
     compact: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val connected = connection is ConnectionState.Connected
-    val color = workoutColor(r, liveHeartRate, connected)
+    val color = workoutColor(r, liveHeartRate, connected, heartZones)
     ZoneTick(liveHeartRate.takeIf { connected && !r.paused }, r)
     val active = activeSecondsState(r)
     val figures = listOfNotNull(
@@ -68,7 +70,8 @@ internal fun LiveIndoorScreen(
     ) {
         // Time reps on the treadmill side: the rep above the heart.
         if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
-        if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(liveHeartRate.takeIf { connected && !r.paused }, r.maxHeartRate))
+        val reading = liveHeartRate.takeIf { connected && !r.paused }
+        if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(reading, r.maxHeartRate, heartZones))
         else WorkoutHeartCard(
             r, liveHeartRate, recent, zoneSeconds, connected, { active.value }, Modifier.fillMaxWidth(),
             kcal = kcal?.active, zoneBar = true,

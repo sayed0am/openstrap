@@ -11,6 +11,7 @@ import kotlin.math.abs
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Range
 
 /*
  * The words and sums of Calories (calories spec 4.4 to 4.6): the Activity row, the detail's day and its ranges, where

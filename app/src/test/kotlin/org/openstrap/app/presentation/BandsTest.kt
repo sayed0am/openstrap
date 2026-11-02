@@ -6,10 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.testing.assertCleanCopy
-import org.openstrap.app.ui.dashboard.ActivityCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.STALE_AFTER_S
 import org.openstrap.app.widget.syncStale
 

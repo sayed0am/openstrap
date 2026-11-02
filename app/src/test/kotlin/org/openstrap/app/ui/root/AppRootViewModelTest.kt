@@ -106,7 +106,6 @@ class AppRootViewModelTest {
     }
 
     @After fun tearDown() {
-        HeartZones.use(HeartZones.STANDARD)
         runBlocking {
             vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin()
             scope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin()
@@ -152,10 +151,11 @@ class AppRootViewModelTest {
         assertEquals(12_345, await(vm.goals) { it.steps == 12_345 }.steps)
     }
 
-    @Test fun `moved heart zones are in use before they're stored`() {
+    @Test fun `moved heart zones reach the screens from the store`() {
         val zones = HeartZones(listOf(50f, 61f, 71f, 81f, 91f))
         vm.setHeartZones(zones)
-        assertEquals(zones, HeartZones.current.value)
+        assertEquals(zones, await(settings.heartZones) { it == zones })
+        assertEquals(zones, await(vm.heartZones) { it == zones })
     }
 
     @Test fun `no history badges while none wait`() {

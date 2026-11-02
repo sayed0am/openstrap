@@ -6,10 +6,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.presentation.chargeShown
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 
 /** The All metrics index is a map of what exists: every metric detail once, and the screens without one. */
 class AllMetricsTest {

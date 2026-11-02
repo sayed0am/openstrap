@@ -5,9 +5,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.History
-import org.openstrap.app.ui.dashboard.DetailCopy.Level
+import org.openstrap.app.presentation.DetailCopy.Level
 import java.time.LocalDate
 import java.util.Locale
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.daySource
+import org.openstrap.app.presentation.TodayCopy
 
 /** A detail screen's words and plain decisions (spec 6.1). */
 class DetailCopyTest {

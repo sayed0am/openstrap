@@ -18,14 +18,15 @@ import org.openstrap.app.presentation.Units
 import org.openstrap.app.testing.ZoneRule
 import org.openstrap.app.testing.assertCleanCopy
 import org.openstrap.app.testing.workout
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.glow.draw.DotFont
 import org.openstrap.app.ui.glow.live.speedText
 import org.openstrap.app.ui.workout.PhoneSummary
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import org.openstrap.app.data.HeartZones
 
 /** The glow screens write numbers, times and days through presentation/, and the dot font only gets what it can draw. */
 class GlowFormatTest {
@@ -44,7 +45,7 @@ class GlowFormatTest {
 
     private fun run(meters: Float, seconds: Long = 1800): PhoneSummary {
         val w = AppWorkout(start, start + seconds, 1, distanceMeters = meters)
-        return PhoneSummary(WorkoutRecorder.analyse(w, emptyList(), 190), emptyList(), start, start + seconds, null, distanceMeters = meters)
+        return PhoneSummary(WorkoutRecorder.analyse(w, emptyList(), 190, HeartZones.STANDARD), emptyList(), start, start + seconds, null, distanceMeters = meters)
     }
 
     @Test fun `numbers drawn in dots keep ASCII digits and a dot in every language`() {
@@ -158,7 +159,7 @@ class GlowFormatTest {
         val days = generateSequence(start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }
             .map { org.openstrap.app.data.DayStat(it, 50f, 50f, 50f, 1) }.toList()
         for ((locale, first) in listOf(Locale.US to java.time.DayOfWeek.SUNDAY, Locale.GERMANY to java.time.DayOfWeek.MONDAY)) inLocale(locale) {
-            val (values, _, dates) = series(org.openstrap.app.ui.dashboard.Range.Year, days, start, end)
+            val (values, _, dates) = series(org.openstrap.app.presentation.Range.Year, days, start, end)
             assertTrue(dates.all { it.dayOfWeek == first })
             // Every week finds its average: the chart and History start weeks on the same day.
             assertTrue(values.all { it == 50f })

@@ -23,6 +23,8 @@ import kotlin.math.ceil
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import org.openstrap.app.presentation.WorkoutCopy
+import org.openstrap.app.data.HeartZones
 
 /** What a [LiveGlance] is lit in: the zone's colour, work red, rest green, yoga purple, paused grey, asking amber. */
 enum class GlanceTint { Zone, Work, Rest, Mind, Paused, Asking }
@@ -118,6 +120,8 @@ data class GlanceInput(
     val bpm: Int?,
     val connected: Boolean,
     val maxHr: Int,
+    /** Your heart rate zones as stored, for the zone shown. */
+    val zones: HeartZones,
     val gps: Boolean,
     val distanceMeters: Float?,
     val distanceFromSteps: Boolean = false,
@@ -150,6 +154,8 @@ fun liveGlance(
     session: WorkoutSession,
     liveHeartRate: Flow<Int?>,
     connection: Flow<ConnectionState>,
+    /** Your heart rate zones as stored. */
+    zones: Flow<HeartZones>,
     work: CoroutineDispatcher = Dispatchers.Default,
 ): Flow<LiveGlance?> {
     val ticks = flow {
@@ -158,7 +164,7 @@ fun liveGlance(
             delay(1000 - System.currentTimeMillis() % 1000)
         }
     }
-    val strap = combine(liveHeartRate, connection) { bpm, c -> bpm to (c is ConnectionState.Connected) }
+    val strap = combine(liveHeartRate, connection, zones) { bpm, c, z -> Triple(bpm, c is ConnectionState.Connected, z) }
     val figures = combine(session.route, session.kcal, session.stats) { route, kcal, stats -> Triple(route, kcal, stats) }
     // Nothing ticks while nothing records.
     val recording = session.state.map { it is WorkoutState.Recording }.distinctUntilChanged()
@@ -168,13 +174,13 @@ fun liveGlance(
 /** [liveGlance] while a workout records. */
 private fun glanceTicks(
     session: WorkoutSession,
-    strap: Flow<Pair<Int?, Boolean>>,
+    strap: Flow<Triple<Int?, Boolean, HeartZones>>,
     figures: Flow<Triple<List<Route.Point>, WorkoutRecorder.Kcal?, WorkoutRecorder.Stats?>>,
     ticks: Flow<Long>,
 ): Flow<LiveGlance?> {
     // The splits are worked out again only when the route grows, not every second.
     var splitsOf = -1 to emptyList<Route.Split>()
-    return combine(session.state, strap, figures, ticks) { st, (bpm, connected), (route, kcal, stats), now ->
+    return combine(session.state, strap, figures, ticks) { st, (bpm, connected, zones), (route, kcal, stats), now ->
         val r = st as? WorkoutState.Recording ?: return@combine null
         val w = r.workout
         val active = WorkoutRecorder.activeSeconds(w, now)
@@ -188,7 +194,7 @@ private fun glanceTicks(
         }
         Glance.of(
             GlanceInput(
-                w.sportType, now, active, w.pausedAt, bpm, connected, r.maxHeartRate, w.useGps, distance, w.distanceFromSteps,
+                w.sportType, now, active, w.pausedAt, bpm, connected, r.maxHeartRate, zones, w.useGps, distance, w.distanceFromSteps,
                 pace = if (w.useGps) Route.currentPace(route) else null,
                 averagePace = Pace.of(distance, active),
                 target = WorkoutTarget.parse(w.target), activeKcal = kcal?.active,
@@ -270,7 +276,7 @@ object Glance {
     fun of(i: GlanceInput): LiveGlance {
         val sport = Workouts.sportName(i.sportType)
         val bpm = i.bpm.takeIf { i.connected && i.pausedAt == null }
-        val zone = WorkoutRecorder.liveZone(bpm, i.maxHr)
+        val zone = WorkoutRecorder.liveZone(bpm, i.maxHr, i.zones)
         val distance = Workouts.family(i.sportType) == Workouts.Family.Distance && i.gps
         val clock = Units.workoutClock(i.activeSeconds)
         val figure = if (distance) i.distanceMeters?.let { kmFigure(it) } ?: "0.00" else bpm?.toString()

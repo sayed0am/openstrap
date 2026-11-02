@@ -12,7 +12,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipRect
-import org.openstrap.app.ui.dashboard.TabCopy
+import org.openstrap.app.presentation.TabCopy
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +40,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.components.rememberScrubHaptics
 import org.openstrap.app.ui.components.scrub
 import org.openstrap.app.ui.dashboard.CaloriesCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
@@ -60,6 +60,7 @@ import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.chart
 import org.openstrap.app.ui.glow.draw.Edge
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
  * The page of a past workout (spec 6.3, "Workout detail"), one for the strap's and the phone's: the sentence first on
@@ -177,6 +178,7 @@ private fun PastSummary(
     onOpenDay: (() -> Unit)?,
     foundTag: Boolean,
 ) {
+    val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val w = a.workout
     val list = rememberLazyListState()
@@ -195,7 +197,10 @@ private fun PastSummary(
             }
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                    val zones = remember(a) { WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate) }
+                    val zones = remember(a, heartZones) {
+                        val shown = a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }
+                        WorkoutRecorder.liveZoneSeconds(shown, a.maxHeartRate, heartZones)
+                    }
                     // The page's sentence ("An easy 40 min walk") where the kind has none of its own.
                     val hero = summaryHero(family, summary, usual).let { h ->
                         if (h.sentence != null) h
@@ -313,6 +318,7 @@ private fun ZoneHeartLine(
     values: List<Float?>, first: Long, end: Long, maxHr: Int, history: List<LongRange>,
     scrubbed: Int?, onScrub: (Int?) -> Unit, modifier: Modifier = Modifier,
 ) {
+    val heartZones = LocalHeartZones.current
     var width by remember { mutableStateOf(0f) }
     val tick = rememberScrubHaptics()
     val known = values.filterNotNull()
@@ -335,7 +341,7 @@ private fun ZoneHeartLine(
             val v0 = values[i] ?: continue
             val v1 = values[i + 1] ?: continue
             val t = first + i * HeartStep
-            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v0.roundToInt(), maxHr)
+            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v0.roundToInt(), maxHr, heartZones)
             drawLine(
                 // The strap's history, filled in after: the same line, dimmed (spec 2.7, no dashes).
                 if (history.any { t in it }) color.copy(alpha = color.alpha * 0.45f) else color,

@@ -1,7 +1,7 @@
 package org.openstrap.app.widget
 
 import org.openstrap.app.data.Summaries
-import org.openstrap.app.ui.dashboard.ActivityCopy
+import org.openstrap.app.presentation.ActivityCopy
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import java.time.LocalDate

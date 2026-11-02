@@ -54,7 +54,7 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberAnimationsOn
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.CalmDownLine
@@ -71,6 +71,7 @@ import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.chart
 import org.openstrap.app.ui.glow.draw.Edge
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
  * The summary right after a workout (workouts spec 2.8): the sport and when, a hero with the one number that matters for
@@ -325,8 +326,11 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
 /** The kept route in its zones' colours; nothing without a route that goes somewhere. */
 @Composable
 internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
+    val heartZones = LocalHeartZones.current
     if (!Route.mappable(summary.route)) return
-    val stretches = remember(summary) { Route.byZone(summary.route, summary.history, summary.analysis.maxHeartRate) }
+    val stretches = remember(summary, heartZones) {
+        Route.byZone(summary.route, summary.history, summary.analysis.maxHeartRate, heartZones)
+    }
     Box(modifier.fillMaxWidth().height(170.dp).clip(GlowLayout.TileShape).background(Raised)) {
         WorkoutMap(stretches, routeOnly = false, Modifier.fillMaxSize())
     }
@@ -391,6 +395,7 @@ internal fun ZonesList(zones: IntArray, maxHr: Int, note: String = "Max $maxHr b
  */
 @Composable
 internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, markFastest: Boolean = false): Boolean {
+    val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val maxHr = a.maxHeartRate
     val route = summary.route.ifEmpty { liveRoute.filter { it.t in a.shownStart..a.end } }
@@ -400,7 +405,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
     val laps = summary.laps.takeIf { it.size > 1 }.orEmpty()
     val sets = summary.sets.filter { it.end != null }
     // Each row's heart takes the zone its average heart rate sat in.
-    fun dot(bpm: Int?) = bpm?.let { zoneColor(it, maxHr) } ?: EdgeNeutral
+    fun dot(bpm: Int?) = bpm?.let { zoneColor(it, maxHr, heartZones) } ?: EdgeNeutral
     val fastest = if (markFastest) FamilySummary.fastestSplit(rows) else null
     when {
         rows.isNotEmpty() || laps.isNotEmpty() -> ListPanel(

@@ -16,6 +16,8 @@ import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.WorkoutCopy
+import org.openstrap.app.data.HeartZones
 
 /*
  * What each kind of workout's summary says under its hero (workouts spec 2.8): the fastest split, sets per exercise
@@ -205,15 +207,16 @@ object FamilySummary {
     /**
      * A game's [periods] from its rounds, named as the live screen names them out of the [of] it was set up with
      * ([StartCopy.periodName]: "1st half", "3rd quarter", "Period 2"), so a game ended early keeps its periods' names.
-     * With the average of [readings] and the hard efforts ([Games.hardEfforts]) in each.
+     * With the average of [readings] and the hard efforts ([Games.hardEfforts], in your [zones]) in each.
      */
-    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int, of: Int): List<PeriodLine> {
+    fun periods(rounds: List<AppWorkoutRound>, readings: List<Pair<Long, Int>>, maxHr: Int, of: Int, zones: HeartZones): List<PeriodLine> {
         val done = rounds.filter { it.workEnd != null }
         return done.map { r ->
             val name = StartCopy.periodName(r.index, of)
             val workEnd = r.workEnd!!
             val inside = readings.filter { it.first in r.workStart..workEnd }
-            PeriodLine(name, WorkoutCopy.averageOver(readings, r.workStart, workEnd), Games.hardEfforts(inside, maxHr), workEnd - r.workStart)
+            val average = WorkoutCopy.averageOver(readings, r.workStart, workEnd)
+            PeriodLine(name, average, Games.hardEfforts(inside, maxHr, zones), workEnd - r.workStart)
         }
     }
 
@@ -319,9 +322,9 @@ object FamilySummary {
     fun loadLine(load: Int, usual: Float?): String = "Load $load" + loadWord(load, usual)
 
     /** How [load] compares with your [usual], as the Load labels end: ", hard", ", light", or nothing. */
-    private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.ui.dashboard.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Above -> ", hard"
-        org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus.Below -> ", light"
+    private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.presentation.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
+        org.openstrap.app.presentation.TodayCopy.LoadStatus.Above -> ", hard"
+        org.openstrap.app.presentation.TodayCopy.LoadStatus.Below -> ", light"
         else -> ""
     }
 

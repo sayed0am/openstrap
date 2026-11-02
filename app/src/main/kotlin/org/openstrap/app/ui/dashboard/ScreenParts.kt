@@ -20,16 +20,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.theme.MetricColors
-
-val SLEEP_NAMES = mapOf(
-    SleepStage.AWAKE to "Awake",
-    SleepStage.REM to "REM",
-    SleepStage.LIGHT to "Light",
-    SleepStage.DEEP to "Deep",
-)
 
 /** Counts taps on the tab that's showing; each new count scrolls the [ScreenList]s on that tab to the top. */
 val LocalScrollToTop = androidx.compose.runtime.compositionLocalOf { 0 }

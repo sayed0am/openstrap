@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.DetailCopy
 
 /*
  * The week story (spec 4.2), opened from Your week on Today: last week day by day, from what the app keeps.

@@ -8,9 +8,9 @@ import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
-
-/** How far back a metric detail looks: the selected day, or one value per day (per week, for a year). */
-internal enum class Range(val label: String, val days: Int) { Day("Day", 1), Week("Week", 7), Month("Month", 30), Year("Year", 365) }
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.daySource
 
 /** Loads one value per day of a metric between two dates; the app root passes the repository's. */
 typealias DailyHistory = (DailyMetric, LocalDate, LocalDate) -> Flow<List<DayStat>>
@@ -56,24 +56,6 @@ internal val DETAIL_GROUPS: List<List<Detail>> = listOf(
 
 /** [detail]'s group, itself included, in order; alone when it's in none. */
 internal fun siblingsOf(detail: Detail): List<Detail> = DETAIL_GROUPS.firstOrNull { detail in it } ?: listOf(detail)
-
-/** Where a metric's number for a day comes from, which decides how its sentence talks about the day. */
-internal enum class DaySource {
-    /** From the night: breathing rate in sleep, and the strap's resting heart rate from your calmest stretch. */
-    Night,
-
-    /** The average of every reading dated that day: HRV, blood oxygen spot readings, skin temperature, stress. */
-    Average,
-
-    /** A running total or the latest reading: steps, heart rate. */
-    SoFar,
-}
-
-internal fun daySource(metric: Metric): DaySource = when (metric) {
-    Metric.Breathing, Metric.RestingHr -> DaySource.Night
-    Metric.Hrv, Metric.Spo2, Metric.SkinTemperature, Metric.Stress -> DaySource.Average
-    Metric.Steps, Metric.HeartRate -> DaySource.SoFar
-}
 
 /** Metrics with one value a night, so their words say "nights" and "last night". */
 internal val NIGHTLY: Set<Metric> = Metric.entries.filter { daySource(it) == DaySource.Night }.toSet()

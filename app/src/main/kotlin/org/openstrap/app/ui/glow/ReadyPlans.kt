@@ -20,7 +20,7 @@ import org.openstrap.app.data.Structure
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.StartCopy
 
 /*

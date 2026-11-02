@@ -90,7 +90,7 @@ data class BackupState(
     val folder: String?,
     val folderName: String?,
     val lastDone: Long?,
-    val failed: org.openstrap.app.export.BackupFiles.Failure?,
+    val failed: BackupFailure?,
     val failedAt: Long?,
 ) {
     val on get() = folder != null
@@ -335,11 +335,10 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     }
 
     /**
-     * Stores [zones] ([HeartZones.STANDARD] clears them) and puts them in use at once, so whatever reads them next
-     * already has them ([HeartZones.current]).
+     * Stores [zones] ([HeartZones.STANDARD] clears them). What reads zones follows [heartZones], so they're in use once
+     * stored, and a write that fails leaves the ones in use as they are on disk.
      */
     suspend fun setHeartZones(zones: org.openstrap.app.data.HeartZones) {
-        org.openstrap.app.data.HeartZones.use(zones)
         store.edit { if (zones.standard) it.remove(heartZonesKey) else it[heartZonesKey] = zones.encode() }
     }
 
@@ -631,7 +630,7 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     val backup: Flow<BackupState> = read { prefs ->
         BackupState(
             prefs[backupFolder], prefs[backupFolderName], prefs[backupDone],
-            prefs[backupFailed]?.let { v -> org.openstrap.app.export.BackupFiles.Failure.entries.firstOrNull { it.name == v } },
+            prefs[backupFailed]?.let { v -> BackupFailure.entries.firstOrNull { it.name == v } },
             prefs[backupFailedAt],
         )
     }
@@ -658,7 +657,7 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         }
     }
 
-    suspend fun setBackupFailed(failure: org.openstrap.app.export.BackupFiles.Failure, epochSeconds: Long) {
+    suspend fun setBackupFailed(failure: BackupFailure, epochSeconds: Long) {
         store.edit {
             it[backupFailed] = failure.name
             it[backupFailedAt] = epochSeconds
@@ -706,19 +705,23 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         store.edit { if (tag == null) it.remove(updateInstallingKey) else it[updateInstallingKey] = tag }
     }
 
-    /** The settings a backup carries ([org.openstrap.app.export.SettingsBackup.carries]), by key name, as stored. */
-    suspend fun backupValues(): Map<String, Any> =
-        store.data.first().asMap().mapKeys { it.key.name }.filterKeys(org.openstrap.app.export.SettingsBackup::carries)
+    /**
+     * The settings a backup [carries], by key name, as stored. The backup passes its own rule in, so the store names
+     * nothing in export.
+     */
+    suspend fun backupValues(carries: (String) -> Boolean): Map<String, Any> =
+        store.data.first().asMap().mapKeys { it.key.name }.filterKeys(carries)
 
     /**
      * Restores [values] from a backup, only those this phone has never set, so restoring twice or onto a phone already
-     * set up changes nothing the user chose here. Returns how many were written.
+     * set up changes nothing the user chose here: [missing] picks them from [values] and the keys already set, the
+     * backup's own rule passed in. Returns how many were written.
      */
-    suspend fun restoreValues(values: Map<String, Any>): Int {
+    suspend fun restoreValues(values: Map<String, Any>, missing: (Map<String, Any>, Set<String>) -> Map<String, Any>): Int {
         var written = 0
         store.edit { prefs ->
             val present = prefs.asMap().keys.mapTo(HashSet()) { it.name }
-            for ((name, v) in org.openstrap.app.export.SettingsBackup.missing(values, present)) {
+            for ((name, v) in missing(values, present)) {
                 when (v) {
                     is Int -> prefs[androidx.datastore.preferences.core.intPreferencesKey(name)] = v
                     is Long -> prefs[longPreferencesKey(name)] = v
@@ -754,7 +757,7 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
 }
 
 /**
- * The DataStore name of every setting [SettingsStore] keeps, shared with [org.openstrap.app.export.SettingsBackup] so a
+ * The DataStore name of every setting [SettingsStore] keeps, shared with the backup's settings file so a
  * backup names the same keys. A key added here is kept when the strap is forgotten unless [SettingsStore.forgetDevice]
  * names it.
  */

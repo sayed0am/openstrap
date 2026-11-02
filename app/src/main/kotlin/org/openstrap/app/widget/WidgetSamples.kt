@@ -1,14 +1,15 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.MomentInputs
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.db.Workout
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -76,7 +77,7 @@ object WidgetSamples {
         fun workout(daysAgo: Int, hour: Int, type: Int, minutes: Int, meters: Float? = null, sets: Int? = null) = run {
             val start = today.minusDays(daysAgo.toLong()).atTime(hour, 0).atZone(zone).toEpochSecond()
             val w = Workout(start, start + minutes * 60L, type, minutes * 60, null, null, null, null, null, null, null, null, null)
-            Workouts.analyse(w, emptyList(), emptyList(), 190).copy(distanceMeters = meters, sets = sets)
+            Workouts.analyse(w, emptyList(), emptyList(), 190, HeartZones.STANDARD).copy(distanceMeters = meters, sets = sets)
         }
         val history = listOf(
             workout(4, 18, 1, 60, meters = 5_200f), workout(11, 7, 1, 45), workout(18, 7, 1, 45),

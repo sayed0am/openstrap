@@ -11,6 +11,8 @@ import org.openstrap.app.data.db.Workout
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.presentation.Range
 
 /** Calories' words and sums (calories spec 4.4 to 4.6). */
 class CaloriesCopyTest {

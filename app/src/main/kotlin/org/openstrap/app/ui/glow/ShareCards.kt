@@ -62,6 +62,7 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
  * The story cards a workout shares as (workouts spec 2.9, boards ShareRun to ShareGame): 9 by 16, one for each kind
@@ -581,13 +582,14 @@ private fun RoundsStory(card: StoryCard.Rounds) {
  */
 @Composable
 private fun PeakColumns(peaks: List<Int?>, maxHr: Int, modifier: Modifier) {
+    val heartZones = LocalHeartZones.current
     val known = peaks.filterNotNull()
     val lo = (known.minOrNull() ?: 0) - 8
     val hi = known.maxOrNull() ?: 1
     Row(modifier.fillMaxWidth().height(72.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
         peaks.forEach { p ->
             val share = if (p == null || hi <= lo) 0.3f else 0.35f + 0.65f * (p - lo) / (hi - lo)
-            val zone = WorkoutRecorder.liveZone(p, maxHr)
+            val zone = WorkoutRecorder.liveZone(p, maxHr, heartZones)
             val color = when {
                 p == null -> Color.White.copy(alpha = 0.25f)
                 zone == null || zone >= ZONE_COLORS.lastIndex -> Color.White

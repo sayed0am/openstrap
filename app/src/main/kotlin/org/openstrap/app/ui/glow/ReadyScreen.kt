@@ -19,7 +19,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -33,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
-import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutPlan
@@ -54,6 +52,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Arrangement
 import org.openstrap.app.device.locationAvailable
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
 
@@ -69,7 +68,7 @@ import org.openstrap.app.device.locationAvailable
  *
  * No sport has a settings sheet: the heart on its own card, then one plan card typed in place, and switch rows for
  * the rest. A distance or cardio sport (board ReadyFinal) has where you are with Ask to end when I stop, then the goal
- * ([ReadyGoal]); a zone goal reads your zones ([maxHeartRate], [HeartZones.current]) and Your zones opens them
+ * ([ReadyGoal]). A zone goal reads your zones ([maxHeartRate], [LocalHeartZones]) and Your zones opens them
  * ([onYourZones]). Run intervals save by name ([saved], [onSaveIntervals]) and open on rounds picked on Choose
  * ([structure]).
  *
@@ -219,7 +218,7 @@ fun GlowWorkoutReadyScreen(
                 askToEnd = askToEnd, onAskToEnd = { askToEnd = it },
                 keepRoute = keepRoute.takeIf { useGps }, onKeepRoute = { keepRoute = it },
             )
-            val zones by HeartZones.current.collectAsState()
+            val zones = LocalHeartZones.current
             ReadyGoal(
                 type, kinds, hasDistance, draft.copy(kind = kind), { draft = it }, typing, { typing = it }, zones, maxHeartRate, onYourZones,
                 saved.filter { Workouts.tileType(it.sport) == key },

@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.dashboard
+package org.openstrap.app.presentation
 
 import org.openstrap.app.data.History
 import java.time.LocalDate

@@ -2,7 +2,7 @@ package org.openstrap.app.device
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.protocol.services.HealthAlert
 
 /** Each health alert opens a metric screen that exists, though the notifier names it without the screens' types. */

@@ -1,12 +1,8 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.presentation
 
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.device.ConnectionState
-import org.openstrap.app.presentation.StrapBands
-import org.openstrap.app.presentation.Units
-import org.openstrap.app.presentation.WorkoutWords
 import java.util.Locale
 
 /*
@@ -44,23 +40,6 @@ object WorkoutCopy {
      * heart rate, or an outline card while the strap is away.
      */
     data class ReadyHero(val title: String, val line: String, val live: Boolean)
-
-    /** "Strap connected" and "Live from your strap.", with the battery when low; "Strap not connected" otherwise. */
-    fun readyHero(connection: ConnectionState, bpm: Int?): ReadyHero = when (connection) {
-        is ConnectionState.Connected -> ReadyHero(
-            "Strap connected",
-            listOfNotNull(
-                if (bpm != null) "Live from your strap." else "Waiting for heart rate.",
-                connection.batteryPercent?.takeIf { it <= READY_LOW_BATTERY && !connection.charging }?.let { "Battery $it%." },
-            ).joinToString(" "),
-            live = true,
-        )
-        ConnectionState.Connecting, ConnectionState.Authenticating -> ReadyHero("Connecting to the strap", ANYWAY, live = false)
-        ConnectionState.NotPaired -> ReadyHero("No strap paired", ANYWAY, live = false)
-        ConnectionState.Disconnected, is ConnectionState.Failed -> ReadyHero("Strap not connected", ANYWAY, live = false)
-    }
-
-    private const val ANYWAY = "You can start anyway."
 
     /** The GPS row while the phone's location is off or not allowed. Start still works, without GPS. */
     const val LOCATION_OFF = "Location is off"

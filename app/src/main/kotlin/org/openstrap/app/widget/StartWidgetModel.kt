@@ -5,7 +5,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.topSports
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale

@@ -8,6 +8,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.ui.workout.PhoneSummary
+import org.openstrap.app.data.HeartZones
 
 /** The summary's hero falls back to the time when its own number is missing, and a missing figure is a dash. */
 class SummaryHeroTest {
@@ -16,7 +17,7 @@ class SummaryHeroTest {
     private fun summary(seconds: Long, sport: Int, bpm: Int? = null): PhoneSummary {
         val w = AppWorkout(start, start + seconds, sport, averageHeartRate = bpm)
         val hr = if (bpm == null) emptyList() else (0L until seconds step 5).map { AppWorkoutHeartRate(start, start + it, bpm, false) }
-        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190), emptyList(), start, start + seconds, null)
+        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD), emptyList(), start, start + seconds, null)
     }
 
     @Test

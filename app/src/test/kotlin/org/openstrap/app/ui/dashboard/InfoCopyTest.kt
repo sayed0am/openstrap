@@ -11,6 +11,7 @@ import org.openstrap.app.data.SleepRegularity
 import org.junit.Rule
 import org.openstrap.app.testing.LocaleRule
 import java.util.Locale
+import org.openstrap.app.presentation.Metric
 
 /** The info sheets (spec 6.2): one for every detail, in the copy rules of spec 7. */
 class InfoCopyTest {

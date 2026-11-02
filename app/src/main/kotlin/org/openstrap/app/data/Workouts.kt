@@ -86,18 +86,18 @@ object Workouts {
 
     /**
      * Ties a workout to its HR stream and sport effect. [maxHeartRate] comes from the strap's effect when it
-     * has one, then [fallbackMaxHr] (the app's usual max HR, [RecoveryEngine.maxHeartRate]).
+     * has one, then [fallbackMaxHr] (the app's usual max HR, [RecoveryEngine.maxHeartRate]). Zone time is in your [zones].
      */
-    fun analyse(w: Workout, hr: List<WorkoutHeartRate>, effects: List<SportEffectRow>, fallbackMaxHr: Int): WorkoutAnalysis {
+    fun analyse(w: Workout, hr: List<WorkoutHeartRate>, effects: List<SportEffectRow>, fallbackMaxHr: Int, zones: HeartZones): WorkoutAnalysis {
         val effect = effectOf(w, effects)
         val lastSample = hr.maxOfOrNull { it.timestamp }
         val end = endOf(w, lastSample, effect)
         val maxHr = effect?.maximalHeartRate ?: fallbackMaxHr
         val during = hr.filter { it.timestamp in w.start..end }
-        val zones = IntArray(ZONES)
+        val seconds = IntArray(ZONES)
         during.zipWithNext().forEach { (a, b) ->
-            val z = zoneOf(a.bpm, maxHr) ?: return@forEach
-            zones[z] += (b.timestamp - a.timestamp).coerceAtMost(5).toInt()
+            val z = zoneOf(a.bpm, maxHr, zones) ?: return@forEach
+            seconds[z] += (b.timestamp - a.timestamp).coerceAtMost(5).toInt()
         }
         val hasTail = lastSample != null && lastSample >= end + 60
         return WorkoutAnalysis(
@@ -105,7 +105,7 @@ object Workouts {
             recovery60 = if (hasTail) recovery(hr, end, 60) else null,
             recovery120 = if (lastSample != null && lastSample >= end + 120) recovery(hr, end, 120) else null,
             endHeartRate = medianAt(hr, end),
-            zoneSeconds = zones.toList(),
+            zoneSeconds = seconds.toList(),
             maxHeartRate = maxHr,
         )
     }
@@ -173,8 +173,12 @@ object Workouts {
         sets: Map<Long, Int>, maxHr: Int, now: Long = System.currentTimeMillis() / 1000,
     ): List<WorkoutAnalysis> {
         val lastByWorkout = last.associateBy { it.workoutStart }
-        val strap = ws.filter { phoneTwin(it, phone, now) == null }.map { w -> analyse(w, listOfNotNull(lastByWorkout[w.start]), effects, maxHr) }
-        return (strap + phone.map { WorkoutRecorder.analyse(it, emptyList(), maxHr).copy(sets = sets[it.start]) }).sortedByDescending { it.workout.start }
+        // A row has at most one HR sample, so no zone time to read zones for: the standard ones stand in.
+        val zones = HeartZones.STANDARD
+        val strap = ws.filter { phoneTwin(it, phone, now) == null }
+            .map { w -> analyse(w, listOfNotNull(lastByWorkout[w.start]), effects, maxHr, zones) }
+        val phoneRows = phone.map { WorkoutRecorder.analyse(it, emptyList(), maxHr, zones).copy(sets = sets[it.start]) }
+        return (strap + phoneRows).sortedByDescending { it.workout.start }
     }
 
     /** The sport effect shown with [w]: the first that ends after its start, within [EFFECT_WINDOW_S]. */
@@ -195,8 +199,8 @@ object Workouts {
         return e.takeIf { otherStarts.none { s -> s > w.start && s < e.end } }
     }
 
-    /** Zone 0..4 in your zones ([HeartZones.current]), by default 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below zone 1. */
-    fun zoneOf(bpm: Int, maxHr: Int): Int? = HeartZones.current.value.zoneOf(bpm, maxHr)
+    /** Zone 0..4 in [zones], by default 50–60, 60–70, 70–80, 80–90 and 90+ % of max, null below zone 1. */
+    fun zoneOf(bpm: Int, maxHr: Int, zones: HeartZones): Int? = zones.zoneOf(bpm, maxHr)
 
     /** HR drop from the end to [after] seconds later, each taken as a 5-second median to ride out noise. */
     private fun recovery(hr: List<WorkoutHeartRate>, end: Long, after: Long): Int? {

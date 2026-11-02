@@ -4,9 +4,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.export.AutoBackup
-import org.openstrap.app.export.BackupFiles
 import java.time.ZoneId
 import java.util.Locale
+import org.openstrap.app.data.settings.BackupFailure
 
 class BackupCopyTest {
     private val utc = ZoneId.of("UTC")
@@ -24,7 +24,7 @@ class BackupCopyTest {
         assertEquals("Last backup on Fri 9 Oct", status(on.copy(lastDone = 1792195200L - 8 * 86_400L)))
         assertEquals(
             "Last backup failed. The folder is no longer available.",
-            status(on.copy(lastDone = 1792195200L, failed = BackupFiles.Failure.FolderGone, failedAt = now)),
+            status(on.copy(lastDone = 1792195200L, failed = BackupFailure.FolderGone, failedAt = now)),
         )
     }
 
@@ -33,13 +33,13 @@ class BackupCopyTest {
         assertEquals("Off", summary(BackupState(null, null, null, null, null)))
         assertEquals("On. No backup yet", summary(on))
         assertEquals("Last backup today at 03:12", summary(on.copy(lastDone = 1792195200L + 3 * 3600 + 12 * 60)))
-        assertEquals("Last backup failed", summary(on.copy(lastDone = 1792195200L, failed = BackupFiles.Failure.NoSpace, failedAt = now)))
+        assertEquals("Last backup failed", summary(on.copy(lastDone = 1792195200L, failed = BackupFailure.NoSpace, failedAt = now)))
     }
 
     @Test fun `every failure and outcome has its words`() {
-        for (f in BackupFiles.Failure.entries) BackupCopy.failure(f)
+        for (f in BackupFailure.entries) BackupCopy.failure(f)
         assertEquals("Backed up as OpenStrap-backup-2026-10-17.zip.", BackupCopy.outcome(AutoBackup.Outcome.Done("OpenStrap-backup-2026-10-17.zip")))
-        assertEquals("Couldn't back up. There isn't enough space for it.", BackupCopy.outcome(AutoBackup.Outcome.Failed(BackupFiles.Failure.NoSpace)))
+        assertEquals("Couldn't back up. There isn't enough space for it.", BackupCopy.outcome(AutoBackup.Outcome.Failed(BackupFailure.NoSpace)))
         assertEquals("The folder you chose", BackupCopy.folder(on.copy(folderName = null)))
     }
 

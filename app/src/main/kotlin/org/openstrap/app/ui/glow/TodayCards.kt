@@ -45,15 +45,15 @@ import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.ui.components.cardNumber
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.RECOVERY_FAILED
 import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.TRY_AGAIN
 import org.openstrap.app.ui.dashboard.WAITING_LAST_NIGHT
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.draw.LightAngle
@@ -310,7 +310,7 @@ internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () 
             score?.toString(), "score",
             when {
                 asleep == null -> if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else "No sleep recorded"
-                score != null -> "${org.openstrap.app.ui.dashboard.TabCopy.sleepScoreWord(score)}, ${TodayCopy.duration(asleep)} asleep"
+                score != null -> "${org.openstrap.app.presentation.TabCopy.sleepScoreWord(score)}, ${TodayCopy.duration(asleep)} asleep"
                 else -> "${TodayCopy.duration(asleep)} asleep, no score from the strap"
             },
             waiting = asleep == null,
@@ -381,7 +381,7 @@ internal fun ActivityCard(
     val hour = java.time.LocalTime.now().hour
     val line = remember(state.hourlySteps, isToday, hour) { org.openstrap.app.data.Summaries.runningSteps(state.hourlySteps, if (isToday) hour else null) }
     val now = java.time.LocalTime.now()
-    val pace = org.openstrap.app.ui.dashboard.ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
+    val pace = org.openstrap.app.presentation.ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
     val ghost = usual?.takeIf { it.size == 24 }
     val chart = state.steps > 0 && line.size >= 2
     EdgeCard(
@@ -391,7 +391,7 @@ internal fun ActivityCard(
         progress = if (chart || goal <= 0) null else state.steps / goal.toFloat(), onClick = onClick,
     ) {
         EdgeTitle("Steps", "Goal ${Units.count(goal)}", marker = upTo, tag = tag)
-        val sentence = org.openstrap.app.ui.dashboard.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
+        val sentence = org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
         if (count) EdgeValue(dotFormat("%,d", state.steps), "steps", sentence)
         else Text(sentence, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 10.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (chart) {

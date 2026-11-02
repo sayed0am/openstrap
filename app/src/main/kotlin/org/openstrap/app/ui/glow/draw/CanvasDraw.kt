@@ -241,7 +241,7 @@ fun drawStageBar(canvas: Canvas, totals: List<Pair<Int, Long>>, left: Float, top
 }
 
 /** The stage strip ([stageStripSegments]) [height] px thick across the canvas's top, [width] px wide. */
-fun drawStageStrip(canvas: Canvas, spans: List<org.openstrap.app.ui.components.StageSpan>, width: Float, height: Float) {
+fun drawStageStrip(canvas: Canvas, spans: List<org.openstrap.app.presentation.StageSpan>, width: Float, height: Float) {
     stageStripSegments(spans, width, height).forEach { s ->
         canvas.drawLine(s.x0, height / 2, s.x1, height / 2, roundStroke(stageColor(s.stage), height).apply { strokeJoin = Paint.Join.ROUND })
     }

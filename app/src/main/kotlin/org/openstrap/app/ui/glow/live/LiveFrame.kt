@@ -46,7 +46,7 @@ import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.*
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.semantics.contentDescription
@@ -63,9 +63,10 @@ import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import androidx.compose.foundation.shape.RoundedCornerShape
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * The live stats row's figures, unchanged from before spec 6.3 ("Stats row unchanged"): the moving time large in the
@@ -473,6 +474,7 @@ internal fun nowTickingState(): androidx.compose.runtime.State<Long> = produceSt
  */
 @Composable
 internal fun LitHeartPill(bpm: Int?, maxHr: Int?, color: Color, paused: Boolean, height: Dp, modifier: Modifier = Modifier) {
+    val heartZones = LocalHeartZones.current
     Row(
         modifier.height(height).clip(RoundedCornerShape(50)).background(color).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -488,7 +490,7 @@ internal fun LitHeartPill(bpm: Int?, maxHr: Int?, color: Color, paused: Boolean,
         Text("bpm", color = Color.Black, style = MediumBody)
         if (maxHr == null) return@Row
         Spacer(Modifier.weight(1f))
-        WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
+        WorkoutRecorder.liveZone(bpm, maxHr, heartZones)?.let { z ->
             Text(WorkoutCopy.zoneLine(z), color = Color.Black, style = MediumBody, maxLines = 1)
         }
     }

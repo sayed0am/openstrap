@@ -16,6 +16,7 @@ import android.widget.RemoteViews
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.NotificationCopy
 import org.openstrap.app.presentation.WorkoutCard
@@ -124,7 +125,8 @@ object WorkoutNotification {
         val confirming = kind == "end"
         val card = NotificationCopy.card(
             Workouts.sportName(if (outdoor) 1 else 8), activeSeconds = 23 * 60 + 41, paused = paused, connected = true,
-            bpm = 152, maxHr = 190, gps = outdoor, distanceMeters = 4210f, distanceFromSteps = false, target = null,
+            bpm = 152, maxHr = 190, zones = HeartZones.STANDARD, gps = outdoor, distanceMeters = 4210f, distanceFromSteps = false,
+            target = null,
             zoneSeconds = listOf(180, 420, 540, 260, 21), confirming = confirming, activeKcal = 286f,
         )
         val open = PendingIntent.getActivity(

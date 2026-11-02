@@ -6,6 +6,8 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.presentation.WorkoutCopy
+import org.openstrap.app.data.HeartZones
 
 class LiveGlanceTest {
     // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
@@ -15,7 +17,7 @@ class LiveGlanceTest {
 
     /** A run 24:51 in, at 4.32 km and 5:42 /km, 142 bpm (zone 3 of 190). */
     private fun run(target: WorkoutTarget? = WorkoutTarget.Distance(5000), pausedAt: Long? = null, stoppedSince: Long? = null) = GlanceInput(
-        sportType = 1, now = now, activeSeconds = 24 * 60 + 51L, pausedAt = pausedAt, bpm = 142, connected = true, maxHr = 190,
+        sportType = 1, now = now, activeSeconds = 24 * 60 + 51L, pausedAt = pausedAt, bpm = 142, connected = true, maxHr = 190, zones = HeartZones.STANDARD,
         gps = true, distanceMeters = 4320f, pace = 342.0, averagePace = 345.0, target = target, activeKcal = 312f,
         stoppedSince = stoppedSince,
     )

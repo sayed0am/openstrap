@@ -43,7 +43,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.LiveGlance
 import org.openstrap.app.ui.workout.GlanceTint
 import org.openstrap.app.ui.workout.GlanceAction

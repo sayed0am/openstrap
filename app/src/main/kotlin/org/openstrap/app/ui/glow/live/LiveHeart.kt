@@ -46,12 +46,13 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.*
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.chart
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /* -------------------------------------------- Live screen -------------------------------------------- */
 
@@ -178,7 +179,8 @@ private const val ARC_GAP = 8f
  */
 @Composable
 internal fun ZoneArc(bpm: Int?, maxHr: Int, modifier: Modifier) {
-    val zone = WorkoutRecorder.liveZone(bpm, maxHr)
+    val heartZones = LocalHeartZones.current
+    val zone = WorkoutRecorder.liveZone(bpm, maxHr, heartZones)
     Canvas(modifier) {
         val stroke = 6.dp.toPx()
         val halo = 9.dp.toPx()
@@ -194,7 +196,7 @@ internal fun ZoneArc(bpm: Int?, maxHr: Int, modifier: Modifier) {
             drawArc(ZONE_COLORS[z].copy(alpha = if (on) 1f else 0.22f), start, seg, false, topLeft, box, style = Stroke(stroke, cap = StrokeCap.Round))
         }
         if (bpm != null) {
-            val a = Math.toRadians((ARC_START + WorkoutRecorder.zonePosition(bpm, maxHr) * ARC_SWEEP).toDouble())
+            val a = Math.toRadians((ARC_START + WorkoutRecorder.zonePosition(bpm, maxHr, heartZones) * ARC_SWEEP).toDouble())
             val at = Offset(center.x + r * cos(a).toFloat(), center.y + r * sin(a).toFloat())
             val dot = zone?.let { ZONE_COLORS[it] } ?: Color.White
             drawCircle(dot.copy(alpha = 0.3f), radius = halo, center = at)
@@ -224,9 +226,10 @@ internal fun WorkoutHeartCard(
     /** The time in each zone as a bar under the zone (indoor cardio, board Main). */
     zoneBar: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
-    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate)
-    val color = workoutColor(r, liveHeartRate, connected)
+    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
+    val color = workoutColor(r, liveHeartRate, connected, heartZones)
     val style = GlowStyle.chart(color).copy(
         motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
         lightLevel = WorkoutCopy.zoneLightLevel(zone),

@@ -9,6 +9,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.dayTitle
+import org.openstrap.app.presentation.todayTitle
+import org.openstrap.app.ui.glow.draw.momentMood
 
 /** The header's day labels, the strap chip's words and the tab rules (spec 3.1 to 3.3). */
 class FrameTest {

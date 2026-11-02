@@ -319,10 +319,11 @@ class StrapService : LifecycleService() {
         val w = r.workout
         val now = System.currentTimeMillis()
         val active = WorkoutRecorder.activeSeconds(w, now / 1000)
-        val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate)
+        val zones = HeartZonesInUse.current.value
+        val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)
         val target = WorkoutTarget.parse(w.target)
         val card = NotificationCopy.card(
-            Workouts.sportName(w.sportType), active, r.paused, connected, bpm, r.maxHeartRate, w.useGps, w.distanceMeters,
+            Workouts.sportName(w.sportType), active, r.paused, connected, bpm, r.maxHeartRate, zones, w.useGps, w.distanceMeters,
             w.distanceFromSteps, target, session.zoneSeconds.value.toList(), confirming, session.kcal.value?.active,
         )
         val actions = WorkoutNotification.actions(r.paused, confirming, ::service)
@@ -352,8 +353,8 @@ class StrapService : LifecycleService() {
                     style.setProgressSegments(WorkoutColors.ZONES.map { NotificationCompat.ProgressStyle.Segment(ZONE_SPAN).setColor(it) })
                     if (bpm != null && !r.paused) {
                         val span = ZONE_SPAN * WorkoutColors.ZONES.size
-                        style.setProgress((WorkoutRecorder.zonePosition(bpm, r.maxHeartRate) * span).toInt())
-                        WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { z -> style.setProgressTrackerIcon(tracker(z)) }
+                        style.setProgress((WorkoutRecorder.zonePosition(bpm, r.maxHeartRate, zones) * span).toInt())
+                        WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)?.let { z -> style.setProgressTrackerIcon(tracker(z)) }
                     }
                 }
             }
@@ -460,7 +461,7 @@ class StrapService : LifecycleService() {
                 if (!connected) "${WorkoutWords.STRAP_GONE}. Still recording."
                 else listOfNotNull(bpm?.let { "$it bpm" }, r.workout.setsTarget?.let { "$done of $it sets" }).joinToString(", "),
             )
-            .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate)) else WorkoutColors.PAUSED_GREY)
+            .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate, HeartZonesInUse.current.value)) else WorkoutColors.PAUSED_GREY)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)

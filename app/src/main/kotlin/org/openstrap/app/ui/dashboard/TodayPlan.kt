@@ -188,12 +188,3 @@ fun applyEdits(slots: List<TodaySlot>, edits: TodayEdits, moment: Moment?, unava
     val at = rest.indexOfFirst { it.card !in urgent }.let { if (it < 0) rest.size else it }
     return rest.take(at) + pinned + rest.drop(at)
 }
-
-/**
- * The sport you usually do: the most frequent in [workouts] (sport, start), ties to the latest. Null without any.
- * Callers pass workouts you started, so a walk the strap noticed doesn't count.
- */
-fun usualSport(workouts: List<Pair<Int, Long>>): Int? =
-    workouts.groupBy { it.first }
-        .maxWithOrNull(compareBy<Map.Entry<Int, List<Pair<Int, Long>>>> { it.value.size }.thenBy { e -> e.value.maxOf { it.second } })
-        ?.key

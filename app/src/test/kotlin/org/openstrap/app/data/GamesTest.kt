@@ -23,9 +23,9 @@ class GamesTest {
         fun spell(from: Long, seconds: Int, bpm: Int) = (0 until seconds).map { from + it to bpm }
         val readings = spell(0, 15, top) + spell(15, 20, 140) + spell(35, 8, top) + spell(43, 5, 140) + spell(48, 30, top)
         // 15 s and 30 s count, the 8 s spell doesn't; a long spell counts once.
-        assertEquals(2, Games.hardEfforts(readings, max))
+        assertEquals(2, Games.hardEfforts(readings, max, HeartZones.STANDARD))
         // A gap in the readings breaks a spell.
-        assertEquals(0, Games.hardEfforts(spell(0, 6, top) + spell(20, 6, top), max))
+        assertEquals(0, Games.hardEfforts(spell(0, 6, top) + spell(20, 6, top), max, HeartZones.STANDARD))
     }
 
     @Test

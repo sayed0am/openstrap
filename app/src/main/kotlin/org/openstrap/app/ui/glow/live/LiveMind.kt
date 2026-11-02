@@ -45,7 +45,7 @@ import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.gestures.detectTapGestures
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 
 /** The screen dims this long after the last touch. */
 private const val DIM_AFTER_MS = 10_000L

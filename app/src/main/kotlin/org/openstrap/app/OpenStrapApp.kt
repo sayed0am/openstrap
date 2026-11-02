@@ -6,7 +6,6 @@ import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
 import org.openstrap.app.ble.BleScanner
 import org.openstrap.app.data.HealthRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
@@ -60,7 +59,7 @@ class AppContainer(val app: Application) {
     val days: org.openstrap.app.data.DayRepository = org.openstrap.app.data.RoomDayRepository(health, liveSteps, strap.todaySteps)
     /** The workouts, analysed, for the lists, pages and summaries. */
     val workouts: org.openstrap.app.data.WorkoutRepository =
-        org.openstrap.app.data.RoomWorkoutRepository(database.healthDao(), settings.profile, maxHeartRates)
+        org.openstrap.app.data.RoomWorkoutRepository(database.healthDao(), settings.profile, maxHeartRates, settings.heartZones)
 
     init {
         // The Recovery cache follows the data from here on.
@@ -93,10 +92,8 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         // The phone's 12 or 24 hour clock, before anything writes a time, and from then on as it changes.
         PhoneClock.follow(this)
         container = AppContainer(this)
-        // Your heart rate zones, kept in use for everything that reads a zone, a restored backup's included.
-        container.appScope.launch {
-            container.settings.heartZones.collect { org.openstrap.app.data.HeartZones.use(it) }
-        }
+        // Your heart rate zones as stored, for the workout and its notification, a restored backup's included.
+        org.openstrap.app.device.HeartZonesInUse.follow(container.settings.heartZones, container.appScope)
         container.companion.refresh()
         // A workout still recording when the process died carries on (the service restarts it too).
         container.workout.restore()

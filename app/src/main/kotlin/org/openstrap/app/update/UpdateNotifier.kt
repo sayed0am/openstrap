@@ -8,7 +8,6 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
-import org.openstrap.app.presentation.UpdateCopy
 
 /** Says a new OpenStrap is out, or that it was just installed. Either opens the Updates page. */
 class UpdateNotifier(private val context: Context) {

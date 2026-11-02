@@ -9,6 +9,9 @@ import org.openstrap.app.data.Activity
 import org.openstrap.app.data.UsualSteps
 import java.time.LocalDate
 import java.util.Locale
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Range
 
 /** The Activity details' words (spec 5.3, 6.1 and 7). */
 class ActivityCopyTest {

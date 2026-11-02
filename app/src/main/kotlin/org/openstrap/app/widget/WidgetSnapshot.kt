@@ -25,10 +25,10 @@ import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.settings.StrapSnapshot
 import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.dashboard.usualSport
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.usualSport
 import org.openstrap.protocol.services.StepTotals
 import java.time.Instant
 import java.time.LocalDate

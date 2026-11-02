@@ -1,6 +1,5 @@
 package org.openstrap.app.data
 
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -8,8 +7,6 @@ import org.junit.Test
 import java.time.LocalDate
 
 class HeartZonesTest {
-    @After fun standardAgain() = HeartZones.use(HeartZones.STANDARD)
-
     @Test fun `the standard zones are the tens of percent the app always used`() {
         val z = HeartZones.STANDARD
         assertNull(z.zoneOf(94, 190))
@@ -64,13 +61,16 @@ class HeartZonesTest {
         assertNull(HeartZones.parse("50,60,x,80,90"))
     }
 
-    @Test fun `every zone reader follows the zones in use`() {
-        HeartZones.use(HeartZones.STANDARD.withStart(1, 100, 190))
-        assertEquals(1, Workouts.zoneOf(100, 190))
-        assertEquals(1, WorkoutRecorder.liveZone(100, 190))
-        assertTrue(WorkoutRecorder.zonePosition(100, 190) >= 0.2f)
-        val seconds = WorkoutRecorder.liveZoneSeconds(listOf(0L to 100, 5L to 100), 190)
+    @Test fun `every zone reader reads the zones it's handed`() {
+        val moved = HeartZones.STANDARD.withStart(1, 100, 190)
+        assertEquals(1, Workouts.zoneOf(100, 190, moved))
+        assertEquals(1, WorkoutRecorder.liveZone(100, 190, moved))
+        assertTrue(WorkoutRecorder.zonePosition(100, 190, moved) >= 0.2f)
+        val seconds = WorkoutRecorder.liveZoneSeconds(listOf(0L to 100, 5L to 100), 190, moved)
         assertEquals(5, seconds[1])
+        // The same reading in the standard zones is zone 1, so nothing else decided the answer.
+        assertEquals(0, Workouts.zoneOf(100, 190, HeartZones.STANDARD))
+        assertEquals(5, WorkoutRecorder.liveZoneSeconds(listOf(0L to 100, 5L to 100), 190, HeartZones.STANDARD)[0])
     }
 
     @Test fun `max heart rate says where it comes from`() {

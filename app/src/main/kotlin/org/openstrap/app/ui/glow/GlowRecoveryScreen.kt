@@ -29,7 +29,7 @@ import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.FIRST_SCORE
 import org.openstrap.app.ui.dashboard.PARTIAL_DAY
@@ -37,15 +37,15 @@ import org.openstrap.app.ui.dashboard.Wear
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.InfoCopy
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.FAILED_SHORT
 import org.openstrap.app.ui.dashboard.RECOVERY_FAILED
 import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.TRY_AGAIN
 import org.openstrap.app.ui.dashboard.RecoveryCard
 import org.openstrap.app.ui.dashboard.RecoveryFacts
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.recoveryCards
 import org.openstrap.app.ui.theme.MetricColors

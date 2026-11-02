@@ -71,7 +71,7 @@ import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.ControlSurface
-import org.openstrap.app.ui.dashboard.momentMood
+import org.openstrap.app.ui.glow.draw.momentMood
 import org.openstrap.app.ui.glow.draw.EdgeLight
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.GlowStyle

@@ -7,8 +7,8 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.assertCleanCopy
 import org.openstrap.app.ui.workout.Glance
-import org.openstrap.app.ui.workout.WorkoutCopy
 import java.util.Locale
+import org.openstrap.app.data.HeartZones
 
 /** The workout's shared words, and the notification and live lines that read them, on a German phone. */
 class WorkoutWordsTest {
@@ -42,7 +42,7 @@ class WorkoutWordsTest {
     fun theNotificationWritesDistanceInTheLanguage() {
         val card = NotificationCopy.card(
             "Outdoor run", 1421, paused = false, connected = true, bpm = 152, maxHr = 190, gps = true, distanceMeters = 4210f,
-            distanceFromSteps = false, target = null as WorkoutTarget?, zoneSeconds = listOf(0, 0, 0, 60, 0), confirming = false,
+            distanceFromSteps = false, target = null as WorkoutTarget?, zoneSeconds = listOf(0, 0, 0, 60, 0), confirming = false, zones = HeartZones.STANDARD,
         )
         assertEquals("4,21 km", card.detail)
         assertCleanCopy(card.text)

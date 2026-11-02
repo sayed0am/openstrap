@@ -23,7 +23,7 @@ import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageHeader
-import org.openstrap.app.presentation.UpdateCopy
+import org.openstrap.app.update.UpdateCopy
 import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons

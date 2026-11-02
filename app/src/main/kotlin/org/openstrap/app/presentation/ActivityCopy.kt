@@ -1,15 +1,10 @@
-package org.openstrap.app.ui.dashboard
+package org.openstrap.app.presentation
 
 import org.openstrap.app.data.Activity
 import org.openstrap.app.data.UsualSteps
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
-import org.openstrap.app.presentation.DayWords
-import org.openstrap.app.presentation.LoadBand
-import org.openstrap.app.presentation.LoadBands
-import org.openstrap.app.presentation.TimeOfDay
-import org.openstrap.app.presentation.Units
 
 /*
  * The words of the Activity tab's details (spec 5.3 and 6.1): steps against your usual by now, Heart points, active

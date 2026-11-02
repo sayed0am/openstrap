@@ -5,8 +5,9 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.Units
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.dashboard.sportNoun
+import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.sportNoun
+import org.openstrap.app.presentation.WorkoutCopy
 
 /*
  * What the summary right after a workout says (spec 6.3, "Right after"): the heart rate drop as it happens and how it

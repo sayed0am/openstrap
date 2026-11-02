@@ -34,6 +34,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.lang.reflect.Proxy
 import java.util.Collections
+import org.openstrap.app.data.HeartZones
 
 /** Each second's glance, which walks the whole route, is worked out off the main thread (audit C7). */
 @RunWith(RobolectricTestRunner::class)
@@ -89,7 +90,7 @@ class LiveGlanceThreadTest {
             threads += Thread.currentThread().name
             emit(120)
         }
-        runBlocking { withTimeout(WAIT_MS) { liveGlance(session, bpm, flowOf(ConnectionState.Disconnected)).first { it != null } } }
+        runBlocking { withTimeout(WAIT_MS) { liveGlance(session, bpm, flowOf(ConnectionState.Disconnected), flowOf(HeartZones.STANDARD)).first { it != null } } }
         assertTrue("read on $threads", threads.isNotEmpty() && threads.all { it.startsWith("DefaultDispatcher") })
     }
 

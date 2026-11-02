@@ -7,6 +7,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.data.HeartZones
 
 /** The ongoing workout notification's card: what it says collapsed and expanded, its colour and its zone strip (spec 6.3). */
 class NotificationCopyTest {
@@ -18,7 +19,7 @@ class NotificationCopyTest {
     private fun card(
         paused: Boolean = false, connected: Boolean = true, bpm: Int? = 152, gps: Boolean = true, distance: Float? = 4210f,
         fromSteps: Boolean = false, target: WorkoutTarget? = null, confirming: Boolean = false,
-    ) = NotificationCopy.card("Outdoor run", 1421, paused, connected, bpm, 190, gps, distance, fromSteps, target, zones, confirming)
+    ) = NotificationCopy.card("Outdoor run", 1421, paused, connected, bpm, 190, HeartZones.STANDARD, gps, distance, fromSteps, target, zones, confirming)
 
     /** Every number the card shows: the time always, then the digits in its other parts. */
     private fun numbers(c: WorkoutCard) = 1 + listOfNotNull(c.bpm, c.detail).count { s -> s.any(Char::isDigit) }
@@ -112,15 +113,15 @@ class NotificationCopyTest {
     }
 
     @Test fun `kcal goes after the time where it fits`() {
-        val c = NotificationCopy.card("Outdoor run", 1421, false, true, 152, 190, true, 4210f, false, null, zones, false, activeKcal = 286.4f)
+        val c = NotificationCopy.card("Outdoor run", 1421, false, true, 152, 190, HeartZones.STANDARD, true, 4210f, false, null, zones, false, activeKcal = 286.4f)
         assertEquals("286 kcal", c.kcal)
         assertTrue(c.kcalCollapsed)
         assertTrue(c.kcalExpanded)
         // Its line stays the three figures it was.
         assertEquals("152 bpm. Zone 4, threshold. 4.21 km", c.text)
         // A long sport name leaves no room on the collapsed line; past the hour the expanded time row is full.
-        assertFalse(NotificationCopy.card("Indoor cycling", 1421, false, true, 152, 190, false, null, false, null, zones, false, activeKcal = 286f).kcalCollapsed)
-        assertFalse(NotificationCopy.card("Outdoor run", 3721, false, true, 152, 190, true, 4210f, false, null, zones, false, activeKcal = 1286f).kcalExpanded)
+        assertFalse(NotificationCopy.card("Indoor cycling", 1421, false, true, 152, 190, HeartZones.STANDARD, false, null, false, null, zones, false, activeKcal = 286f).kcalCollapsed)
+        assertFalse(NotificationCopy.card("Outdoor run", 3721, false, true, 152, 190, HeartZones.STANDARD, true, 4210f, false, null, zones, false, activeKcal = 1286f).kcalExpanded)
         // Without a profile, nothing.
         val none = card()
         assertNull(none.kcal)

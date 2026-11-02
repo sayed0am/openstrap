@@ -41,7 +41,7 @@ class RoomWorkoutRepositoryTest {
 
     private fun repo(): RoomWorkoutRepository {
         val p = flowOf(profile(maxHeartRate = 190))
-        return RoomWorkoutRepository(db.healthDao(), p, MaxHeartRates(db.healthDao(), p))
+        return RoomWorkoutRepository(db.healthDao(), p, MaxHeartRates(db.healthDao(), p), flowOf(HeartZones.STANDARD))
     }
 
     @Test fun `reading a summary writes nothing, and the backfill writes the effect`() = runBlocking {

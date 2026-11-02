@@ -9,7 +9,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.EnergyExpenditure
 import org.openstrap.app.device.ConnectionState
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.WakingLead
+import org.openstrap.app.presentation.wakingLead
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 
 /** Data states (spec 4.3): the pairing steps, who leads with no sleep, the first score once, and the partial day rule. */
 class DataStatesTest {

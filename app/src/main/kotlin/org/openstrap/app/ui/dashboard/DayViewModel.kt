@@ -39,13 +39,14 @@ import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.settings.UserProfile
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.components.StageSpan
-import org.openstrap.app.ui.components.TrendPoint
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.StageSpan
+import org.openstrap.app.presentation.TrendPoint
 import java.time.Clock
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.presentation.Range
 
 /** Nights of sleep loaded for the week view and the in-sleep vitals' usual values. */
 const val SLEEP_NIGHTS = SleepHistory.NIGHTS

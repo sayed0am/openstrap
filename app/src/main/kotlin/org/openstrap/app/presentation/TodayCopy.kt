@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.dashboard
+package org.openstrap.app.presentation
 
 import java.time.Instant
 import java.time.LocalDate
@@ -8,11 +8,6 @@ import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
 import org.openstrap.app.data.Recovery
-import org.openstrap.app.presentation.LoadBand
-import org.openstrap.app.presentation.LoadBands
-import org.openstrap.app.presentation.RecoveryBands
-import org.openstrap.app.presentation.TimeOfDay
-import org.openstrap.app.presentation.Units
 import org.openstrap.app.data.Weeks
 
 /*

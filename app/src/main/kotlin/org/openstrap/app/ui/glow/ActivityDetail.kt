@@ -43,19 +43,19 @@ import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.ui.components.rememberScrubHaptics
 import org.openstrap.app.ui.components.scrub
-import org.openstrap.app.ui.dashboard.ActivityCopy
+import org.openstrap.app.presentation.ActivityCopy
 import org.openstrap.app.ui.dashboard.ActivityHistory
 import org.openstrap.app.ui.dashboard.CaloriesCopy
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.DetailCopy
+import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
-import org.openstrap.app.ui.dashboard.Metric
-import org.openstrap.app.ui.dashboard.Range
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.WeekStory
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -457,7 +457,7 @@ private fun Vo2Detail(ctx: ActivityDetailContext) {
                     val start = Instant.ofEpochSecond(w.shownStart).atZone(zone)
                     ListRow(
                         w.sportName, color, v.toString(), DayWords.short(start.toLocalDate()) + ", " + clockOf(start), divider = !first,
-                        onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.workout.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
+                        onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.theme.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
                     )
                     first = false
                 }
@@ -513,7 +513,7 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
                     val own = org.openstrap.app.ui.workout.SummaryCopy.recoverSpan(w.ownRecoveryMinutes ?: w.recoveryMinutes) ?: "None"
                     ListRow(
                         w.sportName, color, own, "On its own, ${DayWords.short(start.toLocalDate())}, ${clockOf(start)}",
-                        divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.workout.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
+                        divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }, icon = org.openstrap.app.ui.theme.SportIcons.of(w.workout.sportType), iconTint = SportIconTint,
                     )
                 }
             }
@@ -612,7 +612,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                         val start = s.workoutStart
                         if (start != null) ListRow(
                             s.name, color, Units.count(s.kcal), s.line, divider = i > 0, onClick = { ctx.onOpen(Detail.Workout(start)) },
-                            icon = org.openstrap.app.ui.workout.SportIcons.of(s.sportType ?: 0), iconTint = SportIconTint,
+                            icon = org.openstrap.app.ui.theme.SportIcons.of(s.sportType ?: 0), iconTint = SportIconTint,
                         ) else ListRow(
                             s.name, color, Units.count(s.kcal), s.line, divider = i > 0,
                             icon = if (s.name == "Walking") Metric.Steps.rowIcon() else AppIcons.PersonArmsSpread,

@@ -55,7 +55,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Weeks
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.components.LocalCardsGrow
 import org.openstrap.app.ui.components.detailNumber
 import org.openstrap.app.ui.components.detailSurface
@@ -63,12 +63,12 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.DetailCopy
+import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.NIGHTLY
 import org.openstrap.app.ui.dashboard.RELATED
-import org.openstrap.app.ui.dashboard.Range
+import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.colorOf
@@ -496,7 +496,7 @@ fun GlowMetricDetailScreen(
                 metric == Metric.HeartRate -> SleepCopy.lowestHeart(state).let { low ->
                     SleepCopy.nightHeart(low?.y?.toInt(), low?.x?.let(::clock), Math.round(value), isToday)
                 }
-                else -> DetailCopy.day(status, org.openstrap.app.ui.dashboard.DaySource.Night, isToday, nightDays)
+                else -> DetailCopy.day(status, org.openstrap.app.presentation.DaySource.Night, isToday, nightDays)
             }
             if (sentence != null) item { DetailSentence(sentence) }
         } else if (night && range == Range.Week) {
@@ -529,7 +529,7 @@ fun GlowMetricDetailScreen(
                 metric == Metric.HeartRate -> state.heartRate.takeIf { it.isNotEmpty() }?.let { s ->
                     DetailCopy.heartDay(s.minOf { it.y }.toInt(), s.maxOf { it.y }.toInt(), isToday)
                 }
-                else -> DetailCopy.day(status, org.openstrap.app.ui.dashboard.daySource(metric), isToday, normalDays)
+                else -> DetailCopy.day(status, org.openstrap.app.presentation.daySource(metric), isToday, normalDays)
             }
             if (sentence != null) item { DetailSentence(sentence) }
         } else {
@@ -729,7 +729,7 @@ private fun RelatedList(related: List<Metric>, state: DayUiState, history: Daily
             val score = state.sleep?.score
             ListRow(
                 org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
+                score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
                 onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
                 icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
             )

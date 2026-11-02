@@ -2,11 +2,11 @@ package org.openstrap.app.ui.device
 
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.export.AutoBackup
-import org.openstrap.app.export.BackupFiles
 import java.time.ZoneId
 import java.util.Locale
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.data.settings.BackupFailure
 
 /** The words of backup on the You and Backup pages and in its messages. */
 object BackupCopy {
@@ -27,12 +27,12 @@ object BackupCopy {
     }
 
     /** Why a backup failed, said once. */
-    fun failure(f: BackupFiles.Failure): String = when (f) {
-        BackupFiles.Failure.FolderGone -> "The folder is no longer available."
-        BackupFiles.Failure.PermissionLost -> "OpenStrap can no longer reach the folder. Choose it again."
-        BackupFiles.Failure.NoSpace -> "There isn't enough space for it."
-        BackupFiles.Failure.CantWrite -> "OpenStrap couldn't write to the folder."
-        BackupFiles.Failure.Other -> "It tries again tomorrow."
+    fun failure(f: BackupFailure): String = when (f) {
+        BackupFailure.FolderGone -> "The folder is no longer available."
+        BackupFailure.PermissionLost -> "OpenStrap can no longer reach the folder. Choose it again."
+        BackupFailure.NoSpace -> "There isn't enough space for it."
+        BackupFailure.CantWrite -> "OpenStrap couldn't write to the folder."
+        BackupFailure.Other -> "It tries again tomorrow."
     }
 
     /** "today at 03:12", "yesterday at 03:12", "on Tue 20 Oct": [DayWords.whenDone], on the phone's clock. */

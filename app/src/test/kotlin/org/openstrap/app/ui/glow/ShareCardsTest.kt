@@ -11,6 +11,7 @@ import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.PhoneSummary
+import org.openstrap.app.data.HeartZones
 
 /** The share card's route hides its ends and fits its box, and each kind of card says what its board does. */
 class ShareCardsTest {
@@ -48,7 +49,7 @@ class ShareCardsTest {
     private fun summary(seconds: Long, sport: Int, bpm: Int? = null, sets: List<AppWorkoutSet> = emptyList()): PhoneSummary {
         val w = AppWorkout(start, start + seconds, sport, averageHeartRate = bpm)
         val hr = if (bpm == null) emptyList() else (0L until seconds step 5).map { AppWorkoutHeartRate(start, start + it, bpm, false) }
-        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190), emptyList(), start, start + seconds, null, sets = sets)
+        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD), emptyList(), start, start + seconds, null, sets = sets)
     }
 
     @Test fun `a strength card lists each exercise's sets and top weight, then the total`() {
@@ -86,7 +87,7 @@ class ShareCardsTest {
         val w = AppWorkout(start, start + 1800, 74, averageHeartRate = 80)
         val hr = (0L..1800L step 5).map { AppWorkoutHeartRate(start, start + it, (96 - it * 30 / 1800).toInt(), false) }
         val recorded = hr.map { org.openstrap.app.data.db.WorkoutHeartRate(start, it.timestamp, it.bpm) }
-        val calm = PhoneSummary(WorkoutRecorder.analyse(w, hr, 190), recorded, start, start + 1800, null)
+        val calm = PhoneSummary(WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD), recorded, start, start + 1800, null)
         val readings = recorded.map { it.timestamp to it.bpm }
         assertEquals(readings, org.openstrap.app.ui.workout.FamilySummary.readings(calm))
         val (from, to) = org.openstrap.app.ui.workout.FamilySummary.settled(readings, start, start + 1800)!!
@@ -94,7 +95,7 @@ class ShareCardsTest {
         assertEquals("Heart settled $from to $to", card.line)
         assertEquals("Your heart settled from $from to $to.", summaryHero(Workouts.Family.MindBody, calm, null).sentence)
 
-        val played = PhoneSummary(WorkoutRecorder.analyse(w.copy(epoc = 130f), hr, 190), recorded, start, start + 1800, null)
+        val played = PhoneSummary(WorkoutRecorder.analyse(w.copy(epoc = 130f), hr, 190, HeartZones.STANDARD), recorded, start, start + 1800, null)
         val game = storyCard(Workouts.Family.Games, played, summaryHero(Workouts.Family.Games, played, 100f), emptyList(), 100f, start) as StoryCard.Game
         assertEquals("Load 130, hard", game.load)
         assertEquals("Peak 96", game.peak)

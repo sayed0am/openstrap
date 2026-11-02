@@ -65,11 +65,12 @@ import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.glow.draw.dotLayout
-import org.openstrap.app.ui.workout.LiveView
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.LiveView
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.glow.WaitingDash
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.dotClock
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * A distance workout with GPS (workouts spec 2.3, boards Run and Map): two views, swiped, under the moving time. Pace:
@@ -100,6 +101,7 @@ internal fun LiveDistanceScreen(
     split: Boolean = false,
     compact: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val pager = rememberPagerState(initialPage = LiveView.of(liveView).ordinal) { LiveView.entries.size }
     var viewApplied by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(liveView) {
@@ -113,7 +115,7 @@ internal fun LiveDistanceScreen(
     LaunchedEffect(pager) { snapshotFlow { pager.settledPage }.drop(1).collect { saveView(it) } }
     val scope = rememberCoroutineScope()
     val connected = connection is ConnectionState.Connected
-    val color = workoutColor(r, liveHeartRate, connected)
+    val color = workoutColor(r, liveHeartRate, connected, heartZones)
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
     val distance = r.workout.distanceMeters ?: 0f
@@ -294,8 +296,9 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
 /** A tick when the zone changes (spec 3.6); a pause forgets the zone, so resuming in another doesn't tick. */
 @Composable
 internal fun ZoneTick(bpm: Int?, r: WorkoutState.Recording) {
+    val heartZones = LocalHeartZones.current
     val haptics = rememberHaptics()
-    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate)
+    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
     var lastZone by remember { mutableStateOf<Int?>(null) }
     LaunchedEffect(zone, r.paused) {
         if (WorkoutCopy.zoneTick(lastZone, zone)) haptics.perform(HapticEvent.ZoneChange)

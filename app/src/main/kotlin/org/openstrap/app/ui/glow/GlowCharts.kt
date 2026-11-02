@@ -65,6 +65,8 @@ import org.openstrap.app.ui.glow.draw.pillBar
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import org.openstrap.app.ui.glow.draw.stageColor
+import org.openstrap.app.presentation.StageSpan
+import org.openstrap.app.presentation.DetailCopy
 
 /*
  * Charts for glow cards. The card's colour carries the mood, so the marks are white: lines get a soft halo, and grids,
@@ -679,7 +681,8 @@ fun TrendDots(values: List<Int?>, modifier: Modifier = Modifier, height: Dp = 52
 @Composable
 internal fun NormalTrend(
     values: List<Float?>,
-    levels: List<org.openstrap.app.ui.dashboard.DetailCopy.Level?>,
+    // Arrives whole with each day and never changes in place, as before its type moved to presentation.
+    @Suppress("UnstableCollections", "ComposeUnstableCollections") levels: List<DetailCopy.Level?>,
     color: Color,
     modifier: Modifier = Modifier,
     height: Dp = 230.dp,
@@ -752,8 +755,8 @@ internal fun NormalTrend(
                     }
                     pts.forEach { (i, p) ->
                         when (levels.getOrNull(i)) {
-                            org.openstrap.app.ui.dashboard.DetailCopy.Level.Above,
-                            org.openstrap.app.ui.dashboard.DetailCopy.Level.Below,
+                            org.openstrap.app.presentation.DetailCopy.Level.Above,
+                            org.openstrap.app.presentation.DetailCopy.Level.Below,
                             -> {
                                 val lit = lerp(color, Color.White, 0.3f)
                                 drawCircle(lit.copy(alpha = 0.35f), 14.dp.toPx() * scale, p)
@@ -809,7 +812,9 @@ fun ZoneBar(zoneSeconds: List<Int>, colors: List<Color>, modifier: Modifier = Mo
  * stage's colour.
  */
 @Composable
-fun StageStrip(spans: List<org.openstrap.app.ui.components.StageSpan>, modifier: Modifier = Modifier, height: Dp = 6.dp) {
+// The list arrives whole with each day or night and never changes in place. Kept from before its type moved to presentation.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun StageStrip(spans: List<StageSpan>, modifier: Modifier = Modifier, height: Dp = 6.dp) {
     Canvas(modifier.fillMaxWidth().height(height)) {
         // The same geometry a widget's strip is drawn from (widgets spec 6.2).
         org.openstrap.app.ui.glow.draw.stageStripSegments(spans, size.width, size.height).forEach { s ->

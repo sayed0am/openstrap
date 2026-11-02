@@ -9,8 +9,8 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.dashboard.Info
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.dashboard.sportNoun
+import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.sportNoun
 
 /*
  * What the page of a past workout says (spec 6.3, "Workout detail"): the sentence first ("Hard run, mostly in zone

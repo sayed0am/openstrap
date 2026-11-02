@@ -18,10 +18,10 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.glow.draw.AFTER_RIM
 import org.openstrap.app.ui.glow.draw.EVENING_BODY
 import org.openstrap.app.ui.glow.draw.GlowMood

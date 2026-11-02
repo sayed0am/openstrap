@@ -148,7 +148,7 @@ class HealthspanEngine(private val dao: HealthDao) {
         val strength = workouts.filter { it.sportType in Healthspan.STRENGTH_SPORTS }
             .associate { w -> w.start to ((w.exerciseSeconds ?: (w.end - w.start).toInt()) / 60f) }
         val vo2 = workouts.mapNotNull { w ->
-            val effect = Workouts.analyse(w, emptyList(), effects, 0).effect
+            val effect = Workouts.analyse(w, emptyList(), effects, 0, HeartZones.STANDARD).effect
             (w.vo2max?.toFloat() ?: effect?.vo2max)?.takeIf { it > 0f }?.let { w.start to it }
         }.toMap()
 

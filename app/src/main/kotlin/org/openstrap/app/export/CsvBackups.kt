@@ -34,14 +34,14 @@ class CsvBackups(
     }.getOrElse { BackupResult.Failed(it) }
 
     override suspend fun writeZip(out: OutputStream) {
-        csv.exportZip(out, settings = SettingsBackup.toJson(settings.backupValues()))
+        csv.exportZip(out, settings = SettingsBackup.toJson(settings.backupValues(SettingsBackup::carries)))
     }
 
     override suspend fun importCsv(from: Uri): BackupResult = catching {
         val result = withContext(io) { input(from).use { CsvImporter(database).importZip(it) } }
         // A damaged settings file costs the settings only, not the records already restored.
         val restored = result.settings?.let { json ->
-            catching { settings.restoreValues(SettingsBackup.fromJson(json)) }
+            catching { settings.restoreValues(SettingsBackup.fromJson(json), SettingsBackup::missing) }
                 .onFailure { warn("restore: settings not restored: $it") }
                 .getOrDefault(0)
         } ?: 0
@@ -49,14 +49,14 @@ class CsvBackups(
     }.getOrElse { BackupResult.Failed(it) }
 
     override suspend fun exportSettings(to: Uri): BackupResult = catching {
-        val json = SettingsBackup.toJson(settings.backupValues())
+        val json = SettingsBackup.toJson(settings.backupValues(SettingsBackup::carries))
         withContext(io) { output(to).use { it.write(json.toByteArray(Charsets.UTF_8)) } }
         BackupResult.Saved
     }.getOrElse { BackupResult.Failed(it) }
 
     override suspend fun importSettings(from: Uri): BackupResult = catching {
         val json = withContext(io) { input(from).use { it.readBytes().toString(Charsets.UTF_8) } }
-        BackupResult.Restored(0, settings.restoreValues(SettingsBackup.fromJson(json)) > 0, 0)
+        BackupResult.Restored(0, settings.restoreValues(SettingsBackup.fromJson(json), SettingsBackup::missing) > 0, 0)
     }.getOrElse { BackupResult.Failed(it) }
 
     private fun output(uri: Uri): OutputStream =

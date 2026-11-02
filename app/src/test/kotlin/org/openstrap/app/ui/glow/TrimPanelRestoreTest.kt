@@ -23,6 +23,7 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.openstrap.app.data.HeartZones
 
 /** The trim handles keep where they were dragged while the panel stays open across a recreate (audit K7). */
 @RunWith(RobolectricTestRunner::class)
@@ -38,7 +39,7 @@ class TrimPanelRestoreTest {
     private fun summary(): PhoneSummary {
         val w = AppWorkout(start, start + seconds, 1, averageHeartRate = 130)
         val hr = (0L..seconds step 5).map { AppWorkoutHeartRate(start, start + it, 110 + (it * 40 / seconds).toInt(), false) }
-        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190), hr.map { WorkoutHeartRate(start, it.timestamp, it.bpm) }, start, start + seconds, null)
+        return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD), hr.map { WorkoutHeartRate(start, it.timestamp, it.bpm) }, start, start + seconds, null)
     }
 
     @Test fun `a dragged start comes back after a recreate, and Save saves it`() {

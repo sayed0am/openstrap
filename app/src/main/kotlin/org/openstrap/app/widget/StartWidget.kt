@@ -55,7 +55,7 @@ import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import java.time.Instant
 import java.time.ZoneId
 

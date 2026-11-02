@@ -15,6 +15,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import java.time.LocalDate
 import java.util.Locale
 import kotlin.math.roundToInt
+import org.openstrap.app.presentation.WorkoutCopy
 
 /*
  * What Choose and Ready say (workouts spec 2.1, 2.2, 7): the sport, the goal and what the strap will do, never the

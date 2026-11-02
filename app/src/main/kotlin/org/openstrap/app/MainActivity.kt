@@ -55,6 +55,7 @@ import org.openstrap.app.ui.components.rememberGrowProgress
 import org.openstrap.app.ui.dashboard.DataPreview
 import org.openstrap.app.ui.dashboard.DayViewModel
 import org.openstrap.app.ui.dashboard.LocalGoals
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 import org.openstrap.app.ui.dashboard.Reselect
 import org.openstrap.app.ui.dashboard.STALE_AFTER_S
 import org.openstrap.app.ui.dashboard.StrapPreview
@@ -215,7 +216,7 @@ class MainActivity : ComponentActivity() {
         const val EXTRA_READY_PICK = "ready_pick"
         const val EXTRA_OPEN_WORKOUT = "open_workout"
 
-        /** A metric's detail by [org.openstrap.app.ui.dashboard.Metric] name ("Hrv"), or "Recovery" or "Sleep". */
+        /** A metric's detail by [org.openstrap.app.presentation.Metric] name ("Hrv"), or "Recovery" or "Sleep". */
         const val EXTRA_OPEN_METRIC = "open_metric"
 
         /** The day for [EXTRA_OPEN_METRIC], as an ISO date ("2026-10-23"); without it the day showing stays. */
@@ -311,6 +312,7 @@ private fun AppRoot(
     val nav = rememberSaveable(saver = AppNavState.Saver) { AppNavState() }
     val tab = nav.tab.current
     val goals by rootVm.goals.collectAsStateWithLifecycle()
+    val heartZones by rootVm.heartZones.collectAsStateWithLifecycle()
     val strapPreview by previews.strap.collectAsStateWithLifecycle()
     val dataPreview by previews.data.collectAsStateWithLifecycle()
     // The pairing steps before a strap is paired show with no strap, as `strap_state notpaired` does.
@@ -412,7 +414,10 @@ private fun AppRoot(
     // like a book, only the live workout splits.
     val folds = rememberFolds()
     val hinge = folds.table
-    CompositionLocalProvider(LocalGoals provides goals, LocalGlassHost provides glassHost, LocalGrowOrigin provides growOrigin) {
+    CompositionLocalProvider(
+        LocalGoals provides goals, LocalHeartZones provides heartZones, LocalGlassHost provides glassHost,
+        LocalGrowOrigin provides growOrigin,
+    ) {
       Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (hinge != null) {
             TabletopTop(hinge, container, running?.takeIf { !workoutMinimized }, day, live, liveEnabled, strapFacts.connection)

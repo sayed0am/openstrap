@@ -3,35 +3,8 @@ package org.openstrap.app.ui.dashboard
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.saveable.Saver
 import org.openstrap.app.data.settings.Goals
-import org.openstrap.app.data.DailyMetric
-import org.openstrap.app.presentation.Units
-import java.util.Locale
-
-/** A metric with its own detail screen: its title, unit, decimals shown, and the per-day series behind it. */
-enum class Metric(val title: String, val unit: String, val decimals: Int, val daily: DailyMetric) {
-    HeartRate("Heart rate", "bpm", 0, DailyMetric.HeartRate),
-    RestingHr("Resting heart rate", "bpm", 0, DailyMetric.RestingHr),
-    Hrv("HRV", "ms", 0, DailyMetric.Hrv),
-    Spo2("Blood oxygen", "%", 0, DailyMetric.Spo2),
-    Stress("Stress", "", 0, DailyMetric.Stress),
-    SkinTemperature("Skin temperature", "°C", 1, DailyMetric.SkinTemperature),
-    Breathing("Breathing rate", "br/min", 1, DailyMetric.Breathing),
-    Steps("Steps", "steps", 0, DailyMetric.Steps),
-    ;
-
-    /**
-     * [v] as this metric shows it: "13,860" steps, "36.5" °C, in [locale]'s digits and marks. A figure drawn in the dot
-     * font passes [Units.DOT_LOCALE], since the font has only ASCII digits and a comma would read as a thousands mark.
-     */
-    fun format(v: Float, locale: Locale = Locale.getDefault()): String =
-        if (this == Steps) Units.count(Math.round(v).toLong(), locale) else String.format(locale, "%.${decimals}f", v)
-
-    /** A change from your normal, signed with a true minus (spec 2.3): "+0.2", "−0.3"; no sign is lost to rounding. */
-    fun formatChange(d: Float, locale: Locale = Locale.getDefault()): String {
-        val shown = format(kotlin.math.abs(d), locale)
-        return (if (d < 0 && shown.any { it in '1'..'9' }) "\u2212" else "+") + shown
-    }
-}
+import org.openstrap.app.data.HeartZones
+import org.openstrap.app.presentation.Metric
 
 /**
  * A detail in the metric template with no per-day series behind it, unlike a [Metric]'s: Recovery keeps only its last
@@ -48,6 +21,11 @@ enum class Score(val title: String) {
 
 /** Your daily goals, provided once at the top of the app so every screen measures against the same ones. */
 val LocalGoals = compositionLocalOf { Goals() }
+
+/** Your heart rate zones as stored, provided once at the top of the app so every zone on screen reads the same ones. */
+// Like LocalGoals: every zone on screen reads the same stored zones, without threading them through every live screen.
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
+val LocalHeartZones = compositionLocalOf { HeartZones.STANDARD }
 
 /**
  * A screen pushed on top of a tab. Each tab keeps its own, so opening one never moves you to another tab: a card on

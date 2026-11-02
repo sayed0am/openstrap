@@ -59,7 +59,7 @@ import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.glow.draw.Edge
 

@@ -14,6 +14,7 @@ import org.junit.Test
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.Workout
+import org.openstrap.app.data.HeartZones
 
 /** Widgets spec 3.5: what the Start widget offers from your workouts, this week's line, recording, and how it fits. */
 class StartWidgetModelTest {
@@ -26,7 +27,7 @@ class StartWidgetModelTest {
     private fun workout(day: Int, hour: Int, type: Int, minutes: Int, meters: Float? = null, sets: Int? = null): WorkoutAnalysis {
         val start = at(day, hour, 0).epochSecond
         val w = Workout(start, start + minutes * 60L, type, minutes * 60, null, null, null, null, null, null, null, null, null)
-        return Workouts.analyse(w, emptyList(), emptyList(), 190).copy(distanceMeters = meters, sets = sets)
+        return Workouts.analyse(w, emptyList(), emptyList(), 190, HeartZones.STANDARD).copy(distanceMeters = meters, sets = sets)
     }
 
     /**

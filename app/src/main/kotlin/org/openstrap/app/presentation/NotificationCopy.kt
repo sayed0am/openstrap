@@ -1,5 +1,6 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
@@ -45,15 +46,15 @@ object NotificationCopy {
     /**
      * The card for a workout recording now. [bpm] is the live reading while the strap is [connected]. [distanceMeters]
      * counts only for a [gps] workout, marked ≈ when it came from steps (GPS refused after a restart). [confirming]
-     * puts the End question where the zone goes.
+     * puts the End question where the zone goes, a zone of your [zones].
      */
     fun card(
-        sport: String, activeSeconds: Long, paused: Boolean, connected: Boolean, bpm: Int?, maxHr: Int, gps: Boolean,
+        sport: String, activeSeconds: Long, paused: Boolean, connected: Boolean, bpm: Int?, maxHr: Int, zones: HeartZones, gps: Boolean,
         distanceMeters: Float?, distanceFromSteps: Boolean, target: WorkoutTarget?, zoneSeconds: List<Int>, confirming: Boolean,
         activeKcal: Float? = null, locale: Locale = Locale.getDefault(),
     ): WorkoutCard {
         val reading = bpm.takeIf { connected && !paused }
-        val zone = WorkoutRecorder.liveZone(reading, maxHr)
+        val zone = WorkoutRecorder.liveZone(reading, maxHr, zones)
         val slot = when {
             paused -> "Paused"
             !connected -> WorkoutWords.STRAP_GONE

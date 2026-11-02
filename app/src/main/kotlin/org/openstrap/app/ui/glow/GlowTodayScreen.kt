@@ -53,15 +53,15 @@ import org.openstrap.app.ui.dashboard.varyLooks
 import org.openstrap.app.ui.dashboard.habitAgeNew
 import org.openstrap.app.ui.dashboard.items
 import org.openstrap.app.ui.dashboard.LocalGoals
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.TodayCard
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.TodayEdits
 import org.openstrap.app.ui.dashboard.TodayFacts
 import org.openstrap.app.ui.dashboard.TodaySlot
 import org.openstrap.app.ui.dashboard.applyEdits
 import org.openstrap.app.ui.dashboard.avg
-import org.openstrap.app.ui.dashboard.sportNoun
+import org.openstrap.app.presentation.sportNoun
 import org.openstrap.app.ui.dashboard.CHARGE_FAILED
 import org.openstrap.app.ui.dashboard.FAILED_SHORT
 import org.openstrap.app.ui.dashboard.RECOVERY_FAILED
@@ -74,14 +74,14 @@ import org.openstrap.app.ui.dashboard.lastTried
 import org.openstrap.app.ui.dashboard.stuckCopy
 import org.openstrap.app.ui.dashboard.syncStuck
 import org.openstrap.app.ui.dashboard.upToMarker
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.FIRST_SCORE
 import org.openstrap.app.ui.dashboard.PARTIAL_DAY
 import org.openstrap.app.ui.dashboard.PairStep
 import org.openstrap.app.ui.dashboard.Wear
-import org.openstrap.app.ui.dashboard.WakingLead
+import org.openstrap.app.presentation.WakingLead
 import org.openstrap.app.ui.dashboard.pairSentence
-import org.openstrap.app.ui.dashboard.wakingLead
+import org.openstrap.app.presentation.wakingLead
 import org.openstrap.app.ui.dashboard.todayCards
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.runtime.rememberUpdatedState
@@ -103,6 +103,7 @@ import org.openstrap.app.ui.glow.draw.EVENING_BODY
 import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.presentation.topSports
+import org.openstrap.app.presentation.TabCopy
 
 /*
  * Today (spec 4): one hero whose content follows the moment, then a stable set of cards for it ([todayCards]), with
@@ -384,7 +385,7 @@ private data class TodayContext(
         get() {
             val from = now - org.openstrap.app.data.MomentResolver.USUAL_WORKOUT_DAYS * 86_400L
             val yours = workouts.filter { it.startedByYou && it.workout.start >= from }.map { it.workout.sportType to it.workout.start }
-            return org.openstrap.app.ui.dashboard.usualSport(yours) ?: topSports(workouts).first().sportType
+            return org.openstrap.app.presentation.usualSport(yours) ?: topSports(workouts).first().sportType
         }
 }
 
@@ -463,7 +464,7 @@ private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit
     GlowCard(heroStyle(MetricColors.readiness, lightAngle), modifier, onClick = onOpen) {
         Column {
             GlowHeader(
-                "Recovery", trailing = score?.let { org.openstrap.app.ui.dashboard.TabCopy.vsYesterday(it, before) },
+                "Recovery", trailing = score?.let { TabCopy.vsYesterday(it, before) },
                 tag = if (ctx.firstScore && score != null) TitleTag(FIRST_SCORE) else null,
             )
             if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday, deleted = ctx.state.deletedSleep != null))
@@ -518,7 +519,10 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
                 when {
                     failed -> CHARGE_FAILED
                     noSleep -> if (ctx.state.deletedSleep != null) TodayCopy.deletedNight(ctx.isToday) else TodayCopy.NO_SLEEP
-                    else -> TodayCopy.charge(now, c?.let { org.openstrap.app.ui.dashboard.TabCopy.drainedAmount(it.drainedExercise + it.drainedStress + it.drainedLiving).toInt() }, c?.anchored == true, LocalTime.now().hour)
+                    else -> TodayCopy.charge(
+                        now, c?.let { TabCopy.drainedAmount(it.drainedExercise + it.drainedStress + it.drainedLiving).toInt() },
+                        c?.anchored == true, LocalTime.now().hour,
+                    )
                 },
             )
             if (failed) {
@@ -541,7 +545,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
                 if (c != null && c.anchored) listOf(
                     "Recharged ${c.recharged.toInt()}",
                     // After "Drained" the amount needs no minus.
-                    "Drained ${org.openstrap.app.ui.dashboard.TabCopy.drainedAmount(c.drainedExercise + c.drainedStress + c.drainedLiving)}",
+                    "Drained ${TabCopy.drainedAmount(c.drainedExercise + c.drainedStress + c.drainedLiving)}",
                 ) else listOf("Now"),
             )
         }
@@ -797,7 +801,7 @@ private fun TodayRow(
                 // Worked out with Recovery: when that failed, say so here too. The card opens Recovery and its Try again.
                 ctx.charge == null -> if (ctx.recoveryFailure != null) CHARGE_FAILED else ctx.waiting
                 ctx.endOfDay -> "Sleep fills it back"
-                drained != null && drained >= 1f -> "Drained ${org.openstrap.app.ui.dashboard.TabCopy.drainedAmount(drained)}"
+                drained != null && drained >= 1f -> "Drained ${TabCopy.drainedAmount(drained)}"
                 else -> "Steady since waking"
             }
             // The day's Charge so far beside the number, in the evening too, as on every other Charge card.

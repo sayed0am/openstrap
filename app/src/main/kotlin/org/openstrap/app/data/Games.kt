@@ -23,13 +23,13 @@ object Games {
      * Spells of at least [HARD_EFFORT_S] in zone 5 in [readings] (time, bpm, ascending): one effort per spell, however
      * long. A gap of more than a few seconds between readings ends a spell.
      */
-    fun hardEfforts(readings: List<Pair<Long, Int>>, maxHr: Int): Int {
+    fun hardEfforts(readings: List<Pair<Long, Int>>, maxHr: Int, zones: HeartZones): Int {
         var count = 0
         var since: Long? = null
         var last: Long? = null
         var counted = false
         for ((t, bpm) in readings) {
-            val top = WorkoutRecorder.liveZone(bpm, maxHr) == Workouts.ZONES - 1
+            val top = WorkoutRecorder.liveZone(bpm, maxHr, zones) == Workouts.ZONES - 1
             val gap = last != null && t - last > WorkoutRecorder.MAX_STEP_S
             if (!top || gap) { since = null; counted = false }
             if (top) {

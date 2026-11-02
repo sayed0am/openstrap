@@ -8,6 +8,9 @@ import org.junit.Test
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Route
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.presentation.LiveView
+import org.openstrap.app.presentation.SplitLine
+import org.openstrap.app.presentation.WorkoutCopy
 
 /** The Ready and live workout screens' words and rules (spec 6.3). */
 class WorkoutCopyTest {

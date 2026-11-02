@@ -78,9 +78,10 @@ import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.strengthMoment
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /** Strength's rest colour, the green the floating bar and the hero rest in too. */
 private val RestGreen = Color(WorkoutColors.REST_GREEN)
@@ -115,11 +116,12 @@ internal fun LiveStrengthScreen(
     onLog: (index: Int, exercise: String?, reps: Int, kg: Float) -> Unit,
     compact: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
-    val color = if (r.resting && !r.paused) RestGreen else workoutColor(r, liveHeartRate, connected)
+    val color = if (r.resting && !r.paused) RestGreen else workoutColor(r, liveHeartRate, connected, heartZones)
     // Read where it shows (the cards' clocks, the paused figures, the log card), so the screen holds still between
     // seconds. The rest of the screen doesn't move with the clock: [steady] is the moment without its seconds, which
     // only the clocks read, so it needs no time at all.
@@ -345,13 +347,14 @@ private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier 
 /** The heart rate in plain figures with its zone named: the set's clock is the card's dotted number. */
 @Composable
 private fun HeartLine(bpm: Int?, maxHr: Int, paused: Boolean) {
+    val heartZones = LocalHeartZones.current
     Row(verticalAlignment = Alignment.Bottom) {
         Text(bpm?.toString() ?: WorkoutCopy.noHeartRate(paused), color = Color.White, style = GlowType.sentence)
         if (bpm != null) {
             Spacer(Modifier.width(6.dp))
             Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             Spacer(Modifier.weight(1f))
-            WorkoutRecorder.liveZone(bpm, maxHr)?.let { z ->
+            WorkoutRecorder.liveZone(bpm, maxHr, heartZones)?.let { z ->
                 Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary, maxLines = 1)
             }
         }

@@ -181,41 +181,12 @@ internal object Architecture {
     /** The entry points a lower layer may name: to reach the container's owner, build an intent, read the build. */
     val ROOT_NAMES = setOf("OpenStrapApp", "MainActivity", "BuildConfig", "R")
 
-    private val dashboardCopy = listOf(
-        "TabCopy", "TodayCopy", "ActivityCopy", "momentMood", "todayTitle", "sportNoun", "usualSport", "wakingLead",
-        "WakingLead", "AFTER_FIRST_NIGHT", "Metric",
-    ).map { "$APP.ui.dashboard.$it" }
-
     /** Breaks the check lets through for now, each with the wave that removes it. One that matches nothing fails. */
     val EXCEPTIONS: List<KnownBreak> = listOf(
-        KnownBreak(
-            "widget/", listOf("$APP.ui.components.ChartPoint", "$APP.ui.components.StageSpan"),
-            "chart models stay in ui.components until ChartModels.kt moves to presentation", "wave 5",
-        ),
-        KnownBreak(
-            "widget/", dashboardCopy + listOf("$APP.ui.workout.SportIcons", "$APP.ui.workout.WorkoutCopy"),
-            "screen copy and icons 4C could not move while the screens were in flight", "wave 5",
-        ),
-        KnownBreak(
-            "widget/SleepWidgetModel.kt", listOf("$APP.ui.dashboard.SLEEP_NAMES"),
-            "found by 4E, SleepWidgetModel.kt:9 imports the sleep stage names from ui.dashboard", "wave 5",
-        ),
         KnownBreak(
             "device/StrapService.kt", listOf("$APP.AppContainer"),
             "found by 4E, StrapService.kt:293 loadFigures and :396 watchEnded take the container by full name",
             "wave 5, StrapService split",
-        ),
-        KnownBreak(
-            "data/settings/SettingsStore.kt", listOf("$APP.export.BackupFiles", "$APP.export.SettingsBackup"),
-            "found by 4E, SettingsStore.kt:93, 634, 661, 711 and 721 name BackupFiles.Failure and SettingsBackup " +
-                "in code, a data and export cycle",
-            "wave 5",
-        ),
-        KnownBreak(
-            "presentation/UpdateCopy.kt",
-            listOf("Install", "InstallFailure", "Release", "Releases", "UpdateState").map { "$APP.update.$it" },
-            "found by 4E, UpdateCopy.kt:3 to 7 import the update state types, a presentation and update cycle",
-            "wave 5",
         ),
     )
 

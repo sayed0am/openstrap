@@ -8,6 +8,7 @@ import org.junit.Test
 import java.io.FileNotFoundException
 import java.io.IOException
 import java.time.LocalDate
+import org.openstrap.app.data.settings.BackupFailure
 
 class BackupFilesTest {
     private val day = LocalDate.of(2026, 10, 29)
@@ -47,11 +48,11 @@ class BackupFilesTest {
     }
 
     @Test fun `failures say what went wrong`() {
-        assertEquals(BackupFiles.Failure.PermissionLost, BackupFiles.classify(SecurityException("Permission Denial")))
-        assertEquals(BackupFiles.Failure.NoSpace, BackupFiles.classify(IOException("write failed: ENOSPC (No space left on device)")))
-        assertEquals(BackupFiles.Failure.NoSpace, BackupFiles.classify(RuntimeException(IOException("No space left on device"))))
-        assertEquals(BackupFiles.Failure.FolderGone, BackupFiles.classify(FileNotFoundException("Missing file for primary:Backups")))
-        assertEquals(BackupFiles.Failure.CantWrite, BackupFiles.classify(IOException("Broken pipe")))
-        assertEquals(BackupFiles.Failure.Other, BackupFiles.classify(IllegalStateException("odd")))
+        assertEquals(BackupFailure.PermissionLost, BackupFiles.classify(SecurityException("Permission Denial")))
+        assertEquals(BackupFailure.NoSpace, BackupFiles.classify(IOException("write failed: ENOSPC (No space left on device)")))
+        assertEquals(BackupFailure.NoSpace, BackupFiles.classify(RuntimeException(IOException("No space left on device"))))
+        assertEquals(BackupFailure.FolderGone, BackupFiles.classify(FileNotFoundException("Missing file for primary:Backups")))
+        assertEquals(BackupFailure.CantWrite, BackupFiles.classify(IOException("Broken pipe")))
+        assertEquals(BackupFailure.Other, BackupFiles.classify(IllegalStateException("odd")))
     }
 }

@@ -65,6 +65,7 @@ import org.openstrap.app.ui.workout.ZONE_NAMES
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.Edge
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
  * The summary's parts that differ by kind of workout (workouts spec 2.8, boards SummaryRun to SummaryGame): the hero's
@@ -186,6 +187,7 @@ internal fun FamilySection(
     heartLine: Boolean = true,
     week: Rewards.WeekLine? = null,
 ): Boolean {
+    val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val readings = remember(summary) { FamilySummary.readings(summary) }
     // The stored time in zones, as the hero and the share card read it, so the page shows one total.
@@ -240,7 +242,7 @@ internal fun FamilySection(
         Workouts.Family.Games -> {
             // Named out of the periods it was set up with, not the ones played, so ending early doesn't rename them.
             val of = (summary.structure as? org.openstrap.app.data.Structure.Periods)?.rounds ?: summary.rounds.count { it.workEnd != null }
-            val periods = remember(summary) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate, of) }
+            val periods = remember(summary, heartZones) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate, of, heartZones) }
             val read = FamilySummary.gameRead(readings, a.shownStart, a.end)
             val periodsShown = periods.isNotEmpty() || read != null
             if (periodsShown) PeriodsCard(periods, of, read)
@@ -277,6 +279,7 @@ private fun SentenceCard(title: String, sentence: String) {
  */
 @Composable
 private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
+    val heartZones = LocalHeartZones.current
     val shares = remember(groups) { FamilySummary.peakShares(groups.flatMap { g -> g.sets.map { it.peak } }) }
     EdgeCard(familyColor(Workouts.Family.Strength), Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         EdgeTitle("Sets", "Peak heart rate")
@@ -299,7 +302,12 @@ private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
                         modifier = Modifier.width(72.dp),
                     )
                     Box(Modifier.weight(1f).height(6.dp)) {
-                        if (share != null) Box(Modifier.fillMaxWidth(share).fillMaxHeight().clip(CircleShape).background(zoneColor(s.peak, maxHr)))
+                        if (share != null) {
+                            Box(
+                                Modifier.fillMaxWidth(share).fillMaxHeight().clip(CircleShape)
+                                    .background(zoneColor(s.peak, maxHr, heartZones)),
+                            )
+                        }
                     }
                 }
             }
@@ -317,6 +325,7 @@ private const val LabelledRounds = 10
  */
 @Composable
 private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
+    val heartZones = LocalHeartZones.current
     val shares = remember(lines) { FamilySummary.peakShares(lines.map { it.peak }) }
     val hardest = remember(lines) { FamilySummary.hardestRound(lines) }
     val labelled = lines.size <= LabelledRounds
@@ -333,7 +342,8 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
                     )
                     shares[i]?.let { share ->
                         Box(
-                            Modifier.fillMaxWidth().height(RoundColumnHeight * share).clip(shape).background(zoneColor(r.peak, maxHr))
+                            Modifier.fillMaxWidth().height(RoundColumnHeight * share).clip(shape)
+                                .background(zoneColor(r.peak, maxHr, heartZones))
                                 .let { if (i == hardest) it.border(2.dp, Color.White, shape) else it },
                         )
                     }

@@ -195,7 +195,7 @@ internal fun CaveatLine(text: String, color: Color, modifier: Modifier = Modifie
  * rate line, from the nightly resting heart rate.
  */
 @Composable
-internal fun rememberNormal(metric: org.openstrap.app.ui.dashboard.Metric, date: java.time.LocalDate, history: org.openstrap.app.ui.dashboard.DailyHistory?): org.openstrap.app.data.History.Normal? {
+internal fun rememberNormal(metric: org.openstrap.app.presentation.Metric, date: java.time.LocalDate, history: org.openstrap.app.ui.dashboard.DailyHistory?): org.openstrap.app.data.History.Normal? {
     val from = date.minusDays(org.openstrap.app.data.History.NORMAL_DAYS - 1L)
     val stats by androidx.compose.runtime.remember(metric, date, history) {
         history?.invoke(metric.daily, from, date) ?: kotlinx.coroutines.flow.flowOf(emptyList())

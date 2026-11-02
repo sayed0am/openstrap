@@ -8,6 +8,7 @@ import org.openstrap.app.zepp.ZeppCloudException
 import org.openstrap.protocol.firmware.DfuException
 import java.io.IOException
 import java.util.zip.ZipException
+import org.openstrap.app.data.settings.BackupFailure
 
 /**
  * What a failed action says, as [BackupCopy.failure] does for backups. An exception's own text is shown only when it
@@ -24,10 +25,10 @@ object ErrorCopy {
 
     /** Save a copy failed while writing the zip to the place the user picked. */
     fun saveCopy(e: Throwable): String = "Couldn't save the copy. " + when (BackupFiles.classify(e)) {
-        BackupFiles.Failure.NoSpace -> "There isn't enough space for it."
-        BackupFiles.Failure.PermissionLost -> "OpenStrap wasn't allowed to write there. Choose another place."
-        BackupFiles.Failure.FolderGone -> "That place is no longer available. Choose another one."
-        BackupFiles.Failure.CantWrite, BackupFiles.Failure.Other -> "Try again, or choose another place."
+        BackupFailure.NoSpace -> "There isn't enough space for it."
+        BackupFailure.PermissionLost -> "OpenStrap wasn't allowed to write there. Choose another place."
+        BackupFailure.FolderGone -> "That place is no longer available. Choose another one."
+        BackupFailure.CantWrite, BackupFailure.Other -> "Try again, or choose another place."
     }
 
     /** Restore failed while reading the zip the user picked. */

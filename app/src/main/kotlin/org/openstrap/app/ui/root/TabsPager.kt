@@ -52,10 +52,10 @@ import org.openstrap.app.ui.dashboard.MomentHeader
 import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.StrapChip
 import org.openstrap.app.ui.dashboard.Wear
-import org.openstrap.app.ui.dashboard.dayTitle
+import org.openstrap.app.presentation.dayTitle
 import org.openstrap.app.ui.dashboard.heroLightAngle
-import org.openstrap.app.ui.dashboard.momentMood
-import org.openstrap.app.ui.dashboard.todayTitle
+import org.openstrap.app.ui.glow.draw.momentMood
+import org.openstrap.app.presentation.todayTitle
 import org.openstrap.app.ui.glow.AllMetricsSheet
 import org.openstrap.app.ui.glow.GlowActivityScreen
 import org.openstrap.app.ui.glow.GlowRecoveryScreen

@@ -25,6 +25,7 @@ import kotlin.math.roundToInt
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.presentation.TabCopy
 
 /** The Healthspan card's orchid, used for the glow: warm enough to stay clear of Sleep's blue. */
 private val Orchid = MetricColors.habitAge
@@ -116,22 +117,22 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
         }
         r?.let {
             Text(
-                org.openstrap.app.ui.dashboard.TabCopy.habitAgeUpdated(dateOf(it.asOf)), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                TabCopy.habitAgeUpdated(dateOf(it.asOf)), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                 style = GlowType.secondary, maxLines = 1,
             )
         }
-        val line = r?.let { org.openstrap.app.ui.dashboard.TabCopy.habitAgeLine(it.estimate, state.lastWeek, it.low, it.high) }
+        val line = r?.let { TabCopy.habitAgeLine(it.estimate, state.lastWeek, it.low, it.high) }
         val waiting = when {
             r != null -> null
             needsProfile -> profileReminder(state.missing)
-            state.firstEstimate != null -> org.openstrap.app.ui.dashboard.TabCopy.firstEstimate(dateOf(state.firstEstimate))
+            state.firstEstimate != null -> TabCopy.firstEstimate(dateOf(state.firstEstimate))
             else -> withheld?.reason
         }
         // The estimate once there is one; until then your own age stands in. Without a birth year, no number.
         val shown = r?.estimate?.roundToInt() ?: state.age
         EdgeValue(
             shown?.toString(), shown?.let { "years" },
-            line?.text ?: if (shown != null) org.openstrap.app.ui.dashboard.TabCopy.habitAgeForNow(waiting) else waiting,
+            line?.text ?: if (shown != null) TabCopy.habitAgeForNow(waiting) else waiting,
             if (line?.moved == true) Orchid else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             waiting = shown != null,
         )
@@ -166,7 +167,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
         val label = Color.White.copy(alpha = 0.6f)
         Column {
             // Your age over its hairline, the range under its band, as in the kit, so the two never overlap.
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(org.openstrap.app.ui.dashboard.TabCopy.yourAge(age), x(age.toFloat()), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.yourAge(age), x(age.toFloat()), w, label) }
             Canvas(Modifier.fillMaxWidth().height(30.dp)) {
                 val y = size.height / 2
                 fun px(a: Float) = x(a).toPx()
@@ -175,7 +176,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
                 drawLine(Color.White.copy(alpha = 0.6f), Offset(px(age.toFloat()), 0f), Offset(px(age.toFloat()), size.height), 1.dp.toPx())
                 drawCircle(Color.White, 7.dp.toPx(), Offset(px(estimate), y))
             }
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(org.openstrap.app.ui.dashboard.TabCopy.ageRange(low, high), x((low + high) / 2f), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.ageRange(low, high), x((low + high) / 2f), w, label) }
         }
     }
 }

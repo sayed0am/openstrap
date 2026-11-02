@@ -23,7 +23,7 @@ import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.theme.MetricColors
 
@@ -118,7 +118,7 @@ fun metricIndex(
             "Recovery",
             listOf(
                 recoveryStatus(rec?.readiness).let { status ->
-                    val shown = org.openstrap.app.ui.dashboard.TodayCopy.recoveryShown(rec?.readiness, strapScore, NO_VALUE)
+                    val shown = org.openstrap.app.presentation.TodayCopy.recoveryShown(rec?.readiness, strapScore, NO_VALUE)
                     row(
                         "Recovery", MetricColors.readiness, shown.value?.toString(),
                         shown.word.takeIf { shown.estimate } ?: status ?: "Score for the day", IndexTarget.Home(HomeTab.Recovery), waiting = status,
@@ -128,7 +128,7 @@ fun metricIndex(
                 row(
                     "Energy", MetricColors.charge, rec?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)?.toString(),
                     if (state.date == today) "Latest" else "End of day", IndexTarget.Home(HomeTab.Recovery, charge = true),
-                    waiting = org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT.takeIf { rec?.charge?.anchored == false },
+                    waiting = org.openstrap.app.presentation.AFTER_FIRST_NIGHT.takeIf { rec?.charge?.anchored == false },
                 ),
                 row("Habit Age", MetricColors.habitAge, habitValue, habitStatus, IndexTarget.Open(Detail.Healthspan), waiting = habitStatus),
             ),

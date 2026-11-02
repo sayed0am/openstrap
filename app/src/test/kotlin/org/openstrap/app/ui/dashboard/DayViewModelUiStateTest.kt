@@ -41,9 +41,9 @@ import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.ZoneRule
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.components.StageSpan
-import org.openstrap.app.ui.components.TrendPoint
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.StageSpan
+import org.openstrap.app.presentation.TrendPoint
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.time.Instant

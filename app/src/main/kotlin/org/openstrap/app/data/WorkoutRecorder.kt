@@ -15,17 +15,22 @@ import org.openstrap.app.data.settings.UserProfile
 object WorkoutRecorder {
     /**
      * The zone shown live, 0..4: below zone 2 is zone 1 (anything slower is easy), then your zones, as
-     * [Workouts.zoneOf]. Null for no reading.
+     * [Workouts.zoneOf] in [zones]. Null for no reading.
      */
-    fun liveZone(bpm: Int?, maxHr: Int): Int? = bpm?.let { Workouts.zoneOf(it, maxHr) ?: 0 }
+    fun liveZone(bpm: Int?, maxHr: Int, zones: HeartZones): Int? = bpm?.let { liveZoneOf(it, maxHr, zones) }
 
-    /** Where [bpm] sits along the five zones ([HeartZones.position]), 0..1: zone 1's start at the left, each zone a fifth. */
-    fun zonePosition(bpm: Int, maxHr: Int): Float = HeartZones.current.value.position(bpm, maxHr)
+    /** [liveZone] for a reading there is: always a zone. */
+    fun liveZoneOf(bpm: Int, maxHr: Int, zones: HeartZones): Int = Workouts.zoneOf(bpm, maxHr, zones) ?: 0
 
-    /** Seconds in each live zone over [samples] (time, bpm, ascending); a gap counts up to [MAX_STEP_S]. */
-    fun liveZoneSeconds(samples: List<Pair<Long, Int>>, maxHr: Int): IntArray {
+    /** Where [bpm] sits along the five [zones] ([HeartZones.position]), 0..1: zone 1's start at the left, each zone a fifth. */
+    fun zonePosition(bpm: Int, maxHr: Int, zones: HeartZones): Float = zones.position(bpm, maxHr)
+
+    /** Seconds in each live zone of [zones] over [samples] (time, bpm, ascending), where a gap counts up to [MAX_STEP_S]. */
+    fun liveZoneSeconds(samples: List<Pair<Long, Int>>, maxHr: Int, zones: HeartZones): IntArray {
         val out = IntArray(Workouts.ZONES)
-        samples.zipWithNext().forEach { (a, b) -> out[liveZone(a.second, maxHr)!!] += (b.first - a.first).coerceIn(0, MAX_STEP_S).toInt() }
+        samples.zipWithNext().forEach { (a, b) ->
+            out[liveZoneOf(a.second, maxHr, zones)] += (b.first - a.first).coerceIn(0, MAX_STEP_S).toInt()
+        }
         return out
     }
 
@@ -113,12 +118,14 @@ object WorkoutRecorder {
 
     /**
      * A phone workout analysed like a strap one, over its shown range only (a trim or an early end leaves the rest
-     * recorded but out of the figures); [hr] empty gives a list row.
+     * recorded but out of the figures). An empty [hr] gives a list row. Zone time is in your [zones].
      */
-    fun analyse(w: AppWorkout, hr: List<AppWorkoutHeartRate>, maxHeartRate: Int, now: Long = System.currentTimeMillis() / 1000): WorkoutAnalysis {
+    fun analyse(
+        w: AppWorkout, hr: List<AppWorkoutHeartRate>, maxHeartRate: Int, zones: HeartZones, now: Long = System.currentTimeMillis() / 1000,
+    ): WorkoutAnalysis {
         val end = w.end ?: now
         val shown = shown(w, hr, end)
-        return Workouts.analyse(toWorkout(w, now, stats(shown)), expand(shown).filter { it.timestamp in w.from..end }, emptyList(), maxHeartRate)
+        return Workouts.analyse(toWorkout(w, now, stats(shown)), expand(shown).filter { it.timestamp in w.from..end }, emptyList(), maxHeartRate, zones)
             .copy(
                 fromPhone = true, historyMinutes = shown.count { it.fromHistory }, historyRanges = historyRanges(shown),
                 shownStart = w.from, recordedEnd = w.recordedEnd, recoveryMinutes = w.recoveryMinutes, ownRecoveryMinutes = w.ownRecoveryMinutes,
@@ -337,12 +344,13 @@ object WorkoutRecorder {
         }.sortedByDescending { it.workout.start }.take(USUAL_COUNT)
     }
 
-    /** "Your usual" from [similar] workouts analysed with their heart rate; null without any. */
-    fun usual(similar: List<WorkoutAnalysis>): Usual? {
+    /** "Your usual" from [similar] workouts analysed with their heart rate, zone shares in [zones], or null without any. */
+    fun usual(similar: List<WorkoutAnalysis>, zones: HeartZones): Usual? {
         if (similar.isEmpty()) return null
         val shares = FloatArray(Workouts.ZONES)
         similar.forEach { a ->
-            val z = liveZoneSeconds(a.heartRate.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate)
+            val shown = a.heartRate.filter { it.timestamp in a.shownStart..a.end }.map { it.timestamp to it.bpm }
+            val z = liveZoneSeconds(shown, a.maxHeartRate, zones)
             val total = z.sum()
             if (total > 0) for (i in z.indices) shares[i] += z[i].toFloat() / total / similar.size
         }

@@ -11,6 +11,7 @@ import org.openstrap.app.data.Structure
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
+import org.openstrap.app.data.HeartZones
 
 class FamilySummaryTest {
     // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
@@ -189,15 +190,15 @@ class FamilySummaryTest {
     fun periodsAreHalvesOrQuarters() {
         val readings = (0L..6000L step 5).map { it to 150 }
         val halves = listOf(AppWorkoutRound(0, 0, 0, 2400, 3000), AppWorkoutRound(0, 1, 3000, 5400, 5400))
-        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190, 2).map { it.name })
-        assertEquals(150, FamilySummary.periods(halves, readings, 190, 2)[0].averageBpm)
+        assertEquals(listOf("1st half", "2nd half"), FamilySummary.periods(halves, readings, 190, 2, HeartZones.STANDARD).map { it.name })
+        assertEquals(150, FamilySummary.periods(halves, readings, 190, 2, HeartZones.STANDARD)[0].averageBpm)
     }
 
     @Test
     fun aQuartersGameEndedEarlyKeepsItsQuarters() {
         val readings = (0L..6000L step 5).map { it to 150 }
         val two = listOf(AppWorkoutRound(0, 0, 0, 900, 1000), AppWorkoutRound(0, 1, 1000, 1900, null))
-        assertEquals(listOf("1st quarter", "2nd quarter"), FamilySummary.periods(two, readings, 190, 4).map { it.name })
+        assertEquals(listOf("1st quarter", "2nd quarter"), FamilySummary.periods(two, readings, 190, 4, HeartZones.STANDARD).map { it.name })
     }
 
     @Test

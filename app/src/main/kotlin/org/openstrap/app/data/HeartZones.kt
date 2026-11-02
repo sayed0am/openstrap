@@ -1,7 +1,5 @@
 package org.openstrap.app.data
 
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlin.math.ceil
 
 /**
@@ -9,7 +7,7 @@ import kotlin.math.ceil
  * percent of max heart rate ([starts], ascending), so they follow max HR as it's learned or set. Zone 5 runs on up.
  *
  * Everything that reads a zone ([Workouts.zoneOf], [WorkoutRecorder.liveZone] and [WorkoutRecorder.zonePosition], so
- * zone goals, live zones, zone time and the route's colours) reads [current], which the app keeps to what's stored
+ * zone goals, live zones, zone time and the route's colours) is handed the zones to read, as stored
  * ([org.openstrap.app.data.settings.SettingsStore.heartZones]). Stored as [encode]; [STANDARD] until moved.
  */
 data class HeartZones(val starts: List<Float>) {
@@ -79,16 +77,6 @@ data class HeartZones(val starts: List<Float>) {
             if (v.size != Workouts.ZONES || v.first() < MIN_START_PCT || v.last() >= 100f) return null
             if (v.zipWithNext().any { (a, b) -> b <= a }) return null
             return HeartZones(v)
-        }
-
-        private val live = MutableStateFlow(STANDARD)
-
-        /** The zones in use now, everywhere. */
-        val current: StateFlow<HeartZones> = live
-
-        /** Makes [zones] the ones in use ([current]). */
-        fun use(zones: HeartZones) {
-            live.value = zones
         }
     }
 }

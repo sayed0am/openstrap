@@ -78,10 +78,11 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.StartCopy
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.workout.readyHero
 
 /*
  * Ready for distance and cardio sports (board ReadyFinal): the heart, where you are, then the goal, typed in place.
@@ -176,7 +177,7 @@ internal fun ReadyWhere(
     }
 }
 
-private val SportIconsLocation: ImageVector get() = org.openstrap.app.ui.workout.SportIcons.Location
+private val SportIconsLocation: ImageVector get() = org.openstrap.app.ui.theme.SportIcons.Location
 
 /** Amber, for an indoor side: zone 3's yellow, as the board has it. */
 private val IndoorTint = ZONE_COLORS[2]
@@ -349,7 +350,7 @@ private fun kindName(k: GoalKind, type: Int): String = when (k) {
 }
 
 private fun kindIcon(k: GoalKind, type: Int): ImageVector = when (k) {
-    GoalKind.None -> org.openstrap.app.ui.workout.SportIcons.of(type)
+    GoalKind.None -> org.openstrap.app.ui.theme.SportIcons.of(type)
     GoalKind.Distance -> AppIcons.Route01
     GoalKind.Time -> AppIcons.Timer
     GoalKind.Zone -> AppIcons.Pulse01

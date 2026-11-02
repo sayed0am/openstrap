@@ -14,6 +14,7 @@ import org.openstrap.app.presentation.ClockSetting
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.assertCleanCopy
 import java.util.Locale
+import org.openstrap.app.presentation.TabCopy
 
 /** The words on the Recovery, Sleep and Activity tabs (spec 5 and 7). */
 class TabCopyTest {

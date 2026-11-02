@@ -46,6 +46,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Collections
+import org.openstrap.app.data.HeartZones
 
 /**
  * The workouts list is worked out off the main thread (audit C7), the suggestions' window moves on at midnight
@@ -94,7 +95,7 @@ class WorkoutsViewModelThreadsTest {
 
     private fun vm(profile: Flow<UserProfile> = flowOf(profile()), onTestTime: Boolean = false): WorkoutsViewModel {
         val work = if (onTestTime) UnconfinedTestDispatcher(scheduler) else Dispatchers.Default
-        return WorkoutsViewModel(RoomWorkoutRepository(dao, profile, MaxHeartRates(dao, flowOf(profile()))), clock = { clock.clock }, work = work).also { vms += it }
+        return WorkoutsViewModel(RoomWorkoutRepository(dao, profile, MaxHeartRates(dao, flowOf(profile())), flowOf(HeartZones.STANDARD)), clock = { clock.clock }, work = work).also { vms += it }
     }
 
     private fun <T> Flow<T>.watched() {

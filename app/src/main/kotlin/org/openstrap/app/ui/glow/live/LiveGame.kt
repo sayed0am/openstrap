@@ -40,8 +40,9 @@ import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.StartCopy
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * Games and sports (workouts spec 2.7, board LiveGame), made for the phone in a bag: the period and the time in it,
@@ -66,17 +67,18 @@ internal fun LiveGameScreen(
     /** A short half: the total small on top, so the controls keep their labels. */
     compact: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
-    val color = workoutColor(r, liveHeartRate, connected)
+    val color = workoutColor(r, liveHeartRate, connected, heartZones)
     val periods = r.structure as? Structure.Periods
     // The phase alone picks the buttons; its clock is read in [PeriodRow], so the screen holds still between seconds.
     val phase = remember(r) { androidx.compose.runtime.derivedStateOf { r.phase(now.value) } }.value
     val active = activeSecondsState(r)
     val effort = Games.effort(zoneSeconds)
-    val hard = remember(readings.size / 10) { Games.hardEfforts(readings, r.maxHeartRate) }
+    val hard = remember(readings.size / 10, heartZones) { Games.hardEfforts(readings, r.maxHeartRate, heartZones) }
     val figures = listOf(
         kcal?.active?.toInt()?.toString() to "Active kcal",
         stats?.max?.toString() to "Peak bpm",
@@ -97,7 +99,7 @@ internal fun LiveGameScreen(
                         Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
                     }
                     Spacer(Modifier.weight(1f))
-                    WorkoutRecorder.liveZone(bpm, r.maxHeartRate)?.let { z ->
+                    WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)?.let { z ->
                         Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
                     }
                 }

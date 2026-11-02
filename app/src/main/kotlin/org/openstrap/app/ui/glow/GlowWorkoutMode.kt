@@ -38,7 +38,6 @@ import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -75,7 +74,7 @@ import org.openstrap.app.ui.components.GlassAlertDialog
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import androidx.compose.ui.semantics.onClick
 import org.openstrap.app.ui.workout.SummaryCopy
@@ -84,6 +83,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.data.HeartZones
+import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.runtime.ReadOnlyComposable
 
 /* ---------------------------------------------- Shared ----------------------------------------------- */
 
@@ -99,12 +101,12 @@ private val ButtonText = GlowType.body.copy(fontWeight = FontWeight.SemiBold)
 /** Body in Medium, for pills, chips and short live lines. */
 internal val MediumBody = GlowType.body.copy(fontWeight = FontWeight.Medium)
 
-/** The colour a workout takes: its live zone's, or [PausedColor] with no reading. */
-internal fun zoneColor(bpm: Int?, maxHr: Int): Color = WorkoutRecorder.liveZone(bpm, maxHr)?.let { ZONE_COLORS[it] } ?: PausedColor
+/** The colour a workout takes: its live zone's in your [zones], or [PausedColor] with no reading. */
+internal fun zoneColor(bpm: Int?, maxHr: Int, zones: HeartZones): Color = WorkoutRecorder.liveZone(bpm, maxHr, zones)?.let { ZONE_COLORS[it] } ?: PausedColor
 
 /** The colour the whole app takes while [r] records. */
-fun workoutColor(r: WorkoutState.Recording, liveHeartRate: Int?, connected: Boolean): Color =
-    if (r.paused) PausedColor else zoneColor(liveHeartRate.takeIf { connected }, r.maxHeartRate)
+fun workoutColor(r: WorkoutState.Recording, liveHeartRate: Int?, connected: Boolean, zones: HeartZones): Color =
+    if (r.paused) PausedColor else zoneColor(liveHeartRate.takeIf { connected }, r.maxHeartRate, zones)
 
 /** "12:34", or "1:02:03" past the hour, in the phone's digits. Text drawn in dots passes [Units.DOT_LOCALE]. */
 internal fun workoutClock(seconds: Long, locale: java.util.Locale = java.util.Locale.getDefault()): String = Units.workoutClock(seconds, locale)
@@ -113,10 +115,11 @@ internal fun workoutClock(seconds: Long, locale: java.util.Locale = java.util.Lo
 internal fun dotClock(seconds: Long): String = Units.workoutClock(seconds, Units.DOT_LOCALE)
 
 /** A live zone's heart rates in your zones: "under 115 bpm" for zone 1 (anything slower counts), else "134 to 152 bpm". */
-// Collected, so it reads again when the zones are moved on the Heart rate zones page.
+// From the root, so it reads again when the zones are moved on the Heart rate zones page.
 @Composable
+@ReadOnlyComposable
 internal fun zoneRange(zone: Int, maxHr: Int): String {
-    val zones = org.openstrap.app.data.HeartZones.current.collectAsState().value
+    val zones = LocalHeartZones.current
     return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
 }
 
@@ -303,11 +306,12 @@ fun GlowAddWorkoutScreen(
     recentSports: List<Int> = emptyList(),
     sides: Map<Int, Boolean> = emptyMap(),
 ) {
+    val heartZones = LocalHeartZones.current
     var picking by rememberSaveable { mutableStateOf(false) }
     val series = minuteHr.orEmpty()
     val first = series.firstOrNull()?.first ?: 0L
     val last = (series.lastOrNull()?.first ?: 0L) + 60
-    val likely = remember(series) { WorkoutSuggestions.find(series, 60, maxHr, emptyList()).firstOrNull() }
+    val likely = remember(series, heartZones) { WorkoutSuggestions.find(series, 60, maxHr, emptyList(), heartZones).firstOrNull() }
     var from by rememberSaveable(series.size) { mutableStateOf(likely?.start ?: (last - 1800).coerceAtLeast(first)) }
     var to by rememberSaveable(series.size) { mutableStateOf(likely?.end ?: last) }
     if (picking) {
@@ -353,6 +357,7 @@ private val TrimSide = 12.dp
 /** A day of minute heart rate in its zones' colours, with two handles marking a range; outside it dims. */
 @Composable
 private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, from: Long, to: Long, maxHr: Int, onChange: (Long, Long) -> Unit) {
+    val heartZones = LocalHeartZones.current
     val lo = (series.minOfOrNull { it.second } ?: 60) - 5f
     val hi = (series.maxOfOrNull { it.second } ?: 180) + 5f
     // The drag reads the range as it stands when it starts and keeps its own copy while it moves, so nothing is
@@ -388,7 +393,7 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
         series.zipWithNext().forEach { (a, b) ->
             if (b.first - a.first > 300) return@forEach
             val inside = a.first in f until t
-            val color = ZONE_COLORS[WorkoutRecorder.liveZone(a.second, maxHr)!!].copy(alpha = if (inside) 1f else 0.25f)
+            val color = ZONE_COLORS[WorkoutRecorder.liveZoneOf(a.second, maxHr, heartZones)].copy(alpha = if (inside) 1f else 0.25f)
             drawLine(color, Offset(x(a.first), y(a.second.toFloat())), Offset(x(b.first), y(b.second.toFloat())), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
         }
         listOf(f, t).forEach { time ->
@@ -480,6 +485,7 @@ internal fun TrimSection(summary: PhoneSummary, onTrim: (from: Long, to: Long) -
  */
 @Composable
 internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCancel: () -> Unit) {
+    val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val first = summary.recordedStart
     val last = summary.recordedEnd.coerceAtLeast(first + 60)
@@ -533,7 +539,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
                 val cx = inset + (c + 0.5f) * (w / cols)
                 val i = ((c + 0.5f) / cols * points.size).toInt().coerceIn(0, points.size - 1)
                 val v = points[i] ?: continue
-                val zone = WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate) ?: continue
+                val zone = WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate, heartZones) ?: continue
                 val barH = ((v - lo) / (hi - lo)).coerceIn(0.1f, 1f) * (h - 2 * pad)
                 val color = ZONE_COLORS[zone]
                 drawRoundRect(

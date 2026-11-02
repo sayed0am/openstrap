@@ -9,6 +9,7 @@ import org.junit.Test
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.glow.pickedType
 import java.io.File
+import org.openstrap.app.presentation.WorkoutCopy
 
 /**
  * The workout pages' rules (spec 6.3, design step 9): twelve everyday sports and More sports, outdoor or indoor as a

@@ -8,6 +8,8 @@ import org.openstrap.app.presentation.RecoveryBands
 import org.openstrap.app.presentation.SleepBands
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Vo2maxCopy
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.presentation.Metric
 
 /*
  * What every detail's info sheet says (spec 6.2): a bold one-line meaning, the scale its value is read on, and three

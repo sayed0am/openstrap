@@ -463,7 +463,7 @@ data class StageStripSegment(val stage: Int, val x0: Float, val x1: Float)
  * across [width] px from the first stage's start to the last's end, each stretch its stage's. The ends sit half the
  * thickness in, so the round caps stay inside. Empty without stages.
  */
-fun stageStripSegments(spans: List<org.openstrap.app.ui.components.StageSpan>, width: Float, height: Float): List<StageStripSegment> {
+fun stageStripSegments(spans: List<org.openstrap.app.presentation.StageSpan>, width: Float, height: Float): List<StageStripSegment> {
     if (spans.isEmpty()) return emptyList()
     val start = spans.minOf { it.start }
     val end = spans.maxOf { it.end }.coerceAtLeast(start + 1)

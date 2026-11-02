@@ -54,9 +54,10 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.IntervalMoment
 import org.openstrap.app.ui.workout.StartCopy
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.intervalMoment
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /** Work red and rest green, the intervals' two colours. */
 private val WorkRed = MetricColors.heart
@@ -83,6 +84,7 @@ internal fun LiveIntervalsScreen(
     split: Boolean = false,
     compact: Boolean = false,
 ) {
+    val heartZones = LocalHeartZones.current
     val now = nowTickingState()
     val connected = connection is ConnectionState.Connected
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
@@ -95,7 +97,7 @@ internal fun LiveIntervalsScreen(
         r.paused -> org.openstrap.app.ui.glow.PausedColor
         phase is Phase.Work -> WorkRed
         phase is Phase.Rest -> RestGreen
-        else -> org.openstrap.app.ui.glow.workoutColor(r, liveHeartRate, connected)
+        else -> org.openstrap.app.ui.glow.workoutColor(r, liveHeartRate, connected, heartZones)
     }
     val skipLabel = when (phase) {
         is Phase.Work -> if (r.structure is org.openstrap.app.data.Structure.EveryMinute) "Done" else "Skip"
@@ -249,11 +251,12 @@ private fun ColumnScope.PhaseFigure(
 /** The heart rate on a black pill as wide as its words, with the zone's dot and name: the phase's colour is all around it. */
 @Composable
 private fun HeartStripDark(bpm: Int?, maxHr: Int, paused: Boolean, modifier: Modifier = Modifier) {
+    val heartZones = LocalHeartZones.current
     Row(
         modifier.height(52.dp).clip(CircleShape).background(Color.Black).padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        val zone = WorkoutRecorder.liveZone(bpm, maxHr)
+        val zone = WorkoutRecorder.liveZone(bpm, maxHr, heartZones)
         Canvas(Modifier.size(8.dp)) { drawCircle(zone?.let { ZONE_COLORS[it] } ?: Color.White) }
         Spacer(Modifier.width(10.dp))
         Text(bpm?.let { "$it bpm" } ?: WorkoutCopy.noHeartRate(paused), color = Color.White, style = GlowType.body)

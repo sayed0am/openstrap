@@ -1,16 +1,14 @@
-package org.openstrap.app.presentation
+package org.openstrap.app.update
 
-import org.openstrap.app.update.Install
-import org.openstrap.app.update.InstallFailure
-import org.openstrap.app.update.Release
-import org.openstrap.app.update.Releases
-import org.openstrap.app.update.UpdateState
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Formatters
 import java.time.ZoneId
 import java.util.Locale
 
 /**
  * The words of updates on the You and Updates pages and in their notifications. Here rather than in ui, so the update
- * notifier reads them without depending on the screens.
+ * notifier reads them without depending on the screens, and beside the update state they describe rather than in
+ * presentation, which sits below update and can't name it.
  */
 object UpdateCopy {
     /** The You page's Updates row: a new version, a check under way, up to date, or only the version when never checked. */

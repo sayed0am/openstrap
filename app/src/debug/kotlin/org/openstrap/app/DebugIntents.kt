@@ -21,7 +21,7 @@ import org.openstrap.app.device.StrapService
 import org.openstrap.app.device.WorkoutSession
 import org.openstrap.app.ui.dashboard.DataPreview
 import org.openstrap.app.ui.dashboard.StrapPreview
-import org.openstrap.app.ui.glow.debugRecoveryScore
+import org.openstrap.app.ui.glow.debugRecoveryScoreState
 import org.openstrap.app.ui.root.DebugPreviews
 
 private const val TAG = "OpenStrap"
@@ -124,7 +124,7 @@ private fun MainActivity.shownStates(previews: DebugPreviews) {
     if (intent.hasExtra("recovery_score")) {
         val score = intent.getIntExtra("recovery_score", -1)
         intent.removeExtra("recovery_score")
-        debugRecoveryScore.value = score.takeIf { it in 0..SCORE_MAX }
+        debugRecoveryScoreState.value = score.takeIf { it in 0..SCORE_MAX }
     }
     // `--es strap_state stuck` shows a strap state on a phone whose strap is fine.
     intent.getStringExtra(EXTRA_STRAP_STATE)?.let { state ->

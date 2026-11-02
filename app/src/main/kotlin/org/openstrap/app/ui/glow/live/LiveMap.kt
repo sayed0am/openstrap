@@ -20,7 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.layout.Column
-import org.openstrap.app.ui.workout.WorkoutCopy
+import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.device.WorkoutState
 import androidx.compose.ui.platform.LocalDensity
@@ -43,6 +43,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
 import org.openstrap.app.ui.glow.*
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
@@ -67,13 +68,14 @@ internal fun LiveMapScreen(
     /** False when the heart rate is on the other half of a folded phone. */
     heartPill: Boolean = true,
 ) {
+    val heartZones = LocalHeartZones.current
     BackHandler(onBack = controls.onMinimize)
     val density = LocalDensity.current
     var panel by remember { mutableStateOf(344.dp) }
     var routeOnly by rememberSaveable { mutableStateOf(false) }
     var follow by rememberSaveable { mutableStateOf(true) }
     // A reading comes every second: the zone colours follow every tenth, the line every fix.
-    val stretches = remember(route.size, readings.size / 10) { Route.byZone(route, readings, r.maxHeartRate) }
+    val stretches = remember(route.size, readings.size / 10, heartZones) { Route.byZone(route, readings, r.maxHeartRate, heartZones) }
     val here = route.lastOrNull { it.accuracy <= Route.MAX_ACCURACY_M }
     val top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + contentPadding.calculateTopPadding() + 8.dp
     Box(Modifier.fillMaxSize().background(Color.Black)) {

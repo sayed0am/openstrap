@@ -9,7 +9,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.openstrap.app.testing.assertCleanCopy
-import org.openstrap.app.ui.dashboard.TodayCopy.LoadStatus
+import org.openstrap.app.presentation.TodayCopy.LoadStatus
+import org.openstrap.app.presentation.TodayCopy
 
 /** Today's hero sentences and small facts (spec 4.2, 4.3, 7). */
 class TodayCopyTest {

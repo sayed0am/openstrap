@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.data.Moment
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
@@ -59,6 +60,13 @@ enum class GlowMood(val glow: Float, val edge: Float, val tone: Boolean, val bel
 
     /** The night moment, and the Sleep tab always: calmer still, and every light comes from below. */
     Night(glow = 0.65f, edge = 0.8f, tone = true, belowOnly = true),
+}
+
+/** Today's light for a moment (spec 2.1 Moods): softer in the evening, calmer and from below at night. */
+fun momentMood(moment: Moment): GlowMood = when (moment) {
+    Moment.Evening -> GlowMood.Evening
+    Moment.Night -> GlowMood.Night
+    else -> GlowMood.Day
 }
 
 /**

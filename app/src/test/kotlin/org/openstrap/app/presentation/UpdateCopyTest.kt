@@ -10,6 +10,7 @@ import org.openstrap.app.update.UpdateState
 import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
+import org.openstrap.app.update.UpdateCopy
 
 class UpdateCopyTest {
     private val utc = ZoneId.of("UTC")

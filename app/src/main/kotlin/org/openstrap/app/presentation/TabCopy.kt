@@ -1,16 +1,19 @@
-package org.openstrap.app.ui.dashboard
+package org.openstrap.app.presentation
 
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.data.SportTypes
+import org.openstrap.app.data.db.SleepStage
 import java.time.LocalDate
 import java.util.Locale
-import org.openstrap.app.presentation.DayWords
-import org.openstrap.app.presentation.Pace
-import org.openstrap.app.presentation.RecoveryBands
-import org.openstrap.app.presentation.SleepBands
-import org.openstrap.app.presentation.TimeOfDay
-import org.openstrap.app.presentation.Units
+
+/** The sleep stages by name, as the hypnogram and the stage totals say them. */
+val SLEEP_NAMES = mapOf(
+    SleepStage.AWAKE to "Awake",
+    SleepStage.REM to "REM",
+    SleepStage.LIGHT to "Light",
+    SleepStage.DEEP to "Deep",
+)
 
 /*
  * The words on the Recovery, Sleep and Activity tabs (spec 5 and 7). Like [TodayCopy], built only from numbers the
@@ -60,7 +63,7 @@ object TabCopy {
     /** Contributors this light or lighter never lead the sentence: too small a part of the score. */
     private const val SENTENCE_WEIGHT = 0.06f
 
-    /** Below this a contributor holds the score back ([org.openstrap.app.ui.dashboard.Narrative.ratingFor]'s Good). */
+    /** Below this a contributor holds the score back (the Narrative's ratingFor calls it Good). */
     private const val HELD_BACK_BELOW = RecoveryBands.READY_FROM
 
     /**

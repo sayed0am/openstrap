@@ -181,7 +181,7 @@ class WorkoutSession(
                     _stats.value = WorkoutRecorder.stats(stored)
                     val live = stored.filter { !it.fromHistory }.map { it.timestamp to it.bpm }
                     val maxHr = maxHeartRate()
-                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr)
+                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr, HeartZonesInUse.current.value)
                     lastReading = live.lastOrNull()
                     _kcal.value = null
                     stepTotals = emptyList()
@@ -1161,11 +1161,13 @@ class WorkoutSession(
         // A pause between this reading and the one before isn't time in zone. Checked here rather than cleared on
         // resume, so only this coroutine touches what a reading adds up.
         lastReading?.takeIf { (pt, _) -> (r.workout.pauseRanges.lastOrNull()?.last ?: Long.MIN_VALUE) <= pt }?.let { (pt, pbpm) ->
-            val z = WorkoutRecorder.liveZone(pbpm, r.maxHeartRate)!!
+            val z = WorkoutRecorder.liveZoneOf(pbpm, r.maxHeartRate, HeartZonesInUse.current.value)
             _zoneSeconds.value = _zoneSeconds.value.copyOf().also { it[z] += (t - pt).coerceIn(0, WorkoutRecorder.MAX_STEP_S).toInt() }
         }
         lastReading = t to bpm
-        coach.feed(t, WorkoutRecorder.liveZone(bpm, r.maxHeartRate), WorkoutRecorder.activeSeconds(r.workout, t))?.let(::cue)
+        coach.feed(
+            t, WorkoutRecorder.liveZone(bpm, r.maxHeartRate, HeartZonesInUse.current.value), WorkoutRecorder.activeSeconds(r.workout, t),
+        )?.let(::cue)
         _stats.value = WorkoutRecorder.Stats(Math.round(sum.toDouble() / count).toInt(), maxOf(_stats.value?.max ?: 0, bpm), minOf(_stats.value?.min ?: bpm, bpm))
         // Last, so whoever sees the reading in [recent] also sees its zone time and stats.
         _recent.value = (_recent.value + (t to bpm)).dropWhile { it.first < t - RECENT_S }

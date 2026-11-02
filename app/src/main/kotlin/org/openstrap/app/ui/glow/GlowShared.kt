@@ -3,7 +3,7 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.WorkoutAnalysis
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 
 /*
  * Words and small helpers the glow screens share, each written once. Date labels and numbers are in presentation's

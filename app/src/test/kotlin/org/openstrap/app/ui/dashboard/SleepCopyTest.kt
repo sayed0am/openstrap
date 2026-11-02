@@ -9,9 +9,15 @@ import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import java.time.LocalDate
 import java.time.ZoneOffset
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 
 /** The Sleep tab's details (spec 5.2 and 6.1): night-scoped values come from the sleep, and say so. */
 class SleepCopyTest {

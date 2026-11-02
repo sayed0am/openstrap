@@ -4,11 +4,15 @@ import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
 import org.openstrap.app.data.SleepRegularity
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.TabCopy
 
 /*
  * The numbers and words of the Sleep tab's details (spec 5.2 and 6.1): the night-scoped vitals, the Sleep score, Sleep

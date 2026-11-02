@@ -30,6 +30,7 @@ import org.openstrap.app.ui.glow.HeartZonesScreen
 import org.openstrap.app.ui.glow.HistoryBadgesScreen
 import org.openstrap.app.ui.glow.WeeklyGoalSheet
 import org.openstrap.app.ui.glow.WeeklyRecapPage
+import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
  * The Goals and bests page, All badges and the weekly recap (workouts spec 3.5), from what's stored and every workout,
@@ -90,7 +91,7 @@ internal fun HeartZonesPage(
     onZones: (HeartZones) -> Unit,
     onBack: () -> Unit,
 ) {
-    val zones by HeartZones.current.collectAsStateWithLifecycle()
+    val zones = LocalHeartZones.current
     val max by container.maxHeartRates.current.collectAsStateWithLifecycle()
     // Afresh as the page opens, as it always was. A profile change works it out again on its own.
     LaunchedEffect(Unit) { container.maxHeartRates.now() }

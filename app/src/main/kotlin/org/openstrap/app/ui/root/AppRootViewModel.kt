@@ -141,7 +141,7 @@ class AppRootViewModel(
         combine(settings.goalMoment, settings.weeklyRecap, settings.goalMomentWeek, ::CelebrationSettings).state(CelebrationSettings())
 
     /** The workout at a glance, for the Today hero and the floating bar (workouts spec 2.10). */
-    val liveGlance: StateFlow<LiveGlance?> = liveGlance(workout, strap.liveHeartRate, strap.connection).state(null)
+    val liveGlance: StateFlow<LiveGlance?> = liveGlance(workout, strap.liveHeartRate, strap.connection, settings.heartZones).state(null)
 
     /** The badges past history earned, shown once all together (requests spec 7.2). Null while none wait. */
     val historyBadges: StateFlow<List<EarnedBadge>?> = settings.historyBadgesWaiting.flatMapLatest { waiting ->
@@ -228,11 +228,10 @@ class AppRootViewModel(
     /** Your max, or null to go back to the one the app works out. */
     fun setMaxHeartRate(bpm: Int?) = write("max heart rate") { settings.setMaxHeartRate(bpm) }
 
-    /** In use before it's stored, so a quick second tap moves on from this one. */
-    fun setHeartZones(zones: HeartZones) {
-        HeartZones.use(zones)
-        write("heart zones") { settings.setHeartZones(zones) }
-    }
+    /** Your heart rate zones as stored: the screens read these, so they never run ahead of what's on disk (audit A8). */
+    val heartZones: StateFlow<HeartZones> = settings.heartZones.state(HeartZones.STANDARD)
+
+    fun setHeartZones(zones: HeartZones) = write("heart zones") { settings.setHeartZones(zones) }
 
     fun historyBadgesShown() = write("history badges") { settings.historyBadgesShown() }
 

@@ -35,7 +35,7 @@ import org.openstrap.app.ui.glow.draw.drawStageStrip
 import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 
 /**
  * The Moment widget (widgets spec 3.1): what matters now, following the day as Today's hero does, from the same
