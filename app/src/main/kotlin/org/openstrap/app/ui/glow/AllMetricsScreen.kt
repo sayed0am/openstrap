@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis

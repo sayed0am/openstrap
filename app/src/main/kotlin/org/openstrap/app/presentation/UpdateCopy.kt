@@ -1,4 +1,4 @@
-package org.openstrap.app.ui.device
+package org.openstrap.app.presentation
 
 import org.openstrap.app.update.Install
 import org.openstrap.app.update.InstallFailure
@@ -6,23 +6,25 @@ import org.openstrap.app.update.Release
 import org.openstrap.app.update.Releases
 import org.openstrap.app.update.UpdateState
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** The words of updates on the You and Updates pages and in their notifications. */
+/**
+ * The words of updates on the You and Updates pages and in their notifications. Here rather than in ui, so the update
+ * notifier reads them without depending on the screens.
+ */
 object UpdateCopy {
     /** The You page's Updates row: a new version, a check under way, up to date, or only the version when never checked. */
     fun summary(state: UpdateState, installed: String, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
         Releases.newer(state.releases, installed).firstOrNull()?.let { return "OpenStrap ${it.versionName} is ready to install" }
         if (state.checking) return "Checking"
         val checked = state.checkedAt ?: return "Version $installed"
-        return "Up to date. Checked ${BackupCopy.whenDone(checked, now, zone, locale)}"
+        return "Up to date. Checked ${DayWords.whenDone(checked, now, zone, locale = locale)}"
     }
 
     /** The Check now row's value. */
     fun checkStatus(state: UpdateState, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
         if (state.checking) return "Checking GitHub"
-        val checked = state.checkedAt?.let { BackupCopy.whenDone(it, now, zone, locale) }
+        val checked = state.checkedAt?.let { DayWords.whenDone(it, now, zone, locale = locale) }
         if (state.checkFailed) return if (checked != null) "Couldn't reach GitHub. Last checked $checked" else "Couldn't reach GitHub"
         return if (checked != null) "Last checked $checked" else "Never checked"
     }
@@ -64,7 +66,7 @@ object UpdateCopy {
 
     /** When a release came out, beside its version over its notes: "25 Oct 2026". */
     fun date(publishedAt: java.time.Instant, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
-        publishedAt.atZone(zone).format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
+        publishedAt.atZone(zone).format(Formatters.of("d MMM yyyy", locale))
 
     /** A new release's notification title. */
     fun availableTitle(release: Release): String = "OpenStrap ${release.versionName} is out"

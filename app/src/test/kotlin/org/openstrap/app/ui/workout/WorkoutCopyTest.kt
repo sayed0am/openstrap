@@ -11,6 +11,9 @@ import org.openstrap.app.device.ConnectionState
 
 /** The Ready and live workout screens' words and rules (spec 6.3). */
 class WorkoutCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val connected = ConnectionState.Connected(batteryPercent = 80, firmware = null)
 
     @Test fun `the ready hero is the strap in every state`() {
@@ -18,6 +21,10 @@ class WorkoutCopyTest {
         assertEquals(live, WorkoutCopy.readyHero(connected, 72))
         assertEquals(live.copy(line = "Waiting for heart rate."), WorkoutCopy.readyHero(connected, null))
         assertEquals(live.copy(line = "Live from your strap. Battery 15%."), WorkoutCopy.readyHero(connected.copy(batteryPercent = 15), 72))
+        // Ready warns at 20%, earlier than the 15% everywhere else, before a workout that may run long.
+        assertEquals(live.copy(line = "Live from your strap. Battery 20%."), WorkoutCopy.readyHero(connected.copy(batteryPercent = 20), 72))
+        assertEquals(live, WorkoutCopy.readyHero(connected.copy(batteryPercent = 21), 72))
+        assertTrue(WorkoutCopy.READY_LOW_BATTERY > org.openstrap.app.presentation.StrapBands.LOW_BATTERY)
         // Charging, a low battery is on its way up: not worth a word.
         assertEquals(live, WorkoutCopy.readyHero(connected.copy(batteryPercent = 15, charging = true), 72))
         val away = WorkoutCopy.ReadyHero("Strap not connected", "You can start anyway.", live = false)

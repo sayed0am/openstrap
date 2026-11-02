@@ -183,7 +183,7 @@ internal fun LiveFrame(
             return@WorkoutPage
         }
         if (!connected && !r.paused) {
-            Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
+            Note(WorkoutCopy.STRAP_GONE_NOTE)
         }
         r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
         if (!fill || r.paused) Spacer(Modifier.weight(1f))
@@ -332,7 +332,7 @@ internal fun LiveBottomBar(
                 .padding(start = side, end = side, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-            if (!connected) Note("The strap isn't connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.")
+            if (!connected) Note(WorkoutCopy.STRAP_GONE_NOTE)
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
             val at = position()
             Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {

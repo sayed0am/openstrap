@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Rewards
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.RewardsCopy
+import org.openstrap.app.presentation.RewardsCopy
 
 /*
  * The celebrations (workouts spec 3.4, boards GoalMoment and BadgeUnlocked): the full screen goal moment, once a week,

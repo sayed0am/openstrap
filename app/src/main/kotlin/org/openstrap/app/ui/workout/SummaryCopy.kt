@@ -4,10 +4,9 @@ import java.util.Locale
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.dashboard.TodayCopy
 import org.openstrap.app.ui.dashboard.sportNoun
-import org.openstrap.app.ui.glow.km
-import org.openstrap.app.ui.glow.workoutClock
 
 /*
  * What the summary right after a workout says (spec 6.3, "Right after"): the heart rate drop as it happens and how it
@@ -18,8 +17,14 @@ import org.openstrap.app.ui.glow.workoutClock
 /** The hero right after a workout: still [watching] the first minute, or the [drop] once it's done, and its line. */
 data class CalmDownLine(val watching: Boolean, val drop: Int?, val text: String)
 
-/** A kilometre on the Splits list: "Km 3" in "5:42", with its average heart rate when there were readings. */
-data class SplitRow(val name: String, val time: String, val averageBpm: Int?)
+/**
+ * A kilometre on the Splits list: "Km 3" in "5:42", with its average heart rate when there were readings. [seconds] and
+ * [kind] are what the list's marks read, so a change to the words can't move them.
+ */
+data class SplitRow(val name: String, val time: String, val averageBpm: Int?, val seconds: Long, val kind: Kind) {
+    /** A whole kilometre, or the part one at the end. */
+    enum class Kind { Whole, Last }
+}
 
 object SummaryCopy {
     /** The drop is read over the first minute after the end. */
@@ -127,9 +132,11 @@ object SummaryCopy {
      * The workout card's line: distance (≈ from steps), the average, and paused time past a minute: "5.21 km, average
      * 142 bpm. Paused 4 min." Null when there's none of them.
      */
-    fun workoutLine(meters: Float?, fromSteps: Boolean, averageBpm: Int?, pausedSeconds: Long): String? {
+    fun workoutLine(
+        meters: Float?, fromSteps: Boolean, averageBpm: Int?, pausedSeconds: Long, locale: Locale = Locale.getDefault(),
+    ): String? {
         val parts = listOfNotNull(
-            meters?.takeIf { it >= 10f }?.let { (if (fromSteps) "≈ " else "") + km(it) + if (it >= 1000) " km" else "" },
+            meters?.let { Units.distance(it, Units.Precision.Workout, fromSteps, locale) },
             averageBpm?.takeIf { it > 0 }?.let { "average $it bpm" },
         ).joinToString(", ").replaceFirstChar { it.uppercase() }
         val paused = (pausedSeconds / 60).takeIf { it >= 1 }?.let { "Paused $it min." }
@@ -145,7 +152,7 @@ object SummaryCopy {
         val k = WorkoutTarget.parse(target) as? WorkoutTarget.Kcal ?: return null
         val goal = "%,d".format(locale, k.kcal)
         return when {
-            reachedSeconds != null -> "Target $goal kcal, reached at ${workoutClock(reachedSeconds)}"
+            reachedSeconds != null -> "Target $goal kcal, reached at ${Units.workoutClock(reachedSeconds, locale)}"
             activeKcal != null && activeKcal >= k.kcal -> "Target $goal kcal, reached"
             activeKcal != null -> "Target not reached, %,d of $goal kcal".format(locale, activeKcal)
             else -> "Target $goal kcal, not reached"
@@ -153,13 +160,17 @@ object SummaryCopy {
     }
 
     /** A lap's line on the list: "1.02 km, average 150 bpm"; null with neither. */
-    fun lapLine(meters: Double?, averageBpm: Int?): String? = listOfNotNull(
-        meters?.let { km(it.toFloat()) + if (it >= 1000) " km" else "" },
+    fun lapLine(meters: Double?, averageBpm: Int?, locale: Locale = Locale.getDefault()): String? = listOfNotNull(
+        meters?.let { Units.distance(it.toFloat(), Units.Precision.Workout, locale = locale) },
         averageBpm?.let { "average $it bpm" },
     ).joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
 
     /** The trim panel's header: "18:02–18:40, 38:12". */
-    fun trimHeader(from: String, to: String, seconds: Long): String = "$from–$to, ${workoutClock(seconds)}"
+    fun trimHeader(from: String, to: String, seconds: Long): String = "$from–$to, ${Units.workoutClock(seconds)}"
+
+    /** The last part's distance, down to "0 m" where the smoothed total leaves next to nothing. */
+    private fun lastPart(meters: Float, locale: Locale): String =
+        Units.distance(meters, Units.Precision.Workout, locale = locale) ?: String.format(locale, "%d m", meters.toInt())
 
     /** A last stretch shorter than this isn't worth a row. */
     private const val PARTIAL_MIN_M = 100.0
@@ -170,12 +181,19 @@ object SummaryCopy {
      * With the workout's [totalMeters], the last part is what's left of it after the whole kilometres, so the list adds
      * up to the distance shown above it (the raw route runs a little longer than the smoothed distance).
      */
-    fun splitRows(splits: List<Route.Split>, readings: List<Pair<Long, Int>>, firstT: Long?, totalMeters: Float? = null): List<SplitRow> =
+    fun splitRows(
+        splits: List<Route.Split>, readings: List<Pair<Long, Int>>, firstT: Long?, totalMeters: Float? = null,
+        locale: Locale = Locale.getDefault(),
+    ): List<SplitRow> =
         splits.mapIndexedNotNull { i, sp ->
             val whole = sp.meters >= 1000.0
             if (!whole && (i != splits.lastIndex || sp.meters < PARTIAL_MIN_M)) return@mapIndexedNotNull null
             val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
             val last = totalMeters?.let { it - 1000f * i }?.takeIf { it > 0f } ?: sp.meters.toFloat()
-            SplitRow(if (whole) "Km ${i + 1}" else "Last ${km(last)}", workoutClock(sp.seconds), WorkoutCopy.averageOver(readings, from, sp.endT))
+            SplitRow(
+                if (whole) "Km ${i + 1}" else "Last " + lastPart(last, locale),
+                Units.workoutClock(sp.seconds, locale), WorkoutCopy.averageOver(readings, from, sp.endT), sp.seconds,
+                if (whole) SplitRow.Kind.Whole else SplitRow.Kind.Last,
+            )
         }
 }

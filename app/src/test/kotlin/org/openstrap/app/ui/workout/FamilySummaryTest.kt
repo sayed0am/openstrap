@@ -13,6 +13,9 @@ import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
 
 class FamilySummaryTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val utc = ZoneOffset.UTC
 
     @Test
@@ -23,12 +26,21 @@ class FamilySummaryTest {
         assertEquals("Today, 14:00", FamilySummary.whenLine(day + 14 * 3600, now, utc, Locale.UK))
         assertEquals("This evening, 19:05", FamilySummary.whenLine(day + 19 * 3600 + 5 * 60, now, utc, Locale.UK))
         assertEquals("Yesterday, 10:00", FamilySummary.whenLine(day - 14 * 3600, now, utc, Locale.UK))
+        // Further back the day words' rule, and the time follows the 12 or 24 hour setting.
+        assertEquals("Tuesday 10:00", FamilySummary.whenLine(day - 3 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
+        assertEquals("Mon 19 Oct 10:00", FamilySummary.whenLine(day - 11 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
+        assertEquals("This evening, 7:05 pm", FamilySummary.whenLine(day + 19 * 3600 + 5 * 60, now, utc, Locale.UK, use24Hour = false))
     }
 
     @Test
     fun fastestSplitIsTheQuickestWholeKilometre() {
-        val rows = listOf(SplitRow("Km 1", "5:31", null), SplitRow("Km 2", "5:10", null), SplitRow("Km 3", "5:19", null), SplitRow("Last 210 m", "0:58", null))
+        val rows = listOf(
+            SplitRow("Km 1", "5:31", null, 331, SplitRow.Kind.Whole), SplitRow("Km 2", "5:10", null, 310, SplitRow.Kind.Whole),
+            SplitRow("Km 3", "5:19", null, 319, SplitRow.Kind.Whole), SplitRow("Last 210 m", "0:58", null, 58, SplitRow.Kind.Last),
+        )
         assertEquals(1, FamilySummary.fastestSplit(rows))
+        // It reads the kind and the seconds, not the words: renamed rows still mark the same one.
+        assertEquals(1, FamilySummary.fastestSplit(rows.map { it.copy(name = "Kilometre", time = "") }))
         assertNull(FamilySummary.fastestSplit(rows.take(1)))
     }
 

@@ -1,6 +1,5 @@
-package org.openstrap.app.ui.workout
+package org.openstrap.app.presentation
 
-import androidx.compose.ui.graphics.toArgb
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,6 +10,9 @@ import org.openstrap.app.data.WorkoutTarget
 
 /** The ongoing workout notification's card: what it says collapsed and expanded, its colour and its zone strip (spec 6.3). */
 class NotificationCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val zones = listOf(180, 420, 540, 260, 20)
 
     private fun card(
@@ -69,7 +71,9 @@ class NotificationCopyTest {
         assertNull(waiting.zone)
         assertNull(waiting.zoneLine)
         val away = card(connected = false)
-        assertEquals("Reconnecting", away.bpm)
+        // The strap gone reads as on every live screen.
+        assertEquals("Waiting for the strap", away.bpm)
+        assertEquals(WorkoutWords.noHeartRate(paused = false, connected = false), away.bpm)
         assertNull(away.zone)
         assertEquals("Still recording", away.zoneLine)
         assertTrue(away.running)
@@ -81,10 +85,11 @@ class NotificationCopyTest {
     }
 
     @Test fun `bpm takes the zone colour, grey without one`() {
-        ZONE_COLORS.forEachIndexed { z, color -> assertEquals(color.toArgb(), NotificationCopy.accent(z)) }
-        assertEquals(NotificationCopy.MUTED.toArgb(), NotificationCopy.accent(null))
-        assertEquals(ZONE_COLORS[3].toArgb(), NotificationCopy.accent(card().zone))
-        assertEquals(NotificationCopy.MUTED.toArgb(), NotificationCopy.accent(card(paused = true).zone))
+        WorkoutColors.ZONES.forEachIndexed { z, color -> assertEquals(color, NotificationCopy.accent(z)) }
+        // The app's paused grey, the same as the live screen's, no longer a darker one of the notification's own.
+        assertEquals(0xFF9AA0B4.toInt(), NotificationCopy.accent(null))
+        assertEquals(WorkoutColors.ZONE_4, NotificationCopy.accent(card().zone))
+        assertEquals(WorkoutColors.PAUSED_GREY, NotificationCopy.accent(card(paused = true).zone))
     }
 
     @Test fun `the strip shares its width by the time in each zone`() {

@@ -57,6 +57,23 @@ object DayWords {
         return if (date == today) clock else "${inSentence(date, today, locale)} $clock"
     }
 
+    /**
+     * When something last happened, after other words: "today at 10:42", "yesterday at 10:42", or further back the
+     * date alone, "on Tue 21 Oct". For a backup or an update check, where an older time no longer matters.
+     */
+    fun whenDone(
+        epoch: Long, now: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault(),
+    ): String {
+        val date = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate()
+        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
+        val clock = TimeOfDay.format(epoch, zone, use24Hour, locale)
+        return when (date) {
+            today -> "today at $clock"
+            today.minusDays(1) -> "yesterday at $clock"
+            else -> "on ${short(date, locale)}"
+        }
+    }
+
     /** A day for a chart or a short label, always dated: "Tue 21 Oct". */
     fun short(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of(SHORT, locale))
 }

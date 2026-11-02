@@ -8,11 +8,10 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.data.BodySignalsCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.protocol.services.HealthAlert
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * Shows the strap's own health alerts (0x001D `0D`) as notifications, like Zepp's "Health Reminders" channel
@@ -35,15 +34,11 @@ class HealthAlertNotifier(private val context: Context) {
             HealthAlert.Type.HIGH_STRESS -> "High stress" to "Your stress is at ${alert.value}. Take a moment to breathe."
             HealthAlert.Type.LOW_SPO2 -> "Low blood oxygen" to "Your blood oxygen was ${alert.value}%."
             HealthAlert.Type.IRREGULAR_RHYTHM ->
-                "Irregular heart rhythm" to "The strap noticed an irregular heart rhythm at ${TIME.format(Instant.ofEpochSecond(at))}."
-        }
-        val metric = when (alert.type) {
-            HealthAlert.Type.HIGH_HEART_RATE, HealthAlert.Type.LOW_HEART_RATE, HealthAlert.Type.IRREGULAR_RHYTHM -> Metric.HeartRate
-            HealthAlert.Type.HIGH_STRESS -> Metric.Stress
-            HealthAlert.Type.LOW_SPO2 -> Metric.Spo2
+                "Irregular heart rhythm" to
+                    "The strap noticed an irregular heart rhythm at ${TimeOfDay.format(at, ZoneId.systemDefault())}."
         }
         val day = Instant.ofEpochSecond(at).atZone(ZoneId.systemDefault()).toLocalDate()
-        val open = openRoute(metric.name, day, NOTIFICATION_BASE + alert.type.code)
+        val open = openRoute(route(alert.type), day, NOTIFICATION_BASE + alert.type.code)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
             .setContentTitle(title)
@@ -91,11 +86,20 @@ class HealthAlertNotifier(private val context: Context) {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    private companion object {
-        const val CHANNEL = "health"
-        const val BODY_SIGNALS_ID = 99
-        const val NOTIFICATION_BASE = 100
-        const val MIN_EPOCH = 1_704_067_200L // 2024-01-01
-        val TIME: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm").withZone(ZoneId.systemDefault())
+    internal companion object {
+        /**
+         * The metric screen an alert opens, by its `Metric` name in ui.dashboard, written out so device code doesn't
+         * depend on the screens. A test checks each one still names a metric.
+         */
+        fun route(type: HealthAlert.Type): String = when (type) {
+            HealthAlert.Type.HIGH_HEART_RATE, HealthAlert.Type.LOW_HEART_RATE, HealthAlert.Type.IRREGULAR_RHYTHM -> "HeartRate"
+            HealthAlert.Type.HIGH_STRESS -> "Stress"
+            HealthAlert.Type.LOW_SPO2 -> "Spo2"
+        }
+
+        private const val CHANNEL = "health"
+        private const val BODY_SIGNALS_ID = 99
+        private const val NOTIFICATION_BASE = 100
+        private const val MIN_EPOCH = 1_704_067_200L // 2024-01-01
     }
 }
