@@ -215,9 +215,11 @@ fun GlowWorkoutSummaryScreen(
  */
 @Composable
 internal fun SummaryHeroCard(hero: SummaryHero, color: Color, effort: Float, swell: () -> Float = { 0f }) {
-    // Read here, so a best's swell composes only the hero each frame, not the whole summary.
-    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = (effort + SwellLevel * swell()).coerceAtMost(1f))
-    GlowCard(style, Modifier.fillMaxWidth()) {
+    // The swell is drawn over the card's own light ([GlowSwell]), so the light at rest stays the cache key and a best's
+    // swell neither composes the hero again nor renders a new glow each frame.
+    val style = GlowStyle.chart(color).copy(lightAngle = LightAngle.Below, lightLevel = effort.coerceAtMost(1f))
+    val lift = remember(effort, swell) { GlowSwell((effort + SwellLevel).coerceAtMost(1f), swell) }
+    GlowCard(style, Modifier.fillMaxWidth(), swell = lift) {
         Column {
             Row(verticalAlignment = Alignment.Bottom) {
                 DotMatrixText(hero.value, dot = DotSize.Hero)
