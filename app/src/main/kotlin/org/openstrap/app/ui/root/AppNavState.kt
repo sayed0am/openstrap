@@ -7,12 +7,12 @@ import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.SaverScope
 import androidx.compose.runtime.saveable.mapSaver
 import androidx.compose.runtime.setValue
+import java.time.LocalDate
 import org.openstrap.app.NavRequest
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Reselect
 import org.openstrap.app.ui.dashboard.TabNav
 import org.openstrap.app.ui.dashboard.openBeside
-import java.time.LocalDate
 
 /** The four tabs, in the bar's order. Their icons and colours are in [tabItems]. */
 enum class Tab(val label: String) {
@@ -146,6 +146,9 @@ class AppNavState(initial: Snapshot = Snapshot()) {
     fun stack(tab: Tab): List<Detail> = stackStates.getValue(tab).value
 
     /** Choose is open, on its own or under Ready. */
+    /** Today at its root with nothing over it: where the Today hero shows the workout. */
+    val atTodayRoot: Boolean get() = tab.current == Tab.Today.ordinal && stack(Tab.Today).isEmpty() && pages.isEmpty()
+
     val choosing: Boolean get() = workout.let { it == WorkoutOverlay.Choose || (it as? WorkoutOverlay.Ready)?.overChoose == true }
 
     /** Another tab: it becomes current, and back returns here. Every tab keeps its own stack. */

@@ -99,7 +99,8 @@ class FrameRulesTest {
         assertTrue("the avatar records itself", Regex("""growClick\(onOpenYou\)""").containsMatchIn(header))
         assertTrue("the strap chip records itself", Regex("""growClick\(onOpenStrap\)""").containsMatchIn(header))
         val root = source("MainActivity.kt")
-        assertTrue("the pages over the tab grow from the origin", "GrowFromButton(" in root && "growOrigin.take()" in root)
+        val pages = source("ui/root/PagesOverTab.kt")
+        assertTrue("the pages over the tab grow from the origin", "GrowFromButton(" in pages && "growOrigin.take()" in root)
     }
 
     @Test fun `tabs keep their phone gutters folded, and unfolded are at most 960 dp with a 24 dp gutter`() {

@@ -4,10 +4,10 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -86,7 +86,8 @@ class AppRootViewModelTest {
         }
 
     @Before fun setUp() {
-        Dispatchers.setMain(UnconfinedTestDispatcher())
+        val main = UnconfinedTestDispatcher()
+        Dispatchers.setMain(main)
         db = inMemoryDb()
         settings = SettingsStore(app)
         val dao = db.healthDao()
@@ -99,13 +100,17 @@ class AppRootViewModelTest {
             RewardsKeeper(dao, settings, maxHeartRates), HealthConnectExporter(app, dao),
             AppUpdater(app, settings, recording = { false }, scope = scope),
             MutableStateFlow(emptyList<WorkoutAnalysis>()),
+            // Its work on the test's own dispatcher: nothing left on another thread finishes into the next test.
+            work = main,
         )
     }
 
     @After fun tearDown() {
         HeartZones.use(HeartZones.STANDARD)
-        vm.viewModelScope.cancel()
-        scope.cancel()
+        runBlocking {
+            vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin()
+            scope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin()
+        }
         db.close()
         Dispatchers.resetMain()
     }
