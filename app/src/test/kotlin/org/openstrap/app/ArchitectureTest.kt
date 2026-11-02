@@ -201,11 +201,6 @@ internal object Architecture {
             "found by 4E, SleepWidgetModel.kt:9 imports the sleep stage names from ui.dashboard", "wave 5",
         ),
         KnownBreak(
-            "device/StrapService.kt", listOf("$APP.AppContainer"),
-            "found by 4E, StrapService.kt:293 loadFigures and :396 watchEnded take the container by full name",
-            "wave 5, StrapService split",
-        ),
-        KnownBreak(
             "data/settings/SettingsStore.kt", listOf("$APP.export.BackupFiles", "$APP.export.SettingsBackup"),
             "found by 4E, SettingsStore.kt:93, 634, 661, 711 and 721 name BackupFiles.Failure and SettingsBackup " +
                 "in code, a data and export cycle",
