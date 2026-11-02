@@ -313,25 +313,21 @@ class HistorySync internal constructor(
                     return
                 }
                 is ParseResult.Success -> {
-                    // Drop records with impossible times (stale buffer slots, data from before the clock was set).
+                    // Drop records with impossible times (stale buffer slots, data from before the clock was set), and
+                    // activity minutes that haven't ended yet.
                     val now = System.currentTimeMillis() / 1000
                     val (records, parsedNext) = holdBackPartialMinute(result.records, result.nextCursor, cursor)
-                    val kept = records.filter { it.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK }
+                    val kept = keepable(spec.type, records, now)
                     val dropped = records.size - kept.size
-                    log("history ${spec.type}: ${kept.size} records" + if (dropped > 0) " ($dropped with impossible times dropped)" else "")
+                    val droppedNote = if (dropped > 0) " ($dropped unfinished or with impossible times dropped)" else ""
+                    log("history ${spec.type}: ${kept.size} records$droppedNote")
                     // The chunk's rows commit together, before the ACK and the cursor: a kill before the commit keeps
                     // none of them and the cursor where it was, a kill after it fetches the chunk again, and storing
                     // it again replaces the same rows.
                     dao.inTransaction { store(kept) }
                     // Only acknowledge once the data is safely in the database.
                     finish()
-                    // A chunk with nothing usable (only gap slots, or only impossible times) still moves the cursor
-                    // past it, or the strap serves the same chunk on every sync. The chunk holds the earliest
-                    // records after the cursor, so skipping it loses nothing, and the cap at now keeps a strap
-                    // clock that runs ahead from pushing the cursor into the future.
-                    val next = parsedNext
-                        ?.let { if (kept.isEmpty()) it else it.coerceAtMost(kept.maxOf { r -> r.timestamp } + 60) }
-                        ?.coerceAtMost(now)
+                    val next = nextCursor(spec.type, parsedNext, kept, now)
                     if (next != null && next > cursor) cursors.set(key, next)
                     if (!HistoryTypeSpecs.shouldContinue(spec, cursor, next)) return
                     cursor = next!!
@@ -596,6 +592,48 @@ class HistorySync internal constructor(
         private const val FUTURE_SLACK = 120L
         private const val MAX_CHUNKS_PER_TYPE = 50
         private const val DUMP_CHUNKS = 5
+
+        /**
+         * The records of a chunk worth storing. Activity keeps only minutes that have ended: the strap sends the
+         * minute it is still counting and stale slots after it, and a later sync replaced those with the real
+         * minutes, so steps went up and then back down. Other types allow a strap clock a little ahead.
+         */
+        internal fun <R : HistoryRecord> keepable(type: HistoryDataType, records: List<R>, now: Long): List<R> =
+            if (type == HistoryDataType.ACTIVITY) {
+                records.filter { it.timestamp >= MIN_VALID_EPOCH && it.timestamp < minuteStart(now) }
+            } else {
+                records.filter { it.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK }
+            }
+
+        /**
+         * Where the cursor goes after a chunk, or null to leave it.
+         *
+         * A chunk with nothing usable (only gap slots, or only impossible times) still moves the cursor past it, or
+         * the strap serves the same chunk on every sync. The chunk holds the earliest records after the cursor, so
+         * skipping it loses nothing, and the cap at now (the current minute for activity) keeps a strap clock that
+         * runs ahead from pushing the cursor into the future.
+         *
+         * Except recent activity: the strap writes a minute a little after it ends and sends the slot blank until
+         * then. Skipping that slot moved the cursor past a minute that was never fetched, which left gaps of a few
+         * minutes. So blank recent minutes are fetched again next sync.
+         */
+        internal fun nextCursor(type: HistoryDataType, parsedNext: Long?, kept: List<HistoryRecord>, now: Long): Long? {
+            val waitForStrap = kept.isEmpty() && type == HistoryDataType.ACTIVITY && parsedNext != null && parsedNext > now - UNWRITTEN_WAIT
+            if (parsedNext == null || waitForStrap) return null
+            val next = if (kept.isEmpty()) parsedNext else parsedNext.coerceAtMost(kept.maxOf { it.timestamp } + MINUTE_SECONDS)
+            return next.coerceAtMost(latestCursor(type, now))
+        }
+
+        /** How long the strap may take to write a minute; blank slots older than this are real gaps. */
+        private const val UNWRITTEN_WAIT = 10 * 60L
+
+        /** How far a type's cursor may move: activity stops at the current minute, so it is fetched once it ends. */
+        internal fun latestCursor(type: HistoryDataType, now: Long): Long =
+            if (type == HistoryDataType.ACTIVITY) minuteStart(now) else now
+
+        private const val MINUTE_SECONDS = 60L
+
+        private fun minuteStart(epoch: Long) = epoch / MINUTE_SECONDS * MINUTE_SECONDS
     }
 }
 
