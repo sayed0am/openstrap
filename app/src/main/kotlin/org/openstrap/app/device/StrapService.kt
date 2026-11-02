@@ -300,7 +300,7 @@ class StrapService : LifecycleService() {
      * turned off for the app, and on Samsung, whose One UI keeps the chip for apps it lists.
      */
     private fun liveUpdatesShown(): Boolean =
-        !Build.MANUFACTURER.equals("samsung", ignoreCase = true) &&
+        Build.VERSION.SDK_INT >= 36 && !Build.MANUFACTURER.equals("samsung", ignoreCase = true) &&
             runCatching { getSystemService(NotificationManager::class.java).canPostPromotedNotifications() }.getOrDefault(false)
 
     /**
@@ -601,7 +601,7 @@ class StrapService : LifecycleService() {
          * Android 14 on refuses a connected-device service to an app holding no Bluetooth permission (never granted, or
          * revoked in Settings), and the refusal throws inside the service, where no caller can catch it.
          */
-        fun allowed(context: Context) =
+        fun allowed(context: Context) = Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||
             listOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_SCAN)
                 .any { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }
 

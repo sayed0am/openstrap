@@ -5,12 +5,15 @@ import android.companion.AssociationInfo
 import android.companion.CompanionDeviceService
 import android.companion.DevicePresenceEvent
 import android.content.pm.PackageManager
+import android.os.Build
+import androidx.annotation.RequiresApi
 import org.openstrap.app.OpenStrapApp
 
 /**
  * Android binds this while the associated strap is in range (see [CompanionLink]), starting the process if it
  * was killed. Each "appeared" event reconnects; the connection's own retries handle the strap going out of range.
  */
+@RequiresApi(Build.VERSION_CODES.S)
 class StrapPresenceService : CompanionDeviceService() {
 
     private fun appeared(what: String) {
@@ -25,8 +28,10 @@ class StrapPresenceService : CompanionDeviceService() {
     override fun onDeviceAppeared(address: String) = appeared("address $address")
 
     @Deprecated("Android 13 to 15")
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onDeviceAppeared(associationInfo: AssociationInfo) = appeared("association ${associationInfo.id}")
 
+    @RequiresApi(Build.VERSION_CODES.BAKLAVA)
     override fun onDevicePresenceEvent(event: DevicePresenceEvent) {
         if (event.event == DevicePresenceEvent.EVENT_BLE_APPEARED) appeared("presence event, association ${event.associationId}")
     }

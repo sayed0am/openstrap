@@ -114,6 +114,12 @@ class GattClient(
                 fail(Op.READ, c.uuid, "Read of ${c.uuid} failed ($status)")
             }
 
+        @Deprecated("Pre-Android 13 callback")
+        override fun onCharacteristicRead(g: BluetoothGatt, c: BluetoothGattCharacteristic, status: Int) {
+            @Suppress("DEPRECATION")
+            onCharacteristicRead(g, c, c.value ?: ByteArray(0), status)
+        }
+
         override fun onDescriptorWrite(g: BluetoothGatt, d: BluetoothGattDescriptor, status: Int) {
             val uuid = d.characteristic?.uuid
             if (status == BluetoothGatt.GATT_SUCCESS) {
@@ -125,6 +131,13 @@ class GattClient(
 
         override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic, value: ByteArray) {
             if (!_notifications.tryEmit(Notification(c.uuid, value))) dropped(c.uuid)
+        }
+
+        @Deprecated("Pre-Android 13 callback")
+        override fun onCharacteristicChanged(g: BluetoothGatt, c: BluetoothGattCharacteristic) {
+            // The characteristic's value is overwritten by the next notification, so it's copied before it leaves.
+            @Suppress("DEPRECATION")
+            onCharacteristicChanged(g, c, c.value?.copyOf() ?: ByteArray(0))
         }
     }
 
@@ -227,13 +240,33 @@ class GattClient(
         requireGatt().setCharacteristicNotification(c, true)
         val cccd = c.getDescriptor(CCCD) ?: throw GattException("No CCCD on $uuid")
         val value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
-        op<Unit>(Op.DESCRIPTOR, uuid) { requireGatt().writeDescriptor(cccd, value) == BluetoothStatusCodes.SUCCESS }
+        op<Unit>(Op.DESCRIPTOR, uuid) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requireGatt().writeDescriptor(cccd, value) == BluetoothStatusCodes.SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                cccd.value = value
+                @Suppress("DEPRECATION")
+                requireGatt().writeDescriptor(cccd)
+            }
+        }
     }
 
     suspend fun write(service: UUID, uuid: UUID, value: ByteArray, withResponse: Boolean = false) {
         val c = characteristic(service, uuid)
         val type = if (withResponse) BluetoothGattCharacteristic.WRITE_TYPE_DEFAULT else BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-        op<Unit>(Op.WRITE, uuid) { requireGatt().writeCharacteristic(c, value, type) == BluetoothStatusCodes.SUCCESS }
+        op<Unit>(Op.WRITE, uuid) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                requireGatt().writeCharacteristic(c, value, type) == BluetoothStatusCodes.SUCCESS
+            } else {
+                @Suppress("DEPRECATION")
+                c.writeType = type
+                @Suppress("DEPRECATION")
+                c.value = value
+                @Suppress("DEPRECATION")
+                requireGatt().writeCharacteristic(c)
+            }
+        }
     }
 
     suspend fun read(service: UUID, uuid: UUID): ByteArray {

@@ -65,7 +65,7 @@ fun wakingLead(firstNights: Boolean, asleepSeconds: Long?, isToday: Boolean): Wa
 const val FIRST_SCORE = "First score"
 
 /** The day remembered for scores from before the app kept a first score, so the marker never shows for them. */
-val BEFORE_FIRST_SCORE: LocalDate = LocalDate.EPOCH
+val BEFORE_FIRST_SCORE: LocalDate = LocalDate.of(1970, 1, 1)
 
 /** Whether the Recovery hero marks [date]'s score as the first (E4), and the day to remember for it, if any. */
 data class FirstScore(val show: Boolean, val remember: LocalDate? = null)

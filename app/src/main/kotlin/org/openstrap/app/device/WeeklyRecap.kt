@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -59,7 +60,10 @@ object WeeklyRecap {
         val week = weeks.firstOrNull { it.weekStart == lastWeek.toEpochDay() }
         settings.setRecapWeek(lastWeek.toEpochDay())
         if (week == null || week.count == 0) return
-        if (context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        // Android 13 brought the notification permission. Before it, the check would always read as denied.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            context.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) return
         show(context, RewardsCopy.weekRange(lastWeek), RewardsCopy.recapText(week, Rewards.inARow(weeks, lastWeek)))
     }
 

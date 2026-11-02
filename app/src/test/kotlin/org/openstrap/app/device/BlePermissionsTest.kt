@@ -12,10 +12,35 @@ import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 class BlePermissionsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    @Test fun `Android 12 and later need scan and connect, older versions fine location`() {
+        val location = listOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        val runtime = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        assertEquals(location, BlePermissions.bluetooth(29))
+        assertEquals(location, BlePermissions.bluetooth(30))
+        assertEquals(runtime, BlePermissions.bluetooth(31))
+        assertEquals(runtime, BlePermissions.bluetooth(36))
+    }
+
+    @Test @Config(sdk = [30])
+    fun `on Android 11 the request asks for fine location only`() {
+        assertEquals(listOf(Manifest.permission.ACCESS_FINE_LOCATION), BlePermissions.required().toList())
+    }
+
+    @Test @Config(sdk = [30])
+    fun `on Android 11 granted follows fine location, not the Bluetooth permissions it doesn't have`() {
+        shadowOf(app).grantPermissions(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        assertFalse(BlePermissions.granted(app))
+        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+        assertTrue(BlePermissions.granted(app))
+        assertTrue(BlePermissions.granted(mapOf(Manifest.permission.ACCESS_FINE_LOCATION to true)))
+        assertFalse(BlePermissions.granted(mapOf(Manifest.permission.BLUETOOTH_SCAN to true, Manifest.permission.BLUETOOTH_CONNECT to true)))
+    }
 
     @Test fun `the request asks for scan, connect and notifications`() {
         assertEquals(
@@ -25,6 +50,7 @@ class BlePermissionsTest {
     }
 
     @Test fun `granted only once both scan and connect are`() {
+        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
         assertFalse(BlePermissions.granted(app))
         shadowOf(app).grantPermissions(Manifest.permission.BLUETOOTH_CONNECT)
         assertFalse(BlePermissions.granted(app))

@@ -11,8 +11,12 @@ import android.companion.ObservingDevicePresenceRequest
 import android.content.Context
 import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -54,7 +58,12 @@ class CompanionLink(private val context: Context, private val settings: Settings
 
     private fun isAssociated(address: String): Boolean {
         val cdm = cdm ?: return false
-        return cdm.myAssociations.any { it.deviceMacAddress?.toString().equals(address, ignoreCase = true) }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            cdm.myAssociations.any { it.deviceMacAddress?.toString().equals(address, ignoreCase = true) }
+        } else {
+            @Suppress("DEPRECATION")
+            cdm.associations.any { it.equals(address, ignoreCase = true) }
+        }
     }
 
     /**
@@ -75,6 +84,8 @@ class CompanionLink(private val context: Context, private val settings: Settings
             @Deprecated("Android 12 and older")
             override fun onDeviceFound(intentSender: IntentSender) = launch(intentSender)
 
+            // Android calls it from 13 on. Before that the association only shows in onResult.
+            @RequiresApi(Build.VERSION_CODES.TIRAMISU)
             override fun onAssociationCreated(associationInfo: AssociationInfo) {
                 scope.launch { saved(associationInfo.id) }
             }
@@ -84,17 +95,21 @@ class CompanionLink(private val context: Context, private val settings: Settings
                 onError("Android couldn't find the strap (${error ?: "no reason given"}). Keep it on its charger near the phone and try again.")
             }
         }
-        cdm.associate(request, activity.mainExecutor, callback)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) cdm.associate(request, activity.mainExecutor, callback)
+        else @Suppress("DEPRECATION") cdm.associate(request, callback, Handler(Looper.getMainLooper()))
     }
 
     /**
-     * The result of the confirmation [associate] launched. The association itself arrives through the callback.
-     * Returns false when the user turned it down.
+     * The result of the confirmation [associate] launched. On Android 13+ the association arrives through the
+     * callback. Older versions only report it here. Returns false when the user turned it down.
      */
     fun onResult(resultCode: Int): Boolean {
         if (resultCode != Activity.RESULT_OK) {
             scope.launch { settings.setCompanionDeclined(true) }
             return false
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) scope.launch {
+            saved(LEGACY_ID)
         }
         return true
     }
@@ -104,23 +119,34 @@ class CompanionLink(private val context: Context, private val settings: Settings
         refresh()
     }
 
-    /** Has Android bind [StrapPresenceService] when the strap is in range. Android keeps this across reboots. */
+    /** Has Android bind [StrapPresenceService] when the strap is in range (Android 12+). Android keeps this across reboots. */
     private fun observePresence(address: String) {
         val cdm = cdm ?: return
         runCatching {
-            val id = myAssociationId(address) ?: return
-            cdm.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(id).build())
+            when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA -> {
+                    val id = myAssociationId(address) ?: return
+                    cdm.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(id).build())
+                }
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
+            }
         }.onFailure { Log.w(TAG, "presence observing failed: $it") }
     }
 
     private fun myAssociationId(address: String): Int? =
-        cdm?.myAssociations?.firstOrNull { it.deviceMacAddress?.toString().equals(address, ignoreCase = true) }?.id
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            cdm?.myAssociations?.firstOrNull { it.deviceMacAddress?.toString().equals(address, ignoreCase = true) }?.id
+        } else null
 
     /** Removes the association for the strap at [address], when there is one. Called when the strap is forgotten. */
     suspend fun disassociate(address: String) {
         val cdm = cdm ?: return
         runCatching {
-            myAssociationId(address)?.let(cdm::disassociate)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                myAssociationId(address)?.let(cdm::disassociate)
+            } else if (isAssociated(address)) {
+                @Suppress("DEPRECATION") cdm.disassociate(address)
+            }
         }.onFailure { Log.w(TAG, "disassociate failed: $it") }
         associated.value = false
     }

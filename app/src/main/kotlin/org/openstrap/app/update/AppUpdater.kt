@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.work.Constraints
@@ -301,7 +302,7 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
             setAppPackageName(app.packageName)
             setSize(file.length())
             // Without a prompt when Android allows it (OpenStrap installed the copy it replaces); it asks otherwise.
-            setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+            if (Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
         }
         val id = installer.createSession(params)
         installer.openSession(id).use { session ->
@@ -313,7 +314,7 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
             }
             val intent = Intent(app, UpdateReceiver::class.java).setAction(UpdateReceiver.ACTION_INSTALL_STATUS)
             // Mutable, so Android can put the status in it.
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)
             session.commit(PendingIntent.getBroadcast(app, id, intent, flags).intentSender)
         }
     }

@@ -74,7 +74,7 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         if (BlePermissions.granted(this)) container.strap.backgroundConnect()
         // Widgets turn the day over at midnight; alarms don't survive a reboot or an update, so set it on each start.
         org.openstrap.app.device.WidgetUpdater.scheduleMidnight(this)
-        // The widget picker's previews, from the real layouts (spec 6.4).
+        // Android 15 and later: the widget picker's previews, from the real layouts (spec 6.4).
         org.openstrap.app.device.WidgetUpdater.publishPreviews(this)
         // The daily check for a new OpenStrap, unless it was turned off on the Updates page.
         container.updater.start()

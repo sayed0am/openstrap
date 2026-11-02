@@ -6,6 +6,8 @@
   The picker shows previewLayout on Android 12 and later, previewImage before (spec 6.4).
 -->
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:targetApi="s"
     android:description="@string/widget_steps_description"
     android:previewLayout="@layout/widget_preview_steps"
     android:previewImage="@drawable/widget_preview_steps"

@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
+import android.os.Build
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,7 +20,8 @@ class UpdateReceiver : BroadcastReceiver() {
         val container = (context.applicationContext as OpenStrapApp).container
         when (intent.action) {
             ACTION_INSTALL_STATUS -> {
-                val confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                val confirm = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)
+                else @Suppress("DEPRECATION") intent.getParcelableExtra(Intent.EXTRA_INTENT)
                 container.updater.installResult(
                     context,
                     intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE),

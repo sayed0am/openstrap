@@ -7,6 +7,7 @@ import android.content.BroadcastReceiver
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import android.util.Log
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -144,12 +145,13 @@ object WidgetUpdater {
     }
 
     /**
-     * Gives the launcher's picker each widget's generated preview ([GlanceAppWidget.providePreview]), the real layout
-     * with sample values (spec 6.4), once per app version. The system limits how often this may be called, so a
-     * limited or failed call is tried again on the next start. Until it lands, the picker uses the provider XML's
+     * Android 15 and later: gives the launcher's picker each widget's generated preview ([GlanceAppWidget.providePreview]),
+     * the real layout with sample values (spec 6.4), once per app version. The system limits how often this may be
+     * called, so a limited or failed call is tried again on the next start. Older systems use the provider XML's
      * `previewLayout` and `previewImage`.
      */
     fun publishPreviews(context: Context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
         val app = context.applicationContext
         val prefs = app.getSharedPreferences(PREVIEW_PREFS, Context.MODE_PRIVATE)
         val version = org.openstrap.app.BuildConfig.VERSION_CODE
@@ -236,7 +238,7 @@ object WidgetUpdater {
             alarms.setWindow(AlarmManager.RTC, atMs, ALARM_WINDOW_MS, pending)
             return
         }
-        val exact = alarms.canScheduleExactAlarms()
+        val exact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()
         try {
             if (exact) alarms.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pending)
             else alarms.setWindow(AlarmManager.RTC_WAKEUP, atMs, ALARM_WINDOW_MS, pending)

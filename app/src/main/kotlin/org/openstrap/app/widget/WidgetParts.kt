@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.SizeF
@@ -388,9 +389,10 @@ internal fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Flo
     return renderEdge(paint.copy(radius = corner * density))
 }
 
-/** The launcher's widget corner, dp, or null when it can't be read. */
-private fun systemCorner(context: Context): Float? =
+/** The launcher's widget corner, dp, on Android 12 and later, and null before. */
+private fun systemCorner(context: Context): Float? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
     runCatching { context.resources.getDimension(android.R.dimen.system_app_widget_background_radius) / context.resources.displayMetrics.density }.getOrNull()
+} else null
 
 /**
  * The cell sizes the launcher gave the widget, dp ([reportedSizes]): the launcher's own now, or the session's
@@ -407,16 +409,18 @@ private fun cellSizes(options: Bundle, id: GlanceId, context: Context): List<Pai
 }
 
 /**
- * The sizes the launcher says the widget has, dp, the one for the current orientation first: its list of sizes, or
- * when it gives none, the portrait (min width, max height) and landscape (max width, min height) pair.
+ * The sizes the launcher says the widget has, dp, the one for the current orientation first: Android 12's list, or
+ * the portrait (min width, max height) and landscape (max width, min height) pair before it.
  */
 private fun reportedSizes(options: Bundle, context: Context): List<Pair<Float, Float>> {
     val portrait = context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
-    @Suppress("DEPRECATION")
-    val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-    if (!sizes.isNullOrEmpty()) {
-        val all = sizes.map { it.width to it.height }
-        return if (portrait) all.sortedByDescending { it.second / it.first } else all.sortedBy { it.second / it.first }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        @Suppress("DEPRECATION")
+        val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+        if (!sizes.isNullOrEmpty()) {
+            val all = sizes.map { it.width to it.height }
+            return if (portrait) all.sortedByDescending { it.second / it.first } else all.sortedBy { it.second / it.first }
+        }
     }
     val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).toFloat()
     val maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH).toFloat()
