@@ -28,8 +28,11 @@ data class ActivityMinute(
     val heartRate: Int?,
 )
 
-/** A main sleep or a nap. The strap's own totals and score are kept as it reported them. */
-@Entity(tableName = "sleep_session", indices = [Index("day")])
+/**
+ * A main sleep or a nap. The strap's own totals and score are kept as it reported them. Indexed on [nap] and [end] as
+ * well as [day], since most reads pick sessions by when they ended, and some by main sleep or nap too.
+ */
+@Entity(tableName = "sleep_session", indices = [Index("day"), Index("nap", "end")])
 data class SleepSession(
     @PrimaryKey val start: Long,
     val end: Long,
@@ -179,7 +182,7 @@ data class WorkoutHeartRate(
  * A workout recorded on the phone from the strap's live heart rate, apart from the strap's own [Workout] so a later
  * merge with strap-side sessions stays explicit. [end] is null while it is recording.
  */
-@Entity(tableName = "app_workout")
+@Entity(tableName = "app_workout", indices = [Index("end")])
 data class AppWorkout(
     @PrimaryKey val start: Long,
     val end: Long?,
@@ -411,7 +414,7 @@ data class DeletedWorkout(
 )
 
 /** A stretch answered "Not a workout", so it isn't offered again ([org.openstrap.app.data.WorkoutSuggestions]). */
-@Entity(tableName = "app_workout_dismissed")
+@Entity(tableName = "app_workout_dismissed", indices = [Index("end")])
 data class DismissedWorkout(
     @PrimaryKey val start: Long,
     val end: Long,

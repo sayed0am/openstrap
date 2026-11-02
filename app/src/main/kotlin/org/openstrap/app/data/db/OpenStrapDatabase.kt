@@ -52,7 +52,7 @@ import androidx.room.RoomDatabase
         BadgeRow::class,
         WeekResult::class,
     ],
-    version = 26,
+    version = 27,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6),
@@ -72,7 +72,7 @@ abstract class OpenStrapDatabase : RoomDatabase() {
 
     companion object {
         /** Migrations Room can't make itself, after the automatic ones above. */
-        val MIGRATIONS = arrayOf<androidx.room.migration.Migration>(WorkoutsMigration)
+        val MIGRATIONS = arrayOf<androidx.room.migration.Migration>(WorkoutsMigration, IndicesMigration)
 
         fun create(context: Context): OpenStrapDatabase =
             Room.databaseBuilder(context, OpenStrapDatabase::class.java, "openstrap.db").addMigrations(*MIGRATIONS).build()

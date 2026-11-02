@@ -6,8 +6,10 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
+// A DAO is its queries, one function each: splitting it by count would only scatter them.
+@Suppress("TooManyFunctions")
 @Dao
-interface HealthDao {
+interface HealthDao : RangedReads {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHeartRate(samples: List<HeartRateSample>)
 
@@ -775,4 +777,156 @@ interface HealthDao {
      */
     @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003 + (SELECT COUNT(*) + COALESCE(SUM(editedAt), 0) FROM sleep_edit) * 31")
     suspend fun dataFingerprint(from: Long, to: Long): Long
+}
+
+/**
+ * The ranged reads, so no caller loads a whole table to filter it, and the backup's keyset pages. Apart from
+ * [HealthDao] only to keep each a readable size: Room builds them into its implementation.
+ */
+@Suppress("TooManyFunctions") // As HealthDao: one function per query.
+interface RangedReads {
+    /** Whether any workout is stored, strap or finished phone one, without reading them. */
+    @Query("SELECT EXISTS(SELECT 1 FROM workout) OR EXISTS(SELECT 1 FROM app_workout WHERE `end` IS NOT NULL)")
+    suspend fun anyWorkoutOnce(): Boolean
+
+    /** Strap workouts that started in [from, to], by start. */
+    @Query("SELECT * FROM workout WHERE start BETWEEN :from AND :to ORDER BY start")
+    suspend fun workoutsStartingOnce(from: Long, to: Long): List<Workout>
+
+    /** Finished phone workouts that started in [from, to], by start. */
+    @Query("SELECT * FROM app_workout WHERE `end` IS NOT NULL AND start BETWEEN :from AND :to ORDER BY start")
+    suspend fun appWorkoutsStartingOnce(from: Long, to: Long): List<AppWorkout>
+
+    /** The sets of the phone workouts that started in [from, to]. */
+    @Query("SELECT * FROM app_workout_set WHERE workoutStart BETWEEN :from AND :to ORDER BY workoutStart, `index`")
+    suspend fun setsOfWorkoutsOnce(from: Long, to: Long): List<AppWorkoutSet>
+
+    /** The rounds of the phone workouts that started in [from, to]. */
+    @Query("SELECT * FROM app_workout_round WHERE workoutStart BETWEEN :from AND :to ORDER BY workoutStart, `index`")
+    suspend fun roundsOfWorkoutsOnce(from: Long, to: Long): List<AppWorkoutRound>
+
+    /** The recovery HR of the strap workouts that started in [from, to]. */
+    @Query("SELECT * FROM recovery_hr WHERE workoutStart BETWEEN :from AND :to ORDER BY workoutStart")
+    suspend fun recoveryHeartRateOfWorkoutsOnce(from: Long, to: Long): List<RecoveryHeartRateRow>
+
+    /** The edits of the strap sessions that started in [from, to], by that start. */
+    @Query("SELECT * FROM sleep_edit WHERE strapStart BETWEEN :from AND :to ORDER BY strapStart")
+    suspend fun sleepEditsStartingOnce(from: Long, to: Long): List<SleepEdit>
+
+    /** The stages of every session ending in [from, to], as [sleepSessionsOnce] then [sleepStagesOnce] on each give them. */
+    @Query(
+        "SELECT sleep_stage.* FROM sleep_stage JOIN sleep_session ON sleep_session.start = sleep_stage.sessionStart " +
+            "WHERE sleep_session.`end` BETWEEN :from AND :to ORDER BY sleep_session.start, sleep_stage.start",
+    )
+    suspend fun sleepStagesOfSessionsEndingOnce(from: Long, to: Long): List<SleepStage>
+
+    @Query("SELECT * FROM app_workout_dismissed WHERE start BETWEEN :from AND :to ORDER BY start")
+    suspend fun dismissedWorkoutsStartingOnce(from: Long, to: Long): List<DismissedWorkout>
+
+    @Query("SELECT * FROM workout_deleted WHERE start BETWEEN :from AND :to ORDER BY start")
+    suspend fun deletedWorkoutsStartingOnce(from: Long, to: Long): List<DeletedWorkout>
+
+    @Query("SELECT * FROM saved_workout WHERE createdAt BETWEEN :from AND :to ORDER BY createdAt DESC")
+    suspend fun savedWorkoutsCreatedOnce(from: Long, to: Long): List<SavedWorkout>
+
+    @Query("SELECT * FROM exercise WHERE usedAt BETWEEN :from AND :to ORDER BY usedAt DESC")
+    suspend fun exercisesUsedOnce(from: Long, to: Long): List<ExerciseRow>
+
+    @Query("SELECT * FROM badge WHERE earnedAt BETWEEN :from AND :to ORDER BY earnedAt")
+    suspend fun badgesEarnedOnce(from: Long, to: Long): List<BadgeRow>
+
+    /** Weeks whose first day (an epoch day) starts in [from, to], in epoch seconds. */
+    @Query("SELECT * FROM week_result WHERE weekStart * 86400 BETWEEN :from AND :to ORDER BY weekStart")
+    suspend fun weekResultsStartingOnce(from: Long, to: Long): List<WeekResult>
+
+    /** Bests set on a day (an epoch day) that starts in [from, to], in epoch seconds. */
+    @Query("SELECT * FROM personal_best WHERE date * 86400 BETWEEN :from AND :to")
+    suspend fun personalBestsSetOnce(from: Long, to: Long): List<PersonalBest>
+
+    @Query("SELECT * FROM osa_event WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")
+    suspend fun osaEventsOnce(from: Long, to: Long): List<OsaEventRow>
+
+    @Query("SELECT * FROM health_alert WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")
+    suspend fun healthAlertsOnce(from: Long, to: Long): List<HealthAlertRow>
+
+    /*
+     * Keyset pages for the backup of the biggest tables: up to [limit] rows after the last one read, in the order the
+     * whole read would give them, so a page never skips or repeats a row and no table is held whole.
+     */
+
+    @Query("SELECT * FROM heart_rate WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun heartRatePage(after: Long, to: Long, limit: Int): List<HeartRateSample>
+
+    @Query("SELECT * FROM activity_minute WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun activityPage(after: Long, to: Long, limit: Int): List<ActivityMinute>
+
+    @Query("SELECT * FROM activity_extended WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun activityExtendedPage(after: Long, to: Long, limit: Int): List<ActivityExtendedMinute>
+
+    @Query("SELECT * FROM spo2 WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun spo2Page(after: Long, to: Long, limit: Int): List<Spo2Sample>
+
+    @Query("SELECT * FROM sleep_spo2 WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun sleepSpo2Page(after: Long, to: Long, limit: Int): List<SleepSpo2Sample>
+
+    @Query("SELECT * FROM stress WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun stressPage(after: Long, to: Long, limit: Int): List<StressSample>
+
+    @Query("SELECT * FROM hrv WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun hrvPage(after: Long, to: Long, limit: Int): List<HrvSample>
+
+    @Query("SELECT * FROM hrv_sdnn WHERE timestamp > :after AND timestamp <= :to ORDER BY timestamp LIMIT :limit")
+    suspend fun hrvSdnnPage(after: Long, to: Long, limit: Int): List<HrvSdnnSample>
+
+    /** Heart rate of the strap workouts that started in [from, to], after the sample ([afterStart], [afterTime]). */
+    @Query(
+        "SELECT * FROM workout_hr WHERE workoutStart BETWEEN :from AND :to AND " +
+            "(workoutStart > :afterStart OR (workoutStart = :afterStart AND timestamp > :afterTime)) " +
+            "ORDER BY workoutStart, timestamp LIMIT :limit",
+    )
+    suspend fun workoutHeartRatePage(from: Long, to: Long, afterStart: Long, afterTime: Long, limit: Int): List<WorkoutHeartRate>
+
+    /** As [workoutHeartRatePage], for the phone's workouts. */
+    @Query(
+        "SELECT * FROM app_workout_hr WHERE workoutStart BETWEEN :from AND :to AND " +
+            "(workoutStart > :afterStart OR (workoutStart = :afterStart AND timestamp > :afterTime)) " +
+            "ORDER BY workoutStart, timestamp LIMIT :limit",
+    )
+    suspend fun appWorkoutHeartRatePage(from: Long, to: Long, afterStart: Long, afterTime: Long, limit: Int): List<AppWorkoutHeartRate>
+
+    /** As [workoutHeartRatePage], for the phone workouts' routes. */
+    @Query(
+        "SELECT * FROM app_workout_route WHERE workoutStart BETWEEN :from AND :to AND " +
+            "(workoutStart > :afterStart OR (workoutStart = :afterStart AND timestamp > :afterTime)) " +
+            "ORDER BY workoutStart, timestamp LIMIT :limit",
+    )
+    suspend fun routePage(from: Long, to: Long, afterStart: Long, afterTime: Long, limit: Int): List<AppWorkoutRoutePoint>
+
+    /** [hoursWithData] over [from, to] only, so watching the recent days doesn't scan the whole of every table. */
+    @Query(
+        "SELECT DISTINCT timestamp / 3600 FROM heart_rate WHERE timestamp BETWEEN :from AND :to " +
+            "UNION SELECT DISTINCT timestamp / 3600 FROM activity_minute " +
+            "WHERE timestamp BETWEEN :from AND :to AND steps > 0 AND steps != 255 " +
+            "UNION SELECT DISTINCT `end` / 3600 FROM sleep_session WHERE `end` BETWEEN :from AND :to",
+    )
+    fun hoursWithData(from: Long, to: Long): Flow<List<Long>>
+
+    @Query(
+        "SELECT DISTINCT timestamp / 3600 FROM heart_rate WHERE timestamp BETWEEN :from AND :to " +
+            "UNION SELECT DISTINCT timestamp / 3600 FROM activity_minute " +
+            "WHERE timestamp BETWEEN :from AND :to AND steps > 0 AND steps != 255 " +
+            "UNION SELECT DISTINCT `end` / 3600 FROM sleep_session WHERE `end` BETWEEN :from AND :to",
+    )
+    suspend fun hoursWithDataOnce(from: Long, to: Long): List<Long>
+
+    /**
+     * The earliest heart rate, minute and sleep end, folded into one number: it changes when older data comes in (a
+     * restore, a Health Connect import). The first two are index lookups and sleep_session is small, so watching it is
+     * cheap.
+     */
+    @Query(
+        "SELECT COALESCE((SELECT MIN(timestamp) FROM heart_rate), 0) * 3 + COALESCE((SELECT MIN(timestamp) FROM activity_minute), 0) * 5 " +
+            "+ COALESCE((SELECT MIN(`end`) FROM sleep_session), 0) * 7",
+    )
+    fun earliestDataMark(): Flow<Long>
 }

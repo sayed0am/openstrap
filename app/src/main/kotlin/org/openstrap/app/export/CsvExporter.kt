@@ -18,7 +18,7 @@ class CsvExporter(private val dao: HealthDao) {
             val w = zip.writer()
             for (table in CSV_TABLES) {
                 zip.putNextEntry(ZipEntry(table.file))
-                w.writeCsv(table.header, table.rows(dao, from, to))
+                table.writeTo(w, from, to)
                 w.flush()
                 zip.closeEntry()
             }
@@ -31,7 +31,11 @@ class CsvExporter(private val dao: HealthDao) {
         }
     }
 
-    private suspend fun <T> CsvTable<T>.rows(dao: HealthDao, from: Long, to: Long) = read(dao, from, to).map(row)
+    /** The table's file, written a page at a time as the rows are read ([CsvTable.forEachPage]). */
+    private suspend fun <T> CsvTable<T>.writeTo(w: Writer, from: Long, to: Long) {
+        w.append(header).append('\n')
+        forEachPage(dao, from, to) { page -> w.writeRows(page.map(row)) }
+    }
 
     companion object {
         fun iso(epochSeconds: Long): String = Instant.ofEpochSecond(epochSeconds).toString()
@@ -42,6 +46,10 @@ class CsvExporter(private val dao: HealthDao) {
 
         internal fun Writer.writeCsv(header: String, rows: List<List<Any?>>) {
             append(header).append('\n')
+            writeRows(rows)
+        }
+
+        private fun Writer.writeRows(rows: List<List<Any?>>) {
             for (row in rows) {
                 row.joinTo(this, ",") { v -> v?.toString()?.let(::escape) ?: "" }
                 append('\n')

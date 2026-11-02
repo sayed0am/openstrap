@@ -52,6 +52,32 @@ class HealthspanEngine(private val dao: HealthDao) {
         return DayWindow.of(d.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)), zone).from
     }
 
+    /**
+     * Each of [nights]' heart rate by the minute, by its start: read a week of nights at a time and sliced, rather than
+     * two reads a night, while no read holds more than a week of minutes.
+     */
+    private suspend fun nightHeartRates(nights: Collection<org.openstrap.app.data.db.SleepSession>): Map<Long, List<Pair<Long, Int>>> {
+        val out = HashMap<Long, List<Pair<Long, Int>>>()
+        val sorted = nights.sortedBy { it.start }
+        var i = 0
+        while (i < sorted.size) {
+            val first = sorted[i].start
+            var j = i
+            while (j + 1 < sorted.size && sorted[j + 1].end - first <= HR_READ_SPAN_S) j++
+            val group = sorted.subList(i, j + 1)
+            val to = group.maxOf { it.end }
+            val hr = dao.heartRateOnce(first, to)
+            val activity = dao.activityOnce(first, to)
+            for (s in group) {
+                val night = hr.within(s.start, s.end) { it.timestamp }
+                val series = Summaries.heartRateSeries(night, activity.within(s.start, s.end) { it.timestamp })
+                out[s.start] = Summaries.bucketAverage(series, 60)
+            }
+            i = j + 1
+        }
+        return out
+    }
+
     /** Every input over [from, asOf), keyed as [Healthspan.Daily] wants. */
     private suspend fun daily(sunday: LocalDate, from: Long, asOf: Long, zone: ZoneId): Healthspan.Daily {
         val to = asOf - 1
@@ -78,7 +104,8 @@ class HealthspanEngine(private val dao: HealthDao) {
         }.toMap()
 
         // Main sleeps: the longest non-nap session per morning, as Recovery picks them.
-        val sessions = sleepSource.sessionsOnce(from, to)
+        val resolved = sleepSource.resolvedOnce(from, to)
+        val sessions = sleepSource.shown(resolved)
         val mains = sessions.filter { !it.nap }
             .groupBy { RecoveryEngine.morningOf(it, zone) }
             .filterKeys { it in from until asOf }
@@ -87,19 +114,21 @@ class HealthspanEngine(private val dao: HealthDao) {
 
         // Resting HR: the logged lowest 30-minute mean, else worked out from the night's heart rate the same way.
         val logged = dao.nightMetricsOnce(from, to).associateBy { it.day }
-        val restingHr = mains.mapNotNull { (morning, s) ->
-            if (s.end - s.start < Recovery.MIN_VALID_SLEEP_MINUTES * 60L) return@mapNotNull null
+        val valid = mains.filterValues { s -> s.end - s.start >= Recovery.MIN_VALID_SLEEP_MINUTES * 60L }
+        val nightHr = nightHeartRates(valid.filterKeys { logged[it]?.rhrLowest30 == null }.values)
+        val restingHr = valid.mapNotNull { (morning, s) ->
             val row = logged[morning]
             val rhr = if (row?.rhrLowest30 != null) row.rhrLowest30.takeIf { row.hrMinutes >= Recovery.MIN_HR_MINUTES } else {
-                val hr = Summaries.bucketAverage(Summaries.heartRateSeries(dao.heartRateOnce(s.start, s.end), dao.activityOnce(s.start, s.end)), 60)
-                    .filter { it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
+                val hr = nightHr[s.start].orEmpty().filter { it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
                 if (hr.size < Recovery.MIN_HR_MINUTES) null else Recovery.lowestAverage(hr, 30, Recovery.RHR_WINDOW_MIN_MINUTES)?.second
             }
             rhr?.let { morning to it }
         }.toMap()
 
         // Sleep regularity: one SRI per week, each over 8 noon-to-noon grid days ending at a Saturday noon.
-        val stages = sessions.flatMap { s -> sleepSource.stagesOnce(s).map { Triple(it.start, it.end, it.stage) } }
+        // Each session's stages from its resolved edit, which is at hand, so finding its edit again isn't a read per night.
+        val stages = resolved.filter { it.shown != null }
+            .flatMap { r -> sleepSource.stagesOnce(r).map { Triple(it.start, it.end, it.stage) } }
         val weeks = (Healthspan.WINDOW_DAYS - 1) / 7
         val weeklySri = (0 until weeks).mapNotNull { k ->
             val end = sunday.minusDays(7L * k + 1)
@@ -124,5 +153,10 @@ class HealthspanEngine(private val dao: HealthDao) {
             asOf = asOf, restingHr = restingHr, steps = steps, weeklySri = weeklySri, asleepMinutes = asleep,
             strength = strength, vo2max = vo2, firstDay = worn.firstOrNull()?.let { it * 60 } ?: mains.keys.minOrNull(),
         )
+    }
+
+    private companion object {
+        /** The most a heart rate read for the nights spans: a week. */
+        const val HR_READ_SPAN_S = 7 * 86_400L
     }
 }
