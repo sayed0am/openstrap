@@ -25,6 +25,7 @@ import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.ui.components.detailNumber
+import org.openstrap.app.ui.dashboard.ActivityHistory
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
@@ -63,11 +64,10 @@ fun GlowScoreDetailScreen(
     onSelectDay: (LocalDate) -> Unit,
     contentPadding: PaddingValues,
     onBack: () -> Unit,
-    /** For the Activity details: the workouts, each day's Heart points, and the way to the profile. */
+    /** For the Activity details: the workouts, each day's Heart points and stored energy, and the way to the profile. */
     workouts: List<org.openstrap.app.data.WorkoutAnalysis> = emptyList(),
-    paiHistory: PaiHistory? = null,
+    activity: ActivityHistory = ActivityHistory(),
     onEditProfile: () -> Unit = {},
-    energyHistory: EnergyHistory? = null,
     /** For the Sleep score and Naps details: moving, deleting and restoring a sleep or nap. */
     sleepEditing: SleepEditing = SleepEditing(),
 ) {
@@ -79,10 +79,36 @@ fun GlowScoreDetailScreen(
         Score.Regularity -> RegularityDetail(state, r, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack)
         Score.Naps -> NapsDetail(state, r, onOpen, onSwitch, onSelectDay, contentPadding, onBack, sleepEditing)
         Score.HeartPoints, Score.ActiveMinutes, Score.Load, Score.Vo2Max, Score.Recover, Score.Energy, Score.Distance -> ActivityScoreDetail(
-            score, ActivityDetailContext(state, r, workouts, paiHistory, history, onOpen, onSwitch, onSelectDay, onEditProfile, contentPadding, onBack, energyHistory),
+            score, ActivityDetailContext(state, r, workouts, activity, history, onOpen, onSwitch, onSelectDay, onEditProfile, contentPadding, onBack),
         )
     }
 }
+
+/** Today's shape, over [paiHistory] and [energyHistory], until the app root hands in the day view model's [ActivityHistory]. */
+@Deprecated("Pass the day view model's ActivityHistory")
+// Today's parameters as they are, the baselined lists included, until the app root moves over and this goes.
+@Suppress("ComposeUnstableCollections")
+@Composable
+fun GlowScoreDetailScreen(
+    score: Score,
+    state: DayUiState,
+    recovery: RecoveryResult?,
+    strapScore: Int?,
+    history: DailyHistory,
+    onOpen: (Detail) -> Unit,
+    onSwitch: (Detail) -> Unit,
+    onSelectDay: (LocalDate) -> Unit,
+    contentPadding: PaddingValues,
+    onBack: () -> Unit,
+    workouts: List<org.openstrap.app.data.WorkoutAnalysis>,
+    paiHistory: PaiHistory?,
+    onEditProfile: () -> Unit,
+    energyHistory: EnergyHistory?,
+    sleepEditing: SleepEditing = SleepEditing(),
+) = GlowScoreDetailScreen(
+    score, state, recovery, strapScore, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack, workouts,
+    rememberActivityHistory(state.date, paiHistory, energyHistory), onEditProfile, sleepEditing,
+)
 
 /** The days a metric has data for, from the day after [from] to [to]; none when [from] isn't before [to]. */
 @Composable

@@ -15,6 +15,9 @@ object SleepHistory {
     /** Nights the Sleep screen's week looks back over. */
     const val WEEK_NIGHTS = 7
 
+    /** Nights of sleep loaded for the week view and the in-sleep vitals' usual values. */
+    const val NIGHTS = 14
+
     /**
      * The night a sleep ending at [end] belongs to: the day it ended on, the rule recovery counts by
      * ([RecoveryEngine.morningOf]).
@@ -34,6 +37,14 @@ object SleepHistory {
      */
     fun mainSleep(sessions: List<SleepSession>, night: DayWindow): SleepSession? =
         sessions.filter { !it.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
+
+    /**
+     * [mainSleep] over the strap's sessions with their edits, by the times shown, so Today and the widgets pick the
+     * same night. The deleted ones are left out, unless [deleted] asks for the main sleep among them instead, which is
+     * what the No sleep recorded card offers to restore.
+     */
+    fun mainSleep(resolved: List<SleepEdits.Resolved>, night: DayWindow, deleted: Boolean = false): SleepEdits.Resolved? =
+        resolved.filter { it.deleted == deleted && !it.strap.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
 
     /**
      * Time asleep on the week's other nights, for the longest or shortest rule (`TabCopy.night`):

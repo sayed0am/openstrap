@@ -3,6 +3,7 @@ package org.openstrap.app.data
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -30,6 +31,32 @@ class SleepHistoryTest {
         val short = night(0, 8 * 60, 9 * 60)
         val nap = night(0, -120, 9 * 60, nap = true)
         assertEquals(mapOf(end to long), SleepHistory.mainSleeps(listOf(short, nap, long), zone))
+    }
+
+    @Test
+    fun mainSleepOverEditsGoesByTheTimesShown() {
+        val window = DayWindow.nightEndingOn(end, zone)
+        val long = night(0, -60, 7 * 60)
+        val short = night(0, 8 * 60, 9 * 60)
+        val nap = night(0, -120, 9 * 60, nap = true)
+        // The short one moved to run all morning, so it's now the longest as shown.
+        val moved = SleepEdits.Resolved(short, SleepEdit(short.start, nap = false, start = short.start - 5 * 3600, end = short.end + 3 * 3600))
+        val resolved = listOf(SleepEdits.Resolved(long, null), moved, SleepEdits.Resolved(nap, null))
+        assertEquals(moved, SleepHistory.mainSleep(resolved, window))
+        // The same pick as over the sessions as shown, so Today and the widgets agree.
+        assertEquals(SleepHistory.mainSleep(resolved.mapNotNull { it.shown }, window), SleepHistory.mainSleep(resolved, window)?.shown)
+    }
+
+    @Test
+    fun mainSleepOverEditsLeavesTheDeletedOut() {
+        val window = DayWindow.nightEndingOn(end, zone)
+        val long = night(0, -60, 7 * 60)
+        val short = night(0, 8 * 60, 9 * 60)
+        val gone = SleepEdits.Resolved(long, SleepEdit(long.start, nap = false, deleted = true))
+        val resolved = listOf(gone, SleepEdits.Resolved(short, null))
+        assertEquals(short, SleepHistory.mainSleep(resolved, window)?.strap)
+        assertEquals(gone, SleepHistory.mainSleep(resolved, window, deleted = true))
+        assertNull(SleepHistory.mainSleep(listOf(gone), window))
     }
 
     @Test

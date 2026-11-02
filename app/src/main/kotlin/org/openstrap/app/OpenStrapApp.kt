@@ -54,6 +54,16 @@ class AppContainer(val app: Application) {
     /** Save a copy, Restore and automatic backup's zip. What a restore couldn't do goes to Diagnostics. */
     val backups: org.openstrap.app.data.BackupRepository =
         org.openstrap.app.export.CsvBackups(app, database, settings, csv, log = { (strap as? StrapManager)?.log(it) })
+    /** Each day as Today and the tabs show it, read and resolved. */
+    val days: org.openstrap.app.data.DayRepository = org.openstrap.app.data.RoomDayRepository(health, strap.todaySteps)
+    /** The workouts, analysed, for the lists, pages and summaries. */
+    val workouts: org.openstrap.app.data.WorkoutRepository =
+        org.openstrap.app.data.RoomWorkoutRepository(database.healthDao(), settings.profile, maxHeartRates)
+
+    init {
+        // The Recovery cache follows the data from here on.
+        health.start(appScope, HealthRepository.recoveryInputs(database))
+    }
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
