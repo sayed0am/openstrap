@@ -87,6 +87,9 @@ android {
             "CoroutineCreationDuringComposition", "ComposeModifierMissing",
             "ComposeParameterOrder", "ComposeUnstableCollections", "UnusedResources",
         )
+        // LogNotTimber comes in with a dependency's lint checks, but the app logs with android.util.Log on purpose
+        // and has no Timber. NewerVersionAvailable asks the network, so its answer changes from run to run.
+        disable += listOf("LogNotTimber", "NewerVersionAvailable")
     }
 }
 

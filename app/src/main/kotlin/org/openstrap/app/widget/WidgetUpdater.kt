@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
+import androidx.core.content.edit
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -169,7 +170,7 @@ class WidgetUpdater(
                 val manager = GlanceAppWidgetManager(app)
                 val results = WIDGETS.values.map { manager.setWidgetPreviews(it.receiver.kotlin) }
                 if (results.all { it == GlanceAppWidgetManager.SET_WIDGET_PREVIEWS_RESULT_SUCCESS }) {
-                    prefs.edit().putInt(PREVIEW_VERSION, version).apply()
+                    prefs.edit { putInt(PREVIEW_VERSION, version) }
                 } else {
                     Log.i(WIDGET_TAG, "widgets: previews not all set ($results), trying again next start")
                 }

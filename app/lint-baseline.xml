@@ -8,7 +8,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutSession.kt"
-            line="1054"
+            line="1089"
             column="37"/>
     </issue>
 
@@ -30,7 +30,7 @@
         errorLine2="                                                               ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutTileService.kt"
-            line="66"
+            line="64"
             column="64"/>
     </issue>
 
@@ -41,7 +41,7 @@
         errorLine2="                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="304"
+            line="296"
             column="70"/>
     </issue>
 
@@ -52,7 +52,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/AlarmsScreen.kt"
-            line="154"
+            line="157"
             column="36"/>
     </issue>
 
@@ -63,7 +63,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="189"
+            line="184"
             column="20"/>
     </issue>
 
@@ -74,7 +74,7 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="203"
+            line="198"
             column="55"/>
     </issue>
 
@@ -85,7 +85,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="225"
+            line="222"
             column="17"/>
     </issue>
 
@@ -96,7 +96,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="460"
+            line="452"
             column="17"/>
     </issue>
 
@@ -123,124 +123,14 @@
     </issue>
 
     <issue
-        id="ComposeViewModelForwarding"
-        message="Forwarding a ViewModel through multiple @Composable functions should be avoided. Consider using state hoisting.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#hoist-all-the-things for more information."
-        errorLine1="                DeviceScreen("
-        errorLine2="                ^">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1395"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelForwarding"
-        message="Forwarding a ViewModel through multiple @Composable functions should be avoided. Consider using state hoisting.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#hoist-all-the-things for more information."
-        errorLine1="            Page.Firmware -> FirmwareScreen(firmwareVm, padding, onBack = close, onZeppAccount = { open(Page.ZeppAccount) })"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1420"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelForwarding"
-        message="Forwarding a ViewModel through multiple @Composable functions should be avoided. Consider using state hoisting.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#hoist-all-the-things for more information."
-        errorLine1="            Page.ZeppAccount -> org.openstrap.app.ui.firmware.ZeppAccountScreen(firmwareVm, padding, onBack = close)"
-        errorLine2="                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1421"
-            column="63"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelInjection"
-        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
-        errorLine1="    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="422"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelInjection"
-        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
-        errorLine1="    val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="423"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelInjection"
-        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
-        errorLine1="    val firmwareVm: FirmwareViewModel = viewModel(factory = viewModelFactory { initializer { FirmwareViewModel(container) } })"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="429"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelInjection"
-        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
-        errorLine1="    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {"
-        errorLine2="    ^">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="434"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeViewModelInjection"
-        message="Implicit dependencies of composables should be made explicit.&#xA;Usages of viewModel to acquire a ViewModel should be done in composable default parameters, so that it is more testable and flexible.&#xA;See https://slackhq.github.io/compose-lints/rules/#viewmodels for more information."
-        errorLine1="    val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {"
-        errorLine2="    ^">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1455"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="NonObservableLocale"
-        message="Reading locale in a non-observable way in a composable function"
-        errorLine1="            val firstDay = WeekFields.of(Locale.getDefault()).firstDayOfWeek"
-        errorLine2="                                         ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="88"
-            column="42"/>
-    </issue>
-
-    <issue
         id="NonObservableLocale"
         message="Reading locale in a non-observable way in a composable function"
         errorLine1="                        firstDay.plus(i.toLong()).getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2),"
         errorLine2="                                                                                  ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="92"
+            line="97"
             column="83"/>
-    </issue>
-
-    <issue
-        id="NonObservableLocale"
-        message="Reading locale in a non-observable way in a composable function"
-        errorLine1="                        Instant.ofEpochSecond(b.date).atZone(zone).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()), null,"
-        errorLine2="                                                                                                             ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="295"
-            column="110"/>
     </issue>
 
     <issue
@@ -250,7 +140,7 @@
         errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="602"
+            line="614"
             column="80"/>
     </issue>
 
@@ -261,7 +151,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/AlarmsScreen.kt"
-            line="268"
+            line="273"
             column="14"/>
     </issue>
 
@@ -272,7 +162,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="384"
+            line="393"
             column="14"/>
     </issue>
 
@@ -283,7 +173,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="674"
+            line="689"
             column="13"/>
     </issue>
 
@@ -294,7 +184,7 @@
         errorLine2="             ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="172"
+            line="183"
             column="14"/>
     </issue>
 
@@ -305,7 +195,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="492"
+            line="504"
             column="13"/>
     </issue>
 
@@ -316,7 +206,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="180"
+            line="178"
             column="22"/>
     </issue>
 
@@ -338,7 +228,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="526"
+            line="524"
             column="22"/>
     </issue>
 
@@ -371,7 +261,7 @@
         errorLine2="                                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="503"
+            line="501"
             column="43"/>
     </issue>
 
@@ -382,7 +272,7 @@
         errorLine2="                                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="503"
+            line="501"
             column="43"/>
     </issue>
 
@@ -404,7 +294,7 @@
         errorLine2="    ~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="462"
+            line="461"
             column="5"/>
     </issue>
 
@@ -415,7 +305,7 @@
         errorLine2="                                                                   ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="616"
+            line="628"
             column="68"/>
     </issue>
 
@@ -426,7 +316,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="83"
+            line="86"
             column="5"/>
     </issue>
 
@@ -437,7 +327,7 @@
         errorLine2="                        ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="271"
+            line="276"
             column="25"/>
     </issue>
 
@@ -448,558 +338,8 @@
         errorLine2="                                                 ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="281"
+            line="286"
             column="50"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.i(TAG, &quot;Update check failed: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="143"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.i(TAG, &quot;Update download failed: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="186"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.i(TAG, &quot;Update install failed: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="189"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.i(TAG, &quot;Update install failed: status $status, $message&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="221"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;health connect: auto sync not queued: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="110"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.i(TAG, &quot;health connect: wrote workout $start, $n records&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="119"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.i(TAG, &quot;health connect: wrote the sleep at $strapStart again, $n records&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="133"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.i(TAG, &quot;health connect: auto sync wrote $n records&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="145"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        Log.i(TAG, &quot;health connect: auto sync stopped, $why&quot;)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="168"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;health connect: auto sync stopped writing $what: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="181"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;health connect: auto sync of $what failed: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/health/AutoHealthConnect.kt"
-            line="183"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(TAG, &quot;association failed: $error&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="91"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        }.onFailure { Log.w(TAG, &quot;presence observing failed: $it&quot;) }"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="130"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        }.onFailure { Log.w(TAG, &quot;disassociate failed: $it&quot;) }"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="147"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                        Log.w(&quot;OpenStrap&quot;, &quot;recovery failed&quot;, e)"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayViewModel.kt"
-            line="204"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                    Log.w(&quot;OpenStrap&quot;, &quot;usual steps failed&quot;, e)"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayViewModel.kt"
-            line="251"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                        Log.w(&quot;OpenStrap&quot;, &quot;healthspan failed&quot;, e)"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayViewModel.kt"
-            line="269"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                ?: android.util.Log.w(&quot;OpenStrap&quot;, &quot;moment: no moment called $moment&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="304"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                ?: android.util.Log.w(&quot;OpenStrap&quot;, &quot;strap_state: no state called $strapState&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="321"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            android.util.Log.i(&quot;OpenStrap&quot;, &quot;strap_state: showing ${strapPreview.value ?: &quot;the real state&quot;}&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="322"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                ?: android.util.Log.w(&quot;OpenStrap&quot;, &quot;data_state: no state called $dataState&quot;)"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="332"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            android.util.Log.i(&quot;OpenStrap&quot;, &quot;data_state: showing ${dataPreview.value ?: &quot;the real state&quot;}&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="333"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        android.util.Log.i(&quot;OpenStrap&quot;, &quot;dump: requested $days days, types ${types ?: &quot;all&quot;}&quot;)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="359"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        forced?.let { android.util.Log.i(&quot;OpenStrap&quot;, &quot;moment: forced $it, the clock says $clockMoment&quot;) }"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="709"
-            column="23"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(WIDGET_TAG, &quot;widgets: $what for Moment not read: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/MomentWidget.kt"
-            line="90"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(WIDGET_TAG, &quot;widgets: Recovery for $date not worked out: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="71"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                .onFailure { Log.w(TAG, &quot;drawing the card failed&quot;, it) }.getOrNull()"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="180"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="    }.onFailure { Log.w(TAG, &quot;reading the photo failed&quot;, it) }.getOrNull()"
-        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="309"
-            column="19"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="    }.onFailure { Log.w(TAG, &quot;saving the card failed&quot;, it) }.getOrDefault(false)"
-        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="347"
-            column="19"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="    }.onFailure { Log.w(TAG, &quot;writing the card to share failed&quot;, it) }.getOrNull()"
-        errorLine2="                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="355"
-            column="19"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(WIDGET_TAG, &quot;widgets: sleep for $today not read: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="93"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(WIDGET_TAG, &quot;widgets: workouts for Start not read: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/StartWidget.kt"
-            line="104"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(WIDGET_TAG, &quot;widgets: steps for $today not read: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/StepsWidget.kt"
-            line="91"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        Log.i(&quot;OpenStrap&quot;, message)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapManager.kt"
-            line="122"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(&quot;OpenStrap&quot;, &quot;widgets: sync from the status line failed: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/SyncNowAction.kt"
-            line="28"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(TAG, &quot;widget gallery: update failed: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/kotlin/org/openstrap/app/widget/debug/WidgetGalleryActivity.kt"
-            line="184"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        Log.w(TAG, &quot;widget gallery: $text&quot;)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/kotlin/org/openstrap/app/widget/debug/WidgetGalleryActivity.kt"
-            line="277"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="    Log.w(WIDGET_TAG, &quot;widgets: strap status not read: $e&quot;)"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="171"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        Log.w(WIDGET_TAG, &quot;widgets: moment for the mood not worked out: $e&quot;)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="219"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        Log.w(TAG, &quot;widgets: placed check failed: $e&quot;)"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="100"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;widgets: moment alarm not set: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="117"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;widgets: moment alarm not cleared: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="142"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                    Log.i(TAG, &quot;widgets: previews not all set ($results), trying again next start&quot;)"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="166"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(TAG, &quot;widgets: previews not set: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="169"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;widgets: midnight alarm not set: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="184"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(TAG, &quot;widgets: $kind not updated: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="197"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.w(TAG, &quot;widgets: stale alarm not set: $e&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="218"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="                Log.w(&quot;OpenStrap&quot;, &quot;widgets: alarm ${intent.action} failed: $e&quot;)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="282"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="            Log.i(TAG, &quot;gps: fused gave no location in ${FUSED_TIMEOUT_MS / 1000} s, using plain GPS&quot;)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutLocation.kt"
-            line="40"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="LogNotTimber"
-        message="Using &apos;Log&apos; instead of &apos;Timber&apos;"
-        errorLine1="        if (mockFixes > 0) Log.i(TAG, &quot;gps: dropped $mockFixes mock fixes&quot;)"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutLocation.kt"
-            line="109"
-            column="28"/>
     </issue>
 
     <issue
@@ -1019,427 +359,9 @@
         errorLine1="        android:allowBackup=&quot;false&quot;"
         errorLine2="                             ~~~~~">
         <location
-            file="src/main/AndroidManifest.xml"
-            line="85"
+            file="../.claude/worktrees/w4-widgets/app/src/main/AndroidManifest.xml"
+            line="79"
             column="30"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 31"
-        errorLine1="        tools:targetApi=&quot;s&quot; />"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/AndroidManifest.xml"
-            line="19"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= 31) setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="305"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            val flags = PendingIntent.FLAG_UPDATE_CURRENT or (if (Build.VERSION.SDK_INT >= 31) PendingIntent.FLAG_MUTABLE else 0)"
-        errorLine2="                                                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="317"
-            column="67"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="60"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) cdm.associate(request, activity.mainExecutor, callback)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="95"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is never &lt; 36"
-        errorLine1="        if (Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.TIRAMISU) scope.launch {"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="108"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA -> {"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="124"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `Build.VERSION.SDK_INT >= Build.VERSION_CODES.S` is never true here"
-        errorLine1="                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> @Suppress(&quot;DEPRECATION&quot;) cdm.startObservingDevicePresence(address)"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="128"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="134"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/CompanionLink.kt"
-            line="142"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ble/GattClient.kt"
-            line="186"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ble/GattClient.kt"
-            line="201"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                callListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="131"
-            column="36"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="142"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &amp;&amp; l is TelephonyCallback) {"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="148"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &amp;&amp; m is AudioManager.OnModeChangedListener) audio.removeOnModeChangedListener(m)"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="156"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        val callType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0) else 0"
-        errorLine2="                           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="289"
-            column="28"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &amp;&amp; callType != 0 -> callType == Notification.CallStyle.CALL_TYPE_INCOMING"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/PhoneAlerts.kt"
-            line="321"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        val intent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {"
-        errorLine2="                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/alarms/PhoneAlertsScreen.kt"
-            line="101"
-            column="26"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is never &lt; 36"
-        errorLine1="        val asks = Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.Q &amp;&amp;"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="170"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="322"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 31"
-        errorLine1="@RequiresApi(Build.VERSION_CODES.S)"
-        errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapPresenceService.kt"
-            line="16"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 33"
-        errorLine1="    @RequiresApi(Build.VERSION_CODES.TIRAMISU)"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapPresenceService.kt"
-            line="31"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="    @RequiresApi(Build.VERSION_CODES.BAKLAVA)"
-        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapPresenceService.kt"
-            line="34"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        val base = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE else 0"
-        errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="77"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        val withGps = if (gps &amp;&amp; Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) base or ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION else base"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="78"
-            column="34"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        Build.VERSION.SDK_INT >= 36 &amp;&amp; !Build.MANUFACTURER.equals(&quot;samsung&quot;, ignoreCase = true) &amp;&amp;"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="285"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is never &lt; 36"
-        errorLine1="        fun allowed(context: Context) = Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.UPSIDE_DOWN_CAKE ||"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="579"
-            column="41"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                val confirm = if (Build.VERSION.SDK_INT >= 33) intent.getParcelableExtra(Intent.EXTRA_INTENT, Intent::class.java)"
-        errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/update/UpdateReceiver.kt"
-            line="23"
-            column="35"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/debug/kotlin/org/openstrap/app/widget/debug/WidgetGalleryActivity.kt"
-            line="168"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="private fun systemCorner(context: Context): Float? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="                                                         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="393"
-            column="58"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="417"
-            column="9"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is never &lt; 36"
-        errorLine1="        if (Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.VANILLA_ICE_CREAM) return"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="154"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is never &lt; 36"
-        errorLine1="        val exact = Build.VERSION.SDK_INT &lt; Build.VERSION_CODES.S || alarms.canScheduleExactAlarms()"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="241"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutLocation.kt"
-            line="81"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) l.isMock else l.isFromMockProvider"
-        errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutLocation.kt"
-            line="124"
-            column="17"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {"
-        errorLine2="                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutTileService.kt"
-            line="35"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="ObsoleteSdkInt"
-        message="Unnecessary; `SDK_INT` is always >= 36"
-        errorLine1="        if (Build.VERSION.SDK_INT >= 34) startActivityAndCollapse(pending)"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WorkoutTileService.kt"
-            line="65"
-            column="13"/>
     </issue>
 
     <issue
@@ -1460,7 +382,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="208"
+            line="214"
             column="29"/>
     </issue>
 
@@ -1471,7 +393,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="714"
+            line="741"
             column="29"/>
     </issue>
 
@@ -1482,7 +404,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="159"
+            line="186"
             column="29"/>
     </issue>
 
@@ -1493,7 +415,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="244"
+            line="281"
             column="29"/>
     </issue>
 
@@ -1504,7 +426,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="504"
+            line="564"
             column="29"/>
     </issue>
 
@@ -1515,7 +437,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="627"
+            line="693"
             column="29"/>
     </issue>
 
@@ -1526,7 +448,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="317"
+            line="311"
             column="49"/>
     </issue>
 
@@ -1537,52 +459,8 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="318"
+            line="312"
             column="47"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableLongStateOf` instead of `mutableStateOf`"
-        errorLine1="    var f by remember { mutableStateOf(from) }"
-        errorLine2="                        ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="364"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableLongStateOf` instead of `mutableStateOf`"
-        errorLine1="    var t by remember { mutableStateOf(to) }"
-        errorLine2="                        ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="365"
-            column="25"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableLongStateOf` instead of `mutableStateOf`"
-        errorLine1="    var from by remember(summary) { mutableStateOf(a.shownStart) }"
-        errorLine2="                                    ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="490"
-            column="37"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableLongStateOf` instead of `mutableStateOf`"
-        errorLine1="    var to by remember(summary) { mutableStateOf(a.end) }"
-        errorLine2="                                  ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="491"
-            column="35"/>
     </issue>
 
     <issue
@@ -1592,7 +470,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="305"
+            line="316"
             column="29"/>
     </issue>
 
@@ -1603,7 +481,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="390"
+            line="409"
             column="47"/>
     </issue>
 
@@ -1614,63 +492,30 @@
         errorLine2="                                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="391"
+            line="410"
             column="45"/>
     </issue>
 
     <issue
         id="AutoboxingStateCreation"
-        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
-        errorLine1="    var first by remember { mutableStateOf(0) }"
-        errorLine2="                            ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="744"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
         message="Prefer `mutableLongStateOf` instead of `mutableStateOf`"
-        errorLine1="    var restSeconds by rememberSaveable(key, settings) { mutableStateOf(lastRest.seconds) }"
-        errorLine2="                                                         ~~~~~~~~~~~~~~">
+        errorLine1="    var restSeconds by rememberSaveable(key, settings.rest) { mutableStateOf(lastRest.seconds) }"
+        errorLine2="                                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="119"
-            column="58"/>
+            line="121"
+            column="63"/>
     </issue>
 
     <issue
         id="AutoboxingStateCreation"
         message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
-        errorLine1="    var belowLevel by rememberSaveable(key, settings) { mutableStateOf(lastRest.belowBpm ?: StartCopy.DEFAULT_BELOW) }"
-        errorLine2="                                                        ~~~~~~~~~~~~~~">
+        errorLine1="    var planSets by rememberSaveable(key, settings.sets) { mutableStateOf(settings.sets ?: StartCopy.DEFAULT_SETS) }"
+        errorLine2="                                                           ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="122"
-            column="57"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableIntStateOf` instead of `mutableStateOf`"
-        errorLine1="    var planSets by rememberSaveable(key, settings) { mutableStateOf(settings.sets ?: StartCopy.DEFAULT_SETS) }"
-        errorLine2="                                                      ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="123"
-            column="55"/>
-    </issue>
-
-    <issue
-        id="ComposeNonRestartableComposable"
-        message="This composable&apos;s body only delegates to another composable. Consider marking it @NonRestartableComposable when its own restart and skip boundary is unlikely to be useful. The annotation avoids generating that code, but also prevents the wrapper from being restarted or skipped independently.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-unnecessary-restart-groups for more information."
-        errorLine1="@androidx.compose.runtime.Composable"
-        errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1739"
-            column="1"/>
+            line="125"
+            column="60"/>
     </issue>
 
     <issue
@@ -1702,7 +547,7 @@
         errorLine2="                 ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowParts.kt"
-            line="89"
+            line="90"
             column="18"/>
     </issue>
 
@@ -1801,7 +646,7 @@
         errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="162"
+            line="165"
             column="68"/>
     </issue>
 
@@ -1812,7 +657,7 @@
         errorLine2="                                                           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/export/AutoBackup.kt"
-            line="54"
+            line="68"
             column="60"/>
     </issue>
 
@@ -1823,7 +668,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="281"
+            line="276"
             column="5"/>
     </issue>
 
@@ -1834,7 +679,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="289"
+            line="284"
             column="5"/>
     </issue>
 
@@ -1845,7 +690,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="332"
+            line="327"
             column="15"/>
     </issue>
 
@@ -1856,19 +701,8 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="305"
+            line="297"
             column="34"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="        runCatching { container.app.contentResolver.releasePersistableUriPermission(Uri.parse(folder), flags) }"
-        errorLine2="                                                                                    ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/device/DeviceViewModel.kt"
-            line="192"
-            column="85"/>
     </issue>
 
     <issue
@@ -1878,7 +712,7 @@
         errorLine2="              ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCard.kt"
-            line="321"
+            line="351"
             column="15"/>
     </issue>
 
@@ -1889,19 +723,8 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="508"
+            line="536"
             column="22"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `SharedPreferences.edit` instead?"
-        errorLine1="                    prefs.edit().putInt(PREVIEW_VERSION, version).apply()"
-        errorLine2="                    ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/device/WidgetUpdater.kt"
-            line="164"
-            column="21"/>
     </issue>
 
     <issue
@@ -1911,7 +734,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutNotification.kt"
-            line="144"
+            line="143"
             column="22"/>
     </issue>
 
@@ -1955,7 +778,7 @@
         errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/EdgeCard.kt"
-            line="106"
+            line="55"
             column="1"/>
     </issue>
 
@@ -1977,7 +800,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCard.kt"
-            line="80"
+            line="85"
             column="1"/>
     </issue>
 
@@ -1988,7 +811,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCard.kt"
-            line="86"
+            line="91"
             column="1"/>
     </issue>
 
@@ -2010,18 +833,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="264"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeCompositionLocalUsage"
-        message="`CompositionLocal`s are implicit dependencies and creating new ones should be avoided.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#compositionlocals for more information."
-        errorLine1="/**"
-        errorLine2="^">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowStyle.kt"
-            line="64"
+            line="301"
             column="1"/>
     </issue>
 
@@ -2054,7 +866,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/Routes.kt"
-            line="42"
+            line="49"
             column="1"/>
     </issue>
 
@@ -2065,7 +877,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="147"
+            line="142"
             column="1"/>
     </issue>
 
@@ -2076,7 +888,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="153"
+            line="148"
             column="1"/>
     </issue>
 
@@ -2098,7 +910,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="174"
+            line="172"
             column="5"/>
     </issue>
 
@@ -2109,7 +921,7 @@
         errorLine2="    ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="96"
+            line="98"
             column="5"/>
     </issue>
 
@@ -2120,7 +932,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="121"
+            line="123"
             column="5"/>
     </issue>
 
@@ -2131,7 +943,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="171"
+            line="175"
             column="5"/>
     </issue>
 
@@ -2142,7 +954,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="79"
+            line="80"
             column="5"/>
     </issue>
 
@@ -2153,7 +965,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="64"
+            line="68"
             column="5"/>
     </issue>
 
@@ -2164,7 +976,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeletedSleepPage.kt"
-            line="36"
+            line="34"
             column="5"/>
     </issue>
 
@@ -2175,7 +987,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="114"
+            line="111"
             column="5"/>
     </issue>
 
@@ -2186,7 +998,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="388"
+            line="380"
             column="5"/>
     </issue>
 
@@ -2241,7 +1053,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="388"
+            line="425"
             column="5"/>
     </issue>
 
@@ -2252,7 +1064,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="403"
+            line="415"
             column="5"/>
     </issue>
 
@@ -2274,7 +1086,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="117"
+            line="128"
             column="5"/>
     </issue>
 
@@ -2285,7 +1097,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="302"
+            line="296"
             column="5"/>
     </issue>
 
@@ -2296,7 +1108,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="92"
+            line="99"
             column="5"/>
     </issue>
 
@@ -2307,7 +1119,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="137"
+            line="145"
             column="5"/>
     </issue>
 
@@ -2318,7 +1130,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="153"
+            line="161"
             column="5"/>
     </issue>
 
@@ -2329,7 +1141,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="229"
+            line="237"
             column="5"/>
     </issue>
 
@@ -2340,7 +1152,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="264"
+            line="272"
             column="5"/>
     </issue>
 
@@ -2351,7 +1163,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/GoalsSheet.kt"
-            line="55"
+            line="57"
             column="5"/>
     </issue>
 
@@ -2362,7 +1174,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/HeartZonesScreen.kt"
-            line="51"
+            line="52"
             column="5"/>
     </issue>
 
@@ -2395,7 +1207,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="103"
+            line="101"
             column="5"/>
     </issue>
 
@@ -2406,7 +1218,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="117"
+            line="115"
             column="5"/>
     </issue>
 
@@ -2417,7 +1229,7 @@
         errorLine2="    ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="190"
+            line="188"
             column="5"/>
     </issue>
 
@@ -2428,7 +1240,7 @@
         errorLine2="        ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="317"
+            line="315"
             column="9"/>
     </issue>
 
@@ -2439,7 +1251,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="380"
+            line="378"
             column="5"/>
     </issue>
 
@@ -2450,7 +1262,7 @@
         errorLine2="    ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="525"
+            line="523"
             column="5"/>
     </issue>
 
@@ -2461,7 +1273,7 @@
         errorLine2="    ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="547"
+            line="545"
             column="5"/>
     </issue>
 
@@ -2472,14 +1284,14 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="592"
+            line="590"
             column="5"/>
     </issue>
 
     <issue
         id="ComposeModifierMissing"
         message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPadding: PaddingValues, onBack: () -> Unit) {"
+        errorLine1="fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, onBack: () -> Unit) {"
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/PhoneAlertsScreen.kt"
@@ -2538,7 +1350,7 @@
         errorLine2="    ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/UpdatesPage.kt"
-            line="50"
+            line="51"
             column="5"/>
     </issue>
 
@@ -2549,7 +1361,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="240"
+            line="246"
             column="5"/>
     </issue>
 
@@ -2560,7 +1372,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="260"
+            line="266"
             column="5"/>
     </issue>
 
@@ -2571,7 +1383,7 @@
         errorLine2="    ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/YouPage.kt"
-            line="80"
+            line="77"
             column="5"/>
     </issue>
 
@@ -2582,7 +1394,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="99"
+            line="101"
             column="5"/>
     </issue>
 
@@ -2593,7 +1405,7 @@
         errorLine2="                            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="758"
+            line="757"
             column="29"/>
     </issue>
 
@@ -2604,7 +1416,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="759"
+            line="758"
             column="30"/>
     </issue>
 
@@ -2615,7 +1427,7 @@
         errorLine2="                                 ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="760"
+            line="759"
             column="34"/>
     </issue>
 
@@ -2626,7 +1438,7 @@
         errorLine2="                              ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="770"
+            line="769"
             column="31"/>
     </issue>
 
@@ -2637,7 +1449,7 @@
         errorLine2="                                             ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="779"
+            line="778"
             column="46"/>
     </issue>
 
@@ -2648,7 +1460,7 @@
         errorLine2="                 ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="780"
+            line="779"
             column="18"/>
     </issue>
 
@@ -2659,7 +1471,7 @@
         errorLine2="                               ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="782"
+            line="781"
             column="32"/>
     </issue>
 
@@ -2670,7 +1482,7 @@
         errorLine2="                              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="788"
+            line="787"
             column="31"/>
     </issue>
 
@@ -2681,7 +1493,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="792"
+            line="791"
             column="31"/>
     </issue>
 
@@ -2692,7 +1504,7 @@
         errorLine2="            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="806"
+            line="805"
             column="13"/>
     </issue>
 
@@ -2703,7 +1515,7 @@
         errorLine2="               ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="815"
+            line="814"
             column="16"/>
     </issue>
 
@@ -2714,7 +1526,7 @@
         errorLine2="                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="833"
+            line="832"
             column="27"/>
     </issue>
 
@@ -2725,7 +1537,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="835"
+            line="834"
             column="31"/>
     </issue>
 
@@ -2736,7 +1548,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="836"
+            line="835"
             column="35"/>
     </issue>
 
@@ -2747,7 +1559,7 @@
         errorLine2="                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="207"
+            line="208"
             column="48"/>
     </issue>
 
@@ -2780,7 +1592,7 @@
         errorLine2="                         ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/DataStateParts.kt"
-            line="159"
+            line="180"
             column="26"/>
     </issue>
 
@@ -2791,7 +1603,7 @@
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="249"
+            line="246"
             column="50"/>
     </issue>
 
@@ -2802,7 +1614,7 @@
         errorLine2="                                                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="234"
+            line="239"
             column="92"/>
     </issue>
 
@@ -2813,7 +1625,7 @@
         errorLine2="                                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="255"
+            line="257"
             column="45"/>
     </issue>
 
@@ -2824,7 +1636,7 @@
         errorLine2="                                                                    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="291"
+            line="293"
             column="69"/>
     </issue>
 
@@ -2835,7 +1647,7 @@
         errorLine2="                                                                                     ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="328"
+            line="333"
             column="86"/>
     </issue>
 
@@ -2846,7 +1658,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="336"
+            line="344"
             column="41"/>
     </issue>
 
@@ -2857,7 +1669,7 @@
         errorLine2="                                                                                                       ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="458"
+            line="457"
             column="104"/>
     </issue>
 
@@ -2868,7 +1680,7 @@
         errorLine2="                                                                                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="484"
+            line="483"
             column="105"/>
     </issue>
 
@@ -2879,7 +1691,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="504"
+            line="503"
             column="84"/>
     </issue>
 
@@ -2890,7 +1702,7 @@
         errorLine2="                                                                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="562"
+            line="561"
             column="108"/>
     </issue>
 
@@ -2901,7 +1713,7 @@
         errorLine2="                                                                                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="583"
+            line="582"
             column="93"/>
     </issue>
 
@@ -2912,7 +1724,7 @@
         errorLine2="                                                                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="623"
+            line="622"
             column="128"/>
     </issue>
 
@@ -2923,7 +1735,7 @@
         errorLine2="                                                                                                                     ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="663"
+            line="662"
             column="118"/>
     </issue>
 
@@ -2934,7 +1746,7 @@
         errorLine2="                                                         ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="698"
+            line="697"
             column="58"/>
     </issue>
 
@@ -2945,7 +1757,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="720"
+            line="719"
             column="84"/>
     </issue>
 
@@ -2967,7 +1779,7 @@
         errorLine2="                                                                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="208"
+            line="214"
             column="132"/>
     </issue>
 
@@ -2978,7 +1790,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="283"
+            line="284"
             column="37"/>
     </issue>
 
@@ -2989,7 +1801,7 @@
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="366"
+            line="367"
             column="38"/>
     </issue>
 
@@ -3000,7 +1812,7 @@
         errorLine2="                                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="164"
+            line="180"
             column="45"/>
     </issue>
 
@@ -3011,7 +1823,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="203"
+            line="220"
             column="5"/>
     </issue>
 
@@ -3022,7 +1834,7 @@
         errorLine2="                                                                                 ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="414"
+            line="433"
             column="82"/>
     </issue>
 
@@ -3044,7 +1856,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="462"
+            line="461"
             column="5"/>
     </issue>
 
@@ -3055,7 +1867,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="356"
+            line="358"
             column="49"/>
     </issue>
 
@@ -3066,7 +1878,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="581"
+            line="583"
             column="56"/>
     </issue>
 
@@ -3077,7 +1889,7 @@
         errorLine2="                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="616"
+            line="618"
             column="44"/>
     </issue>
 
@@ -3088,7 +1900,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="648"
+            line="650"
             column="36"/>
     </issue>
 
@@ -3099,7 +1911,7 @@
         errorLine2="                                       ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="265"
+            line="254"
             column="40"/>
     </issue>
 
@@ -3110,7 +1922,7 @@
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/StartWidget.kt"
-            line="564"
+            line="536"
             column="50"/>
     </issue>
 
@@ -3121,7 +1933,7 @@
         errorLine2="                                                                      ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/StrapDrawing.kt"
-            line="33"
+            line="36"
             column="71"/>
     </issue>
 
@@ -3132,7 +1944,7 @@
         errorLine2="                                                                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="158"
+            line="164"
             column="128"/>
     </issue>
 
@@ -3143,7 +1955,7 @@
         errorLine2="                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="305"
+            line="310"
             column="25"/>
     </issue>
 
@@ -3154,7 +1966,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="294"
+            line="293"
             column="1"/>
     </issue>
 
@@ -3165,7 +1977,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="594"
+            line="600"
             column="1"/>
     </issue>
 
@@ -3176,7 +1988,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="631"
+            line="637"
             column="1"/>
     </issue>
 
@@ -3187,7 +1999,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="446"
+            line="448"
             column="1"/>
     </issue>
 
@@ -3198,7 +2010,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="421"
+            line="424"
             column="1"/>
     </issue>
 
@@ -3209,41 +2021,8 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="524"
+            line="507"
             column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeMutableParameters"
-        message="Using mutable objects as state in Compose will cause your users to see incorrect or stale data in your app. Mutable objects that are not observable, such as ArrayList&lt;T> or a mutable data class, cannot be observed by Compose to trigger recomposition when they change.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#do-not-use-inherently-mutable-types-as-parameters for more information."
-        errorLine1="    metricRequests: kotlinx.coroutines.flow.MutableStateFlow&lt;MetricRequest?>,"
-        errorLine2="                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="413"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="ComposeMutableParameters"
-        message="Using mutable objects as state in Compose will cause your users to see incorrect or stale data in your app. Mutable objects that are not observable, such as ArrayList&lt;T> or a mutable data class, cannot be observed by Compose to trigger recomposition when they change.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#do-not-use-inherently-mutable-types-as-parameters for more information."
-        errorLine1="    todayRequests: kotlinx.coroutines.flow.MutableStateFlow&lt;Boolean>,"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="414"
-            column="20"/>
-    </issue>
-
-    <issue
-        id="ComposeMutableParameters"
-        message="Using mutable objects as state in Compose will cause your users to see incorrect or stale data in your app. Mutable objects that are not observable, such as ArrayList&lt;T> or a mutable data class, cannot be observed by Compose to trigger recomposition when they change.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#do-not-use-inherently-mutable-types-as-parameters for more information."
-        errorLine1="    strapRequests: kotlinx.coroutines.flow.MutableStateFlow&lt;Boolean>,"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="415"
-            column="20"/>
     </issue>
 
     <issue
@@ -3253,7 +2032,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="384"
+            line="393"
             column="14"/>
     </issue>
 
@@ -3264,7 +2043,7 @@
         errorLine2="             ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="172"
+            line="183"
             column="14"/>
     </issue>
 
@@ -3275,7 +2054,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="492"
+            line="504"
             column="13"/>
     </issue>
 
@@ -3297,7 +2076,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="348"
+            line="385"
             column="22"/>
     </issue>
 
@@ -3308,7 +2087,7 @@
         errorLine2="                 ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowParts.kt"
-            line="40"
+            line="41"
             column="18"/>
     </issue>
 
@@ -3341,7 +2120,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="503"
+            line="501"
             column="17"/>
     </issue>
 
@@ -3352,7 +2131,7 @@
         errorLine2="                       ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="457"
+            line="456"
             column="24"/>
     </issue>
 
@@ -3363,7 +2142,7 @@
         errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="534"
+            line="546"
             column="23"/>
     </issue>
 
@@ -3374,7 +2153,7 @@
         errorLine2="                     ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="615"
+            line="627"
             column="22"/>
     </issue>
 
@@ -3385,7 +2164,7 @@
         errorLine2="                       ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="79"
+            line="82"
             column="24"/>
     </issue>
 
@@ -3396,7 +2175,7 @@
         errorLine2="                    ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="99"
+            line="101"
             column="21"/>
     </issue>
 
@@ -3406,30 +2185,8 @@
         errorLine1="@Composable"
         errorLine2="~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Charts.kt"
-            line="48"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeReadOnlyComposable"
-        message="All composable functions and properties used by this declaration are marked @ReadOnlyComposable, so this declaration can be marked @ReadOnlyComposable too.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#remove-unnecessary-composable-annotations for more information."
-        errorLine1="@Composable"
-        errorLine2="~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Charts.kt"
-            line="100"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeReadOnlyComposable"
-        message="All composable functions and properties used by this declaration are marked @ReadOnlyComposable, so this declaration can be marked @ReadOnlyComposable too.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#remove-unnecessary-composable-annotations for more information."
-        errorLine1="@Composable"
-        errorLine2="~~~~~~~~~~~">
-        <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="366"
+            line="352"
             column="1"/>
     </issue>
 
@@ -3440,7 +2197,7 @@
         errorLine2="            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="203"
+            line="209"
             column="13"/>
     </issue>
 
@@ -3451,7 +2208,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="203"
+            line="209"
             column="63"/>
     </issue>
 
@@ -3462,7 +2219,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="667"
+            line="693"
             column="11"/>
     </issue>
 
@@ -3473,7 +2230,7 @@
         errorLine2="                                       ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="709"
+            line="736"
             column="40"/>
     </issue>
 
@@ -3484,7 +2241,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="709"
+            line="736"
             column="13"/>
     </issue>
 
@@ -3495,7 +2252,7 @@
         errorLine2="                                                                          ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="709"
+            line="736"
             column="75"/>
     </issue>
 
@@ -3506,7 +2263,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="773"
+            line="800"
             column="31"/>
     </issue>
 
@@ -3517,7 +2274,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="175"
+            line="173"
             column="13"/>
     </issue>
 
@@ -3528,7 +2285,7 @@
         errorLine2="                                                                     ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="121"
+            line="123"
             column="70"/>
     </issue>
 
@@ -3539,7 +2296,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="171"
+            line="175"
             column="33"/>
     </issue>
 
@@ -3550,7 +2307,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="189"
+            line="193"
             column="31"/>
     </issue>
 
@@ -3561,41 +2318,8 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="210"
+            line="214"
             column="32"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;ChartPoint> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `points: ImmutableList&lt;ChartPoint>` or create an `@Immutable` wrapper for this class: `@Immutable data class PointsList(val items: List&lt;ChartPoint>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    points: List&lt;ChartPoint>,"
-        errorLine2="            ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Charts.kt"
-            line="114"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;ChartSegment> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `segments: ImmutableList&lt;ChartSegment>` or create an `@Immutable` wrapper for this class: `@Immutable data class SegmentsList(val items: List&lt;ChartSegment>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    segments: List&lt;ChartSegment> = emptyList(),"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Charts.kt"
-            line="128"
-            column="15"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;Float, Color>>? is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `valueGradient: ImmutableList&lt;Pair&lt;Float, Color>>?` or create an `@Immutable` wrapper for this class: `@Immutable data class ValueGradientList(val items: List&lt;Pair&lt;Float, Color>>?)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    valueGradient: List&lt;Pair&lt;Float, Color>>? = null,"
-        errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Charts.kt"
-            line="134"
-            column="20"/>
     </issue>
 
     <issue
@@ -3605,7 +2329,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="81"
+            line="82"
             column="13"/>
     </issue>
 
@@ -3616,7 +2340,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="236"
+            line="237"
             column="19"/>
     </issue>
 
@@ -3627,7 +2351,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="236"
+            line="237"
             column="51"/>
     </issue>
 
@@ -3638,7 +2362,7 @@
         errorLine2="                                                ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="248"
+            line="249"
             column="49"/>
     </issue>
 
@@ -3649,7 +2373,7 @@
         errorLine2="                                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="375"
+            line="376"
             column="47"/>
     </issue>
 
@@ -3660,7 +2384,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="64"
+            line="68"
             column="54"/>
     </issue>
 
@@ -3671,7 +2395,7 @@
         errorLine2="               ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="135"
+            line="140"
             column="16"/>
     </issue>
 
@@ -3682,7 +2406,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeletedSleepPage.kt"
-            line="37"
+            line="35"
             column="14"/>
     </issue>
 
@@ -3693,7 +2417,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="388"
+            line="380"
             column="30"/>
     </issue>
 
@@ -3715,7 +2439,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="105"
+            line="107"
             column="15"/>
     </issue>
 
@@ -3726,7 +2450,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="126"
+            line="129"
             column="17"/>
     </issue>
 
@@ -3737,7 +2461,7 @@
         errorLine2="                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="195"
+            line="200"
             column="31"/>
     </issue>
 
@@ -3748,7 +2472,7 @@
         errorLine2="                                                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="265"
+            line="270"
             column="49"/>
     </issue>
 
@@ -3759,7 +2483,7 @@
         errorLine2="                              ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="298"
+            line="303"
             column="31"/>
     </issue>
 
@@ -3770,7 +2494,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="354"
+            line="359"
             column="54"/>
     </issue>
 
@@ -3781,7 +2505,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="413"
+            line="418"
             column="32"/>
     </issue>
 
@@ -3792,7 +2516,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="129"
+            line="156"
             column="13"/>
     </issue>
 
@@ -3803,7 +2527,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="132"
+            line="159"
             column="13"/>
     </issue>
 
@@ -3814,7 +2538,7 @@
         errorLine2="            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="231"
+            line="268"
             column="13"/>
     </issue>
 
@@ -3825,7 +2549,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="234"
+            line="271"
             column="13"/>
     </issue>
 
@@ -3836,7 +2560,7 @@
         errorLine2="          ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="289"
+            line="329"
             column="11"/>
     </issue>
 
@@ -3847,7 +2571,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="485"
+            line="545"
             column="13"/>
     </issue>
 
@@ -3858,7 +2582,7 @@
         errorLine2="              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="486"
+            line="546"
             column="15"/>
     </issue>
 
@@ -3869,7 +2593,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="489"
+            line="549"
             column="13"/>
     </issue>
 
@@ -3880,7 +2604,7 @@
         errorLine2="               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="496"
+            line="556"
             column="16"/>
     </issue>
 
@@ -3891,7 +2615,7 @@
         errorLine2="                                                                                                   ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="566"
+            line="628"
             column="100"/>
     </issue>
 
@@ -3902,7 +2626,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="566"
+            line="628"
             column="22"/>
     </issue>
 
@@ -3913,7 +2637,7 @@
         errorLine2="                      ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="581"
+            line="647"
             column="23"/>
     </issue>
 
@@ -3924,7 +2648,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="615"
+            line="681"
             column="13"/>
     </issue>
 
@@ -3935,7 +2659,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="616"
+            line="682"
             column="13"/>
     </issue>
 
@@ -3946,7 +2670,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="620"
+            line="686"
             column="13"/>
     </issue>
 
@@ -3957,7 +2681,7 @@
         errorLine2="                                            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="719"
+            line="793"
             column="45"/>
     </issue>
 
@@ -3968,7 +2692,7 @@
         errorLine2="                         ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="719"
+            line="793"
             column="26"/>
     </issue>
 
@@ -3979,7 +2703,7 @@
         errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="738"
+            line="812"
             column="23"/>
     </issue>
 
@@ -3990,7 +2714,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowGrid.kt"
-            line="114"
+            line="111"
             column="27"/>
     </issue>
 
@@ -4001,7 +2725,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="222"
+            line="246"
             column="35"/>
     </issue>
 
@@ -4012,7 +2736,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="222"
+            line="246"
             column="72"/>
     </issue>
 
@@ -4023,7 +2747,7 @@
         errorLine2="                                   ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="89"
+            line="88"
             column="36"/>
     </issue>
 
@@ -4067,7 +2791,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="287"
+            line="299"
             column="29"/>
     </issue>
 
@@ -4078,7 +2802,7 @@
         errorLine2="                               ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="307"
+            line="319"
             column="32"/>
     </issue>
 
@@ -4089,7 +2813,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="325"
+            line="337"
             column="37"/>
     </issue>
 
@@ -4100,7 +2824,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="352"
+            line="364"
             column="37"/>
     </issue>
 
@@ -4111,7 +2835,7 @@
         errorLine2="                                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="650"
+            line="674"
             column="42"/>
     </issue>
 
@@ -4122,7 +2846,7 @@
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="699"
+            line="726"
             column="34"/>
     </issue>
 
@@ -4133,7 +2857,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="355"
+            line="354"
             column="34"/>
     </issue>
 
@@ -4144,7 +2868,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="194"
+            line="199"
             column="30"/>
     </issue>
 
@@ -4155,7 +2879,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="205"
+            line="210"
             column="33"/>
     </issue>
 
@@ -4166,7 +2890,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="226"
+            line="231"
             column="37"/>
     </issue>
 
@@ -4177,7 +2901,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="128"
+            line="139"
             column="15"/>
     </issue>
 
@@ -4188,7 +2912,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="179"
+            line="190"
             column="17"/>
     </issue>
 
@@ -4199,7 +2923,7 @@
         errorLine2="                                                                         ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="743"
+            line="742"
             column="74"/>
     </issue>
 
@@ -4210,7 +2934,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="304"
+            line="298"
             column="15"/>
     </issue>
 
@@ -4221,7 +2945,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="309"
+            line="303"
             column="19"/>
     </issue>
 
@@ -4232,7 +2956,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="310"
+            line="304"
             column="12"/>
     </issue>
 
@@ -4243,7 +2967,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="361"
+            line="355"
             column="32"/>
     </issue>
 
@@ -4254,7 +2978,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="79"
+            line="87"
             column="15"/>
     </issue>
 
@@ -4265,7 +2989,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="162"
+            line="170"
             column="15"/>
     </issue>
 
@@ -4276,7 +3000,7 @@
         errorLine2="                                                                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="240"
+            line="248"
             column="67"/>
     </issue>
 
@@ -4287,7 +3011,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="302"
+            line="313"
             column="13"/>
     </issue>
 
@@ -4298,7 +3022,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="302"
+            line="313"
             column="72"/>
     </issue>
 
@@ -4309,7 +3033,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="358"
+            line="369"
             column="30"/>
     </issue>
 
@@ -4320,7 +3044,7 @@
         errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="382"
+            line="392"
             column="66"/>
     </issue>
 
@@ -4331,7 +3055,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="405"
+            line="415"
             column="34"/>
     </issue>
 
@@ -4342,7 +3066,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="95"
+            line="102"
             column="16"/>
     </issue>
 
@@ -4353,7 +3077,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="96"
+            line="103"
             column="15"/>
     </issue>
 
@@ -4364,7 +3088,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="282"
+            line="291"
             column="32"/>
     </issue>
 
@@ -4375,7 +3099,7 @@
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="384"
+            line="393"
             column="59"/>
     </issue>
 
@@ -4386,7 +3110,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="433"
+            line="445"
             column="29"/>
     </issue>
 
@@ -4397,7 +3121,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="64"
+            line="70"
             column="49"/>
     </issue>
 
@@ -4463,7 +3187,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="84"
+            line="87"
             column="13"/>
     </issue>
 
@@ -4474,7 +3198,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="89"
+            line="92"
             column="12"/>
     </issue>
 
@@ -4485,7 +3209,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="90"
+            line="93"
             column="14"/>
     </issue>
 
@@ -4496,7 +3220,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="208"
+            line="214"
             column="84"/>
     </issue>
 
@@ -4507,19 +3231,19 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="208"
+            line="214"
             column="55"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Route.Split> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `splits: ImmutableList&lt;Route.Split>` or create an `@Immutable` wrapper for this class: `@Immutable data class SplitsList(val items: List&lt;Route.Split>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun PaceCard(pace: Double?, averagePace: Double?, splits: List&lt;Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {"
-        errorLine2="                                                                  ~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List&lt;Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {"
+        errorLine2="                                                                        ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="310"
-            column="67"/>
+            line="316"
+            column="73"/>
     </issue>
 
     <issue
@@ -4529,7 +3253,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="344"
+            line="357"
             column="31"/>
     </issue>
 
@@ -4540,7 +3264,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="111"
+            line="112"
             column="13"/>
     </issue>
 
@@ -4562,7 +3286,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="65"
+            line="70"
             column="13"/>
     </issue>
 
@@ -4573,7 +3297,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="76"
+            line="81"
             column="12"/>
     </issue>
 
@@ -4584,7 +3308,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="77"
+            line="82"
             column="14"/>
     </issue>
 
@@ -4595,7 +3319,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="87"
+            line="92"
             column="16"/>
     </issue>
 
@@ -4606,7 +3330,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="133"
+            line="147"
             column="72"/>
     </issue>
 
@@ -4617,7 +3341,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="133"
+            line="147"
             column="41"/>
     </issue>
 
@@ -4628,7 +3352,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="133"
+            line="147"
             column="12"/>
     </issue>
 
@@ -4639,7 +3363,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="199"
+            line="215"
             column="13"/>
     </issue>
 
@@ -4650,7 +3374,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="281"
+            line="298"
             column="13"/>
     </issue>
 
@@ -4672,7 +3396,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="74"
+            line="77"
             column="15"/>
     </issue>
 
@@ -4683,7 +3407,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="265"
+            line="269"
             column="32"/>
     </issue>
 
@@ -4694,7 +3418,7 @@
         errorLine2="                                                                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="296"
+            line="300"
             column="85"/>
     </issue>
 
@@ -4705,7 +3429,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="296"
+            line="300"
             column="56"/>
     </issue>
 
@@ -4782,7 +3506,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMind.kt"
-            line="63"
+            line="64"
             column="13"/>
     </issue>
 
@@ -4793,7 +3517,7 @@
         errorLine2="                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMind.kt"
-            line="153"
+            line="161"
             column="35"/>
     </issue>
 
@@ -4837,7 +3561,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="104"
+            line="106"
             column="14"/>
     </issue>
 
@@ -4848,19 +3572,19 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="108"
+            line="110"
             column="16"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;Long, Int>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `history: ImmutableList&lt;Pair&lt;Long, Int>>` or create an `@Immutable` wrapper for this class: `@Immutable data class HistoryList(val items: List&lt;Pair&lt;Long, Int>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun RestCard(r: WorkoutState.Recording, left: Long, done: Int, bpm: Int?, drop: Int?, history: List&lt;Pair&lt;Long, Int>>) {"
-        errorLine2="                                                                                                       ~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun RestCard(r: WorkoutState.Recording, left: () -> Long, done: Int, bpm: Int?, drop: Int?, history: List&lt;Pair&lt;Long, Int>>) {"
+        errorLine2="                                                                                                             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="232"
-            column="104"/>
+            line="241"
+            column="110"/>
     </issue>
 
     <issue
@@ -4870,7 +3594,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="294"
+            line="308"
             column="36"/>
     </issue>
 
@@ -4881,7 +3605,7 @@
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="360"
+            line="374"
             column="28"/>
     </issue>
 
@@ -4892,7 +3616,7 @@
         errorLine2="                                                         ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="360"
+            line="374"
             column="58"/>
     </issue>
 
@@ -4903,7 +3627,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="385"
+            line="404"
             column="31"/>
     </issue>
 
@@ -4914,7 +3638,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="385"
+            line="404"
             column="63"/>
     </issue>
 
@@ -4925,7 +3649,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="385"
+            line="404"
             column="91"/>
     </issue>
 
@@ -4936,30 +3660,8 @@
         errorLine2="                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="428"
+            line="447"
             column="51"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Page> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `pages: ImmutableList&lt;Page>` or create an `@Immutable` wrapper for this class: `@Immutable data class PagesList(val items: List&lt;Page>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    pages: List&lt;Page>,"
-        errorLine2="           ~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1353"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;org.openstrap.app.data.WorkoutAnalysis> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `workouts: ImmutableList&lt;org.openstrap.app.data.WorkoutAnalysis>` or create an `@Immutable` wrapper for this class: `@Immutable data class WorkoutsList(val items: List&lt;org.openstrap.app.data.WorkoutAnalysis>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    workouts: List&lt;org.openstrap.app.data.WorkoutAnalysis>,"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/MainActivity.kt"
-            line="1760"
-            column="15"/>
     </issue>
 
     <issue
@@ -4969,7 +3671,7 @@
         errorLine2="             ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="319"
+            line="317"
             column="14"/>
     </issue>
 
@@ -4980,7 +3682,7 @@
         errorLine2="           ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="245"
+            line="244"
             column="12"/>
     </issue>
 
@@ -4991,7 +3693,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="254"
+            line="253"
             column="12"/>
     </issue>
 
@@ -5002,7 +3704,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="282"
+            line="281"
             column="14"/>
     </issue>
 
@@ -5013,7 +3715,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="303"
+            line="302"
             column="14"/>
     </issue>
 
@@ -5024,7 +3726,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="415"
+            line="414"
             column="35"/>
     </issue>
 
@@ -5035,7 +3737,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="435"
+            line="434"
             column="29"/>
     </issue>
 
@@ -5046,7 +3748,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="540"
+            line="544"
             column="14"/>
     </issue>
 
@@ -5057,7 +3759,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="642"
+            line="648"
             column="12"/>
     </issue>
 
@@ -5068,7 +3770,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="732"
+            line="740"
             column="13"/>
     </issue>
 
@@ -5112,7 +3814,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="187"
+            line="167"
             column="30"/>
     </issue>
 
@@ -5123,7 +3825,7 @@
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="202"
+            line="182"
             column="24"/>
     </issue>
 
@@ -5134,7 +3836,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ScoreDetail.kt"
-            line="66"
+            line="69"
             column="15"/>
     </issue>
 
@@ -5145,7 +3847,7 @@
         errorLine2="                                                                        ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="284"
+            line="285"
             column="73"/>
     </issue>
 
@@ -5156,7 +3858,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="356"
+            line="358"
             column="30"/>
     </issue>
 
@@ -5167,7 +3869,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="530"
+            line="532"
             column="34"/>
     </issue>
 
@@ -5178,7 +3880,7 @@
         errorLine2="                             ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="548"
+            line="550"
             column="30"/>
     </issue>
 
@@ -5189,7 +3891,7 @@
         errorLine2="                               ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="581"
+            line="583"
             column="32"/>
     </issue>
 
@@ -5200,7 +3902,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="616"
+            line="618"
             column="30"/>
     </issue>
 
@@ -5211,7 +3913,7 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="112"
+            line="107"
             column="55"/>
     </issue>
 
@@ -5222,7 +3924,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="112"
+            line="107"
             column="84"/>
     </issue>
 
@@ -5233,7 +3935,7 @@
         errorLine2="                                                                                                                ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="112"
+            line="107"
             column="113"/>
     </issue>
 
@@ -5244,7 +3946,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="142"
+            line="137"
             column="49"/>
     </issue>
 
@@ -5255,7 +3957,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="419"
+            line="431"
             column="13"/>
     </issue>
 
@@ -5266,7 +3968,7 @@
         errorLine2="                                                                     ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="419"
+            line="431"
             column="70"/>
     </issue>
 
@@ -5277,7 +3979,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="622"
+            line="637"
             column="61"/>
     </issue>
 
@@ -5288,7 +3990,7 @@
         errorLine2="                                                                                      ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="622"
+            line="637"
             column="87"/>
     </issue>
 
@@ -5299,7 +4001,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/SleepPanels.kt"
-            line="134"
+            line="135"
             column="11"/>
     </issue>
 
@@ -5310,7 +4012,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="244"
+            line="215"
             column="27"/>
     </issue>
 
@@ -5321,7 +4023,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="295"
+            line="266"
             column="29"/>
     </issue>
 
@@ -5332,7 +4034,7 @@
         errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="153"
+            line="164"
             column="38"/>
     </issue>
 
@@ -5343,7 +4045,7 @@
         errorLine2="                                                                                                                             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="173"
+            line="184"
             column="126"/>
     </issue>
 
@@ -5354,7 +4056,7 @@
         errorLine2="                                                               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="173"
+            line="184"
             column="64"/>
     </issue>
 
@@ -5365,7 +4067,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="173"
+            line="184"
             column="91"/>
     </issue>
 
@@ -5376,7 +4078,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="267"
+            line="279"
             column="30"/>
     </issue>
 
@@ -5387,7 +4089,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="307"
+            line="319"
             column="31"/>
     </issue>
 
@@ -5398,7 +4100,7 @@
         errorLine2="                                ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="352"
+            line="364"
             column="33"/>
     </issue>
 
@@ -5409,7 +4111,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="391"
+            line="403"
             column="34"/>
     </issue>
 
@@ -5420,7 +4122,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="492"
+            line="504"
             column="39"/>
     </issue>
 
@@ -5431,7 +4133,7 @@
         errorLine2="                               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="534"
+            line="546"
             column="32"/>
     </issue>
 
@@ -5442,7 +4144,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="569"
+            line="581"
             column="37"/>
     </issue>
 
@@ -5453,7 +4155,7 @@
         errorLine2="                                       ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="594"
+            line="606"
             column="40"/>
     </issue>
 
@@ -5464,7 +4166,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="616"
+            line="628"
             column="11"/>
     </issue>
 
@@ -5475,7 +4177,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="643"
+            line="655"
             column="33"/>
     </issue>
 
@@ -5486,7 +4188,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TabParts.kt"
-            line="174"
+            line="172"
             column="33"/>
     </issue>
 
@@ -5497,7 +4199,7 @@
         errorLine2="                                               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="101"
+            line="104"
             column="48"/>
     </issue>
 
@@ -5508,7 +4210,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="242"
+            line="245"
             column="34"/>
     </issue>
 
@@ -5519,7 +4221,7 @@
         errorLine2="                                                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="370"
+            line="373"
             column="83"/>
     </issue>
 
@@ -5530,7 +4232,7 @@
         errorLine2="                                                                                                               ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="443"
+            line="446"
             column="112"/>
     </issue>
 
@@ -5541,7 +4243,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="493"
+            line="496"
             column="34"/>
     </issue>
 
@@ -5552,7 +4254,7 @@
         errorLine2="                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="580"
+            line="582"
             column="26"/>
     </issue>
 
@@ -5563,7 +4265,7 @@
         errorLine2="                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="552"
+            line="535"
             column="75"/>
     </issue>
 
@@ -5585,7 +4287,7 @@
         errorLine2="                    ~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/widget/debug/WidgetGalleryActivity.kt"
-            line="264"
+            line="261"
             column="21"/>
     </issue>
 
