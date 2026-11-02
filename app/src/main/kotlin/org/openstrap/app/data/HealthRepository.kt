@@ -96,9 +96,17 @@ class HealthRepository(private val dao: HealthDao) {
         dao.sleepEdits().distinctUntilChanged(),
     ) { _, _, _, _, _ -> }
 
-    /** Local days that have any heart rate, steps or sleep, for the calendar. */
-    fun daysWithData(zone: ZoneId = ZoneId.systemDefault()): Flow<Set<LocalDate>> = dao.hoursWithData().map { hours ->
-        hours.mapTo(HashSet()) { Instant.ofEpochSecond(it * 3600).atZone(zone).toLocalDate() }
+    /**
+     * Local days that have any heart rate, steps or sleep, for the calendar. Only the last [RECENT_DATA_DAYS] are
+     * watched, where syncs write: a query over all of every table ran again on each sync batch. The older days are read
+     * once, and again only when older data comes in ([HealthDao.earliestDataMark]), as a restore brings.
+     */
+    fun daysWithData(zone: ZoneId = ZoneId.systemDefault(), now: Long = System.currentTimeMillis() / 1000): Flow<Set<LocalDate>> {
+        val split = (now / 3600 - RECENT_DATA_DAYS * 24L) * 3600
+        val older = dao.earliestDataMark().distinctUntilChanged().map { dao.hoursWithDataOnce(Long.MIN_VALUE, split - 1) }
+        return combine(older, dao.hoursWithData(split, Long.MAX_VALUE)) { old, recent ->
+            (old + recent).mapTo(HashSet()) { Instant.ofEpochSecond(it * 3600).atZone(zone).toLocalDate() }
+        }.distinctUntilChanged()
     }
 
     fun heartRate(w: DayWindow): Flow<List<HeartRateSample>> = dao.heartRate(w.from, w.to)
@@ -237,6 +245,11 @@ class HealthRepository(private val dao: HealthDao) {
         val days = org.openstrap.app.data.settings.CalorieGoal.DAYS.toLong()
         val rows = dao.dailyEnergyOnce(DayWindow.of(today.minusDays(days), zone).from, DayWindow.of(today.minusDays(1), zone).from)
         return org.openstrap.app.data.settings.CalorieGoal.suggested(rows.filter { !it.partial }.map { it.activeKcal })
+    }
+
+    companion object {
+        /** The days [daysWithData] watches as they change: well past how far back a strap's history sync reaches. */
+        const val RECENT_DATA_DAYS = 14
     }
 }
 
