@@ -42,6 +42,7 @@ import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SampleData
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.data.sleepNeed
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.alarms.AlarmsScreen

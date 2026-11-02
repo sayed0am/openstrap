@@ -8,6 +8,7 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.Vo2max
 import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.data.readiness
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.testing.assertCleanCopy
