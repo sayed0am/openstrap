@@ -43,12 +43,14 @@ class AppContainer(val app: Application) {
     val strap: StrapController = StrapManager(app, settings, database.healthDao(), scope = appScope)
     val companion = CompanionLink(app, settings)
     val phoneAlerts = PhoneAlerts(app, settings, strap)
-    val autoHealthConnect = org.openstrap.app.health.HealthConnectAutoSync(app, settings, healthConnect, strap)
+    val autoHealthConnect = org.openstrap.app.health.HealthConnectAutoSync(app, settings, healthConnect, strap, scope = appScope)
     val workout = org.openstrap.app.device.WorkoutSession(
         app, database.healthDao(), settings, strap, maxHeartRates, callRinging = { phoneAlerts.callRinging }, onSaved = autoHealthConnect::workoutSaved,
         scope = appScope,
     )
-    val updater = org.openstrap.app.update.AppUpdater(app, settings, recording = { workout.state.value is org.openstrap.app.device.WorkoutState.Recording })
+    val updater = org.openstrap.app.update.AppUpdater(
+        app, settings, recording = { workout.state.value is org.openstrap.app.device.WorkoutState.Recording }, scope = appScope,
+    )
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {

@@ -45,7 +45,8 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
             restingHr, maxHr, load28, trend, carriedMinutes(w),
         )
         // kcal from scratch over the range as it now stands, so the saved total isn't fitted to the old one.
-        val kcal = runCatching { engine.phoneWorkoutKcal(w.copy(totalKcal = null), profile, profile.age(date), restingHr, maxHr, engine.vo2max(profile, date, zone), end, hr) }
+        val kcal = catching { engine.phoneWorkoutKcal(w.copy(totalKcal = null), profile, profile.age(date), restingHr, maxHr, engine.vo2max(profile, date, zone), end, hr) }
+            .onFailure { android.util.Log.w(TAG, "workout effect: kcal for ${w.start} not worked out: $it") }
             .getOrNull()
         val modelled = WorkoutRecorder.withKcal(w, kcal).copy(
             epoc = r.epoc, aerobicTrainingEffect = r.aerobicTe, recoveryMinutes = r.recoveryMinutes,
@@ -112,7 +113,9 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         for (w in dao.appWorkoutsAll().filter { it.end != null }.sortedBy { it.start }) {
             val hr = dao.appWorkoutHeartRateOnce(w.start)
             if (hr.isEmpty()) continue
-            val e = runCatching { withEffect(w, hr, profile) }.getOrNull() ?: continue
+            val e = catching { withEffect(w, hr, profile) }
+                .onFailure { android.util.Log.w(TAG, "workout effect: ${w.start} not worked out again: $it") }
+                .getOrNull() ?: continue
             if (e.epoc == null) continue
             dao.updateAppWorkoutEffect(w.start, e.epoc, e.aerobicTrainingEffect, e.recoveryMinutes, e.vo2max, e.anaerobicTrainingEffect, e.effectFromStrap, e.ownRecoveryMinutes)
             n++
@@ -160,5 +163,6 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         /** Fitness takes 42 days to build (Recovery.CTL_DAYS); the activity class uses the last 28 of them. */
         const val TREND_DAYS = Recovery.CTL_DAYS
         const val DEFAULT_RESTING_HR = 60f
+        const val TAG = "OpenStrap"
     }
 }

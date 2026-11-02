@@ -2,6 +2,7 @@ package org.openstrap.app.export
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -12,7 +13,6 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.openstrap.app.AppContainer
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.data.catching
 import org.openstrap.app.device.WorkoutState
 import java.time.LocalDate
 import java.time.ZoneId
@@ -50,14 +51,13 @@ class AutoBackup(private val context: Context, private val container: AppContain
         withTimeoutOrNull(10_000) { container.workout.restored.first { it } }
         if (container.workout.state.value is WorkoutState.Recording) return@withLock Outcome.Recording
         val now = System.currentTimeMillis() / 1000
-        try {
+        catching {
             val name = withContext(Dispatchers.IO) { write(Uri.parse(folder)) }
             container.settings.setBackupDone(now)
             Outcome.Done(name)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
+        }.getOrElse { e ->
             val failure = (e as? Failed)?.failure ?: BackupFiles.classify(e)
+            if (e !is Failed) Log.w("OpenStrap", "backup: failed ($failure): $e")
             container.settings.setBackupFailed(failure, now)
             Outcome.Failed(failure)
         }
@@ -76,6 +76,7 @@ class AutoBackup(private val context: Context, private val container: AppContain
         dir.listFiles().filter { it.name?.let(BackupFiles::isTemp) == true }.forEach { it.delete() }
 
         val temp = dir.createFile(TEMP_MIME, BackupFiles.tempName(today)) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        var written = false
         try {
             val settings = SettingsBackup.toJson(container.settings.backupValues())
             (resolver.openOutputStream(temp.uri, "w") ?: throw Failed(BackupFiles.Failure.CantWrite)).use {
@@ -84,9 +85,10 @@ class AutoBackup(private val context: Context, private val container: AppContain
             // A second run on the same day replaces the first.
             dir.findFile(name)?.delete()
             if (!temp.renameTo(name)) copyAs(dir, temp, name)
-        } catch (e: Throwable) {
-            runCatching { temp.delete() }
-            throw e
+            written = true
+        } finally {
+            // Failed or cancelled part way: the temp copy goes, and the failure itself is what's reported.
+            if (!written) deleteQuietly(temp)
         }
 
         for (old in BackupFiles.toDelete(dir.listFiles().mapNotNull { it.name })) dir.findFile(old)?.delete()
@@ -97,13 +99,24 @@ class AutoBackup(private val context: Context, private val container: AppContain
     private fun copyAs(dir: DocumentFile, temp: DocumentFile, name: String) {
         val resolver = context.contentResolver
         val target = dir.createFile(ZIP_MIME, name) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        var copied = false
         try {
-            resolver.openInputStream(temp.uri)!!.use { input -> resolver.openOutputStream(target.uri, "w")!!.use { input.copyTo(it) } }
-        } catch (e: Throwable) {
-            runCatching { target.delete() }
-            throw e
+            val input = resolver.openInputStream(temp.uri)
+            val output = input?.let { resolver.openOutputStream(target.uri, "w") }
+            if (input == null || output == null) {
+                input?.close()
+                throw Failed(BackupFiles.Failure.CantWrite)
+            }
+            input.use { i -> output.use { i.copyTo(it) } }
+            copied = true
+        } finally {
+            if (!copied) deleteQuietly(target)
         }
         temp.delete()
+    }
+
+    private fun deleteQuietly(file: DocumentFile) {
+        runCatching { file.delete() }.onFailure { Log.w("OpenStrap", "backup: ${file.name} not deleted: $it") }
     }
 
     companion object {

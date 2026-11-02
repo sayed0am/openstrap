@@ -17,10 +17,8 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -34,10 +32,12 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.SettingsStore
 import java.io.File
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.URI
 import java.net.URL
 import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
@@ -72,8 +72,13 @@ data class UpdateState(
  * downloads that release's APK, checks it against GitHub's SHA-256 and that it's OpenStrap signed with the same key,
  * then hands it to Android's package installer. Never while a workout records, since installing closes the app.
  */
-class AppUpdater(private val app: Application, private val settings: SettingsStore, private val recording: () -> Boolean) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+class AppUpdater(
+    private val app: Application,
+    private val settings: SettingsStore,
+    private val recording: () -> Boolean,
+    /** The app's scope ([org.openstrap.app.AppContainer.appScope]): a download carries on when the page closes. */
+    private val scope: CoroutineScope,
+) {
     private val cache = File(app.filesDir, "releases.json")
     private val checkLock = Mutex()
     private val _state = MutableStateFlow(UpdateState())
@@ -124,24 +129,26 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
     suspend fun check(): Boolean = checkLock.withLock {
         _state.update { it.copy(checking = true) }
         try {
-            val json = get(Releases.API, github = true)
-            val releases = Releases.parse(json)
-            withContext(Dispatchers.IO) {
-                val tmp = File(app.filesDir, "releases.json.tmp")
-                tmp.writeText(json)
-                tmp.renameTo(cache)
+            catching {
+                val json = get(Releases.API, github = true)
+                val releases = Releases.parse(json)
+                withContext(Dispatchers.IO) {
+                    val tmp = File(app.filesDir, "releases.json.tmp")
+                    tmp.writeText(json)
+                    tmp.renameTo(cache)
+                }
+                val now = System.currentTimeMillis() / 1000
+                settings.setUpdateChecked(now)
+                _state.update { it.copy(releases = releases, checkedAt = now, checkFailed = false) }
+                true
+            }.getOrElse { e ->
+                Log.i(TAG, "Update check failed: $e")
+                _state.update { it.copy(checkFailed = true) }
+                false
             }
-            val now = System.currentTimeMillis() / 1000
-            settings.setUpdateChecked(now)
-            _state.update { it.copy(releases = releases, checkedAt = now, checking = false, checkFailed = false) }
-            true
-        } catch (e: CancellationException) {
+        } finally {
+            // Cancelled too: the page doesn't stay on Checking.
             _state.update { it.copy(checking = false) }
-            throw e
-        } catch (e: Exception) {
-            Log.i(TAG, "Update check failed: $e")
-            _state.update { it.copy(checking = false, checkFailed = true) }
-            false
         }
     }
 
@@ -168,7 +175,7 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
         _state.update { it.copy(install = Install.Downloading(release.tag, 0, apk.size)) }
         scope.launch {
             val tag = release.tag
-            try {
+            catching {
                 if (recording()) throw Stop(InstallFailure.Recording)
                 val file = download(release, apk)
                 checkArchive(file)
@@ -177,16 +184,10 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
                 _state.update { it.copy(install = Install.Installing(tag)) }
                 settings.setUpdateInstalling(tag)
                 commit(file)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Stop) {
-                fail(tag, e.failure)
-            } catch (e: IOException) {
-                Log.i(TAG, "Update download failed: $e")
-                fail(tag, InstallFailure.Network)
-            } catch (e: Exception) {
-                Log.i(TAG, "Update install failed: $e")
-                fail(tag, InstallFailure.Android, e.message)
+            }.onFailure { e ->
+                val failure = failureFor(e)
+                if (e !is Stop) Log.i(TAG, "Update install failed ($failure): $e")
+                fail(tag, failure, e.message.takeIf { failure == InstallFailure.Android })
             }
         }
     }
@@ -230,17 +231,24 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
 
     private class Stop(val failure: InstallFailure) : Exception(failure.name)
 
+    /** Why [e] stopped an install: one of the checks below, the network, or anything else Android's to blame for. */
+    private fun failureFor(e: Throwable): InstallFailure = when (e) {
+        is Stop -> e.failure
+        is IOException -> InstallFailure.Network
+        else -> InstallFailure.Android
+    }
+
     /** The APK in the cache, downloaded unless an earlier, matching copy is there, and its SHA-256 checked. */
     private suspend fun download(release: Release, apk: ReleaseAsset): File = withContext(Dispatchers.IO) {
-        if (!apk.url.startsWith("https://")) throw Stop(InstallFailure.NotOpenStrap)
+        urlFailure(apk.url)?.let { throw Stop(it) }
         val expected = apk.sha256
-            ?: release.sums?.takeIf { it.url.startsWith("https://") }?.let { Releases.sumFor(get(it.url), apk.name) }
+            ?: release.sums?.takeIf { urlFailure(it.url) == null }?.let { Releases.sumFor(get(it.url), apk.name) }
             ?: throw Stop(InstallFailure.NoChecksum)
         val dir = File(app.cacheDir, "updates").apply { mkdirs() }
         // Only the one being installed is kept.
         dir.listFiles()?.filter { it.name != apk.name }?.forEach { it.delete() }
         val file = File(dir, apk.name)
-        if (file.exists() && sha256(file) == expected) return@withContext file
+        if (file.exists() && checksumFailure(expected, sha256(file)) == null) return@withContext file
 
         val tmp = File(dir, "${apk.name}.part")
         val conn = URL(apk.url).openConnection() as HttpURLConnection
@@ -271,9 +279,9 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
                     }
                 }
             }
-            if (hex(digest.digest()) != expected) {
+            checksumFailure(expected, hex(digest.digest()))?.let {
                 tmp.delete()
-                throw Stop(InstallFailure.Checksum)
+                throw Stop(it)
             }
             if (!tmp.renameTo(file)) throw IOException("Couldn't keep the download")
             file
@@ -286,16 +294,19 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
     private fun checkArchive(file: File) {
         val pm = app.packageManager
         val archive = pm.getPackageArchiveInfo(file.path, PackageManager.GET_SIGNING_CERTIFICATES)
-        if (archive == null || archive.packageName != app.packageName) throw Stop(InstallFailure.NotOpenStrap)
         val mine = pm.getPackageInfo(app.packageName, PackageManager.GET_SIGNING_CERTIFICATES)
-        if (signers(archive).isEmpty() || signers(archive) != signers(mine)) throw Stop(InstallFailure.Signature)
+        val failure = archiveFailure(archive?.packageName, app.packageName, archive?.let(::signers).orEmpty(), signers(mine))
+        if (failure != null) throw Stop(failure)
     }
 
     private fun signers(info: PackageInfo): Set<String> =
         info.signingInfo?.apkContentsSigners.orEmpty().mapTo(HashSet()) { hex(MessageDigest.getInstance("SHA-256").digest(it.toByteArray())) }
 
-    /** One package installer session for [file]; Android reports to [UpdateReceiver]. */
-    private suspend fun commit(file: File) = withContext(Dispatchers.IO) {
+    /**
+     * One package installer session for [file], which Android reports on to [UpdateReceiver]. A session that fails before its
+     * commit is abandoned, or it would stay open, holding its copy of the APK, until Android cleans up (audit E12).
+     */
+    internal suspend fun commit(file: File) = withContext(Dispatchers.IO) {
         val installer = app.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(app.packageName)
@@ -304,17 +315,23 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
             setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
         }
         val id = installer.createSession(params)
-        installer.openSession(id).use { session ->
-            file.inputStream().use { input ->
-                session.openWrite("base.apk", 0, file.length()).use { out ->
-                    input.copyTo(out)
-                    session.fsync(out)
+        var committed = false
+        try {
+            installer.openSession(id).use { session ->
+                file.inputStream().use { input ->
+                    session.openWrite("base.apk", 0, file.length()).use { out ->
+                        input.copyTo(out)
+                        session.fsync(out)
+                    }
                 }
+                val intent = Intent(app, UpdateReceiver::class.java).setAction(UpdateReceiver.ACTION_INSTALL_STATUS)
+                // Mutable, so Android can put the status in it.
+                val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+                session.commit(PendingIntent.getBroadcast(app, id, intent, flags).intentSender)
+                committed = true
             }
-            val intent = Intent(app, UpdateReceiver::class.java).setAction(UpdateReceiver.ACTION_INSTALL_STATUS)
-            // Mutable, so Android can put the status in it.
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
-            session.commit(PendingIntent.getBroadcast(app, id, intent, flags).intentSender)
+        } finally {
+            if (!committed) runCatching { installer.abandonSession(id) }.onFailure { Log.w(TAG, "Update session $id not abandoned: $it") }
         }
     }
 
@@ -367,6 +384,33 @@ class AppUpdater(private val app: Application, private val settings: SettingsSto
         }
 
         private fun hex(bytes: ByteArray): String = bytes.joinToString("") { "%02x".format(it) }
+
+        /** A download address OpenStrap fetches from: HTTPS with a host, nothing else. Null when [url] is one. */
+        internal fun urlFailure(url: String): InstallFailure? {
+            val uri = runCatching { URI(url) }.getOrNull()
+            val ok = uri != null && uri.scheme.equals("https", ignoreCase = true) && !uri.host.isNullOrEmpty()
+            return if (ok) null else InstallFailure.NotOpenStrap
+        }
+
+        /** The download's SHA-256, [actual], against GitHub's, [expected]. Null when they match. */
+        internal fun checksumFailure(expected: String, actual: String): InstallFailure? =
+            if (expected.isNotBlank() && actual.equals(expected.trim(), ignoreCase = true)) null else InstallFailure.Checksum
+
+        /**
+         * The downloaded APK is OpenStrap, [archivePackage] the [installedPackage], and signed with the very keys this
+         * copy was ([installedSigners]). Null when it is. Android would refuse it otherwise, after the download.
+         */
+        internal fun archiveFailure(
+            archivePackage: String?,
+            installedPackage: String,
+            archiveSigners: Set<String>,
+            installedSigners: Set<String>,
+        ): InstallFailure? =
+            when {
+                archivePackage == null || archivePackage != installedPackage -> InstallFailure.NotOpenStrap
+                archiveSigners.isEmpty() || archiveSigners != installedSigners -> InstallFailure.Signature
+                else -> null
+            }
     }
 }
 
