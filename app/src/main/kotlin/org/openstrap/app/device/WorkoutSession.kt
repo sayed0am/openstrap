@@ -9,11 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -114,6 +110,11 @@ class WorkoutSession(
 ) {
     private val lock = Mutex()
 
+    /** Discard, trim and save from history: changes to workouts already saved, under the same [lock]. */
+    private val editor = SavedWorkoutEditor(
+        dao, settings, lock, onSaved, onDiscarded = ::closeDiscarded, log = { log(it) }, clock = clock, scope = scope,
+    )
+
     private val _state = MutableStateFlow<WorkoutState>(WorkoutState.Idle)
     val state: StateFlow<WorkoutState> = _state
 
@@ -205,7 +206,7 @@ class WorkoutSession(
             } finally {
                 _restored.value = true
                 // After the restore, so a workout left recording isn't offered as a new one.
-                watchForEffort()
+                autoStart.watch()
             }
         }
     }
@@ -251,121 +252,23 @@ class WorkoutSession(
         }
     }
 
+    /** "Looks like a workout": auto-start's offer, the strap's effort watch and what is recorded from it. */
+    private val autoStart = AutoStartWatcher(
+        dao, settings, strap, _state, callRinging, ::maxHeartRate,
+        record = { o, seed, seedSteps -> start(o.sportType, from = o.start, seed = seed, seedSteps = seedSteps) },
+        clock = clock, scope = scope,
+    )
+
     /**
      * "Looks like a workout" ([AutoStart]): an effort under way that nobody started, while the question is open.
      * The strap buzzes once as it is asked; the notification and the Today and Activity tabs ask it.
      */
-    private val _offer = MutableStateFlow<AutoStart.Offer?>(null)
-    val offer: StateFlow<AutoStart.Offer?> = _offer
-    /** Idle live readings and step totals of the last [WATCH_S], from probes and from streaming while effort lasts. */
-    private val idleReadings = mutableListOf<Pair<Long, Int>>()
-    private var idleSteps = listOf<Pair<Long, Int>>()
-    /** Effort before this isn't offered: the end of the last workout. */
-    private var offerNotBefore = 0L
-    /** "Not now": quiet until the effort under way has ended. */
-    private var declined = false
+    val offer: StateFlow<AutoStart.Offer?> = autoStart.offer
 
     /** "Record": the workout starts where the effort began, with the readings since. */
-    fun recordOffer() {
-        val o = _offer.value ?: return
-        _offer.value = null
-        val seed = synchronized(idleReadings) { idleReadings.filter { it.first >= o.start } }
-        val steps = idleSteps.firstOrNull { it.first >= o.start }?.second
-        (strap as? StrapManager)?.log("auto-start: recording ${o.sportType} from ${o.start}, ${seed.size} readings")
-        start(o.sportType, from = o.start, seed = seed, seedSteps = steps)
-    }
+    fun recordOffer() = autoStart.recordOffer()
 
-    fun declineOffer() {
-        if (_offer.value == null) return
-        _offer.value = null
-        declined = true
-    }
-
-    /** Watches for effort whenever auto-start is on, the strap is connected and nothing records. */
-    private fun watchForEffort() = scope.launch {
-        combine(settings.autoStartWorkouts, _state, strap.connection) { on, st, c ->
-            on && st !is WorkoutState.Recording && c is ConnectionState.Connected
-        }.distinctUntilChanged().collectLatest { watching ->
-            if (watching) watchEffort() else {
-                strap.setEffortWatch(false)
-                _offer.value = null
-            }
-        }
-    }
-
-    /**
-     * Probes live HR for [AutoStart.PROBE_S] every [AutoStart.PROBE_EVERY_S], and keeps it streaming while the heart
-     * rate is up or the feet are busy; asks once an effort has lasted long enough ([AutoStart.offer]).
-     */
-    private suspend fun watchEffort() = coroutineScope {
-        val maxHr = maxHeartRate()
-        val resting = runCatching { dao.restingHrOnce(now() - RESTING_LOOKBACK_S, now()).lastOrNull()?.bpm }.getOrNull() ?: DEFAULT_RESTING_HR
-        val threshold = AutoStart.threshold(resting, maxHr)
-        val log = { m: String -> (strap as? StrapManager)?.log(m); Unit }
-        launch {
-            var last = -1L
-            strap.heartRateReadings.collect { bpm ->
-                val t = now()
-                if (t == last || !WorkoutRecorder.isValid(bpm)) return@collect
-                last = t
-                synchronized(idleReadings) {
-                    idleReadings += t to bpm
-                    while (idleReadings.first().first < t - WATCH_S) idleReadings.removeAt(0)
-                }
-            }
-        }
-        launch {
-            strap.todaySteps.collect { s ->
-                s ?: return@collect
-                val t = now()
-                idleSteps = (idleSteps + (t to s.steps)).dropWhile { it.first < t - WATCH_S }
-            }
-        }
-        try {
-            var probeUntil = 0L
-            var nextProbe = now()
-            var streaming = false
-            while (isActive) {
-                val t = now()
-                val cadence = cadence(t)
-                val snapshot = synchronized(idleReadings) { idleReadings.toList() }
-                val hot = AutoStart.keepStreaming(snapshot.filter { it.first >= t - 60 }, threshold, cadence)
-                val stream = when {
-                    t < probeUntil || hot -> true
-                    t >= nextProbe -> { probeUntil = t + AutoStart.PROBE_S; true }
-                    else -> false
-                }
-                if (stream && !hot && t >= nextProbe) nextProbe = t + AutoStart.PROBE_EVERY_S
-                if (stream != streaming) log("auto-start: ${if (stream) "streaming" else "probe over"}${if (hot) " (effort)" else ""}")
-                streaming = stream
-                strap.setEffortWatch(stream)
-                val o = AutoStart.offer(snapshot, resting, maxHr, cadence, t, offerNotBefore)
-                if (o == null) {
-                    declined = false
-                    if (_offer.value != null) { _offer.value = null; log("auto-start: effort ended before an answer") }
-                } else if (_offer.value == null && !declined) {
-                    _offer.value = o
-                    log("auto-start: offering ${o.sportType} from ${o.start}, ${o.averageHeartRate} bpm")
-                    if (!callRinging()) launch { runCatching { strap.buzz(OFFER_BUZZ) } }
-                }
-                delay(WATCH_TICK_MS)
-            }
-        } finally {
-            strap.setEffortWatch(false)
-        }
-    }
-
-    /**
-     * Steps a minute over the last few minutes of [idleSteps], or null without two totals a minute apart (the strap
-     * reports about once a minute).
-     */
-    private fun cadence(t: Long): Int? {
-        val recent = idleSteps.filter { it.first >= t - 240 }
-        val first = recent.firstOrNull() ?: return null
-        val last = recent.last()
-        if (last.first - first.first < 60) return null
-        return ((last.second - first.second) * 60 / (last.first - first.first)).toInt().coerceAtLeast(0)
-    }
+    fun declineOffer() = autoStart.declineOffer()
 
     fun pause() = pauseFrom(toStrap = true)
 
@@ -499,7 +402,8 @@ class WorkoutSession(
                         val route = _route.value
                         val stretches = org.openstrap.app.data.Rewards.stretches(route, ended.pauseRanges)
                             .let(org.openstrap.app.data.Rewards.Stretch::format)
-                        dao.upsertAppWorkout(withEffect(ended.copy(stretches = stretches), dao.appWorkoutHeartRateOnce(w.start), route))
+                        val hr = dao.appWorkoutHeartRateOnce(w.start)
+                        dao.upsertAppWorkout(editor.withEffect(ended.copy(stretches = stretches), hr, route))
                     } else {
                         dao.deleteAppWorkout(w.start)
                     }
@@ -510,7 +414,7 @@ class WorkoutSession(
                     return@withLock
                 }
                 // The heart rate stays up for a while after a workout, and that's not a new one to offer.
-                offerNotBefore = now()
+                autoStart.offerNotBefore = now()
                 strapState(WorkoutRecorder.closingState(kept), w, send = toStrap)
                 keepAlive?.cancel()
                 stop(keepLive = true)
@@ -527,7 +431,7 @@ class WorkoutSession(
                 _state.update { WorkoutState.Ended(w.start) }
                 watchCalmDown(w.start, recorded)
                 // Its days' energy rows take its kcal now, after the summary is up, so Health Connect gets them with it.
-                refreshDays(ended.from, end)
+                editor.refreshDays(ended.from, end)
                 onSaved(w.start)
             }
             // The strap's history fills any minutes the phone missed; it batches, so ask now.
@@ -557,26 +461,12 @@ class WorkoutSession(
      * Deletes a phone workout, and closes its summary if it is the one showing. The strap's own records of it
      * ([Workouts.strapTwins]) go too, as they show as this one: left, they would come back as a workout of their own.
      */
-    fun discard(start: Long) {
-        scope.launch {
-            lock.withLock {
-                // Not deleted, its summary stays, so Discard can be tried again.
-                val w = catching {
-                    dao.appWorkoutOnce(start).also { w ->
-                        if (w?.end != null) {
-                            val t = now()
-                            val range = org.openstrap.app.data.Workouts.phoneRange(w, t)
-                            org.openstrap.app.data.Workouts.strapTwins(dao.workoutsOnce(range.first, range.last), range)
-                                .forEach { dao.deleteStrapWorkout(it.start, t) }
-                        }
-                        dao.deleteAppWorkout(start)
-                    }
-                }.onFailure { log("workout not discarded: ${it.message}") }.getOrElse { return@withLock }
-                if (w?.end != null) refreshDays(w.start, w.recordedEnd ?: w.end)
-                val showing = _state.value
-                if ((showing as? WorkoutState.Ended)?.start == start && _state.compareAndSet(showing, WorkoutState.Idle)) endCalmDown()
-            }
-        }
+    fun discard(start: Long) = editor.discard(start)
+
+    /** Closes the summary of [start], just deleted, if it is the one showing. */
+    private fun closeDiscarded(start: Long) {
+        val showing = _state.value
+        if ((showing as? WorkoutState.Ended)?.start == start && _state.compareAndSet(showing, WorkoutState.Idle)) endCalmDown()
     }
 
     /**
@@ -621,23 +511,10 @@ class WorkoutSession(
      * Saves a stretch nobody started as a workout ("Save as workout", or added after the fact), built from the
      * strap's history. A stretch over a workout already saved is refused.
      */
-    fun saveFromHistory(from: Long, to: Long, sportType: Int) {
-        scope.launch {
-            lock.withLock {
-                if (to - from < 60 || dao.appWorkoutsOnce(from, to).isNotEmpty()) return@withLock
-                val w = AppWorkout(start = from, end = to, sportType = sportType, source = AppWorkout.SOURCE_SUGGESTED, endReason = AppWorkout.END_USER)
-                dao.upsertAppWorkout(w)
-                WorkoutGapFill(dao) { settings.profile.first() }.fill(w)
-                refreshDays(from, to)
-                onSaved(w.start)
-            }
-        }
-    }
+    fun saveFromHistory(from: Long, to: Long, sportType: Int) = editor.saveFromHistory(from, to, sportType)
 
     /** "Not a workout": remembered for that time range, so the same stretch isn't offered again. */
-    fun dismissSuggestion(from: Long, to: Long) {
-        scope.launch { dao.insertDismissedWorkouts(listOf(org.openstrap.app.data.db.DismissedWorkout(from, to))) }
-    }
+    fun dismissSuggestion(from: Long, to: Long) = editor.dismissSuggestion(from, to)
 
     /* ------------------------------------------- Strength -------------------------------------------- */
 
@@ -822,49 +699,10 @@ class WorkoutSession(
     }
 
     /** Puts back what an early end or a trim left out: the workout as recorded. */
-    fun undoTrim(start: Long) = editSaved(start) { it.copy(end = it.recordedEnd ?: it.end, recordedEnd = null, shownStart = null) }
+    fun undoTrim(start: Long) = editor.undoTrim(start)
 
     /** Shows a saved workout from [from] to [to], both inside what was recorded; nothing is deleted. */
-    fun trim(start: Long, from: Long, to: Long) = editSaved(start) { w ->
-        val recorded = w.recordedEnd ?: w.end ?: return@editSaved w
-        val end = to.coerceIn(w.start + 60, recorded)
-        // A trim by hand replaces whatever the app proposed, so the summary says "Trimmed", not "when you'd stopped".
-        w.copy(
-            shownStart = from.coerceIn(w.start, end - 60).takeIf { it > w.start }, end = end, recordedEnd = recorded.takeIf { it > end },
-            endReason = AppWorkout.END_USER,
-        )
-    }
-
-    private fun editSaved(start: Long, change: (AppWorkout) -> AppWorkout) {
-        scope.launch {
-            lock.withLock {
-                val w = catching { dao.appWorkoutOnce(start) }.getOrNull()?.takeIf { it.end != null } ?: return@withLock
-                val changed = change(w)
-                if (changed == w) return@withLock
-                catching { dao.upsertAppWorkout(withEffect(changed, dao.appWorkoutHeartRateOnce(start))) }
-                    .onFailure { log("workout edit not saved: ${it.message}") }
-                    .getOrElse { return@withLock }
-                // Its kcal moved, so its days' energy rows follow: over all it was recorded, which holds both ranges.
-                refreshDays(w.start, w.recordedEnd ?: w.end ?: start)
-                onSaved(start)
-            }
-        }
-    }
-
-    /** Writes the daily energy rows from [from] to [to] again ([org.openstrap.app.data.DailyEnergyHistory.updateDays]). */
-    private suspend fun refreshDays(from: Long, to: Long) {
-        runCatching { org.openstrap.app.data.DailyEnergyHistory(dao).updateDays(from, to, settings.profile.first()) }
-            .onFailure { (strap as? StrapManager)?.log("daily energy not refreshed: ${it.message}") }
-    }
-
-    /**
-     * [w] with its average and peak, then its effect ([org.openstrap.app.data.WorkoutEffectEngine]); [route] is the one in
-     * memory at the end. A failure there never costs the workout: it is saved with its stats alone.
-     */
-    private suspend fun withEffect(w: AppWorkout, hr: List<AppWorkoutHeartRate>, route: List<Route.Point>? = null): AppWorkout {
-        val stats = WorkoutRecorder.withStats(w, hr)
-        return runCatching { org.openstrap.app.data.WorkoutEffectEngine(dao).withEffect(stats, hr, settings.profile.first(), route) }.getOrDefault(stats)
-    }
+    fun trim(start: Long, from: Long, to: Long) = editor.trim(start, from, to)
 
     fun dismissSummary() {
         _state.update { if (it is WorkoutState.Ended) WorkoutState.Idle else it }
@@ -1239,10 +1077,7 @@ class WorkoutSession(
         val STOP_BUZZ = listOf(500, 250, 500)
         /** Only if the max-HR model can't run; 190 is Tanaka's estimate at 25. */
         const val DEFAULT_MAX_HR = 190
-        /** Long enough for an effort to be offered from its start. */
-        const val WATCH_S = 2 * 3600L
-        const val WATCH_TICK_MS = 5_000L
-        /** Three short pulses: unlike the stop question's two long ones. */
+        /** Auto-start's offer ([AutoStartWatcher]): three short pulses, unlike the stop question's two long ones. */
         val OFFER_BUZZ = listOf(150, 150, 150, 150, 150)
         /** Saved workouts kept (workouts spec 2.5). */
         const val MAX_SAVED = 10
