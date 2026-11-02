@@ -118,8 +118,11 @@ internal fun LiveStrengthScreen(
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     ZoneTick(bpm, r)
     val color = if (r.resting && !r.paused) RestGreen else workoutColor(r, liveHeartRate, connected)
-    // Read where it shows (the cards, the paused figures, the log card), so the screen holds still between seconds.
+    // Read where it shows (the cards' clocks, the paused figures, the log card), so the screen holds still between
+    // seconds. The rest of the screen doesn't move with the clock: [steady] is the moment without its seconds, which
+    // only the clocks read, so it needs no time at all.
     val momentNow = { strengthMoment(r, now.value, bpm, history) }
+    val steady = remember(r, bpm, history) { strengthMoment(r, 0, bpm, history).copy(setSeconds = 0, restLeft = null) }
     val haptics = rememberHaptics()
     var naming by rememberSaveable { mutableStateOf(false) }
     // Sets whose log card was skipped, so it doesn't come back.
@@ -134,11 +137,11 @@ internal fun LiveStrengthScreen(
             r.workout.maxHeartRate?.toString() to "Peak bpm",
         )) },
     ) {
-        val moment = momentNow()
+        val moment = steady
         val tall = if (compact) 56.dp else 72.dp
-        if (compact) CompactCard(r, moment, color, onName = { naming = true }) else when {
-            r.inSet -> SetCard(r, moment.setNumber, moment.setSeconds, bpm, color) { naming = true }
-            r.resting -> RestCard(r, moment.restLeft ?: 0, moment.done, bpm, moment.drop, history)
+        if (compact) CompactCard(r, moment, momentNow, color, onName = { naming = true }) else when {
+            r.inSet -> SetCard(r, moment.setNumber, { momentNow().setSeconds }, bpm, color) { naming = true }
+            r.resting -> RestCard(r, { momentNow().restLeft ?: 0 }, moment.done, bpm, moment.drop, history)
             else -> ReadyCard(r, moment.setNumber, color) { naming = true }
         }
         if (!compact && r.resting && !r.inSet) NextLine(moment.setNumber, r.exercise, moment.nextLoad)
@@ -167,7 +170,7 @@ internal fun LiveStrengthScreen(
 
 /** The set under way: set N of M and its exercise, the set's clock in dots, the sets as dots, the heart rate and zone. */
 @Composable
-private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: Int?, color: Color, onName: () -> Unit) {
+private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: () -> Long, bpm: Int?, color: Color, onName: () -> Unit) {
     val style = heroStyle(color, LightAngle.Below).let { s -> bpm?.let { s.copy(motion = GlowMotion.Heartbeat(it)) } ?: s }
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
@@ -176,7 +179,7 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: 
                 ExercisePill(r.exercise, onName)
             }
             Column(Modifier.fillMaxWidth().padding(top = 34.dp, bottom = 26.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                DotMatrixText(workoutClock(seconds), dot = DotSize.Live)
+                DotClock({ workoutClock(seconds()) }, DotSize.Live)
                 Spacer(Modifier.height(14.dp))
                 Text("in this set", color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
             }
@@ -192,10 +195,14 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: Long, bpm: 
  * or the rest left in dots, on an edge card in the screen's colour.
  */
 @Composable
-private fun CompactCard(r: WorkoutState.Recording, moment: org.openstrap.app.ui.workout.StrengthMoment, color: Color, onName: () -> Unit) {
+private fun CompactCard(
+    r: WorkoutState.Recording, moment: org.openstrap.app.ui.workout.StrengthMoment, now: () -> org.openstrap.app.ui.workout.StrengthMoment,
+    color: Color, onName: () -> Unit,
+) {
     val (title, clock) = when {
-        r.inSet -> WorkoutCopy.setOf(moment.setNumber, r.workout.setsTarget) to workoutClock(moment.setSeconds)
-        r.resting -> "Rest after " + WorkoutCopy.setOf(moment.done, r.workout.setsTarget).lowercase() to workoutClock((moment.restLeft ?: 0).coerceAtLeast(0))
+        r.inSet -> WorkoutCopy.setOf(moment.setNumber, r.workout.setsTarget) to { workoutClock(now().setSeconds) }
+        r.resting -> "Rest after " + WorkoutCopy.setOf(moment.done, r.workout.setsTarget).lowercase() to
+            { workoutClock((now().restLeft ?: 0).coerceAtLeast(0)) }
         else -> (if (moment.setNumber == 1) "Ready for set 1" else "Rest over") to null
     }
     EdgeCard(color, Modifier.fillMaxWidth()) {
@@ -204,7 +211,7 @@ private fun CompactCard(r: WorkoutState.Recording, moment: org.openstrap.app.ui.
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 ExercisePill(r.exercise, onName)
             }
-            if (clock != null) DotMatrixText(clock, dot = DotSize.Detail)
+            if (clock != null) DotClock(clock, DotSize.Detail)
         }
     }
 }
@@ -229,7 +236,7 @@ private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onNa
  * set ended falling toward the level that ends rest sooner, drawn as a solid rule.
  */
 @Composable
-private fun RestCard(r: WorkoutState.Recording, left: Long, done: Int, bpm: Int?, drop: Int?, history: List<Pair<Long, Int>>) {
+private fun RestCard(r: WorkoutState.Recording, left: () -> Long, done: Int, bpm: Int?, drop: Int?, history: List<Pair<Long, Int>>) {
     val rule = Strength.Rest.parse(r.workout.rest) ?: Strength.Rest.DEFAULT
     // Outlined, not lit: the set's card glows, the rest's counts down in its ring.
     Column(
@@ -242,13 +249,13 @@ private fun RestCard(r: WorkoutState.Recording, left: Long, done: Int, bpm: Int?
         }
         Spacer(Modifier.height(10.dp))
         val total = (r.restUntil ?: 0) - (r.sets.lastOrNull()?.end ?: r.restUntil ?: 0)
-        RestRing(left.coerceAtLeast(0), total.coerceAtLeast(1))
+        RestRing({ left().coerceAtLeast(0) }, total.coerceAtLeast(1))
         Spacer(Modifier.height(4.dp))
         Column(Modifier.fillMaxWidth()) {
             val since = r.sets.lastOrNull()?.end
             if (since != null) {
                 Spacer(Modifier.height(10.dp))
-                FallingHeart(history.filter { it.first >= since - 10 }, rule.belowBpm)
+                FallingHeart(remember(history, since) { history.filter { it.first >= since - 10 } }, rule.belowBpm)
             }
             Spacer(Modifier.height(6.dp))
             if (bpm != null) Text("$bpm bpm" + (drop?.takeIf { it > 0 }?.let { ", down $it" } ?: ""), color = Color.White, style = GlowType.sentence)
@@ -258,24 +265,29 @@ private fun RestCard(r: WorkoutState.Recording, left: Long, done: Int, bpm: Int?
     }
 }
 
-/** The rest left in dots inside a ring in rest green that empties as it runs down. */
+/** The rest left in dots inside a ring in rest green that empties as it runs down. [left] is read in draw and its text. */
 @Composable
-private fun RestRing(left: Long, total: Long) {
+private fun RestRing(left: () -> Long, total: Long) {
     Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
         Canvas(Modifier.fillMaxSize().padding(4.dp)) {
             val w = 8.dp.toPx()
             val inset = Offset(w / 2, w / 2)
             val arc = Size(size.width - w, size.height - w)
             drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, inset, arc, style = Stroke(w))
-            drawArc(RestGreen, -90f, 360f * (left.toFloat() / total).coerceIn(0f, 1f), false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
+            val sweep = 360f * (left().toFloat() / total).coerceIn(0f, 1f)
+            drawArc(RestGreen, -90f, sweep, false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            DotMatrixText(workoutClock(left), dot = DotSize.Detail)
+            DotClock({ workoutClock(left()) }, DotSize.Detail)
             Spacer(Modifier.height(10.dp))
             Text("left", color = Color.White.copy(alpha = 0.75f), style = GlowType.body)
         }
     }
 }
+
+/** A clock in dots, its own scope: the second it reads composes only it again, not the card around it. */
+@Composable
+private fun DotClock(text: () -> String, dot: DotSize) = DotMatrixText(text(), dot = dot)
 
 /** What follows the rest: "Set 4, bench press 10 × 60 kg". */
 @Composable
@@ -360,12 +372,17 @@ private fun ExercisePill(name: String?, onClick: () -> Unit) {
 private fun DoneSets(sets: List<AppWorkoutSet>, history: List<Pair<Long, Int>>) {
     val done = sets.filter { it.end != null }.asReversed()
     if (done.isEmpty()) return
+    // The peaks scan the readings, so they're worked out when a set or the readings change, not on every pass.
+    val lines = remember(done, history) { done.take(4).map { s -> WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)) } }
     Column(Modifier.fillMaxWidth()) {
-        done.take(4).forEach { s ->
+        done.take(4).forEachIndexed { i, s ->
             SetRule()
             Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 14.dp)) {
                 Text("Set ${s.index + 1}", color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-                Text(WorkoutCopy.setLine(s, Strength.peak(history, s.start, s.end!!)), color = Color.White.copy(alpha = 0.72f), style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(
+                    lines[i], color = Color.White.copy(alpha = 0.72f), style = GlowType.body, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
             }
         }
         SetRule()

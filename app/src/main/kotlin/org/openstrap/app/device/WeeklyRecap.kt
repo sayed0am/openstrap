@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -21,6 +22,7 @@ import org.openstrap.app.MainActivity
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
 import org.openstrap.app.data.Rewards
+import org.openstrap.app.data.catching
 import org.openstrap.app.ui.workout.RewardsCopy
 
 /**
@@ -55,7 +57,7 @@ object WeeklyRecap {
         // The weeks are only worked out again while the app is open: workouts synced since would be missed, and the
         // week is never sent again. Brought up to date first; a refresh that fails still sends what's stored.
         val recordingStart = (container.workout.state.value as? WorkoutState.Recording)?.workout?.start
-        runCatching { container.rewards.refreshNow(recordingStart) }
+        catching { container.rewards.refreshNow(recordingStart) }.onFailure { Log.w("OpenStrap", "weekly recap: weeks not refreshed: $it") }
         val weeks = container.database.healthDao().weekResultsOnce()
         val week = weeks.firstOrNull { it.weekStart == lastWeek.toEpochDay() }
         settings.setRecapWeek(lastWeek.toEpochDay())
@@ -87,10 +89,10 @@ object WeeklyRecap {
     }
 }
 
-/** The recap's look every few hours ([WeeklyRecap.schedule]). */
+/** The recap's look every few hours ([WeeklyRecap.schedule]). A failed look is logged, and the next one tries again. */
 class RecapWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        runCatching { WeeklyRecap.check(applicationContext) }
+        catching { WeeklyRecap.check(applicationContext) }.onFailure { Log.w("OpenStrap", "weekly recap: look failed: $it") }
         return Result.success()
     }
 }

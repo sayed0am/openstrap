@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -101,11 +100,13 @@ fun GlowRecoveryScreen(
     val slots = recoveryCards(RecoveryFacts(habitAge = healthspan != null, learning = learning, hasRecovery = r != null))
     var info by rememberSaveable { mutableStateOf(false) }
     var partialInfo by rememberSaveable { mutableStateOf(false) }
-    val partial = wear?.takeIf { it.partial }?.let { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    // Built once, so the cards given it can skip (audit K11).
+    val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    val partial = partialTag.takeIf { wear?.partial == true }
     val isToday = state.date == java.time.LocalDate.now()
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         GlowScreenList(contentPadding, list, focus = showCharge, onFocused = onChargeShown) {
-            full { header() }
+            add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->
                 when (card) {
                     RecoveryCard.Hero ->
@@ -321,30 +322,31 @@ private class BodySignal(
     val unit: String = "",
 )
 
-/** Loads the last 30 days of each body signal, enough for its normal. */
+/**
+ * Loads the last 30 days of each body signal, enough for its normal ([rememberNormal], keyed on the day and the
+ * history, each normal worked out once per load), and the signals once per day state (audit K8).
+ */
 @Composable
 private fun rememberSignals(state: DayUiState, history: DailyHistory): List<BodySignal> {
-    val end = state.date
-    val from = end.minusDays(History.NORMAL_DAYS - 1L)
-    @Composable fun daily(m: Metric) = remember(m, end) { history(m.daily, from, end) }
-    val rhr by daily(Metric.RestingHr).collectAsState(emptyList())
-    val hrv by daily(Metric.Hrv).collectAsState(emptyList())
-    val skin by daily(Metric.SkinTemperature).collectAsState(emptyList())
-    val breath by daily(Metric.Breathing).collectAsState(emptyList())
-    val spo2 by daily(Metric.Spo2).collectAsState(emptyList())
-    val stress by daily(Metric.Stress).collectAsState(emptyList())
-    fun normalOf(stats: List<org.openstrap.app.data.DayStat>) = History.normal(stats, end)
-    return listOf(
-        BodySignal(Metric.RestingHr, "Resting heart rate", MetricColors.heart, state.restingHeartRate?.toFloat(), normalOf(rhr)),
-        BodySignal(Metric.Hrv, "HRV", MetricColors.hrv, state.hrv.avg()?.toFloat(), normalOf(hrv)),
-        BodySignal(
-            Metric.SkinTemperature, "Skin temperature", MetricColors.temperature,
-            state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), normalOf(skin), asDeviation = true,
-        ),
-        BodySignal(Metric.Breathing, "Breathing rate", MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), normalOf(breath)),
-        BodySignal(Metric.Spo2, "Blood oxygen", MetricColors.spo2, state.spo2.avg()?.toFloat(), normalOf(spo2), unit = "%"),
-        BodySignal(Metric.Stress, "Stress", MetricColors.stress, state.stress.avg()?.toFloat(), normalOf(stress)),
-    )
+    val rhr = rememberNormal(Metric.RestingHr, state.date, history)
+    val hrv = rememberNormal(Metric.Hrv, state.date, history)
+    val skin = rememberNormal(Metric.SkinTemperature, state.date, history)
+    val breath = rememberNormal(Metric.Breathing, state.date, history)
+    val spo2 = rememberNormal(Metric.Spo2, state.date, history)
+    val stress = rememberNormal(Metric.Stress, state.date, history)
+    return remember(state, rhr, hrv, skin, breath, spo2, stress) {
+        listOf(
+            BodySignal(Metric.RestingHr, "Resting heart rate", MetricColors.heart, state.restingHeartRate?.toFloat(), rhr),
+            BodySignal(Metric.Hrv, "HRV", MetricColors.hrv, state.hrv.avg()?.toFloat(), hrv),
+            BodySignal(
+                Metric.SkinTemperature, "Skin temperature", MetricColors.temperature,
+                state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), skin, asDeviation = true,
+            ),
+            BodySignal(Metric.Breathing, "Breathing rate", MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), breath),
+            BodySignal(Metric.Spo2, "Blood oxygen", MetricColors.spo2, state.spo2.avg()?.toFloat(), spo2, unit = "%"),
+            BodySignal(Metric.Stress, "Stress", MetricColors.stress, state.stress.avg()?.toFloat(), stress),
+        )
+    }
 }
 
 /**

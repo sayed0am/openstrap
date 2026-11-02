@@ -60,7 +60,9 @@ fun GlowTabletopHeart(
                     }
                 }
                 if (state.heartRate.isNotEmpty()) {
-                    val values = remember(state.heartRate, state.dayStart) { bucket(state.heartRate, state.dayStart..state.dayEnd, 5 * 60) }
+                    val values = remember(state.heartRate, state.dayStart, state.dayEnd) {
+                        bucket(state.heartRate, state.dayStart..state.dayEnd, 5 * 60)
+                    }
                     GlowLineChart(values, height = GlowLayout.ChartHeight, labels = listOf("00", "06", "12", "18", "24")) { _, v -> "${v.toInt()} bpm" }
                 }
             }

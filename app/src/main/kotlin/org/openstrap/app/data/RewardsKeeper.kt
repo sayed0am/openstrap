@@ -54,6 +54,12 @@ class RewardsKeeper(
     private val daysLock = kotlinx.coroutines.sync.Mutex()
 
     /**
+     * One [refresh] at a time: each reads what is stored, works out what changed and writes it, so two at once (the
+     * app root and the weekly recap) could each write against what the other was replacing, or both start the rewards.
+     */
+    private val refreshLock = kotlinx.coroutines.sync.Mutex()
+
+    /**
      * Steps per day, for the bests and badges. Summing every minute ever recorded each time took a scan of the whole
      * table, so the days are kept: when only newer minutes came since, just the last day kept and after are read
      * again (its minutes are the ones a sync rewrites). Anything else (older minutes in, some gone, another zone, or
@@ -83,11 +89,11 @@ class RewardsKeeper(
         withContext(Dispatchers.IO) { dao.weekResultsOnce() to dao.badgesOnce() }
 
     /** Works everything out again from [workouts] against [goal] and stores it. */
-    suspend fun refresh(workouts: List<WorkoutAnalysis>, goal: Int) {
+    suspend fun refresh(workouts: List<WorkoutAnalysis>, goal: Int) = refreshLock.withLock {
         // The list starts empty before it loads: only a database with no workouts at all starts the rewards empty.
         if (workouts.isEmpty()) {
-            if (!settings.rewardsStarted.first() && dao.appWorkoutsAll().isEmpty() && dao.workouts().first().isEmpty()) settings.startRewards(historyBadges = false)
-            return
+            if (!settings.rewardsStarted.first() && !dao.anyWorkoutOnce()) settings.startRewards(historyBadges = false)
+            return@withLock
         }
         val f = facts(workouts)
         withContext(Dispatchers.Default) {

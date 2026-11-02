@@ -190,6 +190,8 @@ dependencies {
     // A real Room database in unit tests (CSV restore).
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // Compose UI tests under Robolectric, for saved state across a recreate (StateRestorationTester).
+    testImplementation(libs.compose.ui.test.junit4)
     // Migration tests (MigrationTestHelper).
     testImplementation(libs.room.testing)
 

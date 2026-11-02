@@ -148,7 +148,7 @@ internal fun SleepScoreDetail(
     val normal = History.normal(before, state.date.minusDays(1), SLEEP_NIGHTS - 1)
     val known = week.mapNotNull { it.second }
 
-    val headline = scrub ?: when {
+    val headline = when {
         range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 nights", null)
         range == Range.Week -> DetailHeadline.none("No scores", "In the last 7 nights")
         score != null -> DetailHeadline(score.toString(), SleepCopy.scoreLabel(isToday), TabCopy.sleepScoreWord(score))
@@ -162,10 +162,12 @@ internal fun SleepScoreDetail(
             contentPadding = contentPadding, headline = headline,
             strip = DetailCopy.strip(state.date, today, sleepDays(state, history)), onDay = onSelectDay,
             ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
-            // The horizon arc (chart kit, spec 2.7) holds the night's score, centred, the number under its crest.
-            heroValue = if (range == Range.Day && score != null && scrub == null) {
+            // The horizon arc (chart kit, spec 2.7) holds the night's score, centred, the number under its crest. A
+            // scrub takes its place in the hero alone, so the rest of the detail stays put (audit K4).
+            heroValue = if (range == Range.Day && score != null) {
                 { HorizonArc(score / 100f, color, key = state.date) { DetailScoreNumber(score) } }
             } else null,
+            scrubbed = { scrub },
         ) {
             if (range == Range.Day) {
                 val deleted = state.deletedSleep
@@ -257,9 +259,11 @@ internal fun SleepScoreDetail(
 
 /**
  * What the Sleep score and Naps details can do to a sleep or nap, each given the strap's own session: keep the user's
- * times for it, delete it, and bring it back (Undo and Restore).
+ * times for it, delete it, and bring it back (Undo and Restore). Equal when its actions are (the same view model's
+ * references are), so a detail given an equal one skips (audit K11).
  */
-class SleepEditing(
+@androidx.compose.runtime.Immutable
+data class SleepEditing(
     val setTimes: (SleepSession, Long, Long) -> Unit = { _, _, _ -> },
     val delete: (SleepSession) -> Unit = {},
     val restore: (SleepSession) -> Unit = {},
@@ -395,8 +399,9 @@ private fun StageBars(b: Summaries.SleepBreakdown, modifier: Modifier = Modifier
  */
 @Composable
 private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHeadline?) -> Unit) {
-    val hr = state.sleepHeartRate.filter { it.x in window }
-    val breath = state.breathRate.filter { it.x in window }
+    // Kept while the readings and the window are, so the lines' own remember holds across scrubs (audit K4).
+    val hr = remember(state.sleepHeartRate, window) { state.sleepHeartRate.filter { it.x in window } }
+    val breath = remember(state.breathRate, window) { state.breathRate.filter { it.x in window } }
     if (hr.isEmpty() && breath.isEmpty()) return
     val labels = listOf(clock(window.first), clock(window.last))
     var hrAt by remember(window) { mutableStateOf<DetailHeadline?>(null) }
@@ -526,7 +531,7 @@ internal fun NapsDetail(
     val isToday = state.date == today
     var scrub by remember(state.date) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable { mutableStateOf(false) }
-    val headline = scrub ?: if (naps.isEmpty()) SleepCopy.noNaps(isToday).let { (word, why) -> DetailHeadline.none(word, why) }
+    val headline = if (naps.isEmpty()) SleepCopy.noNaps(isToday).let { (word, why) -> DetailHeadline.none(word, why) }
     else DetailHeadline(clockDuration(total), SleepCopy.napsLabel(isToday), null)
 
     // TODO(step 6): dots under the other days of the strip need the week's naps; the day loads only its own.
@@ -535,7 +540,7 @@ internal fun NapsDetail(
             Score.Naps.title, color, siblings(Detail.OfScore(Score.Naps), onSwitch), onInfo = { info = true }, onBack = onBack,
             contentPadding = contentPadding, headline = headline,
             strip = DetailCopy.strip(state.date, today, if (naps.isEmpty()) emptySet() else setOf(state.date)), onDay = onSelectDay,
-            ranges = listOf(Range.Day), range = Range.Day, onRange = {},
+            ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
         ) {
             if (naps.isEmpty()) item { DetailEmpty(if (isToday) "No naps recorded today." else "No naps recorded that day.") }
             else {
@@ -574,7 +579,7 @@ internal fun NapsDetail(
                             }
                             // The strap sends no average for a nap, so its heart rate is the day's readings in its window.
                             val window = nap.start..nap.end
-                            val hr = state.heartRate.filter { it.x in window }
+                            val hr = remember(state.heartRate, window) { state.heartRate.filter { it.x in window } }
                             if (hr.isNotEmpty()) {
                                 Box(Modifier.padding(top = 16.dp)) {
                                     ScrubLine(hr, window, 100.dp, listOf(clock(nap.start), clock(nap.end)), MetricColors.heart, "bpm") { scrub = it }
@@ -590,10 +595,12 @@ internal fun NapsDetail(
     }
 
     if (info) InfoSheet(InfoCopy.of(Score.Naps), color, null, null, onDismiss = { info = false })
+    // A nap gone from the day (deleted elsewhere, or moved) closes its sheet, cleared once the composition is applied
+    // rather than during it (audit K6).
     adjusting?.let { start ->
         val nap = naps.firstOrNull { it.start == start }
         val detected = state.napsAsDetected[start]
-        if (nap == null || detected == null) adjusting = null
+        if (nap == null || detected == null) androidx.compose.runtime.SideEffect { adjusting = null }
         else SleepTimesSheet(
             nap, detected, state.heartRate, state.sleepNeighbours.filter { !it.nap || it.start != start },
             onSave = { from, to -> adjusting = null; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = null },
@@ -602,7 +609,7 @@ internal fun NapsDetail(
     deleting?.let { start ->
         val nap = naps.firstOrNull { it.start == start }
         val detected = state.napsAsDetected[start]
-        if (nap == null || detected == null) deleting = null
+        if (nap == null || detected == null) androidx.compose.runtime.SideEffect { deleting = null }
         else DeleteSleepSheet(
             SleepCopy.deleteTitle(true, isToday), SleepCopy.span(clock(nap.start), clock(nap.end)),
             onDelete = { deleting = null; editing.delete(detected); undo = detected to nap.start }, onDismiss = { deleting = null },
@@ -635,7 +642,7 @@ private fun SleepTimesSheet(
     val end = picked(endClock, shown.end, detected.end)
     val problem = SleepEdits.problem(detected, start, end, Instant.now().epochSecond, others, zone)
     val window = (detected.start - 2 * 3600)..(detected.end + 2 * 3600)
-    val hr = heartRate.filter { it.x in window }
+    val hr = remember(heartRate, window) { heartRate.filter { it.x in window } }
 
     PageSheet(onDismiss, SleepCopy.timesTitle(detected.nap), note = SleepCopy.strapSaw(clock(detected.start), clock(detected.end))) {
         if (hr.isNotEmpty()) Column {

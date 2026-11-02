@@ -139,7 +139,7 @@ fun GlowActivityScreen(
         }
         shown.toList()
     }
-    val stored = remember(state.date) { paiHistory(state.date, state.date) }.collectAsState(emptyMap()).value
+    val stored = remember(state.date, paiHistory) { paiHistory(state.date, state.date) }.collectAsState(emptyMap()).value
     val heartPoints = state.pai?.total ?: stored[state.date]?.total
     val r = recovery?.takeIf { it.date == state.date }
     val live = liveHeartRate?.takeIf { isToday }
@@ -147,11 +147,13 @@ fun GlowActivityScreen(
     val restingRange = rememberNormal(Metric.RestingHr, state.date, history)
     // A partial day lowers the steps and the day's totals: those two cards carry the tag (spec 4.3).
     var partialInfo by rememberSaveable { mutableStateOf(false) }
-    val partial = wear?.takeIf { it.partial }?.let { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    // Built once, so the cards given it can skip (audit K11).
+    val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    val partial = partialTag.takeIf { wear?.partial == true }
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         GlowScreenList(contentPadding, list) {
-            full { header() }
+            add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots) { card, m ->
                 when (card) {
                     ActivityCard.Start -> StartCard(sports, onStartWorkout, onAllSports)

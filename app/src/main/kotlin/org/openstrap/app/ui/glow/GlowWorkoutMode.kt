@@ -39,9 +39,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -361,27 +363,33 @@ private val TrimSide = 12.dp
 private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, from: Long, to: Long, maxHr: Int, onChange: (Long, Long) -> Unit) {
     val lo = (series.minOfOrNull { it.second } ?: 60) - 5f
     val hi = (series.maxOfOrNull { it.second } ?: 180) + 5f
-    var f by remember { mutableStateOf(from) }
-    var t by remember { mutableStateOf(to) }
-    f = from
-    t = to
+    // The drag reads the range as it stands when it starts and keeps its own copy while it moves, so nothing is
+    // written back during composition (audit K6).
+    val range by rememberUpdatedState(from to to)
+    val change by rememberUpdatedState(onChange)
     Canvas(
-        Modifier.fillMaxWidth().height(120.dp).pointerInput(series) {
+        Modifier.fillMaxWidth().height(120.dp).pointerInput(series, first, last) {
             var dragging = 0
+            var f = 0L
+            var t = 0L
             val inset = HandleInset.toPx()
             fun timeAt(x: Float) = (first + ((x - inset) / (size.width - 2 * inset) * (last - first)).toLong()).coerceIn(first, last)
             detectHorizontalDragGestures(
                 onDragStart = { o ->
+                    f = range.first
+                    t = range.second
                     val at = timeAt(o.x)
                     dragging = if (kotlin.math.abs(at - f) <= kotlin.math.abs(at - t)) 0 else 1
                 },
-            ) { change, _ ->
-                val at = timeAt(change.position.x) / 60 * 60
+            ) { c, _ ->
+                val at = timeAt(c.position.x) / 60 * 60
                 if (dragging == 0) f = at.coerceAtMost(t - 60) else t = at.coerceAtLeast(f + 60)
-                onChange(f, t)
+                change(f, t)
             }
         },
     ) {
+        val f = from
+        val t = to
         val inset = HandleInset.toPx()
         fun x(time: Long) = inset + (time - first).toFloat() / (last - first) * (size.width - 2 * inset)
         fun y(v: Float) = size.height - (v - lo) / (hi - lo) * size.height
@@ -418,7 +426,7 @@ internal const val PHONE_DELETE = "Its heart rate and times are removed from Ope
 /** "Delete this workout" as a warn coloured button with a trash icon, asking first; [what] says what deleting it does. */
 @Composable
 internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
-    var confirmDelete by remember { mutableStateOf(false) }
+    var confirmDelete by rememberSaveable { mutableStateOf(false) }
     PageButton("Delete this workout", { confirmDelete = true }, modifier.fillMaxWidth(), color = MetricColors.warn, icon = AppIcons.Trash)
     if (confirmDelete) {
         GlassAlertDialog(
@@ -487,8 +495,10 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
     val a = summary.analysis
     val first = summary.recordedStart
     val last = summary.recordedEnd.coerceAtLeast(first + 60)
-    var from by remember(summary) { mutableStateOf(a.shownStart) }
-    var to by remember(summary) { mutableStateOf(a.end) }
+    // The handles outlive a rotation, a fold and process death while the panel stays open (audit K7). They start again
+    // only when the workout or its shown range changes.
+    var from by rememberSaveable(a.workout.start, a.shownStart, a.end) { mutableLongStateOf(a.shownStart) }
+    var to by rememberSaveable(a.workout.start, a.shownStart, a.end) { mutableLongStateOf(a.end) }
     val step = 10L
     val points = remember(summary) {
         val n = ((last - first) / step + 1).toInt().coerceAtLeast(2)

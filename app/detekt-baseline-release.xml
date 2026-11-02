@@ -291,10 +291,8 @@
     <ID>ImplicitDefaultLocale:TodayCopy.kt:TodayCopy$"$h h %02d".format(m)</ID>
     <ID>ImplicitDefaultLocale:YouPage.kt:"%,d steps, %,d active kcal, %d active hours".format(goals.steps, goals.calories, goals.activeHours)</ID>
     <ID>ImplicitDefaultLocale:YouPage.kt:"%02d".format(minutes % 60)</ID>
-    <ID>InjectDispatcher:AppUpdater.kt:AppUpdater$Default</ID>
     <ID>InjectDispatcher:AppUpdater.kt:AppUpdater$IO</ID>
     <ID>InjectDispatcher:AutoBackup.kt:AutoBackup$IO</ID>
-    <ID>InjectDispatcher:AutoHealthConnect.kt:HealthConnectAutoSync$Default</ID>
     <ID>InjectDispatcher:DayViewModel.kt:DayViewModel$Default</ID>
     <ID>InjectDispatcher:DayViewModel.kt:DayViewModel$IO</ID>
     <ID>InjectDispatcher:DeviceViewModel.kt:DeviceViewModel$IO</ID>
@@ -311,8 +309,6 @@
     <ID>InjectDispatcher:StrapManager.kt:StrapManager$Default</ID>
     <ID>InjectDispatcher:StrapManager.kt:StrapManager$IO</ID>
     <ID>InjectDispatcher:StrapService.kt:StrapService$Default</ID>
-    <ID>InjectDispatcher:UpdateReceiver.kt:UpdateReceiver$Default</ID>
-    <ID>InjectDispatcher:WidgetUpdater.kt:WidgetAlarmReceiver$Default</ID>
     <ID>InjectDispatcher:WidgetUpdater.kt:WidgetUpdater$Default</ID>
     <ID>InjectDispatcher:WorkoutSession.kt:WorkoutSession$Default</ID>
     <ID>InjectDispatcher:WorkoutsViewModel.kt:WorkoutsViewModel$Default</ID>
@@ -2675,11 +2671,7 @@
     <ID>SpreadOperator:OpenStrapDatabase.kt:OpenStrapDatabase.Companion$(*MIGRATIONS)</ID>
     <ID>SpreadOperator:WorkoutMap.kt:( *listOfNotNull( PropertyFactory.visibility(if (hereColor != null) Property.VISIBLE else Property.NONE), hereColor?.let { PropertyFactory.circleColor(it.toArgb()) }, ).toTypedArray(), )</ID>
     <ID>SuspendFunSwallowedCancellation:AlarmsViewModel.kt:AlarmsViewModel$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:AutoBackup.kt:AutoBackup$catch (e: Throwable) { runCatching { temp.delete() } throw e }</ID>
-    <ID>SuspendFunSwallowedCancellation:AutoHealthConnect.kt:HealthConnectAutoSync$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:DailyEnergyHistory.kt:DailyEnergyHistory$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:DeviceViewModel.kt:DeviceViewModel$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:FirmwareViewModel.kt:FirmwareViewModel$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:HistorySync.kt:HistorySync$catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e log("history failed: $e") // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for the card. // Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause is the link. val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null &amp;&amp; it == e.cause.toString() } state.value = SyncState.Failed(reason ?: "Sync failed") }</ID>
     <ID>SuspendFunSwallowedCancellation:HistorySync.kt:HistorySync$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:MainActivity.kt:MainActivity$runCatching</ID>
@@ -2692,22 +2684,13 @@
     <ID>SuspendFunSwallowedCancellation:StrapManager.kt:StrapManager$catch (e: Exception) { log("dfu failed: ${e.message}") throw e }</ID>
     <ID>SuspendFunSwallowedCancellation:StrapManager.kt:StrapManager$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:StrapService.kt:StrapService$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:WeeklyRecap.kt:RecapWorker$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:WeeklyRecap.kt:WeeklyRecap$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:WidgetUpdater.kt:WidgetAlarmReceiver$catch (e: Exception) { Log.w("OpenStrap", "widgets: alarm ${intent.action} failed: $e") }</ID>
-    <ID>SuspendFunSwallowedCancellation:WidgetUpdater.kt:WidgetUpdater$catch (e: Exception) { Log.w(TAG, "widgets: previews not set: $e") }</ID>
-    <ID>SuspendFunSwallowedCancellation:WidgetUpdater.kt:WidgetUpdater$catch (e: Exception) { if (e is kotlinx.coroutines.CancellationException) throw e Log.w(TAG, "widgets: $kind not updated: $e") }</ID>
-    <ID>SuspendFunSwallowedCancellation:WorkoutEffectEngine.kt:WorkoutEffectEngine$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:WorkoutGapFill.kt:WorkoutGapFill$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:WorkoutSession.kt:WorkoutSession$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:WorkoutSession.kt:WorkoutSession.&lt;no name provided&gt;$runCatching</ID>
     <ID>SuspendFunSwallowedCancellation:WorkoutsViewModel.kt:WorkoutsViewModel$runCatching</ID>
     <ID>SwallowedException:DayViewModel.kt:DayViewModel$e: Exception</ID>
     <ID>SwallowedException:HistorySync.kt:HistorySync$e: FastRechargeModeException</ID>
-    <ID>SwallowedException:StartWidget.kt:StartWidget.Companion$e: Exception</ID>
-    <ID>SwallowedException:StepsWidget.kt:StepsWidget.Companion$e: Exception</ID>
     <ID>SwallowedException:StrapService.kt:StrapService$e: SecurityException</ID>
-    <ID>SwallowedException:WidgetUpdater.kt:WidgetUpdater$e: SecurityException</ID>
     <ID>ThrowsCount:AppUpdater.kt:AppUpdater$fun install</ID>
     <ID>ThrowsCount:AutoBackup.kt:AutoBackup$private suspend fun write: String</ID>
     <ID>ThrowsCount:StrapManager.kt:StrapManager$override suspend fun installFirmware</ID>
@@ -2716,10 +2699,6 @@
     <ID>ThrowsCount:StrapManager.kt:StrapManager$private suspend fun command: ByteArray</ID>
     <ID>ThrowsCount:StrapManager.kt:StrapManager$private suspend fun sendFindDevice</ID>
     <ID>ThrowsCount:ZeppCloud.kt:ZeppCloud$fun parseAppTokens: AppTokenRefresh</ID>
-    <ID>TooGenericExceptionCaught:AppUpdater.kt:AppUpdater$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:AutoBackup.kt:AutoBackup$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:AutoBackup.kt:AutoBackup$e: Throwable</ID>
-    <ID>TooGenericExceptionCaught:AutoHealthConnect.kt:HealthConnectAutoSync$e: Exception</ID>
     <ID>TooGenericExceptionCaught:DayViewModel.kt:DayViewModel$e: Exception</ID>
     <ID>TooGenericExceptionCaught:GattClient.kt:GattClient$e: RuntimeException</ID>
     <ID>TooGenericExceptionCaught:HistorySync.kt:HistorySync$e: Exception</ID>
@@ -2727,14 +2706,10 @@
     <ID>TooGenericExceptionCaught:RecoveryWidget.kt:RecoveryWidget.Companion$e: Exception</ID>
     <ID>TooGenericExceptionCaught:ShareScreen.kt:StoryFiles$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SleepWidget.kt:SleepWidget.Companion$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:StartWidget.kt:StartWidget.Companion$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:StepsWidget.kt:StepsWidget.Companion$e: Exception</ID>
     <ID>TooGenericExceptionCaught:StrapManager.kt:StrapManager$e: Exception</ID>
     <ID>TooGenericExceptionCaught:SyncNowAction.kt:SyncNowAction$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WearReminder.kt:WearEventLog$e: Exception</ID>
     <ID>TooGenericExceptionCaught:WidgetParts.kt:e: Exception</ID>
-    <ID>TooGenericExceptionCaught:WidgetUpdater.kt:WidgetAlarmReceiver$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:WidgetUpdater.kt:WidgetUpdater$e: Exception</ID>
     <ID>TooManyFunctions:ActivityCopy.kt:ActivityCopy</ID>
     <ID>TooManyFunctions:ActivityDetail.kt:org.openstrap.app.ui.glow.ActivityDetail.kt</ID>
     <ID>TooManyFunctions:AppUpdater.kt:AppUpdater</ID>
@@ -2829,19 +2804,14 @@
     <ID>UnnecessaryLaunchedEffect:WorkoutMap.kt:LaunchedEffect</ID>
     <ID>UnsafeCallOnNullableType:Activity.kt:Activity$minutes[k].hrr!!</ID>
     <ID>UnsafeCallOnNullableType:ActivityDetail.kt:shown.first!!</ID>
-    <ID>UnsafeCallOnNullableType:AutoBackup.kt:AutoBackup$resolver.openInputStream(temp.uri)!!</ID>
-    <ID>UnsafeCallOnNullableType:AutoBackup.kt:AutoBackup$resolver.openOutputStream(target.uri, "w")!!</ID>
     <ID>UnsafeCallOnNullableType:ChartSpec.kt:values[lastIndex]!!</ID>
     <ID>UnsafeCallOnNullableType:CsvTables.kt:CsvRow$cell(name)!!</ID>
-    <ID>UnsafeCallOnNullableType:DeviceViewModel.kt:DeviceViewModel$container.app.contentResolver.openInputStream(uri)!!</ID>
-    <ID>UnsafeCallOnNullableType:DeviceViewModel.kt:DeviceViewModel$container.app.contentResolver.openOutputStream(uri)!!</ID>
     <ID>UnsafeCallOnNullableType:EnergyExpenditure.kt:EnergyExpenditure$hrSum[m.t]!!</ID>
     <ID>UnsafeCallOnNullableType:EnergyExpenditure.kt:EnergyExpenditure$m.hrr!!</ID>
     <ID>UnsafeCallOnNullableType:FamilySummary.kt:FamilySummary$last.workout.averageHeartRate!!</ID>
     <ID>UnsafeCallOnNullableType:FamilySummary.kt:FamilySummary$lines[it].peak!!</ID>
     <ID>UnsafeCallOnNullableType:FamilySummary.kt:FamilySummary$r.workEnd!!</ID>
     <ID>UnsafeCallOnNullableType:FamilySummary.kt:FamilySummary$s.end!!</ID>
-    <ID>UnsafeCallOnNullableType:FirmwareViewModel.kt:FirmwareViewModel$container.app.contentResolver.openInputStream(uri)!!</ID>
     <ID>UnsafeCallOnNullableType:GattClient.kt:GattClient$gatt!!</ID>
     <ID>UnsafeCallOnNullableType:GlowCharts.kt:values[i]!!</ID>
     <ID>UnsafeCallOnNullableType:GlowWorkoutMode.kt:WorkoutRecorder.liveZone(a.second, maxHr)!!</ID>

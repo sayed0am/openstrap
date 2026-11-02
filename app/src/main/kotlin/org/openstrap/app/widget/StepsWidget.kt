@@ -23,7 +23,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
-import kotlinx.coroutines.CancellationException
+import org.openstrap.app.data.catching
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.DailyMetric
@@ -75,7 +75,7 @@ class StepsWidget : LoadingWidget<StepsWidget.Shown>(WidgetKind.Steps) {
             val at = now.atZone(zone)
             val today = at.toLocalDate()
             val goal = container.settings.goals.first().steps
-            val model = try {
+            val model = catching {
                 val day = DayWindow.of(today, zone)
                 val minutes = container.database.healthDao().activityOnce(day.from, day.to)
                 val steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value)
@@ -85,19 +85,13 @@ class StepsWidget : LoadingWidget<StepsWidget.Shown>(WidgetKind.Steps) {
                         .filter { it.date < today }.associate { it.date to it.value.roundToInt() }
                 } else emptyMap()
                 StepsWidgetModel.from(today, steps, Summaries.hourlySteps(minutes, day.from), at.hour, goal, past)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+            }.getOrElse { e ->
                 Log.w(WIDGET_TAG, "widgets: steps for $today not read: $e")
                 StepsWidgetModel.from(today, 0, List(24) { 0f }, at.hour, goal, emptyMap())
             }
-            val bedtime = try {
+            val bedtime = catching {
                 container.health.usualBedtime(today)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                null
-            }
+            }.onFailure { Log.w(WIDGET_TAG, "widgets: usual bedtime for Steps not read: $it") }.getOrNull()
             return Shown(model, widgetMood(container, bedtime, now, zone))
         }
     }

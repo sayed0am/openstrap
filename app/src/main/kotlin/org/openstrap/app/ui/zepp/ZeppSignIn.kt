@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.zepp
 
 import android.annotation.SuppressLint
+import android.util.Log
 import android.webkit.CookieManager
 import android.webkit.WebStorage
 import android.webkit.WebView
@@ -43,6 +44,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
+import org.openstrap.app.data.catching
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.glow.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
@@ -112,8 +114,11 @@ fun ZeppSignInDialog(
             val session = ZeppCloud.sessionFromCookies(currentCookies())
             if (session != null) {
                 step = SignInStep.Fetching
-                step = runCatching { SignInStep.Found(ZeppCloud.listDevices(session, preferredApiBase)) }
-                    .getOrElse { SignInStep.Failed(deviceListError(it)) }
+                step = catching { SignInStep.Found(ZeppCloud.listDevices(session, preferredApiBase)) }
+                    .getOrElse {
+                        Log.w("OpenStrap", "zepp: device list failed: $it")
+                        SignInStep.Failed(deviceListError(it))
+                    }
                 break
             }
             delay(1000)

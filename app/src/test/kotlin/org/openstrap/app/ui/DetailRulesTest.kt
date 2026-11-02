@@ -62,7 +62,7 @@ class DetailRulesTest {
         val progress = charts.substringAfter("fun rememberGaugeProgress(").substringBefore("\n}\n")
         assertTrue("a gauge starts at its value, not at zero", "Animatable(target)" in progress)
         val template = sources.getValue("glow/GlowMetricDetail.kt").substringAfter("fun DetailTemplate(").substringBefore("\n}\n")
-        assertTrue("the gauge block is centred", Regex("""if \(heroValue != null\) Column\([^\n]*CenterHorizontally""").containsMatchIn(template))
+        assertTrue("the gauge block is centred", Regex("""if \(gauge != null\) Column\(\s*[^\n]*CenterHorizontally""").containsMatchIn(template))
     }
 
     @Test fun `every detail's header ends in the (i)`() {

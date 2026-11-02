@@ -4,10 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.launch
 import android.util.Log
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.withContext
 import org.openstrap.app.data.RecoveryResult
@@ -27,6 +31,8 @@ import org.openstrap.app.data.LiveSteps
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.data.Today
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.OsaEventRow
 import org.openstrap.app.data.db.OsaResultRow
@@ -37,6 +43,7 @@ import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.components.StageSpan
 import org.openstrap.app.ui.components.TrendPoint
 import org.openstrap.protocol.services.StepTotals
+import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -144,19 +151,41 @@ class DayViewModel(
     profile: Flow<UserProfile> = flowOf(UserProfile()),
     /** A sleep or nap (by the strap's start) was moved, deleted or restored: Health Connect is written again. */
     private val onSleepEdited: (Long) -> Unit = {},
+    /** The clock today is read from, asked afresh each time. Tests pass one they move by hand. */
+    private val clock: () -> Clock = { Clock.systemDefaultZone() },
+    /** The phone's clock, time zone or date changed ([Today.changes]), so today is read again at once. */
+    dateChanges: Flow<Unit> = emptyFlow(),
+    /** Where the day's rows are worked into its state, off the main thread (audit C7). */
+    private val work: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val selected = MutableStateFlow(LocalDate.now())
+    /** Today as it moves, so a screen left open past midnight moves on to the new day (audit C10). */
+    private val today: StateFlow<LocalDate> = Today.dates(clock, dateChanges)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Today.on(clock()))
 
-    fun previousDay() { selected.value = selected.value.minusDays(1) }
-    fun nextDay() { if (selected.value < LocalDate.now()) selected.value = selected.value.plusDays(1) }
-    fun select(date: LocalDate) { selected.value = minOf(date, LocalDate.now()) }
+    /** The day picked, or null while the screen follows today. */
+    private val picked = MutableStateFlow<LocalDate?>(null)
+
+    /** The day shown: the one picked while it's before today, else today. */
+    private val shown: Flow<ShownDay> = combine(picked, today) { p, t ->
+        val date = p?.takeIf { it < t } ?: t
+        ShownDay(date, date == t)
+    }.distinctUntilChanged()
+
+    private val selected: Flow<LocalDate> = shown.map { it.date }.distinctUntilChanged()
+
+    private fun shownNow(): LocalDate = Today.on(clock()).let { t -> picked.value?.takeIf { it < t } ?: t }
+
+    fun previousDay() { picked.value = shownNow().minusDays(1) }
+    fun nextDay() { picked.value = shownNow().plusDays(1).takeIf { it < Today.on(clock()) } }
+    fun select(date: LocalDate) { picked.value = date.takeIf { it < Today.on(clock()) } }
 
     /** Days the calendar lets you pick. */
     val daysWithData: StateFlow<Set<LocalDate>> = repo.daysWithData()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
-    val state: StateFlow<DayUiState> = selected.flatMapLatest { date -> stateFor(date) }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DayUiState())
+    val state: StateFlow<DayUiState> = shown.flatMapLatest { (date, isToday) -> stateFor(date, isToday) }
+        .flowOn(work)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), DayUiState(date = Today.on(clock())))
 
     /** Bumped by [retryRecovery], so the same day and data are worked out again. */
     private val recoveryRetries = MutableStateFlow(0)
@@ -194,16 +223,15 @@ class DayViewModel(
     private val recoveryOutcome: StateFlow<RecoveryOutcome?> =
         combine(selected, profile, repo.changes().debounce(800), recoveryRetries) { d, p, _, _ -> d to p }
             .mapLatest { (d, p) ->
-                withContext(Dispatchers.Default) {
-                    // mapLatest cancels this when newer data arrives; that's not a failure, so let it through.
-                    try {
-                        RecoveryOutcome.Ready(repo.recovery(d, p).also { lastRecovery = it })
-                    } catch (e: kotlinx.coroutines.CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Log.w("OpenStrap", "recovery failed", e)
-                        RecoveryOutcome.Failed(RecoveryFailure(d, yesterdayScore(d, p)))
-                    }
+                withContext(work) {
+                    // mapLatest cancels this when newer data arrives. That's not a failure, and catching lets it through.
+                    catching { repo.recovery(d, p) }.fold(
+                        onSuccess = { RecoveryOutcome.Ready(it.also { r -> lastRecovery = r }) },
+                        onFailure = { e ->
+                            Log.w("OpenStrap", "recovery failed", e)
+                            RecoveryOutcome.Failed(RecoveryFailure(d, yesterdayScore(d, p)))
+                        },
+                    )
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -226,13 +254,9 @@ class DayViewModel(
             if (last.date == yesterday) return last.readiness.score
             last.readinessTrend.firstOrNull { it.first == yesterday }?.let { return it.second }
         }
-        return try {
-            repo.recovery(yesterday, profile).readiness.score
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            null
-        }
+        return catching { repo.recovery(yesterday, profile).readiness.score }
+            .onFailure { Log.w("OpenStrap", "yesterday's recovery failed", it) }
+            .getOrNull()
     }
 
     /**
@@ -242,15 +266,10 @@ class DayViewModel(
      */
     val usualSteps: StateFlow<List<Float>?> = selected
         .mapLatest { d ->
-            withContext(Dispatchers.IO) {
-                try {
+            withContext(work) {
+                catching {
                     org.openstrap.app.data.UsualSteps.byHour(repo.hourlySteps(d.minusDays(org.openstrap.app.data.UsualSteps.DAYS.toLong()), d.minusDays(1)), d)
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    throw e
-                } catch (e: Exception) {
-                    Log.w("OpenStrap", "usual steps failed", e)
-                    null
-                }
+                }.onFailure { Log.w("OpenStrap", "usual steps failed", it) }.getOrNull()
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -260,20 +279,13 @@ class DayViewModel(
     val healthspan: StateFlow<org.openstrap.app.data.Healthspan.Outcome?> =
         combine(selected, profile, repo.changes().debounce(800)) { d, p, _ -> d to p }
             .mapLatest { (d, p) ->
-                withContext(Dispatchers.Default) {
-                    try {
-                        repo.healthspan(d, p)
-                    } catch (e: kotlinx.coroutines.CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        Log.w("OpenStrap", "healthspan failed", e)
-                        null
-                    }
+                withContext(work) {
+                    catching { repo.healthspan(d, p) }.onFailure { Log.w("OpenStrap", "healthspan failed", it) }.getOrNull()
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private fun stateFor(date: LocalDate): Flow<DayUiState> {
+    private fun stateFor(date: LocalDate, isToday: Boolean): Flow<DayUiState> {
         val zone = ZoneId.systemDefault()
         val day = DayWindow.of(date)
         val night = DayWindow.nightEndingOn(date)
@@ -403,7 +415,7 @@ class DayViewModel(
         val sleepAndExtras = combine(sleepAndNights, extras, baselines) { s, e, b -> Triple(s, e, b) }
 
         // The strap's own running total covers steps whose minute records were already taken by another app.
-        val liveSteps = if (date == LocalDate.now()) strapSteps else flowOf(null)
+        val liveSteps = if (isToday) strapSteps else flowOf(null)
         val liveCounter = LiveSteps()
         val actAndLive = combine(activityAndHr, liveSteps) { a, live -> a to live }
 
@@ -478,6 +490,9 @@ class DayViewModel(
         )
     }
 }
+
+/** The day shown, and whether it's today, so a day picked in the past isn't read again at midnight. */
+private data class ShownDay(val date: LocalDate, val isToday: Boolean)
 
 private data class SleepParts(
     val main: SleepSession?,

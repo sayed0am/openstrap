@@ -1,6 +1,5 @@
 package org.openstrap.app.export
 
-import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
@@ -92,11 +91,56 @@ class CsvTable<T>(
     val file: String,
     val header: String,
     val key: Key,
+    /** Every row in [from, to], in the file's order. A [Paged] read also hands them over a page at a time. */
     val read: suspend (HealthDao, Long, Long) -> List<T>,
     val row: (T) -> List<Any?>,
     val parse: (CsvRow) -> T,
     val write: suspend (HealthDao, List<T>) -> Unit,
-)
+) {
+    /** The rows [read] gives, in the same order, a page at a time when it's [Paged], else all in one. */
+    suspend fun forEachPage(dao: HealthDao, from: Long, to: Long, block: suspend (List<T>) -> Unit) {
+        val paged = read as? Paged<*>
+        if (paged == null) block(read(dao, from, to))
+        else paged.forEachPage(dao, from, to) {
+            // A Paged read is the read of this table, so its rows are this table's.
+            @Suppress("UNCHECKED_CAST")
+            block(it as List<T>)
+        }
+    }
+}
+
+/** Rows a backup page holds: enough to keep the queries few, few enough that a year of minutes is never in memory. */
+const val CSV_PAGE = 5000
+
+/**
+ * A table read a page at a time by keyset: [page] gives up to a page of rows after the last row of the one before
+ * (null for the first), in the table's order. The backup writes each page as it comes, so the biggest tables (a row a
+ * minute for years) are never held whole. Called as a plain read, it gathers every page.
+ */
+class Paged<T>(private val page: suspend (HealthDao, Long, Long, T?, Int) -> List<T>) : suspend (HealthDao, Long, Long) -> List<T> {
+    suspend fun forEachPage(dao: HealthDao, from: Long, to: Long, size: Int = CSV_PAGE, block: suspend (List<T>) -> Unit) {
+        var last: T? = null
+        while (true) {
+            val rows = page(dao, from, to, last, size)
+            if (rows.isNotEmpty()) block(rows)
+            if (rows.size < size) return
+            last = rows.last()
+        }
+    }
+
+    override suspend fun invoke(dao: HealthDao, from: Long, to: Long): List<T> = buildList { forEachPage(dao, from, to) { addAll(it) } }
+}
+
+/** A [Paged] read of a table keyed by its [time] alone, from [page] (rows after a time, up to a time, at most a limit). */
+private fun <T> byTime(page: suspend HealthDao.(Long, Long, Int) -> List<T>, time: (T) -> Long) =
+    Paged<T> { d, f, t, last, n -> d.page(last?.let(time) ?: (f - 1), t, n) }
+
+/**
+ * A [Paged] read of a workout's samples, keyed by the workout's [start] then the sample's [time], from [page] (the
+ * workouts started in a range, after a start and time, at most a limit).
+ */
+private fun <T> byWorkout(page: suspend HealthDao.(Long, Long, Long, Long, Int) -> List<T>, start: (T) -> Long, time: (T) -> Long) =
+    Paged<T> { d, f, t, last, n -> d.page(f, t, last?.let(start) ?: (f - 1), last?.let(time) ?: Long.MIN_VALUE, n) }
 
 private fun iso(epochSeconds: Long) = CsvExporter.iso(epochSeconds)
 private fun hex(bytes: ByteArray?) = bytes?.joinToString("") { "%02x".format(it) }
@@ -119,17 +163,18 @@ private fun stageCode(name: String) = when (name) {
 val CSV_TABLES: List<CsvTable<*>> = listOf(
     CsvTable("heart_rate.csv", "time,epoch,bpm,source",
         Key("heart_rate", "timestamp", "epoch"),
-        { d, f, t -> d.heartRateOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.bpm, it.source) },
+        byTime(HealthDao::heartRatePage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.bpm, it.source) },
         { HeartRateSample(it.long("epoch"), it.int("bpm"), it.intOrNull("source") ?: HeartRateSample.SOURCE_HISTORY) },
         { d, r -> d.insertHeartRate(r) }),
     CsvTable("activity_minute.csv", "time,epoch,steps,intensity,kind,heart_rate",
         Key("activity_minute", "timestamp", "epoch"),
-        { d, f, t -> d.activityOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.steps, it.intensity, it.kind, it.heartRate) },
+        byTime(HealthDao::activityPage) { it.timestamp },
+        { listOf(iso(it.timestamp), it.timestamp, it.steps, it.intensity, it.kind, it.heartRate) },
         { ActivityMinute(it.long("epoch"), it.int("steps"), it.int("intensity"), it.int("kind"), it.intOrNull("heart_rate")) },
         { d, r -> d.insertActivity(r) }),
     CsvTable("activity_extended.csv", "time,epoch,floors,run,fat_burn,stand,walk,sit,steps,calories,distance_cm",
         Key("activity_extended", "timestamp", "epoch"),
-        { d, f, t -> d.activityExtended(f, t).first() },
+        byTime(HealthDao::activityExtendedPage) { it.timestamp },
         { listOf(iso(it.timestamp), it.timestamp, it.floors, it.run, it.fatBurn, it.stand, it.walk, it.sit, it.steps, it.calories, it.distanceCm) },
         {
             ActivityExtendedMinute(it.long("epoch"), it.int("floors"), it.int("run"), it.int("fat_burn"), it.int("stand"),
@@ -154,7 +199,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertSleepSessions(r) }),
     CsvTable("sleep_stage.csv", "session_start_epoch,start,end,stage",
         Key("sleep_stage", "sessionStart", "session_start_epoch", parent = "sleep_session"),
-        { d, f, t -> d.sleepSessionsOnce(f, t).flatMap { s -> d.sleepStagesOnce(s.start) } },
+        { d, f, t -> d.sleepStagesOfSessionsEndingOnce(f, t) },
         { listOf(it.sessionStart, iso(it.start), iso(it.end), CsvExporter.stageName(it.stage)) },
         { SleepStage(it.instant("start"), it.instant("end"), it.long("session_start_epoch"), stageCode(it.string("stage"))) },
         { d, r -> d.insertSleepStages(r) }),
@@ -162,7 +207,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
     // without these would bring deleted ones back. The sessions above are the strap's, as synced.
     CsvTable("sleep_edit.csv", "strap_start_epoch,nap,start_epoch,end_epoch,deleted,edited_epoch",
         Key("sleep_edit", "strapStart", "strap_start_epoch"),
-        { d, f, t -> d.sleepEditsOnce().filter { it.strapStart in f..t } },
+        { d, f, t -> d.sleepEditsStartingOnce(f, t) },
         { listOf(it.strapStart, it.nap, it.start, it.end, it.deleted, it.editedAt) },
         {
             SleepEdit(it.long("strap_start_epoch"), it.bool("nap"), it.longOrNull("start_epoch"), it.longOrNull("end_epoch"),
@@ -171,23 +216,23 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertSleepEdits(r) }),
     CsvTable("spo2.csv", "time,epoch,percent",
         Key("spo2", "timestamp", "epoch"),
-        { d, f, t -> d.spo2Once(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
+        byTime(HealthDao::spo2Page) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
         { Spo2Sample(it.long("epoch"), it.int("percent")) }, { d, r -> d.insertSpo2(r) }),
     CsvTable("sleep_spo2.csv", "time,epoch,percent",
         Key("sleep_spo2", "timestamp", "epoch"),
-        { d, f, t -> d.sleepSpo2Once(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
+        byTime(HealthDao::sleepSpo2Page) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
         { SleepSpo2Sample(it.long("epoch"), it.int("percent")) }, { d, r -> d.insertSleepSpo2(r) }),
     CsvTable("stress.csv", "time,epoch,value",
         Key("stress", "timestamp", "epoch"),
-        { d, f, t -> d.stressOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.value) },
+        byTime(HealthDao::stressPage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.value) },
         { StressSample(it.long("epoch"), it.int("value")) }, { d, r -> d.insertStress(r) }),
     CsvTable("hrv.csv", "time,epoch,milliseconds",
         Key("hrv", "timestamp", "epoch"),
-        { d, f, t -> d.hrvOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.milliseconds) },
+        byTime(HealthDao::hrvPage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.milliseconds) },
         { HrvSample(it.long("epoch"), it.int("milliseconds")) }, { d, r -> d.insertHrv(r) }),
     CsvTable("hrv_sdnn.csv", "time,epoch,milliseconds",
         Key("hrv_sdnn", "timestamp", "epoch"),
-        { d, f, t -> d.hrvSdnn(f, t).first() }, { listOf(iso(it.timestamp), it.timestamp, it.milliseconds) },
+        byTime(HealthDao::hrvSdnnPage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.milliseconds) },
         { HrvSdnnSample(it.long("epoch"), it.float("milliseconds")) }, { d, r -> d.insertHrvSdnn(r) }),
     CsvTable("resting_hr.csv", "day,epoch,bpm",
         Key("resting_hr", "day", "epoch"),
@@ -208,7 +253,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertPai(r) }),
     CsvTable("workout.csv", "start,start_epoch,end_epoch,sport_type,exercise_seconds,calories,avg_hr,max_hr,min_hr,aerobic_te,anaerobic_te,training_load,vo2max,steps,subtype",
         Key("workout", "start", "start_epoch", span = Span("`end`", "end_epoch")),
-        { d, f, t -> d.workouts().first().filter { it.start in f..t }.sortedBy { it.start } },
+        { d, f, t -> d.workoutsStartingOnce(f, t) },
         {
             listOf(iso(it.start), it.start, it.end, it.sportType, it.exerciseSeconds, it.calories, it.averageHeartRate, it.maxHeartRate,
                 it.minHeartRate, it.aerobicTrainingEffect, it.anaerobicTrainingEffect, it.trainingLoad, it.vo2max, it.steps, it.subtype)
@@ -222,7 +267,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertWorkouts(r) }),
     CsvTable("workout_hr.csv", "workout_start_epoch,epoch,bpm",
         Key("workout_hr", "workoutStart", "workout_start_epoch", parent = "workout"),
-        { d, f, t -> d.workoutHeartRateAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, it.timestamp, it.bpm) },
+        byWorkout(HealthDao::workoutHeartRatePage, { it.workoutStart }) { it.timestamp }, { listOf(it.workoutStart, it.timestamp, it.bpm) },
         { WorkoutHeartRate(it.long("workout_start_epoch"), it.long("epoch"), it.int("bpm")) }, { d, r -> d.insertWorkoutHeartRate(r) }),
     // Workouts recorded on the phone; one still recording is left out until it ends.
     CsvTable("app_workout.csv",
@@ -230,7 +275,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
             "use_gps,keep_route,distance_m,distance_from_steps,rest,sets_target,laps,epoc,aerobic_te,recovery_minutes,vo2max,active_kcal," +
             "total_kcal,target_reached_epoch,structure,stretches,anaerobic_te,effect_from_strap,own_recovery_minutes",
         Key("app_workout", "start", "start_epoch", span = Span("`end`", "end_epoch")),
-        { d, f, t -> d.appWorkoutsAll().filter { it.start in f..t } },
+        { d, f, t -> d.appWorkoutsStartingOnce(f, t) },
         {
             listOf(iso(it.start), it.start, it.end, it.sportType, it.source, it.pauses, it.endReason, it.averageHeartRate, it.maxHeartRate,
                 it.askToEnd, it.recordedEnd, it.shownStart, it.target, it.useGps, it.keepRoute, it.distanceMeters, it.distanceFromSteps,
@@ -257,13 +302,14 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertAppWorkouts(r) }),
     CsvTable("app_workout_hr.csv", "workout_start_epoch,epoch,bpm,from_history",
         Key("app_workout_hr", "workoutStart", "workout_start_epoch", parent = "app_workout"),
-        { d, f, t -> d.appWorkoutHeartRateAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, it.timestamp, it.bpm, it.fromHistory) },
+        byWorkout(HealthDao::appWorkoutHeartRatePage, { it.workoutStart }) { it.timestamp },
+        { listOf(it.workoutStart, it.timestamp, it.bpm, it.fromHistory) },
         { AppWorkoutHeartRate(it.long("workout_start_epoch"), it.long("epoch"), it.int("bpm"), it.has("from_history") && it.bool("from_history")) },
         { d, r -> d.insertAppWorkoutHeartRate(r) }),
     // Only routes the wearer chose to keep are ever stored, so only those are exported.
     CsvTable("app_workout_route.csv", "workout_start_epoch,epoch,lat,lon,accuracy_m,speed_ms,bearing_deg,altitude_m,speed_accuracy_ms,bearing_accuracy_deg",
         Key("app_workout_route", "workoutStart", "workout_start_epoch", parent = "app_workout"),
-        { d, f, t -> d.routeAll().filter { it.workoutStart in f..t } },
+        byWorkout(HealthDao::routePage, { it.workoutStart }) { it.timestamp },
         { listOf(it.workoutStart, it.timestamp, it.lat, it.lon, it.accuracy, it.speed, it.bearing, it.altitude, it.speedAccuracy, it.bearingAccuracy) },
         {
             AppWorkoutRoutePoint(it.long("workout_start_epoch"), it.long("epoch"), it.string("lat").toDouble(), it.string("lon").toDouble(), it.float("accuracy_m"),
@@ -273,7 +319,8 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertRoutePoints(r) }),
     CsvTable("app_workout_set.csv", "workout_start_epoch,set_index,start_epoch,end_epoch,rest_end_epoch,exercise,reps,weight_kg",
         Key("app_workout_set", "workoutStart", "workout_start_epoch", parent = "app_workout"),
-        { d, f, t -> d.setsAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, it.index, it.start, it.end, it.restEnd, it.exercise, it.reps, it.weightKg) },
+        { d, f, t -> d.setsOfWorkoutsOnce(f, t) },
+        { listOf(it.workoutStart, it.index, it.start, it.end, it.restEnd, it.exercise, it.reps, it.weightKg) },
         {
             AppWorkoutSet(it.long("workout_start_epoch"), it.int("set_index"), it.long("start_epoch"), it.longOrNull("end_epoch"), it.longOrNull("rest_end_epoch"),
                 if (it.has("exercise")) it.string("exercise") else null, it.intOrNull("reps"), it.floatOrNull("weight_kg"))
@@ -281,7 +328,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.upsertSets(r) }),
     CsvTable("app_workout_round.csv", "workout_start_epoch,round_index,work_start_epoch,work_end_epoch,rest_end_epoch,peak_bpm",
         Key("app_workout_round", "workoutStart", "workout_start_epoch", parent = "app_workout"),
-        { d, f, t -> d.roundsAll().filter { it.workoutStart in f..t } },
+        { d, f, t -> d.roundsOfWorkoutsOnce(f, t) },
         { listOf(it.workoutStart, it.index, it.workStart, it.workEnd, it.restEnd, it.peakBpm) },
         {
             AppWorkoutRound(it.long("workout_start_epoch"), it.int("round_index"), it.long("work_start_epoch"), it.longOrNull("work_end_epoch"),
@@ -291,7 +338,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
     // What the user named and saved, which no history can bring back.
     CsvTable("saved_workout.csv", "created_epoch,name,sport_type,structure,goal",
         Key("saved_workout", "createdAt", "created_epoch"),
-        { d, f, t -> d.savedWorkoutsOnce().filter { it.createdAt in f..t } },
+        { d, f, t -> d.savedWorkoutsCreatedOnce(f, t) },
         { listOf(it.createdAt, it.name, it.sport, it.structure, it.goal) },
         {
             SavedWorkout(name = it.string("name"), sport = it.int("sport_type"), structure = it.string("structure"),
@@ -300,45 +347,45 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertSavedWorkouts(r) }),
     CsvTable("exercise.csv", "used_epoch,name,last_reps,last_kg",
         Key("exercise", "usedAt", "used_epoch"),
-        { d, f, t -> d.exercisesOnce().filter { it.usedAt in f..t } },
+        { d, f, t -> d.exercisesUsedOnce(f, t) },
         { listOf(it.usedAt, it.name, it.lastReps, it.lastKg) },
         { ExerciseRow(it.string("name"), it.intOrNull("last_reps"), it.floatOrNull("last_kg"), it.long("used_epoch")) },
         { d, r -> d.insertExercises(r) }),
     // Badges are never taken back and each past week keeps the goal it had (Rewards): neither can be worked out again.
     CsvTable("badge.csv", "earned_epoch,id,workout_start_epoch,day",
         Key("badge", "earnedAt", "earned_epoch"),
-        { d, f, t -> d.badgesOnce().filter { it.earnedAt in f..t } },
+        { d, f, t -> d.badgesEarnedOnce(f, t) },
         { listOf(it.earnedAt, it.id, it.workoutStart, it.day) },
         { BadgeRow(it.string("id"), it.long("earned_epoch"), it.longOrNull("workout_start_epoch"), it.longOrNull("day")) },
         { d, r -> d.insertBadges(r) }),
     CsvTable("week_result.csv", "week_start_day,goal,count,met",
         Key("week_result", "weekStart", "week_start_day"),
-        { d, f, t -> d.weekResultsOnce().filter { it.weekStart * 86_400 in f..t } },
+        { d, f, t -> d.weekResultsStartingOnce(f, t) },
         { listOf(it.weekStart, it.goal, it.count, it.met) },
         { WeekResult(it.long("week_start_day"), it.int("goal"), it.int("count"), it.bool("met")) },
         { d, r -> d.upsertWeekResults(r) }),
     // Bests by kind. A rewards refresh works them out again from the workouts above, so these mostly show what a backup had.
     CsvTable("personal_best.csv", "kind,value,date,workout_start_epoch",
         Key("personal_best", "date", "date", unique = Unique("kind", "kind")),
-        { d, f, t -> d.personalBestsOnce().filter { it.date * 86_400 in f..t } },
+        { d, f, t -> d.personalBestsSetOnce(f, t) },
         { listOf(it.kind, it.value, it.date, it.workoutStart) },
         { PersonalBest(it.string("kind"), it.string("value").toDouble(), it.long("date"), it.longOrNull("workout_start_epoch")) },
         { d, r -> d.insertPersonalBests(r) }),
     CsvTable("app_workout_dismissed.csv", "start_epoch,end_epoch",
         Key("app_workout_dismissed", "start", "start_epoch"),
-        { d, f, t -> d.dismissedWorkoutsAll().filter { it.start in f..t } }, { listOf(it.start, it.end) },
+        { d, f, t -> d.dismissedWorkoutsStartingOnce(f, t) }, { listOf(it.start, it.end) },
         { DismissedWorkout(it.long("start_epoch"), it.long("end_epoch")) },
         { d, r -> d.insertDismissedWorkouts(r) }),
     // Strap workouts deleted in OpenStrap. The strap still holds them and re-sends them, so a restore without these
     // would bring them back. A restore also leaves out the workout rows and sport effects these name.
     CsvTable("workout_deleted.csv", "start_epoch,effect_end_epoch,deleted_epoch",
         Key("workout_deleted", "start", "start_epoch"),
-        { d, f, t -> d.deletedWorkoutsAll().filter { it.start in f..t } }, { listOf(it.start, it.effectEnd, it.deletedAt) },
+        { d, f, t -> d.deletedWorkoutsStartingOnce(f, t) }, { listOf(it.start, it.effectEnd, it.deletedAt) },
         { DeletedWorkout(it.long("start_epoch"), it.longOrNull("effect_end_epoch"), it.longOrNull("deleted_epoch") ?: it.long("start_epoch")) },
         { d, r -> d.insertDeletedWorkouts(r) }),
     CsvTable("sport_effect.csv", "end_epoch,recovery_minutes,vo2max,epoc,weekly_load,monthly_load,optimal_load_min,optimal_load_max,max_hr",
         Key("sport_effect", "`end`", "end_epoch"),
-        { d, f, t -> d.sportEffects().first().filter { it.end in f..t } },
+        { d, f, t -> d.sportEffectsOnce(f, t) },
         {
             listOf(it.end, it.recoveryMinutes, it.vo2max, it.epoc, it.weeklyLoad, it.monthlyLoad, it.optimalLoadMin,
                 it.optimalLoadMax, it.maximalHeartRate)
@@ -351,16 +398,16 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertSportEffects(r) }),
     CsvTable("recovery_hr.csv", "workout_start_epoch,samples_hex",
         Key("recovery_hr", "workoutStart", "workout_start_epoch", parent = "workout"),
-        { d, f, t -> d.recoveryHeartRateAll().filter { it.workoutStart in f..t } }, { listOf(it.workoutStart, hex(it.samples)) },
+        { d, f, t -> d.recoveryHeartRateOfWorkoutsOnce(f, t) }, { listOf(it.workoutStart, hex(it.samples)) },
         { RecoveryHeartRateRow(it.long("workout_start_epoch"), it.bytes("samples_hex") ?: ByteArray(0)) },
         { d, r -> d.insertRecoveryHeartRate(r) }),
     CsvTable("daily_max_hr.csv", "day,epoch,bpm",
         Key("daily_max_hr", "day", "epoch"),
-        { d, f, t -> d.dailyMaxHr(f, t).first() }, { listOf(iso(it.day), it.day, it.bpm) },
+        { d, f, t -> d.dailyMaxHrOnce(f, t) }, { listOf(iso(it.day), it.day, it.bpm) },
         { DailyMaxHr(it.long("epoch"), it.int("bpm")) }, { d, r -> d.insertDailyMaxHr(r) }),
     CsvTable("strap_readiness.csv", "day_epoch,updated_epoch,score,hrv_score,resting_hr_score,skin_temperature_score,breathing_score,sleep_hrv,sleep_resting_hr,algorithm_version",
         Key("strap_readiness", "day", "day_epoch"),
-        { d, f, t -> d.strapReadinessAll().filter { it.day in f..t } },
+        { d, f, t -> d.strapReadinessOnce(f, t) },
         {
             listOf(it.day, it.updatedAt, it.score, it.hrvScore, it.restingHrScore, it.skinTemperatureScore, it.breathingScore,
                 it.sleepHrv, it.sleepRestingHr, it.algorithmVersion)
@@ -382,12 +429,12 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertOsaResults(r) }),
     CsvTable("osa_event.csv", "time,epoch,drop,spo2_hex,heart_rate_hex",
         Key("osa_event", "timestamp", "epoch"),
-        { d, f, t -> d.osaEvents(f, t).first() }, { listOf(iso(it.timestamp), it.timestamp, it.drop, hex(it.spo2), hex(it.heartRate)) },
+        { d, f, t -> d.osaEventsOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.drop, hex(it.spo2), hex(it.heartRate)) },
         { OsaEventRow(it.long("epoch"), it.int("drop"), it.bytes("spo2_hex"), it.bytes("heart_rate_hex")) },
         { d, r -> d.insertOsaEvents(r) }),
     CsvTable("health_alert.csv", "time,epoch,type,value",
         Key("health_alert", "timestamp", "epoch"),
-        { d, f, t -> d.healthAlerts(f, t).first() }, { listOf(iso(it.timestamp), it.timestamp, it.type, it.value) },
+        { d, f, t -> d.healthAlertsOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.type, it.value) },
         { HealthAlertRow(it.long("epoch"), it.int("type"), it.long("value")) }, { d, r -> d.insertHealthAlerts(r) }),
     // The strap's on/off-body changes; worn is blank where the link went down and the state became unknown.
     CsvTable("wear_event.csv", "time,epoch,worn",

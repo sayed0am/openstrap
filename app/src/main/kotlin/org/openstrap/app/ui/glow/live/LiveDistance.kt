@@ -124,7 +124,9 @@ internal fun LiveDistanceScreen(
     val accuracy = route.lastOrNull()?.accuracy
     val reps = r.structure is org.openstrap.app.data.Structure.Reps
     val gps = WorkoutCopy.gpsPill(accuracy) to if (accuracy != null && accuracy <= Route.MAX_ACCURACY_M) TrendGood else TrendBad
-    val readings = WorkoutCopy.readings(history, recent)
+    // Kept across recompositions, so the frames and pages that take them can skip while nothing they show changed.
+    val status = remember(gps) { listOf(gps) }
+    val readings = remember(history, recent) { WorkoutCopy.readings(history, recent) }
     // Reps skip instead of marking laps: the rounds are the laps.
     val lap: (@Composable () -> Unit)? = when {
         r.paused -> null
@@ -134,7 +136,7 @@ internal fun LiveDistanceScreen(
     val battery = (connection as? ConnectionState.Connected)?.batteryPercent
     if (r.paused) {
         LiveFrame(
-            r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = listOf(gps),
+            r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = status,
             paused = {
                 LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
                     Glance.kmFigure(distance) to "km",
@@ -155,13 +157,14 @@ internal fun LiveDistanceScreen(
             when (LiveView.entries[page]) {
                 // Reps (board RunIntervals): the total small on top, the rep the screen's number.
                 LiveView.Heart -> if (reps) LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = true, battery = battery, status = listOf(gps),
+                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
+                    status = status,
                     fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
                 ) {
                     RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
                 } else LiveFrame(
                     r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
-                    status = listOf(gps), fill = true, bottomRoom = bar,
+                    status = status, fill = true, bottomRoom = bar,
                 ) {
                     if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         LiveFigures(listOf(
@@ -170,7 +173,7 @@ internal fun LiveDistanceScreen(
                             kcal?.active?.toInt()?.toString() to "Active kcal",
                         ))
                     } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        PaceCard(pace, averagePace(), splits, speed, Modifier.weight(1f))
+                        PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
                         if (!split) LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
                             Glance.kmFigure(distance) to "km",
@@ -307,12 +310,11 @@ internal fun speedText(secondsPerKm: Double?): String? =
  * under it.
  */
 @Composable
-private fun PaceCard(pace: Double?, averagePace: Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
+private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
     EdgeCard(MetricColors.steps, modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(if (speed) "Speed" else "Pace", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
-            val avg = if (speed) speedText(averagePace)?.let { "Avg $it" } else Glance.paceClock(averagePace)?.let { "Avg $it" }
-            if (avg != null) Text(avg, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            AveragePace(averagePace, speed)
         }
         // The pace sits in the middle of whatever height the card is given, the splits on its floor.
         Spacer(Modifier.height(12.dp).weight(1f))
@@ -333,6 +335,14 @@ private fun PaceCard(pace: Double?, averagePace: Double?, splits: List<Route.Spl
             SplitBars(splits)
         }
     }
+}
+
+/** "Avg 5:42" beside the card's title: the average moves with the clock, so it's read in its own scope. */
+@Composable
+private fun AveragePace(averagePace: () -> Double?, speed: Boolean) {
+    val average = averagePace()
+    val avg = if (speed) speedText(average)?.let { "Avg $it" } else Glance.paceClock(average)?.let { "Avg $it" }
+    if (avg != null) Text(avg, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
 }
 
 /**

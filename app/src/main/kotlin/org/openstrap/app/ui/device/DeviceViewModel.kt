@@ -14,10 +14,13 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.FileNotFoundException
 import org.openstrap.app.AppContainer
 import org.openstrap.app.ble.FoundDevice
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.PairedDevice
 import org.openstrap.app.device.StrapController
+import org.openstrap.app.device.StrapManager
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
 
@@ -66,16 +69,18 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         val key = normalizeAuthKey(authKey)
         if (key == null) {
             val n = authKey.trim().removePrefix("0x").removePrefix("0X").count { it.isLetterOrDigit() }
-            _message.value = "The auth key must be 32 characters of 0–9 and a–f. You entered $n."
+            _message.value = "The auth key must be 32 characters of 0 to 9 and a to f. You entered $n."
             return
         }
-        if (!MAC.matches(address.uppercase())) {
+        // Trimmed once, as the sheet's own check does, so a pasted address with a trailing space pairs (audit E7).
+        val mac = pairAddress(address)
+        if (mac == null) {
             _message.value = "The Bluetooth address should look like C8:0F:10:AB:CD:EF. Scan to fill it in."
             return
         }
         stopScan()
         viewModelScope.launch {
-            container.settings.savePairedDevice(PairedDevice(address.uppercase(), key, name))
+            container.settings.savePairedDevice(PairedDevice(mac, key, name))
             container.strap.connect()
             container.companion.refresh().join()
             if (container.companion.supported && !container.companion.associated.value) _offerBackground.value = true
@@ -107,17 +112,21 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Find strap: buzzes it until stopped or Zepp's 60 s are up. */
     fun findStrap() = viewModelScope.launch {
-        runCatching { container.strap.findStrap() }.onFailure { _message.value = it.message ?: "Couldn't buzz the strap" }
+        catching { container.strap.findStrap() }.onFailure { failed("find strap", it, ErrorCopy.strap(it, "Couldn't buzz the strap")) }
     }
 
     fun stopFindingStrap() = viewModelScope.launch {
-        runCatching { container.strap.stopFindingStrap() }.onFailure { _message.value = it.message ?: "Couldn't stop the strap buzzing" }
+        catching { container.strap.stopFindingStrap() }
+            .onFailure { failed("stop finding strap", it, ErrorCopy.strap(it, "Couldn't stop the strap buzzing")) }
     }
 
     /** Restarts the strap; the link drops and the usual reconnect brings it back. */
     fun restartStrap() = viewModelScope.launch {
-        _message.value = runCatching { container.strap.restartStrap(); "Restarting the strap. OpenStrap reconnects when it's back." }
-            .getOrElse { it.message ?: "Couldn't restart the strap" }
+        _message.value = catching {
+            container.strap.restartStrap()
+            "Restarting the strap. OpenStrap reconnects when it's back."
+        }
+            .getOrElse { failed("restart strap", it, ErrorCopy.strap(it, "Couldn't restart the strap")) }
     }
 
     fun forget() = viewModelScope.launch {
@@ -127,13 +136,14 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun exportCsv(uri: Uri) = viewModelScope.launch {
-        _message.value = runCatching {
+        _message.value = catching {
             withContext(Dispatchers.IO) {
                 val settings = org.openstrap.app.export.SettingsBackup.toJson(container.settings.backupValues())
-                container.app.contentResolver.openOutputStream(uri)!!.use { container.csv.exportZip(it, settings = settings) }
+                val out = container.app.contentResolver.openOutputStream(uri) ?: throw FileNotFoundException("no output stream for $uri")
+                out.use { container.csv.exportZip(it, settings = settings) }
             }
             "Saved a copy."
-        }.getOrElse { "Couldn't save the copy: ${it.message}" }
+        }.getOrElse { failed("save a copy", it, ErrorCopy.saveCopy(it)) }
     }
 
     /**
@@ -141,16 +151,19 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
      * it that this phone hasn't set. Safe to run twice.
      */
     fun importCsv(uri: Uri) = viewModelScope.launch {
-        _message.value = runCatching {
+        _message.value = catching {
             val result = withContext(Dispatchers.IO) {
-                container.app.contentResolver.openInputStream(uri)!!.use { org.openstrap.app.export.CsvImporter(container.database).importZip(it) }
+                val input = container.app.contentResolver.openInputStream(uri) ?: throw FileNotFoundException("no input stream for $uri")
+                input.use { org.openstrap.app.export.CsvImporter(container.database).importZip(it) }
             }
             // A damaged settings file costs the settings only, not the records already restored.
             val settings = result.settings?.let { json ->
-                runCatching { container.settings.restoreValues(org.openstrap.app.export.SettingsBackup.fromJson(json)) }.getOrDefault(0)
+                catching { container.settings.restoreValues(org.openstrap.app.export.SettingsBackup.fromJson(json)) }
+                    .onFailure { log("restore: settings not restored: $it") }
+                    .getOrDefault(0)
             } ?: 0
             BackupCopy.restored(result.total, settings > 0, result.skipped)
-        }.getOrElse { "Couldn't restore the copy: ${it.message}" }
+        }.getOrElse { failed("restore a copy", it, ErrorCopy.restoreCopy(it)) }
     }
 
     val backup: StateFlow<org.openstrap.app.data.settings.BackupState> = container.settings.backup
@@ -168,6 +181,7 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         val resolver = container.app.contentResolver
         val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         val kept = runCatching { resolver.takePersistableUriPermission(uri, flags) }
+        kept.onFailure { log("backup: folder permission not kept: $it") }
         if (kept.isFailure) {
             _message.value = "OpenStrap can't keep writing to that folder. Choose another one."
             return@launch
@@ -207,19 +221,19 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Brings back what OpenStrap exported to Health Connect, filling gaps only. */
     fun importHealthConnect() = viewModelScope.launch {
-        _message.value = runCatching {
+        _message.value = catching {
             val n = withContext(Dispatchers.IO) { container.healthConnect.import() }
             if (n == 0) "Health Connect has no OpenStrap data to restore." else "Restored %,d records from Health Connect.".format(n)
-        }.getOrElse { "Couldn't restore from Health Connect: ${it.message}" }
+        }.getOrElse { failed("health connect import", it, ErrorCopy.healthConnect("Couldn't restore from Health Connect", it)) }
     }
 
     fun exportHealthConnect() = viewModelScope.launch {
-        _message.value = runCatching {
+        _message.value = catching {
             val now = System.currentTimeMillis() / 1000
             val n = container.healthConnect.export(now - 30L * 24 * 3600, now)
             container.settings.setHealthConnectSynced(now)
             "Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Couldn't write to Health Connect: ${it.message}" }
+        }.getOrElse { failed("health connect export", it, ErrorCopy.healthConnect("Couldn't write to Health Connect", it)) }
     }
 
     /** Auto sync to Health Connect, for the You page's row. */
@@ -229,22 +243,38 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     /** The auto sync switch. On is called once the write permissions are granted, and writes the last 30 days at once. */
     fun setAutoHealthConnect(on: Boolean) = viewModelScope.launch {
         if (!on) { container.settings.setHealthConnectAuto(false); return@launch }
-        _message.value = runCatching {
+        _message.value = catching {
             val n = container.autoHealthConnect.turnOn()
             "Auto sync is on. Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Auto sync is on, but the first copy didn't work: ${it.message}" }
+        }.getOrElse {
+            failed("health connect auto sync", it, ErrorCopy.healthConnect("Auto sync is on, but the first copy didn't work", it))
+        }
     }
 
     /** The You page opened: auto sync turns off, saying why, if Health Connect or its permissions went away. */
     fun checkAutoHealthConnect() = viewModelScope.launch {
-        runCatching { container.autoHealthConnect.check() }
+        catching { container.autoHealthConnect.check() }.onFailure { log("health connect: auto sync check failed: $it") }
+    }
+
+    /** The raw failure goes to Diagnostics, and [copy], what the screen says, comes back. */
+    private fun failed(what: String, e: Throwable, copy: String): String {
+        log("$what failed: $e")
+        return copy
+    }
+
+    private fun log(message: String) {
+        android.util.Log.w("OpenStrap", message)
+        (container.strap as? StrapManager)?.log(message)
     }
 
     companion object {
         const val DEFAULT_NAME = "Amazfit Helio Strap"
         private val MAC = Regex("^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
 
-        fun isAddress(input: String) = MAC.matches(input.trim().uppercase())
+        fun isAddress(input: String) = pairAddress(input) != null
+
+        /** [input] as the address to pair with, trimmed and upper case, or null when it isn't a Bluetooth address. */
+        fun pairAddress(input: String): String? = input.trim().uppercase().takeIf { MAC.matches(it) }
 
         /** Accepts "0x…", spaces or colons; returns 32 lowercase hex chars or null. */
         fun normalizeAuthKey(input: String): String? {
