@@ -327,7 +327,10 @@ private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbanc
 /** Breathing disturbances as a Small beside the naps: the count an hour and your usual. Lit from below, a value. */
 @Composable
 private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) =
-    SmallCard(MetricColors.sleepLight, "Breathing disturbances", dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathingShort(b), modifier, onClick = onInfo)
+    SmallCard(
+        MetricColors.sleepLight, "Breathing disturbances", dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathingShort(b), modifier,
+        onClick = onInfo,
+    )
 
 /**
  * The day's naps as a Small (a Wide when alone): the time napped, a strip of the latest nap's stages and when it was.

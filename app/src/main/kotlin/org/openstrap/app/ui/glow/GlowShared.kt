@@ -68,3 +68,6 @@ internal fun Units.count(n: Int): String = count(n.toLong())
  */
 internal fun Metric.dotValue(v: Float): String =
     if (this == Metric.Steps) dotFormat("%,d", Math.round(v)) else dotFormat("%.${decimals}f", v)
+
+/** [v] with [places] decimals in the phone's language, for text: "1.4", "1,4" in German. */
+internal fun decimal(v: Number, places: Int): String = String.format(Locale.getDefault(), "%.${places}f", v)

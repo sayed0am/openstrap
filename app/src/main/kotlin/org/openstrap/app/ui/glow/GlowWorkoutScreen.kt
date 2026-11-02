@@ -270,7 +270,9 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
     EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         EdgeTitle("Heart rate", if (a.heartRate.isNotEmpty()) "Coloured by zone" else null)
         if (at != null) {
-            EdgeValue(at.second.toString(), "bpm", if (at.first > a.end) "At ${clock(at.first)}, after the end" else "At ${clock(at.first)}")
+            EdgeValue(
+                at.second.toString(), "bpm", if (at.first > a.end) "At ${clock(at.first)}, after the end" else "At ${clock(at.first)}",
+            )
         } else {
             val range = listOfNotNull(w.maxHeartRate?.let { "Max $it" }, w.minHeartRate?.let { "lowest $it" }).joinToString(", ")
             EdgeValue(w.averageHeartRate?.toString(), "bpm average", range.ifEmpty { null }?.let { "$it bpm" }, waiting = false)
@@ -289,7 +291,8 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
             Note(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
         }
         if (a.historyRanges.isNotEmpty()) Text(
-            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clock(it.first)}–${clock(it.last + 1)}" } + " came from the strap's history.",
+            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clock(it.first)}–${clock(it.last + 1)}" } +
+                " came from the strap's history.",
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
         )
     }

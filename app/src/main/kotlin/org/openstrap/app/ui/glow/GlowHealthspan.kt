@@ -67,9 +67,14 @@ internal fun termDetail(t: Healthspan.Term, age: Int): String {
             (if (v < 8000f) ", aim for 8,000–10,000" else "")
         Healthspan.Habit.Regularity -> "${v.roundToInt()}, typical: ${ref?.roundToInt()}"
         Healthspan.Habit.RestingHr -> "${v.roundToInt()} bpm asleep, typical: about ${ref?.roundToInt()}"
-        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> "${Units.duration(m * 60L)}, counts only below ${Units.duration(Healthspan.SLEEP_COUNTS_BELOW_MINUTES * 60L)}" }
+        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m ->
+            "${Units.duration(m * MINUTE_S)}, counts only below ${Units.duration(Healthspan.SLEEP_COUNTS_BELOW_MINUTES * MINUTE_S)}"
+        }
     }
 }
+
+/** Seconds in a minute, for the sleep habit's minutes. */
+private const val MINUTE_S = 60L
 
 /** "Sunday 22 Nov" for local midnight [day] (epoch seconds), with no-break spaces so it never wraps inside the date. */
 internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day).atZone(java.time.ZoneId.systemDefault()).toLocalDate()

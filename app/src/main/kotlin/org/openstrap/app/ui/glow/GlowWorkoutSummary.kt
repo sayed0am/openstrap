@@ -399,7 +399,10 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
     when {
         rows.isNotEmpty() || laps.isNotEmpty() -> ListPanel(
             title = if (rows.isNotEmpty()) "Splits" else "Laps",
-            note = if (rows.isNotEmpty()) fastest?.let { "Fastest: ${rows[it].name.lowercase()}" } ?: summary.distanceMeters?.let { Units.distance(it, Units.Precision.Workout) } else "${laps.size}",
+            note = if (rows.isNotEmpty()) {
+                fastest?.let { "Fastest: ${rows[it].name.lowercase()}" }
+                    ?: summary.distanceMeters?.let { Units.distance(it, Units.Precision.Workout) }
+            } else "${laps.size}",
         ) {
             if (markFastest) SplitBars(rows, fastest) else rows.forEachIndexed { i, r ->
                 ListRow(

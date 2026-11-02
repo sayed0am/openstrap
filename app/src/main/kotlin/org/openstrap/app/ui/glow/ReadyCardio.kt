@@ -87,6 +87,14 @@ import java.time.LocalTime
  * No settings sheet: everything it held is a row here or went with the design.
  */
 
+/** Where Ready's heart light sits, in card heights from the top, and its size in card widths and heights. */
+private const val HEART_LIGHT_BELOW = 1.25f
+private const val HEART_LIGHT_WIDTH = 1.2f
+private const val HEART_LIGHT_HEIGHT = 1.1f
+
+/** Ready's heart light at full strength: 70% in the middle, 18% halfway out. */
+private val HeartLight = listOf(0f to 0.7f, 0.5f to 0.18f)
+
 /**
  * Ready's heart: the live bpm in dots on a card lit from below in [color] (heart red, or the family's colour), as
  * Today's hero, "bpm, live from your strap" beside it. While the strap is away, what's wrong and that you can start
@@ -102,8 +110,9 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
             .drawBehind {
                 // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
                 drawCardLight(
-                    color, Offset(size.width / 2, size.height * 1.25f), size.width * 1.2f, size.height * 1.1f,
-                    0f to 0.7f * light, 0.5f to 0.18f * light,
+                    color, Offset(size.width / 2, size.height * HEART_LIGHT_BELOW),
+                    size.width * HEART_LIGHT_WIDTH, size.height * HEART_LIGHT_HEIGHT,
+                    HeartLight.map { (at, alpha) -> at to alpha * light },
                 )
             }
             .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)

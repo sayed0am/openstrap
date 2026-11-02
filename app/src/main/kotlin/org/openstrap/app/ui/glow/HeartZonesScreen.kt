@@ -85,8 +85,8 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
     Column(
         Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
             .drawBehind {
-                val r = size.width * 1.1f
-                drawCardLight(MetricColors.heart, Offset(0f, size.height / 2), r, r, 0f to 0.55f, 0.5f to 0.12f)
+                val r = size.width * HERO_LIGHT_REACH
+                drawCardLight(MetricColors.heart, Offset(0f, size.height / 2), r, r, HeroLight)
             }
             .border(1.dp, MetricColors.heart.copy(alpha = 0.3f), GlowLayout.CardShape)
             .padding(horizontal = 20.dp, vertical = 18.dp),
@@ -102,6 +102,12 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
         PageButton(HeartZonesCopy.SET_IT, onSet, enabled = max != null, icon = AppIcons.PencilEdit)
     }
 }
+
+/** How far the max hero's light reaches from the left edge, in card widths. */
+private const val HERO_LIGHT_REACH = 1.1f
+
+/** The max hero's light: heart red at 55% on the edge, 12% halfway out. */
+private val HeroLight = listOf(0f to 0.55f, 0.5f to 0.12f)
 
 /** A zone on the list: its colour as a short bar, its number and name, and its heart rates. */
 @Composable

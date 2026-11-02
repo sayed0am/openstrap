@@ -182,7 +182,10 @@ internal fun SleepScoreDetail(
                             else if (state.sleepStages.isNotEmpty()) GlowSleepStages(state.sleepStages, 150.dp)
                             state.sleepBreakdown?.let { StageBars(it, Modifier.padding(top = 18.dp)) }
                             DetailFigures(
-                                listOf(clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE, Units.duration(asleep) to SleepCopy.ASLEEP),
+                                listOf(
+                                    clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE,
+                                    Units.duration(asleep) to SleepCopy.ASLEEP,
+                                ),
                                 Modifier.padding(top = 20.dp),
                             )
                             if (detected != null) SleepEditActions(
@@ -220,7 +223,11 @@ internal fun SleepScoreDetail(
                             values, DetailCopy.levels(values, normal), color, labels = week.map { weekdayShort(it.first) },
                             band = normal?.let { it.low..it.high }, bandLabel = normal?.let { DetailCopy.bandLabel(it) { v -> Math.round(v).toString() } },
                             onScrub = { i ->
-                                scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(Math.round(it).toString(), DayWords.short(d), TabCopy.sleepScoreWord(Math.round(it))) } }
+                                scrub = i?.let { week[it] }?.let { (d, v) ->
+                                    v?.let { Math.round(it) }?.let { score ->
+                                        DetailHeadline(score.toString(), DayWords.short(d), TabCopy.sleepScoreWord(score))
+                                    }
+                                }
                             },
                         )
                         if (normal == null) Caption(DetailCopy.learningNormal(before.size, nightly = true))
@@ -408,7 +415,8 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
             ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, "bpm") { hrAt = it; onScrub(it) }
         }
         if (breath.isNotEmpty()) {
-            ChartTitle("Breathing rate", String.format(java.util.Locale.getDefault(), "Average %.1f br/min", breath.map { it.y }.average()), scrubbed = breathAt)
+            val average = "Average ${decimal(breath.map { it.y }.average(), 1)} br/min"
+            ChartTitle("Breathing rate", average, scrubbed = breathAt)
             ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, "br/min", decimals = 1) { breathAt = it; onScrub(it) }
         }
     }
@@ -428,7 +436,12 @@ private fun ScrubLine(
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
         span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length }, spanColor = spanColor,
-        onScrub = { i -> onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(dotFormat("%.${decimals}f", v), "$unit at ${clock(window.first + i * step)}", null) }) },
+        onScrub = { i ->
+            val headline = i?.let { values[it] }?.let { v ->
+                DetailHeadline(dotFormat("%.${decimals}f", v), "$unit at ${clock(window.first + i * step)}", null)
+            }
+            onScrub(headline)
+        },
     )
 }
 

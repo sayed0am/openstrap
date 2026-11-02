@@ -494,7 +494,8 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
                     }
                 }
                 Text(
-                    TabCopy.workoutLine(fact, TimeOfDay.format(start.toLocalTime())), color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
+                    TabCopy.workoutLine(fact, TimeOfDay.format(start.toLocalTime())),
+                    color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }

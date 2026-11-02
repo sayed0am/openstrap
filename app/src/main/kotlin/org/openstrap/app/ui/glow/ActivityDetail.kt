@@ -166,7 +166,9 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
                     daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map { weekdayShort(it) },
                     Modifier.padding(top = 8.dp),
                 ) { i ->
-                    scrub = i?.let { DetailHeadline(Math.round(daily[it] ?: 0f).toString(), ActivityCopy.earnedLabel(DayWords.short(week[it])), null) }
+                    scrub = i?.let {
+                        DetailHeadline(Math.round(daily[it] ?: 0f).toString(), ActivityCopy.earnedLabel(DayWords.short(week[it])), null)
+                    }
                 }
             }
             if (total != null) item {
@@ -182,8 +184,12 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
                     val values = totals.map { it?.toFloat() }
                     NormalTrend(
                         values, DetailCopy.levels(values, null), color,
-                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { month[((month.size - 1) * it).toInt()].let { dayMonth(it) } },
-                        onScrub = { i -> scrub = i?.let { totals[it] }?.let { v -> DetailHeadline(v.toString(), "7-day total, ${DayWords.short(month[i])}", ActivityCopy.heartPointsWord(v)) } },
+                        labels = listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(month[((month.size - 1) * it).toInt()]) },
+                        onScrub = { i ->
+                            scrub = i?.let { totals[it] }?.let { v ->
+                                DetailHeadline(v.toString(), "7-day total, ${DayWords.short(month[i])}", ActivityCopy.heartPointsWord(v))
+                            }
+                        },
                     )
                 }
             }
@@ -292,7 +298,9 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
             item {
                 GlowBars(
                     values, height = 200.dp, labels = week.map { weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
-                    onScrub = { i -> scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "minutes, ${DayWords.short(week[it])}", null) } },
+                    onScrub = { i ->
+                        scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "minutes, ${DayWords.short(week[it])}", null) }
+                    },
                 )
             }
             item { DetailSentence(ActivityCopy.activeWeek(a.weekEquivalent)) }
@@ -356,7 +364,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                         listOf(
                             Math.round(r.workoutLoad).toString() to "From workouts",
                             Math.round(r.everydayLoad).toString() to "Moving about",
-                            String.format(java.util.Locale.getDefault(), "%.1f", r.strain) to "Strain",
+                            decimal(r.strain, 1) to "Strain",
                         ),
                     )
                     DetailSentence(ActivityCopy.loadDay(r.strainPercentile, ctx.isToday))
@@ -368,9 +376,13 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                 else NormalTrend(
                     values, levels(values, band), color,
                     labels = if (range == Range.Week) days.map { weekdayShort(it) }
-                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { days[((days.size - 1) * it).toInt()].let { dayMonth(it) } },
+                    else listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(days[((days.size - 1) * it).toInt()]) },
                     band = band, bandLabel = band?.let(ActivityCopy::usualBandLabel),
-                    onScrub = { i -> scrub = i?.let { values[it] }?.let { v -> DetailHeadline(Math.round(v).toString(), DayWords.short(days[i]), loadWordOf(v, usual)) } },
+                    onScrub = { i ->
+                        scrub = i?.let { values[it] }?.let { v ->
+                            DetailHeadline(Math.round(v).toString(), DayWords.short(days[i]), loadWordOf(v, usual))
+                        }
+                    },
                 )
             }
             val sentence = if (range == Range.Week) ActivityCopy.balance(balance) ?: ActivityCopy.loadSpan(levels(values, band), range)
@@ -478,7 +490,9 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
     val left = last?.let { TodayCopy.recoverLeft(it.end, it.recoveryMinutes ?: 0, now) }
     val shown = left?.let { TodayCopy.recoverShort(it, now, zone) }
     val source = org.openstrap.app.data.Workouts.recoverySource(rated)
-    val ended = source?.let { w -> Instant.ofEpochSecond(w.end).atZone(zone).let { ActivityCopy.ended(it.toLocalDate(), clockOf(it), ctx.today) } }
+    val ended = source?.let { w ->
+        Instant.ofEpochSecond(w.end).atZone(zone).let { ActivityCopy.ended(it.toLocalDate(), clockOf(it), ctx.today) }
+    }
     val headline = when {
         last == null -> DetailHeadline.none("No estimate", "After a workout the strap rates")
         shown?.first == null -> DetailHeadline.none("Recovered", "After your ${(source ?: last).sportName.lowercase()}, $ended")
@@ -551,9 +565,11 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     val headline = when {
         ctx.r == null -> DetailHeadline.none("No reading", DetailCopy.noValue(Metric.Steps, Range.Day, ctx.isToday))
         e == null || active == null -> DetailHeadline.none("No estimate", "Needs your age, weight and height")
-        range == Range.Day -> DetailHeadline(dotFormat("%,d", active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
+        range == Range.Day ->
+            DetailHeadline(dotFormat("%,d", active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
         summary == null -> DetailHeadline.none("Loading", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
-        summary.activeADay != null -> DetailHeadline(dotFormat("%,d", summary.activeADay), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary))
+        summary.activeADay != null ->
+            DetailHeadline(dotFormat("%,d", summary.activeADay), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary))
         else -> DetailHeadline.none("No full days yet", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
     }
     DetailTemplate(
@@ -567,7 +583,11 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
             }
         } else if (range == Range.Day) {
             item { GoalBar(CaloriesCopy.share(active, goal), CaloriesCopy.toGoal(active, goal), color) }
-            item { HourlyKcal(e, color) { h -> scrub = h?.let { DetailHeadline(dotFormat("%,d", Math.round(e.hourly.total[it])), CaloriesCopy.hourLabel(it), null) } } }
+            item {
+                HourlyKcal(e, color) { h ->
+                    scrub = h?.let { DetailHeadline(dotFormat("%,d", Math.round(e.hourly.total[it])), CaloriesCopy.hourLabel(it), null) }
+                }
+            }
             item {
                 Column {
                     // So far today both are; the activity level only means something for a whole day, in the goal's place.
@@ -575,7 +595,8 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                         listOf(
                             Units.count(Math.round(e.totalKcal)) to "Total kcal",
                             Units.count(Math.round(e.totalKcal - e.activeKcal)) to "At rest",
-                            (e.pal?.takeIf { !ctx.isToday }?.let { String.format(java.util.Locale.getDefault(), "%.2f", it) to "Activity level" } ?: (Units.count(goal) to "Goal")),
+                            e.pal?.takeIf { !ctx.isToday }?.let { decimal(it, 2) to "Activity level" }
+                                ?: (Units.count(goal) to "Goal"),
                         ),
                     )
                     DetailSentence(ActivityCopy.energy(Math.round(e.bmrKcal)))
@@ -686,8 +707,8 @@ private fun RangeKcal(
     }
     val labels = when (range) {
         Range.Week -> bars.map { weekdayShort(it.first) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { bars[((bars.size - 1) * it).toInt()].first.let { dayMonth(it) } }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { bars[((bars.size - 1) * it).toInt()].first.let { monthShort(it) } }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dayMonth(bars[((bars.size - 1) * it).toInt()].first) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { monthShort(bars[((bars.size - 1) * it).toInt()].first) }
     }
     Column(Modifier.padding(top = 8.dp)) {
         KcalBars(
@@ -695,7 +716,8 @@ private fun RangeKcal(
             onPick = { i ->
                 onScrub(i?.let { bars[it] }?.let { (d, parts) ->
                     parts?.let {
-                        val label = if (range == Range.Year) "active kcal a day, week of ${dayMonth(d)}" else "active kcal, ${DayWords.short(d)}"
+                        val label =
+                            if (range == Range.Year) "active kcal a day, week of ${dayMonth(d)}" else "active kcal, ${DayWords.short(d)}"
                         DetailHeadline(dotFormat("%,d", Math.round(it.sum())), label, null)
                     }
                 })
@@ -898,7 +920,9 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         if (values.any { it > 0f }) item {
             GlowBars(
                 values, height = 180.dp, labels = days.map { weekdayShort(it.date) }, accent = MetricColors.steps, modifier = Modifier.padding(top = 8.dp),
-                onScrub = { i -> scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "steps, ${DayWords.short(days[it].date)}", null) } },
+                onScrub = { i ->
+                    scrub = i?.let { DetailHeadline(Math.round(values[it]).toString(), "steps, ${DayWords.short(days[it].date)}", null) }
+                },
             )
         }
         item {

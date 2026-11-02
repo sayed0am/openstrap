@@ -507,7 +507,10 @@ fun GlowMetricDetailScreen(
                         band = nightNormal?.let { it.low..it.high }, bandLabel = nightNormal?.let { DetailCopy.bandLabel(it, metric::format) },
                         onScrub = { i ->
                             scrub = i?.let { nightWeek[it] }?.let { (d, v) ->
-                                v?.let { DetailHeadline(metric.dotValue(it), "${metric.unit}, ${DayWords.short(d)}", DetailCopy.statusWord(History.status(it, nightNormal))) }
+                                v?.let {
+                                    val word = DetailCopy.statusWord(History.status(it, nightNormal))
+                                    DetailHeadline(metric.dotValue(it), "${metric.unit}, ${DayWords.short(d)}", word)
+                                }
                             }
                         },
                     )
@@ -592,11 +595,22 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
         GlowLineChart(
             values, height = 220.dp, labels = listOf(clock(window.first), clock(window.last)), color = color, showAverage = false, format = metric::format,
             onScrub = { i ->
-                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(window.first + i * slot)}".trim(), null) })
+                onScrub(i?.let { values[it] }?.let { v -> scrubAt(metric, v, window.first + i * slot) })
             },
         )
     }
 }
+
+/** A scrubbed reading of [metric] in the headline: its value and the time it was taken, "bpm at 22:30". */
+private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(at)}".trim(), null)
+
+/** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
+private fun hourSteps(hour: Int, steps: Float): DetailHeadline {
+    val (from, to) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR) to TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR)
+    return DetailHeadline(dotFormat("%,d", Math.round(steps)), "steps, $from to $to", null)
+}
+
+private const val MINUTES_PER_HOUR = 60
 
 /** A name inside a sentence: lower case, unless it's an acronym like HRV. */
 internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
@@ -627,7 +641,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
             // Holding an hour puts its steps in the headline.
             Metric.Steps -> GlowBars(
                 state.hourlySteps, height = 200.dp, labels = HOURS, accent = color,
-                onScrub = { h -> onScrub(h?.let { DetailHeadline(dotFormat("%,d", Math.round(state.hourlySteps[it])), "steps, ${TimeOfDay.minutes(it * 60)} to ${TimeOfDay.minutes((it + 1) * 60)}", null) }) },
+                onScrub = { h -> onScrub(h?.let { hourSteps(it, state.hourlySteps[it]) }) },
             )
             Metric.RestingHr -> if (state.restingTrend.any { it.value != null }) {
                 GlowTrend(state.restingTrend.map { GlowDay(it.label, it.value) }, height = 200.dp)
@@ -641,7 +655,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
                 GlowLineChart(
                     values, height = 220.dp, labels = labels, color = color, showAverage = false, band = band, format = metric::format,
                     onScrub = { i ->
-                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.dotValue(v), "${metric.unit} at ${clock(window.first + i * slot)}".trim(), null) })
+                        onScrub(i?.let { values[it] }?.let { v -> scrubAt(metric, v, window.first + i * slot) })
                     },
                 )
             }
@@ -667,7 +681,8 @@ private fun HistoryChart(
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
                 val label = if (range == Range.Year) "week of ${dayMonth(d)}" else DayWords.short(d)
-                DetailHeadline(metric.dotValue(v), listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", "), DetailCopy.statusWord(History.status(v, normal)))
+                val unitAndDay = listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", ")
+                DetailHeadline(metric.dotValue(v), unitAndDay, DetailCopy.statusWord(History.status(v, normal)))
             })
         },
     )

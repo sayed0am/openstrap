@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Formatters
 import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -136,7 +137,7 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
     val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
-    val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(org.openstrap.app.presentation.Formatters.of("MMM d", Locale.getDefault()))
+    val date = Instant.ofEpochSecond(a.shownStart).atZone(zone).format(Formatters.of("MMM d", Locale.getDefault()))
     val avg = a.workout.averageHeartRate
     val kcal = kcalFigure(a)
     val (minutes, minUnit) = minutesFigure(active)
@@ -309,6 +310,17 @@ private fun storyColor(card: StoryCard): Color = when (card) {
     else -> familyColor(card.family)
 }
 
+/** Where the board's light sits, in card heights from the top, and its size in card widths and heights. */
+private const val STORY_LIGHT_BELOW = 1.12f
+private const val STORY_LIGHT_WIDTH = 1.3f
+private const val STORY_LIGHT_HEIGHT = 0.65f
+
+/** The light's middle stop, as a share of its strength, and its fixed rim before it fades out. */
+private const val STORY_LIGHT_MID_AT = 0.38f
+private const val STORY_LIGHT_MID = 0.47f
+private const val STORY_LIGHT_RIM_AT = 0.7f
+private const val STORY_LIGHT_RIM = 0.08f
+
 /**
  * The board's light from below: an ellipse wider than the card centred under its foot, from [strength] of [color] to
  * black at its edge.
@@ -318,8 +330,9 @@ private fun StoryGlow(color: Color, strength: Float) {
     Box(
         Modifier.fillMaxSize().drawBehind {
             drawCardLight(
-                color, Offset(size.width / 2, size.height * 1.12f), size.width * 1.3f, size.height * 0.65f,
-                0f to strength, 0.38f to strength * 0.47f, 0.7f to 0.08f,
+                color, Offset(size.width / 2, size.height * STORY_LIGHT_BELOW),
+                size.width * STORY_LIGHT_WIDTH, size.height * STORY_LIGHT_HEIGHT,
+                listOf(0f to strength, STORY_LIGHT_MID_AT to strength * STORY_LIGHT_MID, STORY_LIGHT_RIM_AT to STORY_LIGHT_RIM),
             )
         },
     )

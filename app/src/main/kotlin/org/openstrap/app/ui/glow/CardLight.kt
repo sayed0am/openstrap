@@ -12,10 +12,12 @@ import androidx.compose.ui.graphics.drawscope.scale
  * (distance out from the centre, 0 to 1, to the colour's alpha there) to nothing at its rim. Written once so the three
  * lights stay one light.
  */
-internal fun DrawScope.drawCardLight(color: Color, center: Offset, radiusX: Float, radiusY: Float, vararg stops: Pair<Float, Float>) {
+internal fun DrawScope.drawCardLight(color: Color, center: Offset, radiusX: Float, radiusY: Float, stops: List<Pair<Float, Float>>) {
     val colors = stops.map { (at, alpha) -> at to color.copy(alpha = alpha) } + (1f to Color.Transparent)
     // A circle as tall as the ellipse, stretched across to its width: the gradient stretches with it.
     scale(radiusX / radiusY, 1f, center) {
-        drawCircle(Brush.radialGradient(*colors.toTypedArray(), center = center, radius = radiusY), radiusY, center)
+        @Suppress("SpreadOperator") // Brush takes its stops only as varargs, and there are three or four of them.
+        val brush = Brush.radialGradient(*colors.toTypedArray(), center = center, radius = radiusY)
+        drawCircle(brush, radiusY, center)
     }
 }

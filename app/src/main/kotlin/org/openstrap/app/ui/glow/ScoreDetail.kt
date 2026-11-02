@@ -174,7 +174,9 @@ private fun RecoveryDetail(
                     NormalTrend(
                         values, DetailCopy.levels(values, null), color, labels = week.map { weekdayShort(it.first) },
                         onScrub = { i ->
-                            scrub = i?.let { week[it] }?.let { (d, v) -> v?.let { DetailHeadline(it.toString(), DayWords.short(d), TodayCopy.recoveryWord(it, false)) } }
+                            scrub = i?.let { week[it] }?.let { (d, v) ->
+                                v?.let { DetailHeadline(it.toString(), DayWords.short(d), TodayCopy.recoveryWord(it, false)) }
+                            }
                         },
                     )
                 }
@@ -259,7 +261,10 @@ private fun ChargeDetail(
                 GlowLineChart(
                     values, height = if (hours < SHORT_CURVE_HOURS) 110.dp else 200.dp, labels = HOURS, color = color, showAverage = false, yRange = 0f..100f,
                     onScrub = { i ->
-                        scrub = i?.let { values[it] }?.let { v -> DetailHeadline(chargeShown(v).toString(), "at ${clock(day.first + i * step)}", Narrative.chargeHeadline(chargeShown(v))) }
+                        scrub = i?.let { values[it] }?.let { v ->
+                            val shown = chargeShown(v)
+                            DetailHeadline(shown.toString(), "at ${clock(day.first + i * step)}", Narrative.chargeHeadline(shown))
+                        }
                     },
                 )
                 // A figure the day doesn't have (no waking without a night's sleep) is left out, the others share the row.

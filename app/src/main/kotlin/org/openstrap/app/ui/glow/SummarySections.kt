@@ -104,7 +104,8 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
             when {
                 m == null || m <= 0f -> byTime(listOf(avg to "Avg bpm", kcal to "Active kcal"))
                 else -> SummaryHero(
-                    if (m < Units.METERS_PER_KM) m.toInt().toString() else Units.km(m, Units.Precision.Workout, Units.DOT_LOCALE), if (m < Units.METERS_PER_KM) "m" else "km",
+                    if (m < Units.METERS_PER_KM) m.toInt().toString() else Units.km(m, Units.Precision.Workout, Units.DOT_LOCALE),
+                    if (m < Units.METERS_PER_KM) "m" else "km",
                     listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
                     pace = pace,
                 )
@@ -119,7 +120,9 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
             val rest = FamilySummary.averageRest(summary.sets)?.let(::workoutClock)
             // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8); without sets, the minutes.
             when {
-                lifted != null -> SummaryHero(dotFormat("%,d", Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"))
+                lifted != null -> SummaryHero(
+                    dotFormat("%,d", Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"),
+                )
                 sets > 0 -> SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))
                 else -> byTime(listOf(avg to "Avg bpm", peak to "Peak"))
             }
