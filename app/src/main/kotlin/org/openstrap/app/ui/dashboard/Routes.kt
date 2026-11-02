@@ -4,6 +4,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.saveable.Saver
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.DailyMetric
+import org.openstrap.app.presentation.Units
 
 /** A metric with its own detail screen: its title, unit, decimals shown, and the per-day series behind it. */
 enum class Metric(val title: String, val unit: String, val decimals: Int, val daily: DailyMetric) {
@@ -17,7 +18,7 @@ enum class Metric(val title: String, val unit: String, val decimals: Int, val da
     Steps("Steps", "steps", 0, DailyMetric.Steps),
     ;
 
-    fun format(v: Float): String = if (this == Steps) "%,d".format(Math.round(v)) else "%.${decimals}f".format(v)
+    fun format(v: Float): String = if (this == Steps) Units.count(Math.round(v).toLong()) else "%.${decimals}f".format(v)
 
     /** A change from your normal, signed with a true minus (spec 2.3): "+0.2", "−0.3"; no sign is lost to rounding. */
     fun formatChange(d: Float): String {
@@ -63,7 +64,7 @@ sealed interface Detail {
     data object Recovery : Detail
     /** The Sleep tab's screen, opened from a card on another tab. */
     data object Sleep : Detail
-    /** The week story: last Monday to Sunday day by day, opened from Your week on Today. */
+    /** The week story: last week day by day, opened from Your week on Today. */
     data object Week : Detail
 
     companion object {

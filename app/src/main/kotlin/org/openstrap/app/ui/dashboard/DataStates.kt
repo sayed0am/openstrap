@@ -5,6 +5,7 @@ import org.openstrap.app.data.EnergyExpenditure
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.presentation.Units
 
 /*
  * Data states (spec 4.3, patterns E3 and E4): pairing as one stage, first nights, no sleep last night and a partial
@@ -134,8 +135,8 @@ const val PARTIAL_DAY = "Partial day"
 
 /** The partial day sheet's line: how much wear the figures cover. */
 fun partialLine(w: Wear, isToday: Boolean): String {
-    val worn = TodayCopy.duration(w.wornMinutes * 60L)
-    return if (isToday) "The strap recorded $worn of the ${TodayCopy.duration(w.ofMinutes * 60L)} so far today."
+    val worn = Units.duration(w.wornMinutes * 60L)
+    return if (isToday) "The strap recorded $worn of the ${Units.duration(w.ofMinutes * 60L)} so far today."
     else "The strap recorded $worn of the day."
 }
 
@@ -150,7 +151,7 @@ val PARTIAL_DAY_INFO = Info(
 val PARTIAL_DAY_ROWS = listOf(
     "What it lowers" to "Steps, calories and Energy count only the time the strap was on. Charging pauses them too.",
     "When a day counts as partial" to
-        "When the strap was worn for under ${TodayCopy.duration(EnergyExpenditure.FULL_DAY_MINUTES * 60L)} of the day, or under that share of the day so far.",
+        "When the strap was worn for under ${Units.duration(EnergyExpenditure.FULL_DAY_MINUTES * 60L)} of the day, or under that share of the day so far.",
 )
 
 /* ------------------------------------------ Debug previews ------------------------------------------ */

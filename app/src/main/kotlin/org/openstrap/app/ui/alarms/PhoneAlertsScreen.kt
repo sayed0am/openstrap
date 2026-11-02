@@ -50,6 +50,8 @@ import org.openstrap.app.ui.glow.PageSwitchRow
 import androidx.compose.ui.graphics.Color
 import org.openstrap.app.ui.glow.GlowSegments
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.presentation.TimeOfDay
 
 /** What the Strap page's Phone alerts row says: "Calls and notifications", "Calls", "Notifications" or "Off". */
 fun phoneAlertsSummary(calls: Boolean, notifications: Boolean): String = when {
@@ -59,8 +61,8 @@ fun phoneAlertsSummary(calls: Boolean, notifications: Boolean): String = when {
     else -> "Off"
 }
 
-/** "22:00" for minutes after midnight. */
-internal fun quietClock(minutes: Int): String = "%02d:%02d".format(minutes / 60, minutes % 60)
+/** Minutes after midnight on the phone's clock: "22:00", or "10:00 PM". */
+internal fun quietClock(minutes: Int): String = TimeOfDay.minutes(minutes)
 
 /** Under the Quiet hours switch: what it holds back, and when. */
 internal fun quietHoursSummary(q: QuietHours, callsOn: Boolean): String = when {
@@ -208,7 +210,7 @@ fun PhoneAlertsScreen(alerts: PhoneAlerts, settings: SettingsStore, contentPaddi
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun QuietTimeSheet(title: String, minutes: Int, onSave: (Int) -> Unit, onDismiss: () -> Unit) {
-    val time = rememberTimePickerState(minutes / 60, minutes % 60, is24Hour = true)
+    val time = rememberTimePickerState(minutes / 60, minutes % 60, is24Hour = ClockSetting.use24Hour)
     PageSheet(onDismiss, title) {
         TimePicker(time, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

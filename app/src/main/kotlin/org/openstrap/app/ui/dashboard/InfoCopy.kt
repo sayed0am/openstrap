@@ -4,6 +4,9 @@ import org.openstrap.app.data.Activity
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
+import org.openstrap.app.presentation.RecoveryBands
+import org.openstrap.app.presentation.SleepBands
+import org.openstrap.app.presentation.Units
 
 /*
  * What every detail's info sheet says (spec 6.2): a bold one-line meaning, the scale its value is read on, and three
@@ -26,24 +29,19 @@ object InfoCopy {
     val NORMAL_SCALE = listOf("Below your normal", "Usual", "Above your normal")
 
     /** Recovery's bands, low to high, in the words beside the score ([TodayCopy.recoveryWord]). */
-    val RECOVERY_SCALE = listOf("Take it easy", "Moderate", "Ready", "Ready for more")
+    val RECOVERY_SCALE = RecoveryBands.WORDS
 
     /** Charge's bands, low to high. */
     val CHARGE_SCALE = listOf("Running low", "Some left", "Good", "Full")
 
     /** The Sleep score's bands, low to high, in the words beside it ([TabCopy.sleepScoreWord]). */
-    val SLEEP_SCALE = listOf("Poor", "Fair", "Good", "Great")
+    val SLEEP_SCALE = SleepBands.WORDS
 
     /** Sleep regularity's bands, low to high ([SleepRegularity.Band]). */
     val REGULARITY_SCALE = SleepRegularity.Band.entries.map { it.label }
 
     /** Which bar of [SLEEP_SCALE] a Sleep score is in. */
-    fun sleepBar(score: Int): Int = when {
-        score >= 90 -> 3
-        score >= 80 -> 2
-        score >= 60 -> 1
-        else -> 0
-    }
+    fun sleepBar(score: Int): Int = SleepBands.bar(score)
 
     /** Which bar of [REGULARITY_SCALE] a band is. */
     fun regularityBar(band: SleepRegularity.Band): Int = band.ordinal
@@ -52,12 +50,7 @@ object InfoCopy {
     fun normalBar(status: Int?): Int? = status?.let { it.coerceIn(-1, 1) + 1 }
 
     /** Which bar of [RECOVERY_SCALE] a score is in. */
-    fun recoveryBar(score: Int): Int = when {
-        score >= 85 -> 3
-        score >= 70 -> 2
-        score >= Recovery.FAIR_FROM -> 1
-        else -> 0
-    }
+    fun recoveryBar(score: Int): Int = RecoveryBands.bar(score)
 
     /** Which bar of [CHARGE_SCALE] a Charge is in, by quarters. */
     fun chargeBar(charge: Int): Int = (charge / 25).coerceIn(0, 3)
@@ -356,7 +349,7 @@ object InfoCopy {
     /** What's particular about the day's energy: part of the day worn, an unusual total, minutes from heart rate. */
     fun energyNotes(e: org.openstrap.app.data.EnergyExpenditure.Day?): List<String> = buildList {
         e ?: return@buildList
-        if (e.partial) add("It covers ${TodayCopy.duration(e.minutesWithData * 60L)} of wear, so it's part of the day.")
+        if (e.partial) add("It covers ${Units.duration(e.minutesWithData * 60L)} of wear, so it's part of the day.")
         if (e.palImplausible) add("That's an unusual total for a full day. Check your profile and how the strap was worn.")
         if (e.hrAssistedMinutes > 0) add("${e.hrAssistedMinutes} minutes came from heart rate rather than steps.")
     }
@@ -417,11 +410,11 @@ object InfoCopy {
     /** The week story's sheet: what each day's numbers are and how far back the comparisons reach. */
     val WEEK = Info(
         "Your week",
-        "Last Monday to Sunday, day by day: how much you moved, trained and slept.",
+        "Last week, day by day: how much you moved, trained and slept.",
         emptyList(),
         how = "Steps are each day's total from the strap's minutes, and steps a day the average of the days with any. " +
             "Active minutes are worked out as in their own sheet. A night belongs to the evening it started, so " +
-            "Sunday's is the night into Monday.",
+            "the week's last night runs into the next week.",
         moves = "Every walk, workout and early night shows here a week later.",
         off = "Steps and workouts are compared with the week before. Active minutes and sleep only go back two weeks, " +
             "so they're shown without a comparison. A day with the strap off reads low.",
@@ -443,12 +436,12 @@ object InfoCopy {
         if (reg.sri != null) add("This week compares $hours h of wear.")
         else {
             add("Not enough wear for the full measure yet: $hours h of the ${SleepRegularity.MIN_VALID_PAIRS / 60} h it needs.")
-            reg.midpointSdMinutes?.let { add("Meanwhile the middle of your sleep moved about ${TodayCopy.duration(Math.round(it) * 60L)} this week.") }
+            reg.midpointSdMinutes?.let { add("Meanwhile the middle of your sleep moved about ${Units.duration(Math.round(it) * 60L)} this week.") }
         }
     }
 
     /** What's particular about the night's Sleep score: the sleep need the guidance measures against. */
-    fun sleepNotes(needMinutes: Int): List<String> = listOf("Your sleep need here is ${TodayCopy.duration(needMinutes * 60L)}, from your age or your own setting.")
+    fun sleepNotes(needMinutes: Int): List<String> = listOf("Your sleep need here is ${Units.duration(needMinutes * 60L)}, from your age or your own setting.")
 
     /**
      * What's particular about today's Recovery, for its info sheet: the strap's own score beside ours, and anything that

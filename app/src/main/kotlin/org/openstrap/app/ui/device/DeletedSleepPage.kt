@@ -23,10 +23,8 @@ import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-
-private val DAY = DateTimeFormatter.ofPattern("EEE d MMM")
-private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
 
 /**
  * Deleted sleep (edit spec 4.4), from the You page's Your data while there's something in it: each night or nap deleted
@@ -42,7 +40,7 @@ fun DeletedSleepPage(
     BackHandler(onBack = onBack)
     val zone = ZoneId.systemDefault()
     val now = System.currentTimeMillis() / 1000
-    fun clock(t: Long) = Instant.ofEpochSecond(t).atZone(zone).format(CLOCK)
+    fun clock(t: Long) = TimeOfDay.format(t, zone)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Deleted sleep", onBack) }
         item { Text(SleepCopy.DELETED_INTRO, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp)) }
@@ -55,7 +53,7 @@ fun DeletedSleepPage(
                     val day = if (r.strap.nap) Instant.ofEpochSecond(r.strap.start).atZone(zone).toLocalDate()
                     else SleepHistory.nightOf(r.strap.end, zone).minusDays(1)
                     PageRow(
-                        SleepCopy.deletedName(r.strap.nap, day.format(DAY)),
+                        SleepCopy.deletedName(r.strap.nap, DayWords.short(day)),
                         SleepCopy.deletedLine(clock(r.start), clock(r.end), r.edit?.let { SleepEdits.daysLeft(it, now) } ?: SleepEdits.KEEP_DAYS),
                         below = true, divider = i > 0, icon = AppIcons.Moon,
                     ) { PageButton("Restore", { onRestore(r.strap) }, icon = AppIcons.ArrowCounterClockwise) }

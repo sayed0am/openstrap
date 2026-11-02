@@ -4,8 +4,13 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.data.Workouts
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Pace
+import org.openstrap.app.presentation.RecoveryBands
+import org.openstrap.app.presentation.SleepBands
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 
 /*
  * The words on the Recovery, Sleep and Activity tabs (spec 5 and 7). Like [TodayCopy], built only from numbers the
@@ -56,7 +61,7 @@ object TabCopy {
     private const val SENTENCE_WEIGHT = 0.06f
 
     /** Below this a contributor holds the score back ([org.openstrap.app.ui.dashboard.Narrative.ratingFor]'s Good). */
-    private const val HELD_BACK_BELOW = 70
+    private const val HELD_BACK_BELOW = RecoveryBands.READY_FROM
 
     /**
      * The contributor holding Recovery back the most: the lowest scored of those that weigh enough, when it's under
@@ -71,7 +76,7 @@ object TabCopy {
      */
     fun recovery(score: Int, alert: Boolean, contributors: List<Recovery.Contributor>): String {
         val meaning = TodayCopy.recoveryMeaning(score, alert)
-        val by = heldBackBy(contributors)?.takeIf { score < 85 && !alert } ?: return meaning
+        val by = heldBackBy(contributors)?.takeIf { score < RecoveryBands.READY_FOR_MORE_FROM && !alert } ?: return meaning
         return "$meaning Mostly held back by ${factorPhrase(by)}."
     }
 
@@ -86,14 +91,14 @@ object TabCopy {
 
     /** A contributor's status word, by the score's own bands. */
     fun contributorWord(score: Int): String = when {
-        score >= 85 -> "Helping"
-        score >= 70 -> "Usual"
-        score >= Recovery.FAIR_FROM -> "Holding back a little"
+        score >= RecoveryBands.READY_FOR_MORE_FROM -> "Helping"
+        score >= RecoveryBands.READY_FROM -> "Usual"
+        score >= RecoveryBands.MODERATE_FROM -> "Holding back a little"
         else -> "Holding you back"
     }
 
     /** Whether a contributor is far enough from usual to take its colour. */
-    fun contributorOff(score: Int): Boolean = score < 70 || score >= 85
+    fun contributorOff(score: Int): Boolean = score < RecoveryBands.READY_FROM || score >= RecoveryBands.READY_FOR_MORE_FROM
 
     /** The [n] contributors that weigh most, heaviest first: the ones "What drove it" shows. */
     fun topDrivers(contributors: List<Recovery.Contributor>, n: Int = 3): List<Recovery.Contributor> =
@@ -142,7 +147,7 @@ object TabCopy {
      * are the week's other nights, asleep seconds). "7 h 40, your longest this week."
      */
     fun night(asleepSeconds: Long, others: List<Long>): String {
-        val d = TodayCopy.duration(asleepSeconds)
+        val d = Units.duration(asleepSeconds)
         return when {
             others.size < WEEK_COMPARE_NIGHTS -> "$d asleep."
             asleepSeconds > others.max() -> "$d, your longest this week."
@@ -164,12 +169,7 @@ object TabCopy {
     }
 
     /** The sleep score's word, in the bands the strap's score is built for. */
-    fun sleepScoreWord(score: Int): String = when {
-        score >= 90 -> "Great"
-        score >= 80 -> "Good"
-        score >= 60 -> "Fair"
-        else -> "Poor"
-    }
+    fun sleepScoreWord(score: Int): String = SleepBands.word(score)
 
     /** The score's line beside the night's dotted score: "Sleep score, good", or why there's no score. */
     fun sleepScoreLine(score: Int?): String = score?.let { "Sleep score, ${sleepScoreWord(it).lowercase()}" } ?: NO_STRAP_SCORE
@@ -178,16 +178,14 @@ object TabCopy {
     const val NO_STRAP_SCORE = "No score from the strap"
 
     /** A stage's total on the stage bar's legend: "Deep 1 h 32", "Awake 18 min". */
-    fun stageTotal(stage: Int, seconds: Long): String = "${SLEEP_NAMES[stage].orEmpty()} ${TodayCopy.duration(seconds)}"
+    fun stageTotal(stage: Int, seconds: Long): String = "${SLEEP_NAMES[stage].orEmpty()} ${Units.duration(seconds)}"
 
     /** "7 h 40 asleep". */
-    fun asleep(seconds: Long): String = "${TodayCopy.duration(seconds)} asleep"
+    fun asleep(seconds: Long): String = "${Units.duration(seconds)} asleep"
 
-    /** When the night ran, bedtime to waking: "22:58–06:56" (an en dash, a time range). */
-    fun nightTimes(start: Long, end: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String {
-        fun clock(epoch: Long) = java.time.Instant.ofEpochSecond(epoch).atZone(zone).format(DateTimeFormatter.ofPattern("HH:mm"))
-        return "${clock(start)}–${clock(end)}"
-    }
+    /** When the night ran, bedtime to waking: "22:58–06:56" (an en dash, a time range), in the phone's clock. */
+    fun nightTimes(start: Long, end: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+        "${TimeOfDay.format(start, zone)}–${TimeOfDay.format(end, zone)}"
 
     /** "Woke 3 times", "Woke once", "Slept through"; null when the strap didn't say. */
     fun woke(count: Int?): String? = when (count) {
@@ -207,9 +205,7 @@ object TabCopy {
 
     /** "Usually asleep by 23:10, up at 06:50." from minutes since midnight. */
     fun usualTimes(bedMinutes: Int, wakeMinutes: Int): String =
-        "Usually asleep by ${minutes(bedMinutes)}, up at ${minutes(wakeMinutes)}."
-
-    private fun minutes(m: Int) = Math.floorMod(m, 1440).let { "%02d:%02d".format(it / 60, it % 60) }
+        "Usually asleep by ${TimeOfDay.minutes(bedMinutes)}, up at ${TimeOfDay.minutes(wakeMinutes)}."
 
     /** Breathing disturbances against your usual, or how many nights it still needs. */
     fun breathing(b: Recovery.BreathingDisturbances): String = when (val usual = b.usual) {
@@ -227,6 +223,9 @@ object TabCopy {
      * The week's balance from fatigue (the last 7 days) against fitness (the last 6 weeks): "Building" when the week
      * is well above your usual, "Easing off" when well below, "Steady" between, with the band Today uses for a usual
      * Load ([TodayCopy.LOAD_BAND]). Null before there's a fitness to compare with.
+     *
+     * Not a [org.openstrap.app.presentation.LoadBands] rule: it weighs the week's ATL against the CTL, not a day's Load
+     * against your usual day, so it keeps its own words and only borrows the band's width.
      */
     fun loadBalance(trend: Recovery.LoadTrend?): String? {
         val t = trend ?: return null
@@ -294,20 +293,17 @@ object TabCopy {
         else -> SportFact.Other
     }
 
-    /** Shorter than this and a pace says more about GPS noise than the run. */
-    private const val PACE_MIN_M = 500f
-
     /**
-     * A workout's one fact, by [sport]: distance and pace for a run ("5.2 km, 5:24 a km"), distance for a walk, sets
+     * A workout's one fact, by [sport]: distance and pace for a run ("5.2 km, 5:24 /km"), distance for a walk, sets
      * for strength ("14 sets"), average heart rate otherwise ("Average 128 bpm"). Each falls back to the next the
      * workout has: a run without a GPS pace to its distance, a run or walk without one to heart rate, strength without
      * sets to heart rate, anything else without heart rate to distance. Distance from steps is approximate ("≈ 3.4
      * km") and gets no pace. Only phone workouts carry distance and sets; the strap's fall back to heart rate.
      */
     fun workoutFact(sport: SportFact, distanceMeters: Float?, fromSteps: Boolean, activeSeconds: Long?, sets: Int?, averageHeartRate: Int?): String? {
-        val distance = distanceMeters?.takeIf { it >= 10f }?.let { distanceText(it, fromSteps) }
-        val pace = distanceMeters?.takeIf { !fromSteps && it >= PACE_MIN_M }?.let { m ->
-            activeSeconds?.takeIf { it > 0 }?.let { paceText(it / (m / 1000f)) }
+        val distance = distanceMeters?.let { Units.distance(it, Units.Precision.Day, fromSteps) }
+        val pace = distanceMeters?.takeIf { !fromSteps }?.let { m ->
+            activeSeconds?.takeIf { it > 0 }?.let { Pace.text(Pace.of(m, it)) }
         }
         val heart = averageHeartRate?.takeIf { it > 0 }?.let { "Average $it bpm" }
         val counted = sets?.takeIf { it > 0 }?.let { if (it == 1) "1 set" else "$it sets" }
@@ -319,16 +315,11 @@ object TabCopy {
         }
     }
 
-    /** "850 m" under a kilometre, "5.2 km" from one; "≈ " in front when estimated from steps. */
-    fun distanceText(meters: Float, fromSteps: Boolean): String =
-        (if (fromSteps) "≈ " else "") + if (meters < 1000f) "${meters.toInt()} m" else "%.1f km".format(meters / 1000f)
+    /** "850 m" under a kilometre, "5.2 km" from one; "≈ " in front when estimated from steps. Empty under 10 m. */
+    fun distanceText(meters: Float, fromSteps: Boolean): String = Units.distance(meters, Units.Precision.Day, fromSteps).orEmpty()
 
-    /** "5:24 a km"; null for a pace slower than an hour a kilometre, which is standing still. */
-    fun paceText(secondsPerKm: Float): String? {
-        if (secondsPerKm <= 0f || secondsPerKm > 3600f) return null
-        val s = Math.round(secondsPerKm)
-        return "%d:%02d a km".format(s / 60, s % 60)
-    }
+    /** "5:24 /km"; null for a pace slower than an hour a kilometre, which is standing still. */
+    fun paceText(secondsPerKm: Float): String? = Pace.text(secondsPerKm.toDouble())
 
     /**
      * A workout row's second line: its fact, then when it started ("3.4 km, 17:35"), or the time alone.
@@ -337,22 +328,18 @@ object TabCopy {
      */
     fun workoutLine(fact: String?, startClock: String): String = listOfNotNull(fact, startClock).joinToString(", ")
 
-    /** The header over a day's workouts: "Today", "Yesterday", then "Wed 21 Oct", with the year when it isn't this one. */
-    fun workoutDay(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String = when (date) {
-        today -> "Today"
-        today.minusDays(1) -> "Yesterday"
-        else -> date.format(DateTimeFormatter.ofPattern(if (date.year == today.year) "EEE d MMM" else "EEE d MMM yyyy", locale))
-    }
+    /** The header over a day's workouts, by [DayWords]: "Today", "Yesterday", "Tuesday", then "Wed 21 Oct". */
+    fun workoutDay(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String = DayWords.relative(date, today, locale)
 
     /* --------------------------------------------- Habit Age --------------------------------------------- */
 
     /** "Updated Sun 18 Oct", for the Sunday the estimate is for. */
     fun habitAgeUpdated(sunday: LocalDate, locale: Locale = Locale.getDefault()): String =
-        "Updated " + sunday.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))
+        "Updated " + DayWords.short(sunday, locale)
 
     /** "First estimate Sunday 22 Nov", before there's a number. */
     fun firstEstimate(sunday: LocalDate, locale: Locale = Locale.getDefault()): String =
-        "First estimate " + sunday.format(DateTimeFormatter.ofPattern("EEEE d MMM", locale))
+        "First estimate " + sunday.format(org.openstrap.app.presentation.Formatters.of("EEEE d MMM", locale))
 
     /** Habit Age before its first estimate, under your own age in its place: "Your age for now", then what it waits for. */
     fun habitAgeForNow(waiting: String?): String = if (waiting.isNullOrBlank()) "Your age for now" else "Your age for now. $waiting"

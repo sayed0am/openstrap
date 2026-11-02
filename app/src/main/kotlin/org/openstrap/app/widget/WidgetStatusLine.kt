@@ -1,6 +1,8 @@
 package org.openstrap.app.widget
 
-import org.openstrap.app.ui.dashboard.clockText
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Formatters
+import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -30,14 +32,15 @@ data class StatusLine(val status: StrapStatus, val options: List<String>) {
                     val then = Instant.ofEpochSecond(status.at).atZone(zone).toLocalDate()
                     val days = ChronoUnit.DAYS.between(then, Instant.ofEpochSecond(now).atZone(zone).toLocalDate())
                     when {
-                        days <= 0 -> listOf(clockText(status.at, zone))
-                        days == 1L -> listOf("Yesterday")
+                        days <= 0 -> listOf(TimeOfDay.format(status.at, zone, locale = locale))
+                        days == 1L -> listOf(DayWords.YESTERDAY)
                         days < 7 -> {
                             val day = then.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
                             val short = then.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
                             listOf("Synced $short", day, short)
                         }
-                        else -> listOf(full.removePrefix("Synced "))
+                        // "Tue 13 Oct", then "13 Oct" where even that doesn't fit.
+                        else -> listOf(full.removePrefix("Synced "), then.format(Formatters.of("d MMM", locale)))
                     }
                 }
             }

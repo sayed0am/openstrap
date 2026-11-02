@@ -3,8 +3,14 @@ package org.openstrap.app.data.settings
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import org.junit.Rule
+import org.openstrap.app.testing.LocaleRule
+import java.util.Locale
 
 class CalorieGoalTest {
+    // The expected numbers are written the English way, whatever the machine's language.
+    @get:Rule val locale = LocaleRule(Locale.US)
+
     @Test fun `the buttons step by 10 and stop at the strap's range`() {
         assertEquals(460, CalorieGoal.step(450, Goals.CALORIES_STEP))
         assertEquals(440, CalorieGoal.step(450, -Goals.CALORIES_STEP))

@@ -21,7 +21,8 @@ import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.SleepRegularity
-import org.openstrap.app.ui.components.formatDuration
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.ZoneId
@@ -113,7 +114,7 @@ internal fun sleepWeek(
         slept = slept.size,
         usual = SleepHistory.usualTimes(state.nights.mapNotNull { n -> n.session?.let { n.date to it } }.toMap(), state.date, zone),
         regularity = regularity,
-        averageAsleep = formatDuration(asleep.average().toLong()),
+        averageAsleep = Units.duration(asleep.average().toLong()),
         goalNights = asleep.count { it >= goalSeconds },
     )
 }
@@ -188,7 +189,7 @@ internal fun SleepWindows(
     }
 }
 
-internal fun minutesClock(minutes: Int): String = SleepHistory.clockMinutes(minutes).let { "%02d:%02d".format(it / 60, it % 60) }
+/** Minutes since midnight on the phone's clock, wrapping past either end of the day: "23:30", or "11:30 PM". */
+internal fun minutesClock(minutes: Int): String = TimeOfDay.minutes(minutes)
 
-private fun clockOf(epochSeconds: Long): String =
-    Instant.ofEpochSecond(epochSeconds).atZone(ZoneId.systemDefault()).let { "%02d:%02d".format(it.hour, it.minute) }
+private fun clockOf(epochSeconds: Long): String = TimeOfDay.format(epochSeconds, ZoneId.systemDefault())

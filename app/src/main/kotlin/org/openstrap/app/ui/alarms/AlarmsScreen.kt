@@ -43,6 +43,10 @@ import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.SettingsCodec
+import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
+import java.time.LocalTime
 
 private val DAY_LETTERS = listOf("M", "T", "W", "T", "F", "S", "S")
 private val DAY_NAMES = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
@@ -71,7 +75,7 @@ fun alarmsSummary(state: AlarmsUiState): String? {
     if (state.caps == null) return null
     val on = state.alarms.filter { it.enabled }
     val first = on.firstOrNull() ?: return if (state.alarms.isEmpty()) "None" else "All off"
-    val text = "%02d:%02d %s".format(first.hour, first.minute, daysLabel(first.days).lowercase())
+    val text = "${TimeOfDay.format(LocalTime.of(first.hour, first.minute))} ${daysLabel(first.days).lowercase()}"
     return if (on.size > 1) "$text and ${on.size - 1} more" else text
 }
 
@@ -176,10 +180,12 @@ private fun AlarmsPanel(
         state.alarms.forEach { a ->
             Row(Modifier.fillMaxWidth().clickable(enabled = !state.busy) { onEdit(a) }.padding(vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    org.openstrap.app.ui.glow.DotMatrixText(
-                        "%02d:%02d".format(a.hour, a.minute), dot = org.openstrap.app.ui.glow.DotSize.Edge,
-                        color = if (a.enabled) Color.White else Color.White.copy(alpha = 0.45f),
-                    )
+                    val ink = if (a.enabled) Color.White else Color.White.copy(alpha = 0.45f)
+                    val (digits, marker) = dotClock(a.hour, a.minute)
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        org.openstrap.app.ui.glow.DotMatrixText(digits, dot = org.openstrap.app.ui.glow.DotSize.Edge, color = ink)
+                        marker?.let { Text(it, style = GlowType.secondary, color = ink, modifier = Modifier.padding(start = 6.dp)) }
+                    }
                     Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(top = 6.dp))
                 }
                 org.openstrap.app.ui.glow.GlowSwitch(a.enabled, { onToggle(a, it) }, enabled = !state.busy)
@@ -241,7 +247,7 @@ private fun HeartAlertsPanel(state: AlarmsUiState, vm: AlarmsViewModel) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun AlarmSheet(alarm: Alarm, isNew: Boolean, onSave: (Alarm) -> Unit, onDelete: () -> Unit, onDismiss: () -> Unit) {
-    val time = rememberTimePickerState(alarm.hour, alarm.minute, is24Hour = true)
+    val time = rememberTimePickerState(alarm.hour, alarm.minute, is24Hour = ClockSetting.use24Hour)
     var days by remember { mutableIntStateOf(alarm.days) }
     PageSheet(onDismiss, if (isNew) "New alarm" else "Edit alarm", note = daysLabel(days)) {
         TimePicker(time, Modifier.align(Alignment.CenterHorizontally), colors = AlarmClockColors())
@@ -276,3 +282,13 @@ internal fun AlarmClockColors() = TimePickerDefaults.colors(
     timeSelectorSelectedContentColor = Color.Black,
     timeSelectorUnselectedContentColor = Color.White,
 )
+
+/**
+ * An alarm's time for the dot font, on the phone's clock: the digits ("6:40") and, on a 12 hour phone, the "AM" or
+ * "PM" apart, since the font has no letters.
+ */
+internal fun dotClock(hour: Int, minute: Int, use24Hour: Boolean = ClockSetting.use24Hour): Pair<String, String?> {
+    val text = TimeOfDay.format(LocalTime.of(hour, minute), use24Hour, Units.DOT_LOCALE)
+    val space = text.indexOf(' ')
+    return if (space < 0) text to null else text.substring(0, space) to text.substring(space + 1)
+}

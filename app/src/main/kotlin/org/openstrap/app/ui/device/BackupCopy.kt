@@ -5,8 +5,10 @@ import org.openstrap.app.export.AutoBackup
 import org.openstrap.app.export.BackupFiles
 import java.time.Instant
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Units
 
 /** The words of backup on the You and Backup pages and in its messages. */
 object BackupCopy {
@@ -35,16 +37,12 @@ object BackupCopy {
         BackupFiles.Failure.Other -> "It tries again tomorrow."
     }
 
-    /** "today at 03:12", "yesterday at 03:12", "on Tue 20 Oct". */
+    /** By [DayWords]: "today at 03:12", "yesterday at 03:12", then "on Tuesday" within the week and "on Tue 13 Oct". */
     fun whenDone(epochSeconds: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String {
-        val at = Instant.ofEpochSecond(epochSeconds).atZone(zone)
+        val date = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDate()
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        val clock = at.format(DateTimeFormatter.ofPattern("HH:mm", locale))
-        return when (at.toLocalDate()) {
-            today -> "today at $clock"
-            today.minusDays(1) -> "yesterday at $clock"
-            else -> "on ${at.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))}"
-        }
+        val day = DayWords.inSentence(date, today, locale)
+        return if (date == today || date == today.minusDays(1)) "$day at ${TimeOfDay.format(epochSeconds, zone, locale = locale)}" else "on $day"
     }
 
     /**
@@ -58,14 +56,14 @@ object BackupCopy {
      * What a restore says, short enough for a toast: what came back, and rows that couldn't be read. Records already on
      * this phone aren't counted, since restoring only fills gaps.
      */
-    fun restored(records: Int, settings: Boolean, skipped: Int): String {
+    fun restored(records: Int, settings: Boolean, skipped: Int, locale: Locale = Locale.getDefault()): String {
         val what = when {
-            records > 0 && settings -> "Restored %,d records and your settings.".format(records)
-            records > 0 -> "Restored %,d records.".format(records)
+            records > 0 && settings -> "Restored ${Units.count(records.toLong(), locale)} records and your settings."
+            records > 0 -> "Restored ${Units.count(records.toLong(), locale)} records."
             settings -> "Restored your settings. Your records were already here."
             else -> "Nothing to restore. It's all already here."
         }
-        return if (skipped > 0) "$what %,d rows couldn't be read.".format(skipped) else what
+        return if (skipped > 0) "$what ${Units.count(skipped.toLong(), locale)} rows couldn't be read." else what
     }
 
     /** The Backup folder row's value. */

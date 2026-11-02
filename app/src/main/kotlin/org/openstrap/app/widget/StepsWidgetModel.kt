@@ -2,15 +2,14 @@ package org.openstrap.app.widget
 
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.ui.dashboard.ActivityCopy
-import org.openstrap.app.ui.dashboard.Metric
 import org.openstrap.app.ui.glow.DotSize
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.TextStyle
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlin.math.ceil
+import org.openstrap.app.presentation.Weeks
+import org.openstrap.app.presentation.Units
 
 /** How a day of this week stands against the goal, which colours its bar on the Large. */
 enum class StepsDay {
@@ -47,7 +46,7 @@ data class StepsWidgetModel(
     /** "Goal 10,000". */
     val goalNote: String,
     val steps: Int,
-    /** The number in dots, "8,432", and the word under or beside it. */
+    /** The number in dots, "8,432" with the dot font's ASCII digits and marks ([Units.DOT_LOCALE]), and its word. */
     val stepsText: String,
     val word: String,
     /** "1,568 to go", or "Goal met" past the goal. */
@@ -60,7 +59,7 @@ data class StepsWidgetModel(
     val line: List<Float?>,
     /** The line's value axis tops out here, as the card's: the goal, or the day when it's past it. */
     val lineMax: Float,
-    /** Monday to Sunday. */
+    /** The week's days, from the locale's first day. */
     val week: List<StepsWeekDay>,
     /** "Goal met 2 of 6 days". */
     val weekLine: String,
@@ -70,8 +69,8 @@ data class StepsWidgetModel(
     /** The line shows once there's a step to draw, as on Today's card. */
     val showLine: Boolean get() = steps > 0 && line.size >= 2
 
-    /** What TalkBack reads for the dotted number: "8,432 steps today, 84% of your goal". */
-    val description: String get() = "$stepsText steps today, ${share.replaceFirstChar { it.lowercase() }}"
+    /** What TalkBack reads for the dotted number, in the phone's language: "8,432 steps today, 84% of your goal". */
+    val description: String get() = "${Units.count(steps.toLong())} steps today, ${share.replaceFirstChar { it.lowercase() }}"
 
     companion object {
         const val TITLE = "Steps"
@@ -96,11 +95,11 @@ data class StepsWidgetModel(
                 date = today,
                 title = TITLE,
                 goal = goal,
-                goalNote = "Goal ${format(goal)}",
+                goalNote = "Goal ${Units.count(goal.toLong(), locale)}",
                 steps = steps,
-                stepsText = format(steps),
+                stepsText = Units.count(steps.toLong(), Units.DOT_LOCALE),
                 word = TODAY,
-                toGo = toGo(steps, goal),
+                toGo = toGo(steps, goal, locale),
                 share = ActivityCopy.goalShare(steps, goal),
                 progress = if (goal <= 0) 1f else (steps / goal.toFloat()).coerceIn(0f, 1f),
                 line = line,
@@ -112,15 +111,15 @@ data class StepsWidgetModel(
         }
 
         /** "1,568 to go", or "Goal met" from the goal on. */
-        fun toGo(steps: Int, goal: Int): String = if (steps >= goal) GOAL_MET else "${format(goal - steps)} to go"
+        fun toGo(steps: Int, goal: Int, locale: Locale = Locale.getDefault()): String =
+            if (steps >= goal) GOAL_MET else "${Units.count((goal - steps).toLong(), locale)} to go"
 
         /** "Goal met 2 of 6 days", "Goal met 0 of 1 day". */
         fun weekLine(met: Int, of: Int): String = "Goal met $met of $of ${if (of == 1) "day" else "days"}"
 
-        /** Monday to Sunday of [today]'s week, each day as it stands against [goal]. */
-        fun week(today: LocalDate, steps: Int, goal: Int, past: Map<LocalDate, Int>, locale: Locale): List<StepsWeekDay> {
-            val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-            return (0L until 7L).map { monday.plusDays(it) }.map { d ->
+        /** The days of [today]'s week, from [locale]'s first day ([Weeks]), each as it stands against [goal]. */
+        fun week(today: LocalDate, steps: Int, goal: Int, past: Map<LocalDate, Int>, locale: Locale): List<StepsWeekDay> =
+            Weeks.days(today, Weeks.firstDay(locale)).map { d ->
                 val letter = d.dayOfWeek.getDisplayName(TextStyle.NARROW, locale)
                 when {
                     d > today -> StepsWeekDay(d, letter, null, StepsDay.ToCome)
@@ -129,7 +128,6 @@ data class StepsWidgetModel(
                         ?: StepsWeekDay(d, letter, null, StepsDay.NoRecord)
                 }
             }
-        }
 
         /**
          * Each day's bar as a share of the week's top, the goal or the most steps in a day if that's more, so a met day
@@ -139,8 +137,6 @@ data class StepsWidgetModel(
             val top = maxOf(goal, week.maxOf { it.steps ?: 0 }).coerceAtLeast(1).toFloat()
             return week.map { d -> d.steps?.takeIf { d.state != StepsDay.ToCome }?.let { it / top } }
         }
-
-        private fun format(n: Int) = Metric.Steps.format(n.toFloat())
     }
 }
 

@@ -9,13 +9,12 @@ import org.openstrap.app.data.db.Workout
 import org.openstrap.app.ui.components.ChartPoint
 import org.openstrap.app.ui.dashboard.TabCopy
 import org.openstrap.app.ui.dashboard.TodayCopy
-import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import org.openstrap.app.presentation.Weeks
 
 /**
  * The mockups' sample day as each widget's model, made by the same factories the widgets load through, so the
@@ -40,9 +39,9 @@ object WidgetSamples {
 
     /** 8,432 steps by 14:00 against 10,000, the week before today with two days met. */
     fun steps(today: LocalDate, locale: Locale = Locale.getDefault()): StepsWidgetModel {
-        val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val weekStart = Weeks.start(today, Weeks.firstDay(locale))
         val past = listOf(7_800, 11_200, 5_900, 10_400, 6_300, 9_100).mapIndexedNotNull { i, s ->
-            monday.plusDays(i.toLong()).takeIf { it < today }?.let { it to s }
+            weekStart.plusDays(i.toLong()).takeIf { it < today }?.let { it to s }
         }.toMap()
         val hourly = List(24) { h -> if (h in 7..14) 1_054f else 0f }
         return StepsWidgetModel.from(today, 8_432, hourly, 14, 10_000, past, locale)

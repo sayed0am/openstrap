@@ -8,9 +8,15 @@ import org.junit.Test
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
+import org.junit.Rule
+import org.openstrap.app.testing.LocaleRule
+import java.util.Locale
 
 /** The info sheets (spec 6.2): one for every detail, in the copy rules of spec 7. */
 class InfoCopyTest {
+    // The expected numbers are written the English way, whatever the machine's language.
+    @get:Rule val locale = LocaleRule(Locale.US)
+
     private fun ready(capped: Boolean = false, fallbackHrv: Float? = null, weekNights: Int = 7) = Recovery.Readiness(
         score = 70, contributors = emptyList(), baselineNights = 30, strainAlert = false, alertSignals = emptyList(),
         capped = capped, fallbackHrv = fallbackHrv, hrvWeekNights = weekNights,

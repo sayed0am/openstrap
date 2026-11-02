@@ -90,9 +90,9 @@ class BandsTest {
         assertFalse(StrapBands.stale(null, now))
         assertFalse(StrapBands.stale(now - 3 * 3600, now))
         assertTrue(StrapBands.stale(now - 3 * 3600 - 1, now))
-        // The widgets' rule, which the app's 90 minutes gives way to.
+        // The widgets' rule, which the app's 90 minutes gave way to (wave 3C): one threshold now.
         for (age in listOf(0L, 5400L, 10_800L, 10_801L, 86_400L)) assertEquals(syncStale(now - age, now), StrapBands.stale(now - age, now))
-        assertTrue(STALE_AFTER_S < StrapBands.STALE_AFTER_S)
+        assertEquals(StrapBands.STALE_AFTER_S, STALE_AFTER_S)
     }
 
     @Test

@@ -32,7 +32,7 @@ import org.openstrap.app.data.db.AppWorkoutRoutePoint
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
-import org.openstrap.app.widget.WidgetKind
+import org.openstrap.app.data.WidgetKind
 
 sealed interface WorkoutState {
     data object Idle : WorkoutState

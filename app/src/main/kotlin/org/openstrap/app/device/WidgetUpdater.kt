@@ -31,7 +31,7 @@ import org.openstrap.app.widget.StartWidget
 import org.openstrap.app.widget.StartWidgetReceiver
 import org.openstrap.app.widget.StepsWidget
 import org.openstrap.app.widget.StepsWidgetReceiver
-import org.openstrap.app.widget.WidgetKind
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.widget.WidgetRefresh
 import org.openstrap.app.widget.SYNC_STALE_SECONDS
 import java.time.Instant

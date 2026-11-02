@@ -3,9 +3,10 @@ package org.openstrap.app.ui.dashboard
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.presentation.Units
 
 /*
- * The week story (spec 4.2), opened from Your week on Today: last Monday to Sunday day by day, from what the app keeps.
+ * The week story (spec 4.2), opened from Your week on Today: last week day by day, from what the app keeps.
  * Steps a day, active minutes, the workouts done and the night's sleep after each day. It compares with the week
  * before only where that week is kept: steps (stored per day) and workouts. Active minutes are worked out for the
  * 14 days ending on the day shown and nights load 14 back, so neither reaches the week before. Pure, like [TodayCopy].
@@ -21,7 +22,7 @@ internal object WeekStory {
     data class Totals(val stepsADay: Int?, val activeMinutes: Int?, val workouts: Int, val asleepANight: Long?)
 
     /**
-     * The days of [week], Monday first. [steps] and [active] are keyed by day, [workouts] by the day they started,
+     * The days of [week], its first day first. [steps] and [active] are keyed by day, [workouts] by the day they started,
      * [asleepByMorning] by the morning a night ended on, so each day gets the night after it.
      */
     fun days(
@@ -42,7 +43,7 @@ internal object WeekStory {
     fun dayLine(d: Day): String? = listOfNotNull(
         d.activeMinutes?.takeIf { it > 0 }?.let { if (it == 1) "1 active minute" else "$it active minutes" },
         d.workouts.takeIf { it.isNotEmpty() }?.joinToString(", ") { it.lowercase() },
-        d.asleepSeconds?.let { "${TodayCopy.duration(it)} asleep" },
+        d.asleepSeconds?.let { "${Units.duration(it)} asleep" },
     ).joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
 
     /** "Busiest on Thursday, 12,400 steps." Null with fewer than two days of steps, where there's nothing to pick. */

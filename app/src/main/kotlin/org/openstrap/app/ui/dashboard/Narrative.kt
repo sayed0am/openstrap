@@ -1,7 +1,9 @@
 package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.ui.components.formatDuration
+import org.openstrap.app.presentation.RecoveryBands
+import org.openstrap.app.presentation.SleepBands
+import org.openstrap.app.presentation.Units
 import kotlin.math.abs
 
 /**
@@ -61,8 +63,8 @@ object Narrative {
             short && broken -> "Short, broken night"
             short -> "Short night"
             broken -> "Broken sleep"
-            score >= 90 -> "Solid night"
-            score >= 80 -> "Good night"
+            score >= SleepBands.GREAT_FROM -> "Solid night"
+            score >= SleepBands.GOOD_FROM -> "Good night"
             light -> "Light sleep"
             else -> "Okay night"
         }
@@ -84,10 +86,10 @@ object Narrative {
     ): List<Contributor> = buildList {
         val asleepMin = (asleepSeconds / 60).toInt()
         val duration = org.openstrap.app.data.Recovery.durationScore(asleepMin, needMinutes)
-        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), formatDuration(asleepSeconds) + " of ${formatDuration(needMinutes * 60L)}"))
+        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), Units.duration(asleepSeconds) + " of ${Units.duration(needMinutes * 60L)}"))
         if (wasoMinutes != null && asleepMin > 0) {
             val c = org.openstrap.app.data.Recovery.continuityScore(wasoMinutes)
-            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, "${formatDuration(wasoMinutes * 60L)} awake after falling asleep"))
+            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, "${Units.duration(wasoMinutes * 60L)} awake after falling asleep"))
         }
     }
 
@@ -113,9 +115,9 @@ object Narrative {
 
     /** A 0-100 contributor score as a rating word. */
     fun ratingFor(score: Int): Rating = when {
-        score >= 85 -> Rating.OPTIMAL
-        score >= 70 -> Rating.GOOD
-        score >= org.openstrap.app.data.Recovery.FAIR_FROM -> Rating.FAIR
+        score >= RecoveryBands.READY_FOR_MORE_FROM -> Rating.OPTIMAL
+        score >= RecoveryBands.READY_FROM -> Rating.GOOD
+        score >= RecoveryBands.MODERATE_FROM -> Rating.FAIR
         else -> Rating.LOW
     }
 
