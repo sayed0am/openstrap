@@ -182,13 +182,7 @@ internal object Architecture {
     val ROOT_NAMES = setOf("OpenStrapApp", "MainActivity", "BuildConfig", "R")
 
     /** Breaks the check lets through for now, each with the wave that removes it. One that matches nothing fails. */
-    val EXCEPTIONS: List<KnownBreak> = listOf(
-        KnownBreak(
-            "device/StrapService.kt", listOf("$APP.AppContainer"),
-            "found by 4E, StrapService.kt:293 loadFigures and :396 watchEnded take the container by full name",
-            "wave 5, StrapService split",
-        ),
-    )
+    val EXCEPTIONS: List<KnownBreak> = emptyList()
 
     private val appName = Regex("""(?<![\w.])org\.openstrap\.app(?:\.(?:\w+|\*))+""")
     private val composeName = Regex("""(?<![\w.])androidx\.compose(?:\.(?:\w+|\*))+""")

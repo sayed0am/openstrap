@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -30,6 +31,8 @@ import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
 import org.openstrap.app.data.WorkoutRecorder
+import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.NotificationCopy
@@ -67,6 +70,7 @@ class StrapService : LifecycleService() {
         val container = (application as OpenStrapApp).container
         val strap = container.strap
         val workout = container.workout
+        val dao = container.database.healthDao()
         // Started before the permission was revoked (a notification button, say): startForeground would throw.
         if (!allowed(this)) {
             stopSelf()
@@ -129,12 +133,12 @@ class StrapService : LifecycleService() {
         lifecycleScope.launch(Dispatchers.Default) {
             strap.sync.distinctUntilChangedBy { it is SyncState.Done }.collectLatest {
                 while (true) {
-                    figures.value = runCatching { loadFigures(container) }.getOrNull() ?: figures.value
+                    figures.value = runCatching { loadFigures(dao, container.settings, strap) }.getOrNull() ?: figures.value
                     delay(FIGURES_REFRESH_MS)
                 }
             }
         }
-        lifecycleScope.launch { watchEnded(container) }
+        lifecycleScope.launch { watchEnded(workout.state, dao) }
         lifecycleScope.launch {
             // Live HR changes about once a second, and every post wakes the CPU and redraws the system UI.
             // Connection, battery, charging and workout changes post at once; a bpm-only change waits for the refresh.
@@ -290,11 +294,11 @@ class StrapService : LifecycleService() {
     )
 
     /** Today's Recovery and Charge, the last sync and your usual sport; the model runs in a few hundred ms. */
-    private suspend fun loadFigures(container: org.openstrap.app.AppContainer): Figures {
-        val dao = container.database.healthDao()
-        val r = org.openstrap.app.data.RecoveryEngine(dao).compute(java.time.LocalDate.now(), container.settings.profile.first())
+    private suspend fun loadFigures(dao: HealthDao, settings: SettingsStore, strap: StrapController): Figures {
+        val r = org.openstrap.app.data.RecoveryEngine(dao).compute(java.time.LocalDate.now(), settings.profile.first())
         val sport = dao.appWorkoutsAll().maxByOrNull { it.start }?.sportType ?: Workouts.DEFAULT_SPORTS.first()
-        return Figures(r.readiness.score, r.charge.latest?.let(::chargeShown), sport, (container.strap.sync.value as? SyncState.Done)?.atEpochSeconds ?: figures.value?.syncedAt)
+        val syncedAt = (strap.sync.value as? SyncState.Done)?.atEpochSeconds ?: figures.value?.syncedAt
+        return Figures(r.readiness.score, r.charge.latest?.let(::chargeShown), sport, syncedAt)
     }
 
     /**
@@ -394,15 +398,15 @@ class StrapService : LifecycleService() {
      * Once a workout is saved, a quiet summary with View, and Undo when it ended on its own (the stop or car question)
      * and the time after was kept. It goes when the summary in the app is closed.
      */
-    private suspend fun watchEnded(container: org.openstrap.app.AppContainer) {
+    private suspend fun watchEnded(workoutState: StateFlow<WorkoutState>, dao: HealthDao) {
         val nm = getSystemService(NotificationManager::class.java)
         var previous: WorkoutState? = null
-        container.workout.state.collect { st ->
+        workoutState.collect { st ->
             val was = previous
             previous = st
             when {
                 st is WorkoutState.Ended && was is WorkoutState.Recording -> {
-                    val w = container.database.healthDao().appWorkoutOnce(st.start) ?: return@collect
+                    val w = dao.appWorkoutOnce(st.start) ?: return@collect
                     nm.notify(SUMMARY_ID, savedNotification(w))
                 }
                 st !is WorkoutState.Ended -> nm.cancel(SUMMARY_ID)
