@@ -141,7 +141,9 @@ data class StartWidgetModel(
             val today = now.atZone(zone).toLocalDate()
             val weekStart = Weeks.start(today, Weeks.firstDay(locale)).atStartOfDay(zone).toEpochSecond()
             // As Today and Your week count them: the strap's own "Activity" records aren't workouts.
-            val week = workouts.filter { it.workout.sportType != Workouts.GENERIC_ACTIVITY && it.workout.start in weekStart..now.epochSecond }
+            val week = workouts.filter {
+                it.workout.sportType != Workouts.GENERIC_ACTIVITY && it.workout.start in weekStart..now.epochSecond
+            }
             val last = workouts.filter { Workouts.tileType(it.workout.sportType) == Workouts.tileType(usual.sportType) && it.workout.start <= now.epochSecond }
                 .maxByOrNull { it.workout.start }
             return StartWidgetModel(

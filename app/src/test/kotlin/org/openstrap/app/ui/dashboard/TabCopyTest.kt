@@ -17,7 +17,7 @@ import java.util.Locale
 
 /** The words on the Recovery, Sleep and Activity tabs (spec 5 and 7). */
 class TabCopyTest {
-    // The expected numbers are written the English way; the German test below sets its own.
+    // The expected numbers are written the English way, and the German test below sets its own.
     @get:Rule val locale = LocaleRule(Locale.US)
 
     private fun c(f: Factor, score: Int) = Contributor(f, score, "")

@@ -436,12 +436,15 @@ object InfoCopy {
         if (reg.sri != null) add("This week compares $hours h of wear.")
         else {
             add("Not enough wear for the full measure yet: $hours h of the ${SleepRegularity.MIN_VALID_PAIRS / 60} h it needs.")
-            reg.midpointSdMinutes?.let { add("Meanwhile the middle of your sleep moved about ${Units.duration(Math.round(it) * 60L)} this week.") }
+            reg.midpointSdMinutes?.let {
+                add("Meanwhile the middle of your sleep moved about ${Units.duration(Math.round(it) * 60L)} this week.")
+            }
         }
     }
 
     /** What's particular about the night's Sleep score: the sleep need the guidance measures against. */
-    fun sleepNotes(needMinutes: Int): List<String> = listOf("Your sleep need here is ${Units.duration(needMinutes * 60L)}, from your age or your own setting.")
+    fun sleepNotes(needMinutes: Int): List<String> =
+        listOf("Your sleep need here is ${Units.duration(needMinutes * 60L)}, from your age or your own setting.")
 
     /**
      * What's particular about today's Recovery, for its info sheet: the strap's own score beside ours, and anything that

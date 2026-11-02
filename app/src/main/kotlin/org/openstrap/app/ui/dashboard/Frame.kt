@@ -146,7 +146,8 @@ fun strapChip(paired: Boolean, connection: ConnectionState, sync: SyncState, las
                 connection.charging && battery != null -> StrapChip("Charging $battery%", StrapChip.Dot.Charging, "Strap charging, battery $battery percent")
                 sync is SyncState.Failed -> StrapChip("Not synced", StrapChip.Dot.Warn, "Strap connected, not synced")
                 battery == null -> StrapChip("", StrapChip.Dot.Fine, "Strap connected")
-                StrapBands.lowBattery(battery, connection.charging) -> StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
+                StrapBands.lowBattery(battery, connection.charging) ->
+                    StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
                 else -> StrapChip("$battery%", StrapChip.Dot.Fine, "Strap connected, battery $battery percent")
             }
         }

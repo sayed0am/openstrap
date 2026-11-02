@@ -315,10 +315,10 @@ object TabCopy {
         }
     }
 
-    /** "850 m" under a kilometre, "5.2 km" from one; "≈ " in front when estimated from steps. Empty under 10 m. */
+    /** "850 m" under a kilometre, "5.2 km" from one, "≈ " in front when estimated from steps. Empty under 10 m. */
     fun distanceText(meters: Float, fromSteps: Boolean): String = Units.distance(meters, Units.Precision.Day, fromSteps).orEmpty()
 
-    /** "5:24 /km"; null for a pace slower than an hour a kilometre, which is standing still. */
+    /** "5:24 /km", null for a pace slower than an hour a kilometre, which is standing still. */
     fun paceText(secondsPerKm: Float): String? = Pace.text(secondsPerKm.toDouble())
 
     /**

@@ -52,8 +52,10 @@ internal object ActivityCopy {
     }
 
     /** An hour's steps in the headline while it's tapped: "steps, 09:00 to 10:00". */
-    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String =
-        "steps, ${TimeOfDay.minutes(hour * MINUTES_PER_HOUR, locale = locale)} to ${TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR, locale = locale)}"
+    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String {
+        fun clock(h: Int) = TimeOfDay.minutes(h * MINUTES_PER_HOUR, locale = locale)
+        return "steps, ${clock(hour)} to ${clock(hour + 1)}"
+    }
 
     private const val MINUTES_PER_HOUR = 60
 
@@ -123,7 +125,7 @@ internal object ActivityCopy {
     /** Load's scale in its info sheet, low to high, in the words beside it. */
     val LOAD_SCALE = listOf(LoadBand.Below, LoadBand.Usual, LoadBand.Above).map { it.text }
 
-    /** Which bar of [LOAD_SCALE] a Load is in against your usual for a whole day, by [LoadBands]; null without a usual. */
+    /** Which bar of [LOAD_SCALE] a Load is in against your usual for a whole day, by [LoadBands]. Null without a usual. */
     fun loadBar(load: Float, usual: Float?): Int? = when (LoadBands.of(load, usual)) {
         null -> null
         LoadBand.Below -> 0
@@ -203,5 +205,6 @@ internal object ActivityCopy {
     fun distanceSource(fromSteps: Boolean): String = if (fromSteps) "km, from your steps" else "km, from the strap"
 
     /** The sentence under the kilometres: the steps they come from. */
-    fun distance(steps: Int, today: Boolean): String = "Over ${Units.count(steps.toLong())} steps ${if (today) "so far today" else "that day"}."
+    fun distance(steps: Int, today: Boolean): String =
+        "Over ${Units.count(steps.toLong())} steps ${if (today) "so far today" else "that day"}."
 }

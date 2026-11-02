@@ -170,7 +170,8 @@ internal object CaloriesCopy {
         val busiest = s.busiest ?: return null
         val share = s.workoutShare
         return if (share != null && share >= 1) "Workouts made $share% of your active kcal, the rest came from walking and moving about."
-        else "Your busiest day was ${DayWords.short(busiest.date, locale)}, with ${Units.count(Math.round(busiest.active).toLong(), locale)} active kcal."
+        else "Your busiest day was ${DayWords.short(busiest.date, locale)}, " +
+            "with ${Units.count(Math.round(busiest.active).toLong(), locale)} active kcal."
     }
 
     /* ------------------------------------------- A workout's day ---------------------------------------- */

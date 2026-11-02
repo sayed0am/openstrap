@@ -20,7 +20,7 @@ class BackupCopyTest {
         assertEquals("Each day while the phone charges. No backup yet", status(on))
         assertEquals("Last backup today at 03:12", status(on.copy(lastDone = 1792195200L + 3 * 3600 + 12 * 60)))
         assertEquals("Last backup yesterday at 23:50", status(on.copy(lastDone = 1792195200L - 600)))
-        assertEquals("Last backup on Wednesday", status(on.copy(lastDone = 1792195200L - 3 * 86_400L)))
+        assertEquals("Last backup on Wed 14 Oct", status(on.copy(lastDone = 1792195200L - 3 * 86_400L)))
         assertEquals("Last backup on Fri 9 Oct", status(on.copy(lastDone = 1792195200L - 8 * 86_400L)))
         assertEquals(
             "Last backup failed. The folder is no longer available.",

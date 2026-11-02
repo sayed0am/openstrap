@@ -111,7 +111,9 @@ data class SleepWidgetModel(
         /** Each stage's name, time and share of the night's stage seconds, as the Sleep score detail lists them. */
         fun stageRows(totals: List<Pair<Int, Long>>): List<SleepStageRow> {
             val all = totals.sumOf { it.second }.coerceAtLeast(1L)
-            return totals.map { (stage, seconds) -> SleepStageRow(stage, SLEEP_NAMES[stage].orEmpty(), Units.duration(seconds), seconds.toFloat() / all) }
+            return totals.map { (stage, seconds) ->
+                SleepStageRow(stage, SLEEP_NAMES[stage].orEmpty(), Units.duration(seconds), seconds.toFloat() / all)
+            }
         }
 
         private fun night(n: SleepWidgetNight, stale: Boolean, zone: ZoneId): SleepWidgetModel {

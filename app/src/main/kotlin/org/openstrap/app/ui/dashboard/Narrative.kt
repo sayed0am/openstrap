@@ -86,10 +86,12 @@ object Narrative {
     ): List<Contributor> = buildList {
         val asleepMin = (asleepSeconds / 60).toInt()
         val duration = org.openstrap.app.data.Recovery.durationScore(asleepMin, needMinutes)
-        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), Units.duration(asleepSeconds) + " of ${Units.duration(needMinutes * 60L)}"))
+        val total = Units.duration(asleepSeconds) + " of ${Units.duration(needMinutes * 60L)}"
+        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), total))
         if (wasoMinutes != null && asleepMin > 0) {
             val c = org.openstrap.app.data.Recovery.continuityScore(wasoMinutes)
-            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, "${Units.duration(wasoMinutes * 60L)} awake after falling asleep"))
+            val awake = "${Units.duration(wasoMinutes * 60L)} awake after falling asleep"
+            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, awake))
         }
     }
 

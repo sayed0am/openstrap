@@ -3,11 +3,9 @@ package org.openstrap.app.ui.device
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.export.AutoBackup
 import org.openstrap.app.export.BackupFiles
-import java.time.Instant
 import java.time.ZoneId
 import java.util.Locale
 import org.openstrap.app.presentation.DayWords
-import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 
 /** The words of backup on the You and Backup pages and in its messages. */
@@ -37,13 +35,9 @@ object BackupCopy {
         BackupFiles.Failure.Other -> "It tries again tomorrow."
     }
 
-    /** By [DayWords]: "today at 03:12", "yesterday at 03:12", then "on Tuesday" within the week and "on Tue 13 Oct". */
-    fun whenDone(epochSeconds: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String {
-        val date = Instant.ofEpochSecond(epochSeconds).atZone(zone).toLocalDate()
-        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        val day = DayWords.inSentence(date, today, locale)
-        return if (date == today || date == today.minusDays(1)) "$day at ${TimeOfDay.format(epochSeconds, zone, locale = locale)}" else "on $day"
-    }
+    /** "today at 03:12", "yesterday at 03:12", "on Tue 20 Oct": [DayWords.whenDone], on the phone's clock. */
+    fun whenDone(epochSeconds: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String =
+        DayWords.whenDone(epochSeconds, now, zone, locale = locale)
 
     /**
      * Where the folder picker opens when backup is first turned on. The top of the phone's storage can't be chosen

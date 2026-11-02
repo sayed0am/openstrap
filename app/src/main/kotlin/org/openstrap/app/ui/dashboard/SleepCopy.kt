@@ -200,7 +200,8 @@ internal object SleepCopy {
             band == SleepRegularity.Band.Regular -> "Regular this week. Most days kept similar sleep times."
             band == SleepRegularity.Band.Fair -> "Fair this week. Your sleep times moved on some days."
             band == SleepRegularity.Band.Irregular -> "Irregular this week. Your sleep times moved a lot from day to day."
-            sd != null -> "The middle of your sleep moved about ${Units.duration(sd.roundToInt() * 60L)} this week. The full measure needs more wear."
+            sd != null ->
+                "The middle of your sleep moved about ${Units.duration(sd.roundToInt() * 60L)} this week. The full measure needs more wear."
             else -> "Regularity needs about 5 days of wear around the clock."
         }
     }
@@ -238,7 +239,8 @@ internal object SleepCopy {
 
     /** The day's naps in a sentence: "One nap, 45 min." or "Two naps, 1 h 10 in all." */
     fun naps(count: Int, totalSeconds: Long): String =
-        if (count == 1) "One nap, ${Units.duration(totalSeconds)}." else "${DetailCopy.count(count, "nap").replaceFirstChar { it.uppercase() }}, ${Units.duration(totalSeconds)} in all."
+        if (count == 1) "One nap, ${Units.duration(totalSeconds)}."
+        else "${DetailCopy.count(count, "nap").replaceFirstChar { it.uppercase() }}, ${Units.duration(totalSeconds)} in all."
 
     /** Under a nap's heart rate line. */
     fun napHeart(lowest: Int, average: Int): String = "Lowest $lowest bpm, $average on average."

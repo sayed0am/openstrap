@@ -18,6 +18,7 @@ import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
+import java.util.concurrent.TimeUnit.MINUTES
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
@@ -29,11 +30,13 @@ import org.openstrap.app.ui.theme.AppIcons
 
 /** The Goals row's value: "8,000 steps, 300 active kcal, 8 active hours". */
 fun goalsLine(goals: Goals, locale: java.util.Locale = java.util.Locale.getDefault()): String =
-    "${Units.count(goals.steps.toLong(), locale)} steps, ${Units.count(goals.calories.toLong(), locale)} active kcal, ${goals.activeHours} active hours"
+    "${Units.count(goals.steps.toLong(), locale)} steps, ${Units.count(goals.calories.toLong(), locale)} active kcal, " +
+        "${goals.activeHours} active hours"
 
 /** The Sleep goal row's value, with the sleep need Recovery uses beside it: "7 h 30. Your sleep need is 8 h". */
 fun sleepGoalLine(goals: Goals, needMinutes: Int): String =
-    "${Units.duration(goals.sleepMinutes * 60L)}. Your sleep need is ${Units.duration(needMinutes * 60L)}"
+    "${Units.duration(MINUTES.toSeconds(goals.sleepMinutes.toLong()))}. " +
+        "Your sleep need is ${Units.duration(MINUTES.toSeconds(needMinutes.toLong()))}"
 
 /**
  * The auto sync row's value: on and when it last wrote, by [DayWords.at] ("On. Last synced 10:42", "yesterday 10:42",

@@ -17,7 +17,7 @@ import org.openstrap.app.ui.glow.draw.weekStub
 
 /** Widgets spec 3.3: what the Steps widget shows in each state, from the app's own sums and copy, and how it fits. */
 class StepsWidgetModelTest {
-    // TalkBack's words follow the phone's language; these tests read them in English.
+    // TalkBack's words follow the phone's language, and these tests read them in English.
     @get:Rule val phone = LocaleRule(Locale.UK)
 
     private val today = LocalDate.of(2026, 10, 24) // a Saturday
