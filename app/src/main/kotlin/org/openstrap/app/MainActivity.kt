@@ -422,7 +422,7 @@ private fun AppRoot(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited) } })
+    val dayVm: DayViewModel = viewModel(factory = viewModelFactory { initializer { DayViewModel(container.health, container.strap.todaySteps, container.settings.profile, container.autoHealthConnect::sleepEdited, dateChanges = org.openstrap.app.data.Today.changes(container.app)) } })
     val deviceVm: DeviceViewModel = viewModel(factory = viewModelFactory { initializer { DeviceViewModel(container) } })
 
     // Which tab shows and the one before it, for back; every tab keeps its own stack of details.
@@ -435,7 +435,7 @@ private fun AppRoot(
     // The All metrics sheet, from the grid button in the header: over the tab, never a place.
     var allMetricsOpen by rememberSaveable { mutableStateOf(false) }
     val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates, dateChanges = org.openstrap.app.data.Today.changes(container.app)) }
     })
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val openWorkout by workoutsVm.open.collectAsStateWithLifecycle()
@@ -1524,7 +1524,7 @@ private fun RewardsPage(shown: Page, container: AppContainer, padding: androidx.
     val scope = rememberCoroutineScope()
     // The app root's, already made.
     val workoutsVm: org.openstrap.app.ui.workout.WorkoutsViewModel = viewModel(factory = viewModelFactory {
-        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates) }
+        initializer { org.openstrap.app.ui.workout.WorkoutsViewModel(container.database.healthDao(), container.settings.profile, container.maxHeartRates, dateChanges = org.openstrap.app.data.Today.changes(container.app)) }
     })
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val goals by container.settings.goals.collectAsStateWithLifecycle(org.openstrap.app.data.settings.Goals())

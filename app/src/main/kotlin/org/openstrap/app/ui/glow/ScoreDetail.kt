@@ -121,7 +121,7 @@ private fun RecoveryDetail(
     val withData = week.filter { it.second != null }.map { it.first }.toSet() + later
 
     val known = week.mapNotNull { it.second }
-    val headline = scrub ?: when {
+    val headline = when {
         range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 days", null)
         range == Range.Week -> DetailHeadline.none("No scores", "In the last 7 days")
         score != null -> DetailHeadline(score.toString(), if (isToday) "this morning" else "that morning", TodayCopy.recoveryWord(score, alert))
@@ -133,9 +133,9 @@ private fun RecoveryDetail(
         Score.Recovery.title, color, siblings(Detail.OfScore(Score.Recovery), onSwitch), onInfo = { info = true }, onBack = onBack,
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(state.date, today, withData), onDay = onSelectDay,
-        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) },
+        ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
         // The arc gauge (chart kit, spec 2.7) holds the day's score, centred, the number inside the half circle.
-        heroValue = (score ?: estimate)?.takeIf { range == Range.Day && scrub == null }?.let { shown ->
+        heroValue = (score ?: estimate)?.takeIf { range == Range.Day }?.let { shown ->
             { ArcGauge(shown / 100f, color, key = state.date) { DetailScoreNumber(shown) } }
         },
     ) {
@@ -225,7 +225,7 @@ private fun ChargeDetail(
     // The latest Charge is where the curve ends, which can be well before now while the strap catches up.
     val lastAt = c?.points?.lastOrNull { it.state != Recovery.State.NoData }?.t
     val stale = isToday && lastAt != null && System.currentTimeMillis() / 1000 - lastAt > 30 * 60
-    val headline = scrub ?: when {
+    val headline = when {
         c == null || !c.anchored -> DetailHeadline.none("Waiting", "After your first night")
         now == null -> DetailHeadline.none("No reading", "Needs a few hours of heart rate")
         else -> DetailHeadline(
@@ -247,7 +247,7 @@ private fun ChargeDetail(
         Score.Charge.title, color, siblings(Detail.OfScore(Score.Charge), onSwitch), onInfo = { info = true }, onBack = onBack,
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(state.date, today, withData), onDay = onSelectDay,
-        ranges = listOf(Range.Day), range = Range.Day, onRange = {},
+        ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
     ) {
         item {
             if (c == null || now == null || c.points.size < 2) DetailEmpty(TabCopy.chargeLine(now, atWake, c?.anchored == true))

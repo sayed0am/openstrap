@@ -66,11 +66,8 @@ internal fun <C> GlowBlocks.tabCards(slots: List<TabSlot<C>>, focus: C? = null, 
                 CompositionLocalProvider(LocalEdgeOverride provides slot.look.edgeOverride()) { draw(slot.card, m) }
             }
         }
-        when (pane) {
-            Pane.Full -> full(block)
-            Pane.Left -> left(block)
-            Pane.Right -> right(block)
-        }
+        // Keyed on its cards, so a card keeps its saved state when one is added or hidden above it (audit K5).
+        add(pane, GlowBlocks.cardsKey(row.items().map { "${slots[it].card}" }), block)
     }
 }
 
