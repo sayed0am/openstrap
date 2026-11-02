@@ -1190,7 +1190,6 @@ class WorkoutSession(
             buffer += AppWorkoutHeartRate(r.workout.start, t, bpm)
         }
         synchronized(allReadings) { allReadings += t to bpm }
-        _recent.value = (_recent.value + (t to bpm)).dropWhile { it.first < t - RECENT_S }
         window = (window + (t to bpm)).dropWhile { it.first < t - STOP_WINDOW_S }
         sum += bpm
         count++
@@ -1203,6 +1202,8 @@ class WorkoutSession(
         lastReading = t to bpm
         coach.feed(t, WorkoutRecorder.liveZone(bpm, r.maxHeartRate), WorkoutRecorder.activeSeconds(r.workout, t))?.let(::cue)
         _stats.value = WorkoutRecorder.Stats(Math.round(sum.toDouble() / count).toInt(), maxOf(_stats.value?.max ?: 0, bpm), minOf(_stats.value?.min ?: bpm, bpm))
+        // Last, so whoever sees the reading in [recent] also sees its zone time and stats.
+        _recent.value = (_recent.value + (t to bpm)).dropWhile { it.first < t - RECENT_S }
     }
 
     private suspend fun flush() {
