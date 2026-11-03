@@ -1,5 +1,7 @@
 package org.openstrap.app.device
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.WorkoutEffectEngine
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.db.HealthDao
@@ -11,21 +13,36 @@ import org.openstrap.app.data.settings.UserProfile
  * strap recorded meanwhile ([WorkoutRecorder.missingMinutes], [WorkoutRecorder.fillFromHistory]), then refreshes the
  * workout's averages and effect ([org.openstrap.app.data.WorkoutEffectEngine]). Running it again changes nothing once a
  * minute is filled. [profile] gives the max HR the effect is worked out with.
+ *
+ * Each workout is filled under [lock], the one [WorkoutSession] and its [SavedWorkoutEditor] change workouts under,
+ * and read again inside it, so a trim, an end or a discard made since the list was read stands.
  */
-class WorkoutGapFill(private val dao: HealthDao, private val profile: suspend () -> UserProfile = { UserProfile() }) {
+class WorkoutGapFill(
+    private val dao: HealthDao,
+    private val lock: Mutex = WorkoutSession.LOCK,
+    private val profile: suspend () -> UserProfile = { UserProfile() },
+) {
 
     /** A line for the log when anything was filled, else null. */
     suspend fun run(now: Long = System.currentTimeMillis() / 1000): String? {
         var filled = 0
-        for (w in dao.appWorkoutsOnce(now - LOOKBACK_S, now)) filled += fill(w, now)
+        for (listed in dao.appWorkoutsOnce(now - LOOKBACK_S, now)) {
+            // Gone since the list was read (discarded): nothing to fill.
+            filled += lock.withLock { dao.appWorkoutOnce(listed.start)?.let { fill(it) } ?: 0 }
+        }
         return if (filled > 0) "workout gap fill: $filled minutes from the strap's history" else null
     }
 
-    /** Fills [w]'s missing minutes from history; the number filled. Also builds a workout saved after the fact. */
-    suspend fun fill(w: org.openstrap.app.data.db.AppWorkout, now: Long = System.currentTimeMillis() / 1000): Int {
-        // The whole recorded span, so a trim or an early end can be undone with its minutes filled.
-        val end = w.recordedEnd ?: w.end ?: w.pausedAt ?: now
+    /**
+     * Fills [w]'s missing minutes from history and returns how many. Also builds a workout saved after the fact. The
+     * caller holds [lock] and passes the row as stored now.
+     */
+    suspend fun fill(w: org.openstrap.app.data.db.AppWorkout): Int {
         val hr = dao.appWorkoutHeartRateOnce(w.start)
+        // The whole recorded span, so a trim or an early end can be undone with its minutes filled. One still recording
+        // only up to its last reading: the hours after the app was killed may be the night, and a workout left that
+        // long ends at its last reading ([WorkoutSession.restore]).
+        val end = w.end?.let { w.recordedEnd ?: it } ?: hr.maxOfOrNull { it.timestamp } ?: return 0
         val missing = WorkoutRecorder.missingMinutes(w.start, end, w.pauseRanges, hr.map { it.timestamp })
         if (missing.isEmpty()) return 0
         val from = missing.first()

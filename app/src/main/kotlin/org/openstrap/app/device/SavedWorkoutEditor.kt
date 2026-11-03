@@ -30,6 +30,8 @@ internal class SavedWorkoutEditor(
     private val log: (String) -> Unit,
     private val clock: () -> Long,
     private val scope: CoroutineScope,
+    /** The route and step totals still in memory for the workout [start] (the last one recorded), else null. */
+    private val track: (start: Long) -> WorkoutDistance.Track? = { null },
 ) {
     /**
      * Deletes a phone workout, and closes its summary if it is the one showing. The strap's own records of it
@@ -105,7 +107,7 @@ internal class SavedWorkoutEditor(
         scope.launch {
             lock.withLock {
                 val w = catching { dao.appWorkoutOnce(start) }.getOrNull()?.takeIf { it.end != null } ?: return@withLock
-                val changed = change(w)
+                val changed = change(w).let { c -> if (c.from == w.from && c.end == w.end) c else withDistance(w, c) }
                 if (changed == w) return@withLock
                 catching { dao.upsertAppWorkout(withEffect(changed, dao.appWorkoutHeartRateOnce(start))) }
                     .onFailure { log("workout edit not saved: ${it.message}") }
@@ -115,6 +117,21 @@ internal class SavedWorkoutEditor(
                 onSaved(start)
             }
         }
+    }
+
+    /**
+     * [new], a new range of [old], with the distance over it ([WorkoutDistance]): from the route and step totals in
+     * memory, or a kept route, and without either [old]'s by the share of moving time kept.
+     */
+    private suspend fun withDistance(old: AppWorkout, new: AppWorkout): AppWorkout {
+        val track = track(old.start) ?: run {
+            if (!old.keepRoute) return@run null
+            catching { dao.routeOnce(old.start).map { it.point } }.getOrNull()
+                ?.let { WorkoutDistance.Track(it, emptyList(), null, routeSince = old.start, stepsSince = old.start) }
+        }
+        val shown = track?.let { WorkoutDistance.shown(new, clock(), it) }
+        return if (shown != null) new.copy(distanceMeters = shown.first, distanceFromSteps = shown.second)
+        else new.copy(distanceMeters = WorkoutDistance.scaledTo(old, new))
     }
 
     /** Writes the daily energy rows from [from] to [to] again ([org.openstrap.app.data.DailyEnergyHistory.updateDays]). */
