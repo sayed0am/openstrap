@@ -116,13 +116,13 @@ private fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(
 /** Small: the top row, then the steps with "today", then the goal bar and the share of the goal. */
 @Composable
 private fun ColumnScope.SmallContent(m: StepsWidgetModel, f: WidgetFrame) {
-    val fit = StepsLayout.small(m.stepsText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status)
+    val fit = StepsLayout.small(m.smallText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status)
     Edge(fit.spread, f)
     TopRowView(m.title, null, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
     // Each block one child of the column: Glance drops a column's children past ten.
     Column(GlanceModifier.fillMaxWidth()) {
-        DotNumber(m.stepsText, fit.dot, f.density, m.description)
+        DotNumber(m.smallText, fit.dot, f.density, m.description)
         if (fit.word) {
             Spacer(GlanceModifier.height(StepsLayout.SMALL_WORD_GAP_DP.dp))
             Text(m.word, style = WidgetType.word, maxLines = 1)

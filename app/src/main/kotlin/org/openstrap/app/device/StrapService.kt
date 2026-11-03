@@ -90,10 +90,15 @@ class StrapService : LifecycleService() {
             // Refused for the location type, it tries again without. Refused outright (a start from the background
             // with no exemption), it stops rather than crash: a workout records on, but can be killed.
             if (!tryForeground(first, withGps, log) && (withGps == base || !tryForeground(first, base, log))) {
+                (workout.state.value as? WorkoutState.Recording)?.let {
+                    log("service: no foreground while recording, asking to keep it going")
+                    KeepRecordingNotice.show(this, it.workout.sportType)
+                }
                 stopSelf()
                 return START_NOT_STICKY
             }
             foreground = true
+            KeepRecordingNotice.clear(this)
         }
         when (intent?.action) {
             // Debug: the workout card with sample figures as this service's notification, or ("clear") its own back.
@@ -605,7 +610,8 @@ class StrapService : LifecycleService() {
             }
 
         /** Whether the service is up; a start then needn't (and, once swiped away, mustn't) post its notification. */
-        @Volatile private var running = false
+        @Volatile var running = false
+            private set
 
         /**
          * Android 14 on refuses a connected-device service to an app holding no Bluetooth permission (never granted, or

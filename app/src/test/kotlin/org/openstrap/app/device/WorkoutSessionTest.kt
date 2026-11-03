@@ -50,6 +50,7 @@ import org.openstrap.protocol.services.SettingsGroup
 import org.openstrap.protocol.services.SportSession
 import org.openstrap.protocol.services.StepTotals
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.time.Duration
 import java.util.Collections
@@ -90,8 +91,8 @@ class WorkoutSessionTest {
     /** The app's scope as `AppContainer.appScope` builds it, but what it catches lands in [uncaught] for the test. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> uncaught += e })
 
-    private fun session(leftWaitMs: Long = WorkoutSession.LEFT_WAIT_MS) = WorkoutSession(
-        context, dao, SettingsStore(context), strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope,
+    private fun session(leftWaitMs: Long = WorkoutSession.LEFT_WAIT_MS, on: Context = context) = WorkoutSession(
+        on, dao, SettingsStore(context), strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope,
         leftWaitMs = leftWaitMs,
     )
 
@@ -581,6 +582,87 @@ class WorkoutSessionTest {
         Thread.sleep(SETTLE_MS)
         assertEquals(seed, s.recent.value)
         assertEquals(WorkoutRecorder.Stats(100, 100, 100), s.stats.value)
+    }
+
+    /** The app in the background on Android 12 and up: a foreground service start is refused while [refusing]. */
+    private class Background(base: Context) : android.content.ContextWrapper(base) {
+        @Volatile var refusing = true
+        override fun getApplicationContext(): Context = this
+        override fun startForegroundService(service: android.content.Intent): android.content.ComponentName? =
+            if (refusing) throw android.app.ForegroundServiceStartNotAllowedException("not allowed from the background")
+            else super.startForegroundService(service)
+    }
+
+    private val notifications get() = shadowOf(context.getSystemService(android.app.NotificationManager::class.java))
+
+    /** The Keep recording notice, once [present] says whether it shows. */
+    private fun keepRecording(present: Boolean): android.app.Notification? = runBlocking {
+        withTimeout(WAIT_MS) {
+            while ((notifications.getNotification(KeepRecordingNotice.NOTIFICATION_ID) != null) != present) delay(POLL_MS)
+            notifications.getNotification(KeepRecordingNotice.NOTIFICATION_ID)
+        }
+    }
+
+    private fun grantBluetooth() =
+        shadowOf(context as android.app.Application).grantPermissions(android.Manifest.permission.BLUETOOTH_CONNECT)
+
+    @Test
+    fun aServiceRefusedInTheBackgroundAsksToKeepRecordingAndStartsOnceTheAppIsInFront() {
+        grantBluetooth()
+        val background = Background(context)
+        val s = session(on = background)
+        s.start(sportType = 1)
+        s.recording()
+        val n = keepRecording(present = true)!!
+        assertEquals("Keep recording your outdoor run", n.extras.getString(android.app.Notification.EXTRA_TITLE))
+        assertEquals(KeepRecordingNotice.TEXT, n.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString())
+        assertEquals(WorkoutNotification.CHANNEL, n.channelId)
+        // A tap brings the app forward on the live screen.
+        val tap = shadowOf(n.contentIntent).savedIntent
+        assertEquals(org.openstrap.app.MainActivity::class.java.name, tap.component?.className)
+        assertTrue(tap.getBooleanExtra(org.openstrap.app.MainActivity.EXTRA_SHOW_WORKOUT, false))
+        shadowOf(context as android.app.Application).clearStartedServices()
+
+        // The app in front: the service starts from there and the notice goes.
+        background.refusing = false
+        s.inFront()
+        assertEquals(StrapService::class.java.name, shadowOf(context as android.app.Application).nextStartedService?.component?.className)
+        keepRecording(present = false)
+    }
+
+    @Test
+    fun aRestoredWorkoutRefusedItsServiceAsksToKeepRecording() {
+        grantBluetooth()
+        val t0 = clock.now - 600
+        runBlocking {
+            db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = null, sportType = 49))
+            db.healthDao().insertAppWorkoutHeartRate((1..9).map { AppWorkoutHeartRate(t0, t0 + it, 100 + it) })
+        }
+        val s = session(on = Background(context))
+        s.restore()
+        s.recording()
+        val n = keepRecording(present = true)!!
+        assertEquals("Keep recording your HIIT", n.extras.getString(android.app.Notification.EXTRA_TITLE))
+    }
+
+    @Test
+    fun theKeepRecordingNoticeGoesWhenTheWorkoutEnds() {
+        grantBluetooth()
+        val s = session(on = Background(context))
+        s.start(sportType = 1)
+        s.recording()
+        keepRecording(present = true)
+        clock.advance(Duration.ofSeconds(120))
+        s.end()
+        s.state.await { it is WorkoutState.Ended }
+        keepRecording(present = false)
+    }
+
+    @Test
+    fun theSportReadsAsInASentence() {
+        assertEquals("Keep recording your mountain hike", KeepRecordingNotice.title(224))
+        assertEquals("Keep recording your HYROX training", KeepRecordingNotice.title(222))
+        assertEquals("Keep recording your strength training", KeepRecordingNotice.title(52))
     }
 
     /** [HealthDao] that can fail every workout save, or hold the next one until released. */
