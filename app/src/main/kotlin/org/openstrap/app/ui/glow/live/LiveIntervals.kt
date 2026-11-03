@@ -222,8 +222,8 @@ internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = n
 
 /**
  * A phase: where you are and what's next, its word large, the seconds in the screen's one dotted number, a line under.
- * [compact] (half a folded phone) puts the word, the seconds and the phase's [action] side by side, smaller, with no
- * line.
+ * [compact] (half a folded phone, or a phone on its side) puts the word, the seconds and the phase's [action] side by
+ * side, smaller, with no line.
  */
 @Composable
 private fun ColumnScope.PhaseFigure(
@@ -234,7 +234,7 @@ private fun ColumnScope.PhaseFigure(
         Text(next, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary)
     }
     if (compact) {
-        Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().then(if (shortLandscape(compact)) Modifier else Modifier.weight(1f)), horizontalArrangement = Arrangement.spacedBy(20.dp, Alignment.CenterHorizontally), verticalAlignment = Alignment.CenterVertically) {
             Text(word.uppercase(), color = Color.White, style = GlowType.phaseWord, maxLines = 1)
             if (seconds != null) DotMatrixText(seconds, dot = DotSize.Detail)
             action?.invoke()

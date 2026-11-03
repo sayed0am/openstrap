@@ -23,6 +23,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -134,64 +142,172 @@ internal fun LiveFrame(
     BackHandler(onBack = controls.onMinimize)
     // The screens built for each sport label their buttons; the older one says to hold the square under them.
     val labelled = time != null
-    WorkoutPage(color, contentPadding, scroll = false, backdrop = backdrop) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize)
-            if (quiet) {
-                Text(
-                    title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                    style = GlowType.cardTitle, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f),
+    val landscape = LocalLiveLandscape.current
+    // On its side the screen keeps a wider column than a page's, so the content and the controls fit side by side.
+    CompositionLocalProvider(LocalPageColumn provides if (landscape) GlowLayout.MaxContentWidth else LocalPageColumn.current) {
+        WorkoutPage(color, contentPadding, scroll = false, backdrop = backdrop) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize)
+                if (quiet) {
+                    Text(
+                        title ?: Workouts.sportName(r.workout.sportType), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        style = GlowType.cardTitle, textAlign = TextAlign.Center, maxLines = 1, modifier = Modifier.weight(1f),
+                    )
+                    // The minimise button's width again, so the name sits in the middle of the screen.
+                    Spacer(Modifier.width(44.dp))
+                    return@Row
+                }
+                Spacer(Modifier.width(10.dp))
+                // The pill takes what the status leaves, so on a narrow screen the sport's name gives way, not the status.
+                Box(Modifier.weight(1f)) { Pill(title ?: Workouts.sportName(r.workout.sportType), color) }
+                Spacer(Modifier.width(10.dp))
+                Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    val strap = when {
+                        r.paused -> "Paused"
+                        !connected -> WorkoutWords.STRAP_GONE
+                        battery != null && labelled -> "Strap $battery%"
+                        else -> "Strap"
+                    }
+                    val lines = status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)
+                    if (time != null && smallTime) {
+                        // The total, small, where a set or a round's clock is the screen's number.
+                        ClockText(time, GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                        // Under it, the GPS where there is one (run reps), else that it's the total.
+                        val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(under, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                            Spacer(Modifier.width(8.dp))
+                            Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
+                        }
+                    } else lines.forEach { (text, dot) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(text, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
+                            Spacer(Modifier.width(8.dp))
+                            Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
+                        }
+                    }
+                }
+            }
+            val bigTime = time.takeIf { !smallTime }
+            if (landscape) {
+                LandscapePanes(
+                    r, connected, controls, bigTime, bottomRoom != null, paused,
+                    frameControls = { FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint, pillControls) },
+                    content = content,
                 )
-                // The minimise button's width again, so the name sits in the middle of the screen.
-                Spacer(Modifier.width(44.dp))
-                return@Row
+                return@WorkoutPage
             }
-            Spacer(Modifier.width(10.dp))
-            // The pill takes what the status leaves, so on a narrow screen the sport's name gives way, not the status.
-            Box(Modifier.weight(1f)) { Pill(title ?: Workouts.sportName(r.workout.sportType), color) }
-            Spacer(Modifier.width(10.dp))
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                val strap = when {
-                    r.paused -> "Paused"
-                    !connected -> WorkoutWords.STRAP_GONE
-                    battery != null && labelled -> "Strap $battery%"
-                    else -> "Strap"
+            if (bigTime != null) MovingTime(bigTime)
+            if (r.paused && paused != null) paused() else content()
+            if (bottomRoom != null && !r.paused) {
+                Spacer(Modifier.height(bottomRoom))
+                return@WorkoutPage
+            }
+            if (!connected && !r.paused) {
+                Note(WorkoutCopy.STRAP_GONE_NOTE)
+            }
+            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
+            if (!fill || r.paused) Spacer(Modifier.weight(1f))
+            FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint, pillControls)
+        }
+    }
+}
+
+/**
+ * The live screen is on its side and whole (not half of a folded phone): [LiveFrame] puts the controls beside the
+ * content instead of under it. Set by [GlowWorkoutLiveScreen].
+ */
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
+internal val LocalLiveLandscape = staticCompositionLocalOf { false }
+
+/** The moving time large under the top bar, or over the controls on a phone on its side. */
+@Composable
+private fun MovingTime(time: () -> Long) = Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+    // Plain digits: the screen's one dot-matrix number is further down.
+    ClockText(time, LiveClock)
+    Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
+}
+
+/**
+ * A phone on its side (or an unfolded one) is too short for the screen above its controls: the controls take a column
+ * on the right, under the moving time when it's large, and the screen's own [content] the rest, scrolling only when
+ * the height can't hold it, so the buttons never cover it. The strap note and the stopped prompt go first on the left,
+ * where they're seen. A page under a shared bar ([sharedBar]) leaves the right to that bar ([LiveBottomBar]).
+ */
+@Composable
+private fun ColumnScope.LandscapePanes(
+    r: WorkoutState.Recording,
+    connected: Boolean,
+    controls: LiveControls,
+    time: (() -> Long)?,
+    sharedBar: Boolean,
+    paused: (@Composable ColumnScope.() -> Unit)?,
+    frameControls: @Composable ColumnScope.() -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    // Paused, a page under the shared bar is the whole screen, as it is upright.
+    val bar = sharedBar && !r.paused
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
+        val side = landscapeControlsWidth(maxWidth)
+        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(LandscapeGap)) {
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
+                // At least the pane's height, so the screens' weights still share it out when everything fits.
+                Column(
+                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    // Beside a shared bar the moving time stays over the page, as it is upright.
+                    if (bar && time != null) MovingTime(time)
+                    if (!bar && !connected && !r.paused) Note(WorkoutCopy.STRAP_GONE_NOTE)
+                    if (!bar) r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
+                    if (r.paused && paused != null) paused() else content()
                 }
-                if (time != null && smallTime) {
-                    // The total, small, where a set or a round's clock is the screen's number.
-                    ClockText(time, GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
-                    // Under it, the GPS where there is one (run reps), else that it's the total.
-                    val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(under, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
-                        Spacer(Modifier.width(8.dp))
-                        Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
-                    }
-                } else (status.takeIf { !r.paused }.orEmpty() + (strap to if (connected) TrendGood else TrendBad)).forEach { (text, dot) ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
-                        Spacer(Modifier.width(8.dp))
-                        Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
-                    }
+            }
+            if (bar) return@Row
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.width(side).fillMaxHeight()) {
+                // Centred in the height, and like the content, scrolling rather than cut on a screen too short for it.
+                Column(
+                    Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight),
+                    verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (time != null) MovingTime(time)
+                    frameControls()
                 }
             }
         }
-        if (time != null && !smallTime) Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            // Plain digits: the screen's one dot-matrix number is further down.
-            ClockText(time, LiveClock)
-            Text("Moving time", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
-        }
-        if (r.paused && paused != null) paused() else content()
-        if (bottomRoom != null && !r.paused) {
-            Spacer(Modifier.height(bottomRoom))
-            return@WorkoutPage
-        }
-        if (!connected && !r.paused) {
-            Note(WorkoutCopy.STRAP_GONE_NOTE)
-        }
-        r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-        if (!fill || r.paused) Spacer(Modifier.weight(1f))
-        if (r.paused && paused != null) {
+    }
+}
+
+/**
+ * A short phone on its side ([compact] and [LocalLiveLandscape]): its content pane scrolls rather than squeeze, so a
+ * part that takes the height left over ([Modifier.weight]) keeps its own height instead, or it would be squeezed to
+ * nothing under its neighbours.
+ */
+@Composable
+@androidx.compose.runtime.ReadOnlyComposable
+internal fun shortLandscape(compact: Boolean): Boolean = compact && LocalLiveLandscape.current
+
+/** How wide the controls' column is on a phone on its side: the controls row's own width where there's room. */
+internal fun landscapeControlsWidth(width: Dp): Dp = (width * CONTROLS_SHARE).coerceIn(260.dp, 360.dp)
+
+private const val CONTROLS_SHARE = 0.42f
+
+/** Between the content and the controls' column on a phone on its side. */
+private val LandscapeGap = 24.dp
+
+/**
+ * The controls at the foot of the screen, or in their own column on a phone on its side: End workout and Resume when
+ * [hasPaused] shows the paused view, the two quiet buttons ([quiet]), Pause and the hold to end as pills
+ * ([pillControls]), or else the controls row.
+ */
+@Composable
+private fun ColumnScope.FrameControls(
+    r: WorkoutState.Recording, controls: LiveControls, lap: (@Composable () -> Unit)?, labelled: Boolean, hasPaused: Boolean,
+    quiet: Boolean, tapHint: Boolean, pillControls: Boolean,
+) {
+    when {
+        r.paused && hasPaused -> {
             Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 HoldPill("End workout", Modifier.weight(1f), controls.onEnd)
                 WorkoutButton("Resume", Color.White, Color.Black, controls.onResume, Modifier.weight(1f), icon = AppIcons.PlayFill, height = 64.dp)
@@ -201,9 +317,8 @@ internal fun LiveFrame(
                 style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(20.dp))
-            return@WorkoutPage
         }
-        if (quiet) {
+        quiet -> {
             Row(Modifier.align(Alignment.CenterHorizontally), horizontalArrangement = Arrangement.spacedBy(48.dp)) {
                 // With no [paused] view, a paused quiet screen keeps this row, so it turns into Resume.
                 val label = if (r.paused) "Resume" else "Pause"
@@ -219,16 +334,15 @@ internal fun LiveFrame(
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
             Spacer(Modifier.height(8.dp))
-            return@WorkoutPage
         }
-        if (pillControls) {
+        pillControls -> {
             Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 WorkoutButton("Pause", Raised, Color.White, controls.onPause, Modifier.weight(1f), icon = AppIcons.PauseFill, height = 52.dp)
                 HoldPill("Hold to end", Modifier.weight(1f), controls.onEnd, height = 52.dp)
             }
             Spacer(Modifier.height(8.dp))
-            return@WorkoutPage
         }
+        else -> {
         ControlsRow(r, controls, lap, labelled, Modifier.align(Alignment.CenterHorizontally))
         if (!labelled) Text(
             "Hold the square to end", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
@@ -236,6 +350,7 @@ internal fun LiveFrame(
         )
         // A little room under the controls, so they sit up off the screen's edge.
         Spacer(Modifier.height(20.dp))
+        }
     }
 }
 
@@ -320,6 +435,7 @@ private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, heigh
 /**
  * What the run's views share under their pager, fixed while the views slide: the strap note, the stopped prompt, the
  * page dots following the swipe ([position]) and the controls. [onHeight] reports its height above the bottom padding.
+ * On a phone on its side ([LocalLiveLandscape]) it's a column beside the pager instead, as wide as [modifier] makes it.
  */
 @Composable
 internal fun LiveBottomBar(
@@ -328,6 +444,31 @@ internal fun LiveBottomBar(
     position: () -> Float, count: Int, onPage: (Int) -> Unit, onHeight: (Dp) -> Unit, modifier: Modifier = Modifier,
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
+    val items: @Composable ColumnScope.() -> Unit = {
+        if (!connected) Note(WorkoutCopy.STRAP_GONE_NOTE)
+        r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
+        val at = position()
+        Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {
+            PageDots(kotlin.math.round(at).toInt(), count, at, onPage)
+        }
+        ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
+    }
+    if (LocalLiveLandscape.current) {
+        val end = contentPadding.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current) + GlowLayout.Gutter
+        androidx.compose.foundation.layout.BoxWithConstraints(
+            modifier.fillMaxHeight().statusBarsPadding()
+                .padding(top = contentPadding.calculateTopPadding() + 8.dp, bottom = contentPadding.calculateBottomPadding(), end = end),
+        ) {
+            // Centred in the height, scrolling only when the stopped prompt makes it taller than the screen.
+            Column(
+                Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).heightIn(min = maxHeight),
+                verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                content = items,
+            )
+        }
+        return
+    }
     androidx.compose.foundation.layout.BoxWithConstraints(modifier.fillMaxWidth()) {
         val side = org.openstrap.app.ui.glow.GlowLayout.pageSide(maxWidth, org.openstrap.app.ui.glow.LocalPageColumn.current, org.openstrap.app.ui.glow.GlowLayout.Gutter)
         Column(
@@ -335,15 +476,8 @@ internal fun LiveBottomBar(
                 .onSizeChanged { onHeight(with(density) { it.height.toDp() }) }
                 .padding(start = side, end = side, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            if (!connected) Note(WorkoutCopy.STRAP_GONE_NOTE)
-            r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
-            val at = position()
-            Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {
-                PageDots(kotlin.math.round(at).toInt(), count, at, onPage)
-            }
-            ControlsRow(r, controls, lap, labelled = true, Modifier.align(Alignment.CenterHorizontally))
-        }
+            content = items,
+        )
     }
 }
 

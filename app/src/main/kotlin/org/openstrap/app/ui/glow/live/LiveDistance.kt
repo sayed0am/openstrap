@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -156,19 +158,31 @@ internal fun LiveDistanceScreen(
     // Only what's above the dots slides: the note, the dots and the controls stay put under the pager, the dots
     // following the swipe. A drag on the map pans the map instead.
     val density = LocalDensity.current
-    var bar by remember { mutableStateOf(240.dp) }
-    Box(Modifier.fillMaxSize()) {
+    var measured by remember { mutableStateOf(240.dp) }
+    // On its side the bar is a column on the right, so the pages leave no room under them but keep clear of it on
+    // their right, the pages' glow still across the whole screen.
+    val landscape = LocalLiveLandscape.current
+    val bar = if (landscape) 0.dp else measured
+    val direction = androidx.compose.ui.platform.LocalLayoutDirection.current
+    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+        val side = landscapeControlsWidth(maxWidth)
+        val clear = if (landscape) side else 0.dp
+        val pagePadding = if (!landscape) contentPadding else PaddingValues(
+            start = contentPadding.calculateStartPadding(direction), top = contentPadding.calculateTopPadding(),
+            end = side, bottom = contentPadding.calculateBottomPadding(),
+        )
+        val mapStart = if (landscape) pagePadding.calculateStartPadding(direction) else 0.dp
         HorizontalPager(pager, Modifier.fillMaxSize(), verticalAlignment = Alignment.Top, beyondViewportPageCount = 1) { page ->
             when (LiveView.entries[page]) {
                 // Reps (board RunIntervals): the total small on top, the rep the screen's number.
                 LiveView.Heart -> if (reps) LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
+                    r, color, connected, pagePadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
                     status = status,
                     fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
                 ) {
-                    RepPage(r, route, readings, bpm, color, Modifier.weight(1f))
+                    RepPage(r, route, readings, bpm, color, compact, if (shortLandscape(compact)) Modifier else Modifier.weight(1f))
                 } else LiveFrame(
-                    r, color, connected, contentPadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
+                    r, color, connected, pagePadding, controls, lap, time = { active.value }, smallTime = compact, battery = battery,
                     status = status, fill = true, bottomRoom = bar,
                 ) {
                     if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
@@ -190,19 +204,23 @@ internal fun LiveDistanceScreen(
                     // map, so the tick comes on either.
                     KmSplitLine(route, readings, r.workout.pauseRanges, keepRoom = !compact)
                 }
-                LiveView.Map -> LiveMapScreen(
-                    r, route, readings, bpm, color, contentPadding, controls,
-                    figures = listOf(
-                        Units.km(distance, Units.Precision.Workout) to "km",
-                        (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
-                    ),
-                    time = { active.value }, bottomRoom = bar, heartPill = !split,
-                )
+                // On its side the map stops short of the bar, so the controls stay on black, and of the nav bar.
+                LiveView.Map -> Box(Modifier.fillMaxSize().padding(start = mapStart, end = clear)) {
+                    LiveMapScreen(
+                        r, route, readings, bpm, color, contentPadding, controls,
+                        figures = listOf(
+                            Units.km(distance, Units.Precision.Workout) to "km",
+                            (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
+                        ),
+                        time = { active.value }, bottomRoom = bar, heartPill = !split,
+                    )
+                }
             }
         }
         LiveBottomBar(
             r, connected, contentPadding, controls, lap, { pager.currentPage + pager.currentPageOffsetFraction }, LiveView.entries.size, onPage,
-            onHeight = { if (it != bar) bar = it }, modifier = Modifier.align(Alignment.BottomCenter),
+            onHeight = { if (it != measured) measured = it },
+            modifier = if (landscape) Modifier.align(Alignment.CenterEnd).width(side) else Modifier.align(Alignment.BottomCenter),
         )
     }
 }
@@ -213,7 +231,10 @@ internal fun LiveDistanceScreen(
  * rate strip, then each rep done with its time. A rest shows its seconds left and the rep after it.
  */
 @Composable
-private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {
+private fun RepPage(
+    r: WorkoutState.Recording, route: List<Route.Point>, readings: List<Pair<Long, Int>>, bpm: Int?, color: Color, compact: Boolean,
+    modifier: Modifier,
+) {
     val now = nowTicking()
     val m = org.openstrap.app.ui.workout.intervalMoment(r, now, bpm, readings, route) ?: return
     val structure = r.structure as? org.openstrap.app.data.Structure.Reps ?: return
@@ -244,7 +265,8 @@ private fun RepPage(r: WorkoutState.Recording, route: List<Route.Point>, reading
             Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
         }
         Column(
-            Modifier.fillMaxWidth().weight(1f), horizontalAlignment = Alignment.CenterHorizontally,
+            Modifier.fillMaxWidth().then(if (shortLandscape(compact)) Modifier else Modifier.weight(1f)),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterVertically),
         ) {
             val work = m.phase is org.openstrap.app.data.Phase.Work

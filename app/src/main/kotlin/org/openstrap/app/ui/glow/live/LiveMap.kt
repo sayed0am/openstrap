@@ -105,8 +105,10 @@ internal fun LiveMapScreen(
                     Text(WorkoutCopy.gpsPill(acc), color = Color.White, style = GlowType.secondary, maxLines = 1)
                 }
             }
+            // On its side the map is short, so the buttons hang under the GPS pill instead of rising into it.
             Column(
-                Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = PANEL_OVERLAP + 44.dp),
+                if (LocalLiveLandscape.current) Modifier.align(Alignment.TopEnd).padding(end = 16.dp, top = top + 54.dp)
+                else Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = PANEL_OVERLAP + 44.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 MapButton(AppIcons.MapFold, if (routeOnly) "Show the map" else "Show route only, no map", lit = routeOnly) { routeOnly = !routeOnly }

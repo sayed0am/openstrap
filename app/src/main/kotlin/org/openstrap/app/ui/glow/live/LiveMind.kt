@@ -101,7 +101,8 @@ internal fun LiveMindScreen(
             }
             val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
             val values = remember(recent) { bucketRecent(recent, now) }
-            if (values.count { it != null } >= 2) MindHeartLine(values)
+            // Lower on a short screen (a phone on its side), so the heart rate line under it still fits beside the buttons.
+            if (values.count { it != null } >= 2) MindHeartLine(values, if (compact) 40.dp else 64.dp)
             val first = values.firstOrNull { it != null }?.toInt()
             Text(
                 bpm?.let { b ->
@@ -158,12 +159,12 @@ private fun MindClock(time: () -> Long, length: Long?) {
 
 /** The heart rate as one thin violet line edge to edge, with a dot at now: no axis, no numbers. */
 @Composable
-private fun MindHeartLine(values: List<Float?>) {
+private fun MindHeartLine(values: List<Float?>, height: androidx.compose.ui.unit.Dp) {
     val known = values.filterNotNull()
     val lo = known.min() - 4
     val hi = known.max() + 4
     Spacer(
-        Modifier.fillMaxWidth().height(64.dp).drawWithCache {
+        Modifier.fillMaxWidth().height(height).drawWithCache {
             // Built once per size and readings, not on every draw.
             val step = size.width / (values.size - 1).coerceAtLeast(1)
             val path = Path()
