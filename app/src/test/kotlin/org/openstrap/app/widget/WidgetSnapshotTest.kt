@@ -99,6 +99,16 @@ class WidgetSnapshotTest {
         assertEquals(main.start, data.momentWidget?.getOrThrow()?.night?.session?.start)
     }
 
+    @Test fun `a sleep that ended this evening is today's night`() = runBlocking {
+        // A day sleep after a night shift, 10:00 to 19:30: today's, not tomorrow's (one day rule, item 14).
+        val daySleep = SleepSession(start = midnight + 10 * 3600, end = midnight + 19 * 3600 + 1800)
+        dao.insertSleepSessions(listOf(daySleep))
+        val data = snapshot.gather(setOf(WidgetKind.Sleep, WidgetKind.Moment), Instant.parse("2026-01-15T21:00:00Z"), zone)
+        assertEquals(daySleep.end, data.moment?.getOrThrow()?.sleepEnd)
+        assertEquals(daySleep.start, data.sleep?.getOrThrow()?.tonight?.session?.start)
+        assertEquals(daySleep.start, data.momentWidget?.getOrThrow()?.night?.session?.start)
+    }
+
     @Test fun `the Sleep widget reads as many nights as the Sleep tab`() {
         assertEquals(org.openstrap.app.ui.dashboard.SLEEP_NIGHTS, WidgetSnapshot.SLEEP_NIGHTS)
     }

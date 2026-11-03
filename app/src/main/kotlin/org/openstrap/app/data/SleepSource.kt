@@ -58,7 +58,7 @@ class SleepSource(private val dao: HealthDao) {
         }
 
     /**
-     * True when the night [from, to] (a [DayWindow.nightEndingOn]) has no main sleep because the user deleted it, so
+     * True when the day whose sleep ends in [from, to] ([SleepHistory.endingOn]) has no main sleep because the user deleted it, so
      * what shows it says so instead of asking whether the strap was on.
      */
     suspend fun nightDeleted(from: Long, to: Long): Boolean {

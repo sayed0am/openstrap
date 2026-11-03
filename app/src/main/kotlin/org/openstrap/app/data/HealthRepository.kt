@@ -43,16 +43,6 @@ data class DayWindow(val from: Long, val to: Long) {
         fun of(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow {
             return DayWindow(Days.start(date, zone), Days.end(date, zone) - 1)
         }
-
-        /** Where one night's sleep ends and the next begins, on the clock. */
-        private const val NIGHT_SPLIT_HOUR = 18
-
-        /** Sleep that *ended* on [date]: from 18:00 the previous evening until 18:00 on [date]. */
-        fun nightEndingOn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow {
-            // From the evening before by the clock, not 24 hours back, which is an hour off when the clocks change.
-            fun split(d: LocalDate) = d.atTime(NIGHT_SPLIT_HOUR, 0).atZone(zone).toEpochSecond()
-            return DayWindow(split(date.minusDays(1)), split(date))
-        }
     }
 }
 
@@ -157,7 +147,8 @@ class HealthRepository(
         healthspanEngine.compute(date, profile)
 
     private suspend fun logNight(n: Recovery.Night) {
-        val strap = dao.strapReadinessOnce(n.day, n.day).firstOrNull()
+        // The strap's row for the strap's own night, which may be another day's when the night was moved.
+        val strap = n.strapDay?.let { dao.strapReadinessOnce(it, it).firstOrNull() }
         dao.insertNightMetrics(listOf(NightMetrics.row(n, strap, System.currentTimeMillis() / 1000)))
     }
 
@@ -260,9 +251,12 @@ class HealthRepository(
     fun healthAlerts(w: DayWindow): Flow<List<HealthAlertRow>> = dao.healthAlerts(w.from, w.to)
     fun dailyMaxHr(w: DayWindow): Flow<DailyMaxHr?> = dao.dailyMaxHr(w.from, w.to).map { it.lastOrNull() }
 
-    /** The strap's sleep-apnea summary for the night ending on [date]: its belongTime + 2 h falls on that date. */
-    fun osaResult(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<OsaResultRow?> {
-        val d = DayWindow.of(date, zone)
+    /**
+     * The strap's sleep-apnea summary for the strap's night [strapDay] ([SleepHistory.strapDay], a local midnight): its
+     * belongTime + 2 h falls on that day.
+     */
+    fun osaResultOf(strapDay: Long, zone: ZoneId = ZoneId.systemDefault()): Flow<OsaResultRow?> {
+        val d = DayWindow.of(Days.date(strapDay, zone), zone)
         return dao.osaResults(d.from - 2 * 3600, d.to - 2 * 3600).map { it.lastOrNull() }
     }
 

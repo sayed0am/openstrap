@@ -109,7 +109,10 @@ fun Recovery.charge(
     var atWake: Float? = null
     var latest: Float? = null
     val hrvFactor = params.hrvScore?.let { (0.75f + 0.25f * it / 80f).coerceIn(0.6f, 1.1f) } ?: 1f
-    val nightRest = params.nightRestingHr ?: params.restingHr
+    val scoredNightRest = params.nightRestingHr ?: params.restingHr
+    var nightRest = scoredNightRest
+    val references = params.sleepRestingHr.sortedBy { it.first }
+    var ri = 0
     var anchored = false
     var stressRun = 0
     val signals = params.bodySignals.sortedBy { it.first }
@@ -192,6 +195,7 @@ fun Recovery.charge(
         val hr = m.hr
         val x = hr?.let { hrr(it, params.restingHr, params.maxHr) }
         while (si < signals.size && signals[si].first <= m.t) signal = signals[si++].second
+        while (ri < references.size && references[ri].first <= m.t) nightRest = references[ri++].second ?: scoredNightRest
         // Heart rate counts as effort outside workouts only while moving, or in a sustained run (see [ACTIVITY_HRR]).
         val effort = m.workout != null || moving(m.steps) || sustained[i]
         val state: State

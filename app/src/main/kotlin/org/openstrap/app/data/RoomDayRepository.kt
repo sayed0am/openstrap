@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.DailyPai
+import org.openstrap.app.data.db.OsaResultRow
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.protocol.services.StepTotals
@@ -40,11 +41,14 @@ class RoomDayRepository(
     override fun day(date: LocalDate, isToday: Boolean): Flow<DayData> {
         val zone = ZoneId.systemDefault()
         val day = DayWindow.of(date)
-        val night = DayWindow.nightEndingOn(date)
+        // The day's sleep is what ended in it ([SleepHistory.nightOf]). Its readings reach back to the evening before.
+        val night = SleepHistory.readingsOf(date, zone)
 
         val activityAndHr = combine(health.activity(day), health.heartRate(day)) { act, hr -> act to hr }
         val vitals = combine(health.spo2(day), health.stress(day), health.hrv(day)) { spo2, stress, hrv -> Triple(spo2, stress, hrv) }
-        val span = DayWindow(DayWindow.nightEndingOn(date.minusDays(SleepHistory.NIGHTS - 1L), zone).from, night.to)
+        val span = DayWindow(
+            SleepHistory.endingOn(date.minusDays(SleepHistory.NIGHTS - 1L), zone).from, SleepHistory.endingOn(date, zone).to,
+        )
         val extras = combine(health.skinTemperature(day), health.breathRate(night), health.latestPai(day.to)) { skin, breath, pai ->
             Triple(skin, breath, pai?.takeIf { it.timestamp >= day.from })
         }
@@ -75,6 +79,7 @@ class RoomDayRepository(
                 nightHeartRate = sleepPart.nightHeartRate,
                 sleepHrv = sleepPart.sleepHrv,
                 sleepSkin = sleepPart.sleepSkin,
+                osaResult = sleepPart.osaResult,
                 spo2 = spo2,
                 stress = stress,
                 hrv = hrv,
@@ -86,19 +91,20 @@ class RoomDayRepository(
         }
     }
 
-    /** The night's oxygen and apnea readings, and the day's extended activity, highest heart rate and alerts. */
+    /**
+     * The night's oxygen and apnea readings, and the day's extended activity, highest heart rate and alerts. The night's
+     * apnea summary comes with its sleep ([sleep]).
+     */
     private fun more(date: LocalDate, day: DayWindow, night: DayWindow): Flow<DayData> = combine(
         combine(health.sleepSpo2(night), health.hrvSdnn(day), health.osaEvents(night)) { a, b, c -> Triple(a, b, c) },
-        health.osaResult(date),
         health.dailyMaxHr(day),
         health.activityExtended(day),
         health.healthAlerts(day),
-    ) { (sleepSpo2, sdnn, events), osa, maxHr, extended, alerts ->
+    ) { (sleepSpo2, sdnn, events), maxHr, extended, alerts ->
         DayData(
             date = date,
             sleepSpo2 = sleepSpo2,
             hrvSdnn = sdnn,
-            osaResult = osa,
             osaEvents = events,
             dailyMaxHeartRate = maxHr?.bpm,
             distanceMeters = extended.takeIf { it.isNotEmpty() }?.sumOf { it.distanceCm.toLong() }?.let { (it / CM_PER_M).toInt() },
@@ -112,11 +118,12 @@ class RoomDayRepository(
      * the night's own readings for the charts of the night-scoped details.
      */
     private fun nights(date: LocalDate, night: DayWindow, span: DayWindow, zone: ZoneId): Flow<DayData> = combine(
-        sleep(date, DayWindow.of(date), night, span),
+        sleep(date, span, zone),
         combine(health.hrv(span), health.skinTemperature(span)) { h, s -> h to s },
         combine(health.sleepSpo2(span), health.breathRate(span)) { o, b -> o to b },
         health.heartRate(night),
-    ) { (parts, sessions), (hrv, skin), (spo2, breath), hr ->
+    ) { sleepParts, (hrv, skin), (spo2, breath), hr ->
+        val (parts, sessions, osa) = sleepParts
         val main = SleepHistory.mainSleeps(sessions, zone)
         val list = (SleepHistory.NIGHTS - 1 downTo 0).map { ago ->
             val d = date.minusDays(ago.toLong())
@@ -142,36 +149,42 @@ class RoomDayRepository(
             nightHeartRate = hr,
             sleepHrv = tonight?.let { w -> hrv.filter { it.timestamp in w.start..w.end } }.orEmpty(),
             sleepSkin = tonight?.let { w -> skin.filter { it.timestamp in w.start..w.end } }.orEmpty(),
+            osaResult = osa,
         )
     }
 
+    /** What [sleep] reads for a day: its sleep, the sessions shown over the nights' span, and the night's apnea summary. */
+    private data class SleepParts(val day: SleepDay, val span: List<SleepSession>, val osaResult: OsaResultRow?)
+
     /**
-     * The night's main sleep, the day's naps and the edits around them, with the sessions shown over [span] for the
-     * strip of nights. One read for both, so a delete or a move changes both in the same state.
+     * The day's main sleep, its naps and the edits around them, with the sessions shown over [span] for the strip of
+     * nights. One read for both, so a delete or a move changes both in the same state. Every sleep belongs to the day
+     * it ended, by the times shown ([SleepHistory.nightOf]).
      */
-    private fun sleep(date: LocalDate, day: DayWindow, night: DayWindow, span: DayWindow): Flow<Pair<SleepDay, List<SleepSession>>> {
-        // Sessions ending from the start of the night into early tomorrow, so tonight's evening naps are included too.
-        val nightBefore = DayWindow.nightEndingOn(date.minusDays(1))
-        val sleepWindow = DayWindow(nightBefore.from, day.to + 12 * 3600)
+    private fun sleep(date: LocalDate, span: DayWindow, zone: ZoneId): Flow<SleepParts> {
+        val ending = SleepHistory.endingOn(date, zone)
+        val endingBefore = SleepHistory.endingOn(date.minusDays(1), zone)
+        // Sessions ending from the day before into early tomorrow, so the sleeps either side are there to trim against.
+        val sleepWindow = DayWindow(endingBefore.from, ending.to + 12 * 3600)
         return health.sleepResolved(DayWindow(minOf(span.from, sleepWindow.from), sleepWindow.to)).flatMapLatest { every ->
             val spanSessions = health.sleepShown(every.filter { it.end in span.from..span.to })
             val all = every.filter { it.end in sleepWindow.from..sleepWindow.to }
             val shown = all.filter { !it.deleted }
-            val main = SleepHistory.mainSleep(shown, night)
-            val before = SleepHistory.mainSleep(shown, nightBefore)?.shown
+            val main = SleepHistory.mainSleep(shown, ending)
+            val before = SleepHistory.mainSleep(shown, endingBefore)?.shown
             // With no main sleep, the one the user deleted, for the "No sleep recorded" card and its Restore.
-            val deleted = if (main != null) null else SleepHistory.mainSleep(all, night, deleted = true)
-            // Naps belong to the calendar day they started on, not the night window (which ends at 18:00).
-            // The strap's start decides the day, so moving a nap's times never moves it to another day.
-            val resolved = shown.filter { it.strap.nap && it.strap.start in day.from..day.to }
+            val deleted = if (main != null) null else SleepHistory.mainSleep(all, ending, deleted = true)
+            val resolved = shown.filter { it.strap.nap && it.end in ending.from..ending.to }
             val naps = resolved.mapNotNull { it.shown }
             // Stages stay under the strap's start, trimmed to the times shown.
             // The main sleep's are read whole, so the chart can show what a move left out.
             val strapStages = if (main == null) flowOf(emptyList()) else health.strapStages(main.strap)
+            // The strap's apnea summary for the strap's own night, which stays with it when its times move the day.
+            val osa = main?.shown?.let { health.osaResultOf(SleepHistory.strapDay(it, zone), zone) } ?: flowOf(null)
             val napStages = if (naps.isEmpty()) flowOf(emptyMap())
             else combine(resolved.map { health.sleepStages(it) }) { st -> naps.zip(st) { n, s -> n.start to s }.toMap() }
             val asDetected = naps.zip(resolved) { n, r -> n.start to r.strap }.toMap()
-            combine(strapStages, napStages) { whole, ns ->
+            combine(strapStages, napStages, osa) { whole, ns, apnea ->
                 val st = if (main?.moved == true) SleepEdits.clip(whole, main.start, main.end) else whole
                 // A moved main sleep's totals and score come from its clipped stages, as everywhere else ([SleepSource]).
                 val session = main?.shown?.let { if (main.moved) SleepEdits.restage(it, main.strap, whole) else it }
@@ -186,7 +199,7 @@ class RoomDayRepository(
                     strapStages = if (main?.moved == true) whole else emptyList(),
                     deletedMain = deleted,
                     neighbours = shown.mapNotNull { it.shown },
-                ) to spanSessions
+                ).let { SleepParts(it, spanSessions, apnea) }
             }
         }
     }

@@ -177,7 +177,7 @@ class WidgetSnapshot(
             w.phone.filter { it.sportType != Workouts.GENERIC_ACTIVITY }.map { it.start }
         val lastEnd = (w.strap.map { it.end } + w.phone.mapNotNull { it.end }).filter { it <= t }.maxOrNull()
         // Today's main sleep, as Today picks it.
-        val night = DayWindow.nightEndingOn(today, zone)
+        val night = SleepHistory.endingOn(today, zone)
         val sessions = span ?: health.sleep.sessionsOnce(night.from, night.to)
         return MomentInputs(
             day = today,
@@ -234,16 +234,15 @@ class WidgetSnapshot(
     private suspend fun sleep(sessions: List<SleepSession>, today: LocalDate, zone: ZoneId): SleepRead {
         val nights = SleepHistory.mainSleeps(sessions, zone)
         suspend fun night(date: LocalDate): SleepWidgetNight? =
-            SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(date, zone))?.let { main ->
+            SleepHistory.mainSleep(sessions, SleepHistory.endingOn(date, zone))?.let { main ->
                 SleepWidgetNight.of(date, main, health.sleep.stagesOnce(main), nights)
             }
         val tonight = night(today)
         // A night the user deleted is this morning's answer: yesterday's doesn't stand in for it.
-        val deleted = tonight == null && DayWindow.nightEndingOn(today, zone).let { w -> health.sleep.nightDeleted(w.from, w.to) }
+        val deleted = tonight == null && SleepHistory.endingOn(today, zone).let { w -> health.sleep.nightDeleted(w.from, w.to) }
         val yesterday = if (tonight == null && !deleted) night(today.minusDays(1)) else null
         val first = tonight == null && yesterday == null && !deleted && nights.isEmpty() && dao.latestSleepEnd().first() == null
-        val day = DayWindow.of(today, zone)
-        val naps = sessions.any { it.nap && it.start in day.from..day.to }
+        val naps = sessions.any { it.nap && SleepHistory.nightOf(it, zone) == today }
         return SleepRead(tonight, yesterday, first, naps, deleted)
     }
 
@@ -264,7 +263,7 @@ class WidgetSnapshot(
         val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
         val night = read("last night", null) {
             val sessions = checkNotNull(r.span).getOrThrow()
-            SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(today, zone))?.let { main ->
+            SleepHistory.mainSleep(sessions, SleepHistory.endingOn(today, zone))?.let { main ->
                 SleepWidgetNight.of(today, main, health.sleep.stagesOnce(main), SleepHistory.mainSleeps(sessions, zone))
             }
         }
@@ -309,7 +308,7 @@ class WidgetSnapshot(
             steps = stepsDay?.steps ?: liveSteps.current(today, todaySteps())?.takeIf { it.isPlausible }?.steps ?: 0,
             stepGoal = checkNotNull(r.goal).getOrThrow(),
             nightDeleted = night == null && read("a deleted night", false) {
-                DayWindow.nightEndingOn(today, zone).let { n -> health.sleep.nightDeleted(n.from, n.to) }
+                SleepHistory.endingOn(today, zone).let { n -> health.sleep.nightDeleted(n.from, n.to) }
             },
         )
     }
@@ -328,9 +327,9 @@ class WidgetSnapshot(
         /** Nights the Sleep tab reads for the week's other nights, as Today's sleep (`ui.dashboard.SLEEP_NIGHTS`). */
         internal const val SLEEP_NIGHTS = 14
 
-        /** From the first of the [SLEEP_NIGHTS] nights to the end of the one ending on [today]. */
+        /** From the first of the [SLEEP_NIGHTS] nights to the end of the one ending on [today] ([SleepHistory.endingOn]). */
         internal fun sleepSpan(today: LocalDate, zone: ZoneId) =
-            DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
+            DayWindow(SleepHistory.endingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, SleepHistory.endingOn(today, zone).to)
 
         /**
          * The max heart rate the lists' zones are shares of. The widget shows no zones, so it skips the app's 90-day

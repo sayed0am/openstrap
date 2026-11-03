@@ -11,6 +11,8 @@ import kotlin.math.roundToInt
  * is the Sleep Regularity Index ([SleepRegularity]), which compares the nights minute by minute rather than only their
  * bedtimes and wake times.
  */
+// The one day rule for sleep and every pick that goes by it, kept together so no screen counts a night another way.
+@Suppress("TooManyFunctions")
 object SleepHistory {
     /** Nights the Sleep screen's week looks back over. */
     const val WEEK_NIGHTS = 7
@@ -18,22 +20,47 @@ object SleepHistory {
     /** Nights of sleep loaded for the week view and the in-sleep vitals' usual values. */
     const val NIGHTS = 14
 
+    /** Where [readingsOf] starts, on the evening before. */
+    private const val READINGS_FROM_HOUR = 18
+
     /**
-     * The night a sleep ending at [end] belongs to: the day it ended on, the rule recovery counts by
-     * ([RecoveryEngine.morningOf]).
+     * The day a sleep ending at [end] belongs to: the day it ended on, the day you woke up (user, 2026-11-04). The one
+     * rule for every screen, widget and model, naps and Health Connect imports included, by the times shown, so a night
+     * edited to end after midnight moves to the new day. It wins over the strap's own day for the session
+     * ([strapDay]), which only keys the strap's nightly rows.
      */
     fun nightOf(end: Long, zone: ZoneId): LocalDate = Days.date(end, zone)
 
-    /** The night [s] belongs to: the day the strap gave it, else the day it ended on ([RecoveryEngine.morningOf]). */
-    fun nightOf(s: SleepSession, zone: ZoneId): LocalDate = Days.date(RecoveryEngine.morningOf(s, zone), zone)
+    /** The day [s] belongs to, by its end as shown ([nightOf]). */
+    fun nightOf(s: SleepSession, zone: ZoneId): LocalDate = nightOf(s.end, zone)
 
-    /** The main sleep of each night: the longest session that isn't a nap, as recovery picks it ([RecoveryEngine.mainsByMorning]). */
-    fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =
-        RecoveryEngine.mainsByMorning(sessions, zone).mapKeys { (morning, _) -> Days.date(morning, zone) }
+    /** Where the end of every sleep that belongs to [date] ([nightOf]) falls: that day, midnight to midnight. */
+    fun endingOn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow = DayWindow.of(date, zone)
 
     /**
-     * The main sleep of the night in [night] (a [DayWindow.nightEndingOn]): the longest session that isn't a nap and
-     * ended in it. What the Sleep tab's hero and the Sleep widget show.
+     * The span the night readings of [date]'s sleep are read over (heart rate, breathing, blood oxygen): from
+     * [READINGS_FROM_HOUR] the evening before, by the clock, to the end of [date], so a night that began the evening
+     * before is read whole and one that ended late that evening too. Readings outside the sleep are for the screens to
+     * leave out.
+     */
+    fun readingsOf(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow =
+        // By the clock, not hours back from midnight, which is an hour off when the clocks change.
+        DayWindow(date.minusDays(1).atTime(READINGS_FROM_HOUR, 0).atZone(zone).toEpochSecond(), endingOn(date, zone).to)
+
+    /**
+     * The strap's own day for [s] (its local midnight), kept through an edit: what the strap's nightly rows (its readiness
+     * with the night's HRV and resting heart rate, and the sleep-apnea summary) are keyed by, so they go with the night
+     * from that strap session whichever day it ends on. A session from before v2 has none and takes the day it ended on.
+     */
+    fun strapDay(s: SleepSession, zone: ZoneId): Long = if (s.day > 0) s.day else Days.start(s.end, zone)
+
+    /** The main sleep of each day ([nightOf]): the longest session that ended on it and isn't a nap. */
+    fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =
+        sessions.filter { !it.nap }.groupBy { nightOf(it, zone) }.mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+
+    /**
+     * The main sleep of the day whose [endingOn] window is [night]: the longest session that isn't a nap and ended in
+     * it. What the Sleep tab's hero and the Sleep widget show.
      */
     fun mainSleep(sessions: List<SleepSession>, night: DayWindow): SleepSession? =
         sessions.filter { !it.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
