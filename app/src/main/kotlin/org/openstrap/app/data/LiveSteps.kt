@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 import org.openstrap.protocol.services.StepTotals
 import java.time.LocalDate
 
@@ -13,11 +16,32 @@ import java.time.LocalDate
  *
  * The anchor is state, so the app keeps one instance, built once at start, that Today and the
  * widgets share: a fresh one would show only the history total until the next sync (audit A5).
+ *
+ * The strap's reading carries no date, and it stays as it was while the strap is away. So the instance [follow]s the
+ * readings and keeps the local day each one came on: after midnight the last one is yesterday's total, and it counts
+ * for nothing until the strap sends a new one (data integrity item 10).
  */
 class LiveSteps {
     private var day: LocalDate? = null
     private var anchoredHistory = -1
     private var liveAtAnchor = 0
+
+    /** The last reading the strap sent and the local day it came on, from [read]. */
+    private var lastReading: StepTotals? = null
+    private var readOn: LocalDate? = null
+
+    /** Keeps the day of each reading of [readings] as it comes, [today] being the local date then, for as long as [scope] lives. */
+    fun follow(readings: Flow<StepTotals?>, scope: CoroutineScope, today: () -> LocalDate = { LocalDate.now() }) {
+        scope.launch { readings.collect { read(it, today()) } }
+    }
+
+    /** The strap sent [live] on [date]. */
+    @Synchronized
+    fun read(live: StepTotals?, date: LocalDate) {
+        if (live == null) return
+        lastReading = live
+        readOn = date
+    }
 
     /** [date]'s steps: a new day starts a new anchor, so yesterday's never carries over. */
     @Synchronized
@@ -27,7 +51,9 @@ class LiveSteps {
             anchoredHistory = -1
             liveAtAnchor = 0
         }
-        return count(history, live)
+        // A reading read on another day is that day's total. One not seen yet has only just come, so it is today's.
+        val current = live?.takeUnless { it == lastReading && readOn != date }
+        return count(history, current)
     }
 
     private fun count(history: Int, live: StepTotals?): Int = when {

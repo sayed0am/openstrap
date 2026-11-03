@@ -62,6 +62,7 @@ class HealthRepository(
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000 },
 ) {
     private val recoveryEngine = RecoveryEngine(dao)
+    private val energyHistory = DailyEnergyHistory(dao)
     private val healthspanEngine = HealthspanEngine(dao)
     /** The one reader of sleep for everything shown ([SleepSource]). */
     val sleep = SleepSource(dao)
@@ -131,11 +132,21 @@ class HealthRepository(
     private fun liveMinute(date: LocalDate, now: Long): Long? =
         (now / MINUTE_S).takeIf { now / MINUTE_S * MINUTE_S + MINUTE_S < DayWindow.of(date).to + 1 + RecoveryEngine.LOOKAHEAD_SECONDS }
 
+    /**
+     * Works [date] out. Its energy is [DailyEnergyHistory.energy]'s, the rule its stored row follows after a sync too,
+     * so the day's page and its bar in the week agree (data integrity item 18). Max HR and VO2max come from the
+     * Recovery just worked out, which takes them by the same rules: max HR as of [date] is today's when [date] is today.
+     */
     private suspend fun computeRecovery(date: LocalDate, profile: UserProfile, now: Long): RecoveryResult {
         val r = recoveryEngine.compute(date, profile, now = now)
         r.tonight?.let { logNight(it) }
-        r.energy?.let { dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(DayWindow.of(date).from, it, System.currentTimeMillis() / 1000))) }
-        return r
+        val today = Instant.ofEpochSecond(now).atZone(ZoneId.systemDefault()).toLocalDate()
+        val maxHr = if (date == today) r.maxHr else recoveryEngine.maxHeartRate(profile, today)
+        val energy = energyHistory.energy(date, profile, maxHr, r.vo2max?.value?.toFloat(), now = now)
+        if (energy != null) {
+            dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(DayWindow.of(date).from, energy, System.currentTimeMillis() / 1000)))
+        }
+        return r.copy(energy = energy)
     }
 
     /** When you usually go to sleep as of [date] ([RecoveryResult.usualBedtime]), without working out Recovery. */
@@ -162,13 +173,14 @@ class HealthRepository(
 
 
     /**
-     * Emits whenever new heart-rate, stress or sleep data lands, a strap workout comes or goes, or a nap's times are
-     * changed, so derived scores can refresh.
+     * Emits whenever new heart-rate, stress or sleep data lands, a strap workout comes or goes, a sleep's times are
+     * changed, or a finished phone workout is saved, trimmed, ended earlier or deleted, so derived scores can refresh.
+     * A phone workout moves Recovery, Load and Energy as much as a strap one (data integrity item 19).
      */
     fun changes(): Flow<Unit> = kotlinx.coroutines.flow.combine(
         dao.latestHeartRateTime(), dao.latestStressTime(), dao.latestSleepEnd(), dao.workoutCountFlow().distinctUntilChanged(),
-        dao.sleepEdits().distinctUntilChanged(),
-    ) { _, _, _, _, _ -> }
+        dao.sleepEdits().distinctUntilChanged(), dao.appWorkouts().distinctUntilChanged(),
+    ) { }
 
     /**
      * Local days that have any heart rate, steps or sleep, for the calendar. Only the last [RECENT_DATA_DAYS] are

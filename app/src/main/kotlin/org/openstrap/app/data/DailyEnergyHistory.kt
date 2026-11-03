@@ -10,13 +10,17 @@ import java.time.ZoneId
 
 /**
  * Keeps [DailyEnergyRow] for every day with data, so week, month and year views read a row rather than run the model.
- * The day shown in the app writes its own row each time [RecoveryEngine.compute] works it out ([HealthRepository]);
- * this fills the rest after a sync: days without a row (the first run backfills them all), the last [RECENT_DAYS] (a
- * sync can still bring their minutes or a workout), and every day when the profile has changed. Phone workouts from
- * before version 20 get their kcal first, so their days count it, and after a profile change every phone workout's
- * kcal is worked out again first, so a day never fits its minutes to a total from the old profile.
+ * The day shown in the app writes its own row each time its Recovery is worked out ([HealthRepository]). This fills
+ * the rest after a sync: days without a row (the first run backfills them all), the last [RECENT_DAYS] (a sync can
+ * still bring their minutes or a workout), and every day when the profile has changed. Phone workouts from before
+ * version 20 get their kcal first, so their days count it, and after a profile change every phone workout's kcal is
+ * worked out again first, so a day never fits its minutes to a total from the old profile.
+ *
+ * Both writers work a day out with [energy], so a day's page and its bar in the week show the same kcal (data
+ * integrity item 18).
  */
 class DailyEnergyHistory(private val dao: HealthDao) {
+    private val engine = RecoveryEngine(dao)
 
     /** The days written. */
     suspend fun update(
@@ -35,16 +39,14 @@ class DailyEnergyHistory(private val dao: HealthDao) {
             .filter { d -> d <= today && (profileChanged || d > today.minusDays(RECENT_DAYS.toLong()) || DayWindow.of(d, zone).from !in have) }
         if (days.isEmpty()) return 0
 
-        // Inputs the whole model would take a day to give for each past day: resting HR as the workouts take it, max HR
-        // as of today, VO2max once a week. They only move the HR-assisted minutes; opening a day rewrites its row exactly.
-        val engine = RecoveryEngine(dao)
+        // Max HR is today's for every day, so it's worked out once, and VO2max once a week ([energy]).
         val maxHr = engine.maxHeartRate(profile, today, zone)
         val vo2 = HashMap<LocalDate, Float?>()
         val firstDay = Weeks.firstDay()
         var written = 0
         for (d in days) {
             val v = vo2.getOrPut(Weeks.start(d, firstDay)) { runCatching { engine.vo2max(profile, d, zone, firstDay) }.getOrNull() }
-            if (write(engine, d, profile, maxHr, v, zone, now)) written++
+            if (write(d, profile, maxHr, v, zone, now)) written++
         }
         return written
     }
@@ -56,26 +58,38 @@ class DailyEnergyHistory(private val dao: HealthDao) {
      */
     suspend fun updateDays(from: Long, to: Long, profile: UserProfile, zone: ZoneId = ZoneId.systemDefault(), now: Long = System.currentTimeMillis() / 1000) {
         if (EnergyExpenditure.bmrPerMinute(profile, profile.age()) == null) return
-        val engine = RecoveryEngine(dao)
         val first = Instant.ofEpochSecond(from).atZone(zone).toLocalDate()
         val last = Instant.ofEpochSecond(maxOf(from, to)).atZone(zone).toLocalDate()
         val maxHr = engine.maxHeartRate(profile, Instant.ofEpochSecond(now).atZone(zone).toLocalDate(), zone)
         var d = first
         while (d <= last) {
-            write(engine, d, profile, maxHr, runCatching { engine.vo2max(profile, d, zone) }.getOrNull(), zone, now)
+            write(d, profile, maxHr, runCatching { engine.vo2max(profile, d, zone) }.getOrNull(), zone, now)
             d = d.plusDays(1)
         }
     }
 
-    /** Works out [d] on the resting HR of the days before it and writes its row; false when the model can't. */
-    private suspend fun write(engine: RecoveryEngine, d: LocalDate, profile: UserProfile, maxHr: Float, vo2max: Float?, zone: ZoneId, now: Long): Boolean {
+    /** Works out [d] ([energy]) and writes its row. False when the model can't. */
+    private suspend fun write(d: LocalDate, profile: UserProfile, maxHr: Float, vo2max: Float?, zone: ZoneId, now: Long): Boolean {
+        val e = runCatching { energy(d, profile, maxHr, vo2max, zone, now) }.getOrNull() ?: return false
+        dao.insertDailyEnergy(listOf(row(DayWindow.of(d, zone).from, e, now)))
+        return true
+    }
+
+    /**
+     * [d]'s energy, the one rule its row and its page both follow: its own minutes ([RecoveryEngine.energy]) on the
+     * strap's daytime resting HR of the [Recovery.RHR_DAYS] up to it, [maxHr] as of today
+     * ([RecoveryEngine.maxHeartRate]) and [vo2max] as of its week ([RecoveryEngine.vo2max]). Max HR is today's for
+     * every day, so a sync that rewrites a week of rows reads 90 days of heart rate once, not once a day.
+     */
+    suspend fun energy(
+        d: LocalDate, profile: UserProfile, maxHr: Float, vo2max: Float?,
+        zone: ZoneId = ZoneId.systemDefault(), now: Long = System.currentTimeMillis() / 1000,
+    ): EnergyExpenditure.Day? {
         val from = DayWindow.of(d, zone).from
         val restingHr = Recovery.daytimeRestingHr(
             dao.restingHrOnce(from - Recovery.RHR_DAYS * 86_400L, from).associate { it.day to it.bpm.toFloat() }, emptyMap(), from,
         ) ?: DEFAULT_RESTING_HR
-        val e = runCatching { engine.energy(d, profile, restingHr, maxHr, vo2max, zone, now) }.getOrNull() ?: return false
-        dao.insertDailyEnergy(listOf(row(from, e, now)))
-        return true
+        return engine.energy(d, profile, restingHr, maxHr, vo2max, zone, now)
     }
 
     companion object {

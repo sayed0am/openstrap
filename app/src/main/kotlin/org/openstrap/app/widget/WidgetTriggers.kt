@@ -36,6 +36,7 @@ fun workoutKinds(previous: WorkoutState?, next: WorkoutState): Set<WidgetKind> {
  * Everything a widget's refresh follows (widgets spec 7). The widgets watch these instead of being told: settings,
  * the strap and the workout never name a widget. [now] is epoch seconds.
  */
+@Suppress("LongParameterList") // One named flow per trigger, built in one place by WidgetUpdater.start.
 internal class WidgetTriggers(
     val goals: Flow<Any>,
     val workoutSides: Flow<Any>,
@@ -44,6 +45,9 @@ internal class WidgetTriggers(
     val todaySteps: Flow<StepTotals?>,
     val syncEnded: Flow<Unit>,
     val workoutState: Flow<WorkoutState>,
+    /** The user's sleep edits: a night or nap moved, deleted or brought back. */
+    val sleepEdits: Flow<Any?>,
+    val profile: Flow<Any>,
     val now: () -> Long,
 )
 
@@ -56,6 +60,10 @@ internal fun CoroutineScope.watchWidgetTriggers(t: WidgetTriggers, changed: (Set
     val all = WidgetKind.entries.toSet()
     // Goals: the Steps goal and Moment's evening line.
     launch { t.goals.drop(1).distinctUntilChanged().collect { changed(setOf(WidgetKind.Steps, WidgetKind.Moment)) } }
+    // A sleep edit moves the night the widgets show and Recovery under it, and the profile moves Recovery and the
+    // moment's name, so neither waits for the next sync to end.
+    launch { t.sleepEdits.drop(1).distinctUntilChanged().collect { changed(all) } }
+    launch { t.profile.drop(1).distinctUntilChanged().collect { changed(all) } }
     // The Outdoor or Indoor side last chosen per sport, on Start's tiles.
     launch { t.workoutSides.drop(1).distinctUntilChanged().collect { changed(setOf(WidgetKind.Start)) } }
     // A sync starting while the widgets say the last one is old: their line turns to Syncing (spec 5).
