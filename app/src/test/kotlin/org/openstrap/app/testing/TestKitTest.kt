@@ -49,9 +49,9 @@ class TestKitTest {
     }
 
     @Test
-    fun cleanCopyBansThePunctuationButNotRanges() {
-        assertCleanCopy(listOf("Slept 22:10–06:40", "5–10 min", "Good, steady"))
-        for (bad in listOf("Rest · 2 min", "Easy; slow", "Now — later", "Easy – later")) {
+    fun cleanCopyBansThePunctuationRangesIncluded() {
+        assertCleanCopy(listOf("Slept 22:10 to 06:40", "5 to 10 min", "Good, steady"))
+        for (bad in listOf("Rest · 2 min", "Easy; slow", "Now — later", "Easy – later", "Slept 22:10–06:40", "5–10 min")) {
             assertThrows(AssertionError::class.java) { assertCleanCopy(bad) }
         }
     }

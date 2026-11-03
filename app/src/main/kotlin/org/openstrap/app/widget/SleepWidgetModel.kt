@@ -59,7 +59,7 @@ data class SleepWidgetModel(
     /** The night's day, which a tap opens the Sleep score's detail on; null while waiting. */
     val date: LocalDate?,
     val title: String,
-    /** Bedtime to waking ("22:58–06:56"), or "Last synced night" while this morning's night isn't in. */
+    /** Bedtime to waking ("22:58 to 06:56"), or "Last synced night" while this morning's night isn't in. */
     val note: String?,
     /** Yesterday's night, shown while this morning's isn't synced. */
     val stale: Boolean,

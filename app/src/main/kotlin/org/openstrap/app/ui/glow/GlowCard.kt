@@ -367,7 +367,7 @@ private class Drift(val dx: Float, val dy: Float, val scale: Float, val fade: Fl
 
 /**
  * The core's motion over time. Under the heartbeat is a small never-repeating wander: each axis is two
- * sine waves with unrelated periods (10–24 s), and every card gets its own periods and phases.
+ * sine waves with unrelated periods (10 to 24 s), and every card gets its own periods and phases.
  */
 private class CoreDrift(private val random: Random) {
     private fun wave() = Wave(period = 10f + random.nextFloat() * 14f, phase = random.nextFloat() * 2f * PI.toFloat())

@@ -16,7 +16,7 @@ data class WorkoutAnalysis(
     val recovery120: Int?,
     /** HR when the workout ended, the starting point of the recovery figures. */
     val endHeartRate: Int?,
-    /** Seconds in each of the five zones (50–60 … 90–100 % of [maxHeartRate]) during the workout. */
+    /** Seconds in each of the five zones (50 to 60 … 90 to 100 % of [maxHeartRate]) during the workout. */
     val zoneSeconds: List<Int>,
     val maxHeartRate: Int,
     /** Recorded by OpenStrap from live heart rate rather than by the strap ([WorkoutRecorder]). */
@@ -203,7 +203,7 @@ object Workouts {
         return e.takeIf { otherStarts.none { s -> s > w.start && s < e.end } }
     }
 
-    /** Zone 0..4 in [zones], by default 50–60, 60–70, 70–80, 80–90 and 90+ % of max, null below zone 1. */
+    /** Zone 0..4 in [zones], by default 50 to 60, 60 to 70, 70 to 80, 80 to 90 and 90+ % of max, null below zone 1. */
     fun zoneOf(bpm: Int, maxHr: Int, zones: HeartZones): Int? = zones.zoneOf(bpm, maxHr)
 
     /** HR drop from the end to [after] seconds later, each taken as a 5-second median to ride out noise. */

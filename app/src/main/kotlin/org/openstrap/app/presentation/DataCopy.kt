@@ -69,6 +69,15 @@ object Vo2maxCopy {
         Vo2max.Friend.Band.P70to90 -> "70th to 90th percentile"
         Vo2max.Friend.Band.Top10 -> "Top 10 %"
     }
+
+    /** The estimate from your profile as a row's value: "40 to 45". */
+    fun estimate(low: Int, high: Int, locale: Locale = Locale.getDefault()): String = Ranges.numbers(low, high, locale)
+
+    /**
+     * The estimate from your profile as a detail's hero: the low end in dots and the rest beside them, "40" and
+     * "to 45 ml/kg/min", since the dots draw digits only and a range never takes a dash.
+     */
+    fun estimateHero(low: Int, high: Int): Pair<String, String> = dotFormat("%d", low) to "to ${Units.count(high)} ml/kg/min"
 }
 
 /** The goals sheet's words. */

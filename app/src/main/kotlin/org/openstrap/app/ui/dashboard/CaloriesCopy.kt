@@ -9,6 +9,7 @@ import java.time.ZoneId
 import java.util.Locale
 import kotlin.math.abs
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Range
@@ -47,7 +48,7 @@ internal object CaloriesCopy {
 
     /** An hour's kcal in the headline while it's picked: "active kcal, 07:00 to 08:00". */
     fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String =
-        "active kcal, ${hourClock(hour, locale)} to ${hourClock(hour + 1, locale)}"
+        "active kcal, ${Ranges.of(hourClock(hour, locale), hourClock(hour + 1, locale))}"
 
     /** The start of [hour] on the phone's clock: "07:00", or "7:00 AM". */
     private fun hourClock(hour: Int, locale: Locale) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR, locale = locale)

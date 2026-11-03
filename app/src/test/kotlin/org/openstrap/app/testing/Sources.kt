@@ -25,17 +25,14 @@ object SourceTree {
 }
 
 /**
- * The punctuation copy never uses (spec 7.1 rule 6): interpunct, semicolon, em dash and en dash. An en dash between
- * two digits is a range, like 22:10–06:40 or 5–10, and stays allowed.
+ * The punctuation copy never uses (spec 7.1 rule 6): interpunct, semicolon, em dash and en dash. A range says "to"
+ * (user, 2026-11-03), so an en dash between two digits is banned too.
  */
 private val BANNED = setOf('·', ';', '—', '–')
 
-private fun String.bannedAt(i: Int): Boolean =
-    this[i] in BANNED && !(this[i] == '–' && getOrNull(i - 1)?.isDigit() == true && getOrNull(i + 1)?.isDigit() == true)
-
 /** Fails with every line of [text] that uses banned punctuation. */
 fun assertCleanCopy(text: String) {
-    val bad = text.lines().filter { line -> line.indices.any { line.bannedAt(it) } }
+    val bad = text.lines().filter { line -> line.any { it in BANNED } }
     if (bad.isNotEmpty()) fail("copy uses ·, ;, — or –:\n" + bad.joinToString("\n"))
 }
 

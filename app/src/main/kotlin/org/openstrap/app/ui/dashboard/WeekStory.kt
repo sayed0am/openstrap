@@ -4,6 +4,7 @@ import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.DetailCopy
 
 /*
@@ -86,7 +87,7 @@ internal object WeekStory {
         val end = week.endInclusive
         val month = { d: LocalDate -> d.month.getDisplayName(TextStyle.SHORT, locale) }
         val from = if (start.month == end.month) "${start.dayOfMonth}" else "${start.dayOfMonth} ${month(start)}"
-        return "steps a day, $from to ${end.dayOfMonth} ${month(end)}"
+        return "steps a day, ${Ranges.of(from, "${end.dayOfMonth} ${month(end)}")}"
     }
 
     /** One row of Day by day: a day, or a run of days with nothing recorded folded into one ("Monday to Thursday"). */
@@ -103,7 +104,7 @@ internal object WeekStory {
             if (d.steps != null || line != null) { rows += Row(name(d), d.steps, line); i++; continue }
             var j = i
             while (j + 1 < days.size && days[j + 1].steps == null && dayLine(days[j + 1]) == null) j++
-            rows += Row(if (j == i) name(d) else "${name(d)} to ${name(days[j])}", null, "Nothing recorded")
+            rows += Row(if (j == i) name(d) else Ranges.of(name(d), name(days[j])), null, "Nothing recorded")
             i = j + 1
         }
         return rows

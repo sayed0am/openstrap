@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Ranges
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,10 @@ internal fun effectText(years: Float): String {
     }
 }
 
+/** The steps a day the Steps habit's line aims for. */
+private const val STEPS_AIM_LOW = 8000
+private const val STEPS_AIM_HIGH = 10_000
+
 /** The line under a habit: your value, the typical one it's scored against, and a target where there is one. */
 internal fun termDetail(t: Healthspan.Term, age: Int): String {
     val v = t.value
@@ -66,7 +71,7 @@ internal fun termDetail(t: Healthspan.Term, age: Int): String {
         }
         Healthspan.Habit.Vo2max -> "${v.roundToInt()} ml/kg/min, typical at $age: ${ref?.roundToInt()}"
         Healthspan.Habit.Steps -> "${Units.count(v.roundToInt())} a day, typical: ${Units.count(((ref ?: 0f) / 100).roundToInt() * 100)}" +
-            (if (v < 8000f) ", aim for 8,000–10,000" else "")
+            (if (v < STEPS_AIM_LOW) ", aim for ${Ranges.numbers(STEPS_AIM_LOW, STEPS_AIM_HIGH)}" else "")
         Healthspan.Habit.Regularity -> "${v.roundToInt()}, typical: ${ref?.roundToInt()}"
         Healthspan.Habit.RestingHr -> "${v.roundToInt()} bpm asleep, typical: about ${ref?.roundToInt()}"
         Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m ->

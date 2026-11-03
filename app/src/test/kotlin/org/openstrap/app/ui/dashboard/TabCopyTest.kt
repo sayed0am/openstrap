@@ -272,10 +272,10 @@ class TabCopyTest {
         val was = ClockSetting.use24Hour
         try {
             ClockSetting.use24Hour = true
-            assertEquals("22:58–06:56", TabCopy.nightTimes(start, end, zone))
+            assertEquals("22:58 to 06:56", TabCopy.nightTimes(start, end, zone))
             assertEquals("Usually asleep by 23:10, up at 06:50.", TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
             ClockSetting.use24Hour = false
-            assertEquals("10:58 PM–6:56 AM", TabCopy.nightTimes(start, end, zone))
+            assertEquals("10:58 PM to 6:56 AM", TabCopy.nightTimes(start, end, zone))
             assertEquals("Usually asleep by 11:10 PM, up at 6:50 AM.", TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
             assertCleanCopy(TabCopy.usualTimes(23 * 60 + 10, 6 * 60 + 50))
         } finally {

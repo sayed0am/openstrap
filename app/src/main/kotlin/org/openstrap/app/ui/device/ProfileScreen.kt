@@ -191,7 +191,10 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                             org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW, org.openstrap.app.ui.workout.HeartZonesCopy.profileLine(profile.maxHeartRate),
                             onClick = onHeartZones, below = true, divider = false,
                         )
-                        NumberField(sleepNeed, { sleepNeed = it }, "Sleep need (7–9, blank for your age's default)", "h", sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true)
+                        NumberField(
+                            sleepNeed, { sleepNeed = it }, "Sleep need (7 to 9, blank for your age's default)", "h",
+                            sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true,
+                        )
                     }
                 }
             }

@@ -77,7 +77,7 @@ internal class StrapCommands(
         if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException(refused)
     }
 
-    /** Learned on connect; null until then or when the strap didn't answer (then replies are read as v1–3). */
+    /** Learned on connect. Null until then or when the strap didn't answer (then replies are read as v1 to v3). */
     @Volatile var settingsProtocol: SettingsProtocol? = null
 
     suspend fun settingsProtocol(): SettingsProtocol? = settingsProtocol

@@ -9,7 +9,8 @@ import java.io.File
 /**
  * No interpunct, semicolon or em dash in any string the user reads (spec 7.1 rule 6, 8.2). Scans the string literals
  * of the Kotlin source that holds copy, leaving out code, comments, template code, log and exception messages and
- * debug-only branches. En dashes stay allowed, for ranges like 22:10–06:40.
+ * debug-only branches. Ranges say "to" (user, 2026-11-03): the second test bans the en dash and the em dash in every
+ * string of the app and the protocol module, exception messages included, since some reach the screen.
  */
 class CopyPunctuationTest {
     private val banned = setOf('·', ';', '—')
@@ -59,6 +60,56 @@ class CopyPunctuationTest {
         if (found.isNotEmpty()) fail("${found.size} user-facing strings use ·, ; or —:\n" + found.joinToString("\n"))
         val stale = allowed.keys - used
         assertTrue("allowlist entries that no longer match: $stale", stale.isEmpty())
+    }
+
+    /**
+     * Literals with an en or em dash that aren't text, by file (from `app/src/main/kotlin/org/openstrap/app`, or
+     * `protocol:` and the path from `protocol/src/main/kotlin/org/openstrap/protocol`) and exact text, each with why.
+     * Empty: every range says "to". Keep it for a dash that is data, never for words.
+     */
+    private val dashAllowed = emptyMap<Pair<String, String>, String>()
+
+    private val dashes = setOf('–', '—')
+
+    /** The protocol module's Kotlin, beside the app module. */
+    private val protocolRoot = File(SourceTree.module.parentFile, "protocol/src/main/kotlin/org/openstrap/protocol")
+
+    @Test fun `no string in the app or the protocol joins a range with a dash or uses an em dash`() {
+        val found = mutableListOf<String>()
+        val used = mutableSetOf<Pair<String, String>>()
+        fun scan(dir: File, prefix: String): Int {
+            val files = dir.walkTopDown().filter { it.isFile && it.extension == "kt" }.sortedBy { it.path }.toList()
+            files.forEach { f ->
+                val path = prefix + f.relativeTo(dir).invariantSeparatorsPath
+                KotlinLiterals(f.readText()).scan().forEach { lit ->
+                    if (lit.text.none { it in dashes }) return@forEach
+                    val key = path to lit.text
+                    if (key in dashAllowed) used += key else found += "$path:${lit.line}  \"${lit.text}\""
+                }
+            }
+            return files.size
+        }
+        assertTrue("found no source under ${kotlinRoot.absolutePath}", scan(kotlinRoot, "") > 50)
+        assertTrue("found no source under ${protocolRoot.absolutePath}", scan(protocolRoot, "protocol:") > 10)
+        // Every resource the user can read: strings, the widgets' provider XML and the picker previews.
+        File(root, "res").walkTopDown().filter { it.isFile && it.extension == "xml" }.sortedBy { it.path }.forEach { f ->
+            f.readLines().forEachIndexed { i, line ->
+                if (line.any { it in dashes }) found += "res/${f.relativeTo(File(root, "res")).invariantSeparatorsPath}:${i + 1}  ${line.trim()}"
+            }
+        }
+        if (found.isNotEmpty()) fail("${found.size} strings use an en or em dash, write a range with \"to\":\n" + found.joinToString("\n"))
+        val stale = dashAllowed.keys - used
+        assertTrue("allowlist entries that no longer match: $stale", stale.isEmpty())
+    }
+
+    @Test fun `the dash scan reads exception and log messages too`() {
+        val src = """
+            throw IllegalStateException("No reply — rebooting")
+            Log.w(TAG, "10–12")
+            val a = "22:58 to 06:56"
+        """.trimIndent()
+        val withDash = KotlinLiterals(src).scan().filter { lit -> lit.text.any { it in dashes } }
+        assertTrue(withDash.map { it.line }.toString(), withDash.map { it.line } == listOf(1, 2))
     }
 
     @Test fun `the scanner skips code, comments, template code, logs, exceptions and debug branches`() {

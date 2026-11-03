@@ -5,6 +5,7 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.presentation.sportNoun
 import org.openstrap.app.presentation.WorkoutCopy
@@ -166,8 +167,8 @@ object SummaryCopy {
         averageBpm?.let { "average $it bpm" },
     ).joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
 
-    /** The trim panel's header: "18:02–18:40, 38:12". */
-    fun trimHeader(from: String, to: String, seconds: Long): String = "$from–$to, ${Units.workoutClock(seconds)}"
+    /** The trim panel's header: "18:02 to 18:40, 38:12". */
+    fun trimHeader(from: String, to: String, seconds: Long): String = "${Ranges.of(from, to)}, ${Units.workoutClock(seconds)}"
 
     /** The last part's distance, down to "0 m" where the smoothed total leaves next to nothing. */
     private fun lastPart(meters: Float, locale: Locale): String =

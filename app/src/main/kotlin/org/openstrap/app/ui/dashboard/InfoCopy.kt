@@ -5,6 +5,7 @@ import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.presentation.RecoveryBands
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.SleepBands
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Vo2maxCopy
@@ -66,7 +67,7 @@ object InfoCopy {
         val word = if (nightly) "nights" else "days"
         if (normal == null) return "Your normal shows after ${History.MIN_NORMAL_DAYS} $word with data. ${days.coerceAtMost(History.MIN_NORMAL_DAYS)} so far."
         val u = if (unit.isEmpty()) "" else if (unit.startsWith("%") || unit.startsWith("°")) unit else " $unit"
-        return "You are here. Your normal is ${format(normal.low)} to ${format(normal.high)}$u, from ${normal.days} $word."
+        return "You are here. Your normal is ${Ranges.of(format(normal.low), format(normal.high))}$u, from ${normal.days} $word."
     }
 
     /** The line under Recovery's and Charge's scales. */

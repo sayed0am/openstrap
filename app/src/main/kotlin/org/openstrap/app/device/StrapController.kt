@@ -19,7 +19,7 @@ sealed interface ConnectionState {
 
 sealed interface SyncState {
     data object Idle : SyncState
-    /** [progress] is the share of data types done (0–1), when known. */
+    /** [progress] is the share of data types done (0 to 1), when known. */
     data class Running(val step: String, val progress: Float? = null) : SyncState
     data class Done(val atEpochSeconds: Long) : SyncState
     data class Failed(val reason: String) : SyncState

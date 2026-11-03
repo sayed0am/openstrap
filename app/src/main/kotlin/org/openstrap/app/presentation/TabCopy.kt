@@ -186,9 +186,9 @@ object TabCopy {
     /** "7 h 40 asleep". */
     fun asleep(seconds: Long): String = "${Units.duration(seconds)} asleep"
 
-    /** When the night ran, bedtime to waking: "22:58–06:56" (an en dash, a time range), in the phone's clock. */
+    /** When the night ran, bedtime to waking: "22:58 to 06:56", in the phone's clock. */
     fun nightTimes(start: Long, end: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
-        "${TimeOfDay.format(start, zone)}–${TimeOfDay.format(end, zone)}"
+        Ranges.times(start, end, zone)
 
     /** "Woke 3 times", "Woke once", "Slept through"; null when the strap didn't say. */
     fun woke(count: Int?): String? = when (count) {

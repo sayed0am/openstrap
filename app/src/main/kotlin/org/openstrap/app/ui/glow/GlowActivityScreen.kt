@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
@@ -369,7 +370,7 @@ private fun FactsList(
         val est = r?.vo2max
         ListRow(
             "VO2 max", MetricColors.heart,
-            fromWorkouts?.toString() ?: est?.let { "${it.low}-${it.high}" },
+            fromWorkouts?.toString() ?: est?.let { Vo2maxCopy.estimate(it.low, it.high) },
             when {
                 fromWorkouts != null -> "From your workouts"
                 est != null -> est.band?.let { "${Vo2maxCopy.band(it)} for your age" } ?: "Estimated from your profile"
@@ -553,7 +554,7 @@ private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestio
     Column {
         ListRow(
             "Looks like a workout", ZONE_COLORS[s.zone], null,
-            "${clock(s.start)}–${clock(s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average",
+            "${Ranges.times(s.start, s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average",
             dash = false, divider = divider, icon = AppIcons.Heartbeat,
         )
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {

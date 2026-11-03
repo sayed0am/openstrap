@@ -568,7 +568,7 @@ object Recovery {
     /** Extra drain per stress point above the threshold, per minute (80 over 60 drains 0.14/min). */
     const val STRESS_DRAIN = 0.007f
     /**
-     * Zepp's bands for the strap's score: relaxed 1–39, normal 40–59, medium 60–79, high 80–100. Only medium
+     * Zepp's bands for the strap's score: relaxed 1 to 39, normal 40 to 59, medium 60 to 79, high 80 to 100. Only medium
      * and up count as stress; from 40, most of a seated day (Zepp's "normal") drained as stress. The default
      * until [stressThreshold] has enough of the user's own readings.
      */

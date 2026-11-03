@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
@@ -135,7 +136,7 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
         best?.let { StoryChip("${RewardsCopy.bestTitle(it.kind)}, ${RewardsCopy.bestValue(it.kind, it.value)}", best = true, met = false) },
     )
     return StoryCard.Week(
-        "${DayWords.dayMonth(first)} to ${DayWords.dayMonth(first.plusDays(6))}", "$count",
+        Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), "$count",
         "${if (count == 1) "workout" else "workouts"}, goal $goal", weekDots(view, first), totals, chips,
     )
 }
