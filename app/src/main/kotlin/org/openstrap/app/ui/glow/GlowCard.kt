@@ -124,8 +124,9 @@ fun GlowCard(
     val animate = lit.motion is GlowMotion.Heartbeat && remember(context) {
         Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f
     }
-    val listPaused = LocalGlowPaused.current
-    val pagePaused = LocalGlowPagePaused.current
+    // Read through state, so the running loop follows a newly provided lambda rather than the first one it saw.
+    val listPaused by rememberUpdatedState(LocalGlowPaused.current)
+    val pagePaused by rememberUpdatedState(LocalGlowPagePaused.current)
     val paused = { listPaused() || pagePaused() }
     if (animate) LaunchedEffect(Unit) {
         // Time only advances while the card isn't paused, so the core picks up where it stopped.
