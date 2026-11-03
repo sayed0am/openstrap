@@ -225,7 +225,7 @@ object TabCopy {
     /**
      * The week's balance from fatigue (the last 7 days) against fitness (the last 6 weeks): "Building" when the week
      * is well above your usual, "Easing off" when well below, "Steady" between, with the band Today uses for a usual
-     * Load ([TodayCopy.LOAD_BAND]). Null before there's a fitness to compare with.
+     * Load ([LoadBands.BAND]). Null before there's a fitness to compare with.
      *
      * Not a [org.openstrap.app.presentation.LoadBands] rule: it weighs the week's ATL against the CTL, not a day's Load
      * against your usual day, so it keeps its own words and only borrows the band's width.
@@ -234,8 +234,8 @@ object TabCopy {
         val t = trend ?: return null
         if (t.ctl <= 0f) return null
         return when {
-            t.atl > t.ctl * (1 + TodayCopy.LOAD_BAND) -> "Building"
-            t.atl < t.ctl * (1 - TodayCopy.LOAD_BAND) -> "Easing off"
+            t.atl > t.ctl * (1 + LoadBands.BAND) -> "Building"
+            t.atl < t.ctl * (1 - LoadBands.BAND) -> "Easing off"
             else -> "Steady"
         }
     }
@@ -342,7 +342,7 @@ object TabCopy {
 
     /** "First estimate Sunday 22 Nov", before there's a number. */
     fun firstEstimate(sunday: LocalDate, locale: Locale = Locale.getDefault()): String =
-        "First estimate " + sunday.format(org.openstrap.app.presentation.Formatters.of("EEEE d MMM", locale))
+        "First estimate " + DayWords.weekdayDayMonth(sunday, locale)
 
     /** Habit Age before its first estimate, under your own age in its place: "Your age for now", then what it waits for. */
     fun habitAgeForNow(waiting: String?): String = if (waiting.isNullOrBlank()) "Your age for now" else "Your age for now. $waiting"

@@ -26,11 +26,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.chargeShown
-import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.MainActivity
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
@@ -325,11 +325,11 @@ class StrapService : LifecycleService() {
      */
     private fun workoutNotification(r: WorkoutState.Recording, bpm: Int?, connected: Boolean, confirming: Boolean, session: WorkoutSession): Notification {
         r.endPrompt?.let { return stoppedNotification(r, it) }
-        if (r.strength && !r.paused) return strengthNotification(r, bpm, connected, confirming)
+        val zones = session.heartZones.value
+        if (r.strength && !r.paused) return strengthNotification(r, bpm, connected, confirming, zones)
         val w = r.workout
         val now = System.currentTimeMillis()
         val active = WorkoutRecorder.activeSeconds(w, now / 1000)
-        val zones = HeartZonesInUse.current.value
         val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)
         val target = WorkoutTarget.parse(w.target)
         val card = NotificationCopy.card(
@@ -454,7 +454,7 @@ class StrapService : LifecycleService() {
     }
 
     /** Strength on the lock screen: the set or the rest counting down, its progress, and the next step. */
-    private fun strengthNotification(r: WorkoutState.Recording, bpm: Int?, connected: Boolean, confirming: Boolean): Notification {
+    private fun strengthNotification(r: WorkoutState.Recording, bpm: Int?, connected: Boolean, confirming: Boolean, zones: HeartZones): Notification {
         val now = System.currentTimeMillis()
         val done = r.sets.count { it.end != null }
         val until = r.restUntil
@@ -471,7 +471,7 @@ class StrapService : LifecycleService() {
                 if (!connected) "${WorkoutWords.STRAP_GONE}. Still recording."
                 else listOfNotNull(bpm?.let { "$it bpm" }, r.workout.setsTarget?.let { "$done of $it sets" }).joinToString(", "),
             )
-            .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate, HeartZonesInUse.current.value)) else WorkoutColors.PAUSED_GREY)
+            .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)) else WorkoutColors.PAUSED_GREY)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
@@ -601,13 +601,6 @@ class StrapService : LifecycleService() {
         /** Each zone's length on the notification's progress bar. */
         private const val ZONE_SPAN = 20
         private const val REQUEST_OPEN = 2
-
-        private fun zoneRange(zone: Int, maxHr: Int) =
-            if (zone == 0) {
-                "under ${60 * maxHr / 100} bpm"
-            } else {
-                Ranges.of("${(50 + zone * 10) * maxHr / 100}", "${if (zone == 4) maxHr else (60 + zone * 10) * maxHr / 100 - 1}") + " bpm"
-            }
 
         /** Whether the service is up; a start then needn't (and, once swiped away, mustn't) post its notification. */
         @Volatile var running = false

@@ -122,6 +122,8 @@ class GlowFormatTest {
             assertEquals("Oct", DayWords.monthShort(d))
             assertEquals("21 Oct 2025", DayWords.dayMonthYear(d.minusYears(1)))
             assertEquals("Oct 21", DayWords.monthDay(d))
+            assertEquals("Wednesday 21 Oct", DayWords.weekdayDayMonth(d))
+            assertEquals("Mittwoch 21 Okt.", DayWords.weekdayDayMonth(d, Locale.GERMANY))
         }
     }
 

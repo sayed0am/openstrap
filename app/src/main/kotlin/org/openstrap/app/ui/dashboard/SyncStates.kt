@@ -3,7 +3,6 @@ package org.openstrap.app.ui.dashboard
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
-import java.util.Locale
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.device.SyncState
@@ -31,10 +30,6 @@ val MORNING_START: LocalTime = LocalTime.of(4, 0)
 
 /** And ends at noon, where the rest of Today stops calling it the morning. */
 val MORNING_END: LocalTime = LocalTime.NOON
-
-/** A clock time on the phone's clock ([TimeOfDay]): "09:40", or "9:40 AM" in 12 h. Kept for callers that still name it. */
-fun clockText(epoch: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault()): String =
-    TimeOfDay.format(epoch, zone, use24Hour, locale)
 
 /**
  * Whether syncing has stopped: the last sync failed, or the strap isn't connected so nothing can sync. A sync

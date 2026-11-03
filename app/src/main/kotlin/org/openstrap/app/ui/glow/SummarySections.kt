@@ -1,7 +1,6 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.data.Weeks
-import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Pace
@@ -125,7 +124,8 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
             // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8); without sets, the minutes.
             when {
                 lifted != null -> SummaryHero(
-                    dotFormat("%,d", Math.round(lifted)), "kg lifted", listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"),
+                    Units.count(Math.round(lifted), Units.DOT_LOCALE), "kg lifted",
+                    listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"),
                 )
                 sets > 0 -> SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))
                 else -> byTime(listOf(avg to "Avg bpm", peak to "Peak"))

@@ -1,6 +1,9 @@
 package org.openstrap.app.device
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -23,9 +26,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.openstrap.app.data.Activity
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.MaxHeartRates
 import org.openstrap.app.data.Route
@@ -52,6 +58,7 @@ import org.openstrap.protocol.services.StepTotals
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.io.IOException
 import java.time.Duration
 import java.util.Collections
 
@@ -62,6 +69,7 @@ import java.util.Collections
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class WorkoutSessionTest {
+    @get:Rule val folder = TemporaryFolder()
     private val context = ApplicationProvider.getApplicationContext<Context>()
     private val clock = FixedClock()
     private val strap = FakeStrap()
@@ -91,8 +99,10 @@ class WorkoutSessionTest {
     /** The app's scope as `AppContainer.appScope` builds it, but what it catches lands in [uncaught] for the test. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> uncaught += e })
 
-    private fun session(leftWaitMs: Long = WorkoutSession.LEFT_WAIT_MS, on: Context = context) = WorkoutSession(
-        on, dao, SettingsStore(context), strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope,
+    private fun session(
+        leftWaitMs: Long = WorkoutSession.LEFT_WAIT_MS, on: Context = context, settings: SettingsStore = SettingsStore(context),
+    ) = WorkoutSession(
+        on, dao, settings, strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope,
         leftWaitMs = leftWaitMs,
     )
 
@@ -663,6 +673,34 @@ class WorkoutSessionTest {
         assertEquals("Keep recording your mountain hike", KeepRecordingNotice.title(224))
         assertEquals("Keep recording your HYROX training", KeepRecordingNotice.title(222))
         assertEquals("Keep recording your strength training", KeepRecordingNotice.title(52))
+    }
+
+    /** A preferences store of the test's own, for settings writes that fail. */
+    private val store: DataStore<Preferences> by lazy {
+        PreferenceDataStoreFactory.create(scope = scope) { folder.newFile("settings.preferences_pb").also { it.delete() } }
+    }
+    private val moved = HeartZones.STANDARD.withStart(1, 100, 190)
+
+    /** The zones in use follow only what's stored (audit A8). */
+    @Test
+    fun storedZonesComeIntoUse() {
+        val settings = SettingsStore.of(store)
+        val s = session(settings = settings)
+        runBlocking { settings.setHeartZones(moved) }
+        assertEquals(moved, s.heartZones.await("zones") { it == moved })
+    }
+
+    /** A move that the store fails to write leaves the zones as they are on disk, where they used to change first. */
+    @Test
+    fun aFailedWriteLeavesTheZonesInUseAsStored() = runBlocking {
+        val failing = SettingsStore.of(object : DataStore<Preferences> by store {
+            override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences = throw IOException("disk full")
+        })
+        val s = session(settings = failing)
+        val write = runCatching { failing.setHeartZones(moved) }
+        assertTrue(write.exceptionOrNull() is IOException)
+        assertEquals(HeartZones.STANDARD, failing.heartZones.first())
+        assertEquals(HeartZones.STANDARD, s.heartZones.value)
     }
 
     /** [HealthDao] that can fail every workout save, or hold the next one until released. */

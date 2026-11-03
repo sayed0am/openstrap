@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Ranges
 import androidx.compose.foundation.Canvas
@@ -84,8 +85,7 @@ internal fun termDetail(t: Healthspan.Term, age: Int): String {
 private const val MINUTE_S = 60L
 
 /** "Sunday 22 Nov" for local midnight [day] (epoch seconds), with no-break spaces so it never wraps inside the date. */
-internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-    .format(org.openstrap.app.presentation.Formatters.of("EEEE d MMM", java.util.Locale.getDefault())).replace(' ', '\u00A0')
+internal fun sundayText(day: Long): String = DayWords.weekdayDayMonth(dateOf(day)).replace(' ', '\u00A0')
 
 /** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
 internal fun profileReminder(missing: List<String>): String =

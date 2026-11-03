@@ -2,7 +2,6 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Ranges
-import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +23,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -311,8 +310,8 @@ internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () 
             score?.toString(), "score",
             when {
                 asleep == null -> if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else "No sleep recorded"
-                score != null -> "${org.openstrap.app.presentation.TabCopy.sleepScoreWord(score)}, ${TodayCopy.duration(asleep)} asleep"
-                else -> "${TodayCopy.duration(asleep)} asleep, no score from the strap"
+                score != null -> "${org.openstrap.app.presentation.TabCopy.sleepScoreWord(score)}, ${Units.duration(asleep)} asleep"
+                else -> "${Units.duration(asleep)} asleep, no score from the strap"
             },
             waiting = asleep == null,
         )
@@ -393,7 +392,7 @@ internal fun ActivityCard(
     ) {
         EdgeTitle("Steps", "Goal ${Units.count(goal)}", marker = upTo, tag = tag)
         val sentence = org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
-        if (count) EdgeValue(dotFormat("%,d", state.steps), "steps", sentence)
+        if (count) EdgeValue(Units.count(state.steps, Units.DOT_LOCALE), "steps", sentence)
         else Text(sentence, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 10.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (chart) {
             Spacer(Modifier.height(10.dp))
@@ -503,7 +502,7 @@ internal fun WeekCard(
     val end = week.endInclusive
     val steps by remember(end, history) {
         history?.invoke(Metric.Steps.daily, start.minusDays(7), end) ?: kotlinx.coroutines.flow.flowOf(emptyList())
-    }.collectAsState(emptyList())
+    }.collectAsStateWithLifecycle(emptyList())
     fun stepsAvg(from: java.time.LocalDate, to: java.time.LocalDate) =
         steps.filter { it.date in from..to }.map { it.value.toDouble() }.takeIf { it.isNotEmpty() }?.average()
     val stepsNow = stepsAvg(start, end)
@@ -513,8 +512,8 @@ internal fun WeekCard(
     val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
     EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
         EdgeTitle("Your week", Ranges.of(DayWords.dayMonth(start), DayWords.dayMonth(end)))
-        EdgeValue(stepsNow?.let { dotFormat("%,d", it.roundToInt()) }, "steps a day", null)
-        val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { TodayCopy.duration(it) + " asleep a night" }
+        EdgeValue(stepsNow?.let { Units.count(it.roundToInt(), Units.DOT_LOCALE) }, "steps a day", null)
+        val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { Units.duration(it) + " asleep a night" }
         val workoutsDone = if (done == 1) "1 workout" else "$done workouts"
         Text(
             listOfNotNull(night, workoutsDone).joinToString(", ").replaceFirstChar { it.uppercase() },

@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.LoadBand
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -346,8 +347,8 @@ internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, best: String?, drop: St
     val load = a.workout.trainingLoad
     val status = load?.let { TodayCopy.loadStatus(it.toFloat(), usual, endOfDay = true) }
     val edge = when (status) {
-        TodayCopy.LoadStatus.Above -> EdgeStatus.Above
-        TodayCopy.LoadStatus.Below -> EdgeStatus.Below
+        LoadBand.Above -> EdgeStatus.Above
+        LoadBand.Below -> EdgeStatus.Below
         else -> EdgeStatus.Usual
     }
     EdgeCard(MetricColors.load, Modifier.fillMaxWidth(), status = edge) {

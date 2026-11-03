@@ -10,10 +10,12 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onSubscription
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -21,6 +23,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import org.openstrap.app.data.AutoStart
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.RecoveryEngine
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.catching
@@ -120,6 +123,12 @@ class WorkoutSession(
         track = { start -> if (start == trackStart) track() else null },
     )
 
+    /**
+     * Your heart rate zones as stored, for the recording workout and its notification, which read a zone with every
+     * reading. It only ever follows what's stored, from the session's start, so it can't run ahead of the disk.
+     */
+    val heartZones: StateFlow<HeartZones> = settings.heartZones.stateIn(scope, SharingStarted.Eagerly, HeartZones.STANDARD)
+
     private val _state = MutableStateFlow<WorkoutState>(WorkoutState.Idle)
     val state: StateFlow<WorkoutState> = _state
 
@@ -199,7 +208,7 @@ class WorkoutSession(
                     _stats.value = WorkoutRecorder.stats(stored)
                     val live = stored.filter { !it.fromHistory }.map { it.timestamp to it.bpm }
                     val maxHr = maxHeartRate()
-                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr, HeartZonesInUse.current.value)
+                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr, heartZones.value)
                     lastReading = live.lastOrNull()
                     _kcal.value = null
                     stepTotals = emptyList()
@@ -1136,12 +1145,12 @@ class WorkoutSession(
         // A pause between this reading and the one before isn't time in zone. Checked here rather than cleared on
         // resume, so only this coroutine touches what a reading adds up.
         lastReading?.takeIf { (pt, _) -> (r.workout.pauseRanges.lastOrNull()?.last ?: Long.MIN_VALUE) <= pt }?.let { (pt, pbpm) ->
-            val z = WorkoutRecorder.liveZoneOf(pbpm, r.maxHeartRate, HeartZonesInUse.current.value)
+            val z = WorkoutRecorder.liveZoneOf(pbpm, r.maxHeartRate, heartZones.value)
             _zoneSeconds.value = _zoneSeconds.value.copyOf().also { it[z] += (t - pt).coerceIn(0, WorkoutRecorder.MAX_STEP_S).toInt() }
         }
         lastReading = t to bpm
         coach.feed(
-            t, WorkoutRecorder.liveZone(bpm, r.maxHeartRate, HeartZonesInUse.current.value), WorkoutRecorder.activeSeconds(r.workout, t),
+            t, WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones.value), WorkoutRecorder.activeSeconds(r.workout, t),
         )?.let(::cue)
         _stats.value = WorkoutRecorder.Stats(Math.round(sum.toDouble() / count).toInt(), maxOf(_stats.value?.max ?: 0, bpm), minOf(_stats.value?.min ?: bpm, bpm))
         // Last, so whoever sees the reading in [recent] also sees its zone time and stats.

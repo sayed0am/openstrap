@@ -15,9 +15,6 @@ import org.openstrap.app.data.Weeks
  * a number is missing the sentence says what it waits for, and nothing is guessed.
  */
 object TodayCopy {
-    /** A length of time the way the app says it: "40 min", "7 h 40", "8 h". Kept for callers that still name it here. */
-    fun duration(seconds: Long): String = Units.duration(seconds)
-
     /** A value against your normal, from [org.openstrap.app.data.History.status]: null is no normal yet. */
     fun normalWord(direction: Int?): String = when {
         direction == null -> "Learning your normal"
@@ -165,22 +162,10 @@ object TodayCopy {
     const val SETTLED_BPM = 10
 
     /**
-     * How a Load compares with your usual, one for one with [LoadBand]. It stays here while screens outside the
-     * dashboard still name it, and its words are [LoadBand]'s.
-     */
-    enum class LoadStatus(val text: String) {
-        Above(LoadBand.Above.text), Usual(LoadBand.Usual.text), Below(LoadBand.Below.text), SoFar(LoadBand.SoFar.text)
-    }
-
-    /**
      * [load] against your [usual] daily Load by [LoadBands]. Before the evening a low Load is only "so far today":
      * compared with a whole usual day it would always look low (spec 2.7, compare by pace). Null before there's a usual.
      */
-    fun loadStatus(load: Float, usual: Float?, endOfDay: Boolean): LoadStatus? =
-        LoadBands.of(load, usual, endOfDay)?.let { LoadStatus.valueOf(it.name) }
-
-    /** A Load within this share of your usual counts as usual ([LoadBands.BAND]). */
-    const val LOAD_BAND = LoadBands.BAND
+    fun loadStatus(load: Float, usual: Float?, endOfDay: Boolean): LoadBand? = LoadBands.of(load, usual, endOfDay)
 
     /**
      * The evening hero: what kind of day it was, then what made it. [workouts] are the day's workouts as short nouns
@@ -188,10 +173,10 @@ object TodayCopy {
      * the app's hero, which shows the count in dots under the sentence; the widget keeps the count.
      */
     fun evening(
-        workouts: List<String?>, steps: Int, stepGoal: Int, load: LoadStatus?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
+        workouts: List<String?>, steps: Int, stepGoal: Int, load: LoadBand?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
     ): String {
         val head = when {
-            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadStatus.Above) -> "A full day."
+            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadBand.Above) -> "A full day."
             workouts.isEmpty() && steps < stepGoal / 2 -> "A quiet day."
             else -> "A steady day."
         }
@@ -203,10 +188,10 @@ object TodayCopy {
             },
             if (stepCount || stepGoal <= 0) "${Units.count(steps.toLong(), locale)} steps" else stepsAgainstGoal(steps, stepGoal),
             when (load) {
-                LoadStatus.Above -> "a Load above your usual"
-                LoadStatus.Below -> "a Load below your usual"
-                LoadStatus.Usual -> "a usual Load"
-                LoadStatus.SoFar, null -> null
+                LoadBand.Above -> "a Load above your usual"
+                LoadBand.Below -> "a Load below your usual"
+                LoadBand.Usual -> "a usual Load"
+                LoadBand.SoFar, null -> null
             },
         )
         val list = if (parts.size == 1) parts[0] else parts.dropLast(1).joinToString(", ") + " and " + parts.last()
@@ -252,12 +237,12 @@ object TodayCopy {
     }
 
     /** The line under Load today's number, which says it's a Load and how it compares. */
-    fun loadLine(status: LoadStatus?): String = when (status) {
+    fun loadLine(status: LoadBand?): String = when (status) {
         null -> "Load, learning your usual"
-        LoadStatus.Above -> "Load above your usual"
-        LoadStatus.Usual -> "Your usual Load"
-        LoadStatus.Below -> "Load below your usual"
-        LoadStatus.SoFar -> "Load so far today"
+        LoadBand.Above -> "Load above your usual"
+        LoadBand.Usual -> "Your usual Load"
+        LoadBand.Below -> "Load below your usual"
+        LoadBand.SoFar -> "Load so far today"
     }
 
     /** Under Your week before there's a week before it to compare with: the week starts on the locale's first day. */
@@ -285,8 +270,8 @@ object TodayCopy {
         Units.duration(it) + (score?.let { s -> ", score $s" } ?: "")
     }
 
-    /** A Small's word for Load against your usual: the [LoadStatus]'s, or that the usual is still being learned. */
-    fun loadWord(status: LoadStatus?): String = status?.text ?: "Learning your usual"
+    /** A Small's word for Load against your usual: the [LoadBand]'s, or that the usual is still being learned. */
+    fun loadWord(status: LoadBand?): String = status?.text ?: "Learning your usual"
 
     /**
      * Time to recover as a Small says it: the hours as the value and when you're ready as the word. "14" and "Ready

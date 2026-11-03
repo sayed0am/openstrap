@@ -81,6 +81,10 @@ object DayWords {
     fun weekdayShort(date: LocalDate, locale: Locale = Locale.getDefault()): String =
         date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
 
+    /** The weekday in full with the day and month, for a date further out: "Sunday 22 Nov". */
+    fun weekdayDayMonth(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.format(Formatters.of("EEEE d MMM", locale))
+
     /** A day and month with no weekday, for chart axes, ranges and widgets: "21 Oct". */
     fun dayMonth(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("d MMM", locale))
 

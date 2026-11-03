@@ -160,7 +160,7 @@ class SleepTrimTest {
 
     @Test fun `the times and the span in bed sit above the bar`() {
         show { _, _ -> }
-        val line = "${org.openstrap.app.ui.dashboard.SleepCopy.span(clock(night.start), clock(night.end))}, " +
+        val line = "${org.openstrap.app.presentation.Ranges.of(clock(night.start), clock(night.end))}, " +
             "${org.openstrap.app.presentation.Units.duration(night.end - night.start)} in bed"
         val above = compose.compose.onNodeWithText(line).fetchSemanticsNode().boundsInRoot
         assertTrue(above.bottom <= compose.compose.onNodeWithTag(TRIM_BAR_TAG).fetchSemanticsNode().boundsInRoot.top)
@@ -169,7 +169,7 @@ class SleepTrimTest {
     @Test fun `a nap's line gives its plain length`() {
         val nap = SleepSession(start, start + 25 * 60, nap = true)
         show(shown = nap, detected = nap) { _, _ -> }
-        val line = "${org.openstrap.app.ui.dashboard.SleepCopy.span(clock(nap.start), clock(nap.end))}, " +
+        val line = "${org.openstrap.app.presentation.Ranges.of(clock(nap.start), clock(nap.end))}, " +
             org.openstrap.app.presentation.Units.duration(nap.end - nap.start)
         compose.compose.onNodeWithText(line).assertExists()
     }
