@@ -114,7 +114,7 @@ class ChannelSession(
         ponger = scope.launch {
             messagesFor(Endpoints.CONNECT).filter { it.isNotEmpty() && it.u8(0) == ConnectCodec.PING.u8(0) }.collect {
                 if (pings++ == 0) log("strap ping, answering pong")
-                runCatching { send(Endpoints.CONNECT, ConnectCodec.PONG, wantReply = false) }.onFailure { e -> log("pong failed: $e") }
+                catching { send(Endpoints.CONNECT, ConnectCodec.PONG, wantReply = false) }.onFailure { e -> log("pong failed: $e") }
             }
         }
         // The strap can add or remove an endpoint after the list was read (02 §6.3).

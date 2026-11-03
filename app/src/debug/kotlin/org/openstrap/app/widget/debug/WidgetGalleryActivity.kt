@@ -23,6 +23,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.data.WidgetKind
+import org.openstrap.app.data.catching
 import org.openstrap.app.widget.WidgetRefresh
 import org.openstrap.app.widget.WidgetSizes
 import org.openstrap.app.widget.widgets
@@ -173,13 +174,11 @@ class WidgetGalleryActivity : ComponentActivity() {
         val shown = kind
         val widget = widgets.registration(shown)?.widget ?: return
         lifecycleScope.launch {
-            try {
+            catching {
                 WidgetRefresh.bump(shown)
                 val glance = GlanceAppWidgetManager(applicationContext)
                 ids.forEach { widget().update(applicationContext, glance.getGlanceIdBy(it)) }
-            } catch (e: Exception) {
-                Log.w(TAG, "widget gallery: update failed: $e")
-            }
+            }.onFailure { Log.w(TAG, "widget gallery: update failed: $it") }
         }
     }
 

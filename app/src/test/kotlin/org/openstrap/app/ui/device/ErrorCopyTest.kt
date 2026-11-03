@@ -8,6 +8,7 @@ import org.openstrap.app.ble.GattTimeoutException
 import org.openstrap.app.device.StrapCommandException
 import org.openstrap.app.firmware.FirmwareCloudException
 import org.openstrap.app.testing.assertCleanCopy
+import org.openstrap.app.zepp.ZeppCloudException
 import org.openstrap.protocol.firmware.DfuException
 import java.io.FileNotFoundException
 import java.io.IOException
@@ -34,6 +35,7 @@ class ErrorCopyTest {
             ErrorCopy.restoreCopy(e),
             ErrorCopy.healthConnect("Couldn't write to Health Connect", e),
             ErrorCopy.firmware(e, "Install failed"),
+            ErrorCopy.zepp(e),
         )
     }
 
@@ -82,6 +84,27 @@ class ErrorCopyTest {
             ErrorCopy.firmware(raw[8], "Update check failed"),
         )
         assertEquals("Install failed", ErrorCopy.firmware(raw[6], "Install failed"))
+    }
+
+    @Test fun `a Zepp reply never shows its HTTP code`() {
+        val troubled = "Zepp didn't answer as expected. It may be having trouble. Try again in a few minutes."
+        val refused = "Zepp didn't accept the sign-in. It may have expired, or the account is in another region. Sign in again."
+        val replies = listOf(
+            ZeppCloudException("Zepp's device list returned HTTP 502"),
+            ZeppCloudException("Unexpected reply from Zepp's device list"),
+            ZeppCloudException("Renewing the Zepp sign-in returned HTTP 500"),
+        )
+        for (e in replies) {
+            assertEquals(troubled, ErrorCopy.zepp(e))
+            assertEquals(troubled, ErrorCopy.firmware(e, "Update check failed"))
+        }
+        val rejected = ZeppCloudException("Zepp rejected the sign-in (HTTP 401). Sign in again.", rejected = true)
+        assertEquals(refused, ErrorCopy.zepp(rejected))
+        assertEquals(refused, ErrorCopy.firmware(rejected, "Update check failed"))
+        assertEquals("Couldn't reach Zepp's servers. Check your internet connection and try again.", ErrorCopy.zepp(raw[8]))
+        for (text in (replies + rejected).flatMap { listOf(ErrorCopy.zepp(it), ErrorCopy.firmware(it, "Update check failed")) }) {
+            assertFalse(text, "HTTP" in text)
+        }
     }
 
     @Test fun `a pasted address with spaces pairs, trimmed and upper case`() {

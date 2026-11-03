@@ -202,7 +202,7 @@ private fun glanceTicks(
                 lastSplit = last, lastSplitBpm = lastBpm, fastestSplit = whole.minByOrNull { it.pace }?.index,
                 strength = if (r.strength) strengthMoment(r, now, bpm, session.history.value) else null,
                 interval = intervalMoment(r, now, bpm, WorkoutCopy.readings(session.history.value, session.recent.value), route),
-                effort = org.openstrap.app.data.Games.effort(session.zoneSeconds.value),
+                effort = org.openstrap.app.data.Games.effort(session.zoneSeconds.value.toIntArray()),
             ),
         )
     }.distinctUntilChanged()

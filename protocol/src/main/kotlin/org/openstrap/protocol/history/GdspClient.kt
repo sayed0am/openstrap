@@ -3,6 +3,7 @@ package org.openstrap.protocol.history
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.selects.select
 import kotlinx.coroutines.withTimeoutOrNull
+import org.openstrap.protocol.catching
 import org.openstrap.protocol.crypto.crc32
 import org.openstrap.protocol.toHex
 import java.time.ZoneId
@@ -79,7 +80,8 @@ class GdspClient(
     }
 
     suspend fun queryVersion(): GdspMessage.VersionReply? =
-        runCatching { command(FetchCodec.queryVersion()) }.getOrNull() as? GdspMessage.VersionReply
+        catching { command(FetchCodec.queryVersion()) }
+            .onFailure { log("history: version query failed: $it") }.getOrNull() as? GdspMessage.VersionReply
 
     /**
      * START [typeCode] from [since], then TRANSFER, CRC check and inflate. Throws [FastRechargeModeException]
@@ -118,6 +120,7 @@ class GdspClient(
         try {
             command(FetchCodec.startFetch(typeCode, GdspTime.of(since, zone)))
         } catch (e: GdspTimeoutException) {
+            log("history: start $typeCode: $e")
             null
         }
 

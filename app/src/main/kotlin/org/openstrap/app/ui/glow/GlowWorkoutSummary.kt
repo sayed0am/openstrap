@@ -43,6 +43,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.components.pressClickable
 import kotlinx.coroutines.delay
@@ -373,7 +374,7 @@ internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, best: String?, drop: St
 
 /** Time in zones: the zone bar, then each zone with time in it, hardest first. */
 @Composable
-internal fun ZonesList(zones: IntArray, maxHr: Int, note: String = "Max $maxHr bpm") {
+internal fun ZonesList(zones: ZoneSeconds, maxHr: Int, note: String = "Max $maxHr bpm") {
     ListPanel(title = "Time in zones", note = note) {
         ZoneBar(zones.toList(), ZONE_COLORS, Modifier.padding(top = 2.dp, bottom = 6.dp))
         var first = true

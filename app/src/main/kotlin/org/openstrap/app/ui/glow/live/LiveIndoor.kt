@@ -23,6 +23,7 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
@@ -36,7 +37,7 @@ internal fun LiveIndoorScreen(
     liveHeartRate: Int?,
     recent: List<Pair<Long, Int>>,
     stats: WorkoutRecorder.Stats?,
-    zoneSeconds: IntArray,
+    zoneSeconds: ZoneSeconds,
     connection: ConnectionState,
     contentPadding: PaddingValues,
     controls: LiveControls,
@@ -85,7 +86,7 @@ internal fun LiveIndoorScreen(
  * is white so it stands out against its neighbours, and an empty zone keeps a sliver so the bar always shows all five.
  */
 @Composable
-internal fun ZoneTimeBar(zoneSeconds: IntArray, current: Int?) {
+internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
     val total = zoneSeconds.sum().coerceAtLeast(1)
     val described = zoneSeconds.withIndex().joinToString(", ") { (z, s) -> "zone ${z + 1} ${if (s < 60) "none" else "${s / 60} min"}" }
     Row(

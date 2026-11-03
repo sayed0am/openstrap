@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -44,8 +45,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.delay
+import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.catching
+import org.openstrap.app.device.StrapManager
 import org.openstrap.app.ui.components.pressClickable
+import org.openstrap.app.ui.device.ErrorCopy
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
@@ -62,7 +66,6 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
 import org.openstrap.app.zepp.ZeppCloud
-import org.openstrap.app.zepp.ZeppCloudException
 
 private sealed interface SignInStep {
     data object SignIn : SignInStep
@@ -107,6 +110,10 @@ fun ZeppSignInDialog(
 ) {
     var step by remember { mutableStateOf<SignInStep>(SignInStep.SignIn) }
     var attempt by remember { mutableIntStateOf(0) }
+    val app = LocalContext.current.applicationContext
+    val diagnostics: (String) -> Unit = { line ->
+        ((app as? OpenStrapApp)?.container?.strap as? StrapManager)?.log(line) ?: Log.w("OpenStrap", line)
+    }
 
     // Watch the cookies while the user signs in; the site is a single-page app, so page loads alone don't tell us.
     LaunchedEffect(attempt) {
@@ -116,8 +123,9 @@ fun ZeppSignInDialog(
                 step = SignInStep.Fetching
                 step = catching { SignInStep.Found(ZeppCloud.listDevices(session, preferredApiBase)) }
                     .getOrElse {
-                        Log.w("OpenStrap", "zepp: device list failed: $it")
-                        SignInStep.Failed(deviceListError(it))
+                        // The raw reply (an HTTP status, say) goes to Diagnostics, and the page says it in plain words.
+                        diagnostics("zepp: device list failed: $it")
+                        SignInStep.Failed(ErrorCopy.zepp(it))
                     }
                 break
             }
@@ -298,12 +306,6 @@ fun OptionButton(caption: String, label: String, modifier: Modifier = Modifier.f
     }
 }
 
-private fun deviceListError(e: Throwable): String = when {
-    e is ZeppCloudException && e.rejected ->
-        "Zepp didn't accept the sign-in. It may have expired, or the account is in another region. Sign in again."
-    e is ZeppCloudException -> "${e.message}. Zepp may be having trouble. Try again in a few minutes."
-    else -> "Couldn't reach Zepp's servers. Check your internet connection and try again."
-}
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable

@@ -153,11 +153,11 @@ object SummaryCopy {
      */
     fun targetLine(target: String?, reachedSeconds: Long?, activeKcal: Int?, locale: Locale = Locale.getDefault()): String? {
         val k = WorkoutTarget.parse(target) as? WorkoutTarget.Kcal ?: return null
-        val goal = "%,d".format(locale, k.kcal)
+        val goal = Units.count(k.kcal, locale)
         return when {
             reachedSeconds != null -> "Target $goal kcal, reached at ${Units.workoutClock(reachedSeconds, locale)}"
             activeKcal != null && activeKcal >= k.kcal -> "Target $goal kcal, reached"
-            activeKcal != null -> "Target not reached, %,d of $goal kcal".format(locale, activeKcal)
+            activeKcal != null -> "Target not reached, ${Units.count(activeKcal, locale)} of $goal kcal"
             else -> "Target $goal kcal, not reached"
         }
     }

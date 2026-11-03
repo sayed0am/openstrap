@@ -42,6 +42,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /**
@@ -56,7 +57,7 @@ internal fun LiveGameScreen(
     liveHeartRate: Int?,
     readings: List<Pair<Long, Int>>,
     stats: WorkoutRecorder.Stats?,
-    zoneSeconds: IntArray,
+    zoneSeconds: ZoneSeconds,
     connection: ConnectionState,
     contentPadding: PaddingValues,
     controls: LiveControls,
@@ -77,7 +78,7 @@ internal fun LiveGameScreen(
     // The phase alone picks the buttons; its clock is read in [PeriodRow], so the screen holds still between seconds.
     val phase = remember(r) { androidx.compose.runtime.derivedStateOf { r.phase(now.value) } }.value
     val active = activeSecondsState(r)
-    val effort = Games.effort(zoneSeconds)
+    val effort = Games.effort(zoneSeconds.toIntArray())
     val hard = remember(readings.size / 10, heartZones) { Games.hardEfforts(readings, r.maxHeartRate, heartZones) }
     val figures = listOf(
         kcal?.active?.toInt()?.toString() to "Active kcal",

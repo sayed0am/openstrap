@@ -32,6 +32,7 @@ import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.WorkoutRecorder
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.WorkoutTarget
@@ -139,7 +140,10 @@ class StrapService : LifecycleService() {
         lifecycleScope.launch(Dispatchers.Default) {
             strap.sync.distinctUntilChangedBy { it is SyncState.Done }.collectLatest {
                 while (true) {
-                    figures.value = runCatching { loadFigures(dao, container.settings, strap) }.getOrNull() ?: figures.value
+                    // A failed read keeps the figures shown.
+                    figures.value = catching { loadFigures(dao, container.settings, strap) }
+                        .onFailure { e -> (strap as? StrapManager)?.log("service: notification figures not read: $e") }
+                        .getOrNull() ?: figures.value
                     delay(FIGURES_REFRESH_MS)
                 }
             }

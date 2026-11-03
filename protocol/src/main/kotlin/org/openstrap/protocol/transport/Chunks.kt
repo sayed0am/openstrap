@@ -113,6 +113,20 @@ class Reassembler(
         buffer.reset()
     }
 
+    /** [raw] decrypted when the message is encrypted, or null with the failure told to [onDecryptFailure]. */
+    @Suppress("TooGenericExceptionCaught") // Any decrypt failure (a bad tag, a bad key, a short block) drops the message.
+    private fun payloadOf(raw: ByteArray): ByteArray? =
+        if (!encrypted) {
+            raw
+        } else {
+            try {
+                decrypt(sessionId, raw, totalLength)
+            } catch (e: Exception) {
+                onDecryptFailure(e)
+                null
+            }
+        }
+
     /** Returns an ACK packet to send, or null. Every error drops the message in progress, as Zepp does (02 §4). */
     fun accept(packet: ByteArray): ByteArray? {
         if (packet.size < NEXT_HEADER || packet.u8(0) != PacketType.DATA || packet.u8(2) != 0) return null
@@ -159,12 +173,10 @@ class Reassembler(
                 return ack(AckStatus.BAD_FORMAT)
             }
             val raw = buffer.toByteArray()
-            val payload = try {
-                if (encrypted) decrypt(sessionId, raw, totalLength) else raw
-            } catch (e: Exception) {
+            val payload = payloadOf(raw)
+            if (payload == null) {
                 // Zepp ACKs these as received and drops them silently (02 §4.3); status 12 only makes the strap resend.
                 reset()
-                onDecryptFailure(e)
                 return ack(AckStatus.SUCCESS)
             }
             val message = ChannelMessage(endpoint, sessionId, payload, encrypted)

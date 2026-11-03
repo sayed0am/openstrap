@@ -41,6 +41,8 @@ private fun ByteReader.s16(): Int = u16().toShort().toInt()
 private fun ByteReader.s32(): Int = u32().toInt()
 private fun ByteReader.f32(): Float = Float.fromBits(u32().toInt())
 
+// The byte reader reports a short record as an IndexOutOfBoundsException, so that is what a truncated record is.
+@Suppress("TooGenericExceptionCaught")
 private inline fun <T : HistoryRecord> guarded(block: () -> ParseResult<T>): ParseResult<T> = try {
     block()
 } catch (e: IndexOutOfBoundsException) {

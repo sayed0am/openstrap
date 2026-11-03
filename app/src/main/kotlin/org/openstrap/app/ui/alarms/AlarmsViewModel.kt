@@ -6,8 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.openstrap.app.data.catching
 import org.openstrap.app.device.StrapCommandException
 import org.openstrap.app.device.StrapController
+import org.openstrap.app.device.StrapManager
+import org.openstrap.app.ui.device.ErrorCopy
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.AlarmCapabilities
 import org.openstrap.protocol.services.Setting
@@ -97,14 +100,15 @@ class AlarmsViewModel(private val strap: StrapController) : ViewModel() {
             } catch (e: StrapCommandException) {
                 e.message
             }
-            val read = runCatching {
+            // The raw failure goes to Diagnostics, and the screen says it in plain words ([ErrorCopy.strap]).
+            val read = catching {
                 val (caps, alarms) = strap.readAlarms()
                 Triple(caps, alarms.sortedWith(compareBy({ it.hour }, { it.minute })), strap.readHealthSettings())
-            }
+            }.onFailure { (strap as? StrapManager)?.log("alarms: read from the strap failed: $it") }
             _state.update { s ->
                 read.fold(
                     { (caps, alarms, health) -> s.copy(loading = false, busy = false, error = error, caps = caps, alarms = alarms, health = health) },
-                    { e -> s.copy(loading = false, busy = false, error = error ?: e.message ?: "Couldn't read from the strap") },
+                    { e -> s.copy(loading = false, busy = false, error = error ?: ErrorCopy.strap(e, "Couldn't read from the strap")) },
                 )
             }
         }
