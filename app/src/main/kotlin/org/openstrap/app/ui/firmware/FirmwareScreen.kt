@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.settings.ZeppAccount
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.firmware.UpdateCheck
+import org.openstrap.app.presentation.Units
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.ui.glow.DestructiveInk
@@ -128,7 +129,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
                 val image = step.image
                 Title("Ready to install")
                 InfoLine("Image", image.title)
-                InfoLine("Size", "%,d bytes".format(image.bytes.size))
+                InfoLine("Size", "${Units.count(image.bytes.size)} bytes")
                 image.trailer?.let { InfoLine("Signed for", "product ${it.pnpId} v${it.pnpVersion}") }
                 image.warnings.forEach { Warning(it) }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -173,7 +174,7 @@ private fun CheckResult(result: UpdateCheck, vm: FirmwareViewModel) {
     }
     val next = result.installOrder.firstOrNull()
     Title(if (result.forced) "Required update" else "Update available")
-    result.parts.forEach { InfoLine(it.label, "${it.version}, ${"%,d".format(it.length / 1024)} KB") }
+    result.parts.forEach { InfoLine(it.label, "${it.version}, ${Units.count(it.length / 1024)} KB") }
     result.changeLog?.let { PageNote(it.substringBefore("###summary###").trim()) }
     if (result.installOrder.size > 1) {
         PageNote("Parts are installed one at a time. After the strap restarts, check again to install the next one.")

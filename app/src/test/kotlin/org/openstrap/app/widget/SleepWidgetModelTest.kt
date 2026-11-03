@@ -16,7 +16,7 @@ import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.presentation.ClockSetting
 import org.openstrap.app.presentation.TabCopy
-import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.glow.draw.SleepStageOrder
 import org.openstrap.app.ui.glow.draw.stageBarSegments
 
@@ -81,7 +81,7 @@ class SleepWidgetModelTest {
         assertEquals(SleepStageOrder, m.legend.map { it.stage })
         val asleep = m.totals.filter { it.first != SleepStage.AWAKE }.sumOf { it.second }
         assertEquals(night().asleepSeconds, asleep)
-        assertEquals("7 h 40", TodayCopy.duration(asleep))
+        assertEquals("7 h 40", Units.duration(asleep))
         assertEquals(18 * 60L, m.totals.single { it.first == SleepStage.AWAKE }.second)
     }
 

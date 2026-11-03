@@ -53,7 +53,8 @@ internal object WeekStory {
         val withSteps = days.filter { it.steps != null }
         if (withSteps.size < 2) return null
         val top = withSteps.maxBy { it.steps!! }
-        return "Busiest on ${top.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)}, ${"%,d".format(locale, top.steps)} steps."
+        val day = top.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+        return "Busiest on $day, ${Units.count(requireNotNull(top.steps), locale)} steps."
     }
 
     /** Workouts against the week before: "Three workouts, one more than the week before." Null without a week before. */

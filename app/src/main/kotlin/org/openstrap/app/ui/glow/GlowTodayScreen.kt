@@ -1,6 +1,8 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.data.Stats
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -69,7 +71,6 @@ import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.STALE_AFTER_S
 import org.openstrap.app.ui.dashboard.TRY_AGAIN
 import org.openstrap.app.ui.dashboard.WAITING_LAST_NIGHT
-import org.openstrap.app.ui.dashboard.clockText
 import org.openstrap.app.ui.dashboard.lastTried
 import org.openstrap.app.ui.dashboard.stuckCopy
 import org.openstrap.app.ui.dashboard.syncStuck
@@ -590,7 +591,7 @@ private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Lon
     val noun = sportNoun(w.workout.sportType) ?: "workout"
     GlowCard(heroStyle(MetricColors.heart, lightAngle, rim = AFTER_RIM), modifier, onClick = { onOpenWorkout(w.workout.start) }) {
         Column {
-            GlowHeader("Since your $noun", trailing = TodayCopy.duration(ctx.now - w.end))
+            GlowHeader("Since your $noun", trailing = Units.duration(ctx.now - w.end))
             HeroSentence(TodayCopy.after(nowHr, ctx.state.restingHeartRate))
             // The drop since the end, from the readings the strap has sent. A live curve needs live readings kept
             // through the calm down (step 7).
@@ -635,7 +636,7 @@ private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTim
             // The count is in dots below, so the sentence says the steps against the goal instead.
             HeroSentence(TodayCopy.evening(nouns, ctx.state.steps, goals.steps, ctx.loadStatus, stepCount = false))
             Spacer(Modifier.height(24.dp))
-            HeroNumber(dotFormat("%,d", ctx.state.steps), listOf("steps"))
+            HeroNumber(Units.count(ctx.state.steps, Units.DOT_LOCALE), listOf("steps"))
             // Load is said in the sentence, and Energy has its own card right under the hero. Only with that card
             // hidden in Edit Today does Energy come back here, last and full width, never a lone dash.
             val energy = ctx.charge?.takeIf { energyHidden }
@@ -722,7 +723,7 @@ private fun PairHero(step: PairStep, onPair: () -> Unit, modifier: Modifier) {
 @Composable
 private fun StuckHero(ctx: TodayContext, strap: TodayStrap, onSyncNow: () -> Unit, modifier: Modifier) {
     val haptics = rememberHaptics()
-    val copy = stuckCopy(ctx.state.asleepSeconds != null, ctx.newest?.let { clockText(it, ctx.zone) })
+    val copy = stuckCopy(ctx.state.asleepSeconds != null, ctx.newest?.let { TimeOfDay.format(it, ctx.zone) })
     GlowCard(heroStyle(MetricColors.warn, LightAngle.Below), modifier) {
         Column {
             GlowHeader(copy.title, trailing = lastTried(strap.record, ctx.zone))
@@ -813,7 +814,7 @@ private fun TodayRow(
             MetricColors.load, "Load", ctx.rec?.load?.let { Math.round(it).toString() }, null,
             when { ctx.recoveryFailure != null -> FAILED_SHORT; ctx.rec == null -> ctx.waiting; else -> TodayCopy.loadWord(ctx.loadStatus) },
             modifier, kind = EdgeKind.Progress, progress = ctx.loadShare,
-            edgeStatus = if (ctx.loadStatus == TodayCopy.LoadStatus.Above) EdgeStatus.Above else EdgeStatus.Usual,
+            edgeStatus = if (ctx.loadStatus == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
             onClick = { openScore(org.openstrap.app.ui.dashboard.Score.Load) },
         ) else LoadList(
             when (ctx.moment) {

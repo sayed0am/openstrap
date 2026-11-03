@@ -25,7 +25,7 @@ internal object CaloriesCopy {
 
     /** The Activity row's line: "Active, of 450. Total 1,468", or "Active, goal met. Total 2,140". */
     fun rowLine(active: Int, goal: Int, total: Int, locale: Locale = Locale.getDefault()): String =
-        (if (active >= goal) "Active, goal met" else "Active, of %,d".format(locale, goal)) + ". Total %,d".format(locale, total)
+        (if (active >= goal) "Active, goal met" else "Active, of ${Units.count(goal, locale)}") + ". Total ${Units.count(total, locale)}"
 
     /** How far toward the goal, 0..1, for the row's ring and the detail's bar. */
     fun share(active: Int, goal: Int): Float = if (goal <= 0) 0f else (active / goal.toFloat()).coerceIn(0f, 1f)
@@ -37,7 +37,11 @@ internal object CaloriesCopy {
 
     /** Under the goal bar: "102 to your goal of 450", or "Goal of 450 met". */
     fun toGoal(active: Int, goal: Int, locale: Locale = Locale.getDefault()): String =
-        if (active >= goal) "Goal of %,d met".format(locale, goal) else "%,d to your goal of %,d".format(locale, goal - active, goal)
+        if (active >= goal) {
+            "Goal of ${Units.count(goal, locale)} met"
+        } else {
+            "${Units.count(goal - active, locale)} to your goal of ${Units.count(goal, locale)}"
+        }
 
     /** The busiest hour, for the hourly card's note: "Peak 07:00, 228". Null while every hour is under 1 kcal. */
     fun peak(hourly: List<Float>, locale: Locale = Locale.getDefault()): String? {
@@ -193,7 +197,7 @@ internal object CaloriesCopy {
      */
     fun inYourDay(sport: String, workout: Int, dayActive: Int?, dayWord: String, fromPhone: Boolean, locale: Locale = Locale.getDefault()): String? {
         if (dayActive == null || dayActive < workout || workout <= 0) return null
-        val head = "This $sport is %,d of $dayWord %,d active kcal.".format(locale, workout, dayActive)
+        val head = "This $sport is ${Units.count(workout, locale)} of $dayWord ${Units.count(dayActive, locale)} active kcal."
         return head + if (fromPhone) " The day counts it exactly as shown here." else " The day counts it from the strap's own figure."
     }
 }

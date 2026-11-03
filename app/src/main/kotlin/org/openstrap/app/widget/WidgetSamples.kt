@@ -8,6 +8,7 @@ import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.TabCopy
 import org.openstrap.app.presentation.TodayCopy
 import java.time.Instant
@@ -109,7 +110,7 @@ object WidgetSamples {
             firstNights = false,
             energy = MomentEnergy(62, 84, 38, 60f, true, points),
             load = 42.3f,
-            loadStatus = TodayCopy.LoadStatus.SoFar,
+            loadStatus = LoadBand.SoFar,
             night = night,
             usualSport = 1,
             lastWorkout = null,

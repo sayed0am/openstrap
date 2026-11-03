@@ -8,6 +8,7 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.momentLead
 import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.StageSpan
 import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
@@ -91,7 +92,7 @@ data class MomentWidgetInput(
     val energy: MomentEnergy?,
     /** Load so far today, and against your usual. */
     val load: Float?,
-    val loadStatus: TodayCopy.LoadStatus?,
+    val loadStatus: LoadBand?,
     /** Today's main sleep, as the Sleep tab's hero reads it; null without one. */
     val night: SleepWidgetNight?,
     /** Your usual sport, as Today's Start picks it. */

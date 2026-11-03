@@ -16,6 +16,7 @@ import org.openstrap.app.presentation.DaySource
 import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.presentation.Metric
 import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TabCopy
 import org.openstrap.app.presentation.TodayCopy
 
@@ -194,7 +195,7 @@ class SleepCopyTest {
         assertEquals("23:20 to 07:21\n7 days left", SleepCopy.deletedLine("23:20", "07:21", 7))
         assertEquals("10:40 to 11:05\n1 day left", SleepCopy.deletedLine("10:40", "11:05", 1))
         listOf(
-            SleepCopy.yourTimes("23:20", "07:21"), SleepCopy.span("14:05", "14:47"), SleepCopy.TIMES_HINT, SleepCopy.DELETE_WHAT,
+            SleepCopy.yourTimes("23:20", "07:21"), Ranges.of("14:05", "14:47"), SleepCopy.TIMES_HINT, SleepCopy.DELETE_WHAT,
             SleepCopy.DELETE_RESTORE, SleepCopy.DELETED_INTRO, SleepCopy.DELETED_FOOT, SleepCopy.deletedNight("23:20", "07:21", false),
         ).forEach { l ->
             listOf("·", ";", "—", "–").forEach { assertFalse("$l has $it", l.contains(it)) }

@@ -22,6 +22,7 @@ import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.presentation.TabCopy
 import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.ui.glow.draw.AFTER_RIM
 import org.openstrap.app.ui.glow.draw.EVENING_BODY
 import org.openstrap.app.ui.glow.draw.GlowMood
@@ -110,7 +111,7 @@ class MomentWidgetModelTest {
         firstNights = firstNights,
         energy = energy,
         load = 42.3f,
-        loadStatus = TodayCopy.LoadStatus.SoFar,
+        loadStatus = LoadBand.SoFar,
         night = night,
         usualSport = 1,
         lastWorkout = last,
@@ -249,7 +250,7 @@ class MomentWidgetModelTest {
         assertEquals("Evening", m.name)
         assertEquals("62", m.number)
         assertEquals(listOf("Bedtime in 2 h 10"), m.figures)
-        assertEquals(TodayCopy.evening(listOf("run"), 8432, 10_000, TodayCopy.LoadStatus.SoFar), m.sentences.first())
+        assertEquals(TodayCopy.evening(listOf("run"), 8432, 10_000, LoadBand.SoFar), m.sentences.first())
         assertEquals(GlowMood.Evening, m.mood)
         assertEquals(MomentLight(MetricColors.evening, LightAngle.LowerRight, bodyLightness = EVENING_BODY), m.light)
         assertEquals("the day's heart rate", MomentChartKind.Line, m.chart?.kind)

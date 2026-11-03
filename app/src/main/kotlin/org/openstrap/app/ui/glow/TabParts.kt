@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -199,6 +199,6 @@ internal fun rememberNormal(metric: org.openstrap.app.presentation.Metric, date:
     val from = date.minusDays(org.openstrap.app.data.History.NORMAL_DAYS - 1L)
     val stats by androidx.compose.runtime.remember(metric, date, history) {
         history?.invoke(metric.daily, from, date) ?: kotlinx.coroutines.flow.flowOf(emptyList())
-    }.collectAsState(emptyList())
+    }.collectAsStateWithLifecycle(emptyList())
     return androidx.compose.runtime.remember(stats, date) { org.openstrap.app.data.History.normal(stats, date) }
 }

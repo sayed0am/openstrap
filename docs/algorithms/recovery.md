@@ -1,6 +1,6 @@
 # Readiness and Energy
 
-OpenStrap's own recovery model. Code: `app/src/main/kotlin/org/openstrap/app/data/Recovery.kt` (pure model) and `RecoveryEngine.kt` (database → model). Tests: `app/src/test/.../RecoveryTest.kt`. Constant names below match the code.
+OpenStrap's own recovery model. Code, in `app/src/main/kotlin/org/openstrap/app/data/`: the pure model is one file per part, `ReadinessModel.kt` (Readiness), `ChargeModel.kt` (Energy), `LoadModel.kt` (training load) and `MaxHrModel.kt` (maximum heart rate), with the inputs, results and constants they share in `Recovery.kt`. `RecoveryEngine.kt` feeds them from the database (database → model). Tests: `app/src/test/.../RecoveryTest.kt`. Constant names below match the code.
 
 Planned changes and their evidence: [evidence-review.md](evidence-review.md).
 
@@ -15,6 +15,8 @@ Zepp's **BioCharge** is not reusable:
 Two ideas from Zepp carry over: splitting charge into physical and mental drains, and modelling stress apart from activity (`ChargeStressInfo.proto` regresses stress on HR and activity). Nothing else does, and we don't need it. What follows is built from published methods so every rule can be explained and checked.
 
 ## Readiness (0–100, each morning)
+
+Code: `ReadinessModel.kt`.
 
 Each contributor compares the night that ended this morning with the user's own history.
 
@@ -163,6 +165,8 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 
 ## Energy (0–100, minute by minute)
 
+Code: `ChargeModel.kt`.
+
 A body battery, simulated per minute. The simulation starts 8 days before the day shown (`WAKE_HISTORY` + 1), so the arbitrary starting value (50) washes out through the first night and the week's wake values are there for the not-worn restart below. For a past day it runs up to 14 h past the day's end (`LOOKAHEAD_SECONDS`, data permitting) only to see when the strap went back on. It reads every sleep that overlaps the run, not only those that end in the day, so the evening part of a night that ends the next morning counts as sleep on the day it began (Zepp's minute curve does the same). The day's own numbers still run midnight to midnight. Until the simulation has seen at least one sleep (`anchored`), no value is shown: charge is measured from how full a night left you, so without one the number would only echo the starting guess.
 
 ### Minute states
@@ -251,6 +255,8 @@ Zepp does the same job differently. It computes a stress threshold on the phone 
 
 ## Training load (TRIMP)
 
+Code: `LoadModel.kt`.
+
 * Formula (Banister 1991): TRIMP per minute = x·0.64·e^(1.92x) for men and x·0.86·e^(1.67x) for women, where x is HRR. Unknown sex uses the men's curve.
 * `dailyLoad` returns two parts, `workout` + `everyday` = the day's total, as Zepp's Exertion splits `exerciseScore` from `activityScore` (analysis `native/07` §3.3).
   * **Workout:** every minute overlapping a stored workout, phone (`app_workout`, shown start to end less its pauses, `activeRanges`) or strap (`workout`), counts whatever its intensity, asleep or not. Each minute counts once, so a phone and a strap workout over the same time aren't added twice. The minute's HR is the workout's own recording (mean of its samples in that minute, the higher where two overlap; `withWorkoutHeartRate`), else the all-day value.
@@ -328,7 +334,7 @@ Zepp does the same job differently. It computes a stress threshold on the phone 
 
 ## Inputs from the profile (Device → Your profile)
 
-* **Max HR:** a value the user entered from a test wins. Otherwise Tanaka et al. 2001 (JACC, 18,712 subjects): 208 − 0.7·age; without an age, the strap's own max HR (from the Zepp profile), else 190. Any equation's individual SD is about 7–11 bpm, so raising is sound and lowering is not: it's raised to the highest HR the user has actually reached, by at most `MAX_HR_RAISE` = +15 bpm. "Reached" (`observedPeak`) needs two separate days within `MAX_HR_AGREE_BPM` = 3 bpm of each other over the last 90 days, each day's value being its highest artefact-filtered minute (`filteredMax`: a neighbouring minute within 10 bpm) raised by the strap's daily maximum exercise HR (type 61) only when that is in 30–220 bpm and within `ARTEFACT_JUMP_BPM` = 10 of the filtered minute (`dailyMaxima`; a strap value on a day without one is dropped). The same max HR sets workout zones when a workout has no sport-effect max HR. Max HR sets heart-rate reserve, so it changes both training load and Energy drain.
+* **Max HR** (`MaxHrModel.kt`): a value the user entered from a test wins. Otherwise Tanaka et al. 2001 (JACC, 18,712 subjects): 208 − 0.7·age; without an age, the strap's own max HR (from the Zepp profile), else 190. Any equation's individual SD is about 7–11 bpm, so raising is sound and lowering is not: it's raised to the highest HR the user has actually reached, by at most `MAX_HR_RAISE` = +15 bpm. "Reached" (`observedPeak`) needs two separate days within `MAX_HR_AGREE_BPM` = 3 bpm of each other over the last 90 days, each day's value being its highest artefact-filtered minute (`filteredMax`: a neighbouring minute within 10 bpm) raised by the strap's daily maximum exercise HR (type 61) only when that is in 30–220 bpm and within `ARTEFACT_JUMP_BPM` = 10 of the filtered minute (`dailyMaxima`; a strap value on a day without one is dropped). The same max HR sets workout zones when a workout has no sport-effect max HR. Max HR sets heart-rate reserve, so it changes both training load and Energy drain.
 * **Sex:** selects the TRIMP curve.
 * **Weight and height:** energy expenditure (BMR) and step length.
 * **Resting HR (daytime)** (`daytimeRestingHr`): median of the strap's daily resting HR over the last 14 days, else the median nightly lowest + an offset. The offset is the median of (daily − nightly lowest) over the latest 14 days that have both, else `RHR_OFFSET_BPM` = 3 bpm. Karvonen and Swain define resting HR as awake rest; a nightly minimum would inflate HRR for every waking minute.

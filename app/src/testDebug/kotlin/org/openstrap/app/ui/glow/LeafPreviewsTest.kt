@@ -11,6 +11,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.testing.ComposeRules
+import org.openstrap.app.ui.device.PairStepPreview
+import org.openstrap.app.ui.device.StrapHeroPreview
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -33,6 +35,8 @@ class LeafPreviewsTest {
         { NormalTrendPreview() },
         { DetailTemplatePreview() },
         { DetailTemplateWaitingPreview() },
+        { StrapHeroPreview() },
+        { PairStepPreview() },
     )
 
     private val showing = mutableIntStateOf(0)

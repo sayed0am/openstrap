@@ -14,6 +14,7 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.WorkoutCopy
@@ -323,8 +324,8 @@ object FamilySummary {
 
     /** How [load] compares with your [usual], as the Load labels end: ", hard", ", light", or nothing. */
     private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.presentation.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        org.openstrap.app.presentation.TodayCopy.LoadStatus.Above -> ", hard"
-        org.openstrap.app.presentation.TodayCopy.LoadStatus.Below -> ", light"
+        LoadBand.Above -> ", hard"
+        LoadBand.Below -> ", light"
         else -> ""
     }
 

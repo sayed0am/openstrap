@@ -1,8 +1,8 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -342,7 +342,9 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
     val headline = when {
         r == null -> DetailHeadline.none("No reading", "Needs a day of heart rate")
         // "So far today" and "learning your usual" are the sentence's to say, so the word is only a comparison.
-        range == Range.Day -> DetailHeadline(Math.round(r.load).toString(), if (ctx.isToday) "today" else "that day", status?.takeIf { it != TodayCopy.LoadStatus.SoFar }?.text)
+        range == Range.Day -> DetailHeadline(
+            Math.round(r.load).toString(), if (ctx.isToday) "today" else "that day", status?.takeIf { it != LoadBand.SoFar }?.text,
+        )
         known.isNotEmpty() -> DetailHeadline(
             Math.round(known.average()).toString(), "a day on average, last ${range.days} days", balance.takeIf { range == Range.Week },
         )
@@ -569,10 +571,12 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
         ctx.r == null -> DetailHeadline.none("No reading", DetailCopy.noValue(Metric.Steps, Range.Day, ctx.isToday))
         e == null || active == null -> DetailHeadline.none("No estimate", "Needs your age, weight and height")
         range == Range.Day ->
-            DetailHeadline(dotFormat("%,d", active), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
+            DetailHeadline(Units.count(active, Units.DOT_LOCALE), CaloriesCopy.dayLabel(ctx.isToday), "Goal met".takeIf { active >= goal })
         summary == null -> DetailHeadline.none("Loading", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
         summary.activeADay != null ->
-            DetailHeadline(dotFormat("%,d", summary.activeADay), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary))
+            DetailHeadline(
+                Units.count(summary.activeADay, Units.DOT_LOCALE), CaloriesCopy.rangeLabel(range), CaloriesCopy.goalDays(summary),
+            )
         else -> DetailHeadline.none("No full days yet", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
     }
     DetailTemplate(
@@ -588,7 +592,9 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
             item { GoalBar(CaloriesCopy.share(active, goal), CaloriesCopy.toGoal(active, goal), color) }
             item {
                 HourlyKcal(e, color) { h ->
-                    scrub = h?.let { DetailHeadline(dotFormat("%,d", Math.round(e.hourly.total[it])), CaloriesCopy.hourLabel(it), null) }
+                    scrub = h?.let {
+                        DetailHeadline(Units.count(Math.round(e.hourly.total[it]), Units.DOT_LOCALE), CaloriesCopy.hourLabel(it), null)
+                    }
                 }
             }
             item {
@@ -721,7 +727,7 @@ private fun RangeKcal(
                     parts?.let {
                         val label = if (range == Range.Year) "active kcal a day, week of ${DayWords.dayMonth(d)}"
                         else "active kcal, ${DayWords.short(d)}"
-                        DetailHeadline(dotFormat("%,d", Math.round(it.sum())), label, null)
+                        DetailHeadline(Units.count(Math.round(it.sum()), Units.DOT_LOCALE), label, null)
                     }
                 })
             },
@@ -890,7 +896,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
     val start = week.start
     val end = week.endInclusive
     var scrub by remember(start) { mutableStateOf<DetailHeadline?>(null) }
-    val steps by remember(start, ctx.history) { ctx.history(DailyMetric.Steps, start.minusDays(7), end) }.collectAsState(null)
+    val steps by remember(start, ctx.history) { ctx.history(DailyMetric.Steps, start.minusDays(7), end) }.collectAsStateWithLifecycle(null)
     val zone = ZoneId.systemDefault()
     fun dayOf(w: WorkoutAnalysis) = Instant.ofEpochSecond(w.workout.start).atZone(zone).toLocalDate()
     val stepsByDay = steps.orEmpty().associate { it.date to Math.round(it.value) }
@@ -910,7 +916,7 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         dayOf(it) in before..start.minusDays(1) && it.workout.sportType != org.openstrap.app.data.Workouts.GENERIC_ACTIVITY
     } else null
     val headline = when {
-        totals.stepsADay != null -> DetailHeadline(dotFormat("%,d", totals.stepsADay), WeekStory.label(week), change)
+        totals.stepsADay != null -> DetailHeadline(Units.count(totals.stepsADay, Units.DOT_LOCALE), WeekStory.label(week), change)
         steps == null -> DetailHeadline.none("Loading", WeekStory.label(week).replaceFirstChar { it.uppercase() })
         else -> DetailHeadline.none("No steps", "Monday to Sunday last week")
     }

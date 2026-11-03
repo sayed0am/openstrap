@@ -3,6 +3,8 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.SleepEditCopy
+import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -263,7 +265,7 @@ internal fun SleepScoreDetail(
         onSave = { from, to -> adjusting = false; editing.setTimes(detected, from, to) }, onDismiss = { adjusting = false },
     )
     if (deleting && session != null && detected != null) DeleteSleepSheet(
-        SleepCopy.deleteTitle(false, isToday), SleepCopy.span(clock(session.start), clock(session.end)),
+        SleepCopy.deleteTitle(false, isToday), Ranges.of(clock(session.start), clock(session.end)),
         onDelete = { deleting = false; editing.delete(detected); undo = detected }, onDismiss = { deleting = false },
     )
 }
@@ -395,7 +397,7 @@ private fun StageBars(b: Summaries.SleepBreakdown, modifier: Modifier = Modifier
                     Box(Modifier.fillMaxWidth((secs.toFloat() / total).coerceIn(0f, 1f)).height(10.dp).background(stageColor(st), shape))
                 }
                 Text(
-                    TodayCopy.duration(secs), color = Color.White, style = GlowType.secondary,
+                    Units.duration(secs), color = Color.White, style = GlowType.secondary,
                     modifier = Modifier.padding(start = 12.dp).width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End,
                 )
             }
@@ -495,8 +497,8 @@ internal fun RegularityDetail(
                 )
                 if (u != null) DetailFigures(
                     listOf(
-                        minutesClock(u.bedtime) to "Usually asleep by",
-                        minutesClock(u.wake) to "Usually up at",
+                        TimeOfDay.minutes(u.bedtime) to "Usually asleep by",
+                        TimeOfDay.minutes(u.wake) to "Usually up at",
                     ),
                     Modifier.padding(top = 18.dp),
                 )
@@ -513,8 +515,6 @@ internal fun RegularityDetail(
 }
 
 private fun minutesOf(epoch: Long, zone: ZoneId): Int = Instant.ofEpochSecond(epoch).atZone(zone).toLocalTime().let { it.hour * 60 + it.minute }
-
-private fun minutesClock(minutes: Int): String = org.openstrap.app.ui.dashboard.minutesClock(minutes)
 
 /* ------------------------------------------------- Naps --------------------------------------------- */
 
@@ -560,7 +560,7 @@ internal fun NapsDetail(
                             Modifier.fillMaxWidth().padding(top = 12.dp)
                                 .topHairline(i > 0, RowHairline),
                         ) {
-                            ChartTitle(SleepCopy.span(clock(nap.start), clock(nap.end)), TodayCopy.duration(nap.end - nap.start))
+                            ChartTitle(Ranges.of(clock(nap.start), clock(nap.end)), Units.duration(nap.end - nap.start))
                             val detected = state.napsAsDetected[nap.start]
                             val stages = state.napStages[nap.start].orEmpty()
                             // Heart rate as in the hour before and no deep sleep: maybe sitting still, said, never removed.
@@ -624,7 +624,7 @@ internal fun NapsDetail(
         val detected = state.napsAsDetected[start]
         if (nap == null || detected == null) androidx.compose.runtime.SideEffect { deleting = null }
         else DeleteSleepSheet(
-            SleepCopy.deleteTitle(true, isToday), SleepCopy.span(clock(nap.start), clock(nap.end)),
+            SleepCopy.deleteTitle(true, isToday), Ranges.of(clock(nap.start), clock(nap.end)),
             onDelete = { deleting = null; editing.delete(detected); undo = detected to nap.start }, onDismiss = { deleting = null },
         )
     }

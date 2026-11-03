@@ -7,9 +7,9 @@ import java.util.Locale
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.LoadBands
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.dashboard.Info
-import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.presentation.sportNoun
 
 /*
@@ -54,8 +54,8 @@ object WorkoutDetailCopy {
         if (load == null || load <= 0) return null
         val e = Workouts.effort(load, usual)
         return when {
-            e < 0.5f * (1 - TodayCopy.LOAD_BAND) -> Effort.Easy
-            e <= 0.5f * (1 + TodayCopy.LOAD_BAND) -> Effort.Steady
+            e < 0.5f * (1 - LoadBands.BAND) -> Effort.Easy
+            e <= 0.5f * (1 + LoadBands.BAND) -> Effort.Steady
             e < 0.875f -> Effort.Hard
             else -> Effort.VeryHard
         }
@@ -112,12 +112,14 @@ object WorkoutDetailCopy {
             pausedSeconds.takeIf { it >= MIN_PAUSED_S }?.let {
                 WorkoutFact("Paused", Units.workoutClock(it, Units.DOT_LOCALE), "Not counted in the time", WorkoutFact.Kind.Paused)
             },
-            steps?.takeIf { it > 0 }?.let { WorkoutFact("Steps", "%,d".format(locale, it), null, WorkoutFact.Kind.Steps) },
+            steps?.takeIf { it > 0 }?.let { WorkoutFact("Steps", Units.count(it, locale), null, WorkoutFact.Kind.Steps) },
             calories?.takeIf { it > 0 }?.let { total ->
                 if (activeKcal != null && activeKcal != total) {
-                    WorkoutFact("Calories", "%,d".format(locale, activeKcal), "Total %,d".format(locale, total), WorkoutFact.Kind.Calories)
+                    WorkoutFact(
+                        "Calories", Units.count(activeKcal, locale), "Total ${Units.count(total, locale)}", WorkoutFact.Kind.Calories,
+                    )
                 } else {
-                    WorkoutFact("Calories", "%,d".format(locale, total), "kcal", WorkoutFact.Kind.Calories)
+                    WorkoutFact("Calories", Units.count(total, locale), "kcal", WorkoutFact.Kind.Calories)
                 }
             },
         )
@@ -131,10 +133,10 @@ object WorkoutDetailCopy {
         val status = when {
             reachedSeconds != null -> "Reached at ${Units.workoutClock(reachedSeconds, locale)}"
             activeKcal != null && activeKcal >= k.kcal -> "Reached"
-            activeKcal != null -> "Not reached, %,d of %,d".format(locale, activeKcal, k.kcal)
+            activeKcal != null -> "Not reached, ${Units.count(activeKcal, locale)} of ${Units.count(k.kcal, locale)}"
             else -> "Not reached"
         }
-        return WorkoutFact("Target", "%,d kcal".format(locale, k.kcal), status, WorkoutFact.Kind.Target)
+        return WorkoutFact("Target", "${Units.count(k.kcal, locale)} kcal", status, WorkoutFact.Kind.Target)
     }
 
     /**

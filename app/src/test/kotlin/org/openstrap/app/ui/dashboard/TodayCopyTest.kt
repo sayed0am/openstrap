@@ -9,7 +9,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.openstrap.app.testing.assertCleanCopy
-import org.openstrap.app.presentation.TodayCopy.LoadStatus
+import org.openstrap.app.presentation.LoadBand
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.TodayCopy
 
 /** Today's hero sentences and small facts (spec 4.2, 4.3, 7). */
@@ -18,11 +19,11 @@ class TodayCopyTest {
     private fun at(h: Int, m: Int = 0, day: Int = 23) = ZonedDateTime.of(2026, 10, day, h, m, 0, 0, zone).toEpochSecond()
 
     @Test fun `durations read like the mockups`() {
-        assertEquals("40 min", TodayCopy.duration(40 * 60L))
-        assertEquals("7 h 40", TodayCopy.duration((7 * 60 + 40) * 60L))
-        assertEquals("1 h 05", TodayCopy.duration(65 * 60L))
-        assertEquals("8 h", TodayCopy.duration(8 * 3600L))
-        assertEquals("0 min", TodayCopy.duration(-5))
+        assertEquals("40 min", Units.duration(40 * 60L))
+        assertEquals("7 h 40", Units.duration((7 * 60 + 40) * 60L))
+        assertEquals("1 h 05", Units.duration(65 * 60L))
+        assertEquals("8 h", Units.duration(8 * 3600L))
+        assertEquals("0 min", Units.duration(-5))
     }
 
     private val learning = TodayCopy.NoScore.Learning(5, 7)
@@ -93,32 +94,32 @@ class TodayCopyTest {
     }
 
     @Test fun `load is only low at the end of the day`() {
-        assertEquals(LoadStatus.Above, TodayCopy.loadStatus(60f, 40f, endOfDay = false))
-        assertEquals(LoadStatus.SoFar, TodayCopy.loadStatus(10f, 40f, endOfDay = false))
-        assertEquals(LoadStatus.Below, TodayCopy.loadStatus(10f, 40f, endOfDay = true))
-        assertEquals(LoadStatus.Usual, TodayCopy.loadStatus(45f, 40f, endOfDay = true))
+        assertEquals(LoadBand.Above, TodayCopy.loadStatus(60f, 40f, endOfDay = false))
+        assertEquals(LoadBand.SoFar, TodayCopy.loadStatus(10f, 40f, endOfDay = false))
+        assertEquals(LoadBand.Below, TodayCopy.loadStatus(10f, 40f, endOfDay = true))
+        assertEquals(LoadBand.Usual, TodayCopy.loadStatus(45f, 40f, endOfDay = true))
         assertNull(TodayCopy.loadStatus(45f, null, endOfDay = true))
     }
 
     @Test fun `the load line says it's a Load`() {
         assertEquals("Load, learning your usual", TodayCopy.loadLine(null))
-        assertEquals("Load above your usual", TodayCopy.loadLine(LoadStatus.Above))
-        assertEquals("Load so far today", TodayCopy.loadLine(LoadStatus.SoFar))
-        assertEquals("Your usual Load", TodayCopy.loadLine(LoadStatus.Usual))
-        assertEquals("Load below your usual", TodayCopy.loadLine(LoadStatus.Below))
+        assertEquals("Load above your usual", TodayCopy.loadLine(LoadBand.Above))
+        assertEquals("Load so far today", TodayCopy.loadLine(LoadBand.SoFar))
+        assertEquals("Your usual Load", TodayCopy.loadLine(LoadBand.Usual))
+        assertEquals("Load below your usual", TodayCopy.loadLine(LoadBand.Below))
     }
 
     @Test fun `evening tells the day`() {
         assertEquals(
             "A full day. A run, 13,860 steps and a Load above your usual.",
-            TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadStatus.Above, Locale.UK),
+            TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadBand.Above, Locale.UK),
         )
-        assertEquals("A quiet day. 2,100 steps and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadStatus.Below, Locale.UK))
+        assertEquals("A quiet day. 2,100 steps and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadBand.Below, Locale.UK))
         assertEquals("A steady day. 2 workouts and 6,000 steps.", TodayCopy.evening(listOf("run", null), 6_000, 8_000, null, Locale.UK))
-        assertEquals("A steady day. A workout and 6,000 steps.", TodayCopy.evening(listOf(null), 6_000, 8_000, LoadStatus.SoFar, Locale.UK))
+        assertEquals("A steady day. A workout and 6,000 steps.", TodayCopy.evening(listOf(null), 6_000, 8_000, LoadBand.SoFar, Locale.UK))
         // The app's hero says the steps against the goal, since it shows the count in dots.
-        assertEquals("A quiet day. Well short of your step goal and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadStatus.Below, Locale.UK, stepCount = false))
-        assertEquals("A full day. A run, past your step goal and a Load above your usual.", TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadStatus.Above, Locale.UK, stepCount = false))
+        assertEquals("A quiet day. Well short of your step goal and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadBand.Below, Locale.UK, stepCount = false))
+        assertEquals("A full day. A run, past your step goal and a Load above your usual.", TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadBand.Above, Locale.UK, stepCount = false))
     }
 
     @Test fun `bedtime counts down and stops once passed`() {
@@ -185,7 +186,7 @@ class TodayCopyTest {
         val all = listOf(
             TodayCopy.waking(1000, 80, false, null, false, true), TodayCopy.waking(1000, null, false, learning, false, true),
             TodayCopy.WEEK_FIRST, TodayCopy.recoverText(5000, at(10), zone).second, TodayCopy.charge(50, 30, true, 10),
-            TodayCopy.window("run", 50), TodayCopy.after(80, 50), TodayCopy.evening(listOf("run"), 9000, 8000, LoadStatus.Usual, Locale.UK),
+            TodayCopy.window("run", 50), TodayCopy.after(80, 50), TodayCopy.evening(listOf("run"), 9000, 8000, LoadBand.Usual, Locale.UK),
         )
         assertCleanCopy(all)
     }
@@ -198,8 +199,8 @@ class TodayCopyTest {
     }
 
     @Test fun `the after workout Smalls say a number and a word`() {
-        assertEquals("Above your usual", TodayCopy.loadWord(LoadStatus.Above))
-        assertEquals("So far today", TodayCopy.loadWord(LoadStatus.SoFar))
+        assertEquals("Above your usual", TodayCopy.loadWord(LoadBand.Above))
+        assertEquals("So far today", TodayCopy.loadWord(LoadBand.SoFar))
         assertEquals("Learning your usual", TodayCopy.loadWord(null))
         val zone = ZoneId.of("Europe/London")
         val now = ZonedDateTime.of(2026, 10, 23, 18, 0, 0, 0, zone).toEpochSecond()

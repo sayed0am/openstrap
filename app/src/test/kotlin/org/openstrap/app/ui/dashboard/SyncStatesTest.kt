@@ -12,6 +12,7 @@ import org.junit.Test
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.presentation.TimeOfDay
 
 /** Sync and strap states (spec 4.3): when syncing has stopped, the Up to marker, the stuck hero and the debug previews. */
 class SyncStatesTest {
@@ -20,11 +21,11 @@ class SyncStatesTest {
     private val connected = ConnectionState.Connected(80, null)
 
     @Test fun `clock times follow the 24 or 12 hour setting`() {
-        assertEquals("09:40", clockText(at(9, 40), zone, use24Hour = true))
-        assertEquals("21:05", clockText(at(21, 5), zone, use24Hour = true))
-        assertEquals("9:40 AM", clockText(at(9, 40), zone, use24Hour = false, locale = Locale.US))
-        assertEquals("9:05 PM", clockText(at(21, 5), zone, use24Hour = false, locale = Locale.US))
-        assertEquals("12:00 PM", clockText(at(12), zone, use24Hour = false, locale = Locale.US))
+        assertEquals("09:40", TimeOfDay.format(at(9, 40), zone, use24Hour = true))
+        assertEquals("21:05", TimeOfDay.format(at(21, 5), zone, use24Hour = true))
+        assertEquals("9:40 AM", TimeOfDay.format(at(9, 40), zone, use24Hour = false, locale = Locale.US))
+        assertEquals("9:05 PM", TimeOfDay.format(at(21, 5), zone, use24Hour = false, locale = Locale.US))
+        assertEquals("12:00 PM", TimeOfDay.format(at(12), zone, use24Hour = false, locale = Locale.US))
     }
 
     @Test fun `syncing has stopped when the last sync failed or the strap is away`() {

@@ -1,7 +1,7 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
@@ -286,7 +286,7 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, on
             val h = hour
             val picked = h?.let { state.hourlySteps.getOrNull(it) }
             HeroFigure(
-                dotFormat("%,d", if (h != null && picked != null) Math.round(picked) else state.steps),
+                Units.count(if (h != null && picked != null) Math.round(picked) else state.steps, Units.DOT_LOCALE),
                 if (h != null && picked != null) ActivityCopy.hourLabel(h) else ActivityCopy.activityLine(state.steps, goal, pace, isToday),
                 big = true, dot = DotSize.Second, labelLines = 2,
             )
@@ -341,7 +341,7 @@ private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
     EdgeCard(
         MetricColors.load, Modifier.fillMaxWidth().gridSize(CardSize.Wide),
-        status = if (status == TodayCopy.LoadStatus.Above) EdgeStatus.Above else EdgeStatus.Usual,
+        status = if (status == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
         kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
     ) {
         EdgeTitle("Load", TabCopy.loadBalance(r?.loadTrend))

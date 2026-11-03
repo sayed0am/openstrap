@@ -255,14 +255,11 @@ internal object SleepCopy {
 
     /* --------------------------------------- Adjust times (edit spec 4.2) ------------------------------- */
 
-    /** A span of clock times in text: "23:20 to 07:21". */
-    fun span(from: String, to: String): String = Ranges.of(from, to)
-
     /** The times sheet's title. */
     fun timesTitle(nap: Boolean): String = if (nap) "Nap times" else "Sleep times"
 
     /** Under the sheet's title. */
-    fun strapSaw(from: String, to: String): String = "The strap saw ${span(from, to)}."
+    fun strapSaw(from: String, to: String): String = "The strap saw ${Ranges.of(from, to)}."
 
     /** How to read the sheet's heart rate. */
     const val TIMES_HINT = "Your heart rate drops as you fall asleep and rises as you wake."
@@ -272,7 +269,7 @@ internal object SleepCopy {
      * shorter time asleep ("23:05 to 08:16, 9 h 11 in bed"). A nap's is its plain length.
      */
     fun trimLine(nap: Boolean, from: String, to: String, seconds: Long): String =
-        "${span(from, to)}, ${Units.duration(seconds)}${if (nap) "" else " in bed"}"
+        "${Ranges.of(from, to)}, ${Units.duration(seconds)}${if (nap) "" else " in bed"}"
 
     /**
      * Under the stages of a sleep or nap whose times reach past what the strap saw ([strapStart] to [strapEnd]): the
@@ -317,7 +314,7 @@ internal object SleepCopy {
     const val NO_SLEEP_TITLE = "No sleep recorded"
 
     fun deletedNight(from: String, to: String, today: Boolean): String =
-        "You deleted ${span(from, to)}. " +
+        "You deleted ${Ranges.of(from, to)}. " +
             if (today) "Recovery this morning works without last night, as on a night the strap was off."
             else "Recovery that morning works without that night, as on a night the strap was off."
 
@@ -337,7 +334,7 @@ internal object SleepCopy {
 
     /** Under it, on two lines so neither wraps beside Restore: "23:20 to 07:21", then "6 days left". */
     fun deletedLine(from: String, to: String, daysLeft: Int): String =
-        "${span(from, to)}\n${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
+        "${Ranges.of(from, to)}\n${if (daysLeft == 1) "1 day" else "$daysLeft days"} left"
 
     /** Under a nap whose heart rate stayed as when sitting still (edit spec 4.5). */
     fun stillNap(bpm: Int): String = "Heart rate stayed at $bpm, as when you sit still. Might not be a nap."

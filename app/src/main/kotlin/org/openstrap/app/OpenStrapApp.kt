@@ -95,8 +95,6 @@ class OpenStrapApp : Application(), androidx.work.Configuration.Provider {
         // The phone's 12 or 24 hour clock, before anything writes a time, and from then on as it changes.
         PhoneClock.follow(this)
         container = AppContainer(this)
-        // Your heart rate zones as stored, for the workout and its notification, a restored backup's included.
-        org.openstrap.app.device.HeartZonesInUse.follow(container.settings.heartZones, container.appScope)
         container.companion.refresh()
         // A workout still recording when the process died carries on (the service restarts it too).
         container.workout.restore()

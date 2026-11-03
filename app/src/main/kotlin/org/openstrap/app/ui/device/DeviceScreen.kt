@@ -304,7 +304,7 @@ private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, 
 
 /** The strap in a glow card: its name, the state line, a drawing of it with its light, and the battery. */
 @Composable
-private fun StrapHero(name: String, connection: ConnectionState, sync: SyncState, lastSeen: Long?) {
+internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncState, lastSeen: Long?) {
     val connected = connection as? ConnectionState.Connected
     val battery = connected?.batteryPercent
     val led = when {
@@ -452,8 +452,9 @@ private fun PairPanel(vm: DeviceViewModel, scan: ScanUiState, onRequestBluetooth
     if (manual) ManualPairSheet(vm, scan, onRequestBluetooth, onDismiss = { vm.stopScan(); manual = false })
 }
 
+/** One numbered pairing step: its number in a circle, its [title], and what to do under it. */
 @Composable
-private fun PairStep(number: Int, title: String, content: @Composable () -> Unit) {
+internal fun PairStep(number: Int, title: String, content: @Composable () -> Unit) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Box(
             Modifier.size(28.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.1f)),

@@ -4,7 +4,7 @@ Every number OpenStrap works out itself, explained in plain words. Written from 
 
 * For research sources and the reasoning behind each choice, see [recovery.md](recovery.md) and [evidence-review.md](evidence-review.md).
 * For the planned check against the strap's own Readiness, see [readiness-calibration.md](readiness-calibration.md).
-* Code lives in `app/src/main/kotlin/org/openstrap/app/data/`. Most of it is in `Recovery.kt`, and `RecoveryEngine.kt` feeds it from the database.
+* Code lives in `app/src/main/kotlin/org/openstrap/app/data/`. The rules are in one file per part: `ReadinessModel.kt` (Readiness, §5, and the sleep score, §9), `ChargeModel.kt` (Energy, §7), `LoadModel.kt` (training load, Strain and fitness, §8, and daytime resting HR, §4) and `MaxHrModel.kt` (maximum HR, §4). Their inputs, results and constants are in `Recovery.kt`, named `Recovery.X` as the code names them, and `RecoveryEngine.kt` feeds them from the database.
 
 OpenStrap is a wellness app. None of these numbers is a medical measurement.
 
@@ -156,6 +156,8 @@ On an invalid night, the strap's own nightly HRV and resting HR are **shown** in
 
 ## 4. Your heart-rate settings: resting and maximum
 
+Code: `LoadModel.kt` (`daytimeRestingHr`) and `MaxHrModel.kt` (`maxHeartRate`).
+
 ### Daytime resting HR (for heart-rate reserve)
 
 Heart-rate reserve is defined against resting HR while **awake**. Using the much lower sleeping minimum would make every waking minute look harder than it was. In order of preference:
@@ -182,6 +184,8 @@ One rule for the whole app: Readiness, Energy, load, active minutes, calories, a
 ---
 
 ## 5. Readiness (0–100, each morning)
+
+Code: `ReadinessModel.kt` (`readiness`).
 
 "How far last night sat from your own normal." It's a comparison, not a prediction.
 
@@ -282,6 +286,8 @@ Once on, an Alert stays until **2 nights in a row without a core flag**.
 
 ## 7. Energy (0–100, minute by minute)
 
+Code: `ChargeModel.kt` (`charge`).
+
 A body-battery: sleep fills it, and the day drains it.
 
 ### How it runs
@@ -347,6 +353,8 @@ The point where the strap's stress score starts to drain Energy.
 ---
 
 ## 8. Training load, Strain and fitness/fatigue
+
+Code: `LoadModel.kt` (`dailyLoad`, `strain`, `fitnessFatigue`).
 
 ### Daily training load (TRIMP)
 

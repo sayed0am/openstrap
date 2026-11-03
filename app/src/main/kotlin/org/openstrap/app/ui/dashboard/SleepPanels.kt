@@ -192,7 +192,4 @@ internal fun SleepWindows(
     }
 }
 
-/** Minutes since midnight on the phone's clock, wrapping past either end of the day: "23:30", or "11:30 PM". */
-internal fun minutesClock(minutes: Int): String = TimeOfDay.minutes(minutes)
-
 private fun clockOf(epochSeconds: Long): String = TimeOfDay.format(epochSeconds, ZoneId.systemDefault())

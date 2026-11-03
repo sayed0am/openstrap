@@ -5,6 +5,7 @@ import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.presentation.sportNoun
@@ -90,9 +91,9 @@ object SummaryCopy {
 
     /** The Load card's line: against your [usual] workout Load ([Workouts.usualLoad]), with the band Today uses. */
     fun loadLine(load: Int, usual: Float?): String = when (TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        TodayCopy.LoadStatus.Above -> "Above your usual of ${Math.round(usual!!)}"
-        TodayCopy.LoadStatus.Below -> "Below your usual of ${Math.round(usual!!)}"
-        TodayCopy.LoadStatus.Usual, TodayCopy.LoadStatus.SoFar -> "About your usual"
+        LoadBand.Above -> "Above your usual of ${Math.round(usual!!)}"
+        LoadBand.Below -> "Below your usual of ${Math.round(usual!!)}"
+        LoadBand.Usual, LoadBand.SoFar -> "About your usual"
         null -> "Learning your usual"
     }
 

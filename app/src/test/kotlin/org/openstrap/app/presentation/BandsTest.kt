@@ -65,7 +65,6 @@ class BandsTest {
 
     @Test
     fun loadMatchesTodayAndActivity() {
-        assertEquals(TodayCopy.LOAD_BAND, LoadBands.BAND)
         for (usual in listOf(null, 0f, 40f, 100f, 333f)) {
             for (load in (0..500 step 5).map { it.toFloat() }) {
                 for (endOfDay in listOf(true, false)) {
@@ -76,7 +75,6 @@ class BandsTest {
             }
             assertEquals(ActivityCopy.usualBand(usual), LoadBands.usualRange(usual))
         }
-        assertEquals(TodayCopy.LoadStatus.entries.map { it.text }, LoadBand.entries.map { it.text })
     }
 
     @Test

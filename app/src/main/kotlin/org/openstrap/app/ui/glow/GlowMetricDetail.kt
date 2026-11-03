@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
@@ -30,7 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -436,7 +435,7 @@ fun GlowMetricDetailScreen(
     val to = maxOf(end, strip0.last().date)
     val from = minOf(end.minusDays(maxOf(range.days, History.NORMAL_DAYS) - 1L), strip0.first().date)
     val daily = if (night) SleepCopy.nightDaily(metric) else metric.daily
-    val stats by remember(daily, from, to, history) { history(daily, from, to) }.collectAsState(null)
+    val stats by remember(daily, from, to, history) { history(daily, from, to) }.collectAsStateWithLifecycle(null)
     // Worked out once per load, not on every pass of the screen (audit K4).
     val normal = remember(stats, end) { stats?.let { History.normal(it, end) } }
     val normalDays = remember(stats, end) { stats?.count { it.date in end.minusDays(History.NORMAL_DAYS - 1L)..end } ?: 0 }
@@ -610,7 +609,7 @@ private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.
 /** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
 private fun hourSteps(hour: Int, steps: Float): DetailHeadline {
     val (from, to) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR) to TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR)
-    return DetailHeadline(dotFormat("%,d", Math.round(steps)), "steps, ${Ranges.of(from, to)}", null)
+    return DetailHeadline(Units.count(Math.round(steps), Units.DOT_LOCALE), "steps, ${Ranges.of(from, to)}", null)
 }
 
 private const val MINUTES_PER_HOUR = 60

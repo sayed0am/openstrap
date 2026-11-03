@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -88,7 +88,8 @@ fun GlowScoreDetailScreen(
 /** The days a metric has data for, from the day after [from] to [to]; none when [from] isn't before [to]. */
 @Composable
 internal fun daysWithData(metric: DailyMetric, from: LocalDate, to: LocalDate, history: DailyHistory): Set<LocalDate> {
-    val stats by remember(metric, from, to) { if (from < to) history(metric, from.plusDays(1), to) else flowOf(emptyList()) }.collectAsState(emptyList())
+    val stats by remember(metric, from, to) { if (from < to) history(metric, from.plusDays(1), to) else flowOf(emptyList()) }
+        .collectAsStateWithLifecycle(emptyList())
     return stats.map { it.date }.toSet()
 }
 
