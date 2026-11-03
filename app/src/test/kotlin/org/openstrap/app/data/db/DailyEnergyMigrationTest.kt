@@ -33,12 +33,12 @@ class DailyEnergyMigrationTest {
         dao.updateAppWorkoutKcal(1000, 210f, 260f)
         assertEquals(260f, dao.appWorkoutOnce(1000)!!.totalKcal)
 
-        assertEquals(emptyList<LocalDate>(), dao.dailyEnergyDaysOnce())
-        fun row(day: Long, total: Float) = DailyEnergyRow(LocalDate.ofEpochDay(day), 1, total, 400f, 1650f, 1440, false, 120f, 200f, List(24) { "1.0" }.joinToString(","))
-        dao.insertDailyEnergy(listOf(row(1, 2100f), row(2, 2300f)))
+        assertEquals(emptyList<LocalDate>(), dao.dailyCaloriesDaysOnce())
+        fun row(day: Long, total: Float) = DailyCaloriesRow(LocalDate.ofEpochDay(day), 1, total, 400f, 1650f, 1440, false, 120f, 200f, List(24) { "1.0" }.joinToString(","))
+        dao.insertDailyCalories(listOf(row(1, 2100f), row(2, 2300f)))
         // The same day again replaces it.
-        dao.insertDailyEnergy(listOf(row(2, 2350f)))
-        assertEquals(listOf(2100f, 2350f), dao.dailyEnergyOnce(LocalDate.EPOCH, LocalDate.ofEpochDay(3)).map { it.totalKcal })
-        assertEquals(24, dao.dailyEnergyOnce(LocalDate.ofEpochDay(1), LocalDate.ofEpochDay(1)).single().hourlyKcal.size)
+        dao.insertDailyCalories(listOf(row(2, 2350f)))
+        assertEquals(listOf(2100f, 2350f), dao.dailyCaloriesOnce(LocalDate.EPOCH, LocalDate.ofEpochDay(3)).map { it.totalKcal })
+        assertEquals(24, dao.dailyCaloriesOnce(LocalDate.ofEpochDay(1), LocalDate.ofEpochDay(1)).single().hourlyKcal.size)
     }
 }

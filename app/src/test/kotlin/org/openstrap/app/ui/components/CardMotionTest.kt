@@ -12,7 +12,7 @@ class CardMotionTest {
     private val hero = 11L
     private val note = 22L
     private val recovery = Detail.keyOf(Detail.OfScore(Score.Recovery))
-    private val charge = Detail.keyOf(Detail.OfScore(Score.Charge))
+    private val charge = Detail.keyOf(Detail.OfScore(Score.Energy))
 
     /** The hero on the tab's root pressed, then clicked. */
     private fun clicked(source: Long = hero, number: String? = "72") =

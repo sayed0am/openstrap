@@ -174,7 +174,7 @@ object InfoCopy {
                 "night with the strap loose or off, or too few clean HRV readings, gives it less to go on, and the " +
                 "strap's own readings may stand in.",
         )
-        Score.Charge -> Info(
+        Score.Energy -> Info(
             "Energy",
             "Your energy right now, from 0 to 100. Sleep fills it and the day uses it.",
             CHARGE_SCALE,
@@ -295,7 +295,7 @@ object InfoCopy {
             off = "It knows only the workout, not your sleep, stress or the rest of the day. Recovery here is time, not " +
                 "the morning's Recovery score.",
         )
-        Score.Energy -> Info(
+        Score.Calories -> Info(
             "Calories",
             "Active kcal are what moving burned on top of your body's use at rest. The total adds that rest. Both are estimates, in kilocalories (kcal).",
             emptyList(),
@@ -350,8 +350,8 @@ object InfoCopy {
         withheld?.let { add("No estimate from your profile yet. ${Vo2maxCopy.reason(it)}") }
     }
 
-    /** What's particular about the day's energy: part of the day worn, an unusual total, minutes from heart rate. */
-    fun energyNotes(e: org.openstrap.app.data.EnergyExpenditure.Day?): List<String> = buildList {
+    /** What's particular about the day's calories: part of the day worn, an unusual total, minutes from heart rate. */
+    fun caloriesNotes(e: org.openstrap.app.data.EnergyExpenditure.Day?): List<String> = buildList {
         e ?: return@buildList
         if (e.partial) add("It covers ${Units.duration(e.minutesWithData * 60L)} of wear, so it's part of the day.")
         if (e.palImplausible) add("That's an unusual total for a full day. Check your profile and how the strap was worn.")

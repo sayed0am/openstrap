@@ -248,8 +248,8 @@ object TabCopy {
     fun heartPoints(total: Int, target: Int): String =
         if (total >= target) "Last 7 days, at $target or more" else "Last 7 days, aim for $target"
 
-    /** Energy under its number. */
-    fun energy(partial: Boolean, isToday: Boolean): String = when {
+    /** Calories under its number. */
+    fun calories(partial: Boolean, isToday: Boolean): String = when {
         isToday -> "Estimated kcal so far today"
         partial -> "Estimated kcal, part of the day worn"
         else -> "Estimated kcal"

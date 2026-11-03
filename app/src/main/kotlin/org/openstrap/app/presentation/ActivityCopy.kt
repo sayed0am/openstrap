@@ -8,7 +8,7 @@ import java.util.Locale
 
 /*
  * The words of the Activity tab's details (spec 5.3 and 6.1): steps against your usual by now, Heart points, active
- * minutes, Load, VO2 max, time to recover, energy and distance. Built only from numbers the app already has, like
+ * minutes, Load, VO2 max, time to recover, calories and distance. Built only from numbers the app already has, like
  * [DetailCopy], so every rule is tested without a screen. The method behind each number is in [InfoCopy].
  */
 internal object ActivityCopy {
@@ -189,10 +189,10 @@ internal object ActivityCopy {
     /** The sentence under the hours to go: which workout they count from. */
     fun recover(sport: String, ended: String): String = "Counted from your ${sport.lowercase()}, which ended $ended."
 
-    /* ----------------------------------------------- Energy --------------------------------------------- */
+    /* ---------------------------------------------- Calories -------------------------------------------- */
 
     /** The sentence under the day's kcal: what your body uses at rest, before any movement. */
-    fun energy(atRest: Int): String = "Your body uses about ${Units.count(atRest.toLong())} kcal a day at rest, before any movement."
+    fun caloriesAtRest(atRest: Int): String = "Your body uses about ${Units.count(atRest.toLong())} kcal a day at rest, before any movement."
 
     /* ---------------------------------------------- Distance -------------------------------------------- */
 

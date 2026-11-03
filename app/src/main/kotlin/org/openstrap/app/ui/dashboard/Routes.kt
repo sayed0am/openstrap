@@ -8,15 +8,23 @@ import org.openstrap.app.presentation.Metric
 
 /**
  * A detail in the metric template with no per-day series behind it, unlike a [Metric]'s: Recovery keeps only its last
- * 7 days, Charge only the day shown, the strap's Sleep score and the night's times only the 14 nights the day loads,
- * and the day's Naps are only that day's. The Activity tab's: Heart points over the strap's 7 days, Active minutes over
- * the 14 days the day works out, Load over the 30 days before it, and VO2 max, Time to recover, Energy and Distance as
- * the day has them.
+ * 7 days, Energy (the Charge model) only the day shown, the strap's Sleep score and the night's times only the 14
+ * nights the day loads, and the day's Naps are only that day's. The Activity tab's: Heart points over the strap's 7
+ * days, Active minutes over the 14 days the day works out, Load over the 30 days before it, and VO2 max, Time to
+ * recover, Calories and Distance as the day has them.
+ *
+ * [key] names it in saved stacks ([Detail.StackSaver]) and card motion: its name, except for the two renamed to match
+ * what the screens say. Energy was `Charge` and Calories was `Energy`, and they keep those names there, so a stack
+ * saved before the rename still opens the same detail and a saved "Energy" only ever means Calories.
  */
-enum class Score(val title: String) {
-    Recovery("Recovery"), Charge("Energy"), Sleep("Sleep score"), Regularity("Sleep regularity"), Naps("Naps"),
-    HeartPoints("Heart points"), ActiveMinutes("Active minutes"), Load("Load"), Vo2Max("VO2 max"),
-    Recover("Time to recover"), Energy("Calories"), Distance("Distance"),
+enum class Score(val title: String, private val savedAs: String? = null) {
+    Recovery("Recovery"), Energy("Energy", savedAs = "Charge"), Sleep("Sleep score"), Regularity("Sleep regularity"),
+    Naps("Naps"), HeartPoints("Heart points"), ActiveMinutes("Active minutes"), Load("Load"), Vo2Max("VO2 max"),
+    Recover("Time to recover"), Calories("Calories", savedAs = "Energy"), Distance("Distance"),
+    ;
+
+    /** The name a saved stack knows it by. */
+    val key: String get() = savedAs ?: name
 }
 
 /** Your daily goals, provided once at the top of the app so every screen measures against the same ones. */
@@ -61,7 +69,7 @@ sealed interface Detail {
         /** A detail's saved key ("m:Hrv"), also its key in the card to detail motion. */
         fun keyOf(d: Detail): String = when (d) {
             is OfMetric -> "${if (d.night) "n" else "m"}:${d.metric.name}"
-            is OfScore -> "c:${d.score.name}"
+            is OfScore -> "c:${d.score.key}"
             is Workout -> "w:${d.start}"
             AllWorkouts -> "a:"
             Healthspan -> "h:"
@@ -75,7 +83,7 @@ sealed interface Detail {
             return when (s.substringBefore(':')) {
                 "m" -> Metric.entries.firstOrNull { it.name == value }?.let { OfMetric(it) }
                 "n" -> NIGHT_VITALS.firstOrNull { it.name == value }?.let { OfMetric(it, night = true) }
-                "c" -> Score.entries.firstOrNull { it.name == value }?.let(::OfScore)
+                "c" -> Score.entries.firstOrNull { it.key == value }?.let(::OfScore)
                 "w" -> value.toLongOrNull()?.let(::Workout)
                 "a" -> AllWorkouts
                 "h" -> Healthspan

@@ -133,9 +133,9 @@ class TabCopyTest {
         assertEquals("Last 7 days, goal of 150 reached", TabCopy.activeMinutes(160, 150))
         assertEquals("Last 7 days, aim for 100", TabCopy.heartPoints(64, 100))
         assertEquals("Last 7 days, at 100 or more", TabCopy.heartPoints(100, 100))
-        assertEquals("Estimated kcal so far today", TabCopy.energy(partial = true, isToday = true))
-        assertEquals("Estimated kcal, part of the day worn", TabCopy.energy(partial = true, isToday = false))
-        assertEquals("Estimated kcal", TabCopy.energy(partial = false, isToday = false))
+        assertEquals("Estimated kcal so far today", TabCopy.calories(partial = true, isToday = true))
+        assertEquals("Estimated kcal, part of the day worn", TabCopy.calories(partial = true, isToday = false))
+        assertEquals("Estimated kcal", TabCopy.calories(partial = false, isToday = false))
     }
 
     @Test fun `no interpunct, semicolon or em dash in any of it`() {
@@ -155,7 +155,7 @@ class TabCopyTest {
             add(TabCopy.regularity(SleepRegularity.Result(null, 2000, 90f)))
             add(TabCopy.usualTimes(0, 0)); add(TabCopy.breathing(Recovery.BreathingDisturbances(1f, null, 0)))
             add(TabCopy.loadUsual(null)); add(TabCopy.loadUsual(10f))
-            add(TabCopy.activeMinutes(1, 150)); add(TabCopy.heartPoints(1, 100)); add(TabCopy.energy(false, true))
+            add(TabCopy.activeMinutes(1, 150)); add(TabCopy.heartPoints(1, 100)); add(TabCopy.calories(false, true))
             add(TabCopy.RECOVERY_WAITING)
         }.filterNotNull()
         all.forEach { s -> listOf("·", ";", "—").forEach { bad -> assertFalse("'$s' contains $bad", bad in s) } }

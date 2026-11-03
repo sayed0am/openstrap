@@ -142,11 +142,11 @@ private sealed interface RecoveryOutcome {
 /** One day's Heart points: those earned that day and the 7-day total. */
 data class HeartPointsDay(val daily: Float, val total: Float)
 
-/** One day's stored energy ([org.openstrap.app.data.DailyEnergyHistory]), in kcal. */
-data class EnergyDay(val active: Float, val total: Float, val workout: Float, val partial: Boolean)
+/** One day's stored calories ([org.openstrap.app.data.DailyCaloriesHistory]), in kcal. */
+data class CaloriesDay(val active: Float, val total: Float, val workout: Float, val partial: Boolean)
 
 /**
- * Each day's Heart points and stored energy up to [date], for the Activity tab and its details, so they're handed
+ * Each day's Heart points and stored calories up to [date], for the Activity tab and its details, so they're handed
  * state rather than a way to read it (audit A11).
  */
 data class ActivityHistory(
@@ -154,22 +154,22 @@ data class ActivityHistory(
     val date: LocalDate? = null,
     /** The [HEART_POINTS_DAYS] days ending on [date]. */
     val heartPoints: Map<LocalDate, HeartPointsDay> = emptyMap(),
-    /** The [ENERGY_DAYS] days ending on [date]: the longest range and the one before it. Null while loading. */
-    val energy: Map<LocalDate, EnergyDay>? = null,
+    /** The [CALORIES_DAYS] days ending on [date]: the longest range and the one before it. Null while loading. */
+    val calories: Map<LocalDate, CaloriesDay>? = null,
 ) {
     /** [heartPoints] when they're [day]'s, else none yet. */
     fun heartPointsOn(day: LocalDate): Map<LocalDate, HeartPointsDay> = if (date == day) heartPoints else emptyMap()
 
-    /** [energy] from [from] to [day] when it's [day]'s, else null while it loads. */
-    fun energyOn(day: LocalDate, from: LocalDate): Map<LocalDate, EnergyDay>? =
-        energy?.takeIf { date == day }?.filterKeys { it in from..day }
+    /** [calories] from [from] to [day] when it's [day]'s, else null while it loads. */
+    fun caloriesOn(day: LocalDate, from: LocalDate): Map<LocalDate, CaloriesDay>? =
+        calories?.takeIf { date == day }?.filterKeys { it in from..day }
 
     companion object {
         /** Heart points' month. */
         const val HEART_POINTS_DAYS = 30
 
         /** Calories' year and the year before it, for the change against it. */
-        val ENERGY_DAYS = 2 * Range.Year.days
+        val CALORIES_DAYS = 2 * Range.Year.days
     }
 }
 
@@ -315,16 +315,16 @@ class DayViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    /** Each day's Heart points and stored energy up to the day shown, for the Activity tab and its details. */
+    /** Each day's Heart points and stored calories up to the day shown, for the Activity tab and its details. */
     val activityHistory: StateFlow<ActivityHistory> = selected.flatMapLatest { d ->
         combine(
             repo.dailyPai(d.minusDays(ActivityHistory.HEART_POINTS_DAYS - 1L), d),
-            repo.dailyEnergy(d.minusDays(ActivityHistory.ENERGY_DAYS - 1L), d),
-        ) { pai, energy ->
+            repo.dailyCalories(d.minusDays(ActivityHistory.CALORIES_DAYS - 1L), d),
+        ) { pai, calories ->
             ActivityHistory(
                 date = d,
                 heartPoints = pai.mapValues { (_, p) -> HeartPointsDay(p.daily, p.total) },
-                energy = energy.mapValues { (_, e) -> EnergyDay(e.activeKcal, e.totalKcal, e.workoutKcal, e.partial) },
+                calories = calories.mapValues { (_, e) -> CaloriesDay(e.activeKcal, e.totalKcal, e.workoutKcal, e.partial) },
             )
         }
     }

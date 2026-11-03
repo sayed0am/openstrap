@@ -8,7 +8,7 @@ import org.openstrap.app.testing.profile
 
 /** The daily energy profile key is stored and compared after a restart, so it has to be the same in every process (P2). */
 class ProfileKeyTest {
-    private fun key(p: UserProfile) = DailyEnergyHistory.profileKey(p)
+    private fun key(p: UserProfile) = DailyCaloriesHistory.profileKey(p)
 
     @Test fun `equal profiles built separately have one key`() {
         assertEquals(key(profile(maxHeartRate = 190)), key(profile(maxHeartRate = 190)))

@@ -17,7 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.DayKey
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.RestingHeartRate
 import org.openstrap.app.testing.ZoneRule
@@ -75,7 +75,7 @@ class HealthConnectDayKeyTest {
 
     @Test fun `a day's calorie total keeps its id in every zone`() {
         for (zone in zones) for (date in dates) {
-            val row = DailyEnergyRow(date, 0, 2200f, 500f, 1650f, 1440, false, 100f, 150f, List(24) { "1" }.joinToString(","))
+            val row = DailyCaloriesRow(date, 0, 2200f, 500f, 1650f, 1440, false, 100f, 150f, List(24) { "1" }.joinToString(","))
             val m = midnight(date, zone)
             assertEquals("$date in $zone", "total:$m", CalorieRecords.dayTotals(listOf(row), zone, m + 3 * 86_400).single().id)
         }

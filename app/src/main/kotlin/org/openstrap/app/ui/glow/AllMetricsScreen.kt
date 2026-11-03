@@ -50,7 +50,7 @@ enum class HomeTab { Recovery, Sleep }
 internal fun IndexTarget.rowIcon(): androidx.compose.ui.graphics.vector.ImageVector? = when (this) {
     is IndexTarget.Open -> detail.rowIcon()
     is IndexTarget.Home -> when {
-        charge -> org.openstrap.app.ui.dashboard.Score.Charge.rowIcon()
+        charge -> org.openstrap.app.ui.dashboard.Score.Energy.rowIcon()
         tab == HomeTab.Sleep -> org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon()
         else -> org.openstrap.app.ui.dashboard.Score.Recovery.rowIcon()
     }

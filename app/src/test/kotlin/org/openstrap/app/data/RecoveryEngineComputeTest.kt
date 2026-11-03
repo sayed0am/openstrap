@@ -126,7 +126,7 @@ class RecoveryEngineComputeTest {
         r.readiness.score, r.readiness.baselineNights, r.readinessTrend.map { it.second },
         r.load, r.chronicLoad, r.restingHr, r.stressThreshold.value, r.charge.latest, r.charge.atWake, r.charge.points.size,
         r.strain, r.strainPercentile, r.activity?.steps, r.activity?.mvpa?.moderateMinutes, r.activity?.distanceMeters,
-        r.energy?.totalKcal, r.energy?.activeKcal, r.energy?.minutesWithData, r.regularity?.sri, r.sleepHealth?.count,
+        r.calories?.totalKcal, r.calories?.activeKcal, r.calories?.minutesWithData, r.regularity?.sri, r.sleepHealth?.count,
         r.workoutLoad, r.everydayLoad, r.usualBedtime, r.dailyLoads.size,
     ).joinToString("|")
 

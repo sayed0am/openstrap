@@ -295,7 +295,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         if (!active && !total) return emptyList<Record>() to emptyList()
         val zone = ZoneId.systemDefault()
         val (a, b) = CalorieRecords.days(from, to, zone)
-        val rows = CalorieRecords.dates(a to b, zone).let { dao.dailyEnergyOnce(it.start, it.endInclusive) }
+        val rows = CalorieRecords.dates(a to b, zone).let { dao.dailyCaloriesOnce(it.start, it.endInclusive) }
         val range = TimeRangeFilter.between(Instant.ofEpochSecond(a), Instant.ofEpochSecond(minOf(b, now)))
         val records = mutableListOf<Record>()
         val replaced = mutableListOf<Pair<KClass<out Record>, TimeRangeFilter>>()

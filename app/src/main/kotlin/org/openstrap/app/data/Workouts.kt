@@ -232,7 +232,7 @@ object Workouts {
 
     /**
      * [a]'s active kcal, rounded: a phone workout's saved figure; a strap workout's kcal less [bmrPerMinute] for each
-     * minute from its start to its stored end, as the day counts its minutes ([RecoveryEngine.energy]), never below
+     * minute from its start to its stored end, as the day counts its minutes ([RecoveryEngine.calories]), never below
      * zero. Without a profile ([bmrPerMinute] null) the strap's own figure stands. Null when there's no kcal at all.
      */
     fun activeKcal(a: WorkoutAnalysis, bmrPerMinute: Float?): Int? {

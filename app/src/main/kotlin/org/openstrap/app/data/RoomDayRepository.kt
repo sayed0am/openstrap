@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DailyPai
 import org.openstrap.app.data.db.OsaResultRow
 import org.openstrap.app.data.db.SleepSession
@@ -32,7 +32,7 @@ class RoomDayRepository(
     override suspend fun healthspan(date: LocalDate, profile: UserProfile): Healthspan.Outcome = health.healthspan(date, profile)
     override fun changes(): Flow<Unit> = health.changes()
     override fun dailyPai(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyPai>> = health.dailyPai(from, to)
-    override fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyEnergyRow>> = health.dailyEnergy(from, to)
+    override fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>> = health.dailyCalories(from, to)
     override fun deletedSleep(): Flow<List<SleepEdits.Resolved>> = health.deletedSleep()
     override suspend fun setSleepTimes(strap: SleepSession, start: Long, end: Long) = health.setSleepTimes(strap, start, end)
     override suspend fun deleteSleep(strap: SleepSession) = health.deleteSleep(strap)

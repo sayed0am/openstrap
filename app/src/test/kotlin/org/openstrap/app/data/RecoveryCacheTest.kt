@@ -17,7 +17,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.db.ActivityMinute
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.HrvSample
@@ -63,9 +63,9 @@ class RecoveryCacheTest {
                 return real.activityOnce(from, to)
             }
 
-            override suspend fun insertDailyEnergy(rows: List<DailyEnergyRow>) {
+            override suspend fun insertDailyCalories(rows: List<DailyCaloriesRow>) {
                 writes.incrementAndGet()
-                real.insertDailyEnergy(rows)
+                real.insertDailyCalories(rows)
             }
 
             override suspend fun insertNightMetrics(rows: List<NightMetricsRow>) {

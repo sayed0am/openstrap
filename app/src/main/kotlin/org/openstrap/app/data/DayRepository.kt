@@ -3,7 +3,7 @@ package org.openstrap.app.data
 import kotlinx.coroutines.flow.Flow
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.BreathRate
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DailyPai
 import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.HeartRateSample
@@ -49,8 +49,8 @@ interface DayRepository {
     /** Each day's Heart points from [from] to [to], keyed by local date. */
     fun dailyPai(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyPai>>
 
-    /** Each day's stored energy from [from] to [to], keyed by local date. */
-    fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyEnergyRow>>
+    /** Each day's stored calories from [from] to [to], keyed by local date. */
+    fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>>
 
     /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first. */
     fun deletedSleep(): Flow<List<SleepEdits.Resolved>>

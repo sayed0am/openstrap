@@ -149,7 +149,7 @@ class DayKeyMigrationTest {
         val dates = ordinary + clockChanges.getValue(newYork)
         val db = harness.open(harness.create(24) { seedDays(dates) { Days.start(it, dubai) } }, newYork)
         assertEquals(dates.sorted(), db.healthDao().restingHrAll().map { it.day })
-        assertEquals(dates.sorted(), db.healthDao().dailyEnergyAll().map { it.day })
+        assertEquals(dates.sorted(), db.healthDao().dailyCaloriesAll().map { it.day })
     }
 
     @Test fun `days written in Auckland and opened in London come back a day early, the 12 hour limit`() = runTest {
@@ -193,7 +193,7 @@ class DayKeyMigrationTest {
         assertEquals(listOf(77), dao.strapReadinessAll().map { it.score })
         assertEquals(listOf(1000L), dao.nightMetricsAll().map { it.updatedAt })
         assertEquals(listOf(29.0f), dao.habitAgeWeeksAll().map { it.estimate })
-        assertEquals(listOf(2500f), dao.dailyEnergyAll().map { it.totalKcal })
+        assertEquals(listOf(2500f), dao.dailyCaloriesAll().map { it.totalKcal })
         // Every tag either key had, once.
         assertEquals(listOf("alcohol", "late_meal", "travel"), dao.dayTagsAll().map { it.tag })
         assertEquals(setOf(d), dao.dayTagsAll().map { it.day }.toSet())

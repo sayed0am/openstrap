@@ -8,7 +8,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DayTagRow
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.RestingHeartRate
@@ -55,11 +55,11 @@ class DayKeyTravelTest {
     @Test fun `resting heart rate and energy keep their dates after a flight`() = runTest {
         inZone("Pacific/Auckland")
         dao.insertRestingHr(listOf(RestingHeartRate(d, 52), RestingHeartRate(d.plusDays(1), 54)))
-        dao.insertDailyEnergy(listOf(DailyEnergyRow(d, 1000, 2100f, 450f, 1650f, 1440, false, 0f, 200f, "")))
+        dao.insertDailyCalories(listOf(DailyCaloriesRow(d, 1000, 2100f, 450f, 1650f, 1440, false, 0f, 200f, "")))
         inZone("Europe/London")
         val stats = repo.daily(DailyMetric.RestingHr, d, d.plusDays(1)).first()
         assertEquals(listOf(d to 52f, d.plusDays(1) to 54f), stats.map { it.date to it.value })
-        assertEquals(setOf(d), repo.dailyEnergy(d.minusDays(1), d.plusDays(1)).first().keys)
+        assertEquals(setOf(d), repo.dailyCalories(d.minusDays(1), d.plusDays(1)).first().keys)
         assertEquals(listOf(52), repo.restingHr(d, d).first().map { it.bpm })
     }
 }

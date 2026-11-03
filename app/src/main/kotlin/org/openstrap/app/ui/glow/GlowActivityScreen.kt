@@ -98,7 +98,7 @@ private const val LISTED_WORKOUTS = 5
 /*
  * The Activity tab (spec 5.3): "how much did I move and train". A card to start a sport today, steps glowing, Load
  * against your usual, this week's facts and the workouts ([activityCards]). Every card and row opens its detail; the
- * method behind each number (energy, active minutes, VO2 max, Load's parts) is in their info sheets. Workouts under
+ * method behind each number (calories, active minutes, VO2 max, Load's parts) is in their info sheets. Workouts under
  * way and the morning check-in live on Today.
  */
 @Composable
@@ -352,13 +352,13 @@ private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
 /* ------------------------------------------------ Facts --------------------------------------------- */
 
 /**
- * The day's smaller facts: VO2 max, time to recover, energy and distance, each opening its detail. Active minutes and
+ * The day's smaller facts: VO2 max, time to recover, calories and distance, each opening its detail. Active minutes and
  * Heart points are the Small pair above.
  */
 @Composable
 private fun FactsList(
     state: DayUiState, r: RecoveryResult?, workouts: List<WorkoutAnalysis>, isToday: Boolean, onEditProfile: () -> Unit, open: (Score) -> Unit,
-    /** The Partial day tag: energy and distance are the day's totals. */
+    /** The Partial day tag: calories and distance are the day's totals. */
     tag: TitleTag? = null,
 ) {
     val waiting = NO_READING
@@ -388,14 +388,14 @@ private fun FactsList(
             onClick = { open(Score.Recover) }, icon = Score.Recover.rowIcon(),
         )
         // Active kcal leads, the total under it; the ring in the icon's place fills to the goal (calories spec 4.4).
-        val e = r?.energy
+        val e = r?.calories
         val goal = LocalGoals.current.calories
         val active = e?.activeKcal?.roundToInt()
         ListRow(
             "Calories", MetricColors.calories, active?.let { Units.count(it) },
             e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) } ?: "$ADD_PROFILE to see it",
-            onClick = if (e == null && r != null) onEditProfile else { { open(Score.Energy) } }, dash = e != null,
-            icon = Score.Energy.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
+            onClick = if (e == null && r != null) onEditProfile else { { open(Score.Calories) } }, dash = e != null,
+            icon = Score.Calories.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
         )
         // Ours from step length and height when we can; the strap's own figure otherwise. Always approximate.
         val distance = a?.distanceMeters ?: state.distanceMeters?.toFloat()
