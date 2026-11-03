@@ -4,6 +4,7 @@ import org.openstrap.app.data.Summaries
 import org.openstrap.app.presentation.ActivityCopy
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
+import java.text.DecimalFormatSymbols
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -33,7 +34,7 @@ enum class StepsDay {
 data class StepsWeekDay(val date: LocalDate, val letter: String, val steps: Int?, val state: StepsDay)
 
 /**
- * What the Steps widget shows (widgets spec 3.3), the same model at every size: the Small shows the title, [stepsText]
+ * What the Steps widget shows (widgets spec 3.3), the same model at every size: the Small shows the title, [smallText]
  * with [word], the goal bar and [share]; the Wide adds [goalNote], [toGo] and the day's [line]; the Large adds the
  * [week] and [weekLine]. There's no waiting state: before any steps today it shows 0 against the goal, as Today's
  * Steps card does.
@@ -48,6 +49,8 @@ data class StepsWidgetModel(
     val steps: Int,
     /** The number in dots, "8,432" with the dot font's ASCII digits and marks ([Units.DOT_LOCALE]), and its word. */
     val stepsText: String,
+    /** The Small's number: [stepsText] up to 9,999, then "12.3k" to fit the smallest cell ([short]). */
+    val smallText: String,
     val word: String,
     /** "1,568 to go", or "Goal met" past the goal. */
     val toGo: String,
@@ -98,6 +101,7 @@ data class StepsWidgetModel(
                 goalNote = "Goal ${Units.count(goal.toLong(), locale)}",
                 steps = steps,
                 stepsText = Units.count(steps.toLong(), Units.DOT_LOCALE),
+                smallText = short(steps, locale),
                 word = TODAY,
                 toGo = toGo(steps, goal, locale),
                 share = ActivityCopy.goalShare(steps, goal),
@@ -108,6 +112,26 @@ data class StepsWidgetModel(
                 week = week,
                 weekLine = weekLine(met, counted.size),
             )
+        }
+
+        /** From here the Small shows thousands with a k. */
+        const val SHORT_FROM = 10_000
+        private const val WHOLE_FROM = 100_000
+        private const val THOUSAND = 1_000
+        private const val HUNDRED = 100
+
+        /**
+         * The Small's number for [steps]: "9,999" in full, then "12.3k" with one decimal cut down, never rounded up
+         * (12,999 is "12.9k", as it hasn't reached 13,000), and "100k" with no decimal from 100,000. ASCII digits for
+         * the dot font, and [locale]'s decimal mark when it's a comma ("12,3k" in German), which the font has too.
+         */
+        fun short(steps: Int, locale: Locale = Locale.getDefault()): String = when {
+            steps < SHORT_FROM -> Units.count(steps.toLong(), Units.DOT_LOCALE)
+            steps >= WHOLE_FROM -> "${steps / THOUSAND}k"
+            else -> {
+                val mark = if (DecimalFormatSymbols.getInstance(locale).decimalSeparator == ',') ',' else '.'
+                "${steps / THOUSAND}$mark${steps % THOUSAND / HUNDRED}k"
+            }
         }
 
         /** "1,568 to go", or "Goal met" from the goal on. */

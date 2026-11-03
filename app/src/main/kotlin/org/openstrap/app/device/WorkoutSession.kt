@@ -925,9 +925,7 @@ class WorkoutSession(
         if (w.useGps) location.start()
         _state.update { setup(WorkoutState.Recording(w, maxHr)) }
         strap.setWorkoutActive(true)
-        // From the background (a restore after a widget's broadcast, say) Android may refuse it: the workout records
-        // on, but with no foreground service it can be killed.
-        runCatching { StrapService.start(context) }.onFailure { log("service start failed: $it") }
+        startService(w.sportType)
         strap.autoConnect()
         // The CPU must keep up with the strap's readings and the flushes while the screen is off.
         wake = context.getSystemService(PowerManager::class.java)
@@ -1084,8 +1082,29 @@ class WorkoutSession(
     private val _lastCue = MutableStateFlow<org.openstrap.app.data.Cue?>(null)
     val lastCue: StateFlow<org.openstrap.app.data.Cue?> = _lastCue
 
+    /**
+     * Starts the foreground service for a workout recording [sportType]. From the background (a restore after a
+     * widget's broadcast, say) Android 12 and up may refuse it: the workout records on, but with no foreground service
+     * it can be killed, so [KeepRecordingNotice] asks for a tap that brings the app forward, where [inFront] tries again.
+     */
+    private fun startService(sportType: Int) {
+        runCatching { StrapService.start(context) }
+            .onSuccess { KeepRecordingNotice.clear(context) }
+            .onFailure {
+                log("service start failed while recording, asking to keep it going: $it")
+                KeepRecordingNotice.show(context, sportType)
+            }
+    }
+
+    /** The app came to the front: a workout recording with no service, refused it in the background, starts it now. */
+    fun inFront() {
+        val r = _state.value as? WorkoutState.Recording ?: return
+        if (!StrapService.running) startService(r.workout.sportType)
+    }
+
     /** [keepLive]: the live heart rate stays on for the calm down after the end ([watchCalmDown]). */
     private fun stop(keepLive: Boolean = false) {
+        KeepRecordingNotice.clear(context)
         _lastCue.value = null
         location.stop()
         if (carRegistered) runCatching { context.unregisterReceiver(carReceiver) }

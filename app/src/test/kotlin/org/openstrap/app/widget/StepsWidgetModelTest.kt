@@ -55,6 +55,33 @@ class StepsWidgetModelTest {
         assertEquals("8.432 steps today, 84% of your goal", m.description)
     }
 
+    @Test fun `the Small shortens five digits to thousands, the Wide and Large keep them all`() {
+        assertEquals("9,999", model(steps = 9_999).smallText)
+        val m = model(steps = 10_000)
+        assertEquals("10.0k", m.smallText)
+        assertEquals("10,000", m.stepsText)
+        assertEquals("12.3k", model(steps = 12_345).smallText)
+        // Cut down, never up: 12,999 hasn't reached 13,000.
+        assertEquals("12.9k", model(steps = 12_999).smallText)
+        assertEquals("99.9k", model(steps = 99_999).smallText)
+        assertEquals("100k", model(steps = 100_000).smallText)
+        assertEquals("123k", model(steps = 123_999).smallText)
+        assertEquals("0", model(steps = 0).smallText)
+        // TalkBack still reads every step.
+        assertTrue(model(steps = 12_345).description.startsWith("12,345 steps today"))
+    }
+
+    @Test fun `the Small's decimal mark follows the locale, in the dot font's digits`() {
+        assertEquals("12,3k", StepsWidgetModel.short(12_345, Locale.GERMANY))
+        assertEquals("9,999", StepsWidgetModel.short(9_999, Locale.GERMANY))
+        assertEquals("12.3k", StepsWidgetModel.short(12_345, Locale.US))
+        // Arabic digits and mark are not in the dot font: ASCII digits, and its mark only when it is a comma.
+        for (l in listOf(Locale.GERMANY, Locale.US, Locale.forLanguageTag("ar-EG"), Locale.forLanguageTag("fa-IR"))) {
+            val text = StepsWidgetModel.short(12_345, l)
+            assertTrue("$l: $text", text.all(org.openstrap.app.ui.glow.draw.DotFont::has))
+        }
+    }
+
     @Test fun `the week starts on the locale's first day`() {
         // Saturday the 24th: Monday the 19th first in the UK, Sunday the 18th in the US.
         assertEquals(monday, model().week.first().date)

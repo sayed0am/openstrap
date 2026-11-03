@@ -147,6 +147,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         // Reconnect to a paired strap whenever the app comes to the front (sync follows on connect).
         if (BlePermissions.granted(this)) (application as OpenStrapApp).container.strap.autoConnect()
+        // A workout whose service Android refused while the app was in the background starts it now.
+        (application as OpenStrapApp).container.workout.inFront()
         // The association or battery setting may have changed in system settings meanwhile.
         (application as OpenStrapApp).container.companion.refresh()
         handleDebugIntent(previews)
