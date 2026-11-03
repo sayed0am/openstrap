@@ -105,14 +105,6 @@ private fun StepsContent(data: StepsWidget.Shown) {
     }
 }
 
-/** A gap between blocks: they share the spare height alike, with half a gap above and below. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
-/** The half gap above the first block or below the last, at the cell's real height. */
-@Composable
-private fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
-
 /** Small: the top row, then the steps with "today", then the goal bar and the share of the goal. */
 @Composable
 private fun ColumnScope.SmallContent(m: StepsWidgetModel, f: WidgetFrame) {

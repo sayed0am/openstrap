@@ -179,25 +179,25 @@ private fun ColumnScope.SmallContent(m: StartWidgetModel, f: WidgetFrame) {
         Text(fit.words.name, style = NameStyle, maxLines = 1)
         fit.words.line?.let { Text(it, style = WidgetType.secondary, maxLines = 1) }
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     if (fit.actionTop) {
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fit.tile) UsualTile(sport, false, sz, f.density)
             Spacer(GlanceModifier.defaultWeight())
             Action(m, sz, f)
         }
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         Column(GlanceModifier.fillMaxWidth()) { words() }
     } else {
         UsualTile(sport, false, sz, f.density)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(GlanceModifier.defaultWeight()) { words() }
             Spacer(GlanceModifier.width(StartLayout.SMALL_GAP_DP.dp))
             Action(m, sz, f)
         }
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /**
@@ -211,13 +211,13 @@ private fun ColumnScope.StatusSmallContent(m: StartWidgetModel, line: StatusLine
     val edge = fit.spread.edge(f.drawContentHeight)
     Spacer(GlanceModifier.height(edge.dp))
     TopRowView(fit.title.orEmpty(), null, fit.top, f, edge)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         UsualTile(m.usual, false, fit.sizes, f.density)
         Spacer(GlanceModifier.width(StartLayout.STATUS_PLAY_GAP_DP.dp))
         Action(m, fit.sizes, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Column(GlanceModifier.fillMaxWidth()) {
         Text(fit.words.name, style = NameStyle, maxLines = 1)
         fit.words.line?.let { Text(it, style = WidgetType.secondary, maxLines = 1) }
@@ -238,13 +238,13 @@ private fun ColumnScope.WideContent(m: StartWidgetModel, f: WidgetFrame, top: To
         Spacer(GlanceModifier.height(gap.dp))
         StatusTitle(top, f, gap)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     UsualRow(m, b, f)
     b.tiles?.let {
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         TileRow(it, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /**
@@ -258,16 +258,16 @@ private fun ColumnScope.LargeContent(m: StartWidgetModel, f: WidgetFrame, top: T
     Spacer(GlanceModifier.height(edge.dp))
     if (top != null) {
         StatusTitle(top, f, edge)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
     }
     UsualRow(m, b, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     b.tiles?.let {
         TileRow(it, f)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
     }
     Hairline()
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     b.figures?.let { Figures(m, it) }
     Spacer(GlanceModifier.height(edge.dp))
 }
@@ -319,30 +319,30 @@ private fun UsualRow(m: StartWidgetModel, b: StartLayout.Block, f: WidgetFrame) 
 @Composable
 private fun ColumnScope.SmallRecording(m: StartWidgetModel, r: StartRecording, f: WidgetFrame) {
     val fit = StartLayout.smallRecording(r, f.contentWidth, f.contentHeight, f.fontScale)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (fit.tile >= StartLayout.MIN_TILE_DP) UsualTile(r.sport, true, StartLayout.Sizes(fit.tile, fit.open, 0f), f.density)
         Spacer(GlanceModifier.defaultWeight())
         Action(m, fit.sizes, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Column(GlanceModifier.fillMaxWidth()) {
         Timer(r, fit.timerSp)
         Text(fit.name, style = NameStyle, maxLines = 1)
         if (fit.since == StartLayout.SincePlace.Under) Text(if (r.paused) r.status else r.since, style = WidgetType.secondary, maxLines = 1)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /** Wide while recording: the sport's row with "Recording" and Open, then the timer as the hero. */
 @Composable
 private fun ColumnScope.WideRecording(m: StartWidgetModel, r: StartRecording, f: WidgetFrame) {
     val fit = StartLayout.wideRecording(r, f.contentWidth, f.contentHeight, f.fontScale)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     RecordingRow(m, r, fit, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     TimerRow(r, fit)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /** Large while recording: the Wide's, then the hairline and the week's figures, secondary to the timer. */
@@ -352,11 +352,11 @@ private fun ColumnScope.LargeRecording(m: StartWidgetModel, r: StartRecording, f
     val edge = fit.edgeGap(f.drawHeight - 2 * WidgetSizes.PADDING_DP)
     Spacer(GlanceModifier.height(edge.dp))
     RecordingRow(m, r, fit, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     TimerRow(r, fit)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Hairline()
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     fit.figures?.let { Figures(m, it) }
     Spacer(GlanceModifier.height(edge.dp))
 }
@@ -515,9 +515,9 @@ private fun TileRow(tiles: StartLayout.Tiles, f: WidgetFrame) {
 private fun Figures(m: StartWidgetModel, fit: StartLayout.Figures) {
     when (fit.layout) {
         StartLayout.FigureLayout.Side -> Row(GlanceModifier.fillMaxWidth().then(Inset)) {
-            Figure(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.defaultWeight())
+            FigureCell(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.defaultWeight())
             Spacer(GlanceModifier.width(StartLayout.FIGURE_GAP_DP.dp))
-            Figure(m.lastLabel, m.lastLine, GlanceModifier.defaultWeight())
+            FigureCell(m.lastLabel, m.lastLine, GlanceModifier.defaultWeight())
         }
         StartLayout.FigureLayout.Rows -> Column(GlanceModifier.fillMaxWidth().then(Inset)) {
             FigureRow(StartWidgetModel.THIS_WEEK, m.weekLine)
@@ -525,19 +525,10 @@ private fun Figures(m: StartWidgetModel, fit: StartLayout.Figures) {
             FigureRow(m.lastLabel, m.lastLine)
         }
         StartLayout.FigureLayout.Stacked -> Column(GlanceModifier.fillMaxWidth().then(Inset)) {
-            Figure(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.fillMaxWidth())
+            FigureCell(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.fillMaxWidth())
             Spacer(GlanceModifier.height(StartLayout.FIGURE_ROW_GAP_DP.dp))
-            Figure(m.lastLabel, m.lastLine, GlanceModifier.fillMaxWidth())
+            FigureCell(m.lastLabel, m.lastLine, GlanceModifier.fillMaxWidth())
         }
-    }
-}
-
-@Composable
-private fun Figure(label: String, value: String, modifier: GlanceModifier) {
-    Column(modifier) {
-        Text(label, style = WidgetType.caption, maxLines = 1)
-        Spacer(GlanceModifier.height(StartLayout.FIGURE_LINE_GAP_DP.dp))
-        Text(value, style = WidgetType.body, maxLines = 1)
     }
 }
 

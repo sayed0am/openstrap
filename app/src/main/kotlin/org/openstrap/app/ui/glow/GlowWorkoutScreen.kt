@@ -144,7 +144,7 @@ fun GlowWorkoutDetailScreen(
             if (inDay != null) item { InYourDayCard(inDay, onOpenDay) }
             val drop = WorkoutDetailCopy.dropLine(shown.recovery60, shown.recoveryIsMeaningful, usualDrop)
             val loadShown = w.trainingLoad != null || (shown.recoveryMinutes ?: 0) > 0 || drop != null
-            if (loadShown) item { LoadCard(shown, usual, best = null, drop = drop, onInfo = { info = true }) }
+            if (loadShown) item { LoadCard(shown, usual, drop = drop, onInfo = { info = true }) }
             // A list right under another would look the same, so the later one sits on a neutral edge card (spec 2.4):
             // the zones when the facts are right above them, else the splits under a plain list.
             val zonesShown = zones.sum() > 0
@@ -230,7 +230,7 @@ private fun PastSummary(
                     }
                     if (inDay != null) InYourDayCard(inDay, onOpenDay)
                     val drop = WorkoutDetailCopy.dropLine(a.recovery60, a.recoveryIsMeaningful, null)
-                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, best = null, drop = drop, onInfo = { info = true })
+                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, drop = drop, onInfo = { info = true })
                     // Zones and splits for the kinds whose section doesn't already show them.
                     val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
                     if (zonesShown) ZoneStripPanel(zones)

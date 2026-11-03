@@ -38,6 +38,7 @@ import org.openstrap.app.firmware.UpdateCheck
 import org.openstrap.app.presentation.Units
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import org.openstrap.app.ui.glow.CardTitle
 import org.openstrap.app.ui.glow.DestructiveInk
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
@@ -118,7 +119,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
     PagePanel {
         when (step) {
             FirmwareStep.Idle -> {
-                Title("Updates")
+                CardTitle("Updates")
                 Body("Ask Zepp's update server whether there's newer firmware for this strap.")
                 PageButton("Check for update", vm::check, Modifier.fillMaxWidth(), primary = true)
             }
@@ -127,7 +128,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
             is FirmwareStep.Downloading -> Busy("Downloading ${step.part.label} ${step.part.version}", step.fraction)
             is FirmwareStep.Ready -> {
                 val image = step.image
-                Title("Ready to install")
+                CardTitle("Ready to install")
                 InfoLine("Image", image.title)
                 InfoLine("Size", "${Units.count(image.bytes.size)} bytes")
                 image.trailer?.let { InfoLine("Signed for", "product ${it.pnpId} v${it.pnpVersion}") }
@@ -144,7 +145,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
             FirmwareStep.Installed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
-                    Title("Installed")
+                    CardTitle("Installed")
                 }
                 Body("The strap is restarting. OpenStrap reconnects by itself. Check again afterwards in case there are more parts to install.")
                 PageButton("Done", vm::reset, Modifier.fillMaxWidth())
@@ -152,7 +153,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
             is FirmwareStep.Failed -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(AppIcons.WarningCircle, null, tint = MetricColors.warn)
-                    Title("Something went wrong")
+                    CardTitle("Something went wrong")
                 }
                 Body(step.message)
                 PageButton("OK", vm::reset, Modifier.fillMaxWidth())
@@ -166,14 +167,14 @@ private fun CheckResult(result: UpdateCheck, vm: FirmwareViewModel) {
     if (result.upToDate) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(AppIcons.CheckCircle, null, tint = MetricColors.good)
-            Title("Up to date")
+            CardTitle("Up to date")
         }
         Body("The update server has nothing newer for this strap.")
         PageButton("OK", vm::reset, Modifier.fillMaxWidth())
         return
     }
     val next = result.installOrder.firstOrNull()
-    Title(if (result.forced) "Required update" else "Update available")
+    CardTitle(if (result.forced) "Required update" else "Update available")
     result.parts.forEach { InfoLine(it.label, "${it.version}, ${Units.count(it.length / 1024)} KB") }
     result.changeLog?.let { PageNote(it.substringBefore("###summary###").trim()) }
     if (result.installOrder.size > 1) {
@@ -282,9 +283,6 @@ private fun Busy(label: String, fraction: Float?) {
     }
     PageProgress(fraction)
 }
-
-@Composable
-private fun Title(text: String) = Text(text, style = GlowType.cardTitle, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
 
 @Composable
 private fun Body(text: String) = Text(text, style = GlowType.body, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))

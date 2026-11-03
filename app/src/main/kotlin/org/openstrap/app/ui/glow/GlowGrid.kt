@@ -106,14 +106,6 @@ fun <T> packGrid(cards: List<kotlin.Pair<CardSize, T>>): List<GridRow<T>> {
 /** A card on the grid: its size, and how to draw it given a modifier that sets its exact size. */
 class GridCard(val size: CardSize, val content: @Composable (Modifier) -> Unit)
 
-/** Packs [cards] with [packGrid] and lays the rows out one under the other, [GlowGrid.Gap] apart. */
-@Composable
-fun GlowGridColumn(cards: List<GridCard>, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-        packGrid(cards.map { it.size to it }).forEach { GlowGridRow(it) }
-    }
-}
-
 /** One packed row, filling the width it's given. */
 @Composable
 fun GlowGridRow(row: GridRow<GridCard>, modifier: Modifier = Modifier) {

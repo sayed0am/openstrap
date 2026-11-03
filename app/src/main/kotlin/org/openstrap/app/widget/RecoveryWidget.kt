@@ -90,18 +90,10 @@ private fun RecoveryContent(data: RecoveryWidget.Shown) {
     }
 }
 
-/** A gap between blocks: they share the spare height alike, with half a gap above and below ([Edge]). */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
-/** The half gap above the first block or below the last, at the cell's real height. */
-@Composable
-private fun Edge(fit: RecoveryLayout.Fit, f: WidgetFrame) = Spacer(GlanceModifier.height(fit.spread.edge(f.drawContentHeight).dp))
-
 /** Small: the top row, the score, its word, the dots grown to fill a tall cell. */
 @Composable
 private fun ColumnScope.SmallContent(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
-    Edge(fit, f)
+    Edge(fit.spread, f)
     TopRowView(m.title, null, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
     m.score?.let { DotNumber(it, fit.dot, f.density, m.scoreDescription) }
@@ -109,13 +101,13 @@ private fun ColumnScope.SmallContent(m: RecoveryWidgetModel, fit: RecoveryLayout
         Gap()
         Text(it, style = WidgetType.word.copy(fontSize = fit.wordSp.sp), maxLines = 1)
     }
-    Edge(fit, f)
+    Edge(fit.spread, f)
 }
 
 /** Wide: the top row with "This morning", the score and word, the three figures. */
 @Composable
 private fun ColumnScope.WideContent(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
-    Edge(fit, f)
+    Edge(fit.spread, f)
     TopRowView(m.title, m.note, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
     ScoreRow(m, fit.dot, f.density)
@@ -123,13 +115,13 @@ private fun ColumnScope.WideContent(m: RecoveryWidgetModel, fit: RecoveryLayout.
         Gap()
         Figures(m.figures)
     }
-    Edge(fit, f)
+    Edge(fit.spread, f)
 }
 
 /** Large: the Wide plus the sentence and the last seven days beside the score. */
 @Composable
 private fun ColumnScope.LargeContent(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
-    Edge(fit, f)
+    Edge(fit.spread, f)
     TopRowView(m.title, m.note, fit.top, f, fit.spread.edge(f.drawContentHeight))
     if (fit.sentenceLines > 0) m.sentence?.let {
         Gap()
@@ -147,7 +139,7 @@ private fun ColumnScope.LargeContent(m: RecoveryWidgetModel, fit: RecoveryLayout
         Gap()
         Figures(m.figures)
     }
-    Edge(fit, f)
+    Edge(fit.spread, f)
 }
 
 /** The score in dots [dot] dp across with its word beside it, read out as "78, Ready". */
@@ -168,11 +160,7 @@ private fun Figures(figures: List<RecoveryFigure>) {
     Row(GlanceModifier.fillMaxWidth()) {
         figures.forEachIndexed { i, f ->
             if (i > 0) Spacer(GlanceModifier.width(12.dp))
-            Column(GlanceModifier.defaultWeight()) {
-                Text(f.label, style = WidgetType.caption, maxLines = 1)
-                Spacer(GlanceModifier.height(2.dp))
-                Text(f.value, style = WidgetType.body, maxLines = 1)
-            }
+            FigureCell(f.label, f.value, GlanceModifier.defaultWeight())
         }
     }
 }

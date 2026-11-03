@@ -101,14 +101,6 @@ private fun SleepContent(m: SleepWidgetModel) {
     }
 }
 
-/** A gap between blocks: they share the spare height alike, with half a gap above and below. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
-/** The half gap above the first block or below the last, at the cell's real height. */
-@Composable
-private fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
-
 /** Small: the top row, the score and its word, then time asleep and the stage bar. */
 @Composable
 private fun ColumnScope.SmallContent(m: SleepWidgetModel, f: WidgetFrame) {

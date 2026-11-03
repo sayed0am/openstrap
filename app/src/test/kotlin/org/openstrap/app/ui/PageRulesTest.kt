@@ -39,7 +39,7 @@ class PageRulesTest {
     @Test fun `pages use no Material parts`() {
         // TimePicker stays: the alarm sheet recolours Material's clock rather than drawing one of its own.
         val material = Regex(
-            """\b(OutlinedTextField|TextField|TextButton|OutlinedButton|Button|IconButton|AlertDialog|GlassAlertDialog|Checkbox|Switch|""" +
+            """\b(OutlinedTextField|TextField|TextButton|OutlinedButton|Button|IconButton|AlertDialog|Checkbox|Switch|""" +
                 """FilterChip|LinearProgressIndicator|CircularProgressIndicator|Surface|Panel|PanelHeader)\(""",
         )
         val found = scan(material)

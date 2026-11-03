@@ -5,8 +5,6 @@ import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
@@ -20,7 +18,7 @@ import org.openstrap.app.PendingStrapAction
 import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.WorkoutPlan
 import org.openstrap.app.device.BlePermissions
-import org.openstrap.app.ui.components.GlassAlertDialog
+import org.openstrap.app.ui.glow.PageConfirm
 
 /** The Bluetooth and location gates in front of a workout and the Strap page's actions. */
 internal class PermissionGates(
@@ -114,23 +112,16 @@ internal fun rememberPermissionGates(
 internal fun BluetoothBlockedDialog(gates: PermissionGates) {
     if (!gates.bluetoothBlocked) return
     val context = LocalContext.current
-    GlassAlertDialog(
-        onDismissRequest = gates::dismissBlocked,
-        title = { Text("Allow Nearby devices") },
-        text = {
-            Text(
-                "OpenStrap needs Nearby devices to find and connect to your strap. Android won't ask again, " +
-                    "so turn it on in OpenStrap's settings, under Permissions.",
-            )
+    PageConfirm(
+        title = "Allow Nearby devices",
+        text = "OpenStrap needs Nearby devices to find and connect to your strap. Android won't ask again, " +
+            "so turn it on in OpenStrap's settings, under Permissions.",
+        confirm = "Open settings",
+        onConfirm = {
+            gates.dismissBlocked()
+            context.startActivity(BlePermissions.settingsIntent(context))
         },
-        confirmButton = {
-            TextButton(onClick = {
-                gates.dismissBlocked()
-                context.startActivity(BlePermissions.settingsIntent(context))
-            }) { Text("Open settings") }
-        },
-        dismissButton = {
-            TextButton(onClick = gates::dismissBlocked) { Text("Not now") }
-        },
+        onDismiss = gates::dismissBlocked,
+        dismiss = "Not now",
     )
 }

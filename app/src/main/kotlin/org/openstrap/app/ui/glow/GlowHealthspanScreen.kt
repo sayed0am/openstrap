@@ -76,7 +76,7 @@ private fun PacePanel(pace: Float?) {
     }
 }
 
-/** A track from -1x to 3x with a dot at the pace, in the quiet panels' bar style (see [GlowBar]). */
+/** A track from -1x to 3x with a dot at the pace, in the quiet panels' bar style: a faint track and a [glowDot]. */
 @Composable
 private fun PaceScale(marker: Float, color: Color, modifier: Modifier = Modifier) {
     Column(modifier) {
@@ -94,7 +94,7 @@ private fun PaceScale(marker: Float, color: Color, modifier: Modifier = Modifier
     }
 }
 
-/** [GlowBar]'s dot: a halo, the solid dot, and a white pip. */
+/** The quiet panels' bar dot: a halo, the solid dot, and a white pip. */
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.glowDot(at: Offset, color: Color) {
     drawCircle(color.copy(alpha = 0.30f), 5.dp.toPx(), at)
     drawCircle(color, 3.dp.toPx(), at)
@@ -147,8 +147,8 @@ private fun ScaleLabels(start: String, middle: String, end: String, modifier: Mo
 }
 
 /**
- * One habit's effect as a bar out from the middle: left takes years off, right adds them. Drawn like [GlowBar], the quiet
- * panels' bar: a faint track, a glowing line and a dot at its end, green for years off and amber for years added. A habit
+ * One habit's effect as a bar out from the middle: left takes years off, right adds them. Drawn in the quiet
+ * panels' bar style: a faint track, a glowing line and a dot at its end, green for years off and amber for years added. A habit
  * with no effect shows only the track and the middle mark.
  */
 @Composable

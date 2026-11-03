@@ -208,7 +208,7 @@ fun GlowWorkoutSummaryScreen(
         // Load is lit from the left: what comes before it (the hero, the drop) is lit from below, so two cards in a row
         // never look the same. Under the section's own edge card, lit from the left or right, Load takes the bottom.
         CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = if (sectionOnEdge && !dropShown) Edge.Bottom else Edge.Left)) {
-            LoadCard(a, usualLoad, best = null)
+            LoadCard(a, usualLoad)
         }
         TrimSection(summary, onTrim, onUndoTrim)
         DeleteWorkout(PHONE_DELETE, onDelete)
@@ -340,11 +340,11 @@ internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
 
 /**
  * Load from this workout against your [usual] workout Load: lit from the top when above it, stronger from the bottom
- * when below (spec 2.4). Time to recover under it, then the heart rate [drop] line when there is one, and a personal
- * [best] as its last line. [onInfo] puts an (i) beside the title, for training effect and EPOC.
+ * when below (spec 2.4). Time to recover under it, then the heart rate [drop] line when there is one.
+ * [onInfo] puts an (i) beside the title, for training effect and EPOC.
  */
 @Composable
-internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, best: String?, drop: String? = null, onInfo: (() -> Unit)? = null) {
+internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = null, onInfo: (() -> Unit)? = null) {
     val load = a.workout.trainingLoad
     val status = load?.let { TodayCopy.loadStatus(it.toFloat(), usual, endOfDay = true) }
     val edge = when (status) {
@@ -368,7 +368,6 @@ internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, best: String?, drop: St
             Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
         }
         drop?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp)) }
-        best?.let { Text(it, color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(top = 12.dp)) }
     }
 }
 

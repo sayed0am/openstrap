@@ -159,11 +159,11 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                         // Sex as labelled segments like Units, not two bare symbols beside Age. Tapping the chosen one
                         // again clears it.
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Sex, for energy, Load, fitness and Habit Age")
+                            PageNote("Sex, for energy, Load, fitness and Habit Age")
                             org.openstrap.app.ui.glow.GlowSegments(listOf("Female", "Male"), if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i })
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Units")
+                            PageNote("Units")
                             org.openstrap.app.ui.glow.GlowSegments(listOf("Metric", "Imperial"), if (imperial) 1 else 0, { switchUnits(it == 1) })
                         }
                         NumberField(
@@ -179,7 +179,7 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                             NumberField(heightCm, { heightCm = it }, "Height", "cm", !heightBlank && heightValue == null)
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Usual activity, for the fitness estimate")
+                            PageNote("Usual activity, for the fitness estimate")
                             // Tapping the chosen level again clears it.
                             org.openstrap.app.ui.glow.GlowSegments((1..5).map { "$it" }, activity, { i -> activity = if (activity == i) -1 else i })
                             PageNote(if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity] else "Pick the level that best matches a usual week.")
@@ -225,9 +225,6 @@ internal fun NumberField(
         keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
     )
 }
-
-@Composable
-private fun FieldLabel(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
 
 /** 72.0 -> "72", 158.7 -> "158.7". */
 private fun formatNumber(v: Float): String = "%.1f".format(java.util.Locale.ROOT, v).removeSuffix(".0")

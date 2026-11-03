@@ -40,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import org.openstrap.app.ui.components.SectionLabel
 import org.openstrap.app.ui.theme.AppIcons
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -93,9 +92,11 @@ fun DayCalendarSheet(selected: LocalDate, available: Set<LocalDate>, onPick: (Lo
             val firstDay = Weeks.firstDay()
             Row(Modifier.fillMaxWidth()) {
                 for (i in 0 until 7) {
-                    SectionLabel(
-                        firstDay.plus(i.toLong()).getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2),
+                    Text(
+                        firstDay.plus(i.toLong()).getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2).uppercase(),
                         Modifier.weight(1f).wrapContentWidth(Alignment.CenterHorizontally),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.labelMedium,
                     )
                 }
             }

@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -20,9 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
@@ -370,30 +367,6 @@ private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Met
 }
 
 /* --------------------------------------------- Shared ------------------------------------------------ */
-
-/**
- * The quiet panels' progress bar: a faint solid track, the first [fraction] of it a glowing line in [color], and a
- * dot where it ends, like the knob on the sleep score's arc.
- */
-@Composable
-internal fun GlowBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.fillMaxWidth().height(12.dp)) {
-        val y = size.height / 2
-        val r = 5.dp.toPx()
-        // Inset by the dot's halo, so a full or empty bar keeps its dot inside the panel.
-        val x0 = r
-        val x1 = size.width - r
-        drawLine(Color.White.copy(alpha = 0.10f), Offset(x0, y), Offset(x1, y), 2.dp.toPx(), StrokeCap.Round)
-        val f = fraction.coerceIn(0f, 1f)
-        if (f <= 0f) return@Canvas
-        val end = Offset(x0 + (x1 - x0) * f, y)
-        drawLine(color.copy(alpha = 0.22f), Offset(x0, y), end, 6.dp.toPx(), StrokeCap.Round)
-        drawLine(color, Offset(x0, y), end, 2.2.dp.toPx(), StrokeCap.Round)
-        drawCircle(color.copy(alpha = 0.30f), r, end)
-        drawCircle(color, 3.dp.toPx(), end)
-        drawCircle(Color.White, 1.2.dp.toPx(), end)
-    }
-}
 
 @Composable
 internal fun Note(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)

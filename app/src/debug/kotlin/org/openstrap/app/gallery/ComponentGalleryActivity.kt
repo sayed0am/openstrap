@@ -37,12 +37,13 @@ import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowGrid
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowGridColumn
+import org.openstrap.app.ui.glow.GlowGridRow
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.GridCard
+import org.openstrap.app.ui.glow.packGrid
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.ListPanel
 import org.openstrap.app.ui.glow.ListRow
@@ -195,6 +196,14 @@ private fun Gallery() {
             }
         }
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** Packs [cards] with [packGrid] and lays the rows out one under the other, [GlowGrid.Gap] apart. */
+@Composable
+private fun GlowGridColumn(cards: List<GridCard>, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
+        packGrid(cards.map { it.size to it }).forEach { GlowGridRow(it) }
     }
 }
 

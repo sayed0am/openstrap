@@ -37,7 +37,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
@@ -69,7 +68,6 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.ui.workout.PhoneSummary
-import org.openstrap.app.ui.components.GlassAlertDialog
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
@@ -427,13 +425,7 @@ internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifie
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
     PageButton("Delete this workout", { confirmDelete = true }, modifier.fillMaxWidth(), color = MetricColors.warn, icon = AppIcons.Trash)
     if (confirmDelete) {
-        GlassAlertDialog(
-            onDismissRequest = { confirmDelete = false },
-            title = { Text("Delete this workout?") },
-            text = { Text(what) },
-            confirmButton = { TextButton(onClick = { confirmDelete = false; onDelete() }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
-        )
+        PageConfirm("Delete this workout?", what, "Delete", { confirmDelete = false; onDelete() }, { confirmDelete = false })
     }
 }
 
