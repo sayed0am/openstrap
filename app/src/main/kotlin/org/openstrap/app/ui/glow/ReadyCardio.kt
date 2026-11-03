@@ -163,7 +163,10 @@ internal fun ReadyWhere(
                     !locationOn -> WorkoutCopy.LOCATION_OFF
                     else -> gpsLine
                 },
-            ) { PlacePill(placeIcon(sides, !indoor), StartCopy.otherPlace(sides, indoor), onSwitch) }
+            ) {
+                val other = StartCopy.otherPlace(sides, indoor)
+                IconPill(other, onSwitch, icon = placeIcon(sides, !indoor), height = 36.dp, description = other)
+            }
             rows++
         } else if (outdoor && !locationOn) {
             PlaceRow(SportIconsLocation, TrendBad, WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, trailing = null)
@@ -206,20 +209,6 @@ private fun PlaceRow(icon: ImageVector, tint: Color, title: String, note: String
             Spacer(Modifier.width(12.dp))
             trailing()
         }
-    }
-}
-
-/** The pill at the where row's end: the other side's icon and name. Tapping it goes there. */
-@Composable
-private fun PlacePill(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Row(
-        Modifier.height(36.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape)
-            .semantics { role = Role.Button; contentDescription = label }.padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
     }
 }
 
@@ -325,7 +314,12 @@ private fun ReadyPlanCard(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         var choosing by rememberSaveable { mutableStateOf(false) }
-        KindPill(shown.icon, shown.name, StartCopy.planHint(family)) { onTyping(false); choosing = true }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            IconPill(
+                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = TypingLime, caret = true, height = 40.dp,
+                description = "${shown.name}. ${StartCopy.planHint(family)}",
+            )
+        }
         if (choosing) PageSheet({ choosing = false }, StartCopy.planSheet(family)) {
             Column {
                 options.forEachIndexed { i, o ->
@@ -363,24 +357,6 @@ private fun kindNote(k: GoalKind, hasDistance: Boolean): String = when (k) {
     GoalKind.Time -> StartCopy.TIME_KIND_NOTE
     GoalKind.Zone -> StartCopy.ZONE_KIND_NOTE
     GoalKind.Intervals -> StartCopy.INTERVALS_KIND_NOTE
-}
-
-/** The plan's choice in one pill (board ReadyKindPill): its icon in lime, its name and a caret, opening the kinds' sheet. */
-@Composable
-private fun KindPill(icon: ImageVector, label: String, hint: String, onClick: () -> Unit) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Row(
-            Modifier.height(40.dp).clip(CircleShape).background(Raised)
-                .pressClickable(onClick, CircleShape).semantics { role = Role.Button; contentDescription = "$label. $hint" }
-                .padding(start = 12.dp, end = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(icon, null, tint = TypingLime, modifier = Modifier.size(18.dp))
-            Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
-            Icon(AppIcons.CaretDown, null, tint = Color.White, modifier = Modifier.size(14.dp))
-        }
-    }
 }
 
 /** A plan's choice in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
@@ -680,7 +656,7 @@ private fun IntervalsGoal(
             Text(StartCopy.EACH_REP_IN, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
             Spacer(Modifier.width(10.dp))
             StartCopy.RepUnit.entries.forEach { e ->
-                UnitChip(e.label, e == unit) { unit = e }
+                PageChip(e.label, e == unit, { unit = e }, role = Role.RadioButton, filled = true)
                 Spacer(Modifier.width(6.dp))
             }
         }
@@ -810,18 +786,6 @@ internal fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onCl
             Spacer(Modifier.width(4.dp))
             Text(unit, color = Color.White.copy(alpha = 0.75f), style = GlowType.body, modifier = Modifier.alignByBaseline())
         }
-    }
-}
-
-/** A rep's unit while it's typed: white when chosen. */
-@Composable
-private fun UnitChip(label: String, on: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier.height(30.dp).clip(CircleShape).background(if (on) Color.White else Raised)
-            .clickable(onClick = onClick).semantics { selected = on }.padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = if (on) Color.Black else Color.White.copy(alpha = 0.85f), style = GlowType.secondary.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal))
     }
 }
 

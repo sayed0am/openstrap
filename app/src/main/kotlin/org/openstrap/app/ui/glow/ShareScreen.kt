@@ -199,7 +199,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
     ) {
         // Close on the left, the title in the middle (board ShareRun).
         Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.align(Alignment.CenterStart)) { RoundButton(AppIcons.X, "Close", onClose, size = 44.dp) }
+            Box(Modifier.align(Alignment.CenterStart)) { RoundIconButton(AppIcons.X, "Close", onClose, size = 44.dp) }
             Text("Share", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
             // The picture for Save and Share: the same card at 1080 by 1920, recorded but never drawn on screen.
             if (export != null) Box(
@@ -225,7 +225,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
                         StoryCardView(card, photo, shown)
                     }
                     if (photo != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
-                        RoundButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
+                        RoundIconButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))

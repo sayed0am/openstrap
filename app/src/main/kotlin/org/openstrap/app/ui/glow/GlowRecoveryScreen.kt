@@ -221,7 +221,7 @@ private fun RecoveryFailedHero(failure: RecoveryFailure, onOpen: () -> Unit, onR
                 HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
             }
             Spacer(Modifier.height(22.dp))
-            HeroButton(TRY_AGAIN, onRetry)
+            PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
 }

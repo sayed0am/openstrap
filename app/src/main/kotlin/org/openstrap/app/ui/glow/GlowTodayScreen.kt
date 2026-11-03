@@ -84,6 +84,7 @@ import org.openstrap.app.presentation.WakingLead
 import org.openstrap.app.ui.dashboard.pairSentence
 import org.openstrap.app.presentation.wakingLead
 import org.openstrap.app.ui.dashboard.todayCards
+import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.DisposableEffect
@@ -494,7 +495,7 @@ private fun FailedHero(f: RecoveryFailure, lightAngle: Float?, onOpen: () -> Uni
                 HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
             }
             Spacer(Modifier.height(24.dp))
-            HeroButton(TRY_AGAIN, onRetry)
+            PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
 }
@@ -530,7 +531,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
             )
             if (failed) {
                 Spacer(Modifier.height(24.dp))
-                HeroButton(TRY_AGAIN, onRetry)
+                PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
                 return@Column
             }
             // The caveat marker: tapping it opens Charge's info sheet, which explains the estimated start. One caveat a
@@ -574,8 +575,8 @@ private fun WindowHero(ctx: TodayContext, lightAngle: Float?, onStart: (Int) -> 
             HeroSentence(TodayCopy.window(noun, ctx.charge))
             Spacer(Modifier.height(28.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                HeroButton("Start ${noun ?: Workouts.sportName(sport).lowercase()}", { onStart(sport) }, Modifier.weight(1f), icon = true)
-                HeroSecondaryButton("Other sport", onOther)
+                PageButton("Start ${noun ?: Workouts.sportName(sport).lowercase()}", { onStart(sport) }, Modifier.weight(1f), primary = true, icon = AppIcons.PlayFill, size = ButtonSize.Hero)
+                PageButton("Other sport", onOther, size = ButtonSize.Hero, onCard = true)
             }
         }
     }
@@ -712,7 +713,7 @@ private fun PairHero(step: PairStep, onPair: () -> Unit, modifier: Modifier) {
             PairingStage(step)
             if (step != PairStep.Connected) {
                 Spacer(Modifier.height(18.dp))
-                HeroButton("Find my strap", onPair)
+                PageButton("Find my strap", onPair, primary = true, size = ButtonSize.Hero)
             }
         }
     }
@@ -732,7 +733,7 @@ private fun StuckHero(ctx: TodayContext, strap: TodayStrap, onSyncNow: () -> Uni
             HeroSentence(copy.sentence)
             Text(copy.line, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
             Spacer(Modifier.height(28.dp))
-            HeroButton("Sync now", { if (strap.canSync) onSyncNow() else haptics.perform(HapticEvent.SyncFailed) })
+            PageButton("Sync now", { if (strap.canSync) onSyncNow() else haptics.perform(HapticEvent.SyncFailed) }, primary = true, size = ButtonSize.Hero)
         }
     }
 }

@@ -259,32 +259,6 @@ private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, on
     PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton("About $title", onInfo) }
 }
 
-/**
- * Heart rate's Live control in its detail header: a chip on the Control surface (spec 2.2, 2.4), white with black
- * text while live, so it reads as the design system's own control and not a coloured switch.
- */
-@Composable
-internal fun LiveChip(on: Boolean, onChange: (Boolean) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(36.dp).clip(shape).background(if (on) Color.White else ControlSurface)
-            .toggleable(on, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Live", color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
-    }
-}
-
-/** A 38 dp round glass button with an icon, as on the detail mockup. */
-@Composable
-internal fun RoundButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, size: Dp = 38.dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).clickable(onClickLabel = label, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, Modifier.size(size * 0.47f), tint = Color.White) }
-}
-
 /** The status word under the value, in the metric's colour with a soft glow of it. */
 @Composable
 private fun StatusWord(word: String, color: Color, modifier: Modifier = Modifier) {
@@ -485,7 +459,7 @@ fun GlowMetricDetailScreen(
         ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
         heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
             {
-                LiveChip(liveEnabled, onLiveToggle)
+                PageChip("Live", liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch, filled = true)
             }
         } else null,
     ) {

@@ -39,8 +39,10 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.LinearEasing
@@ -98,12 +100,37 @@ val PageHeaderHeight = 64.dp
  * and still while not [enabled] (a firmware install running).
  */
 @Composable
-fun BackButton(onBack: () -> Unit, enabled: Boolean = true) {
-    Box(
-        Modifier.size(BackButtonSize).clip(CircleShape).background(ControlSurface).alpha(if (enabled) 1f else 0.4f)
-            .clickable(enabled = enabled, onClickLabel = "Back", role = Role.Button, onClick = onBack),
-        contentAlignment = Alignment.Center,
-    ) { Icon(AppIcons.ArrowLeft, "Back", Modifier.size(20.dp), tint = Color.White) }
+fun BackButton(onBack: () -> Unit, enabled: Boolean = true) =
+    RoundIconButton(AppIcons.ArrowLeft, "Back", onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp, enabled = enabled)
+
+/**
+ * A round button holding just an [icon]: [size] across on [surface] (10% white by default), the icon [iconSize]
+ * across in [tint]. [label] is read out, [clickLabel] says what a tap does when that's different, and [dot] marks the
+ * top right with a [NoticeDot]. Back, (i), close and the header's avatar are all this button.
+ */
+@Composable
+fun RoundIconButton(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    size: Dp = 38.dp,
+    surface: Color = Color.White.copy(alpha = 0.10f),
+    iconSize: Dp = size * 0.47f,
+    tint: Color = Color.White,
+    clickLabel: String = label,
+    enabled: Boolean = true,
+    dot: Boolean = false,
+) {
+    Box(modifier.size(size)) {
+        Box(
+            Modifier.matchParentSize().clip(CircleShape).background(surface).alpha(if (enabled) 1f else 0.4f)
+                .clickable(enabled = enabled, onClickLabel = clickLabel, role = Role.Button, onClick = onClick),
+            contentAlignment = Alignment.Center,
+        ) { Icon(icon, label, Modifier.size(iconSize), tint = tint) }
+        // On the circle's edge at its top right, ringed in the page's black so it reads apart from the button.
+        if (dot) NoticeDot(Modifier.align(Alignment.TopEnd), ring = Color.Black)
+    }
 }
 
 /**
@@ -391,9 +418,22 @@ fun PageSwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: 
     }
 }
 
+/** How big a [PageButton] is: its height, side padding, icon and type. */
+enum class ButtonSize(val height: Dp, val padding: Dp, val icon: Dp) {
+    /** A page's own buttons. */
+    Page(52.dp, 18.dp, 20.dp),
+
+    /** On a hero card, like Start or Try again. */
+    Hero(48.dp, 18.dp, 16.dp),
+
+    /** Inside a row, like Save beside a found workout. */
+    Row(32.dp, 14.dp, 14.dp),
+}
+
 /**
  * A page's button, fully round (spec 2.4): white with black text when it's the page's main action ([primary]),
- * otherwise on the Control surface with white text. Body type, a 20 dp [icon] before the text when given.
+ * otherwise on the Control surface with white text, or on glass when it sits [onCard] and its colour shows through.
+ * Body type (Secondary at [ButtonSize.Row]), an [icon] before the text when given.
  */
 @Composable
 fun PageButton(
@@ -404,22 +444,31 @@ fun PageButton(
     primary: Boolean = false,
     color: Color = if (primary) Color.Black else Color.White,
     icon: ImageVector? = null,
+    size: ButtonSize = ButtonSize.Page,
+    onCard: Boolean = false,
 ) {
     Row(
         // Dimmed before the pill is drawn, so a disabled button fades whole, pill and label (user, 2026-11-03).
-        modifier.height(52.dp).alpha(if (enabled) 1f else 0.4f).clip(CircleShape)
-            .background(if (primary) Color.White else ControlSurface)
+        modifier.height(size.height).alpha(if (enabled) 1f else 0.4f).clip(CircleShape)
+            .let {
+                when {
+                    primary -> it.background(Color.White)
+                    onCard -> it.background(Color.White.copy(alpha = 0.08f)).border(1.dp, Color.White.copy(alpha = 0.12f), CircleShape)
+                    else -> it.background(ControlSurface)
+                }
+            }
             .let { if (enabled) it.pressClickable(onClick, CircleShape) else it }
             .semantics { role = Role.Button }
-            .padding(horizontal = 18.dp),
+            .padding(horizontal = size.padding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) {
-            Icon(icon, null, Modifier.size(20.dp), tint = color)
+            Icon(icon, null, Modifier.size(size.icon), tint = color)
             Spacer(Modifier.width(8.dp))
         }
-        Text(text, color = color, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        val style = if (size == ButtonSize.Row) GlowType.secondary else GlowType.body
+        Text(text, color = color, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -563,15 +612,23 @@ fun PageConfirm(
 }
 
 /**
- * A chip (spec 2.4, fully round): a hairline and 72% text, or white with black text when [selected]. Secondary type,
- * at least 36 dp tall.
+ * A chip (spec 2.4, fully round): a hairline and 72% text, or white with black text when [selected]. A [filled] chip
+ * sits on the Control surface instead of the hairline, for a lone chip like Live. Secondary type, at least 36 dp tall.
  */
 @Composable
-fun PageChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true, role: Role = Role.Checkbox) {
+fun PageChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    role: Role = Role.Checkbox,
+    filled: Boolean = false,
+) {
     Box(
         modifier.heightIn(min = 36.dp).clip(CircleShape)
-            .background(if (selected) Color.White else Color.Transparent)
-            .let { if (selected) it else it.border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape) }
+            .background(if (selected) Color.White else if (filled) ControlSurface else Color.Transparent)
+            .let { if (selected || filled) it else it.border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape) }
             .alpha(if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, role = role, onClick = onClick)
             .semantics { this.selected = selected }
@@ -582,6 +639,48 @@ fun PageChip(text: String, selected: Boolean, onClick: () -> Unit, modifier: Mod
             text, color = if (selected) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             style = GlowType.secondary, maxLines = 1,
         )
+    }
+}
+
+/**
+ * A pill that names a choice: an [icon] in [tint] or a [dot], the [label] in Body, and a [caret] when tapping opens a
+ * list. [height] tall on [surface] (the Control surface), with a [hairline] on a quiet card. Without [onClick] it's
+ * only a label, like the live screen's sport. A long label ends in an ellipsis and leaves the caret its room.
+ */
+@Composable
+internal fun IconPill(
+    label: String,
+    onClick: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    tint: Color = Color.White,
+    dot: Color? = null,
+    caret: Boolean = false,
+    height: Dp = 44.dp,
+    surface: Color = ControlSurface,
+    hairline: Boolean = false,
+    description: String? = null,
+) {
+    Row(
+        modifier.height(height).clip(CircleShape).background(surface)
+            .let { if (hairline) it.border(1.dp, RowHairline, CircleShape) else it }
+            .let { if (onClick != null) it.pressClickable(onClick, CircleShape) else it }
+            .semantics {
+                if (onClick != null) role = Role.Button
+                if (description != null) contentDescription = description
+            }
+            .padding(start = if (icon != null || dot != null) 12.dp else 16.dp, end = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        if (icon != null) Icon(icon, null, Modifier.size(18.dp), tint = tint)
+        if (dot != null) Box(Modifier.size(8.dp).background(dot, CircleShape))
+        // Weighted only beside a caret, so a squeezed label gives way to it; a weight in a scrolling row would be zero wide.
+        Text(
+            label, if (caret) Modifier.weight(1f, fill = false) else Modifier, color = Color.White, style = GlowType.body, maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        if (caret) Icon(AppIcons.CaretDown, null, Modifier.size(14.dp), tint = Color.White)
     }
 }
 

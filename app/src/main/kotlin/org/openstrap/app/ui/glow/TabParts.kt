@@ -151,18 +151,6 @@ internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true)
     }
 }
 
-/** A small pill button inside a row: white for the main action, glass otherwise. */
-@Composable
-internal fun RowPill(text: String, onClick: () -> Unit, primary: Boolean = false) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(32.dp)
-            .let { if (primary) it.background(Color.White, shape).clickable(onClick = onClick) else it.glass(shape, onClick) }
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, color = if (primary) Color.Black else Color.White, style = GlowType.secondary, maxLines = 1) }
-}
-
 /** A dot in [color] and a short [text], for a caveat like "Learning, 9 of 14 nights". */
 @Composable
 internal fun CaveatLine(text: String, color: Color, modifier: Modifier = Modifier) {

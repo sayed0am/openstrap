@@ -159,7 +159,7 @@ internal fun LiveFrame(
                 }
                 Spacer(Modifier.width(10.dp))
                 // The pill takes what the status leaves, so on a narrow screen the sport's name gives way, not the status.
-                Box(Modifier.weight(1f)) { Pill(title ?: Workouts.sportName(r.workout.sportType), color) }
+                Box(Modifier.weight(1f)) { IconPill(title ?: Workouts.sportName(r.workout.sportType), null, dot = color) }
                 Spacer(Modifier.width(10.dp))
                 Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     val strap = when {

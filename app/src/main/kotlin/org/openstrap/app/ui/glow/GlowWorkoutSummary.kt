@@ -272,7 +272,7 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
         Column {
             GlowHeader(
                 "Heart rate drop", trailing = "Since ${clock(a.end)}",
-                trailingContent = { Spacer(Modifier.width(10.dp)); RoundButton(AppIcons.Info, "About the heart rate drop", onInfo, size = 32.dp) },
+                trailingContent = { Spacer(Modifier.width(10.dp)); InfoButton("About the heart rate drop", onInfo) },
             )
             HeroSentence(line.text)
             if (bpmNow != null) Row(Modifier.padding(top = 16.dp), verticalAlignment = Alignment.Bottom) {
@@ -357,7 +357,7 @@ internal fun LoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = null, o
             Box(Modifier.weight(1f)) { EdgeTitle("Load", SummaryCopy.loadTitle(a.workout.sportType)) }
             if (onInfo != null) {
                 Spacer(Modifier.width(10.dp))
-                RoundButton(AppIcons.Info, "About Load and training effect", onInfo, size = 30.dp)
+                InfoButton("About Load and training effect", onInfo)
             }
         }
         if (load != null) EdgeValue(

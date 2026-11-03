@@ -116,8 +116,8 @@ fun GlowChooseScreen(
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { chip ->
                     when (chip) {
-                        is RecentChip.Sport -> RecentChipButton(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
-                        is RecentChip.Saved -> RecentChipButton(chip.sport, chip.name) { onSaved(chip) }
+                        is RecentChip.Sport -> RecentPill(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
+                        is RecentChip.Saved -> RecentPill(chip.sport, chip.name) { onSaved(chip) }
                     }
                 }
             }
@@ -179,23 +179,13 @@ private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
     }
 }
 
-/** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */
-@Composable
-private fun RecentChipButton(sport: Int, name: String, onClick: () -> Unit) {
-    Row(
-        Modifier.height(44.dp).clip(CircleShape).background(QuietCard).border(1.dp, RowHairline, CircleShape)
-            .pressClickable(onClick, CircleShape).semantics { role = Role.Button }
-            .padding(start = 10.dp, end = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(SportIcons.of(sport), null, tint = familyColor(Workouts.family(sport)), modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(name, color = Color.White, style = GlowType.body, maxLines = 1)
-    }
-}
-
 /** Choose's quiet chips, a step off black so the usual's glow stays the one lit thing. */
 private val QuietCard = ListSurface
+
+/** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */
+@Composable
+private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) =
+    IconPill(name, onClick, icon = SportIcons.of(sport), tint = familyColor(Workouts.family(sport)), surface = QuietCard, hairline = true)
 
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 

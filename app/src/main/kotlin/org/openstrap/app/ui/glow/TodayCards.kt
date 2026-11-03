@@ -114,30 +114,6 @@ internal fun HeroNumber(value: String?, lines: List<String>, modifier: Modifier 
     }
 }
 
-/** The white pill that starts something, like the ready screen's Start. */
-@Composable
-internal fun HeroButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: Boolean = false) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        modifier.height(48.dp).clip(shape).background(Color.White).pressClickable(onClick, shape).padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
-    ) {
-        if (icon) {
-            Icon(AppIcons.PlayFill, null, tint = Color.Black, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(text, color = Color.Black, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-    }
-}
-
-/** A quieter glass pill beside [HeroButton]. */
-@Composable
-internal fun HeroSecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.height(48.dp).glass(RoundedCornerShape(50), onClick).padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = Color.White, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-    }
-}
-
 /* ---------------------------------------------- Strips ---------------------------------------------- */
 
 /** A strip is only 68 dp high, so its words get less above and below than a card; the sides are a card's. */
@@ -426,7 +402,7 @@ internal fun RecoveryEarlierCard(
 internal fun RecoveryFailed(failure: RecoveryFailure, onRetry: () -> Unit) {
     failure.yesterday?.let { y -> Column(Modifier.alpha(FAILED_ALPHA)) { EdgeValue(y.toString(), "yesterday", null) } }
     Text(RECOVERY_FAILED, color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
-    HeroSecondaryButton(TRY_AGAIN, onRetry, Modifier.padding(top = 12.dp))
+    PageButton(TRY_AGAIN, onRetry, Modifier.padding(top = 12.dp), size = ButtonSize.Hero, onCard = true)
 }
 
 /** How dim a value kept from before is, beside a failure. */

@@ -558,8 +558,8 @@ private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestio
             dash = false, divider = divider, icon = AppIcons.Heartbeat,
         )
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RowPill("Save", onSave, primary = true)
-            RowPill("Not a workout", onDismiss)
+            PageButton("Save", onSave, primary = true, size = ButtonSize.Row)
+            PageButton("Not a workout", onDismiss, size = ButtonSize.Row, onCard = true)
             Box(Modifier.weight(1f))
         }
     }

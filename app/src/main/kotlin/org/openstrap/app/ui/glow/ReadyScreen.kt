@@ -226,7 +226,7 @@ fun GlowWorkoutReadyScreen(
     ) {
         Box(Modifier.fillMaxWidth()) {
             RoundIcon(AppIcons.X, "Close", onBack, Modifier.align(Alignment.CenterStart))
-            Box(Modifier.align(Alignment.Center)) { Pill(Workouts.shortName(type), null, onClick = { picking = true }, caret = true) }
+            Box(Modifier.align(Alignment.Center)) { IconPill(Workouts.shortName(type), { picking = true }, caret = true) }
         }
         if (cardio) {
             ReadyHeartCard(connection, liveHeartRate)

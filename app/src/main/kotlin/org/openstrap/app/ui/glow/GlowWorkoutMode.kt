@@ -210,31 +210,6 @@ internal fun WorkoutPage(
     }
 }
 
-/** A dark pill: a dot and a label, optionally tappable with a caret. */
-@Composable
-internal fun Pill(label: String, dot: Color?, onClick: (() -> Unit)? = null, caret: Boolean = false) {
-    Row(
-        Modifier.height(44.dp).clip(RoundedCornerShape(50)).background(Raised)
-            .let { if (onClick != null) it.pressClickable(onClick, RoundedCornerShape(50)) else it }
-            .padding(horizontal = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (dot != null) {
-            Canvas(Modifier.size(8.dp)) { drawCircle(dot) }
-            Spacer(Modifier.width(8.dp))
-        }
-        // Squeezed by the live top bar, a long name ends in an ellipsis and leaves the caret its room.
-        Text(
-            label, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
-        )
-        if (caret) {
-            Spacer(Modifier.width(6.dp))
-            Icon(AppIcons.CaretDown, null, tint = Color.White, modifier = Modifier.size(16.dp))
-        }
-    }
-}
-
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
 
 /**

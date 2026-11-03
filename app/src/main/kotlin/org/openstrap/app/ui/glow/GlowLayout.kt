@@ -316,13 +316,9 @@ internal val CaretSize = 14.dp
  * row. The same on every card that has an explanation; it opens that card's info sheet.
  */
 @Composable
-internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Box(
-        modifier.size(InfoButtonSize).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.10f))
-            .clickable(onClickLabel = label, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(AppIcons.Info, label, Modifier.size(16.dp), tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)) }
-}
+internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) = RoundIconButton(
+    AppIcons.Info, label, onClick, modifier, size = InfoButtonSize, iconSize = 16.dp, tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+)
 
 internal val InfoButtonSize = 32.dp
 /** A card's caret, right after its title. */
