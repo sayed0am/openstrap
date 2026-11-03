@@ -65,7 +65,7 @@ fun GlowScoreDetailScreen(
     onSelectDay: (LocalDate) -> Unit,
     contentPadding: PaddingValues,
     onBack: () -> Unit,
-    /** For the Activity details: the workouts, each day's Heart points and stored energy, and the way to the profile. */
+    /** For the Activity details: the workouts, each day's Heart points and stored calories, and the way to the profile. */
     workouts: List<org.openstrap.app.data.WorkoutAnalysis> = emptyList(),
     activity: ActivityHistory = ActivityHistory(),
     onEditProfile: () -> Unit = {},
@@ -75,11 +75,11 @@ fun GlowScoreDetailScreen(
     val r = recovery?.takeIf { it.date == state.date }
     when (score) {
         Score.Recovery -> RecoveryDetail(state, r, strapScore, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack)
-        Score.Charge -> ChargeDetail(state, r, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack)
+        Score.Energy -> ChargeDetail(state, r, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack)
         Score.Sleep -> SleepScoreDetail(state, r, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack, sleepEditing)
         Score.Regularity -> RegularityDetail(state, r, history, onOpen, onSwitch, onSelectDay, contentPadding, onBack)
         Score.Naps -> NapsDetail(state, r, onOpen, onSwitch, onSelectDay, contentPadding, onBack, sleepEditing)
-        Score.HeartPoints, Score.ActiveMinutes, Score.Load, Score.Vo2Max, Score.Recover, Score.Energy, Score.Distance -> ActivityScoreDetail(
+        Score.HeartPoints, Score.ActiveMinutes, Score.Load, Score.Vo2Max, Score.Recover, Score.Calories, Score.Distance -> ActivityScoreDetail(
             score, ActivityDetailContext(state, r, workouts, activity, history, onOpen, onSwitch, onSelectDay, onEditProfile, contentPadding, onBack),
         )
     }
@@ -246,7 +246,7 @@ private fun ChargeDetail(
 
     // TODO(step 6): Week and longer wait for a stored Charge history; the app works out only the day shown, so there are no pills.
     DetailTemplate(
-        Score.Charge.title, color, siblings(Detail.OfScore(Score.Charge), onSwitch), onInfo = { info = true }, onBack = onBack,
+        Score.Energy.title, color, siblings(Detail.OfScore(Score.Energy), onSwitch), onInfo = { info = true }, onBack = onBack,
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(state.date, today, withData), onDay = onSelectDay,
         ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
@@ -292,11 +292,11 @@ private fun ChargeDetail(
                 }
             }
         }
-        item { ScoreRelated(Score.Charge, state, r, history, onOpen) }
+        item { ScoreRelated(Score.Energy, state, r, history, onOpen) }
     }
 
     if (info) InfoSheet(
-        InfoCopy.of(Score.Charge), color, now?.let(InfoCopy::chargeBar), now?.let { InfoCopy.HERE },
+        InfoCopy.of(Score.Energy), color, now?.let(InfoCopy::chargeBar), now?.let { InfoCopy.HERE },
         onDismiss = { info = false }, notes = InfoCopy.chargeNotes(c),
     )
 }
@@ -318,7 +318,7 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
     ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
         if (score == Score.Recovery) ListRow(
             "Energy", MetricColors.charge, charge?.toString(), charge?.let(Narrative::chargeHeadline) ?: chargeWaiting,
-            onClick = { onOpen(Detail.OfScore(Score.Charge)) }, divider = false, icon = Score.Charge.rowIcon(),
+            onClick = { onOpen(Detail.OfScore(Score.Energy)) }, divider = false, icon = Score.Energy.rowIcon(),
         ) else ListRow(
             "Recovery", MetricColors.readiness, ready?.score?.toString(),
             ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE,

@@ -16,7 +16,7 @@ import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.BreathRate
 import org.openstrap.app.data.db.CheckInRow
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DailyMaxHr
 import org.openstrap.app.data.db.DeletedWorkout
 import org.openstrap.app.data.db.DayTagRow
@@ -206,7 +206,7 @@ private val CHECK_IN_DAY = DayColumn("date", "day_epoch")
 private val TAG_DAY = DayColumn("date", "day_epoch")
 private val NIGHT_DAY = DayColumn("date", "day_epoch")
 private val HABIT_DAY = DayColumn("as_of_date", "as_of_epoch")
-private val ENERGY_DAY = DayColumn("date", "day_epoch")
+private val CALORIES_DAY = DayColumn("date", "day_epoch")
 
 private fun stageCode(name: String) = when (name) {
     "awake" -> SleepStage.AWAKE; "light" -> SleepStage.LIGHT; "deep" -> SleepStage.DEEP; "rem" -> SleepStage.REM
@@ -536,17 +536,18 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> r.forEach { row -> d.insertHabitAgeWeek(row) } }),
     // Worked out from the data above, but kept so a later change of model doesn't rewrite the history that was shown.
     CsvTable("daily_energy.csv", "day,day_epoch,updated_epoch,total_kcal,active_kcal,bmr_kcal,minutes_with_data,partial,workout_kcal,walking_kcal,hourly_active_kcal,date",
-        Key("daily_energy", "day", "day_epoch", day = ENERGY_DAY),
-        { d, f, t -> d.dailyEnergyAll().legacyIn(f, t) { it.day } },
+        Key("daily_energy", "day", "day_epoch", day = CALORIES_DAY),
+        { d, f, t -> d.dailyCaloriesAll().legacyIn(f, t) { it.day } },
         {
             val m = legacy(it.day)
             listOf(iso(m), m, it.updatedAt, it.totalKcal, it.activeKcal, it.bmrKcal, it.minutesWithData, it.partial,
                 it.workoutKcal, it.walkingKcal, it.hourly, it.day)
         },
         {
-            DailyEnergyRow(it.date(ENERGY_DAY), it.long("updated_epoch"), it.float("total_kcal"), it.float("active_kcal"), it.float("bmr_kcal"),
+            DailyCaloriesRow(
+                it.date(CALORIES_DAY), it.long("updated_epoch"), it.float("total_kcal"), it.float("active_kcal"), it.float("bmr_kcal"),
                 it.int("minutes_with_data"), it.bool("partial"), it.float("workout_kcal"), it.float("walking_kcal"),
                 if (it.has("hourly_active_kcal")) it.string("hourly_active_kcal") else "")
         },
-        { d, r -> d.insertDailyEnergy(r) }),
+        { d, r -> d.insertDailyCalories(r) }),
 )

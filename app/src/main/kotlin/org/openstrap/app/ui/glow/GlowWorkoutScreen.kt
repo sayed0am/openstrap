@@ -387,7 +387,7 @@ private fun FactsList(facts: List<WorkoutFact>, summary: PhoneSummary?) {
                 WorkoutFact.Kind.Distance -> Score.Distance.rowIcon()
                 WorkoutFact.Kind.Paused -> AppIcons.Hourglass
                 WorkoutFact.Kind.Steps -> Metric.Steps.rowIcon()
-                WorkoutFact.Kind.Calories -> Score.Energy.rowIcon()
+                WorkoutFact.Kind.Calories -> Score.Calories.rowIcon()
                 WorkoutFact.Kind.Target -> AppIcons.Target
             }
             ListRow(f.name, color, f.value, f.status, divider = i > 0, icon = icon)

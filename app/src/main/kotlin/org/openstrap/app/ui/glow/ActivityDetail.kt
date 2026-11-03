@@ -77,7 +77,7 @@ internal class ActivityDetailContext(
     val state: DayUiState,
     val r: RecoveryResult?,
     val workouts: List<WorkoutAnalysis>,
-    /** Each day's Heart points, and stored energy for Calories' week, month and year. */
+    /** Each day's Heart points, and stored calories for Calories' week, month and year. */
     val activity: ActivityHistory,
     val history: DailyHistory,
     val onOpen: (Detail) -> Unit,
@@ -91,7 +91,7 @@ internal class ActivityDetailContext(
     val isToday: Boolean get() = state.date == today
 }
 
-/** The detail of an Activity [score]: Heart points, active minutes, Load, VO2 max, time to recover, energy or distance. */
+/** The detail of an Activity [score]: Heart points, active minutes, Load, VO2 max, time to recover, calories or distance. */
 @Composable
 internal fun ActivityScoreDetail(score: Score, ctx: ActivityDetailContext) {
     when (score) {
@@ -100,7 +100,7 @@ internal fun ActivityScoreDetail(score: Score, ctx: ActivityDetailContext) {
         Score.Load -> LoadDetail(ctx)
         Score.Vo2Max -> Vo2Detail(ctx)
         Score.Recover -> RecoverDetail(ctx)
-        Score.Energy -> CaloriesDetail(ctx)
+        Score.Calories -> CaloriesDetail(ctx)
         Score.Distance -> DistanceDetail(ctx)
         else -> Unit
     }
@@ -534,7 +534,7 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
 /**
  * Calories (calories spec 4.5): active kcal as the headline with the goal under it. Day has the hours split by where the
  * kcal came from, the total and your use at rest, and a row per workout, walking and everyday moving. Week, Month and
- * Year read each day's stored row ([ActivityHistory.energy]): the active kcal a day, the goal days, day bars split into
+ * Year read each day's stored row ([ActivityHistory.calories]): the active kcal a day, the goal days, day bars split into
  * workouts and the rest against the goal (weekly over a year), and the change against the range before. The averages
  * read full days only; the total and the busiest day take today too ([CaloriesCopy.summary]). No profile: as before,
  * the way to add one.
@@ -549,12 +549,12 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     val range = ranges[rangeIndex.coerceIn(ranges.indices)]
     var scrub by remember(range, date) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable { mutableStateOf(false) }
-    val e = ctx.r?.energy
+    val e = ctx.r?.calories
     val active = e?.activeKcal?.let(Math::round)
     val start = date.minusDays(range.days - 1L)
     // A range reads twice its length, for the change against the one before.
     val stored = remember(range, date, ctx.activity) {
-        if (range == Range.Day) null else ctx.activity.energyOn(date, start.minusDays(range.days.toLong()))
+        if (range == Range.Day) null else ctx.activity.caloriesOn(date, start.minusDays(range.days.toLong()))
     }
     // The day shown is worked out afresh, so it stands in for its row.
     // Worked out once per load, not on every pass of the screen (audit K4).
@@ -580,7 +580,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
         else -> DetailHeadline.none("No full days yet", DetailCopy.noValue(Metric.Steps, range, ctx.isToday))
     }
     DetailTemplate(
-        Score.Energy.title, color, siblings(Detail.OfScore(Score.Energy), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
+        Score.Calories.title, color, siblings(Detail.OfScore(Score.Calories), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx, DailyMetric.HeartRate), onDay = ctx.onSelectDay,
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
@@ -608,8 +608,8 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                                 ?: (Units.count(goal) to "Goal"),
                         ),
                     )
-                    DetailSentence(ActivityCopy.energy(Math.round(e.bmrKcal)))
-                    InfoCopy.energyNotes(e).firstOrNull()?.let { note ->
+                    DetailSentence(ActivityCopy.caloriesAtRest(Math.round(e.bmrKcal)))
+                    InfoCopy.caloriesNotes(e).firstOrNull()?.let { note ->
                         androidx.compose.foundation.layout.Box(Modifier.clickable { info = true }) { CaveatLine(note, color) }
                     }
                 }
@@ -656,10 +656,10 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
         item {
             androidx.compose.runtime.CompositionLocalProvider(
                 LocalEdgeOverride provides if (range == Range.Day && e != null) EdgeOverride(edge = Edge.Bottom) else EdgeOverride(),
-            ) { ActivityRelated(Score.Energy, ctx, null) }
+            ) { ActivityRelated(Score.Calories, ctx, null) }
         }
     }
-    if (info) InfoSheet(InfoCopy.of(Score.Energy), color, null, null, onDismiss = { info = false }, notes = InfoCopy.energyNotes(e))
+    if (info) InfoSheet(InfoCopy.of(Score.Calories), color, null, null, onDismiss = { info = false }, notes = InfoCopy.caloriesNotes(e))
 }
 
 /** The day toward the goal: a 4 dp bar in [color] filled to [share], [text] under it ("102 to your goal of 450"). */

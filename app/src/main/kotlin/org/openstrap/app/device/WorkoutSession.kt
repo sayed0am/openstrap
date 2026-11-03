@@ -476,7 +476,7 @@ class WorkoutSession(
                 }
                 _state.update { WorkoutState.Ended(w.start) }
                 watchCalmDown(w.start, recorded)
-                // Its days' energy rows take its kcal now, after the summary is up, so Health Connect gets them with it.
+                // Its days' calories rows take its kcal now, after the summary is up, so Health Connect gets them with it.
                 editor.refreshDays(ended.from, end)
                 onSaved(w.start)
             }

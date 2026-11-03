@@ -38,7 +38,7 @@ import org.openstrap.app.ui.components.cardNumber
 import org.openstrap.app.ui.components.cardOpening
 
 /*
- * The quiet tier of the glow language: a grouped list for small facts (body signals, time to recover, energy) and
+ * The quiet tier of the glow language: a grouped list for small facts (body signals, time to recover, calories) and
  * for lists of things (workouts, contributors, settings). No glow at all, so the cards above it keep the light.
  */
 
@@ -248,14 +248,14 @@ internal fun Metric.rowIcon(): ImageVector = when (this) {
  */
 internal fun Score.rowIcon(): ImageVector = when (this) {
     Score.Recovery -> AppIcons.Plant
-    Score.Charge -> AppIcons.BatteryCharging // BatteryCharging01
+    Score.Energy -> AppIcons.BatteryCharging // BatteryCharging01
     Score.Sleep, Score.Regularity, Score.Naps -> AppIcons.Moon // Moon02
     Score.HeartPoints -> AppIcons.Heart // Favourite
     Score.ActiveMinutes -> AppIcons.Timer
     Score.Load -> AppIcons.Barbell // Dumbbell01
     Score.Vo2Max -> AppIcons.FastWind
     Score.Recover -> AppIcons.Hourglass
-    Score.Energy -> AppIcons.Fire
+    Score.Calories -> AppIcons.Fire
     Score.Distance -> AppIcons.Route01
 }
 

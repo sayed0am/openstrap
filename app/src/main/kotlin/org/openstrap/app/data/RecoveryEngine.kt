@@ -50,7 +50,7 @@ data class RecoveryResult(
     /** Steps, MVPA and distance for [date]. */
     val activity: Activity.Day? = null,
     /** Energy expenditure for [date]; null without weight, height and age. */
-    val energy: EnergyExpenditure.Day? = null,
+    val calories: EnergyExpenditure.Day? = null,
     /** Non-exercise VO2max (Jurca 2005), recomputed weekly; or why it's withheld. */
     val vo2max: Vo2max.Estimate? = null,
     val vo2maxWithheld: Vo2max.Withheld? = null,
@@ -90,7 +90,7 @@ class RecoveryEngine(private val dao: HealthDao) {
     /**
      * The whole model for [date], in three steps: [gather] reads every table once over the spans of [Span], [basis]
      * turns the rows into what each score stands on (nights, resting and max HR, daily loads), and each score is then
-     * worked out from those and put together here. Only [energy] reads on its own, as it also runs without the rest.
+     * worked out from those and put together here. Only [calories] reads on its own, as it also runs without the rest.
      */
     suspend fun compute(date: LocalDate, profile: UserProfile, zone: ZoneId = ZoneId.systemDefault(), now: Long = System.currentTimeMillis() / 1000): RecoveryResult {
         val span = Span(date, zone, now)
@@ -122,7 +122,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         )
 
         val day = span.day
-        val energy = energy(
+        val calories = calories(
             date, profile, base.restingHr, base.maxHr, vo2?.value?.toFloat(), zone, now,
             DayReads(
                 reads.activity.within(day.from, day.to) { it.timestamp }, reads.heartRate.within(day.from, day.to) { it.timestamp },
@@ -145,7 +145,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             date, readiness, charge, trend, todayLoad, chronic, base.restingHr, maxHr, base.age != null, stressThreshold, tonight,
             Recovery.breathingDisturbances(tonight, nights), Recovery.acwr(loads), base.sleepNeed, regularity, sleepHealth,
             loadTrend, Recovery.strain(todayLoad), Recovery.loadPercentile(todayLoad, loads), profile.maxHeartRate != null && maxHr == profile.maxHeartRate.toFloat(),
-            activity, energy, vo2, vo2Withheld, base.todaySplit.workout, base.todaySplit.everyday,
+            activity, calories, vo2, vo2Withheld, base.todaySplit.workout, base.todaySplit.everyday,
             usualBedtime(mains.filterKeys { it <= midnight }.values, date, zone),
             dailyLoads = base.loadDays.map { span.dayOf(it.first) to it.second }
                 .filter { it.first >= date.minusDays(RECENT_LOAD_DAYS.toLong()) },
@@ -521,13 +521,13 @@ class RecoveryEngine(private val dao: HealthDao) {
     }
 
     /**
-     * Energy for [date] ([RecoveryResult.energy]) on the given resting and max HR and VO2max, reading only that day:
-     * [compute] uses it, and so does the daily energy history for days nobody opened. Every minute with data (a step
+     * Calories for [date] ([RecoveryResult.calories]) on the given resting and max HR and VO2max, reading only that day:
+     * [compute] uses it, and so does the daily calories history for days nobody opened. Every minute with data (a step
      * record, heart rate, sleep, or a phone workout's minute) counts; no row is missing, never zero. A phone workout's
      * minutes take its own kcal ([phoneWorkoutKcal]), so the day counts what the workout says; a strap workout's are
      * the strap's kcal pro-rated.
      */
-    suspend fun energy(
+    suspend fun calories(
         date: LocalDate, profile: UserProfile, restingHr: Float, maxHr: Float, vo2max: Float?,
         zone: ZoneId = ZoneId.systemDefault(), now: Long = System.currentTimeMillis() / 1000,
     ): EnergyExpenditure.Day? {
@@ -536,10 +536,10 @@ class RecoveryEngine(private val dao: HealthDao) {
             dao.activityOnce(day.from, day.to), dao.heartRateOnce(day.from, day.to), sleepSource.sessionsOnce(day.from, day.to),
             dao.workoutsOnce(day.from, day.to),
         )
-        return energy(date, profile, restingHr, maxHr, vo2max, zone, now, reads)
+        return calories(date, profile, restingHr, maxHr, vo2max, zone, now, reads)
     }
 
-    /** What [energy] reads of its day, so [compute] can hand over what it read already. */
+    /** What [calories] reads of its day, so [compute] can hand over what it read already. */
     private class DayReads(
         val activity: List<org.openstrap.app.data.db.ActivityMinute>,
         val heartRate: List<org.openstrap.app.data.db.HeartRateSample>,
@@ -547,7 +547,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val strapWorkouts: List<org.openstrap.app.data.db.Workout>,
     )
 
-    private suspend fun energy(
+    private suspend fun calories(
         date: LocalDate, profile: UserProfile, restingHr: Float, maxHr: Float, vo2max: Float?, zone: ZoneId, now: Long, reads: DayReads,
     ): EnergyExpenditure.Day? {
         val day = DayWindow.of(date, zone)

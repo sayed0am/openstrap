@@ -52,7 +52,7 @@ class HealthRepository(
     private val nowSeconds: () -> Long = { System.currentTimeMillis() / 1000 },
 ) {
     private val recoveryEngine = RecoveryEngine(dao)
-    private val energyHistory = DailyEnergyHistory(dao)
+    private val caloriesHistory = DailyCaloriesHistory(dao)
     private val healthspanEngine = HealthspanEngine(dao)
     /** The one reader of sleep for everything shown ([SleepSource]). */
     val sleep = SleepSource(dao)
@@ -93,7 +93,7 @@ class HealthRepository(
 
     /**
      * Readiness and charge for [date]; heavy, so call it off the main thread. Also logs the night's own inputs next to
-     * the strap's ([NightMetricsRow]) for the calibration review, and keeps the day's energy ([DailyEnergyHistory]).
+     * the strap's ([NightMetricsRow]) for the calibration review, and keeps the day's calories ([DailyCaloriesHistory]).
      * Once [start]ed, a result is kept until the data changes, and a kept one writes nothing: its rows were written
      * when it was first worked out. While the day's Charge still runs up to the present, it is kept for the minute
      * only. A failure is never kept, so asking again works it out again.
@@ -124,7 +124,7 @@ class HealthRepository(
         (now / MINUTE_S).takeIf { now / MINUTE_S * MINUTE_S + MINUTE_S < DayWindow.of(date).to + 1 + RecoveryEngine.LOOKAHEAD_SECONDS }
 
     /**
-     * Works [date] out. Its energy is [DailyEnergyHistory.energy]'s, the rule its stored row follows after a sync too,
+     * Works [date] out. Its calories are [DailyCaloriesHistory.calories]'s, the rule its stored row follows after a sync too,
      * so the day's page and its bar in the week agree (data integrity item 18). Max HR and VO2max come from the
      * Recovery just worked out, which takes them by the same rules: max HR as of [date] is today's when [date] is today.
      */
@@ -133,11 +133,11 @@ class HealthRepository(
         r.tonight?.let { logNight(it) }
         val today = Instant.ofEpochSecond(now).atZone(ZoneId.systemDefault()).toLocalDate()
         val maxHr = if (date == today) r.maxHr else recoveryEngine.maxHeartRate(profile, today)
-        val energy = energyHistory.energy(date, profile, maxHr, r.vo2max?.value?.toFloat(), now = now)
-        if (energy != null) {
-            dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(date, energy, System.currentTimeMillis() / 1000)))
+        val calories = caloriesHistory.calories(date, profile, maxHr, r.vo2max?.value?.toFloat(), now = now)
+        if (calories != null) {
+            dao.insertDailyCalories(listOf(DailyCaloriesHistory.row(date, calories, System.currentTimeMillis() / 1000)))
         }
-        return r.copy(energy = energy)
+        return r.copy(calories = calories)
     }
 
     /** When you usually go to sleep as of [date] ([RecoveryResult.usualBedtime]), without working out Recovery. */
@@ -311,9 +311,9 @@ class HealthRepository(
             rows.mapNotNull { r -> DayStat.parseDay(r.day)?.let { it to r } }.toMap()
         }
 
-    /** Each day's stored energy from [from] to [to] ([DailyEnergyHistory]), by local day, for Calories' ranges. */
-    fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, org.openstrap.app.data.db.DailyEnergyRow>> =
-        dao.dailyEnergy(from, to).map { rows -> rows.associateBy { it.day } }
+    /** Each day's stored calories from [from] to [to] ([DailyCaloriesHistory]), by local day, for Calories' ranges. */
+    fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, org.openstrap.app.data.db.DailyCaloriesRow>> =
+        dao.dailyCalories(from, to).map { rows -> rows.associateBy { it.day } }
 
     /**
      * The calorie goal the last [org.openstrap.app.data.settings.CalorieGoal.DAYS] suggest: from the active kcal of
@@ -321,7 +321,7 @@ class HealthRepository(
      */
     suspend fun suggestedCalorieGoal(today: LocalDate = LocalDate.now()): Int? {
         val days = org.openstrap.app.data.settings.CalorieGoal.DAYS.toLong()
-        val rows = dao.dailyEnergyOnce(today.minusDays(days), today.minusDays(1))
+        val rows = dao.dailyCaloriesOnce(today.minusDays(days), today.minusDays(1))
         return org.openstrap.app.data.settings.CalorieGoal.suggested(rows.filter { !it.partial }.map { it.activeKcal })
     }
 

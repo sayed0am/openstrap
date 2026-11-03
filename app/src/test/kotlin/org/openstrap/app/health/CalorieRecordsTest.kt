@@ -3,7 +3,7 @@ package org.openstrap.app.health
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import java.time.LocalDate
 import java.time.ZoneId
 import org.openstrap.app.data.Days
@@ -16,7 +16,7 @@ class CalorieRecordsTest {
 
     /** The row for the day starting at the local midnight [day] in [zone]. */
     private fun row(day: Long, hourly: List<Float>, total: Float = 2200f, partial: Boolean = false, updated: Long = day + 90_000, zone: ZoneId = utc) =
-        DailyEnergyRow(Days.date(day, zone), updated, total, hourly.sum(), 1650f, if (partial) 600 else 1440, partial, 100f, 150f, hourly.joinToString(","))
+        DailyCaloriesRow(Days.date(day, zone), updated, total, hourly.sum(), 1650f, if (partial) 600 else 1440, partial, 100f, 150f, hourly.joinToString(","))
 
     private val day = midnight(LocalDate.of(2026, 10, 20), utc)
     private val later = day + 10 * 86_400

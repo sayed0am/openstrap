@@ -46,7 +46,7 @@ import java.time.ZoneId
         WearEventRow::class,
         HabitAgeWeekRow::class,
         DeletedWorkout::class,
-        DailyEnergyRow::class,
+        DailyCaloriesRow::class,
         SleepEdit::class,
         AppWorkoutRound::class,
         SavedWorkout::class,

@@ -31,7 +31,7 @@ import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.SleepDay
 import org.openstrap.app.data.SleepEdits
 import org.openstrap.app.data.db.ActivityMinute
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DailyPai
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.HrvSample
@@ -149,13 +149,13 @@ class DayViewModelUiStateTest {
         val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.activityHistory.collect {} }
         val h = vm.activityHistory.first { it.date == date }
         assertEquals(date.minusDays(ActivityHistory.HEART_POINTS_DAYS - 1L) to date, repo.paiWindow)
-        assertEquals(date.minusDays(ActivityHistory.ENERGY_DAYS - 1L) to date, repo.energyWindow)
+        assertEquals(date.minusDays(ActivityHistory.CALORIES_DAYS - 1L) to date, repo.energyWindow)
         assertEquals(HeartPointsDay(12f, 80f), h.heartPointsOn(date)[date])
         assertEquals(emptyMap<LocalDate, HeartPointsDay>(), h.heartPointsOn(date.minusDays(1)))
-        assertEquals(EnergyDay(400f, 2400f, 150f, true), h.energyOn(date, date.minusDays(6))?.get(date))
+        assertEquals(CaloriesDay(400f, 2400f, 150f, true), h.caloriesOn(date, date.minusDays(6))?.get(date))
         // A range only gets its own days, and another day's energy is still loading.
-        assertEquals(setOf(date), h.energyOn(date, date)?.keys)
-        assertNull(h.energyOn(date.minusDays(1), date.minusDays(7)))
+        assertEquals(setOf(date), h.caloriesOn(date, date)?.keys)
+        assertNull(h.caloriesOn(date.minusDays(1), date.minusDays(7)))
         collector.cancel()
         vm.viewModelScope.coroutineContext[Job]?.cancel()
     }
@@ -181,9 +181,9 @@ class DayViewModelUiStateTest {
             return flowOf(mapOf(date to DailyPai(date.toString(), 12f, 80f, at(9))))
         }
 
-        override fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyEnergyRow>> {
+        override fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>> {
             energyWindow = from to to
-            val row = DailyEnergyRow(date, at(12), 2400f, 400f, 1700f, 600, true, workoutKcal = 150f, walkingKcal = 100f, hourly = "")
+            val row = DailyCaloriesRow(date, at(12), 2400f, 400f, 1700f, 600, true, workoutKcal = 150f, walkingKcal = 100f, hourly = "")
             return flowOf(mapOf(date to row, date.minusDays(10) to row))
         }
     }

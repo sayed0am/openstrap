@@ -408,7 +408,7 @@ private fun Hero(
     /** The Energy card is hidden in Edit Today, so the evening hero says Energy itself. */
     energyHidden: Boolean = false,
 ) {
-    val onOpenCharge = { onOpenScore(org.openstrap.app.ui.dashboard.Score.Charge) }
+    val onOpenCharge = { onOpenScore(org.openstrap.app.ui.dashboard.Score.Energy) }
     // Every hero is as high as its content with the card padding around it. The floor is only a Wide's height, under
     // every hero's content, so none shows an empty band.
     val m = Modifier.fillMaxWidth().gridSize(CardSize.Wide)
@@ -554,7 +554,7 @@ private fun ChargeHero(ctx: TodayContext, onOpen: () -> Unit, onRetry: () -> Uni
         }
     }
     if (info) InfoSheet(
-        org.openstrap.app.ui.dashboard.InfoCopy.of(org.openstrap.app.ui.dashboard.Score.Charge), MetricColors.charge,
+        org.openstrap.app.ui.dashboard.InfoCopy.of(org.openstrap.app.ui.dashboard.Score.Energy), MetricColors.charge,
         now?.let(org.openstrap.app.ui.dashboard.InfoCopy::chargeBar), now?.let { org.openstrap.app.ui.dashboard.InfoCopy.HERE },
         onDismiss = { info = false }, notes = org.openstrap.app.ui.dashboard.InfoCopy.chargeNotes(c),
     )
@@ -809,7 +809,10 @@ private fun TodayRow(
             }
             // The day's Charge so far beside the number, in the evening too, as on every other Charge card.
             val soFar = c?.takeIf { it.anchored && ctx.isToday }?.let { chargeSoFar(it.points, s.dayStart..s.dayEnd, ctx.now) }
-            ChargeWideCard(ctx.charge, status, slot.secondGlow, { openScore(org.openstrap.app.ui.dashboard.Score.Charge) }, soFar = soFar, upTo = ctx.upTo(ctx.newest), tag = ctx.partial)
+            ChargeWideCard(
+                ctx.charge, status, slot.secondGlow, { openScore(org.openstrap.app.ui.dashboard.Score.Energy) }, soFar = soFar,
+                upTo = ctx.upTo(ctx.newest), tag = ctx.partial,
+            )
         }
         // After a workout, what it did as a Small pair: Load toward your usual (from below) and time to recover.
         TodayCard.LoadToday -> if (slot.size == CardSize.Small) SmallCard(

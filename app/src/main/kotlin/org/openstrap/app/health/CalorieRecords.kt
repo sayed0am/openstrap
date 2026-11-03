@@ -2,12 +2,12 @@ package org.openstrap.app.health
 
 import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Days
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import java.time.LocalDate
 import java.time.ZoneId
 
 /**
- * What Health Connect gets of the stored days' energy ([DailyEnergyRow], calories spec 5): active kcal an hour, and
+ * What Health Connect gets of the stored days' calories ([DailyCaloriesRow], calories spec 5): active kcal an hour, and
  * the day's total once it's over and not partial. Workouts get none of their own: Health Connect's exercise session
  * has no kcal, and a record over the workout would count its minutes again on top of their hours. Pure, so the split
  * is tested without Health Connect.
@@ -22,7 +22,7 @@ object CalorieRecords {
      * are the hour's start, as they were when days were stored as local midnights, so a day written again replaces
      * its records.
      */
-    fun activeHours(rows: List<DailyEnergyRow>, zone: ZoneId, now: Long): List<Span> = rows.flatMap { row ->
+    fun activeHours(rows: List<DailyCaloriesRow>, zone: ZoneId, now: Long): List<Span> = rows.flatMap { row ->
         val date = row.day
         row.hourlyKcal.withIndex().mapNotNull { (h, kcal) ->
             if (h > 23 || kcal <= 0f) return@mapNotNull null
@@ -38,7 +38,7 @@ object CalorieRecords {
      * The day's total kcal, local midnight to midnight, for each of [rows] that's over by [now] and not partial. Its id
      * is the day's local midnight in [zone] ([DayKey.legacyMidnight]), the id it had before days were stored as dates.
      */
-    fun dayTotals(rows: List<DailyEnergyRow>, zone: ZoneId, now: Long): List<Span> = rows.mapNotNull { row ->
+    fun dayTotals(rows: List<DailyCaloriesRow>, zone: ZoneId, now: Long): List<Span> = rows.mapNotNull { row ->
         val start = DayKey.legacyMidnight(row.day, zone)
         val end = Days.end(row.day, zone)
         if (row.partial || end > now || row.totalKcal <= 0f) return@mapNotNull null

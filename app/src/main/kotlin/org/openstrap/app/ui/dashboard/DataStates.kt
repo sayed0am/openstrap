@@ -81,7 +81,7 @@ fun earliestScore(trend: List<Pair<LocalDate, Int?>>, date: LocalDate): LocalDat
 
 /**
  * The one partial day rule: a day counts as partial when the strap was worn for less than this share of it. 20 h of
- * 24, the full day the energy estimate already uses ([EnergyExpenditure.FULL_DAY_MINUTES]). For today the share is of
+ * 24, the full day the calories estimate already uses ([EnergyExpenditure.FULL_DAY_MINUTES]). For today the share is of
  * the day so far, up to the newest reading, so a sync that hasn't run yet doesn't count as time off the wrist.
  */
 const val PARTIAL_WEAR_SHARE = EnergyExpenditure.FULL_DAY_MINUTES / (24 * 60f)
@@ -95,14 +95,14 @@ data class Wear(val wornMinutes: Int, val ofMinutes: Int) {
 }
 
 /**
- * Wear from what the app already has: the energy estimate's minutes with data ([energyMinutes]: steps, heart rate or
+ * Wear from what the app already has: the calories estimate's minutes with data ([caloriesMinutes]: steps, heart rate or
  * sleep) when it ran, which needs a profile, else the heart rate buckets with a reading ([hrBuckets] bucket starts).
  * Out of [dayStart]..[dayEnd], or today up to the [newest] reading. Null with no wear at all: an empty day is waiting
  * for data, not partial.
  */
-fun wear(energyMinutes: Int?, hrBuckets: List<Long>, dayStart: Long, dayEnd: Long, isToday: Boolean, newest: Long?): Wear? {
+fun wear(caloriesMinutes: Int?, hrBuckets: List<Long>, dayStart: Long, dayEnd: Long, isToday: Boolean, newest: Long?): Wear? {
     val inDay = hrBuckets.filter { it in dayStart..dayEnd }
-    val worn = energyMinutes ?: (inDay.distinct().size * WEAR_BUCKET_MINUTES)
+    val worn = caloriesMinutes ?: (inDay.distinct().size * WEAR_BUCKET_MINUTES)
     if (worn <= 0) return null
     val dayMinutes = ((dayEnd - dayStart + 1) / 60).toInt()
     val until = if (isToday) (newest ?: inDay.maxOrNull()?.plus(WEAR_BUCKET_MINUTES * 60L)) ?: return null else dayEnd + 1
@@ -110,11 +110,11 @@ fun wear(energyMinutes: Int?, hrBuckets: List<Long>, dayStart: Long, dayEnd: Lon
     return Wear(worn.coerceAtMost(of), of)
 }
 
-/** The day's [Wear] from its state and Recovery (for the energy estimate's minutes). */
+/** The day's [Wear] from its state and Recovery (for the calories estimate's minutes). */
 fun DayUiState.wear(recovery: RecoveryResult?, isToday: Boolean): Wear? {
-    val energy = recovery?.takeIf { it.date == date }?.energy?.minutesWithData
+    val calories = recovery?.takeIf { it.date == date }?.calories?.minutesWithData
     val buckets = heartRate.map { it.x }
-    return wear(energy, buckets, dayStart, dayEnd, isToday, buckets.maxOrNull()?.plus(WEAR_BUCKET_MINUTES * 60L))
+    return wear(calories, buckets, dayStart, dayEnd, isToday, buckets.maxOrNull()?.plus(WEAR_BUCKET_MINUTES * 60L))
 }
 
 /** The marker next to the title of a card whose figures a partial day lowers. */

@@ -252,7 +252,7 @@ data class AppWorkout(
     /**
      * kcal over the shown range less pauses, above rest and in all ([org.openstrap.app.data.EnergyExpenditure.workoutMinutes]).
      * Worked out when it ends and again on a trim or a gap fill; null without a profile, and on workouts from before
-     * version 20 until the daily energy history fills them in.
+     * version 20 until the daily calories history fills them in.
      */
     val activeKcal: Float? = null,
     val totalKcal: Float? = null,
@@ -653,11 +653,12 @@ data class HabitAgeWeekRow(
 )
 
 /**
- * One local day's energy as the engine last worked it out ([org.openstrap.app.data.EnergyExpenditure.Day]), so week,
- * month and year views don't run the model for every day. Rewritten whenever the day is worked out again.
+ * One local day's calories as the engine last worked it out ([org.openstrap.app.data.EnergyExpenditure.Day]), so week,
+ * month and year views don't run the model for every day. Rewritten whenever the day is worked out again. The table
+ * keeps its first name, `daily_energy`, and so does its backup file, `daily_energy.csv`.
  */
 @Entity(tableName = "daily_energy")
-data class DailyEnergyRow(
+data class DailyCaloriesRow(
     @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     val totalKcal: Float,

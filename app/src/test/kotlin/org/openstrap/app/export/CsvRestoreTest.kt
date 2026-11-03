@@ -24,7 +24,7 @@ import org.openstrap.app.data.db.StressSample
 import org.openstrap.app.data.db.ExerciseRow
 import org.openstrap.app.data.db.SavedWorkout
 import org.openstrap.app.data.db.WeekResult
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DeletedWorkout
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
@@ -262,16 +262,16 @@ class CsvRestoreTest {
     }
 
     @Test fun `daily energy and a phone workout's kcal target come back, before the phone's own days`() = runTest {
-        fun energy(d: LocalDate, total: Float) = DailyEnergyRow(d, DayKey.of(d) + 86_399, total, 450f, 1650f, 1440, false, 120f, 200f, List(24) { "%.1f".format(java.util.Locale.ROOT, it * 1.5f) }.joinToString(","))
-        old.healthDao().insertDailyEnergy(listOf(energy(date.minusDays(2), 2100f), energy(date.minusDays(1), 2200f), energy(date, 2300f)))
+        fun energy(d: LocalDate, total: Float) = DailyCaloriesRow(d, DayKey.of(d) + 86_399, total, 450f, 1650f, 1440, false, 120f, 200f, List(24) { "%.1f".format(java.util.Locale.ROOT, it * 1.5f) }.joinToString(","))
+        old.healthDao().insertDailyCalories(listOf(energy(date.minusDays(2), 2100f), energy(date.minusDays(1), 2200f), energy(date, 2300f)))
         val w = AppWorkout(day - 86_400 + 17 * 3600, day - 86_400 + 18 * 3600, 1, target = "k:300", activeKcal = 320f, totalKcal = 410f, targetReachedAt = day - 86_400 + 17 * 3600 + 2900)
         old.healthDao().insertAppWorkouts(listOf(w))
         // The phone already worked out today: it keeps its own row.
-        phone.healthDao().insertDailyEnergy(listOf(energy(date, 999f)))
+        phone.healthDao().insertDailyCalories(listOf(energy(date, 999f)))
         restore(backup(old))
-        assertEquals(listOf(2100f, 2200f, 999f), phone.healthDao().dailyEnergyAll().map { it.totalKcal })
-        assertEquals(old.healthDao().dailyEnergyAll().dropLast(1), phone.healthDao().dailyEnergyAll().dropLast(1))
-        assertEquals(24, phone.healthDao().dailyEnergyOnce(date.minusDays(1), date.minusDays(1)).single().hourlyKcal.size)
+        assertEquals(listOf(2100f, 2200f, 999f), phone.healthDao().dailyCaloriesAll().map { it.totalKcal })
+        assertEquals(old.healthDao().dailyCaloriesAll().dropLast(1), phone.healthDao().dailyCaloriesAll().dropLast(1))
+        assertEquals(24, phone.healthDao().dailyCaloriesOnce(date.minusDays(1), date.minusDays(1)).single().hourlyKcal.size)
         assertEquals(listOf(w), phone.healthDao().appWorkoutsAll())
     }
     @Test fun `badges, past weeks, saved workouts, exercises and rounds come back, once`() = runTest {

@@ -30,7 +30,7 @@ class ActivityCopyTest {
                 ActivityCopy.usualBandLabel(30f..50f), ActivityCopy.strapRange(120, 300),
                 ActivityCopy.vo2(true), ActivityCopy.vo2(false),
                 ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", LocalDate.of(2026, 10, 24), Locale.UK)),
-                ActivityCopy.energy(1650), ActivityCopy.distanceSource(true), ActivityCopy.distanceSource(false),
+                ActivityCopy.caloriesAtRest(1650), ActivityCopy.distanceSource(true), ActivityCopy.distanceSource(false),
                 ActivityCopy.distance(6420, false), ActivityCopy.activeWeek(150),
             ) + listOfNotNull(
                 ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK), ActivityCopy.heartPointsWord(100),

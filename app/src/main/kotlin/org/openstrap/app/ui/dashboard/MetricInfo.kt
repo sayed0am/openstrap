@@ -33,11 +33,11 @@ internal val NIGHT_VITALS: List<Metric> = listOf(Metric.HeartRate, Metric.Hrv, M
 
 /**
  * The Activity tab's details, in the tab's order: Steps, the Small pair, Load, Heart rate, then the Today list's VO2
- * max, time to recover, energy and distance.
+ * max, time to recover, calories and distance.
  */
 internal val ACTIVITY_GROUP: List<Detail> = listOf(
     Detail.OfMetric(Metric.Steps), Detail.OfScore(Score.ActiveMinutes), Detail.OfScore(Score.HeartPoints), Detail.OfScore(Score.Load),
-    Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Energy),
+    Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Calories),
     Detail.OfScore(Score.Distance),
 )
 
@@ -49,7 +49,7 @@ internal val ACTIVITY_GROUP: List<Detail> = listOf(
 internal val DETAIL_GROUPS: List<List<Detail>> = listOf(
     listOf(Metric.RestingHr, Metric.Hrv, Metric.SkinTemperature, Metric.Breathing, Metric.Spo2, Metric.Stress).map { Detail.OfMetric(it) },
     ACTIVITY_GROUP,
-    listOf(Score.Recovery, Score.Charge).map(Detail::OfScore),
+    listOf(Score.Recovery, Score.Energy).map(Detail::OfScore),
     listOf(Score.Sleep, Score.Regularity, Score.Naps).map(Detail::OfScore),
     NIGHT_VITALS.map { Detail.OfMetric(it, night = true) },
 )

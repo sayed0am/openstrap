@@ -19,7 +19,7 @@ import org.openstrap.protocol.ChannelSession
 
 /**
  * History sync: one at a time, a full sync or the types the strap pushed queued behind it, the hourly auto sync, and
- * the work that follows each sync (body signals, workout gap fill, workout effect, daily energy).
+ * the work that follows each sync (body signals, workout gap fill, workout effect, daily calories).
  */
 // The sync queue and each piece of work after a sync, as small functions.
 @Suppress("TooManyFunctions")
@@ -135,7 +135,7 @@ internal class SyncCoordinator(
         catching { WorkoutGapFill(dao) { settings.profile.first() }.run()?.let { log(it) } }
             .onFailure { log("workout gap fill: $it") }
         catching { updateEffectModel() }.onFailure { log("workout effect: $it") }
-        catching { updateDailyEnergy() }.onFailure { log("daily energy: $it") }
+        catching { updateDailyCalories() }.onFailure { log("daily energy: $it") }
     }
 
     /**
@@ -171,15 +171,15 @@ internal class SyncCoordinator(
     }
 
     /**
-     * After a sync, keeps each day's energy row ([org.openstrap.app.data.DailyEnergyHistory]): the first time every day
+     * After a sync, keeps each day's calories row ([org.openstrap.app.data.DailyCaloriesHistory]): the first time every day
      * with data, then the recent days, and all of them again when the profile they were worked out with has changed.
      */
-    private suspend fun updateDailyEnergy() {
+    private suspend fun updateDailyCalories() {
         val profile = settings.profile.first()
-        val key = org.openstrap.app.data.DailyEnergyHistory.profileKey(profile)
-        val changed = settings.lastSync(DAILY_ENERGY_PROFILE) != key
-        val written = org.openstrap.app.data.DailyEnergyHistory(dao).update(profile, profileChanged = changed)
-        settings.setLastSync(DAILY_ENERGY_PROFILE, key)
+        val key = org.openstrap.app.data.DailyCaloriesHistory.profileKey(profile)
+        val changed = settings.lastSync(DAILY_CALORIES_PROFILE) != key
+        val written = org.openstrap.app.data.DailyCaloriesHistory(dao).update(profile, profileChanged = changed)
+        settings.setLastSync(DAILY_CALORIES_PROFILE, key)
         if (written > 0) log("daily energy: $written days")
     }
 
@@ -205,8 +205,11 @@ internal class SyncCoordinator(
          * kept its local midnight under another key, so the upgrade morning can push once more at most.
          */
         const val BODY_SIGNALS_PUSHED = "body_signals_push_day"
-        /** [org.openstrap.app.data.DailyEnergyHistory.profileKey] of the profile the daily energy rows were last written with. */
-        const val DAILY_ENERGY_PROFILE = "daily_energy_profile"
+        /**
+         * [org.openstrap.app.data.DailyCaloriesHistory.profileKey] of the profile the daily calories rows were last
+         * written with. Stored under its first name, so the key saved before the rename still counts.
+         */
+        const val DAILY_CALORIES_PROFILE = "daily_energy_profile"
         /** The [org.openstrap.app.data.WorkoutEffect.MODEL] phone workouts' effects were last worked out with. */
         const val EFFECT_MODEL = "workout_effect_model"
     }

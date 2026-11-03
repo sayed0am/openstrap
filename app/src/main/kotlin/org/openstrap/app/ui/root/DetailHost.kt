@@ -91,7 +91,7 @@ internal fun DetailHost(
                 bmrPerMinute = EnergyExpenditure.bmrPerMinute(profile, profile.age()),
                 recovery = shown.recovery, days = container.days,
                 // Its day's Calories: the day shown moves to it, as a strip pick does.
-                onOpenDay = { d -> dayVm.select(d); push(Detail.OfScore(Score.Energy)) },
+                onOpenDay = { d -> dayVm.select(d); push(Detail.OfScore(Score.Calories)) },
             )
         }
         Detail.AllWorkouts -> GlowWorkoutsScreen(workouts, padding, onOpen = { push(Detail.Workout(it)) }, onBack = pop)
@@ -145,9 +145,9 @@ private fun WorkoutDetail(
     // The workout's day: its active kcal as just worked out when it's the day shown, else as stored.
     val date = a?.let { Instant.ofEpochSecond(it.shownStart).atZone(ZoneId.systemDefault()).toLocalDate() }
     val stored by remember(date, days) {
-        date?.let { d -> days.dailyEnergy(d, d) } ?: flowOf(emptyMap())
+        date?.let { d -> days.dailyCalories(d, d) } ?: flowOf(emptyMap())
     }.collectAsStateWithLifecycle(emptyMap())
-    val dayActive = recovery?.takeIf { it.date == date }?.energy?.activeKcal ?: date?.let { stored[it]?.activeKcal }
+    val dayActive = recovery?.takeIf { it.date == date }?.calories?.activeKcal ?: date?.let { stored[it]?.activeKcal }
     GlowWorkoutDetailScreen(
         a, summary, workouts, usualDrop, contentPadding, onBack,
         onDelete = if (fromPhone) onDelete else ({ start?.let(workoutsVm::deleteStrapWorkout); onBack() }),

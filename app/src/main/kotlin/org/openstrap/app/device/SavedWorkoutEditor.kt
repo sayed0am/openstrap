@@ -15,7 +15,7 @@ import org.openstrap.app.data.settings.SettingsStore
 
 /**
  * Changes to phone workouts already saved: discard, trim and its undo, and a stretch saved from history. Each runs
- * under [WorkoutSession]'s [lock], so it can't interleave with the end of a recording. Their days' energy rows follow
+ * under [WorkoutSession]'s [lock], so it can't interleave with the end of a recording. Their days' calories rows follow
  * every change ([refreshDays]), and [onSaved] tells auto sync.
  */
 // Built once, by WorkoutSession, from what that was built with.
@@ -112,7 +112,7 @@ internal class SavedWorkoutEditor(
                 catching { dao.upsertAppWorkout(withEffect(changed, dao.appWorkoutHeartRateOnce(start))) }
                     .onFailure { log("workout edit not saved: ${it.message}") }
                     .getOrElse { return@withLock }
-                // Its kcal moved, so its days' energy rows follow: over all it was recorded, which holds both ranges.
+                // Its kcal moved, so its days' calories rows follow: over all it was recorded, which holds both ranges.
                 refreshDays(w.start, w.recordedEnd ?: w.end ?: start)
                 onSaved(start)
             }
@@ -134,9 +134,9 @@ internal class SavedWorkoutEditor(
         else new.copy(distanceMeters = WorkoutDistance.scaledTo(old, new))
     }
 
-    /** Writes the daily energy rows from [from] to [to] again ([org.openstrap.app.data.DailyEnergyHistory.updateDays]). */
+    /** Writes the daily calories rows from [from] to [to] again ([org.openstrap.app.data.DailyCaloriesHistory.updateDays]). */
     suspend fun refreshDays(from: Long, to: Long) {
-        catching { org.openstrap.app.data.DailyEnergyHistory(dao).updateDays(from, to, settings.profile.first()) }
+        catching { org.openstrap.app.data.DailyCaloriesHistory(dao).updateDays(from, to, settings.profile.first()) }
             .onFailure { log("daily energy not refreshed: ${it.message}") }
     }
 

@@ -100,7 +100,7 @@ internal object CaloriesCopy {
 
     /* ---------------------------------------------- Ranges ---------------------------------------------- */
 
-    /** One stored day, as the ranges read it ([org.openstrap.app.data.db.DailyEnergyRow]). */
+    /** One stored day, as the ranges read it ([org.openstrap.app.data.db.DailyCaloriesRow]). */
     data class DayKcal(val date: LocalDate, val active: Float, val total: Float, val workout: Float, val partial: Boolean)
 
     /** A range's numbers: per day averages, the goal days, the active total and the change against the range before. */

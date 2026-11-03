@@ -63,7 +63,7 @@ object DayKeyMerge {
         is CheckInRow -> row.updatedAt
         is NightMetricsRow -> row.updatedAt
         is HabitAgeWeekRow -> row.updatedAt
-        is DailyEnergyRow -> row.updatedAt
+        is DailyCaloriesRow -> row.updatedAt
         else -> 0
     }
 }

@@ -187,19 +187,34 @@ class FrameTest {
     @Test fun `Recovery and Charge details survive process death`() {
         // Every route there is, the score details among them, deepest last.
         val stack = listOf(
-            Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Charge), Detail.OfMetric(Metric.HeartRate), Detail.AllWorkouts,
+            Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Energy), Detail.OfMetric(Metric.HeartRate), Detail.AllWorkouts,
             Detail.Healthspan, Detail.Recovery, Detail.Sleep, Detail.Workout(1792227300),
         ) + Metric.entries.map(Detail::OfMetric) + Score.entries.map(Detail::OfScore)
         val saved = with(Detail.StackSaver) { androidx.compose.runtime.saveable.SaverScope { true }.save(stack) }!!
         assertEquals(stack, Detail.StackSaver.restore(saved))
         // A score this build doesn't know is dropped, the rest kept.
-        assertEquals(listOf(Detail.OfScore(Score.Charge)), Detail.StackSaver.restore("c:Sleepscore|c:Charge"))
+        assertEquals(listOf(Detail.OfScore(Score.Energy)), Detail.StackSaver.restore("c:Sleepscore|c:Charge"))
+    }
+
+    @Test fun `stacks saved before Energy and Calories were renamed open the same details`() {
+        // Before the rename, Energy (the Charge model) was Score.Charge and Calories was Score.Energy, saved by name.
+        assertEquals(listOf(Detail.OfScore(Score.Calories)), Detail.StackSaver.restore("c:Energy"))
+        assertEquals(listOf(Detail.OfScore(Score.Energy)), Detail.StackSaver.restore("c:Charge"))
+        assertEquals(
+            listOf(Detail.Recovery, Detail.OfScore(Score.Energy), Detail.OfScore(Score.Calories)),
+            Detail.StackSaver.restore("r:|c:Charge|c:Energy"),
+        )
+        // They are still saved that way, so a saved "Energy" only ever means Calories, and card motion keys match.
+        assertEquals("c:Charge", Detail.keyOf(Detail.OfScore(Score.Energy)))
+        assertEquals("c:Energy", Detail.keyOf(Detail.OfScore(Score.Calories)))
+        assertEquals(Score.entries.size, Score.entries.map { it.key }.toSet().size)
+        Score.entries.filter { it != Score.Energy && it != Score.Calories }.forEach { assertEquals(it.name, it.key) }
     }
 
     @Test fun `every detail switches within one group of siblings`() {
         val all = Metric.entries.map(Detail::OfMetric) + Score.entries.map(Detail::OfScore)
         all.forEach { d -> assertEquals(d.toString(), 1, DETAIL_GROUPS.count { d in it }) }
-        assertEquals(listOf(Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Charge)), siblingsOf(Detail.OfScore(Score.Charge)))
+        assertEquals(listOf(Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Energy)), siblingsOf(Detail.OfScore(Score.Energy)))
         assertEquals(listOf(Detail.Healthspan), siblingsOf(Detail.Healthspan))
     }
 
@@ -228,7 +243,7 @@ class FrameTest {
         assertEquals(
             listOf(
                 Detail.OfMetric(Metric.Steps), Detail.OfScore(Score.ActiveMinutes), Detail.OfScore(Score.HeartPoints), Detail.OfScore(Score.Load),
-                Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Energy),
+                Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Calories),
                 Detail.OfScore(Score.Distance),
             ),
             ACTIVITY_GROUP,

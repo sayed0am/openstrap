@@ -10,7 +10,7 @@ import org.junit.runner.RunWith
 import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Days
 import org.openstrap.app.data.db.CheckInRow
-import org.openstrap.app.data.db.DailyEnergyRow
+import org.openstrap.app.data.db.DailyCaloriesRow
 import org.openstrap.app.data.db.DayTagRow
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.RestingHeartRate
@@ -124,7 +124,7 @@ class CsvDayKeyTest {
         o.insertRestingHr(listOf(RestingHeartRate(d, 55), RestingHeartRate(d.plusDays(1), 57)))
         o.insertCheckIns(listOf(CheckInRow(d, 3, 1000)))
         o.insertDayTags(listOf(DayTagRow(d, "late_meal")))
-        o.insertDailyEnergy(listOf(DailyEnergyRow(d, 2000, 2100f, 450f, 1650f, 1440, false, 0f, 200f, List(24) { "1.5" }.joinToString(","))))
+        o.insertDailyCalories(listOf(DailyCaloriesRow(d, 2000, 2100f, 450f, 1650f, 1440, false, 0f, 200f, List(24) { "1.5" }.joinToString(","))))
         o.insertSleepSessions(listOf(SleepSession(midnight(d, auckland) - 3 * 3600, midnight(d, auckland) + 7 * 3600, DayKey.of(d), score = 70)))
         inZone(auckland)
         val zip = ByteArrayOutputStream().also { CsvExporter(o).exportZip(it) }.toByteArray()
@@ -145,7 +145,7 @@ class CsvDayKeyTest {
         assertEquals(o.restingHrAll().sortedBy { it.day }, p.restingHrAll().sortedBy { it.day })
         assertEquals(o.checkInsAll(), p.checkInsAll())
         assertEquals(o.dayTagsAll(), p.dayTagsAll())
-        assertEquals(o.dailyEnergyAll(), p.dailyEnergyAll())
+        assertEquals(o.dailyCaloriesAll(), p.dailyCaloriesAll())
         assertEquals(DayKey.of(d), p.sleepSessionsOnce(0, Long.MAX_VALUE / 2).single().day)
     }
 }

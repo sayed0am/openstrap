@@ -22,12 +22,12 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 /**
- * Data integrity item 18: a day's energy is worked out by one rule, whether its page works it out or a sync writes its
+ * Data integrity item 18: a day's calories are worked out by one rule, whether its page works it out or a sync writes its
  * row, so the page and the week's bar show the same kcal.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class DailyEnergyOneRuleTest {
+class DailyCaloriesOneRuleTest {
     @get:Rule val zone = ZoneRule()
 
     private lateinit var db: OpenStrapDatabase
@@ -51,14 +51,14 @@ class DailyEnergyOneRuleTest {
     @After fun tearDown() = db.close()
 
     private suspend fun stored(d: LocalDate): Float {
-        return checkNotNull(db.healthDao().dailyEnergyOnce(d, d).singleOrNull()) { "no row for $d" }.totalKcal
+        return checkNotNull(db.healthDao().dailyCaloriesOnce(d, d).singleOrNull()) { "no row for $d" }.totalKcal
     }
 
     @Test fun `a past day's page shows what the sync wrote for it`() = runBlocking {
-        DailyEnergyHistory(db.healthDao()).update(you, profileChanged = true, zone = ZoneOffset.UTC, now = clock.now)
+        DailyCaloriesHistory(db.healthDao()).update(you, profileChanged = true, zone = ZoneOffset.UTC, now = clock.now)
         val synced = stored(day)
 
-        val page = HealthRepository(db.healthDao()) { clock.now }.recovery(day, you).energy
+        val page = HealthRepository(db.healthDao()) { clock.now }.recovery(day, you).calories
         assertNotNull(page)
         assertEquals(synced, page!!.totalKcal, 0.01f)
         assertEquals(synced, stored(day), 0.01f)
@@ -70,8 +70,8 @@ class DailyEnergyOneRuleTest {
         db.healthDao().insertActivity((0 until 60).map { ActivityMinute(from + it * 60L, 5, 10, 1, 120) })
         db.healthDao().insertHeartRate((0 until 60).map { HeartRateSample(from + it * 60L, 120) })
 
-        val page = checkNotNull(HealthRepository(db.healthDao()) { clock.now }.recovery(today, you).energy)
-        DailyEnergyHistory(db.healthDao()).update(you, profileChanged = true, zone = ZoneOffset.UTC, now = clock.now)
+        val page = checkNotNull(HealthRepository(db.healthDao()) { clock.now }.recovery(today, you).calories)
+        DailyCaloriesHistory(db.healthDao()).update(you, profileChanged = true, zone = ZoneOffset.UTC, now = clock.now)
         assertEquals(page.totalKcal, stored(today), 0.01f)
     }
 }
