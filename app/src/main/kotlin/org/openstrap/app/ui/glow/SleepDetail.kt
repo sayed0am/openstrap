@@ -183,6 +183,12 @@ internal fun SleepScoreDetail(
                             if (moved && state.strapSleepStages.isNotEmpty()) GlowSleepStages(state.strapSleepStages, 150.dp, kept = session.start..session.end)
                             else if (state.sleepStages.isNotEmpty()) GlowSleepStages(state.sleepStages, 150.dp)
                             state.sleepBreakdown?.let { StageBars(it, Modifier.padding(top = 18.dp)) }
+                            // Times extended past the strap's have no stages for the added time, so the page says so.
+                            if (detected != null && state.sleepBreakdown != null) {
+                                SleepCopy.stagesCover(session.start, session.end, detected.start, detected.end)?.let {
+                                    Caption(it, Modifier.padding(top = 12.dp))
+                                }
+                            }
                             DetailFigures(
                                 listOf(
                                     clock(session.start) to SleepCopy.FELL_ASLEEP, clock(session.end) to SleepCopy.WOKE,
@@ -572,6 +578,10 @@ internal fun NapsDetail(
                                     ).mapNotNull { st -> b.byStage[st]?.takeIf { it > 0 }?.let { Units.duration(it) to SLEEP_NAMES[st].orEmpty() } }
                                     if (figures.isNotEmpty()) DetailFigures(figures, Modifier.padding(top = 14.dp))
                                 }
+                                // A nap extended past the strap's times has stages only for what the strap saw.
+                                if (detected != null) SleepCopy.stagesCover(nap.start, nap.end, detected.start, detected.end)?.let {
+                                    Caption(it, Modifier.padding(top = 10.dp))
+                                }
                             }
                             if (detected != null) {
                                 val moved = detected.start != nap.start || detected.end != nap.end
@@ -638,9 +648,10 @@ private fun SleepTimesSheet(
 /**
  * The workout's trim, its one bar ([TrimBar]), for a sleep or nap: the times and length over the heart rate from two
  * hours before to two hours after what the strap detected, so the drop into sleep and the rise out of it can be found
- * and the sleep trimmed or extended, a minute at a time. The handles stop at [now] and at the [others] around it.
- * Times that still can't be saved ([SleepEdits.check], too short or too long) say why in the note's place and keep
- * Save off. The strap's times stay one tap away.
+ * and the sleep trimmed or extended, a minute at a time. The handles stop at [now], at the [others] around it, and at
+ * the kind's shortest and longest ([SleepEdits.NAP_MIN_SECONDS] and the rest). Times that still can't be saved
+ * ([SleepEdits.check], the last guard) say why in the note's place and keep Save off, as do times that are still the
+ * ones shown. The strap's times stay one tap away.
  */
 // The readings and the other sleeps arrive whole with the day and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
@@ -656,20 +667,23 @@ internal fun SleepTrim(
     val reach = remember(detected, shown.start, shown.end, now, others) { Trim.sleepReach(detected, shown.start, shown.end, now, others) }
     val points = remember(heartRate, reach) { bucket(heartRate.filter { it.x in reach }, reach, HR_STEP_SECONDS) }
     val problem = SleepEdits.check(detected, start, end, now, others)?.let { SleepEditCopy.text(it, zone) }
+    val changed = start != shown.start || end != shown.end
     Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
         // As the workout's trim: the times and length above the bar.
-        Text("${SleepCopy.span(clock(start), clock(end))}, ${Units.duration(end - start)}", color = Color.White, style = GlowType.body)
+        Text(SleepCopy.trimLine(detected.nap, clock(start), clock(end), end - start), color = Color.White, style = GlowType.body)
         // Sleep's heart rate sits below zone 2, so the bars are zone 1's colour.
         TrimBar(
             points, core = detected.start..detected.end, reach = reach, from = start, to = end,
             colorOf = { ZONE_COLORS[0] }, onChange = { f, t -> start = f; end = t },
             step = Trim.SLEEP_STEP_SECONDS, keep = listOf(detected.start, detected.end, shown.start, shown.end),
+            length = if (detected.nap) SleepEdits.NAP_MIN_SECONDS..SleepEdits.NAP_MAX_SECONDS
+            else SleepEdits.SLEEP_MIN_SECONDS..SleepEdits.SLEEP_MAX_SECONDS,
         )
         if (problem != null) PageNote(problem, color = MetricColors.warn)
         else Text(SleepCopy.TIMES_HINT, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PageButton("Cancel", onCancel, Modifier.weight(1f))
-            PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null, primary = true)
+            PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null && changed, primary = true)
         }
         if (shown.start != detected.start || shown.end != detected.end) {
             PageButton(

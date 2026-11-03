@@ -266,9 +266,23 @@ internal object SleepCopy {
     /** How to read the sheet's heart rate. */
     const val TIMES_HINT = "Your heart rate drops as you fall asleep and rises as you wake."
 
-    /** The sheet's result line for times that can be saved. */
-    fun timesResult(nap: Boolean, seconds: Long): String =
-        if (nap) "A nap of ${Units.duration(seconds)}." else "Asleep for ${Units.duration(seconds)}."
+    /**
+     * Above the sheet's bar: the times and how long they span. A night's says "in bed", since the page above gives the
+     * shorter time asleep ("23:05 to 08:16, 9 h 11 in bed"). A nap's is its plain length.
+     */
+    fun trimLine(nap: Boolean, from: String, to: String, seconds: Long): String =
+        "${span(from, to)}, ${Units.duration(seconds)}${if (nap) "" else " in bed"}"
+
+    /**
+     * Under the stages of a sleep or nap whose times reach past what the strap saw ([strapStart] to [strapEnd]): the
+     * stages are only the strap's, so this says how much of the times they cover. Null when the times stay inside the
+     * strap's, or miss them.
+     */
+    fun stagesCover(start: Long, end: Long, strapStart: Long, strapEnd: Long): String? {
+        if (start >= strapStart && end <= strapEnd) return null
+        val seen = minOf(end, strapEnd) - maxOf(start, strapStart)
+        return if (seen <= 0) null else "The stages cover the ${Units.duration(seen)} the strap saw."
+    }
 
     /** On a detail whose sleep or nap has the user's times. */
     fun yourTimes(from: String, to: String): String = "Your times. ${strapSaw(from, to)}"

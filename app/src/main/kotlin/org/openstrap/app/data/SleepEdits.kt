@@ -1,7 +1,5 @@
 package org.openstrap.app.data
 
-import java.time.Instant
-import java.time.ZoneId
 import kotlin.math.abs
 import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.data.db.SleepSession
@@ -168,16 +166,6 @@ object SleepEdits {
             overlap != null -> Problem.RunsInto(overlap.nap, overlap.start)
             else -> null
         }
-    }
-
-    /**
-     * The moment at [minuteOfDay] (after local midnight) closest to [near]: a clock picked for a session's end is read
-     * on its own day, or the next or previous one when it crosses midnight.
-     */
-    fun atNear(minuteOfDay: Int, near: Long, zone: ZoneId): Long {
-        val day = Instant.ofEpochSecond(near).atZone(zone).toLocalDate()
-        return (-1L..1L).map { day.plusDays(it).atStartOfDay(zone).plusMinutes(minuteOfDay.toLong()).toEpochSecond() }
-            .minBy { abs(it - near) }
     }
 
     /**
