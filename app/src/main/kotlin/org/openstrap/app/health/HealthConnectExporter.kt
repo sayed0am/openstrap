@@ -309,9 +309,15 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         return records to replaced
     }
 
-    /** Heart rate: one record per hour with all samples in it. */
-    private suspend fun heartRate(from: Long, to: Long): List<Record> {
-        val hr = dao.heartRateOnce(from, to) + dao.activityOnce(from, to)
+    /**
+     * Heart rate: one record per hour with all samples in it. Its id is the hour, so it replaces the hour's record
+     * written before, and [from] and [to] reach out to whole hours: a range starting mid hour would write that hour's
+     * later part over the whole of it.
+     */
+    internal suspend fun heartRate(from: Long, to: Long): List<Record> {
+        val first = Math.floorDiv(from, 3600L) * 3600
+        val last = (Math.floorDiv(to, 3600L) + 1) * 3600 - 1
+        val hr = dao.heartRateOnce(first, last) + dao.activityOnce(first, last)
             .mapNotNull { m -> m.heartRate?.takeIf { it in HeartRate.VALID }?.let { HeartRateSample(m.timestamp, it) } }
         return hr.distinctBy { it.timestamp }.sortedBy { it.timestamp }.groupBy { it.timestamp / 3600 }.map { (hour, samples) ->
             val start = hour * 3600
@@ -359,7 +365,8 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
 
     /**
      * Copies what OpenStrap wrote to Health Connect back into the database, filling gaps only: a day the strap has
-     * already synced keeps its own, richer rows. Returns the number of rows read. Without the history permission,
+     * already synced keeps its own, richer rows, and a sleep the user moved or deleted doesn't come back as another.
+     * Returns the number of rows read. Without the history permission,
      * Health Connect only returns the last 30 days. Read a year at a time, so ten years are never in memory at once.
      */
     suspend fun import(now: Instant = Instant.now()): Int {
@@ -380,8 +387,22 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         return n
     }
 
+    /**
+     * The sleep in [records] the phone doesn't have yet. One it has at other times (a night the user moved) or
+     * deleted stays out ([SleepImport]), with its stages.
+     */
+    private suspend fun newSleep(records: List<SleepSessionRecord>): List<SleepSessionRecord> {
+        if (records.isEmpty()) return records
+        val from = records.minOf { it.startTime.epochSecond } - SleepImport.REACH_SECONDS
+        val to = records.maxOf { it.endTime.epochSecond } + SleepImport.REACH_SECONDS
+        val phone = SleepImport(org.openstrap.app.data.SleepSource(dao).resolvedOnce(from, to), dao.sleepEditsOnce())
+        return records.filterNot {
+            phone.leavesOut(it.startTime.epochSecond, it.endTime.epochSecond, SleepImport.strapStart(it.metadata.clientRecordId))
+        }
+    }
+
     /** [import] over one range, reading each kind of record in it with [read]. */
-    private suspend fun importRange(read: suspend (KClass<out Record>) -> List<Record>): Int {
+    internal suspend fun importRange(read: suspend (KClass<out Record>) -> List<Record>): Int {
         var n = 0
         @Suppress("UNCHECKED_CAST") // [read] returns records of the type it is given.
         suspend fun <T : Record> of(type: KClass<T>): List<T> = read(type) as List<T>
@@ -404,7 +425,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         val sessions = mutableListOf<SleepSession>()
         val allStages = mutableListOf<SleepStage>()
         val zone = ZoneId.systemDefault()
-        for (r in of(SleepSessionRecord::class)) {
+        for (r in newSleep(of(SleepSessionRecord::class))) {
             val start = r.startTime.epochSecond
             val end = r.endTime.epochSecond
             val nap = end - start < 3 * 3600
