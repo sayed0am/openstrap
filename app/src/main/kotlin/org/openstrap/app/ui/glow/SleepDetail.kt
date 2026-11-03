@@ -19,13 +19,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
-import androidx.compose.material3.TimeInput
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -71,12 +69,12 @@ import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.sleepWeek
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import org.openstrap.app.ui.glow.draw.stageColor
-import org.openstrap.app.ui.theme.ControlSurface
 
 /*
  * The Sleep tab's details (spec 5.2 and 6.1) in the metric template: the Sleep score with the night it came from,
@@ -430,16 +428,12 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
 @Composable
 private fun ScrubLine(
     points: List<ChartPoint>, window: LongRange, height: Dp, labels: List<String>, color: Color, unit: String, decimals: Int = 0,
-    span: LongRange? = null,
-    spanColor: Color = color,
     onScrub: (DetailHeadline?) -> Unit,
 ) {
     val step = 5 * 60L
     val values = remember(points, window) { bucket(points, window, step) }
-    val length = (window.last - window.first).coerceAtLeast(1).toFloat()
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
-        span = span?.let { (it.first - window.first) / length..(it.last - window.first) / length }, spanColor = spanColor,
         onScrub = { i ->
             val headline = i?.let { values[it] }?.let { v ->
                 DetailHeadline(dotFormat("%.${decimals}f", v), "$unit at ${clock(window.first + i * step)}", null)
@@ -627,52 +621,54 @@ internal fun NapsDetail(
 }
 
 /**
- * A sleep's or nap's own times, one sheet for both: Fell asleep and Woke up as two boxes typed on the number pad, with
- * the heart rate from two hours before to two hours after the strap's session and the chosen span shaded on it, so the
- * drop into sleep and the rise out of it can be found by scrubbing. [others] are the day's other sleep and naps as shown, which the
- * times mustn't run into. The strap's times stay one tap away.
+ * A sleep's or nap's own times, one sheet for both, around [SleepTrim]. [others] are the day's other sleep and naps as
+ * shown, which the times mustn't run into.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SleepTimesSheet(
     shown: SleepSession, detected: SleepSession, heartRate: List<ChartPoint>, others: List<SleepSession>,
     onSave: (Long, Long) -> Unit, onDismiss: () -> Unit,
 ) {
-    val zone = ZoneId.systemDefault()
-    fun local(t: Long) = Instant.ofEpochSecond(t).atZone(zone)
-    val startClock = rememberTimePickerState(local(shown.start).hour, local(shown.start).minute, is24Hour = true)
-    val endClock = rememberTimePickerState(local(shown.end).hour, local(shown.end).minute, is24Hour = true)
-    var pickingEnd by remember { mutableStateOf(false) }
-    var scrub by remember { mutableStateOf<DetailHeadline?>(null) }
-    // A clock left on the minute it opened at keeps the time to the second, so the strap's own times stay its own.
-    fun picked(c: androidx.compose.material3.TimePickerState, was: Long, near: Long): Long =
-        if (c.hour == local(was).hour && c.minute == local(was).minute) was else SleepEdits.atNear(c.hour * 60 + c.minute, near, zone)
-    val start = picked(startClock, shown.start, detected.start)
-    val end = picked(endClock, shown.end, detected.end)
-    val problem = SleepEdits.check(detected, start, end, Instant.now().epochSecond, others)?.let { SleepEditCopy.text(it, zone) }
-    val window = (detected.start - 2 * 3600)..(detected.end + 2 * 3600)
-    val hr = remember(heartRate, window) { heartRate.filter { it.x in window } }
-
+    val now = remember { Instant.now().epochSecond }
     PageSheet(onDismiss, SleepCopy.timesTitle(detected.nap), note = SleepCopy.strapSaw(clock(detected.start), clock(detected.end))) {
-        if (hr.isNotEmpty()) Column {
-            Text(
-                scrub?.let { "${it.value} ${it.label}" } ?: SleepCopy.TIMES_HINT,
-                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
-            )
-            Box(Modifier.padding(top = 8.dp)) {
-                ScrubLine(
-                    hr, window, 90.dp, listOf(clock(window.first), clock(window.last)), MetricColors.heart, "bpm",
-                    span = if (end > start) start..end else null, spanColor = MetricColors.sleepDeep,
-                ) { scrub = it }
-            }
-        }
-        GlowSegments(listOf("Fell asleep ${clock(start)}", "Woke up ${clock(end)}"), if (pickingEnd) 1 else 0, { pickingEnd = it == 1 })
-        // Hours and minutes as two boxes, typed on the number pad: no dial, so the sheet stays short.
-        TimeInput(if (pickingEnd) endClock else startClock, Modifier.align(Alignment.CenterHorizontally), colors = SleepTimeColors())
+        SleepTrim(shown, detected, heartRate, others, now, onSave, onDismiss)
+    }
+}
+
+/**
+ * The workout's trim, its one bar ([TrimBar]), for a sleep or nap: the times and length over the heart rate from two
+ * hours before to two hours after what the strap detected, so the drop into sleep and the rise out of it can be found
+ * and the sleep trimmed or extended, a minute at a time. The handles stop at [now] and at the [others] around it.
+ * Times that still can't be saved ([SleepEdits.check], too short or too long) say why in the note's place and keep
+ * Save off. The strap's times stay one tap away.
+ */
+// The readings and the other sleeps arrive whole with the day and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+internal fun SleepTrim(
+    shown: SleepSession, detected: SleepSession, heartRate: List<ChartPoint>, others: List<SleepSession>, now: Long,
+    onSave: (Long, Long) -> Unit, onCancel: () -> Unit,
+) {
+    val zone = ZoneId.systemDefault()
+    // The handles outlive a rotation and a fold while the sheet stays open (audit K7), until the sleep's times change.
+    var start by rememberSaveable(detected.start, shown.start, shown.end) { mutableLongStateOf(shown.start) }
+    var end by rememberSaveable(detected.start, shown.start, shown.end) { mutableLongStateOf(shown.end) }
+    val reach = remember(detected, shown.start, shown.end, now, others) { Trim.sleepReach(detected, shown.start, shown.end, now, others) }
+    val points = remember(heartRate, reach) { bucket(heartRate.filter { it.x in reach }, reach, HR_STEP_SECONDS) }
+    val problem = SleepEdits.check(detected, start, end, now, others)?.let { SleepEditCopy.text(it, zone) }
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // As the workout's trim: the times and length above the bar.
+        Text("${SleepCopy.span(clock(start), clock(end))}, ${Units.duration(end - start)}", color = Color.White, style = GlowType.body)
+        // Sleep's heart rate sits below zone 2, so the bars are zone 1's colour.
+        TrimBar(
+            points, core = detected.start..detected.end, reach = reach, from = start, to = end,
+            colorOf = { ZONE_COLORS[0] }, onChange = { f, t -> start = f; end = t },
+            step = Trim.SLEEP_STEP_SECONDS, keep = listOf(detected.start, detected.end, shown.start, shown.end),
+        )
         if (problem != null) PageNote(problem, color = MetricColors.warn)
-        else Text(SleepCopy.timesResult(detected.nap, end - start), color = Color.White, style = GlowType.body)
+        else Text(SleepCopy.TIMES_HINT, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
+            PageButton("Cancel", onCancel, Modifier.weight(1f))
             PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null, primary = true)
         }
         if (shown.start != detected.start || shown.end != detected.end) {
@@ -684,16 +680,8 @@ private fun SleepTimesSheet(
     }
 }
 
-/** The box being typed in lit in the sleep colour, the other plain, as on the alarms' clock otherwise. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SleepTimeColors() = androidx.compose.material3.TimePickerDefaults.colors(
-    containerColor = Color.Transparent,
-    timeSelectorSelectedContainerColor = MetricColors.sleepDeep.copy(alpha = 0.25f),
-    timeSelectorUnselectedContainerColor = ControlSurface,
-    timeSelectorSelectedContentColor = Color.White,
-    timeSelectorUnselectedContentColor = Color.White,
-)
+/** The sleep bar's heart rate, in the steps the page loads it in. */
+private const val HR_STEP_SECONDS = 5 * 60L
 
 /* ----------------------------------------------- Related -------------------------------------------- */
 
