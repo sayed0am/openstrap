@@ -12,8 +12,8 @@ import org.openstrap.app.data.db.SleepStage
  * that is the model working as meant: Recharged counts from midnight, so the untrimmed night's first hour recharged
  * into the day's starting point instead, and sleep refills a share of what is missing ([Recovery.SLEEP_K]), so the
  * shorter night, starting lower, refills faster. Over the whole night the trimmed one still recharges less, and the
- * cut hours themselves add only Relax's slight recharge. Both nights get the same night resting heart rate here, though
- * on the phone the trim raised it (the lowest half hour was in the cut part), which makes the kept sleep recharge faster.
+ * cut hours themselves add only Relax's slight recharge. Both nights get the same night resting heart rate, as the
+ * engine takes it from the strap's own night ([ChargeEditedNightTest]).
  */
 class ChargeTrimmedNightTest {
     // Minute 0 is 8:00 PM the evening before.

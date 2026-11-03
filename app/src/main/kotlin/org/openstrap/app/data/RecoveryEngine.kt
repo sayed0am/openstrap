@@ -184,6 +184,8 @@ class RecoveryEngine(private val dao: HealthDao) {
         val workoutHr: List<Pair<LongRange, Map<Long, Int>>>,
         /** Naps count with the user's own times when they changed them. */
         val sessions: List<SleepSession>,
+        /** The sleeps of [sessions] the user moved, with the strap's own session for each. */
+        val moved: List<SleepEdits.Resolved>,
         val hrv: List<org.openstrap.app.data.db.HrvSample>,
         val skin: List<org.openstrap.app.data.db.SkinTemperature>,
         val breath: List<org.openstrap.app.data.db.BreathRate>,
@@ -206,13 +208,15 @@ class RecoveryEngine(private val dao: HealthDao) {
     /** Step one of [compute]: every database read it needs, over the spans of [span]. */
     private suspend fun gather(span: Span): Reads {
         val strapWorkouts = dao.workoutsOnce(span.loadFrom, span.to)
+        val resolved = sleepSource.resolvedOnce(span.from, span.to)
         return Reads(
             activity = dao.activityOnce(span.loadFrom, span.readTo),
             heartRate = dao.heartRateOnce(span.loadFrom, span.readTo),
             stress = dao.stressOnce(minOf(span.simFrom, span.calmFrom), span.readTo),
             strapWorkouts = strapWorkouts,
             workoutHr = workoutHeartRates(span.loadFrom, span.to, span.now, strapWorkouts),
-            sessions = sleepSource.sessionsOnce(span.from, span.to),
+            sessions = sleepSource.shown(resolved),
+            moved = resolved.filter { it.moved && !it.deleted },
             hrv = dao.hrvOnce(span.from, span.to),
             skin = dao.skinTemperatureOnce(span.from, span.to),
             breath = dao.breathRateOnce(span.from, span.to),
@@ -366,12 +370,26 @@ class RecoveryEngine(private val dao: HealthDao) {
         // night gives each its own state); an Alert scales Charge from that sleep's start.
         val bodyByDay = BodySignals.evaluate(base.nights, base.causes).associate { it.day to it.state }
         val bodySignals = base.nights.map { it.start to (bodyByDay[it.day] ?: BodySignals.State.Normal) }
+        val nightRestingHr = chargeNightRestingHr(base.tonight, reads.moved, base.hr)
         val params = Recovery.ChargeParams(
-            base.restingHr, base.maxHr, base.tonight?.restingHr, hrvScore, base.female, stressThreshold.value, bodySignals,
+            base.restingHr, base.maxHr, nightRestingHr, hrvScore, base.female, stressThreshold.value, bodySignals,
             mainSleepEnds = base.mains.values.map { it.end }.filter { it in simFrom until simTo },
             usualSleep = usualSleep(base.mains.filterKeys { it <= span.midnight }.values, span.date, span.zone),
         )
         return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end)
+    }
+
+    /**
+     * The reference Charge's sleep term measures each minute's relaxation against: [tonight]'s lowest 30-minute heart
+     * rate as the strap detected the night. When the user moved its times ([moved]), that comes from the strap's own
+     * session, so a trim that cuts off the calmest half hour doesn't make the sleep kept count as more restful. An
+     * unmoved night keeps its own value.
+     */
+    private fun chargeNightRestingHr(tonight: Recovery.Night?, moved: List<SleepEdits.Resolved>, hr: List<Pair<Long, Int>>): Float? {
+        val strap = moved.firstOrNull { tonight != null && !it.strap.nap && it.start == tonight.start && it.end == tonight.end }?.strap
+            ?: return tonight?.restingHr
+        val sleepHr = hr.filter { it.first in strap.start..strap.end && it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
+        return Recovery.lowestAverage(sleepHr, 30, Recovery.RHR_WINDOW_MIN_MINUTES)?.second ?: tonight?.restingHr
     }
 
     /**

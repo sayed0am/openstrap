@@ -182,6 +182,8 @@ Each minute gets a state, following Firstbeat's stress/recovery method (*Stress 
 | Rest | otherwise | −`REST_DRAIN`·C (0.0005·C: 0.04 at 80, 0.025 at 50) |
 | No data | a heart-rate dropout under 10 min, or a gap still open at the end of the data (not synced yet) | no change, the value holds |
 
+**Night resting, for the sleep term.** The relax factor's night resting is the night's lowest 30-minute average heart rate (as Readiness's `rhr_n`), taken over the night as the strap detected it. When the user moved the night's times, the engine takes it from the strap's own session, not the edited one, so a trim that cuts off the calmest half hour doesn't make the sleep kept count as more restful. On the Fold's 2 to 3 Nov night, trimmed from 11:05 PM to 3:00 AM, the edited night's own value would be 66 bpm against the strap's 59, and the kept sleep would recharge about 40 % faster a minute. A night with no edit uses its own value, as before. Readiness and the sleep pages still use the edited night.
+
 `BASE_DRAIN` = 0.04 (about 2.4/h) is the floor under every minute that is doing something: movement, stress, exercise recovery, the stress exclusion. "Moving" is `moving`, the same signal daily load uses: the strap counted 1–250 steps that minute.
 
 **No drain at rest.** Zepp's physical pool drains only with movement and HRR over 10 %; at rest it recharges slowly. A seated day falls through its mental pool, which drains while stress is 24 or more, and ever more slowly once the pool is under half (native 03 §4.3–4.4). OpenStrap has one pool, so:
