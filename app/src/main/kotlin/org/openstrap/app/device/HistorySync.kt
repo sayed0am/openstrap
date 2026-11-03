@@ -282,6 +282,13 @@ class HistorySync internal constructor(
         }
     }
 
+    /**
+     * Whether the strap workout [row] is the strap's copy ([Workouts.sameWorkout]) of a time marked as no workout: a
+     * phone workout discarded or ended under a minute, a strap workout deleted, or a suggestion turned down.
+     */
+    private suspend fun discardedPhoneWorkout(row: Workout): Boolean =
+        dao.dismissedWorkoutsAll().any { Workouts.sameWorkout(row.start..row.end, it.start..it.end) }
+
     private suspend fun syncType(spec: HistoryTypeSpec) {
         val key = "gdsp_${spec.code}"
         val lookback = if (spec.type in WORKOUT_TYPES) WORKOUT_LOOKBACK else DEFAULT_LOOKBACK
@@ -327,7 +334,7 @@ class HistorySync internal constructor(
                     dao.inTransaction { store(kept) }
                     // Only acknowledge once the data is safely in the database.
                     finish()
-                    val next = nextCursor(spec.type, parsedNext, kept, now)
+                    val next = nextCursor(spec.type, headerTime, records, parsedNext, kept, now)
                     if (next != null && next > cursor) cursors.set(key, next)
                     if (!HistoryTypeSpecs.shouldContinue(spec, cursor, next)) return
                     cursor = next!!
@@ -377,8 +384,13 @@ class HistorySync internal constructor(
                 is WorkoutFetch.Workout -> {
                     val now = System.currentTimeMillis() / 1000
                     val deleted = dao.deletedWorkoutsAll().any { it.start == w.summary.trackId }
+                    val discarded = !deleted && discardedPhoneWorkout(workoutRow(w.summary))
                     if (deleted) {
                         log("history workout ${Instant.ofEpochSecond(w.summary.trackId)}: deleted in OpenStrap, skipped")
+                    } else if (discarded) {
+                        // The strap's copy of a phone workout discarded before it synced: deleted like one deleted here.
+                        log("history workout ${Instant.ofEpochSecond(w.summary.trackId)}: over a discarded workout, skipped")
+                        dao.insertDeletedWorkouts(listOf(DeletedWorkout(w.summary.trackId, null, now)))
                     } else if (w.summary.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK) {
                         log("history workout ${Instant.ofEpochSecond(w.summary.trackId)}: type ${w.summary.sportType}, subtype ${w.summary.subtype}, ${w.detail?.heartRate?.size ?: 0} HR samples")
                         val storedBefore = dao.workout(w.summary.trackId).first() != null
@@ -471,8 +483,8 @@ class HistorySync internal constructor(
                 maxHr.merge(dayStart(r.timestamp), bpm, ::maxOf)
             }
             is RecoveryHeartRate -> if (r.samples.isNotEmpty()) recoveryHr += RecoveryHeartRateRow(r.trackId, r.samples.map { it.toByte() }.toByteArray())
-            // A record of 0xFF bytes is buffer padding, not a minute.
-            is TodayActivityExtended -> if (r.version != 0xFF) extended += ActivityExtendedMinute(
+            // A record of 0xFF bytes is buffer padding, not a minute (keepable drops it already).
+            is TodayActivityExtended -> if (!isBlank(r)) extended += ActivityExtendedMinute(
                 r.timestamp, r.floorCount, r.runDuration, r.fatBurnDuration, r.standDuration, r.walkDuration, r.sitDuration,
                 r.steps, r.calories, r.distanceCm,
             )
@@ -599,37 +611,76 @@ class HistorySync internal constructor(
          * minutes, so steps went up and then back down. Other types allow a strap clock a little ahead.
          */
         internal fun <R : HistoryRecord> keepable(type: HistoryDataType, records: List<R>, now: Long): List<R> =
-            if (type == HistoryDataType.ACTIVITY) {
-                records.filter { it.timestamp >= MIN_VALID_EPOCH && it.timestamp < minuteStart(now) }
+            if (type in MINUTE_SERIES) {
+                records.filter { !isBlank(it) && it.timestamp >= MIN_VALID_EPOCH && it.timestamp < minuteStart(now) }
             } else {
                 records.filter { it.timestamp in MIN_VALID_EPOCH..now + FUTURE_SLACK }
             }
 
         /**
-         * Where the cursor goes after a chunk, or null to leave it.
+         * Where the cursor goes after a chunk starting at [headerTime], or null to leave it.
          *
          * A chunk with nothing usable (only gap slots, or only impossible times) still moves the cursor past it, or
          * the strap serves the same chunk on every sync. The chunk holds the earliest records after the cursor, so
-         * skipping it loses nothing, and the cap at now (the current minute for activity) keeps a strap clock that
-         * runs ahead from pushing the cursor into the future.
+         * skipping it loses nothing, and the cap at now (the current minute for the minute series) keeps a strap
+         * clock that runs ahead from pushing the cursor into the future.
          *
-         * Except recent activity: the strap writes a minute a little after it ends and sends the slot blank until
-         * then. Skipping that slot moved the cursor past a minute that was never fetched, which left gaps of a few
-         * minutes. So blank recent minutes are fetched again next sync.
+         * Except recent blank minutes: the strap writes a minute a little after it ends and sends the slot blank
+         * until then, even with written minutes after it. Moving past that slot lost a minute that was never fetched
+         * (gaps of 2 to 10 minutes while heart rate had every one). So the cursor stops at the first blank minute
+         * still inside [UNWRITTEN_WAIT], and the minutes after it are fetched again, replacing the same rows.
          */
-        internal fun nextCursor(type: HistoryDataType, parsedNext: Long?, kept: List<HistoryRecord>, now: Long): Long? {
-            val waitForStrap = kept.isEmpty() && type == HistoryDataType.ACTIVITY && parsedNext != null && parsedNext > now - UNWRITTEN_WAIT
-            if (parsedNext == null || waitForStrap) return null
-            val next = if (kept.isEmpty()) parsedNext else parsedNext.coerceAtMost(kept.maxOf { it.timestamp } + MINUTE_SECONDS)
+        internal fun nextCursor(
+            type: HistoryDataType,
+            headerTime: Long,
+            records: List<HistoryRecord>,
+            parsedNext: Long?,
+            kept: List<HistoryRecord>,
+            now: Long,
+        ): Long? {
+            if (parsedNext == null) return null
+            val next = firstRecentBlank(type, headerTime, records, parsedNext, now)
+                ?: if (kept.isEmpty()) parsedNext else parsedNext.coerceAtMost(kept.maxOf { it.timestamp } + MINUTE_SECONDS)
             return next.coerceAtMost(latestCursor(type, now))
         }
+
+        /**
+         * The earliest blank minute of a minute-series chunk the strap may still write. Activity's parser skips the
+         * blank slots before its first written minute (they run from [headerTime]), and stops at the first one after
+         * it ([parsedNext]). Extended activity keeps its blank slots as 0xFF records.
+         */
+        private fun firstRecentBlank(
+            type: HistoryDataType,
+            headerTime: Long,
+            records: List<HistoryRecord>,
+            parsedNext: Long,
+            now: Long,
+        ): Long? {
+            val blanks = when (type) {
+                HistoryDataType.ACTIVITY -> {
+                    val firstWritten = records.minOfOrNull { it.timestamp } ?: parsedNext
+                    (headerTime until firstWritten step MINUTE_SECONDS).toList()
+                }
+                HistoryDataType.TODAY_ACTIVITY_EXTENDED -> records.filter(::isBlank).map { it.timestamp }
+                else -> return null
+            }
+            return blanks.firstOrNull { it >= now - UNWRITTEN_WAIT }
+        }
+
+        /** An extended activity slot the strap hasn't written: all 0xFF, so its version byte is too. */
+        private fun isBlank(r: HistoryRecord): Boolean = r is TodayActivityExtended && r.version == BLANK_VERSION
+
+        private const val BLANK_VERSION = 0xFF
+
+        /** One row a minute, written by the strap a little after the minute ends. */
+        private val MINUTE_SERIES = setOf(HistoryDataType.ACTIVITY, HistoryDataType.TODAY_ACTIVITY_EXTENDED)
 
         /** How long the strap may take to write a minute; blank slots older than this are real gaps. */
         private const val UNWRITTEN_WAIT = 10 * 60L
 
-        /** How far a type's cursor may move: activity stops at the current minute, so it is fetched once it ends. */
+        /** How far a type's cursor may move: the minute series stop at the current minute, so it is fetched once it ends. */
         internal fun latestCursor(type: HistoryDataType, now: Long): Long =
-            if (type == HistoryDataType.ACTIVITY) minuteStart(now) else now
+            if (type in MINUTE_SERIES) minuteStart(now) else now
 
         private const val MINUTE_SECONDS = 60L
 

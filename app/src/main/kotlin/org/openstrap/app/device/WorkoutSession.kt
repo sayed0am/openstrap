@@ -406,6 +406,8 @@ class WorkoutSession(
                         dao.upsertAppWorkout(editor.withEffect(ended.copy(stretches = stretches), hr, route))
                     } else {
                         dao.deleteAppWorkout(w.start)
+                        // Not kept, so a strap session that ran over it isn't one either, should the strap keep it.
+                        dao.insertDismissedWorkouts(listOf(org.openstrap.app.data.db.DismissedWorkout(w.start, recorded)))
                     }
                 }
                 stored.exceptionOrNull()?.let {

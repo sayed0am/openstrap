@@ -114,8 +114,12 @@ object Workouts {
     const val SAME_WORKOUT_OUTSIDE_S = 600L
     const val SAME_WORKOUT_OUTSIDE_SHARE = 0.25f
 
-    /** A phone workout's time as [sameWorkout] reads it: its shown start to its end, [now] while it records. */
-    fun phoneRange(p: org.openstrap.app.data.db.AppWorkout, now: Long): LongRange = p.from..(p.end ?: now)
+    /**
+     * A phone workout's time as [sameWorkout] reads it: as recorded, from its start to where recording stopped ([now]
+     * while it records). The strap's session runs over that time, so a trim or an End at, which change only what is
+     * shown, don't turn the strap's copy into a second workout.
+     */
+    fun phoneRange(p: org.openstrap.app.data.db.AppWorkout, now: Long): LongRange = p.start..(p.recordedEnd ?: p.end ?: now)
 
     /**
      * Whether the strap workout over [strap] is the strap's own record of the phone workout over [phone], so the two

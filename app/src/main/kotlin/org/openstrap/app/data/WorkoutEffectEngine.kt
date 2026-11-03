@@ -142,7 +142,8 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         val since = dayStart(w.from, zone) - (TREND_DAYS - 1) * DAY
         val phone = dao.appWorkoutsOnce(since, w.from).filter { it.start != w.start && it.end != null && it.from < w.from }
         val strap = dao.workoutsOnce(since, w.from).filter { s ->
-            s.start < w.from && !Workouts.sameWorkout(s.start..s.end, w.from..w.end!!) && phone.none { p -> Workouts.sameWorkout(s.start..s.end, p.from..p.end!!) }
+            s.start < w.from && !Workouts.sameWorkout(s.start..s.end, Workouts.phoneRange(w, w.end!!)) &&
+                phone.none { p -> Workouts.sameWorkout(s.start..s.end, Workouts.phoneRange(p, p.end!!)) }
         }
         return phone.mapNotNull { p -> p.epoc?.let { p.from to it } } + strap.mapNotNull { s -> s.trainingLoad?.let { s.start to it.toFloat() } }
     }

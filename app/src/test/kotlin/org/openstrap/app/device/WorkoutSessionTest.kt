@@ -160,6 +160,8 @@ class WorkoutSessionTest {
         s.end()
         s.state.await { it is WorkoutState.Idle }
         assertNull(stored(t0))
+        // Its time is remembered, so a strap session the strap kept over it isn't synced in as a workout.
+        assertEquals(listOf(t0 to t0 + 30), runBlocking { db.healthDao().dismissedWorkoutsAll() }.map { it.start to it.end })
     }
 
     @Test
@@ -174,6 +176,8 @@ class WorkoutSessionTest {
         s.discard(t0)
         s.state.await { it is WorkoutState.Idle }
         assertNull(stored(t0))
+        // Discarded before the strap's copy synced: its time is remembered, so the copy is left out when it arrives.
+        assertEquals(listOf(t0 to t0 + 300), runBlocking { db.healthDao().dismissedWorkoutsAll() }.map { it.start to it.end })
     }
 
     @Test

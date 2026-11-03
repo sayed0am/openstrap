@@ -70,6 +70,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
             }
         }
         val deleted = db.healthDao().deletedWorkoutsAll()
+        removeResent(deleted)
         val gone = mapOf(
             "workout" to deleted.mapTo(HashSet()) { it.start },
             "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
@@ -79,6 +80,20 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
         if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
         Result(counts, present, skipped, settings)
+    }
+
+    /**
+     * Workouts deleted on the old phone that the strap re-sent here before the restore: the restored marker keeps
+     * them out of later syncs, and they go now, with their heart rate and their effect, as a delete would.
+     */
+    private suspend fun removeResent(deleted: List<org.openstrap.app.data.db.DeletedWorkout>) {
+        val dao = db.healthDao()
+        for (d in deleted.filter { dao.workoutOnce(it.start) != null }) {
+            dao.deleteWorkoutHeartRate(d.start)
+            dao.deleteRecoveryHeartRate(d.start)
+            d.effectEnd?.let { dao.deleteSportEffect(it) }
+            dao.deleteWorkoutRow(d.start)
+        }
     }
 
     /** This table's rows from [records], the header first; null for an empty file. */

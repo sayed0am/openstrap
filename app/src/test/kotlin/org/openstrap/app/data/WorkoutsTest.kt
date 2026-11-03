@@ -146,6 +146,20 @@ class WorkoutsTest {
     }
 
     @Test
+    fun aTrimOrEndAtLeavesTheStrapCopyWithItsWorkout() {
+        // A 30 min walk, the stop prompt 8 min later, End at tapped at 41 min: the strap stopped at 41 min. Shown as
+        // 0 to 30 min, 11 min of the strap's copy lies outside, more than the 10 min allowed, so it listed twice.
+        val walk = org.openstrap.app.data.db.AppWorkout(start, start + 1800, 3, recordedEnd = start + 2460)
+        val strapCopy = Workout(start, start + 2460, 3, 2460, 200, 110, 130, 80, 1f, 0.1f, 10, null, null)
+        assertEquals(walk, Workouts.phoneTwin(strapCopy, listOf(walk), start + 9000))
+        assertEquals(1, Workouts.listed(listOf(strapCopy), emptyList(), emptyList(), listOf(walk), emptyMap(), 190, now = start + 9000).size)
+        // Trimmed at both ends: still the strap's copy of it.
+        val trimmed = walk.copy(shownStart = start + 900, end = start + 1500)
+        assertEquals(trimmed, Workouts.phoneTwin(strapCopy, listOf(trimmed), start + 9000))
+        assertEquals(listOf(strapCopy.start), Workouts.strapTwins(listOf(strapCopy), Workouts.phoneRange(trimmed, start + 9000)).map { it.start })
+    }
+
+    @Test
     fun onlyARecordOfNearlyAllOfAPhoneWorkoutStandsForItsEffect() {
         val walk = start..(start + 6892)
         // A session the strap ran alongside, a few seconds off at each end: its figures are the walk's.

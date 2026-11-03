@@ -184,6 +184,24 @@ class CsvRestoreTest {
         assertEquals(0, result.skipped)
     }
 
+    @Test fun `a deleted workout the strap re-sent to the new phone before the restore goes`() = runTest {
+        // Deleted on the old phone. The new phone paired and synced first, so the strap re-sent it with its effect.
+        val gone = workout(day + 3600, day + 5400)
+        val effectEnd = gone.end + 60
+        old.healthDao().insertDeletedWorkouts(listOf(DeletedWorkout(gone.start, effectEnd, day)))
+        old.healthDao().insertWorkouts(listOf(workout(day + 9000, day + 9600)))
+        phone.healthDao().insertWorkouts(listOf(gone))
+        phone.healthDao().insertSportEffects(listOf(SportEffectRow(effectEnd, 600, null, null, null, null, null, null, null)))
+        phone.healthDao().insertRecoveryHeartRate(listOf(RecoveryHeartRateRow(gone.start, byteArrayOf(1, 2))))
+        restore(backup(old))
+
+        val d = phone.healthDao()
+        assertNull(d.workoutOnce(gone.start))
+        assertTrue(d.recoveryHeartRateAll().isEmpty())
+        assertTrue(d.sportEffects().first().isEmpty())
+        assertEquals(listOf(gone.start), d.deletedWorkoutsAll().map { it.start })
+    }
+
     @Test fun `a tombstone already on the phone keeps the backup's copy of that workout out`() = runTest {
         fillOldPhone()
         val first = old.healthDao().workouts().first().minBy { it.start }

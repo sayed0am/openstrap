@@ -148,7 +148,8 @@ class RoomWorkoutRepository(
                 val a = WorkoutRecorder.analyse(w, hr, maxHr, zones)
                 // The strap's own records of this workout ([Workouts.sameWorkout]), which the lists leave out.
                 val effects = dao.sportEffects().first()
-                val strap = Workouts.strapTwins(dao.workoutsOnce(w.from, w.end ?: a.end), w.from..(w.end ?: a.end))
+                val recorded = Workouts.phoneRange(w, a.end)
+                val strap = Workouts.strapTwins(dao.workoutsOnce(recorded.first, recorded.last), recorded)
                     .map { s -> Workouts.analyse(s, dao.workoutHeartRate(s.start).first(), effects, maxHr, zones) }
                 val route = routeRows.map { it.point }.filter { it.t in w.from..(w.end ?: Long.MAX_VALUE) }
                 val below = Strength.Rest.parse(w.rest)?.belowBpm

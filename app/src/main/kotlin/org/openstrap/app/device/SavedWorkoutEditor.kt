@@ -47,6 +47,9 @@ internal class SavedWorkoutEditor(
                             val range = org.openstrap.app.data.Workouts.phoneRange(w, t)
                             org.openstrap.app.data.Workouts.strapTwins(dao.workoutsOnce(range.first, range.last), range)
                                 .forEach { dao.deleteStrapWorkout(it.start, t) }
+                            // The strap's copy usually syncs after the summary shows, so after a Discard tapped there:
+                            // its time is remembered, and the sync leaves out a strap workout over it.
+                            dao.insertDismissedWorkouts(listOf(org.openstrap.app.data.db.DismissedWorkout(range.first, range.last)))
                         }
                         dao.deleteAppWorkout(start)
                     }
