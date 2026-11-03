@@ -25,10 +25,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.openstrap.app.data.Activity
 import org.openstrap.app.data.MaxHeartRates
+import org.openstrap.app.data.Route
+import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
+import org.openstrap.app.data.db.AppWorkoutRoutePoint
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.data.db.SportEffectRow
@@ -273,6 +277,89 @@ class WorkoutSessionTest {
         assertNull(undone.recordedEnd)
     }
 
+    @Test
+    fun aWorkoutLeftRecordingForHoursEndsAtItsLastReading() {
+        // Killed ten minutes into a walk, and the app comes back five hours later.
+        val t0 = clock.now - 5 * 3600
+        runBlocking {
+            db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = null, sportType = 1))
+            db.healthDao().insertAppWorkoutHeartRate((1..600).map { AppWorkoutHeartRate(t0, t0 + it, 120) })
+        }
+        val s = session()
+        s.restore()
+        s.restored.await { it }
+        assertEquals(WorkoutState.Ended(t0), s.state.await { it is WorkoutState.Ended })
+        val saved = stored(t0)!!
+        assertEquals(t0 + 600, saved.end)
+        // Nothing after it is part of the workout, so there is nothing to undo and nothing for a gap fill.
+        assertNull(saved.recordedEnd)
+        assertEquals(AppWorkout.END_AUTO, saved.endReason)
+        assertEquals(120, saved.averageHeartRate)
+    }
+
+    @Test
+    fun aRestartAddsToTheDistanceStoredBeforeIt() {
+        val settings = SettingsStore(context)
+        runBlocking { settings.saveProfile(profile()) }
+        try {
+            // Killed ten minutes into a walk with 1 km stored from steps, and the app comes back at once.
+            val t0 = clock.now - 600
+            runBlocking {
+                db.healthDao().upsertAppWorkout(
+                    AppWorkout(start = t0, end = null, sportType = SportTypes.WALK, distanceMeters = 1_000f, distanceFromSteps = true),
+                )
+                db.healthDao().insertAppWorkoutHeartRate((1..599).map { AppWorkoutHeartRate(t0, t0 + it, 120) })
+            }
+            strap.steps.value = StepTotals(5_000, null, null)
+            val s = session()
+            s.restore()
+            s.recording()
+            Thread.sleep(SETTLE_MS)
+            // Five more minutes, 500 steps.
+            clock.advance(Duration.ofSeconds(300))
+            strap.steps.value = StepTotals(5_500, null, null)
+            Thread.sleep(SETTLE_MS)
+            s.end()
+            s.state.await { it is WorkoutState.Ended }
+            val saved = stored(t0)!!
+            assertEquals(1_000 + 500 * Activity.stepLength(100, 175), saved.distanceMeters!!, 0.5f)
+            assertTrue(saved.distanceFromSteps)
+        } finally {
+            runBlocking { settings.saveProfile(org.openstrap.app.data.settings.UserProfile()) }
+        }
+    }
+
+    @Test
+    fun aTrimWorksTheDistanceOutAgainFromTheKeptRoute() {
+        val t0 = clock.now - 3600
+        // A straight line at 3 m/s for ten minutes, a fix every 10 s.
+        val route = (0L..600L step 10).map { Route.Point(t0 + it, 51.5 + it * 3 / 111_195.0, -0.1, 5f) }
+        val full = Route.distance(route).toFloat()
+        runBlocking {
+            db.healthDao().upsertAppWorkout(
+                AppWorkout(start = t0, end = t0 + 600, sportType = SportTypes.WALK, useGps = true, keepRoute = true, distanceMeters = full),
+            )
+            db.healthDao().insertRoutePoints(route.map { AppWorkoutRoutePoint.of(t0, it) })
+        }
+        val s = session()
+        s.trim(t0, from = t0, to = t0 + 300)
+        val trimmed = storedOnce(t0) { it?.end == t0 + 300 }!!
+        assertEquals(full / 2, trimmed.distanceMeters!!, full * 0.05f)
+        s.undoTrim(t0)
+        assertEquals(full, storedOnce(t0) { it?.end == t0 + 600 }!!.distanceMeters!!, 0.5f)
+    }
+
+    @Test
+    fun aTrimWithNoRouteLeftKeepsTheShareOfTheDistance() {
+        val t0 = clock.now - 3600
+        runBlocking { db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = t0 + 600, sportType = SportTypes.WALK, useGps = true, distanceMeters = 3_000f)) }
+        val s = session()
+        s.trim(t0, from = t0 + 60, to = t0 + 360)
+        assertEquals(1_500f, storedOnce(t0) { it?.end == t0 + 360 }!!.distanceMeters!!, 0.5f)
+        s.undoTrim(t0)
+        assertEquals(3_000f, storedOnce(t0) { it?.end == t0 + 600 }!!.distanceMeters!!, 0.5f)
+    }
+
     /** A live reading at the clock's second, once the session has taken it. */
     private fun reading(s: WorkoutSession, bpm: Int) {
         val t = clock.now
@@ -412,7 +499,8 @@ class WorkoutSessionTest {
         override val liveHeartRate: StateFlow<Int?> = MutableStateFlow(null)
         override val heartRateReadings: SharedFlow<Int> = readings
         override val liveHeartRateEnabled: StateFlow<Boolean> = MutableStateFlow(false)
-        override val todaySteps: StateFlow<StepTotals?> = MutableStateFlow(null)
+        val steps = MutableStateFlow<StepTotals?>(null)
+        override val todaySteps: StateFlow<StepTotals?> = steps
         override val info: StateFlow<StrapInfo?> = MutableStateFlow(null)
         override val firmwareUpdating: StateFlow<Boolean> = MutableStateFlow(false)
         override val log: StateFlow<List<String>> = MutableStateFlow(emptyList())
