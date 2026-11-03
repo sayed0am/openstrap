@@ -69,6 +69,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
@@ -165,7 +166,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
         // Clearing export ends this effect, so it waits until the picture has gone where it's going.
         try {
             recorded.await()
-            val picture = runCatching { layer.toImageBitmap().asAndroidBitmap().let { if (it.config == Bitmap.Config.HARDWARE) it.copy(Bitmap.Config.ARGB_8888, false) else it } }
+            val picture = catching { layer.toImageBitmap().asAndroidBitmap().let { if (it.config == Bitmap.Config.HARDWARE) it.copy(Bitmap.Config.ARGB_8888, false) else it } }
                 .onFailure { Log.w(TAG, "drawing the card failed", it) }.getOrNull()
             when {
                 picture == null -> if (doing == Export.Save) saved = false
@@ -316,13 +317,15 @@ internal object StoryFiles {
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }
         val uri = resolver.insert(MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY), values) ?: return false
+        // A half written picture is removed, and the failure goes on to the log below.
+        var done = false
         try {
             val written = resolver.openOutputStream(uri)?.use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) } == true
             check(written) { "nothing written" }
             resolver.update(uri, ContentValues().apply { put(MediaStore.Images.Media.IS_PENDING, 0) }, null, null)
-        } catch (e: Exception) {
-            resolver.delete(uri, null, null)
-            throw e
+            done = true
+        } finally {
+            if (!done) resolver.delete(uri, null, null)
         }
         true
     }.onFailure { Log.w(TAG, "saving the card failed", it) }.getOrDefault(false)

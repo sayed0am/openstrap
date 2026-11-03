@@ -249,7 +249,7 @@ object FamilySummary {
     }
 
     /** Each zone's time on the zone strip, to the nearest minute, and a minute for any time under one. */
-    fun zoneMinutes(zones: IntArray): List<Int> = zones.map { s -> if (s <= 0) 0 else Math.round(s / 60.0).toInt().coerceAtLeast(1) }
+    fun zoneMinutes(zones: List<Int>): List<Int> = zones.map { s -> if (s <= 0) 0 else Math.round(s / 60.0).toInt().coerceAtLeast(1) }
 
     /**
      * The heart rate as [points] evenly spaced values from [readings] (time, bpm), each the average of its stretch and
@@ -283,7 +283,7 @@ object FamilySummary {
     }
 
     /** "Mostly zone 3": the zone with the most time, or null with none. */
-    fun mostlyZone(zones: IntArray): String? = zones.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.let { "Mostly zone ${it.index + 1}" }
+    fun mostlyZone(zones: List<Int>): String? = zones.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.let { "Mostly zone ${it.index + 1}" }
 
     /** Another workout of the same sport counts as like this one within this share of its active time. */
     const val SIMILAR_SHARE = 0.25

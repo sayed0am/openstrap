@@ -25,6 +25,7 @@ import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.testing.appWorkout
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
@@ -57,7 +58,7 @@ class LiveRecompositionTest {
         val now = System.currentTimeMillis() / 1000
         val r = WorkoutState.Recording(appWorkout(start = now - 600, end = null), maxHeartRate = 190)
         val recent = (0 until 120).map { now - 120 + it to 140 }
-        val zones = IntArray(5) { 60 }
+        val zones = ZoneSeconds(List(5) { 60 })
         val ticks = recompositions {
             LiveIndoorScreen(r, 140, recent, null, zones, connected, padding, controls, onLap = {}, kcal = null)
         }

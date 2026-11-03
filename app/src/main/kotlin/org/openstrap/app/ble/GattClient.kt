@@ -165,6 +165,8 @@ class GattClient(
     /** The open handle, or a [GattException] once [close] has run, instead of an NPE from a field nulled meanwhile. */
     private fun requireGatt(): BluetoothGatt = gatt ?: throw GattException("Closed")
 
+    // A dead binder comes as a plain RuntimeException, so that is what it catches. Anything else is thrown on as it came.
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun <T> op(kind: Op, uuid: UUID? = null, timeoutMs: Long = 10_000, start: () -> Boolean): T = opLock.withLock {
         val p = Pending(kind, uuid)
         pending = p

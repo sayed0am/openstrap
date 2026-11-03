@@ -115,7 +115,7 @@ class FamilySummaryTest {
 
     @Test
     fun zoneMinutesRoundAndKeepAMinuteForAShortStay() {
-        assertEquals(listOf(6, 0, 1, 31, 17), FamilySummary.zoneMinutes(intArrayOf(360, 0, 20, 1850, 1020)))
+        assertEquals(listOf(6, 0, 1, 31, 17), FamilySummary.zoneMinutes(listOf(360, 0, 20, 1850, 1020)))
     }
 
     @Test

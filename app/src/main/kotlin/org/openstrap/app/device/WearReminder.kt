@@ -6,11 +6,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.openstrap.app.MainActivity
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.WearEventRow
 
 /**
@@ -92,7 +92,7 @@ internal class WearEventLog(
     init {
         scope.launch {
             for (work in queue) {
-                try { work() } catch (e: CancellationException) { throw e } catch (e: Exception) { onError(e) }
+                catching { work() }.onFailure(onError)
             }
         }
     }

@@ -1,9 +1,11 @@
 package org.openstrap.app.device
 
+import android.util.Log
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.WorkoutEffectEngine
 import org.openstrap.app.data.WorkoutRecorder
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.settings.UserProfile
@@ -52,7 +54,10 @@ class WorkoutGapFill(
         if (w.end != null) {
             val all = dao.appWorkoutHeartRateOnce(w.start)
             val stats = WorkoutRecorder.withStats(w, all)
-            dao.upsertAppWorkout(runCatching { WorkoutEffectEngine(dao).withEffect(stats, all, profile()) }.getOrDefault(stats))
+            // Without its effect the workout still keeps its filled minutes and figures.
+            val withEffect = catching { WorkoutEffectEngine(dao).withEffect(stats, all, profile()) }
+                .onFailure { Log.w("OpenStrap", "workout gap fill: effect not worked out for ${w.start}: $it") }
+            dao.upsertAppWorkout(withEffect.getOrDefault(stats))
         }
         return rows.size
     }

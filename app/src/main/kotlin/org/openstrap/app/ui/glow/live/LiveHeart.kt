@@ -48,6 +48,7 @@ import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.*
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
@@ -70,7 +71,7 @@ fun GlowWorkoutLiveScreen(
     liveHeartRate: Int?,
     recent: List<Pair<Long, Int>>,
     stats: WorkoutRecorder.Stats?,
-    zoneSeconds: IntArray,
+    zoneSeconds: ZoneSeconds,
     connection: ConnectionState,
     contentPadding: PaddingValues,
     onPause: () -> Unit,
@@ -215,7 +216,7 @@ internal fun WorkoutHeartCard(
     r: WorkoutState.Recording,
     liveHeartRate: Int?,
     recent: List<Pair<Long, Int>>,
-    zoneSeconds: IntArray,
+    zoneSeconds: ZoneSeconds,
     connected: Boolean,
     /** The active seconds, read only by the time target's note, so the card isn't composed again each second. */
     active: () -> Long,
@@ -299,7 +300,7 @@ fun GlowWorkoutGlance(
     r: WorkoutState.Recording,
     liveHeartRate: Int?,
     recent: List<Pair<Long, Int>>,
-    zoneSeconds: IntArray,
+    zoneSeconds: ZoneSeconds,
     connection: ConnectionState,
     modifier: Modifier = Modifier,
     kcal: WorkoutRecorder.Kcal? = null,

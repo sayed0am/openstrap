@@ -48,6 +48,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.EffectFigures
 import org.openstrap.app.ui.workout.PhoneSummary
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.familyColor
 import org.openstrap.app.ui.workout.WorkoutDetailCopy
 import org.openstrap.app.ui.workout.WorkoutFact
@@ -151,7 +152,7 @@ fun GlowWorkoutDetailScreen(
             val zonesOnEdge = zonesShown && factsRightAbove
             if (zonesShown) item {
                 CompositionLocalProvider(LocalEdgeOverride provides if (zonesOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-                    ZonesList(zones.toIntArray(), shown.maxHeartRate)
+                    ZonesList(remember(zones) { ZoneSeconds(zones) }, shown.maxHeartRate)
                 }
             }
             item { DeleteWorkout(STRAP_DELETE, onDelete) }
@@ -201,7 +202,7 @@ private fun PastSummary(
                 Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     val zones = remember(a, heartZones) {
                         val shown = a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }
-                        WorkoutRecorder.liveZoneSeconds(shown, a.maxHeartRate, heartZones)
+                        ZoneSeconds(WorkoutRecorder.liveZoneSeconds(shown, a.maxHeartRate, heartZones).toList())
                     }
                     // The page's sentence ("An easy 40 min walk") where the kind has none of its own.
                     val hero = summaryHero(family, summary, usual).let { h ->

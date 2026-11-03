@@ -691,19 +691,19 @@ class StrapManager(
         val wake = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:firmware").apply { acquire(30 * 60_000L) }
         try {
-            if (live.isRunning) live.pause()
-            val link = GattDfuLink(client)
-            if (!link.available) throw DfuException(-1, "This strap doesn't offer the firmware update service")
-            // Bigger ATT packets make the transfer several times faster; fall back to 20-byte writes if refused.
-            catching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
-            log("dfu: ${file.size} bytes, type ${"%02x".format(type)}, crc ${"%08x".format(crc32(file))}, att mtu ${client.mtu}")
-            link.enable()
-            connections.refreshGattOnConnect = true
-            DfuSession(link, ::log).flash(file, type, DfuCommands.MODE_NORMAL, onProgress)
-            log("dfu: installed, strap is restarting")
-        } catch (e: Exception) {
-            log("dfu failed: ${e.message}")
-            throw e
+            // A failure is logged and handed on to the Firmware page. A cancellation is rethrown by catching as it came.
+            catching {
+                if (live.isRunning) live.pause()
+                val link = GattDfuLink(client)
+                if (!link.available) throw DfuException(-1, "This strap doesn't offer the firmware update service")
+                // Bigger ATT packets make the transfer several times faster. Refused, it falls back to 20-byte writes.
+                catching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
+                log("dfu: ${file.size} bytes, type ${"%02x".format(type)}, crc ${"%08x".format(crc32(file))}, att mtu ${client.mtu}")
+                link.enable()
+                connections.refreshGattOnConnect = true
+                DfuSession(link, ::log).flash(file, type, DfuCommands.MODE_NORMAL, onProgress)
+                log("dfu: installed, strap is restarting")
+            }.onFailure { log("dfu failed: ${it.message}") }.getOrThrow()
         } finally {
             firmwareUpdating.value = false
             if (wake.isHeld) wake.release()

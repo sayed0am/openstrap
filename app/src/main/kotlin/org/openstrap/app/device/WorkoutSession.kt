@@ -146,9 +146,12 @@ class WorkoutSession(
     private var sum = 0L
     private var count = 0L
 
-    /** Seconds in each live zone so far ([WorkoutRecorder.liveZone]), for "6:40 in zone". */
-    private val _zoneSeconds = MutableStateFlow(IntArray(org.openstrap.app.data.Workouts.ZONES))
-    val zoneSeconds: StateFlow<IntArray> = _zoneSeconds
+    /**
+     * Seconds in each live zone so far ([WorkoutRecorder.liveZone]), for "6:40 in zone". A read-only list, not an
+     * IntArray, so the live screens that take it stay stable for Compose and skip when it hasn't changed.
+     */
+    private val _zoneSeconds = MutableStateFlow(List(org.openstrap.app.data.Workouts.ZONES) { 0 })
+    val zoneSeconds: StateFlow<List<Int>> = _zoneSeconds
     private var lastReading: Pair<Long, Int>? = null
 
     /**
@@ -208,7 +211,7 @@ class WorkoutSession(
                     _stats.value = WorkoutRecorder.stats(stored)
                     val live = stored.filter { !it.fromHistory }.map { it.timestamp to it.bpm }
                     val maxHr = maxHeartRate()
-                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr, heartZones.value)
+                    _zoneSeconds.value = WorkoutRecorder.liveZoneSeconds(live, maxHr, heartZones.value).toList()
                     lastReading = live.lastOrNull()
                     _kcal.value = null
                     stepTotals = emptyList()
@@ -225,7 +228,8 @@ class WorkoutSession(
                     val sets = dao.setsOnce(w.start)
                     val restUntil = sets.lastOrNull()?.takeIf { it.end != null && it.restEnd == null }?.let { it.end!! + restRule(w).seconds }
                     // Logging is the sport's setting at its start, which Ready saved then.
-                    val log = runCatching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)]?.log }.getOrNull() == true
+                    val log = catching { settings.sportSettings.first()[org.openstrap.app.data.Workouts.tileType(w.sportType)]?.log }
+                        .onFailure { log("workout: sport settings not read: $it") }.getOrNull() == true
                     val rounds = if (w.structure != null) dao.roundsOnce(w.start) else emptyList()
                     begin(w, maxHr) {
                         it.copy(sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = log, rounds = rounds)
@@ -268,7 +272,7 @@ class WorkoutSession(
                 _stats.value = null
                 sum = 0
                 count = 0
-                _zoneSeconds.value = IntArray(org.openstrap.app.data.Workouts.ZONES)
+                _zoneSeconds.value = List(org.openstrap.app.data.Workouts.ZONES) { 0 }
                 lastReading = null
                 _kcal.value = null
                 // Auto-start: the strap's total where the effort began, so the steps since count.
@@ -312,7 +316,11 @@ class WorkoutSession(
     /** "Lap": marks the end of one lap and the start of the next; a buzz says it took. */
     fun lap() = update { w ->
         if (w.pausedAt != null) w else w.copy(laps = (w.lapMarks + now()).joinToString(",")).also {
-            if (!callRinging()) scope.launch { runCatching { strap.buzz(org.openstrap.app.data.Cue.BackInTarget.pattern) } }
+            if (!callRinging()) {
+                scope.launch {
+                    catching { strap.buzz(org.openstrap.app.data.Cue.BackInTarget.pattern) }.onFailure { log("buzz lap not played: $it") }
+                }
+            }
         }
     }
 
@@ -343,7 +351,7 @@ class WorkoutSession(
         if (!strapSessions) return
         val elapsed = WorkoutRecorder.activeSeconds(w, now())
         if (send) scope.launch {
-            runCatching { strap.sportSession(state, w.sportType, w.start, elapsed) }
+            catching { strap.sportSession(state, w.sportType, w.start, elapsed) }
                 .onFailure { (strap as? StrapManager)?.log("strap session $state not sent: ${it.message}") }
         }
         keepAlive?.cancel()
@@ -390,7 +398,7 @@ class WorkoutSession(
             asked = r != null && !r.paused && r.workout.askToEnd && r.endPrompt == null
             if (r != null && asked) r.copy(endPrompt = at, inCar = inCar) else s
         }
-        if (asked && !callRinging()) scope.launch { runCatching { strap.buzz(STOP_BUZZ) } }
+        if (asked && !callRinging()) scope.launch { catching { strap.buzz(STOP_BUZZ) }.onFailure { log("buzz stop not played: $it") } }
     }
 
     /** Saves the workout; ended while paused, it ends where the pause began. */
@@ -515,7 +523,8 @@ class WorkoutSession(
         }
         log("workout left recording ended at ${java.time.Instant.ofEpochSecond(last)}${if (kept) "" else ", under a minute so not kept"}")
         // A strap session it ran stops too.
-        strapSessions = runCatching { settings.strapSessions.first() }.getOrDefault(true)
+        strapSessions = catching { settings.strapSessions.first() }
+            .onFailure { log("workout: strap sessions setting not read: $it") }.getOrDefault(true)
         strapState(WorkoutRecorder.closingState(kept), ended)
         if (!kept) return
         _state.update { WorkoutState.Ended(w.start) }
@@ -739,7 +748,7 @@ class WorkoutSession(
     /** Saves [structure] for [sport] as [name] ("Tuesday intervals"); only the newest [MAX_SAVED] are kept. */
     fun saveWorkout(name: String, sport: Int, structure: String) {
         scope.launch {
-            runCatching {
+            catching {
                 dao.upsertSavedWorkout(org.openstrap.app.data.db.SavedWorkout(name = name, sport = sport, structure = structure, createdAt = now()))
                 dao.savedWorkoutsOnce().drop(MAX_SAVED).forEach { dao.deleteSavedWorkout(it.id) }
             }.onFailure { (strap as? StrapManager)?.log("workout not saved: ${it.message}") }
@@ -816,7 +825,7 @@ class WorkoutSession(
         if (callRinging()) return
         val filter = context.getSystemService(android.app.NotificationManager::class.java).currentInterruptionFilter
         if (filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE || filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS) return
-        scope.launch { runCatching { strap.buzz(pattern) }.onFailure { (strap as? StrapManager)?.log("buzz $what not played: ${it.message}") } }
+        scope.launch { catching { strap.buzz(pattern) }.onFailure { log("buzz $what not played: ${it.message}") } }
         (strap as? StrapManager)?.log("buzz: $what")
     }
 
@@ -857,7 +866,7 @@ class WorkoutSession(
     }
 
     private suspend fun maxHeartRate() =
-        runCatching { maxHeartRates.now().bpm }.getOrDefault(DEFAULT_MAX_HR)
+        catching { maxHeartRates.now().bpm }.onFailure { log("workout: max heart rate not read: $it") }.getOrDefault(DEFAULT_MAX_HR)
 
     private var coach = org.openstrap.app.data.Coach(null)
 
@@ -929,8 +938,9 @@ class WorkoutSession(
         calmJob?.cancelAndJoin()
         calmJob = null
         coach = org.openstrap.app.data.Coach(org.openstrap.app.data.WorkoutTarget.parse(w.target), w.targetReachedAt)
-        strapSessions = runCatching { settings.strapSessions.first() }.getOrDefault(true)
-        heightCm = runCatching { settings.profile.first().heightCm }.getOrNull()
+        strapSessions = catching { settings.strapSessions.first() }
+            .onFailure { log("workout: strap sessions setting not read: $it") }.getOrDefault(true)
+        heightCm = catching { settings.profile.first().heightCm }.onFailure { log("workout: height not read: $it") }.getOrNull()
         if (w.useGps) location.start()
         _state.update { setup(WorkoutState.Recording(w, maxHr)) }
         strap.setWorkoutActive(true)
@@ -940,7 +950,8 @@ class WorkoutSession(
         wake = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:workout").apply { acquire(MAX_WAKE_MS) }
         watchForCar()
-        restingHr = runCatching { dao.restingHrOnce(now() - RESTING_LOOKBACK_S, now()).lastOrNull()?.bpm }.getOrNull() ?: DEFAULT_RESTING_HR
+        restingHr = catching { dao.restingHrOnce(now() - RESTING_LOOKBACK_S, now()).lastOrNull()?.bpm }
+            .onFailure { log("workout: resting heart rate not read: $it") }.getOrNull() ?: DEFAULT_RESTING_HR
         recordJob?.cancelAndJoin()
         for ((t, bpm) in seed) record(t, bpm)
         recordJob = scope.launch {
@@ -998,12 +1009,13 @@ class WorkoutSession(
      * saved. Minutes a history fill wrote and the strap's own step minutes are read again every [KCAL_READ_TICKS].
      */
     private suspend fun countKcal(w: AppWorkout, maxHr: Int) {
-        val profile = runCatching { settings.profile.first() }.getOrNull() ?: return
+        val profile = catching { settings.profile.first() }.onFailure { log("kcal: profile not read: $it") }.getOrNull() ?: return
         if (org.openstrap.app.data.EnergyExpenditure.bmrPerMinute(profile, profile.age()) == null) return
         val zone = java.time.ZoneId.systemDefault()
         val date = java.time.Instant.ofEpochSecond(w.from).atZone(zone).toLocalDate()
-        val resting = runCatching { org.openstrap.app.data.WorkoutEffectEngine(dao).restingHr(w.from, zone) }.getOrDefault(DEFAULT_RESTING_HR.toFloat())
-        val vo2 = runCatching { RecoveryEngine(dao).vo2max(profile, date, zone) }.getOrNull()
+        val resting = catching { org.openstrap.app.data.WorkoutEffectEngine(dao).restingHr(w.from, zone) }
+            .onFailure { log("kcal: resting heart rate not read: $it") }.getOrDefault(DEFAULT_RESTING_HR.toFloat())
+        val vo2 = catching { RecoveryEngine(dao).vo2max(profile, date, zone) }.onFailure { log("kcal: VO2 max not read: $it") }.getOrNull()
         var history = emptyList<AppWorkoutHeartRate>()
         var synced = emptyMap<Long, Int>()
         var tick = 0
@@ -1012,10 +1024,11 @@ class WorkoutSession(
             if (r.workout.start != w.start) return
             val t = now()
             if (tick++ % KCAL_READ_TICKS == 0) {
-                history = runCatching { dao.appWorkoutHeartRateOnce(w.start).filter { it.fromHistory } }.getOrDefault(history)
-                synced = runCatching {
+                history = catching { dao.appWorkoutHeartRateOnce(w.start).filter { it.fromHistory } }
+                    .onFailure { log("kcal: synced heart rate not read: $it") }.getOrDefault(history)
+                synced = catching {
                     dao.activityOnce(r.workout.from - 60, t + 60).filter { it.steps in 0..250 }.associate { it.timestamp / 60 * 60 to it.steps }
-                }.getOrDefault(synced)
+                }.onFailure { log("kcal: synced steps not read: $it") }.getOrDefault(synced)
             }
             val live = synchronized(allReadings) { allReadings.toList() }
             _kcal.value = runCatching {
@@ -1082,7 +1095,7 @@ class WorkoutSession(
         }
         val filter = context.getSystemService(android.app.NotificationManager::class.java).currentInterruptionFilter
         if (filter == android.app.NotificationManager.INTERRUPTION_FILTER_NONE || filter == android.app.NotificationManager.INTERRUPTION_FILTER_ALARMS) return
-        scope.launch { runCatching { strap.buzz(c.pattern) }.onFailure { (strap as? StrapManager)?.log("coach $c not played: ${it.message}") } }
+        scope.launch { catching { strap.buzz(c.pattern) }.onFailure { log("coach $c not played: ${it.message}") } }
         (strap as? StrapManager)?.log("coach: $c")
         _lastCue.value = c
     }
@@ -1146,7 +1159,8 @@ class WorkoutSession(
         // resume, so only this coroutine touches what a reading adds up.
         lastReading?.takeIf { (pt, _) -> (r.workout.pauseRanges.lastOrNull()?.last ?: Long.MIN_VALUE) <= pt }?.let { (pt, pbpm) ->
             val z = WorkoutRecorder.liveZoneOf(pbpm, r.maxHeartRate, heartZones.value)
-            _zoneSeconds.value = _zoneSeconds.value.copyOf().also { it[z] += (t - pt).coerceIn(0, WorkoutRecorder.MAX_STEP_S).toInt() }
+            val added = (t - pt).coerceIn(0, WorkoutRecorder.MAX_STEP_S).toInt()
+            _zoneSeconds.value = _zoneSeconds.value.toMutableList().also { it[z] += added }
         }
         lastReading = t to bpm
         coach.feed(

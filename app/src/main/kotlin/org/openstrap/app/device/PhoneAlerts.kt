@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
@@ -114,7 +115,9 @@ class PhoneAlerts(
             strap.startCallBuzz(style == CallBuzz.PULSED)
             delay(CALL_PREVIEW_MS)
         } finally {
-            if (!callRinging && previews.get() == mine) withContext(NonCancellable) { runCatching { strap.stopCallBuzz() } }
+            if (!callRinging && previews.get() == mine) {
+                withContext(NonCancellable) { catching { strap.stopCallBuzz() }.onFailure { log("call buzz preview not stopped: $it") } }
+            }
         }
     }
 
@@ -211,12 +214,13 @@ class PhoneAlerts(
                 withTimeoutOrNull(CONNECT_WAIT_MS) { strap.connection.first { it is ConnectionState.Connected } }
                     ?: run { log("call ringing: the strap didn't connect in time"); return@launch }
             }
-            runCatching { strap.startCallBuzz(callStyle == CallBuzz.PULSED) }.onFailure { log("call buzz failed: ${it.message}"); return@launch }
+            catching { strap.startCallBuzz(callStyle == CallBuzz.PULSED) }
+                .onFailure { log("call buzz failed: ${it.message}"); return@launch }
             // A missed call can end without a state change reaching us; don't leave the strap buzzing.
             delay(MAX_RING_MS)
             log("call ringing: ${MAX_RING_MS / 1000} s limit")
             synchronized(ringSources) { ringSources.clear() }
-            runCatching { strap.stopCallBuzz() }
+            catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") }
         }
     }
 
@@ -224,7 +228,7 @@ class PhoneAlerts(
         val job = ringing ?: return
         ringing = null
         job.cancel()
-        scope.launch { runCatching { strap.stopCallBuzz() } }
+        scope.launch { catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") } }
     }
 
     /**
@@ -289,7 +293,7 @@ class PhoneAlerts(
             if (now - lastBuzz < MIN_GAP_MS) return
             lastBuzz = now
         }
-        scope.launch { runCatching { strap.buzz(pattern.millis) } }
+        scope.launch { catching { strap.buzz(pattern.millis) }.onFailure { log("notification buzz not played: $it") } }
     }
 
     private fun quietNow(): Boolean = LocalTime.now().let { quiet.covers(it.hour * 60 + it.minute) }

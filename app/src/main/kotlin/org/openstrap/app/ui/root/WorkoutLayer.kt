@@ -62,6 +62,7 @@ import org.openstrap.app.ui.glow.live.GlowWorkoutGlance
 import org.openstrap.app.ui.glow.live.GlowWorkoutLiveScreen
 import org.openstrap.app.ui.workout.GlanceAction
 import org.openstrap.app.ui.workout.LiveGlance
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.ui.workout.WorkoutsViewModel
 
@@ -123,7 +124,8 @@ internal fun TabletopTop(
     val top = Modifier.height(with(density) { hinge.bounds.top.toDp() })
     if (workoutOnTop != null) {
         val recent by container.workout.recent.collectAsStateWithLifecycle()
-        val zoneSeconds by container.workout.zoneSeconds.collectAsStateWithLifecycle()
+        val zoneList by container.workout.zoneSeconds.collectAsStateWithLifecycle()
+        val zoneSeconds = remember(zoneList) { ZoneSeconds(zoneList) }
         val kcal by container.workout.kcal.collectAsStateWithLifecycle()
         GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, connection, top, kcal)
     } else {
@@ -268,7 +270,8 @@ private fun LiveWorkout(
         full = {
             val recent by session.recent.collectAsStateWithLifecycle()
             val stats by session.stats.collectAsStateWithLifecycle()
-            val zoneSeconds by session.zoneSeconds.collectAsStateWithLifecycle()
+            val zoneList by session.zoneSeconds.collectAsStateWithLifecycle()
+            val zoneSeconds = remember(zoneList) { ZoneSeconds(zoneList) }
             val route by session.route.collectAsStateWithLifecycle()
             val history by session.history.collectAsStateWithLifecycle()
             val exercises by remember { session.exercises() }.collectAsStateWithLifecycle(emptyList())

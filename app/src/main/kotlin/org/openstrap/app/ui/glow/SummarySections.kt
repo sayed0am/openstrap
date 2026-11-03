@@ -57,6 +57,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.ExerciseSets
 import org.openstrap.app.ui.workout.FamilySummary
+import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.PeriodLine
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.RoundLine
@@ -192,7 +193,7 @@ internal fun FamilySection(
     val a = summary.analysis
     val readings = remember(summary) { FamilySummary.readings(summary) }
     // The stored time in zones, as the hero and the share card read it, so the page shows one total.
-    val zones = remember(a) { a.zoneSeconds.toIntArray() }
+    val zones = remember(a) { ZoneSeconds(a.zoneSeconds) }
     when (family) {
         Workouts.Family.Distance -> {
             RouteCard(summary)
@@ -447,7 +448,7 @@ private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
  * long as the time.
  */
 @Composable
-private fun ZoneStrip(zones: IntArray, modifier: Modifier = Modifier) {
+private fun ZoneStrip(zones: ZoneSeconds, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(4.dp)
     Row(modifier.fillMaxWidth().height(12.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
         zones.forEachIndexed { z, s -> if (s > 0) Box(Modifier.weight(s.toFloat()).fillMaxHeight().clip(shape).background(ZONE_COLORS[z])) }
@@ -459,7 +460,7 @@ private fun ZoneStrip(zones: IntArray, modifier: Modifier = Modifier) {
  * each zone's dot and minutes under it, the first with its unit.
  */
 @Composable
-internal fun ZoneStripPanel(zones: IntArray) {
+internal fun ZoneStripPanel(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     QuietPanel {
         PanelTitle("Time in zones", FamilySummary.mostlyZone(zones))
@@ -487,7 +488,7 @@ internal fun ZoneStripPanel(zones: IntArray) {
  * then each zone with time in it by name and minutes, that zone's row bold.
  */
 @Composable
-private fun ZonesEdgeCard(zones: IntArray) {
+private fun ZonesEdgeCard(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     val most = zones.indices.maxByOrNull { zones[it] } ?: 0
     CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Right)) {

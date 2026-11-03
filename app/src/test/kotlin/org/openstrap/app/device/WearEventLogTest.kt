@@ -3,12 +3,15 @@ package org.openstrap.app.device
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.db.WearEventRow
 
@@ -57,5 +60,18 @@ class WearEventLogTest {
         advanceUntilIdle()
         assertEquals(listOf(WearEventRow(101, true)), stored)
         assertEquals(1, errors.size)
+    }
+
+    @Test
+    fun aWriteThatTimesOutDoesNotStopTheRest() = runTest {
+        val stored = mutableListOf<WearEventRow>()
+        val errors = mutableListOf<Throwable>()
+        // A timeout is a CancellationException too, but only the write timed out, not the log.
+        val log = WearEventLog(scope(), { row -> if (row.worn == false) withTimeout(10) { delay(1_000) }; stored += row }, errors::add)
+        log.record(100, false)
+        log.record(101, true)
+        advanceUntilIdle()
+        assertEquals(listOf(WearEventRow(101, true)), stored)
+        assertTrue(errors.single() is TimeoutCancellationException)
     }
 }
