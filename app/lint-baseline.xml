@@ -166,16 +166,6 @@
             column="14"/>
     </issue>
 
-    <issue
-        id="ComposableNaming"
-        message="Composable functions with a return type should start with a lowercase letter"
-        errorLine1="private fun SleepTimeColors() = androidx.compose.material3.TimePickerDefaults.colors("
-        errorLine2="            ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="689"
-            column="13"/>
-    </issue>
 
     <issue
         id="ComposableNaming"
@@ -353,16 +343,6 @@
             column="29"/>
     </issue>
 
-    <issue
-        id="DataExtractionRules"
-        message="The attribute `android:allowBackup` is deprecated from Android 12 and may be removed in future versions. Consider adding the attribute `android:dataExtractionRules` specifying an `@xml` resource which configures backups and device transfers on Android 12 and higher."
-        errorLine1="        android:allowBackup=&quot;false&quot;"
-        errorLine2="                             ~~~~~">
-        <location
-            file="../.claude/worktrees/w4-widgets/app/src/main/AndroidManifest.xml"
-            line="79"
-            column="30"/>
-    </issue>
 
     <issue
         id="ComposeModifierComposed"
@@ -2652,16 +2632,6 @@
             column="13"/>
     </issue>
 
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;org.openstrap.app.ui.dashboard.DetailCopy.Level?> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `levels: ImmutableList&lt;org.openstrap.app.ui.dashboard.DetailCopy.Level?>` or create an `@Immutable` wrapper for this class: `@Immutable data class LevelsList(val items: List&lt;org.openstrap.app.ui.dashboard.DetailCopy.Level?>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    levels: List&lt;org.openstrap.app.ui.dashboard.DetailCopy.Level?>,"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="682"
-            column="13"/>
-    </issue>
 
     <issue
         id="ComposeUnstableCollections"
@@ -2696,16 +2666,6 @@
             column="26"/>
     </issue>
 
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;org.openstrap.app.ui.components.StageSpan> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `spans: ImmutableList&lt;org.openstrap.app.ui.components.StageSpan>` or create an `@Immutable` wrapper for this class: `@Immutable data class SpansList(val items: List&lt;org.openstrap.app.ui.components.StageSpan>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="fun StageStrip(spans: List&lt;org.openstrap.app.ui.components.StageSpan>, modifier: Modifier = Modifier, height: Dp = 6.dp) {"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="812"
-            column="23"/>
-    </issue>
 
     <issue
         id="ComposeUnstableCollections"
