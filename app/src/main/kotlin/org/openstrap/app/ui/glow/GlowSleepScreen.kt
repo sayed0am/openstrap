@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Ranges
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -244,7 +245,7 @@ internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolea
         kept = kept?.let { (it.first - start).toFloat() / (end - start)..(it.last - start).toFloat() / (end - start) },
     ) { st ->
         val mins = (((end - start) * (st.to - st.from)) / 60).toInt().coerceAtLeast(1)
-        "${names[st.row]}, ${at(st.from)}–${at(st.to)}, $mins min"
+        "${names[st.row]}, ${Ranges.of(at(st.from), at(st.to))}, $mins min"
     }
 }
 

@@ -26,6 +26,13 @@ class DataCopyTest {
     private val day = LocalDate.of(2026, 10, 17)
     private fun at(h: Int, m: Int = 0) = day.atTime(h, m).toEpochSecond(zone)
 
+    @Test fun `the VO2 max estimate is a range in words, its hero the low end in dots`() {
+        assertEquals("40 to 45", Vo2maxCopy.estimate(40, 45))
+        // The dots draw digits only, so the rest of the range goes beside them, never "40-45".
+        assertEquals("40" to "to 45 ml/kg/min", Vo2maxCopy.estimateHero(40, 45))
+        assertCleanCopy(listOf(Vo2maxCopy.estimate(40, 45), Vo2maxCopy.estimateHero(40, 45).second))
+    }
+
     @Test fun `a signed change never reads as minus nothing, whatever the decimal mark`() {
         assertEquals("±0,0", Signed.of(-0.04f, 1))
         assertEquals("−0,4", Signed.of(-0.4f, 1))

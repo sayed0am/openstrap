@@ -46,7 +46,7 @@ fun polylineOps(pts: List<Offset>): List<PathOp> =
     pts.mapIndexed { i, p -> if (i == 0) PathOp.Move(p.x, p.y) else PathOp.Line(p.x, p.y) }
 
 /**
- * A smooth path through [pts] using monotone cubic interpolation (Fritsch–Carlson): curves like a spline but never
+ * A smooth path through [pts] using monotone cubic interpolation (Fritsch-Carlson): curves like a spline but never
  * overshoots the data, so a smoothed heart rate can't show a peak or dip that didn't happen.
  */
 fun smoothOps(pts: List<Offset>): List<PathOp> {

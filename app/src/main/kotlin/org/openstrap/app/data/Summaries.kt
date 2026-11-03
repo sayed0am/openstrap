@@ -36,7 +36,7 @@ object Summaries {
         return hourly.mapIndexed { i, v -> sum += v; if (upTo != null && i > upTo) null else sum }
     }
 
-    /** Hours of the day with at least [threshold] steps — a simple "stay active" measure. */
+    /** Hours of the day with at least [threshold] steps, a simple "stay active" measure. */
     fun activeHours(hourly: List<Float>, threshold: Int = 250): Int = hourly.count { it >= threshold }
 
     /** Merges heart rate from dedicated HR samples and per-minute activity, preferring HR samples. */
@@ -72,7 +72,7 @@ object Summaries {
             .sortedBy { it.first }
 
     /**
-     * Lowest 30-minute average heart rate — a reasonable stand-in for resting HR when the strap's own
+     * Lowest 30-minute average heart rate, a reasonable stand-in for resting HR when the strap's own
      * value isn't available.
      */
     fun estimateRestingHr(series: List<Pair<Long, Int>>, windowSeconds: Long = 30 * 60): Int? {

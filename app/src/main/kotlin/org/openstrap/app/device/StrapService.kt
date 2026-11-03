@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.chargeShown
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.MainActivity
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
@@ -597,7 +598,11 @@ class StrapService : LifecycleService() {
         private const val REQUEST_OPEN = 2
 
         private fun zoneRange(zone: Int, maxHr: Int) =
-            if (zone == 0) "under ${60 * maxHr / 100} bpm" else "${(50 + zone * 10) * maxHr / 100}–${if (zone == 4) maxHr else (60 + zone * 10) * maxHr / 100 - 1} bpm"
+            if (zone == 0) {
+                "under ${60 * maxHr / 100} bpm"
+            } else {
+                Ranges.of("${(50 + zone * 10) * maxHr / 100}", "${if (zone == 4) maxHr else (60 + zone * 10) * maxHr / 100 - 1}") + " bpm"
+            }
 
         /** Whether the service is up; a start then needn't (and, once swiped away, mustn't) post its notification. */
         @Volatile private var running = false

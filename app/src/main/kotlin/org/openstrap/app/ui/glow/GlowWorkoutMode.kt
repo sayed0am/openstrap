@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.runtime.LaunchedEffect
 import androidx.activity.compose.BackHandler
@@ -118,7 +119,8 @@ internal fun dotClock(seconds: Long): String = Units.workoutClock(seconds, Units
 @ReadOnlyComposable
 internal fun zoneRange(zone: Int, maxHr: Int): String {
     val zones = LocalHeartZones.current
-    return if (zone == 0) "under ${zones.startBpm(1, maxHr)} bpm" else "${zones.startBpm(zone, maxHr)} to ${zones.endBpm(zone, maxHr) ?: maxHr} bpm"
+    if (zone == 0) return "under ${zones.startBpm(1, maxHr)} bpm"
+    return Ranges.of("${zones.startBpm(zone, maxHr)}", "${zones.endBpm(zone, maxHr) ?: maxHr}") + " bpm"
 }
 
 /** Active time of the workout, ticking once a second while it records. */
@@ -261,7 +263,10 @@ internal fun SuggestionPanel(
             Column {
                 Text("Looks like you worked out", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 val day = dayName(Instant.ofEpochSecond(s.start).atZone(ZoneId.systemDefault()).toLocalDate())
-                Note("$day ${clock(s.start)}–${clock(s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average. Nobody pressed Start.")
+                Note(
+                    "$day ${Ranges.times(s.start, s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average. " +
+                        "Nobody pressed Start.",
+                )
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -332,7 +337,7 @@ fun GlowAddWorkoutScreen(
             return@WorkoutPage
         }
         QuietPanel {
-            PanelTitle("When was it?", trailing = "${clock(from)} – ${clock(to)}")
+            PanelTitle("When was it?", trailing = Ranges.times(from, to))
             RangeChart(series, first, last, from, to, maxHr) { f, t -> from = f; to = t }
             Row(Modifier.fillMaxWidth()) {
                 Note(clock(first))
@@ -449,7 +454,7 @@ internal fun TrimSection(summary: PhoneSummary, onTrim: (from: Long, to: Long) -
             Text(
                 if (summary.endReason == AppWorkout.END_CAR && a.shownStart == w.start) "Ended at ${clock(a.end)}. $left of driving were left out."
                 else if (summary.endReason == AppWorkout.END_AUTO && a.shownStart == w.start) "Ended at ${clock(a.end)}, when you'd stopped. $left after that were left out."
-                else "Trimmed to ${clock(a.shownStart)}–${clock(a.end)}. The rest is kept.",
+                else "Trimmed, now from ${Ranges.times(a.shownStart, a.end)}. The rest is kept.",
                 color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f),
             )
             Text(

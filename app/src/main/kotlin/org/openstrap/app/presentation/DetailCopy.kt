@@ -34,7 +34,8 @@ internal object DetailCopy {
     }
 
     /** The band's label on the chart: "Your normal, 44 to 58". */
-    fun bandLabel(normal: History.Normal, format: (Float) -> String): String = "Your normal, ${format(normal.low)} to ${format(normal.high)}"
+    fun bandLabel(normal: History.Normal, format: (Float) -> String): String =
+        "Your normal, ${Ranges.of(format(normal.low), format(normal.high))}"
 
     /** Before there's a normal: "Learning your normal, 4 of 7 days" (spec 2.7). */
     fun learningNormal(days: Int, nightly: Boolean): String =

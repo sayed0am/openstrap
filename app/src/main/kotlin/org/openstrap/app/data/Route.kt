@@ -103,7 +103,7 @@ object Route {
      * walks (RouteTest): higher follows the wander at walking pace, lower rounds off a runner's corners.
      */
     private const val Q_POSITION = 0.5
-    /** Floor on a fix's claimed accuracy: phones claim 1–2 m that GPS doesn't deliver. */
+    /** Floor on a fix's claimed accuracy: phones claim 1 to 2 m that GPS doesn't deliver. */
     private const val MIN_SIGMA_M = 3.0
     /** Doppler velocity σ when the phone gives no speed accuracy, as Zepp assumes (native 02 §3.7). */
     private const val DOPPLER_SIGMA_MS = 2.0

@@ -220,7 +220,7 @@ data class AppWorkout(
     /** Lap marks, epoch seconds, comma separated; see [lapMarks]. */
     @ColumnInfo(defaultValue = "") val laps: String = "",
     /**
-     * What the workout did ([org.openstrap.app.data.WorkoutEffect]): peak EPOC in ml/kg, aerobic training effect 0–5,
+     * What the workout did ([org.openstrap.app.data.WorkoutEffect]): peak EPOC in ml/kg, aerobic training effect 0 to 5,
      * recovery time and, for outdoor runs, VO2max in ml/kg/min. Worked out when it ends and again on a trim or a gap
      * fill; null on workouts from before version 14 until they are opened.
      */
@@ -228,7 +228,7 @@ data class AppWorkout(
     val aerobicTrainingEffect: Float? = null,
     val recoveryMinutes: Int? = null,
     val vo2max: Float? = null,
-    /** Anaerobic training effect 0–5: only from the strap ([effectFromStrap]), as no open model makes one. */
+    /** Anaerobic training effect 0 to 5: only from the strap ([effectFromStrap]), as no open model makes one. */
     val anaerobicTrainingEffect: Float? = null,
     /**
      * The effect figures and [averageHeartRate] and [maxHeartRate] are the strap's own, from a record it kept of nearly

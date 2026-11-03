@@ -2,6 +2,7 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Pace
 import androidx.compose.foundation.Canvas
@@ -517,7 +518,7 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 3) }
     QuietPanel {
         if (line) Column {
-            PanelTitle("Heart rate", "${readings.minOf { it.second }} to ${readings.maxOf { it.second }}")
+            PanelTitle("Heart rate", Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
             SmoothLine(values, MetricColors.heart, Modifier.padding(top = 8.dp), height = 64.dp, peak = true)
         }
         target?.let { (text, reached) ->
@@ -593,7 +594,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 9) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
-        EdgeTitle("Heart rate", drop?.let { "down $it" } ?: "${readings.minOf { it.second }} to ${readings.maxOf { it.second }}")
+        EdgeTitle("Heart rate", drop?.let { "down $it" } ?: Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
         if (chart) SmoothLine(values, color, Modifier.padding(top = 14.dp), height = 74.dp, ends = true)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Column(Modifier.weight(1f)) {

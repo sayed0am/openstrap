@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.dotFormat
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
@@ -609,7 +610,7 @@ private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.
 /** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
 private fun hourSteps(hour: Int, steps: Float): DetailHeadline {
     val (from, to) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR) to TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR)
-    return DetailHeadline(dotFormat("%,d", Math.round(steps)), "steps, $from to $to", null)
+    return DetailHeadline(dotFormat("%,d", Math.round(steps)), "steps, ${Ranges.of(from, to)}", null)
 }
 
 private const val MINUTES_PER_HOUR = 60

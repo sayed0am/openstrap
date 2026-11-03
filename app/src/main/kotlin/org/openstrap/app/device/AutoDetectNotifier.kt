@@ -10,9 +10,8 @@ import org.openstrap.app.MainActivity
 import org.openstrap.app.R
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.Workout
-import java.time.Instant
+import org.openstrap.app.presentation.Ranges
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 
 /**
  * Tells the user about a workout the strap recognised on its own, like Zepp's "Auto Detected Activity" channel
@@ -48,10 +47,11 @@ class AutoDetectNotifier(private val context: Context) {
     companion object {
         private const val CHANNEL = "workout_auto_detected"
 
-        /** "Running detected, 10:02–10:40". */
-        fun title(w: Workout, zone: ZoneId = ZoneId.systemDefault()): String {
-            val clock = DateTimeFormatter.ofPattern("HH:mm").withZone(zone)
-            return "${Workouts.sportName(w.sportType)} detected, ${clock.format(Instant.ofEpochSecond(w.start))}–${clock.format(Instant.ofEpochSecond(w.end))}"
-        }
+        /**
+         * "Running detected, 10:02 to 10:40", in the phone's clock as every time is (decision 4 in
+         * [org.openstrap.app.presentation.Units]).
+         */
+        fun title(w: Workout, zone: ZoneId = ZoneId.systemDefault()): String =
+            "${Workouts.sportName(w.sportType)} detected, ${Ranges.times(w.start, w.end, zone)}"
     }
 }

@@ -5,6 +5,7 @@ import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.Ranges
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.Units
@@ -255,7 +256,7 @@ internal object SleepCopy {
     /* --------------------------------------- Adjust times (edit spec 4.2) ------------------------------- */
 
     /** A span of clock times in text: "23:20 to 07:21". */
-    fun span(from: String, to: String): String = "$from to $to"
+    fun span(from: String, to: String): String = Ranges.of(from, to)
 
     /** The times sheet's title. */
     fun timesTitle(nap: Boolean): String = if (nap) "Nap times" else "Sleep times"

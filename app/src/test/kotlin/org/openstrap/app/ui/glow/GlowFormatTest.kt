@@ -131,7 +131,14 @@ class GlowFormatTest {
             assertEquals("5 h 40, counts only below 6 h 30", line)
             assertCleanCopy(line)
             val steps = termDetail(Healthspan.Term(Healthspan.Habit.Steps, 0f, 6543f, 9000f), 40)
-            assertTrue(steps, steps.startsWith("6,543 a day, typical: 9,000"))
+            assertEquals("6,543 a day, typical: 9,000, aim for 8,000 to 10,000", steps)
+        }
+        // The target's numbers in the phone's language, as the rest of the line.
+        inLocale(Locale.GERMANY) {
+            assertEquals(
+                "6.543 a day, typical: 9.000, aim for 8.000 to 10.000",
+                termDetail(Healthspan.Term(Healthspan.Habit.Steps, 0f, 6543f, 9000f), 40),
+            )
         }
     }
 

@@ -8,6 +8,7 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.momentLead
 import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.StageSpan
 import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.presentation.TabCopy
@@ -482,7 +483,10 @@ data class MomentWidgetModel(
             if (n.stages.isEmpty()) return null
             val from = clock(n.session.start)
             val to = clock(n.session.end)
-            return MomentChart(MomentChartKind.Stages, stages = n.stages, from = from, to = to, description = "Last night's stages, $from to $to")
+            return MomentChart(
+                MomentChartKind.Stages, stages = n.stages, from = from, to = to,
+                description = "Last night's stages, ${Ranges.of(from, to)}",
+            )
         }
 
         /**

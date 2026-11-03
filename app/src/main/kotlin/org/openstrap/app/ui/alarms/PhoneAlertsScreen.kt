@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import org.openstrap.app.ui.glow.GlowSegments
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TimeOfDay
 
 /** What the Strap page's Phone alerts row says: "Calls and notifications", "Calls", "Notifications" or "Off". */
@@ -65,8 +66,8 @@ internal fun quietClock(minutes: Int): String = TimeOfDay.minutes(minutes)
 internal fun quietHoursSummary(q: QuietHours, callsOn: Boolean): String = when {
     !q.on -> "Pause the buzz at night or during set hours."
     q.from == q.to -> "Pick different start and end times."
-    q.calls && callsOn -> "No buzz from ${quietClock(q.from)} to ${quietClock(q.to)}, calls included."
-    else -> "No notification buzz from ${quietClock(q.from)} to ${quietClock(q.to)}."
+    q.calls && callsOn -> "No buzz from ${Ranges.of(quietClock(q.from), quietClock(q.to))}, calls included."
+    else -> "No notification buzz from ${Ranges.of(quietClock(q.from), quietClock(q.to))}."
 }
 
 /**

@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
@@ -302,7 +303,7 @@ internal fun clockDuration(seconds: Long): String = Units.clockDuration(seconds,
 internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false) {
     val s = state.sleep
     EdgeCard(MetricColors.sleepDeep, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onClick) {
-        EdgeTitle("Last night", s?.let { "${clock(it.start)}–${clock(it.end)}" })
+        EdgeTitle("Last night", s?.let { Ranges.times(it.start, it.end) })
         val asleep = state.asleepSeconds
         val score = s?.score
         // A night the strap gave no score says so in words, with no dash where the score would be.
@@ -474,7 +475,7 @@ internal fun ChargeWideCard(
 @Composable
 internal fun WorkoutCard(w: org.openstrap.app.data.WorkoutAnalysis, onClick: () -> Unit, modifier: Modifier = Modifier) {
     EdgeCard(MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Earlier, onClick = onClick) {
-        EdgeTitle(Workouts.sportName(w.workout.sportType), "${clock(w.shownStart)}–${clock(w.end)}")
+        EdgeTitle(Workouts.sportName(w.workout.sportType), Ranges.times(w.shownStart, w.end))
         val mostly = w.zoneSeconds.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.index
         EdgeValue(
             dotClock(w.activeSeconds.coerceAtLeast(0)), "long",
@@ -511,7 +512,7 @@ internal fun WeekCard(
     val zone = ZoneId.systemDefault()
     val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
     EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
-        EdgeTitle("Your week", "${DayWords.dayMonth(start)}–${DayWords.dayMonth(end)}")
+        EdgeTitle("Your week", Ranges.of(DayWords.dayMonth(start), DayWords.dayMonth(end)))
         EdgeValue(stepsNow?.let { dotFormat("%,d", it.roundToInt()) }, "steps a day", null)
         val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { TodayCopy.duration(it) + " asleep a night" }
         val workoutsDone = if (done == 1) "1 workout" else "$done workouts"

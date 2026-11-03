@@ -440,7 +440,9 @@ private fun Vo2Detail(ctx: ActivityDetailContext) {
     // The band is the profile estimate's, so it stands beside that number only.
     val headline = when {
         latest != null -> DetailHeadline(latest.second.toString(), "ml/kg/min", null)
-        est != null -> DetailHeadline("${est.low}-${est.high}", "ml/kg/min", band?.let { "$it for your age" })
+        est != null -> Vo2maxCopy.estimateHero(est.low, est.high).let { (dots, rest) ->
+            DetailHeadline(dots, rest, band?.let { "$it for your age" })
+        }
         else -> DetailHeadline.none("No estimate", "After a workout the strap can read it from")
     }
     val withData = readings.map { Instant.ofEpochSecond(it.first.workout.start).atZone(zone).toLocalDate() }.toSet()
@@ -461,7 +463,9 @@ private fun Vo2Detail(ctx: ActivityDetailContext) {
                     )
                     first = false
                 }
-                if (latest != null && est != null) ListRow("From your profile", color, "${est.low}-${est.high}", "Estimated weekly", divider = !first)
+                if (latest != null && est != null) {
+                    ListRow("From your profile", color, Vo2maxCopy.estimate(est.low, est.high), "Estimated weekly", divider = !first)
+                }
             }
         }
         item { ActivityRelated(Score.Vo2Max, ctx, null) }

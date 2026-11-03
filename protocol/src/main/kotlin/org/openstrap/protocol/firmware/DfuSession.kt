@@ -136,7 +136,10 @@ class DfuSession(
                 x
             }
             when {
-                r == null -> throw DfuException(-6, "No reply to %02X — the strap may be rebooting; reconnect before retrying".format(command))
+                r == null -> throw DfuException(
+                    -6,
+                    "No reply to %02X. The strap may be rebooting, so reconnect before retrying.".format(java.util.Locale.ROOT, command),
+                )
                 r.command == command -> {
                     if (!r.ok) throw DfuException(r.code, "Step %02X failed: %s".format(command, DfuCode.describe(r.code)))
                     return

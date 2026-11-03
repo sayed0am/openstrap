@@ -82,7 +82,7 @@ class SummaryCopyTest {
         assertEquals("≈ 820 m.", SummaryCopy.workoutLine(820f, true, null, 30))
         assertEquals("Average 120 bpm.", SummaryCopy.workoutLine(null, false, 120, 0))
         assertNull(SummaryCopy.workoutLine(null, false, null, 0))
-        assertEquals("18:02–18:40, 38:12", SummaryCopy.trimHeader("18:02", "18:40", 38 * 60 + 12))
+        assertEquals("18:02 to 18:40, 38:12", SummaryCopy.trimHeader("18:02", "18:40", 38 * 60 + 12))
         assertEquals("1.02 km, average 150 bpm", SummaryCopy.lapLine(1020.0, 150))
         assertEquals("Average 150 bpm", SummaryCopy.lapLine(null, 150))
         assertNull(SummaryCopy.lapLine(null, null))

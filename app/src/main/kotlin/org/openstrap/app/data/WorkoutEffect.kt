@@ -86,7 +86,7 @@ object WorkoutEffect {
     /** Zepp's activity classes and the 28-day load (sum of workout EPOC) each runs up to (native 04 §4.5). */
     private val CLASS_LOADS = listOf(450f to 40, 570f to 50, 720f to 60, 870f to 70, 1020f to 75, 1320f to 80, 1570f to 85, 1920f to 90, 2450f to 95)
 
-    /** Activity class 40–100 from the last 28 days' workout EPOC; 50 with none, as Zepp's app does (native 04 §4.5). */
+    /** Activity class 40 to 100 from the last 28 days' workout EPOC, 50 with none, as Zepp's app does (native 04 §4.5). */
     fun activityClass(load28: Float): Int =
         if (load28 <= 0f) 50 else CLASS_LOADS.firstOrNull { load28 <= it.first }?.second ?: 100
 
@@ -108,7 +108,7 @@ object WorkoutEffect {
     const val MIN_TE_EPOCHS = 12
 
     /**
-     * Aerobic training effect 0–5 from peak [epoc]: straight lines between the class's breakpoints (Zepp's own
+     * Aerobic training effect 0 to 5 from peak [epoc]: straight lines between the class's breakpoints (Zepp's own
      * segments, which don't quite meet, differ from them by up to 0.2), floored to a tenth and capped at 5 as Zepp does (native 04 §4.4). A
      * fitter class needs more EPOC for the same effect.
      */
@@ -168,7 +168,7 @@ object WorkoutEffect {
     /** Steady: the four 30-second speeds within this SD (Zepp's 0.3 m/s, native 04 §5.2) and HR within this SD. */
     const val MAX_SPEED_SD = 0.3
     const val MAX_HR_SD = 4.0
-    /** Swain's %HRR ≈ %VO2R holds over roughly 40–90 %; below half the reserve the extrapolation magnifies noise. */
+    /** Swain's %HRR ≈ %VO2R holds over roughly 40 to 90 %. Below half the reserve the extrapolation magnifies noise. */
     const val MIN_HRR = 0.5f
     const val MAX_HRR = 0.95f
     /** A window climbing or falling more than this is skipped: GPS height can't grade-adjust (Zepp's dead band, native 04 §5.4). */

@@ -30,8 +30,8 @@ object Vo2max {
     val ACTIVITY_LEVELS = listOf(
         "Inactive, or little activity beyond usual daily activities",
         "Light activity, at least 10 minutes at a time, 5 or more days a week",
-        "Aerobic exercise 20–60 minutes a week",
-        "Aerobic exercise 1–3 hours a week",
+        "Aerobic exercise 20 to 60 minutes a week",
+        "Aerobic exercise 1 to 3 hours a week",
         "Aerobic exercise over 3 hours a week",
     )
 

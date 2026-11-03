@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
 import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.Ranges
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
@@ -191,7 +192,8 @@ private fun PastSummary(
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
                 PageHeader(
-                    a.sportName, onBack, subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${clock(a.shownStart)} to ${clock(a.end)}",
+                    a.sportName, onBack,
+                    subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${Ranges.times(a.shownStart, a.end)}",
                     trailing = if (foundTag) ({ FoundTag() }) else null,
                 )
             }
@@ -255,7 +257,7 @@ private fun WorkoutHero(a: WorkoutAnalysis, usual: Float?, zones: List<Int>) {
     val style = GlowStyle.chart(MetricColors.heart).copy(lightAngle = LightAngle.Below, lightLevel = Workouts.effort(w.trainingLoad, usual))
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column {
-            GlowHeader(WorkoutDetailCopy.day(a.shownStart, LocalDate.now()), trailing = "${clock(a.shownStart)}–${clock(a.end)}")
+            GlowHeader(WorkoutDetailCopy.day(a.shownStart, LocalDate.now()), trailing = Ranges.times(a.shownStart, a.end))
             HeroSentence(WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones))
             DotMatrixText(dotClock(a.activeSeconds), Modifier.padding(top = 16.dp), dot = DotSize.Hero)
         }
@@ -302,7 +304,7 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
             Note(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
         }
         if (a.historyRanges.isNotEmpty()) Text(
-            "Dimmed: " + a.historyRanges.joinToString(", ") { "${clock(it.first)}–${clock(it.last + 1)}" } +
+            "Dimmed: " + a.historyRanges.joinToString(", ") { Ranges.times(it.first, it.last + 1) } +
                 " came from the strap's history.",
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
         )
