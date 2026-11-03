@@ -71,6 +71,24 @@ class WidgetSnapshotTest {
         assertEquals(2479, snapshot.gather(setOf(WidgetKind.Steps), now, zone).steps?.day?.steps)
     }
 
+    @Test fun `with the day's minutes unread, Moment leaves out yesterday's last reading`() = runBlocking {
+        // The steps read fails, so Moment falls back to the strap's reading, which came yesterday and stays as it was.
+        val failing = object : org.openstrap.app.data.db.HealthDao by dao {
+            override suspend fun activityOnce(from: Long, to: Long): List<ActivityMinute> = error("no minutes")
+        }
+        val snapshot = WidgetSnapshot(
+            HealthRepository(failing), failing, SettingsStore(context), liveSteps,
+            syncing = { false }, todaySteps = { live }, workoutState = { WorkoutState.Idle }, location = { false }, placed = { emptySet() },
+        )
+        val evening = StepTotals(9000, 6300, 350)
+        liveSteps.read(evening, clock.today.minusDays(1))
+        live = evening
+        assertEquals(0, snapshot.gather(setOf(WidgetKind.Moment), now, zone).momentWidget?.getOrThrow()?.steps)
+        // A reading from today still counts there.
+        live = StepTotals(400, 280, 15)
+        assertEquals(400, snapshot.gather(setOf(WidgetKind.Moment), now, zone).momentWidget?.getOrThrow()?.steps)
+    }
+
     @Test fun `the moment, Moment and Sleep pick one main night`() = runBlocking {
         val main = SleepSession(start = midnight - 3 * 3600, end = midnight + 7 * 3600)
         val shorter = SleepSession(start = midnight + 8 * 3600, end = midnight + 8 * 3600 + 1800)

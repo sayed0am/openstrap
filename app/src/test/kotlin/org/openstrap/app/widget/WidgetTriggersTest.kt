@@ -15,7 +15,9 @@ import org.openstrap.app.data.settings.StrapSnapshot
 import org.openstrap.app.device.SyncState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.presentation.StrapBands
+import org.openstrap.app.data.db.SleepEdit
 import org.openstrap.app.testing.appWorkout
+import org.openstrap.app.testing.profile
 import org.openstrap.protocol.services.StepTotals
 
 /**
@@ -57,11 +59,13 @@ class WidgetTriggersTest {
     private val steps = MutableStateFlow<StepTotals?>(null)
     private val ended = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val workout = MutableStateFlow<WorkoutState>(WorkoutState.Idle)
+    private val sleepEdits = MutableStateFlow<Any?>(emptyList<Any>())
+    private val profiles = MutableStateFlow<Any>(profile())
     private val changed = mutableListOf<Set<WidgetKind>>()
     private var stepPushes = 0
 
     private fun watch() {
-        val t = WidgetTriggers(goals, sides, snapshot, sync, steps, ended, workout) { NOW }
+        val t = WidgetTriggers(goals, sides, snapshot, sync, steps, ended, workout, sleepEdits, profiles) { NOW }
         scope.watchWidgetTriggers(t, { changed += it }, { stepPushes++ })
         scope.runCurrent()
     }
@@ -112,6 +116,15 @@ class WidgetTriggersTest {
         scope.runCurrent()
         assertEquals(listOf(all, both), changed)
         assertEquals(1, stepPushes)
+    }
+
+    @Test fun `a sleep edit and a profile change refresh every widget without a sync`() {
+        // Data integrity item 20: before, the widgets kept the old night and Recovery until the next sync ended.
+        watch()
+        sleepEdits.value = listOf(SleepEdit(NOW - 30_000, nap = false, start = NOW - 29_000, end = NOW - 2_000, editedAt = NOW))
+        profiles.value = profile(weightKg = 80f)
+        scope.runCurrent()
+        assertEquals(listOf(all, all), changed)
     }
 
     private companion object {

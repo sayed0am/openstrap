@@ -17,6 +17,7 @@ import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.openstrap.app.BuildConfig
@@ -56,9 +57,9 @@ internal fun placedWidgets(context: Context): Set<WidgetKind> = runCatching {
 
 /**
  * The one place that refreshes home screen widgets (widgets spec 7). It watches what they show ([start]): the goals,
- * the workout sides, the strap's state and syncs, the live steps and the workout. Nobody tells it, and nothing
- * refreshes on a timer it doesn't need. Calls return at once and never throw: the work runs on [scope] and failures
- * are logged.
+ * the workout sides, the strap's state and syncs, the live steps, the workout, sleep edits and the profile. Nobody
+ * tells it, and nothing refreshes on a timer it doesn't need. Calls return at once and never throw: the work runs on
+ * [scope] and failures are logged.
  *
  * Only widgets that are placed are updated, and the moment and midnight alarms are set only while one is. Each refresh
  * reads once for every widget it updates ([WidgetSnapshot.gather]), and the widgets' sessions draw from that read.
@@ -69,6 +70,8 @@ class WidgetUpdater(
     private val settings: SettingsStore,
     private val strap: StrapController,
     private val workout: WorkoutSession,
+    /** The user's sleep edits as they change ([org.openstrap.app.data.HealthRepository.sleepEdits]). */
+    private val sleepEdits: Flow<Any?>,
     private val snapshot: WidgetSnapshot,
 ) {
     private val steps = UpdateThrottle(STEPS_EVERY_MS)
@@ -87,6 +90,8 @@ class WidgetUpdater(
             todaySteps = strap.todaySteps,
             syncEnded = strap.syncEnded,
             workoutState = workout.state,
+            sleepEdits = sleepEdits,
+            profile = settings.profile,
             now = { System.currentTimeMillis() / 1000 },
         )
         scope.watchWidgetTriggers(triggers, ::changed, ::stepsChanged)
