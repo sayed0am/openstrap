@@ -56,19 +56,28 @@ fun BackupPage(
     }
 }
 
-/** The file picker for Restore, opening on the backup folder (a tree URI) when there is one, else on Download. */
+/** The picker's Downloads view, which lists the newest files first, so a zip just saved is at the top. */
+private val DOWNLOADS: android.net.Uri =
+    android.provider.DocumentsContract.buildDocumentUri("com.android.providers.downloads.documents", "downloads")
+
+/** The file picker for Save a copy, opening on Downloads. */
+class SaveBackup : androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/zip") {
+    override fun createIntent(context: android.content.Context, input: String): android.content.Intent =
+        super.createIntent(context, input).putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, DOWNLOADS)
+}
+
+/** The file picker for Restore, opening on the backup folder (a tree URI) when there is one, else on Downloads. */
 class PickBackup : androidx.activity.result.contract.ActivityResultContract<android.net.Uri?, android.net.Uri?>() {
     override fun createIntent(context: android.content.Context, input: android.net.Uri?): android.content.Intent =
         android.content.Intent(android.content.Intent.ACTION_OPEN_DOCUMENT)
             .addCategory(android.content.Intent.CATEGORY_OPENABLE)
             .setType("*/*")
             .putExtra(android.content.Intent.EXTRA_MIME_TYPES, arrayOf("application/zip", "application/x-zip-compressed", "application/octet-stream"))
-            .apply {
-                runCatching {
-                    if (input != null) android.provider.DocumentsContract.buildDocumentUriUsingTree(input, android.provider.DocumentsContract.getTreeDocumentId(input))
-                    else android.provider.DocumentsContract.buildDocumentUri("com.android.externalstorage.documents", "primary:Download")
-                }.getOrNull()?.let { putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, it) }
-            }
+            .putExtra(android.provider.DocumentsContract.EXTRA_INITIAL_URI, input?.let(::folderDocument) ?: DOWNLOADS)
+
+    private fun folderDocument(tree: android.net.Uri): android.net.Uri? = runCatching {
+        android.provider.DocumentsContract.buildDocumentUriUsingTree(tree, android.provider.DocumentsContract.getTreeDocumentId(tree))
+    }.getOrNull()
 
     override fun parseResult(resultCode: Int, intent: android.content.Intent?): android.net.Uri? =
         intent?.data?.takeIf { resultCode == android.app.Activity.RESULT_OK }

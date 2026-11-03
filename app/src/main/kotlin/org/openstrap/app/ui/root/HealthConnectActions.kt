@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 import org.openstrap.app.ui.device.BackupCopy
 import org.openstrap.app.ui.device.DeviceViewModel
 import org.openstrap.app.ui.device.PickBackup
+import org.openstrap.app.ui.device.SaveBackup
 
 /** The device view model's messages, each shown once as a toast. */
 @Composable
@@ -118,7 +119,7 @@ internal class BackupActions(
 /** The launchers stay with the app root, composed all the time, so an answer after a fold still arrives. */
 @Composable
 internal fun rememberBackupActions(deviceVm: DeviceViewModel): BackupActions {
-    val csvLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri ->
+    val csvLauncher = rememberLauncherForActivityResult(SaveBackup()) { uri ->
         uri?.let(deviceVm::exportCsv)
     }
     val folderLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
