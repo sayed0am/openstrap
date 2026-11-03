@@ -25,9 +25,13 @@ object MomentResolver {
     /** The workout window runs this long either side of your usual workout time. */
     const val WINDOW_MINUTES = 45
 
-    /** Night starts this long before your usual bedtime, and evening [EVENING_MINUTES] before it. */
+    /**
+     * Night starts this long before your usual bedtime, and evening [EVENING_MINUTES] before it or at [EVENING_LATEST],
+     * whichever is earlier, so a late bedtime doesn't keep Midday into the evening.
+     */
     const val NIGHT_LEAD_MINUTES = 45
     const val EVENING_MINUTES = 180
+    val EVENING_LATEST: LocalTime = LocalTime.of(18, 0)
 
     /** Night ends here, the morning after. */
     val NIGHT_ENDS: LocalTime = LocalTime.of(4, 0)
@@ -35,7 +39,7 @@ object MomentResolver {
     /** The morning starts here when no main sleep ended today. */
     val WAKE_FALLBACK: LocalTime = LocalTime.of(5, 0)
 
-    /** Bedtime when none is known yet: three hours after it, evening starts at 19:00 as the spec asks. */
+    /** Bedtime when none is known yet. Evening then starts at [EVENING_LATEST], before the three hours ahead of it. */
     val BEDTIME_FALLBACK: LocalTime = LocalTime.of(22, 0)
 
     /** Usual workout time looks back this many days and needs at least [USUAL_WORKOUT_MIN] workouts. */
@@ -76,7 +80,7 @@ object MomentResolver {
         val nightStarts = (bed - NIGHT_LEAD_MINUTES).coerceAtLeast(0)
         val m = afterNoon(clock)
         if (m in nightStarts until nightEnds) return Moment.Night
-        if (m in (bed - EVENING_MINUTES).coerceAtLeast(0) until minOf(nightStarts, nightEnds)) return Moment.Evening
+        if (m in eveningStarts(bed) until minOf(nightStarts, nightEnds)) return Moment.Evening
         return Moment.Midday
     }
 
@@ -145,7 +149,7 @@ object MomentResolver {
         // Clock minutes where evening, night, the window and the fallback morning start or end.
         val bed = afterNoon(usualBedtime ?: BEDTIME_FALLBACK)
         val minutes = buildSet {
-            listOf(0, bed - EVENING_MINUTES, bed - NIGHT_LEAD_MINUTES, afterNoon(NIGHT_ENDS))
+            listOf(0, eveningStarts(bed), bed - NIGHT_LEAD_MINUTES, afterNoon(NIGHT_ENDS))
                 .forEach { add(Math.floorMod(it.coerceAtLeast(0) + 720, 1440)) }
             usuals.forEach { u ->
                 val m = u.toSecondOfDay() / 60
@@ -191,6 +195,9 @@ object MomentResolver {
         val d = Math.floorMod(clock.toSecondOfDay() / 60 - usual.toSecondOfDay() / 60 + 720, 1440) - 720
         return d in -WINDOW_MINUTES until WINDOW_MINUTES
     }
+
+    /** Where evening starts on the noon clock for a [bed] on it: [EVENING_MINUTES] before it, [EVENING_LATEST] at the latest. */
+    private fun eveningStarts(bed: Int): Int = minOf(bed - EVENING_MINUTES, afterNoon(EVENING_LATEST)).coerceAtLeast(0)
 
     /** Minutes since noon: 12:00 is 0, 04:00 the next morning is 960. */
     private fun afterNoon(t: LocalTime): Int = Math.floorMod(t.toSecondOfDay() / 60 - 720, 1440)

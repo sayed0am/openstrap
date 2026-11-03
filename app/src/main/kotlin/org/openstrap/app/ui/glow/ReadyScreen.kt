@@ -19,6 +19,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -55,6 +61,22 @@ import org.openstrap.app.device.locationAvailable
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /* -------------------------------------------- Ready screen ------------------------------------------- */
+
+/**
+ * Calls [end] once the keyboard that came up while [typing] has gone ([keyboardUp] read in a snapshot, so the screen
+ * isn't composed again as it moves). Back with the keyboard up only closes the keyboard, leaving the caret in the
+ * field and Start hidden until a second Back.
+ */
+@Composable
+internal fun EndTypingWithKeyboard(typing: Boolean, keyboardUp: () -> Boolean, end: () -> Unit) {
+    val up by rememberUpdatedState(keyboardUp)
+    val onEnd by rememberUpdatedState(end)
+    LaunchedEffect(typing) {
+        if (!typing) return@LaunchedEffect
+        var seen = false
+        snapshotFlow { up() }.collect { now -> if (now) seen = true else if (seen) onEnd() }
+    }
+}
 
 /**
  * Ready (workouts spec 2.2): the same frame for every sport. Close and the sport as a pill (tap to change it); the
@@ -176,8 +198,12 @@ fun GlowWorkoutReadyScreen(
     }
     BackHandler(onBack = onBack)
     val focusManager = LocalFocusManager.current
-    // Back while typing puts the keyboard and the caret away first.
+    // Back while typing puts the keyboard and the caret away first. The keyboard takes that Back itself when it's up,
+    // so its going ends typing too, and Start comes back with it.
     BackHandler(enabled = typing) { focusManager.clearFocus() }
+    val ime = WindowInsets.ime
+    val density = LocalDensity.current
+    EndTypingWithKeyboard(typing, { ime.getBottom(density) > 0 }) { focusManager.clearFocus() }
     val start = {
         haptics.perform(HapticEvent.WorkoutStart)
         val rest = Strength.Rest(restSeconds, restBelow)

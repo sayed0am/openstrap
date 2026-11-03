@@ -61,11 +61,11 @@ class MomentResolverTest {
     // Workout window
 
     @Test fun `the workout window runs 45 minutes either side of your usual time`() {
-        val starts = fridays(18, 0)
-        assertEquals(Moment.Midday, moment(at(17, 14), starts = starts))
-        assertEquals(Moment.WorkoutWindow, moment(at(17, 15), starts = starts))
-        assertEquals(Moment.WorkoutWindow, moment(at(18, 44), starts = starts))
-        assertEquals(Moment.Midday, moment(at(18, 45), starts = starts))
+        val starts = fridays(16, 0)
+        assertEquals(Moment.Midday, moment(at(15, 14), starts = starts))
+        assertEquals(Moment.WorkoutWindow, moment(at(15, 15), starts = starts))
+        assertEquals(Moment.WorkoutWindow, moment(at(16, 44), starts = starts))
+        assertEquals(Moment.Midday, moment(at(16, 45), starts = starts))
     }
 
     @Test fun `the workout window wins over waking, night and evening`() {
@@ -82,7 +82,7 @@ class MomentResolverTest {
     }
 
     @Test fun `no usual workout time means no workout window`() {
-        assertEquals(Moment.Midday, moment(at(18, 0), starts = fridays(18, 0).take(2)))
+        assertEquals(Moment.Midday, moment(at(16, 0), starts = fridays(16, 0).take(2)))
     }
 
     // Waking
@@ -149,14 +149,26 @@ class MomentResolverTest {
     // Evening
 
     @Test fun `evening runs from three hours before bedtime until night`() {
-        assertEquals(Moment.Midday, moment(at(19, 59)))
-        assertEquals(Moment.Evening, moment(at(20, 0)))
-        assertEquals(Moment.Evening, moment(at(22, 14)))
+        val early = LocalTime.of(20, 30)
+        assertEquals(Moment.Midday, moment(at(17, 29), bedtime = early))
+        assertEquals(Moment.Evening, moment(at(17, 30), bedtime = early))
+        assertEquals(Moment.Evening, moment(at(19, 44), bedtime = early))
+        assertEquals(Moment.Night, moment(at(19, 45), bedtime = early))
     }
 
-    @Test fun `evening starts at 19_00 when bedtime is unknown`() {
-        assertEquals(Moment.Midday, moment(at(18, 59), bedtime = null))
-        assertEquals(Moment.Evening, moment(at(19, 0), bedtime = null))
+    @Test fun `evening starts at 18_00 at the latest, however late bedtime is`() {
+        // Three hours before 23:00 would be 20:00, so 18:45 showed Midday.
+        assertEquals(Moment.Midday, moment(at(17, 59)))
+        assertEquals(Moment.Evening, moment(at(18, 0)))
+        assertEquals(Moment.Evening, moment(at(18, 45)))
+        assertEquals(Moment.Evening, moment(at(22, 14)))
+        assertEquals(Moment.Midday, moment(at(17, 59), bedtime = LocalTime.of(1, 30)))
+        assertEquals(Moment.Evening, moment(at(18, 0), bedtime = LocalTime.of(1, 30)))
+    }
+
+    @Test fun `evening starts at 18_00 when bedtime is unknown`() {
+        assertEquals(Moment.Midday, moment(at(17, 59), bedtime = null))
+        assertEquals(Moment.Evening, moment(at(18, 0), bedtime = null))
         assertEquals(Moment.Evening, moment(at(21, 14), bedtime = null))
         assertEquals(Moment.Night, moment(at(21, 15), bedtime = null))
     }
