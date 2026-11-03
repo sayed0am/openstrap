@@ -15,6 +15,10 @@ import org.junit.runner.RunWith
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.BadgeRow
+import org.openstrap.app.data.db.CheckInRow
+import org.openstrap.app.data.db.DayTagRow
+import org.openstrap.app.data.db.HealthAlertRow
+import org.openstrap.app.data.db.StressSample
 import org.openstrap.app.data.db.ExerciseRow
 import org.openstrap.app.data.db.SavedWorkout
 import org.openstrap.app.data.db.WeekResult
@@ -33,13 +37,12 @@ import org.openstrap.app.data.db.WorkoutHeartRate
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
-import java.time.ZoneId
 import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
-/** Export and restore against a real database: the backup fills the days before the strap's history, and no others. */
+/** Export and restore against a real database: the backup fills what the phone is missing, and keeps what it has. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CsvRestoreTest {
@@ -56,7 +59,7 @@ class CsvRestoreTest {
     @After fun close() { old.close(); phone.close() }
 
     private suspend fun backup(db: OpenStrapDatabase) = ByteArrayOutputStream().also { CsvExporter(db.healthDao()).exportZip(it) }.toByteArray()
-    private suspend fun restore(zip: ByteArray) = CsvImporter(phone, ZoneId.of("UTC")).importZip(ByteArrayInputStream(zip))
+    private suspend fun restore(zip: ByteArray) = CsvImporter(phone).importZip(ByteArrayInputStream(zip))
 
     /** Every file of an export, by name, for comparing two databases in full. */
     private suspend fun contents(db: OpenStrapDatabase): Map<String, String> {
@@ -287,5 +290,78 @@ class CsvRestoreTest {
         val once = contents(phone)
         restore(zip)
         assertEquals(once, contents(phone))
+    }
+
+    @Test fun `a newer backup fills every day the phone lacks, not only those before its first row`() = runTest {
+        fillOldPhone()
+        val d = old.healthDao()
+        d.insertStress((0 until 30).map { StressSample(day - (30 - it) * 86_400L + 12 * 3600, 30 + it) })
+        d.insertCheckIns((0 until 30).map { CheckInRow(day - (30 - it) * 86_400L, 3, day - (30 - it) * 86_400L + 8 * 3600) })
+        val first = d.workouts().first().minBy { it.start }
+        val effectEnd = first.end + 60
+        d.insertSportEffects(listOf(SportEffectRow(effectEnd, 600, null, null, null, null, null, null, null)))
+        d.insertDeletedWorkouts(listOf(DeletedWorkout(first.start, effectEnd, day)))
+        // The phone holds an older Health Connect import, and the strap's newest stress reading.
+        val imported = day - 60 * 86_400L
+        phone.healthDao().insertHeartRate(listOf(HeartRateSample(imported, 64)))
+        phone.healthDao().insertSleepSessions(listOf(SleepSession(imported - 2 * 3600, imported + 6 * 3600, imported)))
+        val strapStress = StressSample(day - 86_400L + 12 * 3600, 99)
+        phone.healthDao().insertStress(listOf(strapStress))
+        val zip = backup(old)
+        restore(zip)
+
+        val p = phone.healthDao()
+        assertEquals(31, p.sleeps().size)
+        assertEquals(2, p.sleepStagesOnce(p.sleeps().last().start).size)
+        assertEquals(old.healthDao().workouts().first().map { it.start }.filter { it != first.start }.sorted(), p.workouts().first().map { it.start }.sorted())
+        assertEquals(6, p.workoutHeartRateAll().size)
+        assertTrue(p.sportEffects().first().isEmpty())
+        assertEquals(30, p.stressOnce(0, Long.MAX_VALUE / 2).size)
+        assertEquals(strapStress, p.stressOnce(strapStress.timestamp, strapStress.timestamp).single())
+        assertEquals(30, p.checkInsOnce(0, Long.MAX_VALUE / 2).size)
+        assertEquals(old.healthDao().wearEventsOnce(0, Long.MAX_VALUE / 2), p.wearEventsOnce(0, Long.MAX_VALUE / 2))
+        assertEquals(30 * 24 + 1, p.hr().size)
+
+        val once = contents(phone)
+        assertEquals(0, restore(zip).total)
+        assertEquals(once, contents(phone))
+    }
+
+    @Test fun `a sleep or workout that overlaps one on the phone is left out on any day, one still recording included`() = runTest {
+        fillOldPhone()
+        val early = AppWorkout(day - 10 * 86_400 + 17 * 3600, day - 10 * 86_400 + 18 * 3600, 1)
+        val late = AppWorkout(day - 2 * 86_400 + 17 * 3600, day - 2 * 86_400 + 18 * 3600, 1)
+        old.healthDao().insertAppWorkouts(listOf(early, late))
+        val far = AppWorkout(day - 60 * 86_400 + 17 * 3600, day - 60 * 86_400 + 18 * 3600, 1)
+        val recording = AppWorkout(late.start + 600, null, 1)
+        phone.healthDao().insertAppWorkouts(listOf(far, recording))
+        val night = old.healthDao().sleeps().last()
+        val resynced = night.copy(start = night.start + 60, score = 55)
+        phone.healthDao().insertSleepSessions(listOf(resynced))
+        restore(backup(old))
+
+        assertEquals(listOf(far, early), phone.healthDao().appWorkoutsAll())
+        assertEquals(recording, phone.healthDao().appWorkoutOnce(late.start + 600))
+        assertNull(phone.healthDao().appWorkoutOnce(late.start))
+        val sleeps = phone.healthDao().sleeps()
+        assertEquals(30, sleeps.size)
+        assertEquals(55, sleeps.single { it.start == resynced.start }.score)
+        assertTrue(sleeps.none { it.start == night.start })
+    }
+
+    @Test fun `a day tag or alert the phone lacks comes back beside the one it has at that time`() = runTest {
+        val alertAt = day - 86_400 + 15 * 3600
+        old.healthDao().insertDayTags(listOf(DayTagRow(day - 2 * 86_400, "alcohol"), DayTagRow(day - 86_400, "alcohol"), DayTagRow(day - 86_400, "late_meal")))
+        old.healthDao().insertHealthAlerts(listOf(HealthAlertRow(alertAt, 1, 140), HealthAlertRow(alertAt, 2, 80)))
+        phone.healthDao().insertDayTags(listOf(DayTagRow(day - 86_400, "alcohol")))
+        phone.healthDao().insertHealthAlerts(listOf(HealthAlertRow(alertAt, 1, 150)))
+        val zip = backup(old)
+        val result = restore(zip)
+
+        val p = phone.healthDao()
+        assertEquals(old.healthDao().dayTagsOnce(0, Long.MAX_VALUE / 2).toSet(), p.dayTagsOnce(0, Long.MAX_VALUE / 2).toSet())
+        assertEquals(setOf(HealthAlertRow(alertAt, 1, 150), HealthAlertRow(alertAt, 2, 80)), p.healthAlertsOnce(0, Long.MAX_VALUE / 2).toSet())
+        assertEquals(2, result.present)
+        assertEquals(0, restore(zip).total)
     }
 }
