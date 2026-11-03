@@ -9,6 +9,7 @@ import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -130,10 +131,11 @@ class TodayHooks(
 
 /**
  * The four tabs, every one kept composed so a swipe never builds a whole dashboard mid-gesture (with only the
- * neighbours kept, crossing halfway built the next one). Glows on tabs off screen, or while the pager moves, hold
- * still. Swiping moves between tabs: [nav] owns the tab and the pager follows it. A tap animates the pager there, and
- * only a swipe the user made, once it settles, is another way to pick the tab. Back handlers on tabs that aren't
- * showing answer to [idleBack], a dispatcher nobody presses, so back only ever closes what's on screen.
+ * neighbours kept, crossing halfway built the next one). Glows on tabs off screen, while the pager moves, or under the
+ * full-screen workout hold still. Swiping moves between tabs: [nav] owns the tab and the pager follows it. A tap
+ * animates the pager there, and only a swipe the user made, once it settles, is another way to pick the tab. Back
+ * handlers on tabs that aren't showing answer to [idleBack], a dispatcher nobody presses, so back only ever closes
+ * what's on screen.
  */
 @Composable
 internal fun TabsPager(
@@ -182,6 +184,7 @@ internal fun TabsPager(
     val connected = strap.connection is ConnectionState.Connected
     // A detail screen open on this tab keeps the swipe for itself (and for its back gesture).
     val subScreenOpen = currentDetail != null || nav.pages.isNotEmpty()
+    val covered = rememberWorkoutCovers(container.workout.state, container.workout.minimized, nav)
     HorizontalPager(
         pager, Modifier.padding(start = if (rail) NavRailWidth else 0.dp).sinkBehind(pageGrow).hazeSource(navGlass),
         userScrollEnabled = !subScreenOpen, key = { it }, beyondViewportPageCount = Tab.entries.size - 1,
@@ -190,7 +193,7 @@ internal fun TabsPager(
         @Suppress("SpreadOperator") // at most one local, once per page
         CompositionLocalProvider(
             // Remembered: a new lambda each time would be a new static local, recomposing the whole tab under it.
-            LocalGlowPagePaused provides remember(pager, page) { { pager.isScrollInProgress || pager.settledPage != page } },
+            LocalGlowPagePaused provides remember(pager, page, covered) { tabPaused(pager, page, covered) },
             LocalScrollToTop provides scroll.of(page),
             *back,
         ) {
@@ -210,6 +213,13 @@ internal fun TabsPager(
         }
     }
 }
+
+/**
+ * Whether glows on [page] hold still: while the pager moves, while the page is off screen, and while [covered] says the
+ * workout layer hides the tabs (the Today hero beating under the dimmed Mind and body screen drew every frame).
+ */
+internal fun tabPaused(pager: PagerState, page: Int, covered: () -> Boolean): () -> Boolean =
+    { covered() || pager.isScrollInProgress || pager.settledPage != page }
 
 /** A tab's own screen, at the root of its stack. Cards about other tabs open those screens here, and none switches tab. */
 @Composable
