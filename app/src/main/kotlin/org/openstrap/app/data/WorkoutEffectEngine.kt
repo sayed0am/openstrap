@@ -5,6 +5,7 @@ import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.ZoneId
@@ -112,7 +113,8 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
 
     /** Daytime resting HR at [t]: the strap's daily values over [Recovery.RHR_DAYS], else [DEFAULT_RESTING_HR]. */
     suspend fun restingHr(t: Long, zone: ZoneId = ZoneId.systemDefault()): Float = Recovery.daytimeRestingHr(
-        dao.restingHrOnce(t - Recovery.RHR_DAYS * DAY, t).associate { it.day to it.bpm.toFloat() }, emptyMap(), dayStart(t, zone),
+        dao.restingHrIn(t - Recovery.RHR_DAYS * DAY, t, zone).associate { Days.start(it.day, zone) to it.bpm.toFloat() },
+        emptyMap(), dayStart(t, zone),
     ) ?: DEFAULT_RESTING_HR
 
     /**

@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.HealthConnectFeatures
 import androidx.health.connect.client.records.metadata.DataOrigin
 import androidx.health.connect.client.request.ReadRecordsRequest
+import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Days
 import org.openstrap.app.data.HeartRate
 import org.openstrap.app.data.db.ActivityMinute
@@ -183,17 +184,28 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             )
         }
 
-        for (r in dao.restingHrOnce(from, to)) {
-            records += RestingHeartRateRecord(
-                time = Instant.ofEpochSecond(r.day), zoneOffset = offset(r.day),
-                beatsPerMinute = r.bpm.toLong(),
-                metadata = meta("rhr:${r.day}"),
-            )
-        }
+        val resting = restingHr(from, to, ZoneId.systemDefault())
+        records += resting
 
         store.write(records, kcalRanges + (SleepSessionRecord::class to sleepRange(from, to)))
+        store.dropMovedRestingHr(resting)
         return records.size
     }
+
+    /**
+     * The stored days' resting heart rate from [from]'s day to [to]'s, each at its local midnight in [zone] with that
+     * moment as its id, as when days were stored as local midnights: a day written again in the same zone replaces its
+     * record. After a change of zone the id is new, and [dropMovedRestingHr] takes out the old one.
+     */
+    internal suspend fun restingHr(from: Long, to: Long, zone: ZoneId): List<RestingHeartRateRecord> =
+        dao.restingHrOnce(Days.date(from, zone), Days.date(to, zone)).map { r ->
+            val midnight = DayKey.legacyMidnight(r.day, zone)
+            RestingHeartRateRecord(
+                time = Instant.ofEpochSecond(midnight), zoneOffset = zone.rules.getOffset(Instant.ofEpochSecond(midnight)),
+                beatsPerMinute = r.bpm.toLong(),
+                metadata = meta("rhr:$midnight"),
+            )
+        }
 
     /**
      * Writes only the sleep in [from, to] again, as [export] does: for a sleep the user moved, deleted or brought back,
@@ -282,7 +294,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         if (!active && !total) return emptyList<Record>() to emptyList()
         val zone = ZoneId.systemDefault()
         val (a, b) = CalorieRecords.days(from, to, zone)
-        val rows = dao.dailyEnergyOnce(a, b - 1)
+        val rows = CalorieRecords.dates(a to b, zone).let { dao.dailyEnergyOnce(it.start, it.endInclusive) }
         val range = TimeRangeFilter.between(Instant.ofEpochSecond(a), Instant.ofEpochSecond(minOf(b, now)))
         val records = mutableListOf<Record>()
         val replaced = mutableListOf<Pair<KClass<out Record>, TimeRangeFilter>>()
@@ -429,7 +441,9 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             val start = r.startTime.epochSecond
             val end = r.endTime.epochSecond
             val nap = end - start < 3 * 3600
-            val day = Days.start(if (nap) start else end, zone)
+            // The record's own offset, where the sleep happened, else the phone's zone.
+            val at = if (nap) start else end
+            val day = (if (nap) r.startZoneOffset else r.endZoneOffset)?.let { DayKey.dayOf(at, it) } ?: DayKey.dayOf(at, zone)
             val stages = r.stages.map {
                 SleepStage(
                     it.startTime.epochSecond, it.endTime.epochSecond, start,
@@ -443,7 +457,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
             }
             fun minutes(stage: Int) = (stages.filter { it.stage == stage }.sumOf { it.end - it.start } / 60).toInt().takeIf { stages.isNotEmpty() }
             sessions += SleepSession(
-                start, end, day, nap,
+                start, end, DayKey.of(day), nap,
                 deepMinutes = minutes(SleepStage.DEEP), lightMinutes = minutes(SleepStage.LIGHT),
                 remMinutes = minutes(SleepStage.REM), awakeMinutes = minutes(SleepStage.AWAKE),
                 wakeCount = stages.count { it.stage == SleepStage.AWAKE }.takeIf { stages.isNotEmpty() },
@@ -461,7 +475,11 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         val hrv = of(HeartRateVariabilityRmssdRecord::class).map { HrvSample(it.time.epochSecond, it.heartRateVariabilityMillis.toInt()) }
         dao.insertHrvIfMissing(hrv); n += hrv.size
 
-        val rhr = of(RestingHeartRateRecord::class).map { RestingHeartRate(it.time.epochSecond, it.beatsPerMinute.toInt()) }
+        // OpenStrap's own records sit at a local midnight with that zone's offset, so their own offset gives the date.
+        val rhr = of(RestingHeartRateRecord::class).map {
+            val t = it.time.epochSecond
+            RestingHeartRate(it.zoneOffset?.let { o -> DayKey.dayOf(t, o) } ?: DayKey.dayOf(t, zone), it.beatsPerMinute.toInt())
+        }
         dao.insertRestingHrIfMissing(rhr); n += rhr.size
         return n
     }
@@ -504,3 +522,28 @@ internal suspend fun RecordStore.write(records: List<Record>, replaced: List<Pai
 
 /** The most records one Health Connect call takes. */
 internal const val HC_BATCH = 500
+
+/** How far a zone's offset reaches from UTC, either way: a day's local midnight lies within it of its UTC midnight. */
+private val OFFSET_REACH = Duration.ofHours(14)
+
+/**
+ * After a change of zone, a date's resting heart rate has a new local midnight and so a new id ([HealthConnectExporter.restingHr]),
+ * and the record written in the old zone would stay beside it. Takes out OpenStrap's own resting heart rate records on
+ * the dates of [written] (each by its own offset) whose id isn't the one written now. Only those dates, so a day the
+ * database no longer has is left alone, and nothing when its own records can't be read. Run after [written] is in.
+ */
+internal suspend fun RecordStore.dropMovedRestingHr(written: List<RestingHeartRateRecord>) {
+    if (written.isEmpty()) return
+    val range = TimeRangeFilter.between(
+        written.minOf { it.time }.minus(OFFSET_REACH), written.maxOf { it.time }.plus(Duration.ofDays(1)).plus(OFFSET_REACH),
+    )
+    val own = ownRecords(RestingHeartRateRecord::class, range) ?: return
+    val ids = written.mapNotNull { r -> dateOf(r)?.let { it to r.metadata.clientRecordId } }.toMap()
+    val stale = own.filterIsInstance<RestingHeartRateRecord>()
+        .filter { r -> dateOf(r)?.let(ids::get)?.let { it != r.metadata.clientRecordId } == true }
+        .map { it.metadata.id }
+    stale.chunked(HC_BATCH).forEach { deleteIds(RestingHeartRateRecord::class, it) }
+}
+
+/** A resting heart rate record's date where it was written, by its own offset, or null without one. */
+private fun dateOf(r: RestingHeartRateRecord): java.time.LocalDate? = r.zoneOffset?.let { r.time.atOffset(it).toLocalDate() }

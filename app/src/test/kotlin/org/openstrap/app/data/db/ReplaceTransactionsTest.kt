@@ -11,6 +11,8 @@ import org.openstrap.app.data.SleepSource
 import org.openstrap.app.testing.inMemoryDb
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.time.LocalDate
+import org.openstrap.app.data.DayKey
 
 /**
  * The delete-then-insert replaces run all or none (audit P4): a write that fails half way leaves what was there. A
@@ -22,8 +24,8 @@ class ReplaceTransactionsTest {
     private lateinit var db: OpenStrapDatabase
     private val dao get() = db.healthDao()
     private val h = 3600L
-    private val day = 99 * h
-    private val night = SleepSession(100 * h, 108 * h, day, nap = false, score = 80)
+    private val day = LocalDate.of(1970, 1, 5)
+    private val night = SleepSession(100 * h, 108 * h, DayKey.of(day), nap = false, score = 80)
     private val stages = listOf(
         SleepStage(100 * h, 102 * h, night.start, SleepStage.DEEP),
         SleepStage(102 * h, 108 * h, night.start, SleepStage.LIGHT),
@@ -51,7 +53,7 @@ class ReplaceTransactionsTest {
     }
 
     @Test fun `replaceSleepDay leaves the other kind alone`() = runTest {
-        val nap = SleepSession(114 * h, 115 * h, day, nap = true)
+        val nap = SleepSession(114 * h, 115 * h, DayKey.of(day), nap = true)
         dao.replaceSleepDay(day, nap = false, listOf(night), stages)
         dao.replaceSleepDay(day, nap = true, listOf(nap), emptyList())
         dao.replaceSleepDay(day, nap = true, emptyList(), emptyList())

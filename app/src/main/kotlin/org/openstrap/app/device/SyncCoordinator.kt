@@ -147,12 +147,14 @@ internal class SyncCoordinator(
     private suspend fun notifyBodySignals() {
         val today = java.time.LocalDate.now()
         val day = org.openstrap.app.data.DayWindow.of(today).from
-        if ((settings.lastSync(BODY_SIGNALS_PUSHED) ?: 0L) >= day) return
+        // By date, so after a flight west the same morning doesn't push again.
+        val pushDay = org.openstrap.app.data.DayKey.of(today)
+        if ((settings.lastSync(BODY_SIGNALS_PUSHED) ?: 0L) >= pushDay) return
         val r = org.openstrap.app.data.RecoveryEngine(dao).compute(today, settings.profile.first())
         val body = r.readiness.bodySignals ?: return
         if (body.day != day || body.state != org.openstrap.app.data.BodySignals.State.Alert) return
         notifiers.healthAlerts.showBodySignals(body.families, body.nightsOff)
-        settings.setLastSync(BODY_SIGNALS_PUSHED, day)
+        settings.setLastSync(BODY_SIGNALS_PUSHED, pushDay)
     }
 
     /**
@@ -198,8 +200,11 @@ internal class SyncCoordinator(
         const val AUTO_SYNC_SECONDS = 60 * 60L
         const val MILLIS_PER_SECOND = 1_000L
         const val SECONDS_PER_DAY = 86_400L
-        /** Settings key: the local midnight of the last morning a body-signal alert was pushed. */
-        const val BODY_SIGNALS_PUSHED = "body_signals_push"
+        /**
+         * Settings key: the last morning a body-signal alert was pushed ([org.openstrap.app.data.DayKey]). Builds before
+         * kept its local midnight under another key, so the upgrade morning can push once more at most.
+         */
+        const val BODY_SIGNALS_PUSHED = "body_signals_push_day"
         /** [org.openstrap.app.data.DailyEnergyHistory.profileKey] of the profile the daily energy rows were last written with. */
         const val DAILY_ENERGY_PROFILE = "daily_energy_profile"
         /** The [org.openstrap.app.data.WorkoutEffect.MODEL] phone workouts' effects were last worked out with. */

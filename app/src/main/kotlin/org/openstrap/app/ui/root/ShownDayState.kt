@@ -65,7 +65,7 @@ internal fun rememberShownDay(
     val day = shown.day
     val recovery = shown.recovery
     val healthspan by dayVm.healthspan.collectAsStateWithLifecycle()
-    LaunchedEffect(day.date, day.dayStart) { rootVm.dayShown(day.date, day.dayStart) }
+    LaunchedEffect(day.date) { rootVm.dayShown(day.date) }
     val dayExtras by rootVm.dayExtras.collectAsStateWithLifecycle()
     val dayIsToday = day.date == clockDate
     val wear = day.wear(recovery, dayIsToday)

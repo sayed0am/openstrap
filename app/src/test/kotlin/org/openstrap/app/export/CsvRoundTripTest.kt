@@ -7,6 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.openstrap.app.data.db.DayKeyMerge
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.export.CsvExporter.Companion.writeCsv
 import org.openstrap.app.testing.SourceTree
@@ -49,10 +50,19 @@ class CsvRoundTripTest {
         }
     }
 
+    /** Each day-keyed table's day column. */
+    private val dayColumns = DayKeyMerge.TABLES.associate { it.name to it.column } + ("sleep_session" to "day")
+
     /** A value for every column, none of them a default: the CSV must carry each one for the row to come back equal. */
     private fun value(table: String, column: Column): Any = when (column.affinity) {
         // A deleted workout that names the row in workout, or its sport effect, would keep them out of the restore.
-        "INTEGER" -> if (table == "workout_deleted") 3L else 2L
+        "INTEGER" -> when {
+            table == "workout_deleted" -> 3L
+            // A stored day is a date's key, a whole number of days, and a sleep's 0 means none. Two days in, so its
+            // local midnight is after 1970 began in every zone, the start of the read.
+            column.name == dayColumns[table] -> 2 * 86_400L
+            else -> 2L
+        }
         "REAL" -> 2.5
         "BLOB" -> byteArrayOf(1, 0xab.toByte())
         // A comma, a quote and a line break: the cell has to be quoted and read back whole.

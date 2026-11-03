@@ -44,12 +44,15 @@ import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import java.time.LocalDate
+import org.openstrap.app.data.DayKey
 
 /** Export and restore against a real database: the backup fills what the phone is missing, and keeps what it has. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CsvRestoreTest {
     private val day = 1792195200L // 2026-10-17T00:00Z
+    private val date = LocalDate.of(2026, 10, 17)
     private val week = 7 * 86_400L
 
     private lateinit var old: OpenStrapDatabase
@@ -259,16 +262,16 @@ class CsvRestoreTest {
     }
 
     @Test fun `daily energy and a phone workout's kcal target come back, before the phone's own days`() = runTest {
-        fun energy(d: Long, total: Float) = DailyEnergyRow(d, d + 86_399, total, 450f, 1650f, 1440, false, 120f, 200f, List(24) { "%.1f".format(java.util.Locale.ROOT, it * 1.5f) }.joinToString(","))
-        old.healthDao().insertDailyEnergy(listOf(energy(day - 2 * 86_400, 2100f), energy(day - 86_400, 2200f), energy(day, 2300f)))
+        fun energy(d: LocalDate, total: Float) = DailyEnergyRow(d, DayKey.of(d) + 86_399, total, 450f, 1650f, 1440, false, 120f, 200f, List(24) { "%.1f".format(java.util.Locale.ROOT, it * 1.5f) }.joinToString(","))
+        old.healthDao().insertDailyEnergy(listOf(energy(date.minusDays(2), 2100f), energy(date.minusDays(1), 2200f), energy(date, 2300f)))
         val w = AppWorkout(day - 86_400 + 17 * 3600, day - 86_400 + 18 * 3600, 1, target = "k:300", activeKcal = 320f, totalKcal = 410f, targetReachedAt = day - 86_400 + 17 * 3600 + 2900)
         old.healthDao().insertAppWorkouts(listOf(w))
         // The phone already worked out today: it keeps its own row.
-        phone.healthDao().insertDailyEnergy(listOf(energy(day, 999f)))
+        phone.healthDao().insertDailyEnergy(listOf(energy(date, 999f)))
         restore(backup(old))
-        assertEquals(listOf(2100f, 2200f, 999f), phone.healthDao().dailyEnergyOnce(0, Long.MAX_VALUE / 2).map { it.totalKcal })
-        assertEquals(old.healthDao().dailyEnergyOnce(0, day - 1), phone.healthDao().dailyEnergyOnce(0, day - 1))
-        assertEquals(24, phone.healthDao().dailyEnergyOnce(day - 86_400, day - 86_400).single().hourlyKcal.size)
+        assertEquals(listOf(2100f, 2200f, 999f), phone.healthDao().dailyEnergyAll().map { it.totalKcal })
+        assertEquals(old.healthDao().dailyEnergyAll().dropLast(1), phone.healthDao().dailyEnergyAll().dropLast(1))
+        assertEquals(24, phone.healthDao().dailyEnergyOnce(date.minusDays(1), date.minusDays(1)).single().hourlyKcal.size)
         assertEquals(listOf(w), phone.healthDao().appWorkoutsAll())
     }
     @Test fun `badges, past weeks, saved workouts, exercises and rounds come back, once`() = runTest {
@@ -299,7 +302,7 @@ class CsvRestoreTest {
         fillOldPhone()
         val d = old.healthDao()
         d.insertStress((0 until 30).map { StressSample(day - (30 - it) * 86_400L + 12 * 3600, 30 + it) })
-        d.insertCheckIns((0 until 30).map { CheckInRow(day - (30 - it) * 86_400L, 3, day - (30 - it) * 86_400L + 8 * 3600) })
+        d.insertCheckIns((0 until 30).map { CheckInRow(date.minusDays(30L - it), 3, day - (30 - it) * 86_400L + 8 * 3600) })
         val first = d.workouts().first().minBy { it.start }
         val effectEnd = first.end + 60
         d.insertSportEffects(listOf(SportEffectRow(effectEnd, 600, null, null, null, null, null, null, null)))
@@ -321,7 +324,7 @@ class CsvRestoreTest {
         assertTrue(p.sportEffects().first().isEmpty())
         assertEquals(30, p.stressOnce(0, Long.MAX_VALUE / 2).size)
         assertEquals(strapStress, p.stressOnce(strapStress.timestamp, strapStress.timestamp).single())
-        assertEquals(30, p.checkInsOnce(0, Long.MAX_VALUE / 2).size)
+        assertEquals(30, p.checkInsAll().size)
         assertEquals(old.healthDao().wearEventsOnce(0, Long.MAX_VALUE / 2), p.wearEventsOnce(0, Long.MAX_VALUE / 2))
         assertEquals(30 * 24 + 1, p.hr().size)
 
@@ -354,15 +357,15 @@ class CsvRestoreTest {
 
     @Test fun `a day tag or alert the phone lacks comes back beside the one it has at that time`() = runTest {
         val alertAt = day - 86_400 + 15 * 3600
-        old.healthDao().insertDayTags(listOf(DayTagRow(day - 2 * 86_400, "alcohol"), DayTagRow(day - 86_400, "alcohol"), DayTagRow(day - 86_400, "late_meal")))
+        old.healthDao().insertDayTags(listOf(DayTagRow(date.minusDays(2), "alcohol"), DayTagRow(date.minusDays(1), "alcohol"), DayTagRow(date.minusDays(1), "late_meal")))
         old.healthDao().insertHealthAlerts(listOf(HealthAlertRow(alertAt, 1, 140), HealthAlertRow(alertAt, 2, 80)))
-        phone.healthDao().insertDayTags(listOf(DayTagRow(day - 86_400, "alcohol")))
+        phone.healthDao().insertDayTags(listOf(DayTagRow(date.minusDays(1), "alcohol")))
         phone.healthDao().insertHealthAlerts(listOf(HealthAlertRow(alertAt, 1, 150)))
         val zip = backup(old)
         val result = restore(zip)
 
         val p = phone.healthDao()
-        assertEquals(old.healthDao().dayTagsOnce(0, Long.MAX_VALUE / 2).toSet(), p.dayTagsOnce(0, Long.MAX_VALUE / 2).toSet())
+        assertEquals(old.healthDao().dayTagsAll().toSet(), p.dayTagsAll().toSet())
         assertEquals(setOf(HealthAlertRow(alertAt, 1, 150), HealthAlertRow(alertAt, 2, 80)), p.healthAlertsOnce(0, Long.MAX_VALUE / 2).toSet())
         assertEquals(2, result.present)
         assertEquals(0, restore(zip).total)

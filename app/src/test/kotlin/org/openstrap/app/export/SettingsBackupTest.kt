@@ -78,7 +78,7 @@ class SettingsBackupTest {
             "strap_battery", "strap_charging", "strap_last_sync_done", "strap_sessions",
             "buzz_calls", "buzz_notifications", "health_connect_auto", "health_connect_synced", "health_connect_auto_stopped",
             "backup_folder", "backup_folder_name", "backup_last_done", "backup_failed", "backup_failed_at",
-            "goal_moment_week", "recap_week", "rewards_started", "history_badges_waiting", "habit_age_seen",
+            "goal_moment_week", "recap_week", "rewards_started", "history_badges_waiting", "habit_age_seen", "habit_age_seen_day",
             "update_checked_at", "update_notified_tag", "update_installing_tag", "update_seen_tag",
         )
         val keys = org.openstrap.app.data.settings.SettingsKeys::class.java.declaredFields

@@ -67,7 +67,7 @@ class DayBoundariesTest {
         assertEquals(day, SleepHistory.nightOf(evening, berlin))
         assertEquals(mapOf(Days.start(day, berlin) to evening), RecoveryEngine.mainsByMorning(listOf(evening), berlin))
         // The day it ended wins over the strap's own day (user, 2026-11-04), in recovery as on the sleep screens.
-        val assigned = evening.copy(day = Days.start(day.plusDays(1), berlin))
+        val assigned = evening.copy(day = DayKey.of(day.plusDays(1)))
         assertEquals(mapOf(day to assigned), SleepHistory.mainSleeps(listOf(assigned), berlin))
         assertEquals(mapOf(Days.start(day, berlin) to assigned), RecoveryEngine.mainsByMorning(listOf(assigned), berlin))
     }

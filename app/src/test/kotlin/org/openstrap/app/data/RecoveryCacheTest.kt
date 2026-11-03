@@ -165,6 +165,16 @@ class RecoveryCacheTest {
         assertSame(later, repo.recovery(yesterday, profile()))
     }
 
+    @Test fun `another zone is worked out on its own`() = runBlocking {
+        val repo = started()
+        val home = repo.recovery(date, profile())
+        // After a flight the day's moments are others, so the result kept from before it isn't this day's.
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Dubai"))
+        val away = repo.recovery(date, profile())
+        assertNotSame(home, away)
+        assertSame(away, repo.recovery(date, profile()))
+    }
+
     @Test fun `a past day stays kept as the clock moves`() = runBlocking {
         val repo = started()
         val first = repo.recovery(date, profile())
@@ -174,8 +184,12 @@ class RecoveryCacheTest {
 
     @Test fun `the cache watches every table Recovery reads`() {
         val daos = File(SourceTree.kotlin, "data/db/Daos.kt").readText()
+        // A read of the day tables by moments ([org.openstrap.app.data.db.restingHrIn] and the like) is the query it calls.
+        val dayReads = Regex("""fun HealthDao\.(\w+)\([^=]*=\s*DayKey\.datesIn\([^)]*\)\.let \{ (\w+)\(""")
+            .findAll(File(SourceTree.kotlin, "data/db/DayReads.kt").readText()).associate { it.groupValues[1] to it.groupValues[2] }
+        assertTrue("found no day reads", dayReads.isNotEmpty())
         val read = listOf("data/RecoveryEngine.kt", "data/SleepSource.kt").flatMap { f ->
-            Regex("""dao\.(\w+)\(""").findAll(File(SourceTree.kotlin, f).readText()).map { it.groupValues[1] }.toList()
+            Regex("""dao\.(\w+)\(""").findAll(File(SourceTree.kotlin, f).readText()).map { dayReads[it.groupValues[1]] ?: it.groupValues[1] }.toList()
         }.toSet()
         val tables = read.flatMap { m ->
             val query = Regex("""@Query\("((?:[^"\\]|\\.)*)"\)\s*(?:@\w+\s*)*(?:suspend\s+)?fun $m\(""").find(daos)?.groupValues?.get(1).orEmpty()

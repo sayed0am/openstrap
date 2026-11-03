@@ -57,9 +57,10 @@ class BacktestTest {
     @Test fun `replays every day with the strap score, check-in and tags beside ours`() = runTest {
         fill(20)
         val d = db.healthDao()
-        val day10 = first.plusDays(10).atStartOfDay(zone).toEpochSecond()
-        d.insertStrapReadiness(listOf(StrapReadinessRow(day10, day10, 88, 80, 75, 100, 100, 50, 54, "4.3")))
-        d.insertCheckIns(listOf(CheckInRow(day10, 4, day10)))
+        val day10 = first.plusDays(10)
+        val at10 = day10.atStartOfDay(zone).toEpochSecond()
+        d.insertStrapReadiness(listOf(StrapReadinessRow(day10, at10, 88, 80, 75, 100, 100, 50, 54, "4.3")))
+        d.insertCheckIns(listOf(CheckInRow(day10, 4, at10)))
         d.insertDayTags(listOf(DayTagRow(day10, "alcohol"), DayTagRow(day10, "travel")))
 
         val rows = Backtest(d, zone).run(first, first.plusDays(19), UserProfile(birthYear = 1990, sex = UserProfile.Sex.Male))

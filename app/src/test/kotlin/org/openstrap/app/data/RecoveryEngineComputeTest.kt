@@ -53,7 +53,7 @@ class RecoveryEngineComputeTest {
             val wake = first.plusDays(k + 1L)
             val start = at(wake.minusDays(1), LocalTime.of(23, 0))
             SleepSession(
-                start, at(wake, LocalTime.of(7, 0)), wake.atStartOfDay(zone).toEpochSecond(), nap = false, score = 80,
+                start, at(wake, LocalTime.of(7, 0)), DayKey.of(wake), nap = false, score = 80,
                 deepMinutes = 90, lightMinutes = 300, remMinutes = 90, awakeMinutes = 0, wakeCount = 0,
             )
         }

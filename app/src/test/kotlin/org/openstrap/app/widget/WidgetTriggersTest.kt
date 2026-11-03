@@ -61,11 +61,12 @@ class WidgetTriggersTest {
     private val workout = MutableStateFlow<WorkoutState>(WorkoutState.Idle)
     private val sleepEdits = MutableStateFlow<Any?>(emptyList<Any>())
     private val profiles = MutableStateFlow<Any>(profile())
+    private val clock = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val changed = mutableListOf<Set<WidgetKind>>()
     private var stepPushes = 0
 
     private fun watch() {
-        val t = WidgetTriggers(goals, sides, snapshot, sync, steps, ended, workout, sleepEdits, profiles) { NOW }
+        val t = WidgetTriggers(goals, sides, snapshot, sync, steps, ended, workout, sleepEdits, profiles, clock) { NOW }
         scope.watchWidgetTriggers(t, { changed += it }, { stepPushes++ })
         scope.runCurrent()
     }
@@ -125,6 +126,14 @@ class WidgetTriggersTest {
         profiles.value = profile(weightKg = 80f)
         scope.runCurrent()
         assertEquals(listOf(all, all), changed)
+    }
+
+    @Test fun `a change of time zone refreshes every widget`() {
+        // Item 17: after a flight the widgets show the day it is there, and the refresh sets midnight's alarm again.
+        watch()
+        clock.tryEmit(Unit)
+        scope.runCurrent()
+        assertEquals(listOf(all), changed)
     }
 
     private companion object {

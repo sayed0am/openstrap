@@ -3,6 +3,9 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.DailyMaxHr
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.data.db.dailyMaxHrIn
+import org.openstrap.app.data.db.restingHrIn
+import org.openstrap.app.data.db.strapReadinessIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
@@ -198,7 +201,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val pai: org.openstrap.app.data.db.PaiSample?,
         val sleepSpo2: List<org.openstrap.app.data.db.SleepSpo2Sample>,
         val osa: List<org.openstrap.app.data.db.OsaResultRow>,
-        val strapNights: Map<Long, org.openstrap.app.data.db.StrapReadinessRow>,
+        val strapNights: Map<LocalDate, org.openstrap.app.data.db.StrapReadinessRow>,
         val wear: List<org.openstrap.app.data.db.WearEventRow>,
         val dailyMaxHr: List<DailyMaxHr>,
         private val sleepSource: SleepSource,
@@ -230,15 +233,15 @@ class RecoveryEngine(private val dao: HealthDao) {
             hrv = dao.hrvOnce(span.from, span.to),
             skin = dao.skinTemperatureOnce(span.from, span.to),
             breath = dao.breathRateOnce(span.from, span.to),
-            strapResting = dao.restingHrOnce(span.from, span.to),
+            strapResting = dao.restingHrIn(span.from, span.to, span.zone),
             pai = dao.paiOnce(span.from, span.to).lastOrNull(),
             sleepSpo2 = dao.sleepSpo2Once(span.from, span.to),
             // The strap's nightly rows are keyed by its own day, which can be a day either side of the night's ([basis]).
             osa = dao.osaResultsOnce(span.osaFrom, span.to + STRAP_DAY_SLACK),
-            strapNights = dao.strapReadinessOnce(span.from - STRAP_DAY_SLACK, span.to + STRAP_DAY_SLACK).associateBy { it.day },
+            strapNights = dao.strapReadinessIn(span.from - STRAP_DAY_SLACK, span.to + STRAP_DAY_SLACK, span.zone).associateBy { it.day },
             // The strap's live wear pushes, where the app was connected to hear them; elsewhere the heart-rate gap rule stands.
             wear = dao.wearEventsOnce(span.simFrom, span.simTo),
-            dailyMaxHr = dao.dailyMaxHrOnce(span.loadFrom, span.to),
+            dailyMaxHr = dao.dailyMaxHrIn(span.loadFrom, span.to, span.zone),
             sleepSource = sleepSource,
         )
     }
@@ -277,7 +280,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val sessions = reads.sessions
         // A night's summary uses the sleep result's day rule: the date of belongTime + 2 h, the strap's day.
         val osaByStrapDay = reads.osa.associateBy {
-            Days.start(it.belongTime + 2 * 3600, zone)
+            Days.date(it.belongTime + 2 * 3600, zone)
         }
 
         val mains = mainsByMorning(sessions, zone)
@@ -303,7 +306,8 @@ class RecoveryEngine(private val dao: HealthDao) {
 
         // Daytime resting HR: the strap's daily values when it has them, else the nightly lowest plus an offset.
         val restingHr = Recovery.daytimeRestingHr(
-            reads.strapResting.associate { it.day to it.bpm.toFloat() },
+            // Keyed by the day's local midnight here, as the nights are, so the two match day for day.
+            reads.strapResting.associate { Days.start(it.day, zone) to it.bpm.toFloat() },
             nights.mapNotNull { n -> n.restingHr?.let { n.day to it } }.toMap(),
             span.day.from,
         ) ?: 60f
@@ -495,7 +499,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         if (tested != null) {
             Recovery.maxHeartRate(profile.age(date), strapMax, tested = tested).let { if (it == tested.toFloat()) return it }
         }
-        return maxHeartRate(profile, profile.age(date), minuteHeartRate(loadFrom, to), strapMax, dao.dailyMaxHrOnce(loadFrom, to), zone)
+        return maxHeartRate(profile, profile.age(date), minuteHeartRate(loadFrom, to), strapMax, dao.dailyMaxHrIn(loadFrom, to, zone), zone)
     }
 
     /**
@@ -649,7 +653,7 @@ class RecoveryEngine(private val dao: HealthDao) {
     private fun dailyMaxima(hrAll: List<Pair<Long, Int>>, strapDaily: List<DailyMaxHr>, zone: ZoneId): Map<LocalDate, Int> {
         fun dayOf(t: Long) = Instant.ofEpochSecond(t).atZone(zone).toLocalDate()
         val minuteMax = hrAll.groupBy { dayOf(it.first) }.mapValues { (_, m) -> Recovery.filteredMax(m) }
-        return Recovery.dailyMaximaByDay(minuteMax, strapDaily.map { dayOf(it.day) to it.bpm })
+        return Recovery.dailyMaximaByDay(minuteMax, strapDaily.map { it.day to it.bpm })
     }
 
     /**
@@ -660,7 +664,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val (loadFrom, to, strapMax) = maxHeartRateWindow(date, zone)
         val tested = profile.maxHeartRate?.takeIf { it in Recovery.TESTED_MAX_RANGE }
         if (tested != null) return MaxHeartRate(tested, MaxHeartRate.Source.Set)
-        val maxima = dailyMaxima(minuteHeartRate(loadFrom, to), dao.dailyMaxHrOnce(loadFrom, to), zone)
+        val maxima = dailyMaxima(minuteHeartRate(loadFrom, to), dao.dailyMaxHrIn(loadFrom, to, zone), zone)
         val peak = Recovery.observedPeak(maxima.values.toList())
         val bpm = Recovery.maxHeartRate(profile.age(date), strapMax, peak).roundToInt()
         val source = Recovery.maxHeartRateSource(profile.age(date), strapMax, peak)

@@ -127,14 +127,14 @@ class AppRootViewModelTest {
     @Test fun `the day's strap score and check-in follow the day shown`() {
         val day = LocalDate.of(2026, 10, 20)
         val start = day.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
-        runBlocking { db.healthDao().insertStrapReadiness(listOf(StrapReadinessRow(start, start, 71, null, null, null, null, null, null, "1"))) }
+        runBlocking { db.healthDao().insertStrapReadiness(listOf(StrapReadinessRow(day, start, 71, null, null, null, null, null, null, "1"))) }
         vm.saveCheckIn(day, 4)
-        vm.dayShown(day, start)
+        vm.dayShown(day)
         val extras = await(vm.dayExtras) { it.checkIn != null && it.strapReadiness != null }
         assertEquals(4, extras.checkIn)
         assertEquals(71, extras.strapReadiness?.score)
         val next = day.plusDays(1)
-        vm.dayShown(next, next.atStartOfDay(ZoneId.systemDefault()).toEpochSecond())
+        vm.dayShown(next)
         assertEquals(DayExtras(), await(vm.dayExtras) { it.checkIn == null && it.strapReadiness == null })
     }
 

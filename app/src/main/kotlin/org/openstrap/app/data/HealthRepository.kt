@@ -68,7 +68,7 @@ class HealthRepository(
      * profile is part of the key because age, weight and the sleep need change the result. The oldest goes past
      * [RECOVERY_CACHE_SIZE]. Only read and written under [recoveryLock].
      */
-    private val recoveries = LinkedHashMap<Pair<LocalDate, UserProfile>, CachedRecovery>()
+    private val recoveries = LinkedHashMap<Triple<LocalDate, UserProfile, ZoneId>, CachedRecovery>()
     private val recoveryLock = Mutex()
 
     /** Moves whenever a table Recovery reads changes, so a cached Recovery is never older than the data under it. */
@@ -101,7 +101,8 @@ class HealthRepository(
     suspend fun recovery(date: LocalDate, profile: UserProfile): RecoveryResult {
         val now = nowSeconds()
         if (!caching) return computeRecovery(date, profile, now)
-        val key = date to profile
+        // The zone too: a day's moments move with it, so a result worked out before a flight is another day's after it.
+        val key = Triple(date, profile, ZoneId.systemDefault())
         val version = dataVersion.get()
         val minute = liveMinute(date, now)
         return recoveryLock.withLock { recoveries[key]?.takeIf { it.version == version && it.minute == minute }?.result }
@@ -134,7 +135,7 @@ class HealthRepository(
         val maxHr = if (date == today) r.maxHr else recoveryEngine.maxHeartRate(profile, today)
         val energy = energyHistory.energy(date, profile, maxHr, r.vo2max?.value?.toFloat(), now = now)
         if (energy != null) {
-            dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(DayWindow.of(date).from, energy, System.currentTimeMillis() / 1000)))
+            dao.insertDailyEnergy(listOf(DailyEnergyHistory.row(date, energy, System.currentTimeMillis() / 1000)))
         }
         return r.copy(energy = energy)
     }
@@ -149,17 +150,16 @@ class HealthRepository(
     private suspend fun logNight(n: Recovery.Night) {
         // The strap's row for the strap's own night, which may be another day's when the night was moved.
         val strap = n.strapDay?.let { dao.strapReadinessOnce(it, it).firstOrNull() }
-        dao.insertNightMetrics(listOf(NightMetrics.row(n, strap, System.currentTimeMillis() / 1000)))
+        dao.insertNightMetrics(listOf(NightMetrics.row(n, strap, System.currentTimeMillis() / 1000, ZoneId.systemDefault())))
     }
 
     /** The morning check-in for [date], 1-5, or null before the user answered. */
-    fun checkIn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<CheckInRow?> = dao.checkIn(DayWindow.of(date, zone).from)
+    fun checkIn(date: LocalDate): Flow<CheckInRow?> = dao.checkIn(date)
 
     /** Saves the check-in for [date]; null clears it. */
-    suspend fun saveCheckIn(date: LocalDate, feeling: Int?, zone: ZoneId = ZoneId.systemDefault()) {
-        val day = DayWindow.of(date, zone).from
-        if (feeling == null) dao.deleteCheckIn(day)
-        else dao.insertCheckIns(listOf(CheckInRow(day, feeling.coerceIn(CheckIn.MIN, CheckIn.MAX), System.currentTimeMillis() / 1000)))
+    suspend fun saveCheckIn(date: LocalDate, feeling: Int?) {
+        if (feeling == null) dao.deleteCheckIn(date)
+        else dao.insertCheckIns(listOf(CheckInRow(date, feeling.coerceIn(CheckIn.MIN, CheckIn.MAX), System.currentTimeMillis() / 1000)))
     }
 
 
@@ -239,7 +239,7 @@ class HealthRepository(
         }
     }
     fun hrv(w: DayWindow): Flow<List<HrvSample>> = dao.hrv(w.from, w.to)
-    fun restingHr(from: Long, to: Long): Flow<List<RestingHeartRate>> = dao.restingHr(from, to)
+    fun restingHr(from: LocalDate, to: LocalDate): Flow<List<RestingHeartRate>> = dao.restingHr(from, to)
     fun skinTemperature(w: DayWindow): Flow<List<SkinTemperature>> = dao.skinTemperature(w.from, w.to)
     fun breathRate(w: DayWindow): Flow<List<BreathRate>> = dao.breathRate(w.from, w.to)
     fun latestPai(before: Long): Flow<PaiSample?> = dao.latestPai(before)
@@ -249,14 +249,14 @@ class HealthRepository(
     fun osaEvents(w: DayWindow): Flow<List<OsaEventRow>> = dao.osaEvents(w.from, w.to)
     fun activityExtended(w: DayWindow): Flow<List<ActivityExtendedMinute>> = dao.activityExtended(w.from, w.to)
     fun healthAlerts(w: DayWindow): Flow<List<HealthAlertRow>> = dao.healthAlerts(w.from, w.to)
-    fun dailyMaxHr(w: DayWindow): Flow<DailyMaxHr?> = dao.dailyMaxHr(w.from, w.to).map { it.lastOrNull() }
+    fun dailyMaxHr(date: LocalDate): Flow<DailyMaxHr?> = dao.dailyMaxHr(date, date).map { it.lastOrNull() }
 
     /**
-     * The strap's sleep-apnea summary for the strap's night [strapDay] ([SleepHistory.strapDay], a local midnight): its
-     * belongTime + 2 h falls on that day.
+     * The strap's sleep-apnea summary for the strap's night [strapDay] ([SleepHistory.strapDay]): its belongTime + 2 h
+     * falls on that day.
      */
-    fun osaResultOf(strapDay: Long, zone: ZoneId = ZoneId.systemDefault()): Flow<OsaResultRow?> {
-        val d = DayWindow.of(Days.date(strapDay, zone), zone)
+    fun osaResultOf(strapDay: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<OsaResultRow?> {
+        val d = DayWindow.of(strapDay, zone)
         return dao.osaResults(d.from - 2 * 3600, d.to - 2 * 3600).map { it.lastOrNull() }
     }
 
@@ -264,11 +264,11 @@ class HealthRepository(
     fun daily(metric: DailyMetric, from: LocalDate, to: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<List<DayStat>> {
         val a = DayWindow.of(from, zone).from
         val b = DayWindow.of(to, zone).to
-        // The strap stores one resting HR per day already, keyed by local midnight.
-        if (metric == DailyMetric.RestingHr) return dao.restingHr(a, b).map { rows ->
+        // The strap stores one resting HR per day already, keyed by its date.
+        if (metric == DailyMetric.RestingHr) return dao.restingHr(from, to).map { rows ->
             rows.map { r ->
                 val bpm = r.bpm.toFloat()
-                DayStat(Instant.ofEpochSecond(r.day).atZone(zone).toLocalDate(), bpm, bpm, bpm, 1)
+                DayStat(r.day, bpm, bpm, bpm, 1)
             }
         }
         // Stress leaves out readings in and just after workouts, so it's aggregated here rather than in SQL.
@@ -312,18 +312,16 @@ class HealthRepository(
         }
 
     /** Each day's stored energy from [from] to [to] ([DailyEnergyHistory]), by local day, for Calories' ranges. */
-    fun dailyEnergy(from: LocalDate, to: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<Map<LocalDate, org.openstrap.app.data.db.DailyEnergyRow>> =
-        dao.dailyEnergy(DayWindow.of(from, zone).from, DayWindow.of(to, zone).from).map { rows ->
-            rows.associateBy { Instant.ofEpochSecond(it.day).atZone(zone).toLocalDate() }
-        }
+    fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, org.openstrap.app.data.db.DailyEnergyRow>> =
+        dao.dailyEnergy(from, to).map { rows -> rows.associateBy { it.day } }
 
     /**
      * The calorie goal the last [org.openstrap.app.data.settings.CalorieGoal.DAYS] suggest: from the active kcal of
      * their full days, today left out ([org.openstrap.app.data.settings.CalorieGoal.suggested]). Null under a week of them.
      */
-    suspend fun suggestedCalorieGoal(today: LocalDate = LocalDate.now(), zone: ZoneId = ZoneId.systemDefault()): Int? {
+    suspend fun suggestedCalorieGoal(today: LocalDate = LocalDate.now()): Int? {
         val days = org.openstrap.app.data.settings.CalorieGoal.DAYS.toLong()
-        val rows = dao.dailyEnergyOnce(DayWindow.of(today.minusDays(days), zone).from, DayWindow.of(today.minusDays(1), zone).from)
+        val rows = dao.dailyEnergyOnce(today.minusDays(days), today.minusDays(1))
         return org.openstrap.app.data.settings.CalorieGoal.suggested(rows.filter { !it.partial }.map { it.activeKcal })
     }
 

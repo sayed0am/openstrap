@@ -8,6 +8,7 @@ import org.json.JSONObject
 import org.junit.rules.ExternalResource
 import org.openstrap.app.data.db.OpenStrapDatabase
 import java.io.File
+import java.time.ZoneId
 
 /** An empty database at the current version, in memory. Robolectric only. Close it after the test. */
 fun inMemoryDb(context: Context = ApplicationProvider.getApplicationContext()): OpenStrapDatabase =
@@ -46,10 +47,14 @@ class MigrationHarness : ExternalResource() {
         return file
     }
 
-    /** [file] opened through Room at the current version, migrating it on the way. */
-    fun open(file: File): OpenStrapDatabase =
+    /**
+     * [file] opened through Room at the current version, migrating it on the way. [zone] is the phone's zone the day
+     * keys are converted in ([org.openstrap.app.data.db.DayKeyMigration]), the JVM's when null.
+     */
+    fun open(file: File, zone: ZoneId? = null): OpenStrapDatabase =
         Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build().also { opened += it }
+            .addMigrations(*(zone?.let { z -> OpenStrapDatabase.migrations { z } } ?: OpenStrapDatabase.MIGRATIONS))
+            .allowMainThreadQueries().build().also { opened += it }
 
     override fun after() {
         opened.forEach { it.close() }

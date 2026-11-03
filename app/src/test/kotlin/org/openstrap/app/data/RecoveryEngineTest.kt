@@ -66,7 +66,7 @@ class RecoveryEngineTest {
 
     @Test
     fun strapDailyMaxSpikesDontRaiseMaxHr() {
-        val days = listOf(3L, 10L).map { date.minusDays(it).atStartOfDay(zone).toEpochSecond() }
+        val days = listOf(3L, 10L).map { date.minusDays(it) }
         val minutes = effort(3, 175) + effort(10, 176)
         // The strap's 205 on two days isn't backed by the minutes (175-176), so Tanaka stands.
         assertEquals(180f, maxHr(dao(minutes, days.map { DailyMaxHr(it, 205) })), 0.01f)

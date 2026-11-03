@@ -1,5 +1,6 @@
 package org.openstrap.app.export
 
+import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Days
 import org.openstrap.app.data.db.ActivityExtendedMinute
 import org.openstrap.app.data.db.AppWorkout
@@ -45,10 +46,14 @@ import org.openstrap.app.data.db.WearEventRow
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.db.WorkoutHeartRate
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 
-/** One CSV row, read by column name so files from older exports (fewer columns, other order) still import. */
-class CsvRow(private val index: Map<String, Int>, private val cells: List<String>) {
+/**
+ * One CSV row, read by column name so files from older exports (fewer columns, other order) still import. [zone] is
+ * where a day from an older backup, a local midnight, is read as a date ([date]).
+ */
+class CsvRow(private val index: Map<String, Int>, private val cells: List<String>, private val zone: ZoneId = ZoneId.systemDefault()) {
     private fun cell(name: String): String? = index[name]?.let(cells::getOrNull)?.takeIf { it.isNotEmpty() }
 
     fun has(name: String) = cell(name) != null
@@ -63,7 +68,23 @@ class CsvRow(private val index: Map<String, Int>, private val cells: List<String
     /** An ISO-8601 time column, as epoch seconds. */
     fun instant(name: String): Long = Instant.parse(cell(name)!!).epochSecond
     fun bytes(name: String): ByteArray? = cell(name)?.chunked(2)?.map { it.toInt(16).toByte() }?.toByteArray()
+
+    /**
+     * A day column: its `yyyy-MM-dd` [DayColumn.date] when the file has one, else its older local midnight
+     * ([DayColumn.legacy]) as its date in the phone's zone now (user, 2026-11-03), as the migration reads the database's.
+     */
+    fun date(day: DayColumn): LocalDate =
+        cell(day.date)?.let(LocalDate::parse) ?: DayKey.fromLegacy(long(day.legacy), zone)
+
+    /** The older local midnight of a day column, for a row from a file without its date: what a merge compares. */
+    fun legacy(day: DayColumn): Long? = if (has(day.date)) null else longOrNull(day.legacy)
 }
+
+/**
+ * A day kept as a date ([DayKey]): the CSV column with its `yyyy-MM-dd` date, written since day keys became dates, and
+ * the older column with its local midnight in epoch seconds, still written for the builds before, which read only that.
+ */
+class DayColumn(val date: String, val legacy: String)
 
 /**
  * Where a table's rows sit in time and what keys them: the database table, the column that holds each row's time, and
@@ -75,6 +96,8 @@ class CsvRow(private val index: Map<String, Int>, private val cells: List<String
 class Key(
     val table: String, val column: String, val epoch: String,
     val span: Span? = null, val parent: String? = null, val unique: Unique? = null, val part: Unique? = null,
+    /** For a table keyed by a day: its date, which keys it in place of [epoch] ([DayKey.of]). */
+    val day: DayColumn? = null,
 )
 
 /** A key column read as text: the database column and the CSV column. */
@@ -146,10 +169,33 @@ private fun <T> byWorkout(page: suspend HealthDao.(Long, Long, Long, Long, Int) 
 private fun iso(epochSeconds: Long) = CsvExporter.iso(epochSeconds)
 private fun hex(bytes: ByteArray?) = bytes?.joinToString("") { "%02x".format(it) }
 
-/** Local midnight of the day a sleep belongs to, for rows from exports that didn't carry it: the day you woke up. */
-private fun sleepDay(start: Long, end: Long, nap: Boolean): Long {
-    return Days.start(if (nap) start else end, ZoneId.systemDefault())
+/** The strap's day for a sleep, for rows from exports that didn't carry it: the day you woke up. */
+private fun sleepDay(start: Long, end: Long, nap: Boolean): Long =
+    DayKey.of(Days.date(if (nap) start else end, ZoneId.systemDefault()))
+
+/** [date]'s local midnight in the phone's zone, what the older day columns hold ([DayColumn.legacy]). */
+private fun legacy(date: LocalDate) = DayKey.legacyMidnight(date, ZoneId.systemDefault())
+
+/** The rows of a day table whose older key ([legacy]) is in [from, to], as the read of the local midnights gave. */
+private fun <T> List<T>.legacyIn(from: Long, to: Long, day: (T) -> LocalDate) = filter { legacy(day(it)) in from..to }
+
+/** The strap's day of a sleep row from its file: the date, else the older local midnight, else [sleepDay]. */
+private fun sleepDayOf(row: CsvRow, start: Long, end: Long, nap: Boolean): Long = when {
+    row.has(SLEEP_DAY.date) -> DayKey.of(row.date(SLEEP_DAY))
+    (row.longOrNull(SLEEP_DAY.legacy) ?: 0) > 0 -> DayKey.of(row.date(SLEEP_DAY))
+    else -> sleepDay(start, end, nap)
 }
+
+/** The day columns of each day-keyed file. */
+private val SLEEP_DAY = DayColumn("date", "day_epoch")
+private val RESTING_DAY = DayColumn("date", "epoch")
+private val MAX_HR_DAY = DayColumn("date", "epoch")
+private val STRAP_DAY = DayColumn("date", "day_epoch")
+private val CHECK_IN_DAY = DayColumn("date", "day_epoch")
+private val TAG_DAY = DayColumn("date", "day_epoch")
+private val NIGHT_DAY = DayColumn("date", "day_epoch")
+private val HABIT_DAY = DayColumn("as_of_date", "as_of_epoch")
+private val ENERGY_DAY = DayColumn("date", "day_epoch")
 
 private fun stageCode(name: String) = when (name) {
     "awake" -> SleepStage.AWAKE; "light" -> SleepStage.LIGHT; "deep" -> SleepStage.DEEP; "rem" -> SleepStage.REM
@@ -181,17 +227,18 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 it.int("walk"), it.int("sit"), it.int("steps"), it.int("calories"), it.int("distance_cm"))
         },
         { d, r -> d.insertActivityExtended(r) }),
-    CsvTable("sleep_session.csv", "start,end,start_epoch,end_epoch,nap,score,avg_hr,deep_min,light_min,rem_min,awake_min,wake_count,day_epoch",
+    CsvTable("sleep_session.csv", "start,end,start_epoch,end_epoch,nap,score,avg_hr,deep_min,light_min,rem_min,awake_min,wake_count,day_epoch,date",
         Key("sleep_session", "start", "start_epoch", span = Span("`end`", "end_epoch")),
         { d, f, t -> d.sleepSessionsOnce(f, t) },
         {
             listOf(iso(it.start), iso(it.end), it.start, it.end, it.nap, it.score, it.averageHeartRate,
-                it.deepMinutes, it.lightMinutes, it.remMinutes, it.awakeMinutes, it.wakeCount, it.day)
+                it.deepMinutes, it.lightMinutes, it.remMinutes, it.awakeMinutes, it.wakeCount, it.strapDate?.let(::legacy) ?: 0,
+                it.strapDate)
         },
         {
             val start = it.long("start_epoch"); val end = it.long("end_epoch"); val nap = it.bool("nap")
             SleepSession(
-                start, end, it.longOrNull("day_epoch")?.takeIf { d -> d > 0 } ?: sleepDay(start, end, nap), nap,
+                start, end, sleepDayOf(it, start, end, nap), nap,
                 it.intOrNull("score"), it.intOrNull("avg_hr"), it.intOrNull("deep_min"), it.intOrNull("light_min"),
                 it.intOrNull("rem_min"), it.intOrNull("awake_min"), it.intOrNull("wake_count"),
             )
@@ -234,10 +281,10 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         Key("hrv_sdnn", "timestamp", "epoch"),
         byTime(HealthDao::hrvSdnnPage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.milliseconds) },
         { HrvSdnnSample(it.long("epoch"), it.float("milliseconds")) }, { d, r -> d.insertHrvSdnn(r) }),
-    CsvTable("resting_hr.csv", "day,epoch,bpm",
-        Key("resting_hr", "day", "epoch"),
-        { d, f, t -> d.restingHrOnce(f, t) }, { listOf(iso(it.day), it.day, it.bpm) },
-        { RestingHeartRate(it.long("epoch"), it.int("bpm")) }, { d, r -> d.insertRestingHr(r) }),
+    CsvTable("resting_hr.csv", "day,epoch,bpm,date",
+        Key("resting_hr", "day", "epoch", day = RESTING_DAY),
+        { d, f, t -> d.restingHrAll().legacyIn(f, t) { it.day } }, { legacy(it.day).let { m -> listOf(iso(m), m, it.bpm, it.day) } },
+        { RestingHeartRate(it.date(RESTING_DAY), it.int("bpm")) }, { d, r -> d.insertRestingHr(r) }),
     CsvTable("skin_temperature.csv", "time,epoch,celsius",
         Key("skin_temperature", "timestamp", "epoch"),
         { d, f, t -> d.skinTemperatureOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.celsius) },
@@ -401,19 +448,19 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, f, t -> d.recoveryHeartRateOfWorkoutsOnce(f, t) }, { listOf(it.workoutStart, hex(it.samples)) },
         { RecoveryHeartRateRow(it.long("workout_start_epoch"), it.bytes("samples_hex") ?: ByteArray(0)) },
         { d, r -> d.insertRecoveryHeartRate(r) }),
-    CsvTable("daily_max_hr.csv", "day,epoch,bpm",
-        Key("daily_max_hr", "day", "epoch"),
-        { d, f, t -> d.dailyMaxHrOnce(f, t) }, { listOf(iso(it.day), it.day, it.bpm) },
-        { DailyMaxHr(it.long("epoch"), it.int("bpm")) }, { d, r -> d.insertDailyMaxHr(r) }),
-    CsvTable("strap_readiness.csv", "day_epoch,updated_epoch,score,hrv_score,resting_hr_score,skin_temperature_score,breathing_score,sleep_hrv,sleep_resting_hr,algorithm_version",
-        Key("strap_readiness", "day", "day_epoch"),
-        { d, f, t -> d.strapReadinessOnce(f, t) },
+    CsvTable("daily_max_hr.csv", "day,epoch,bpm,date",
+        Key("daily_max_hr", "day", "epoch", day = MAX_HR_DAY),
+        { d, f, t -> d.dailyMaxHrAll().legacyIn(f, t) { it.day } }, { legacy(it.day).let { m -> listOf(iso(m), m, it.bpm, it.day) } },
+        { DailyMaxHr(it.date(MAX_HR_DAY), it.int("bpm")) }, { d, r -> d.insertDailyMaxHr(r) }),
+    CsvTable("strap_readiness.csv", "day_epoch,updated_epoch,score,hrv_score,resting_hr_score,skin_temperature_score,breathing_score,sleep_hrv,sleep_resting_hr,algorithm_version,date",
+        Key("strap_readiness", "day", "day_epoch", day = STRAP_DAY),
+        { d, f, t -> d.strapReadinessAll().legacyIn(f, t) { it.day } },
         {
-            listOf(it.day, it.updatedAt, it.score, it.hrvScore, it.restingHrScore, it.skinTemperatureScore, it.breathingScore,
-                it.sleepHrv, it.sleepRestingHr, it.algorithmVersion)
+            listOf(legacy(it.day), it.updatedAt, it.score, it.hrvScore, it.restingHrScore, it.skinTemperatureScore, it.breathingScore,
+                it.sleepHrv, it.sleepRestingHr, it.algorithmVersion, it.day)
         },
         {
-            StrapReadinessRow(it.long("day_epoch"), it.long("updated_epoch"), it.intOrNull("score"), it.intOrNull("hrv_score"),
+            StrapReadinessRow(it.date(STRAP_DAY), it.long("updated_epoch"), it.intOrNull("score"), it.intOrNull("hrv_score"),
                 it.intOrNull("resting_hr_score"), it.intOrNull("skin_temperature_score"), it.intOrNull("breathing_score"),
                 it.intOrNull("sleep_hrv"), it.intOrNull("sleep_resting_hr"), it.string("algorithm_version"))
         },
@@ -442,44 +489,51 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, f, t -> d.wearEventsOnce(f, t + 1).filter { it.timestamp in f..t } }, { listOf(iso(it.timestamp), it.timestamp, it.worn) },
         { WearEventRow(it.long("epoch"), if (it.has("worn")) it.bool("worn") else null) }, { d, r -> d.insertWearEvents(r) }),
     // What the user entered: the morning check-in and day tags can't be synced again from the strap.
-    CsvTable("check_in.csv", "day,day_epoch,feeling,updated_epoch",
-        Key("check_in", "day", "day_epoch"),
-        { d, f, t -> d.checkInsOnce(f, t) }, { listOf(iso(it.day), it.day, it.feeling, it.updatedAt) },
-        { CheckInRow(it.long("day_epoch"), it.int("feeling"), it.longOrNull("updated_epoch") ?: it.long("day_epoch")) },
-        { d, r -> d.insertCheckIns(r) }),
-    CsvTable("day_tag.csv", "day,day_epoch,tag",
-        Key("day_tag", "day", "day_epoch", part = Unique("tag", "tag")),
-        { d, f, t -> d.dayTagsOnce(f, t) }, { listOf(iso(it.day), it.day, it.tag) },
-        { DayTagRow(it.long("day_epoch"), it.string("tag")) }, { d, r -> d.insertDayTags(r) }),
-    CsvTable("night_metrics.csv", "day,day_epoch,updated_epoch,hrv_ln,hrv_samples,rhr_lowest30,rhr_mean_sleep,rhr_p10,hr_minutes,strap_hrv,strap_resting_hr",
-        Key("night_metrics", "day", "day_epoch"),
-        { d, f, t -> d.nightMetricsOnce(f, t) },
+    CsvTable("check_in.csv", "day,day_epoch,feeling,updated_epoch,date",
+        Key("check_in", "day", "day_epoch", day = CHECK_IN_DAY),
+        { d, f, t -> d.checkInsAll().legacyIn(f, t) { it.day } },
+        { legacy(it.day).let { m -> listOf(iso(m), m, it.feeling, it.updatedAt, it.day) } },
         {
-            listOf(iso(it.day), it.day, it.updatedAt, it.hrvLn, it.hrvSamples, it.rhrLowest30, it.rhrMeanSleep, it.rhrP10, it.hrMinutes,
-                it.strapHrv, it.strapRestingHr)
+            CheckInRow(it.date(CHECK_IN_DAY), it.int("feeling"),
+                it.longOrNull("updated_epoch") ?: it.longOrNull("day_epoch") ?: DayKey.of(it.date(CHECK_IN_DAY)))
+        },
+        { d, r -> d.insertCheckIns(r) }),
+    CsvTable("day_tag.csv", "day,day_epoch,tag,date",
+        Key("day_tag", "day", "day_epoch", part = Unique("tag", "tag"), day = TAG_DAY),
+        { d, f, t -> d.dayTagsAll().legacyIn(f, t) { it.day } }, { legacy(it.day).let { m -> listOf(iso(m), m, it.tag, it.day) } },
+        { DayTagRow(it.date(TAG_DAY), it.string("tag")) }, { d, r -> d.insertDayTags(r) }),
+    CsvTable("night_metrics.csv", "day,day_epoch,updated_epoch,hrv_ln,hrv_samples,rhr_lowest30,rhr_mean_sleep,rhr_p10,hr_minutes,strap_hrv,strap_resting_hr,date",
+        Key("night_metrics", "day", "day_epoch", day = NIGHT_DAY),
+        { d, f, t -> d.nightMetricsAll().legacyIn(f, t) { it.day } },
+        {
+            val m = legacy(it.day)
+            listOf(iso(m), m, it.updatedAt, it.hrvLn, it.hrvSamples, it.rhrLowest30, it.rhrMeanSleep, it.rhrP10, it.hrMinutes,
+                it.strapHrv, it.strapRestingHr, it.day)
         },
         {
-            NightMetricsRow(it.long("day_epoch"), it.long("updated_epoch"), it.floatOrNull("hrv_ln"), it.int("hrv_samples"),
+            NightMetricsRow(it.date(NIGHT_DAY), it.long("updated_epoch"), it.floatOrNull("hrv_ln"), it.int("hrv_samples"),
                 it.floatOrNull("rhr_lowest30"), it.floatOrNull("rhr_mean_sleep"), it.floatOrNull("rhr_p10"), it.int("hr_minutes"),
                 it.intOrNull("strap_hrv"), it.intOrNull("strap_resting_hr"))
         },
         { d, r -> d.insertNightMetrics(r) }),
     // Each Sunday's Habit Age as it was shown: only the current week is ever worked out, so a past one can't come back.
-    CsvTable("habit_age_week.csv", "as_of,as_of_epoch,estimate,low,high,updated_epoch",
-        Key("habit_age_week", "asOf", "as_of_epoch"),
-        { d, f, t -> d.habitAgeWeeksOnce(f, t) }, { listOf(iso(it.asOf), it.asOf, it.estimate, it.low, it.high, it.updatedAt) },
-        { HabitAgeWeekRow(it.long("as_of_epoch"), it.float("estimate"), it.int("low"), it.int("high"), it.long("updated_epoch")) },
+    CsvTable("habit_age_week.csv", "as_of,as_of_epoch,estimate,low,high,updated_epoch,as_of_date",
+        Key("habit_age_week", "asOf", "as_of_epoch", day = HABIT_DAY),
+        { d, f, t -> d.habitAgeWeeksAll().legacyIn(f, t) { it.asOf } },
+        { legacy(it.asOf).let { m -> listOf(iso(m), m, it.estimate, it.low, it.high, it.updatedAt, it.asOf) } },
+        { HabitAgeWeekRow(it.date(HABIT_DAY), it.float("estimate"), it.int("low"), it.int("high"), it.long("updated_epoch")) },
         { d, r -> r.forEach { row -> d.insertHabitAgeWeek(row) } }),
     // Worked out from the data above, but kept so a later change of model doesn't rewrite the history that was shown.
-    CsvTable("daily_energy.csv", "day,day_epoch,updated_epoch,total_kcal,active_kcal,bmr_kcal,minutes_with_data,partial,workout_kcal,walking_kcal,hourly_active_kcal",
-        Key("daily_energy", "day", "day_epoch"),
-        { d, f, t -> d.dailyEnergyOnce(f, t) },
+    CsvTable("daily_energy.csv", "day,day_epoch,updated_epoch,total_kcal,active_kcal,bmr_kcal,minutes_with_data,partial,workout_kcal,walking_kcal,hourly_active_kcal,date",
+        Key("daily_energy", "day", "day_epoch", day = ENERGY_DAY),
+        { d, f, t -> d.dailyEnergyAll().legacyIn(f, t) { it.day } },
         {
-            listOf(iso(it.day), it.day, it.updatedAt, it.totalKcal, it.activeKcal, it.bmrKcal, it.minutesWithData, it.partial,
-                it.workoutKcal, it.walkingKcal, it.hourly)
+            val m = legacy(it.day)
+            listOf(iso(m), m, it.updatedAt, it.totalKcal, it.activeKcal, it.bmrKcal, it.minutesWithData, it.partial,
+                it.workoutKcal, it.walkingKcal, it.hourly, it.day)
         },
         {
-            DailyEnergyRow(it.long("day_epoch"), it.long("updated_epoch"), it.float("total_kcal"), it.float("active_kcal"), it.float("bmr_kcal"),
+            DailyEnergyRow(it.date(ENERGY_DAY), it.long("updated_epoch"), it.float("total_kcal"), it.float("active_kcal"), it.float("bmr_kcal"),
                 it.int("minutes_with_data"), it.bool("partial"), it.float("workout_kcal"), it.float("walking_kcal"),
                 if (it.has("hourly_active_kcal")) it.string("hourly_active_kcal") else "")
         },

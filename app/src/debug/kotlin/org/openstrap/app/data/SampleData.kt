@@ -85,7 +85,7 @@ object SampleData {
             dao.insertStress(stress)
             dao.insertSpo2(spo2)
             dao.insertHrv((0 until 6).map { HrvSample(sleepStart + it * 3600L + 1800, 48 + rnd.nextInt(-12, 15)) })
-            dao.insertRestingHr(listOf(RestingHeartRate(dayStart, resting)))
+            dao.insertRestingHr(listOf(RestingHeartRate(date, resting)))
         }
     }
 }

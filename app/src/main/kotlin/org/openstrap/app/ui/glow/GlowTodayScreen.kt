@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import org.openstrap.app.presentation.chargeShown
@@ -146,7 +147,7 @@ fun GlowTodayScreen(
     /** The weekly Habit Age estimate, or why it's withheld; null hides the card. */
     healthspan: org.openstrap.app.data.Healthspan.Outcome? = null,
     /** The Sunday of the last Habit Age estimate opened, so Today stops offering it ([habitAgeNew]). */
-    habitAgeSeenAsOf: Long? = null,
+    habitAgeSeenAsOf: LocalDate? = null,
     /** Per-day history for Your week; null leaves its steps out. */
     history: DailyHistory? = null,
     /** Edit Today's hidden and pinned cards. */
@@ -212,7 +213,7 @@ fun GlowTodayScreen(
         restingRange = rememberNormal(Metric.RestingHr, state.date, history),
         firstNights = rec != null && !rec.charge.anchored,
         stuck = strap.paired && syncStuck(isToday, state.asleepSeconds != null, strap.record.failingSince, now.epochSecond, zone),
-        strapScore = strapReadiness?.takeIf { it.day == state.dayStart }?.score,
+        strapScore = strapReadiness?.takeIf { it.day == state.date }?.score,
         stopped = strap.stopped, staleAfter = strap.staleAfter,
         recoveryFailure = recoveryFailure?.takeIf { it.date == state.date && rec == null },
         partial = partialTag.takeIf { wear?.partial == true },
@@ -225,7 +226,8 @@ fun GlowTodayScreen(
         isToday = isToday, offer = offer != null, suggestion = suggestion != null, alerts = state.alerts.isNotEmpty(),
         workout = lastWorkout != null && isToday,
         healthspan = healthspan?.result?.let { r ->
-            habitAgeNew(Instant.ofEpochSecond(r.asOf).atZone(zone).toLocalDate(), habitAgeSeenAsOf == r.asOf, state.date, now.atZone(zone).toLocalDate())
+            val asOf = Instant.ofEpochSecond(r.asOf).atZone(zone).toLocalDate()
+            habitAgeNew(asOf, habitAgeSeenAsOf == asOf, state.date, now.atZone(zone).toLocalDate())
         } == true,
     )
     // Before the first estimate Habit Age never shows on Today, pinned or not.

@@ -98,7 +98,7 @@ class ShownDay(
     val firstScore: Boolean,
 ) {
     /** The strap's own score for the day shown. */
-    val strapScore: Int? get() = strapReadiness?.takeIf { it.day == day.dayStart }?.score
+    val strapScore: Int? get() = strapReadiness?.takeIf { it.day == day.date }?.score
 }
 
 /** The stored histories the charts read. */

@@ -6,6 +6,7 @@ import org.junit.Test
 import org.openstrap.app.data.db.DailyEnergyRow
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.data.Days
 
 class CalorieRecordsTest {
     private val utc = ZoneId.of("UTC")
@@ -13,8 +14,9 @@ class CalorieRecordsTest {
 
     private fun midnight(d: LocalDate, zone: ZoneId) = d.atStartOfDay(zone).toEpochSecond()
 
-    private fun row(day: Long, hourly: List<Float>, total: Float = 2200f, partial: Boolean = false, updated: Long = day + 90_000) =
-        DailyEnergyRow(day, updated, total, hourly.sum(), 1650f, if (partial) 600 else 1440, partial, 100f, 150f, hourly.joinToString(","))
+    /** The row for the day starting at the local midnight [day] in [zone]. */
+    private fun row(day: Long, hourly: List<Float>, total: Float = 2200f, partial: Boolean = false, updated: Long = day + 90_000, zone: ZoneId = utc) =
+        DailyEnergyRow(Days.date(day, zone), updated, total, hourly.sum(), 1650f, if (partial) 600 else 1440, partial, 100f, 150f, hourly.joinToString(","))
 
     private val day = midnight(LocalDate.of(2026, 10, 20), utc)
     private val later = day + 10 * 86_400
@@ -70,15 +72,15 @@ class CalorieRecordsTest {
     @Test fun `days with a clock change keep their local hours and length`() {
         // Berlin falls back on 25 October 2026: a 25 hour day.
         val d = midnight(LocalDate.of(2026, 10, 25), berlin)
-        val spans = CalorieRecords.activeHours(listOf(row(d, List(24) { 10f })), berlin, d + 30 * 86_400)
+        val spans = CalorieRecords.activeHours(listOf(row(d, List(24) { 10f }, zone = berlin)), berlin, d + 30 * 86_400)
         assertEquals(24, spans.size)
         assertEquals(d + 4 * 3600, spans[3].start) // 03:00 local is four hours after midnight
         assertEquals(25 * 3600L, CalorieRecords.dayEnd(d, berlin) - d)
-        assertEquals(25 * 3600L, CalorieRecords.dayTotals(listOf(row(d, List(24) { 10f })), berlin, d + 30 * 86_400).single().let { it.end - it.start })
+        assertEquals(25 * 3600L, CalorieRecords.dayTotals(listOf(row(d, List(24) { 10f }, zone = berlin)), berlin, d + 30 * 86_400).single().let { it.end - it.start })
         // And springs forward on 29 March: hour 2 doesn't exist, and it holds nothing.
         val s = midnight(LocalDate.of(2026, 3, 29), berlin)
         val hourly = List(24) { h -> if (h == 2) 0f else 10f }
-        val spring = CalorieRecords.activeHours(listOf(row(s, hourly)), berlin, s + 30 * 86_400)
+        val spring = CalorieRecords.activeHours(listOf(row(s, hourly, zone = berlin)), berlin, s + 30 * 86_400)
         assertEquals(23, spring.size)
         assertEquals(spring.size, spring.map { it.start }.toSet().size)
     }
