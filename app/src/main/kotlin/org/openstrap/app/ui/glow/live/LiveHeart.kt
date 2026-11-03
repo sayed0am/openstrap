@@ -34,6 +34,12 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
@@ -80,6 +86,7 @@ fun GlowWorkoutLiveScreen(
     onMinimize: () -> Unit,
     onEndAtPrompt: () -> Unit,
     onKeepGoing: () -> Unit,
+    modifier: Modifier = Modifier,
     route: List<Route.Point> = emptyList(),
     history: List<Pair<Long, Int>> = emptyList(),
     onStartSet: () -> Unit = {},
@@ -109,30 +116,40 @@ fun GlowWorkoutLiveScreen(
     // other half.
     val family = Workouts.family(r.workout.sportType)
     // Under the fold of a phone stood like a laptop the half is short: the screens with a large figure fit a compact one.
-    BoxWithConstraints(Modifier.fillMaxSize()) {
+    BoxWithConstraints(modifier.fillMaxSize()) {
         val compact = maxHeight < CompactHeight
-        when {
-            family == Workouts.Family.Distance && r.workout.useGps ->
-                LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)
-            family == Workouts.Family.Strength -> LiveStrengthScreen(
-                r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
-                controls, exercises,
-                onStartSet, onSetDone, onExtendRest, onExercise, onLogSet, compact,
-            )
-            family == Workouts.Family.Intervals && r.structure != null ->
-                LiveIntervalsScreen(
-                    r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
-                    controls, onSkip, onAddRest, split, compact,
-                )
-            family == Workouts.Family.MindBody -> LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls, split, compact)
-            family == Workouts.Family.Games ->
-                LiveGameScreen(
-                    r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, stats, zoneSeconds, connection,
-                    contentPadding, controls, kcal, onSkip, split, compact,
-                )
-            // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
-            // the rounds.
-            else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal, split, compact)
+        // On its side, the whole screen (a folded half keeps the layout made for it) puts the controls beside the
+        // content, and keeps clear of a camera cutout, which is then on its left or right. The tree is the same either
+        // way, so what a screen saves outlives a turn of the phone.
+        val landscape = !split && maxWidth > maxHeight
+        val cutout = if (!landscape) Modifier
+        else Modifier.background(Color.Black).windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
+        CompositionLocalProvider(LocalLiveLandscape provides landscape) {
+            Box(Modifier.fillMaxSize().then(cutout)) {
+                when {
+                    family == Workouts.Family.Distance && r.workout.useGps ->
+                        LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)
+                    family == Workouts.Family.Strength -> LiveStrengthScreen(
+                        r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection, contentPadding,
+                        controls, exercises,
+                        onStartSet, onSetDone, onExtendRest, onExercise, onLogSet, compact,
+                    )
+                    family == Workouts.Family.Intervals && r.structure != null ->
+                        LiveIntervalsScreen(
+                            r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, connection,
+                            contentPadding, controls, onSkip, onAddRest, split, compact,
+                        )
+                    family == Workouts.Family.MindBody -> LiveMindScreen(r, liveHeartRate, recent, connection, contentPadding, controls, split, compact)
+                    family == Workouts.Family.Games ->
+                        LiveGameScreen(
+                            r, liveHeartRate, remember(history, recent) { WorkoutCopy.readings(history, recent) }, stats, zoneSeconds,
+                            connection, contentPadding, controls, kcal, onSkip, split, compact,
+                        )
+                    // Indoor cardio, a distance sport without GPS, and HIIT's Free, which has no timer: heart rate only, laps mark
+                    // the rounds.
+                    else -> LiveIndoorScreen(r, liveHeartRate, recent, stats, zoneSeconds, connection, contentPadding, controls, onLap, kcal, split, compact)
+                }
+            }
         }
     }
 }
@@ -276,17 +293,23 @@ internal fun WorkoutHeartCard(
                 ZoneTimeBar(zoneSeconds, zone)
             }
             Spacer(Modifier.height(8.dp))
-            Row {
-                zone?.let { Note(WorkoutCopy.zoneTime(zoneSeconds[it])) }
-                Spacer(Modifier.weight(1f))
-                when (val t = WorkoutTarget.parse(r.workout.target)) {
-                    is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
-                    is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
-                    is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
-                    is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
-                    null -> Unit
-                }
-            }
+            HeartNotes(r, zone, zoneSeconds, active, kcal)
+        }
+    }
+}
+
+/** The time in the [zone] you're in on the left of the heart card's foot, and the target's progress on the right. */
+@Composable
+internal fun HeartNotes(r: WorkoutState.Recording, zone: Int?, zoneSeconds: ZoneSeconds, active: () -> Long, kcal: Float?) {
+    Row {
+        zone?.let { Note(WorkoutCopy.zoneTime(zoneSeconds[it])) }
+        Spacer(Modifier.weight(1f))
+        when (val t = WorkoutTarget.parse(r.workout.target)) {
+            is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
+            is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
+            is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
+            is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
+            null -> Unit
         }
     }
 }

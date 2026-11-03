@@ -2,6 +2,19 @@ package org.openstrap.app.ui.glow.live
 
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.layout.Arrangement
+import org.openstrap.app.ui.glow.draw.chart
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.GlowCard
+import org.openstrap.app.presentation.WorkoutCopy
+import androidx.compose.ui.Alignment
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -45,7 +58,7 @@ internal fun LiveIndoorScreen(
     kcal: WorkoutRecorder.Kcal?,
     /** Split across a fold: the heart card is on the other half, so this one keeps the time in zones. */
     split: Boolean = false,
-    /** A short half: the total small on top, so the controls keep their labels. */
+    /** A short screen: the total small on top, so the controls keep their labels, and the heart card on one row. */
     compact: Boolean = false,
 ) {
     val heartZones = LocalHeartZones.current
@@ -73,6 +86,8 @@ internal fun LiveIndoorScreen(
         if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected && !r.paused })
         val reading = liveHeartRate.takeIf { connected && !r.paused }
         if (split) ZoneTimeBar(zoneSeconds, WorkoutRecorder.liveZone(reading, r.maxHeartRate, heartZones))
+        // A whole screen this short is a phone on its side: the arc can't fit beside the controls, the number can.
+        else if (compact) CompactHeartCard(r, liveHeartRate, zoneSeconds, connected, { active.value }, kcal?.active)
         else WorkoutHeartCard(
             r, liveHeartRate, recent, zoneSeconds, connected, { active.value }, Modifier.fillMaxWidth(),
             kcal = kcal?.active, zoneBar = true,
@@ -100,6 +115,43 @@ internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
                 else -> ZONE_COLORS[z]
             }
             Box(Modifier.weight(maxOf(s.toFloat() / total, 0.04f)).height(8.dp).clip(RoundedCornerShape(50)).background(color))
+        }
+    }
+}
+
+/**
+ * The live heart card on a short screen (a phone on its side): the bpm in dots with the zone beside it, the time in
+ * each zone as a bar, and the card's notes, lit as the full card is ([WorkoutHeartCard]), without the arc and the
+ * last ten minutes that need its height.
+ */
+@Composable
+private fun CompactHeartCard(
+    r: WorkoutState.Recording, liveHeartRate: Int?, zoneSeconds: ZoneSeconds, connected: Boolean, active: () -> Long, kcal: Float?,
+) {
+    val heartZones = LocalHeartZones.current
+    val bpm = liveHeartRate.takeIf { connected && !r.paused }
+    val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
+    val style = GlowStyle.chart(workoutColor(r, liveHeartRate, connected, heartZones)).copy(
+        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
+        lightLevel = WorkoutCopy.zoneLightLevel(zone),
+        outline = r.paused,
+    )
+    GlowCard(style, Modifier.fillMaxWidth()) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.Bottom) {
+                if (bpm != null) {
+                    DotMatrixText("$bpm", dot = DotSize.Detail)
+                    Spacer(Modifier.width(8.dp))
+                    Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
+                } else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
+                Spacer(Modifier.weight(1f))
+                Text(
+                    zone?.let { WorkoutCopy.zoneLine(it) } ?: if (r.paused) "No zone while paused" else "No zone yet",
+                    color = Color.White, style = GlowType.secondary, maxLines = 1,
+                )
+            }
+            ZoneTimeBar(zoneSeconds, zone)
+            HeartNotes(r, zone, zoneSeconds, active, kcal)
         }
     }
 }

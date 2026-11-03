@@ -5,6 +5,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.DisposableEffect
@@ -41,6 +44,9 @@ import java.util.Locale
 /** OpenFreeMap's dark style: no API key, no cookies; attribution is shown by the map's own button. */
 private const val TILES_STYLE = "https://tiles.openfreemap.org/styles/dark"
 
+/** The black of [BLANK_STYLE], for a map that can't be drawn. */
+private val RouteOnlyBlack = Color(0xFF0B0B0D)
+
 /** "Route only": no tile requests at all, just the line on black. */
 private const val BLANK_STYLE = """{"version":8,"sources":{},"layers":[{"id":"bg","type":"background","paint":{"background-color":"#0B0B0D"}}]}"""
 
@@ -62,6 +68,11 @@ fun WorkoutMap(
     follow: Boolean = true,
     onPanned: () -> Unit = {},
 ) {
+    // A preview or a layout test has no native map library: the route only map's black stands in for it.
+    if (LocalInspectionMode.current) {
+        Box(modifier.background(RouteOnlyBlack))
+        return
+    }
     val panned by rememberUpdatedState(onPanned)
     val density = LocalDensity.current
     val context = LocalContext.current
