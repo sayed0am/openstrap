@@ -1,28 +1,29 @@
 package org.openstrap.app.export
 
 import androidx.room.withTransaction
-import org.openstrap.app.data.Days
+import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.db.AppWorkout
+import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.OpenStrapDatabase
 import java.io.InputStream
-import java.time.Instant
-import java.time.ZoneId
 import java.util.zip.ZipInputStream
 
 /**
- * Restores a zip made by [CsvExporter] into what the phone is missing. Heart rate and activity minutes ([MINUTES]) come
- * back wherever the phone has no row for that minute, and a minute it has keeps the strap's value, so a day the strap
- * only partly re-sent is filled in. Every other table only fills the local days before the first day the phone has a
- * row on: that day and every day after it are the strap's, gaps included. A sleep or workout that overlaps one on the phone is
- * skipped too, and stages and workout heart rate come back only with their sleep or workout. A strap workout deleted in
- * OpenStrap, on the phone or by the backup, stays deleted: its row and the sport effect deleted with it are left out, so
- * its heart rate is too. Restoring twice changes nothing. Runs as one transaction, so a zip that fails part way changes
- * nothing. Files this version doesn't know are skipped, and a backup from before deleted workouts were kept restores as
- * it did. The settings file isn't written here: [Result.settings] carries it.
+ * Restores a zip made by [CsvExporter] into what the phone is missing: every row whose key the phone has no row for
+ * comes back, and a row it has keeps the phone's values, so a day the strap only partly re-sent is filled in, as are
+ * days a newer backup or a Health Connect import holds. A sleep or workout that overlaps one on the phone is left out
+ * too, as the strap can re-send a night with another start, and stages and workout heart rate come back only with their
+ * sleep or workout. A strap workout deleted in OpenStrap, on the phone or by the backup, stays deleted: its row and the
+ * sport effect deleted with it are left out, so its heart rate is too. A phone workout discarded since the backup was
+ * made stays gone too, as its range is kept. Restoring twice changes nothing. Runs as one
+ * transaction, so a zip that fails part way changes nothing. Files this version doesn't know are skipped, and a backup
+ * from before deleted workouts were kept restores as it did. The settings file isn't written here: [Result.settings]
+ * carries it.
  */
-class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = ZoneId.systemDefault()) {
+class CsvImporter(private val db: OpenStrapDatabase) {
 
     /**
-     * What one restore did: rows added per file, rows left out as the strap's days have them, and rows unreadable.
+     * What one restore did: rows added per file, rows left out as the phone has them, and rows unreadable.
      * [settings] is the zip's [SettingsBackup.FILE] as is, for the caller to restore; null in a zip from before it.
      */
     data class Result(val rows: Map<String, Int>, val present: Int, val skipped: Int, val settings: String? = null) {
@@ -31,7 +32,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
 
     private class Outcome(val stored: Int, val present: Int, val bad: Int)
 
-    /** One CSV row read: its time and, for a span, its end, its text key for a [Unique] table, and the row. */
+    /** One CSV row read: its time and, for a span, its end, its text key or key part ([Key.unique], [Key.part]), and the row. */
     private class Parsed<T>(val time: Long, val end: Long, val id: String?, val value: T)
 
     /** A file's rows as read, waiting to be written, and how many were unreadable. */
@@ -40,10 +41,12 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
     suspend fun importZip(input: InputStream): Result = db.withTransaction {
         val tables = CSV_TABLES.associateBy { it.file }
         val counts = linkedMapOf<String, Int>()
+        // Read before the zip's own: one zip is one snapshot, so a range it holds never covers a workout it holds.
+        val dismissed = db.healthDao().dismissedWorkoutsAll()
         // Starts of the sleeps and workouts this restore added: only their stages and heart rate come with them.
         val added = mutableMapOf<String, Set<Long>>()
         // Child tables wait until every parent is in, whatever order the zip lists them in, and the tables a deleted
-        // workout is left out of wait until every deleted workout is in.
+        // or discarded workout is left out of wait until every deleted workout is in.
         val children = mutableListOf<Pending<*>>()
         val deletable = mutableListOf<Pending<*>>()
         var present = 0
@@ -74,6 +77,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         val gone = mapOf(
             "workout" to deleted.mapTo(HashSet()) { it.start },
             "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
+            "app_workout" to discarded(deletable, dismissed),
         )
         for (p in deletable) count(p.table.file, p.backfill(added, gone[p.table.key.table].orEmpty()))
         for (p in children) count(p.table.file, p.backfill(added))
@@ -81,6 +85,18 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
         if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
         Result(counts, present, skipped, settings)
     }
+
+    /**
+     * Starts of the phone workouts in [pending] that lie inside a range the phone had [dismissed]: a Discard deletes the
+     * row and keeps its [Workouts.phoneRange] ([org.openstrap.app.device.SavedWorkoutEditor.discard]), so an older zip
+     * would bring it back. Only inside, so a workout that merely touches a "Not a workout" range comes back.
+     */
+    private fun discarded(pending: List<Pending<*>>, dismissed: List<DismissedWorkout>): Set<Long> =
+        pending.filter { it.table.key.table == "app_workout" }.flatMap { it.rows }.mapNotNullTo(HashSet()) { row ->
+            val w = row.value as? AppWorkout ?: return@mapNotNullTo null
+            val range = Workouts.phoneRange(w, Long.MAX_VALUE)
+            w.start.takeIf { dismissed.any { d -> d.start <= range.first && range.last <= d.end } }
+        }
 
     /**
      * Workouts deleted on the old phone that the strap re-sent here before the restore: the restored marker keeps
@@ -105,73 +121,71 @@ class CsvImporter(private val db: OpenStrapDatabase, private val zone: ZoneId = 
             val cells = CsvRow(index, records.next() ?: break)
             runCatching {
                 val time = cells.long(key.epoch)
-                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, key.unique?.let { cells.string(it.csv) }, parse(cells))
+                val id = (key.unique ?: key.part)?.let { cells.string(it.csv) }
+                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, id, parse(cells))
             }.onFailure { bad++ }
         }
         return Pending(this, rows, bad)
     }
 
-    /** Writes the rows that fall before the phone's first day for this table, less those timed at [gone]. */
+    /** Writes the rows the phone is missing ([missing]), or a child table's rows of the parents just added, less those timed at [gone]. */
     private suspend fun <T> Pending<T>.backfill(added: MutableMap<String, Set<Long>>, gone: Set<Long> = emptySet()): Outcome {
         val key = table.key
         val rows = rows.filter { it.time !in gone }
-        val fresh = if (rows.isEmpty()) rows else {
-            val from = rows.minOf { it.time }
-            val to = rows.maxOf { it.end }
-            val parent = key.parent
-            val span = key.span
-            when {
-                parent != null -> added[parent].orEmpty().let { starts -> rows.filter { it.time in starts } }
-                else -> {
-                    val first = query("SELECT MIN(${key.column}) FROM ${key.table}") { c -> if (c.isNull(0)) null else c.getLong(0) }.single()
-                    val cutoff = first?.let { dayStart(it) } ?: Long.MAX_VALUE
-                    // A deletion is the user's, not the strap's history: every one comes back, less those already here.
-                    val unique = key.unique
-                    val before = when (key.table) {
-                        in WHOLE -> if (unique != null) {
-                            val have = query("SELECT ${unique.column} FROM ${key.table}") { it.getString(0) }.toHashSet()
-                            rows.filter { it.id !in have }
-                        } else {
-                            val have = query("SELECT ${key.column} FROM ${key.table}") { it.getLong(0) }.toHashSet()
-                            rows.filter { it.time !in have }
-                        }
-                        // One row a minute, keyed by it: a minute the phone has keeps the strap's value, any other
-                        // minute comes back, so a day the strap only partly re-sent is filled in too.
-                        in MINUTES -> {
-                            val have = query("SELECT ${key.column} FROM ${key.table} WHERE ${key.column} BETWEEN ? AND ?", from, to) { it.getLong(0) }.toHashSet()
-                            rows.filter { it.time !in have }
-                        }
-                        else -> rows.filter { it.time < cutoff }
-                    }
-                    if (span == null) before else {
-                        // A night that starts the evening before the strap's first day can still be one it has.
-                        val have = query("SELECT ${key.column}, ${span.column} FROM ${key.table} WHERE ${key.column} <= ? AND ${span.column} >= ?", to, from) {
-                            it.getLong(0) to it.getLong(1)
-                        }
-                        before.filter { row -> have.none { (s, e) -> s == row.time || (s < row.end && e > row.time) } }
-                    }
-                }
-            }
+        val parent = key.parent
+        val fresh = when {
+            rows.isEmpty() -> rows
+            parent != null -> added[parent].orEmpty().let { starts -> rows.filter { it.time in starts } }
+            else -> missing(key, rows)
         }
         if (key.span != null) added[key.table] = fresh.mapTo(HashSet()) { it.time }
         fresh.map { it.value }.chunked(2_000).forEach { table.write(db.healthDao(), it) }
         return Outcome(fresh.size, rows.size - fresh.size, bad)
     }
 
-    private fun dayStart(epoch: Long): Long = Days.start(epoch, zone)
+    /**
+     * The [rows] whose key the phone has no row for, whatever day they fall on: a row the phone has keeps its values, as
+     * the strap's or the user's. A span also leaves out one that overlaps a span on the phone, still recording included,
+     * since the strap can re-send a night with another start.
+     */
+    private fun <T> missing(key: Key, rows: List<Parsed<T>>): List<Parsed<T>> {
+        val from = rows.minOf { it.time }
+        val to = rows.maxOf { it.end }
+        val unique = key.unique
+        val part = key.part
+        val inRange = "WHERE ${key.column} BETWEEN ? AND ?"
+        val absent = when {
+            unique != null -> {
+                val have = query("SELECT ${unique.column} FROM ${key.table}") { it.getString(0) }.toHashSet()
+                rows.filter { it.id !in have }
+            }
+            part != null -> {
+                val sql = "SELECT ${key.column}, ${part.column} FROM ${key.table} $inRange"
+                val have = query(sql, from, to) { it.getLong(0) to it.getString(1) }.toHashSet()
+                rows.filter { (it.time to it.id) !in have }
+            }
+            else -> {
+                val have = query("SELECT ${key.column} FROM ${key.table} $inRange", from, to) { it.getLong(0) }.toHashSet()
+                rows.filter { it.time !in have }
+            }
+        }
+        val span = key.span ?: return absent
+        val end = "IFNULL(${span.column}, ${Long.MAX_VALUE})"
+        val have = query("SELECT ${key.column}, $end FROM ${key.table} WHERE ${key.column} <= ? AND $end >= ?", to, from) {
+            it.getLong(0) to it.getLong(1)
+        }
+        return absent.filter { row -> have.none { (s, e) -> s < row.end && e > row.time } }
+    }
 
     private fun <R> query(sql: String, vararg args: Any, read: (android.database.Cursor) -> R): List<R> =
         db.openHelper.writableDatabase.query(sql, args).use { c -> buildList { while (c.moveToNext()) add(read(c)) } }
 
     companion object {
-        /** Tables whose rows a deleted strap workout takes with it, by its start (workout) or its effect's end. */
-        private val DELETABLE = setOf("workout", "sport_effect")
-
-        /** Tables restored whole rather than only before the phone's first day: what the user did, which the strap can't re-send. */
-        private val WHOLE = setOf("workout_deleted", "saved_workout", "exercise", "badge", "week_result", "personal_best", "habit_age_week")
-
-        /** Minute tables, keyed by the minute: restored wherever the phone has no row for it, not only before its first day. */
-        private val MINUTES = setOf("heart_rate", "activity_minute", "activity_extended")
+        /**
+         * Tables whose rows a deleted strap workout takes with it, by its start (workout) or its effect's end, and a
+         * discarded phone workout by its start (app_workout).
+         */
+        private val DELETABLE = setOf("workout", "sport_effect", "app_workout")
 
         /** One CSV line into cells, as [CsvReader] reads it. */
         fun parseLine(line: String): List<String> = CsvReader(line.reader()).next() ?: listOf("")

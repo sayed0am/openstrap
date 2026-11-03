@@ -102,7 +102,7 @@ class BacktestTest {
         assumeTrue("set -Pbacktest=<openstrap.db or backup .zip> to run", path != null)
         val source = File(path!!)
         val target = if (source.extension == "zip") {
-            CsvImporter(db, ZoneId.systemDefault()).importZip(source.inputStream())
+            CsvImporter(db).importZip(source.inputStream())
             db
         } else {
             // Work on a copy (with its WAL beside it), so Room's migration never touches the original.

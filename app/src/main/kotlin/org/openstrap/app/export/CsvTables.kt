@@ -66,18 +66,18 @@ class CsvRow(private val index: Map<String, Int>, private val cells: List<String
 }
 
 /**
- * Where a table's rows sit in time: the database table, the column that holds each row's time, and the CSV column
- * with that time in epoch seconds. A restore only writes rows from before the first day the phone has in the table. A
- * [span] table (sleep, workouts) also skips rows that overlap one on the phone, as a night can cross into that day.
- * A [parent] table's rows belong to a row of that table, keyed by its start, and come back only with it. A [unique]
- * table is keyed by text rather than time.
+ * Where a table's rows sit in time and what keys them: the database table, the column that holds each row's time, and
+ * the CSV column with that time in epoch seconds. A restore writes the rows whose key the phone has no row for. The key
+ * is the time, or the text [unique] in its place, or the time with [part] beside it. A [span] table (sleep, workouts)
+ * also leaves out rows that overlap one on the phone, as the strap can re-send one with another start. A [parent]
+ * table's rows belong to a row of that table, keyed by its start, and come back only with it.
  */
 class Key(
     val table: String, val column: String, val epoch: String,
-    val span: Span? = null, val parent: String? = null, val unique: Unique? = null,
+    val span: Span? = null, val parent: String? = null, val unique: Unique? = null, val part: Unique? = null,
 )
 
-/** A text key: the database column and the CSV column. A restore leaves out rows whose key the phone already has. */
+/** A key column read as text: the database column and the CSV column. */
 class Unique(val column: String, val csv: String)
 
 /** A span table's end: the database column and the CSV column, in epoch seconds. */
@@ -346,14 +346,14 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         },
         { d, r -> d.insertSavedWorkouts(r) }),
     CsvTable("exercise.csv", "used_epoch,name,last_reps,last_kg",
-        Key("exercise", "usedAt", "used_epoch"),
+        Key("exercise", "usedAt", "used_epoch", unique = Unique("name", "name")),
         { d, f, t -> d.exercisesUsedOnce(f, t) },
         { listOf(it.usedAt, it.name, it.lastReps, it.lastKg) },
         { ExerciseRow(it.string("name"), it.intOrNull("last_reps"), it.floatOrNull("last_kg"), it.long("used_epoch")) },
         { d, r -> d.insertExercises(r) }),
     // Badges are never taken back and each past week keeps the goal it had (Rewards): neither can be worked out again.
     CsvTable("badge.csv", "earned_epoch,id,workout_start_epoch,day",
-        Key("badge", "earnedAt", "earned_epoch"),
+        Key("badge", "earnedAt", "earned_epoch", unique = Unique("id", "id")),
         { d, f, t -> d.badgesEarnedOnce(f, t) },
         { listOf(it.earnedAt, it.id, it.workoutStart, it.day) },
         { BadgeRow(it.string("id"), it.long("earned_epoch"), it.longOrNull("workout_start_epoch"), it.longOrNull("day")) },
@@ -433,7 +433,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { OsaEventRow(it.long("epoch"), it.int("drop"), it.bytes("spo2_hex"), it.bytes("heart_rate_hex")) },
         { d, r -> d.insertOsaEvents(r) }),
     CsvTable("health_alert.csv", "time,epoch,type,value",
-        Key("health_alert", "timestamp", "epoch"),
+        Key("health_alert", "timestamp", "epoch", part = Unique("type", "type")),
         { d, f, t -> d.healthAlertsOnce(f, t) }, { listOf(iso(it.timestamp), it.timestamp, it.type, it.value) },
         { HealthAlertRow(it.long("epoch"), it.int("type"), it.long("value")) }, { d, r -> d.insertHealthAlerts(r) }),
     // The strap's on/off-body changes; worn is blank where the link went down and the state became unknown.
@@ -448,7 +448,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { CheckInRow(it.long("day_epoch"), it.int("feeling"), it.longOrNull("updated_epoch") ?: it.long("day_epoch")) },
         { d, r -> d.insertCheckIns(r) }),
     CsvTable("day_tag.csv", "day,day_epoch,tag",
-        Key("day_tag", "day", "day_epoch"),
+        Key("day_tag", "day", "day_epoch", part = Unique("tag", "tag")),
         { d, f, t -> d.dayTagsOnce(f, t) }, { listOf(iso(it.day), it.day, it.tag) },
         { DayTagRow(it.long("day_epoch"), it.string("tag")) }, { d, r -> d.insertDayTags(r) }),
     CsvTable("night_metrics.csv", "day,day_epoch,updated_epoch,hrv_ln,hrv_samples,rhr_lowest30,rhr_mean_sleep,rhr_p10,hr_minutes,strap_hrv,strap_resting_hr",
