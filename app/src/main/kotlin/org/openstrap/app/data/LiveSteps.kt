@@ -51,10 +51,15 @@ class LiveSteps {
             anchoredHistory = -1
             liveAtAnchor = 0
         }
-        // A reading read on another day is that day's total. One not seen yet has only just come, so it is today's.
-        val current = live?.takeUnless { it == lastReading && readOn != date }
-        return count(history, current)
+        return count(history, current(date, live))
     }
+
+    /**
+     * [live] when it counts on [date], else null: a reading that came on another day is that day's total. One not seen
+     * yet has only just come, so it is today's. Leaves the anchor alone, for a caller that has no history to count from.
+     */
+    @Synchronized
+    fun current(date: LocalDate, live: StepTotals?): StepTotals? = live?.takeUnless { it == lastReading && readOn != date }
 
     private fun count(history: Int, live: StepTotals?): Int = when {
         live == null -> history
