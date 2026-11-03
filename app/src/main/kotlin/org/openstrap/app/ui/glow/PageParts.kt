@@ -406,9 +406,9 @@ fun PageButton(
     icon: ImageVector? = null,
 ) {
     Row(
-        modifier.height(52.dp).clip(CircleShape)
+        // Dimmed before the pill is drawn, so a disabled button fades whole, pill and label (user, 2026-11-03).
+        modifier.height(52.dp).alpha(if (enabled) 1f else 0.4f).clip(CircleShape)
             .background(if (primary) Color.White else ControlSurface)
-            .alpha(if (enabled) 1f else 0.4f)
             .let { if (enabled) it.pressClickable(onClick, CircleShape) else it }
             .semantics { role = Role.Button }
             .padding(horizontal = 18.dp),
