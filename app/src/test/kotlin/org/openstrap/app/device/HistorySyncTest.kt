@@ -275,6 +275,27 @@ class HistorySyncTest {
         assertEquals(SyncState.Failed("The link to the strap dropped."), state.value)
     }
 
+    @Test fun `fast-charge mode stops the sync and the log keeps the strap's reason`() = runTest {
+        seedStrap()
+        strap.onStart = { throw org.openstrap.protocol.history.FastRechargeModeException() }
+        runSync()
+
+        assertEquals(SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off."), state.value)
+        assertTrue(log.toString(), log.any { it.startsWith("history: strap is in fast-charge mode") && "The strap is in fast-charge mode" in it })
+    }
+
+    @Test fun `any failure on one type skips that type only, not just an Exception`() = runTest {
+        seedStrap()
+        // An Error (a parser's TODO, say) escaped the catch for Exception and with it the whole sync.
+        strap.onStart = { type -> if (type == HistoryDataType.HRV_RMSSD.code) throw NotImplementedError("no parser") }
+        val thrown = runCatching { runSync() }.exceptionOrNull()
+
+        assertEquals(null, thrown)
+        assertTrue("${state.value}", state.value is SyncState.Done)
+        assertEquals(1, table("SELECT * FROM pai").size)
+        assertTrue(log.toString(), log.any { it.startsWith("history HRV_RMSSD") && "no parser" in it })
+    }
+
     @Test fun `a cancelled sync does not stay Running`() = runTest {
         seedStrap()
         val started = CompletableDeferred<Unit>()

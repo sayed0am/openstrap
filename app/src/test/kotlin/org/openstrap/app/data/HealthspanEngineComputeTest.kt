@@ -3,6 +3,7 @@ package org.openstrap.app.data
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Rule
 import org.junit.Test
@@ -76,6 +77,21 @@ class HealthspanEngineComputeTest {
         assertNotNull(outcome.result)
         assertEquals(39, outcome.age)
         assertMatchesSnapshot(SNAPSHOT, outcome.toString())
+    }
+
+    @Test fun `a value replaced in place refreshes the cached estimate`() = runTest {
+        seed()
+        val engine = HealthspanEngine(dao)
+        fun Healthspan.Result.restingHr() = terms.first { it.habit == Healthspan.Habit.RestingHr }.value
+        val before = requireNotNull(engine.compute(sunday, profile(birthYear = 1986), zone).result).restingHr()
+        // The same nights logged again, with a higher resting HR: as many rows as before, under the same keys.
+        val first = sunday.minusDays(days.toLong())
+        val again = (0 until days step 2).map { k -> NightMetricsRow(first.plusDays(k + 1L), 1, null, 0, 64f, null, null, 400, null, null) }
+        dao.insertNightMetrics(again)
+        val after = requireNotNull(engine.compute(sunday, profile(birthYear = 1986), zone).result).restingHr()
+        assertNotEquals(before, after)
+        // A fresh engine, with no cache, agrees with the refreshed one.
+        assertEquals(after, requireNotNull(HealthspanEngine(dao).compute(sunday, profile(birthYear = 1986), zone).result).restingHr())
     }
 
     /**

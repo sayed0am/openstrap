@@ -218,7 +218,7 @@ class WidgetSnapshot(
     private suspend fun recovery(today: LocalDate, result: RecoveryResult?, profile: Result<UserProfile>): RecoveryRead {
         suspend fun day(date: LocalDate, known: RecoveryResult?): RecoveryDay? = catching {
             val r = known ?: health.recovery(date, profile.getOrThrow())
-            RecoveryDay.of(r, dao.strapReadinessOnce(date, date).firstOrNull()?.score)
+            RecoveryDay.of(r, r.strapScore)
         }.onFailure { logUnread("Recovery for $date", it) }.getOrNull()
         val first = result?.let { day(today, it) }
         val yesterday = if (first?.shown?.value == null) day(today.minusDays(1), null) else null
@@ -258,7 +258,6 @@ class WidgetSnapshot(
         suspend fun <T> read(what: String, default: T, block: suspend () -> T): T =
             catching { block() }.onFailure { logUnread("$what for Moment", it) }.getOrDefault(default)
         val inputs = base.copy(usualBedtime = rec?.usualBedtime ?: r.bedtime)
-        val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(today, today).firstOrNull()?.score }
         val night = read("last night", null) {
             val sessions = checkNotNull(r.span).getOrThrow()
             SleepHistory.mainSleep(sessions, SleepHistory.endingOn(today, zone))?.let { main ->
@@ -286,7 +285,7 @@ class WidgetSnapshot(
         return MomentWidgetInput(
             inputs = inputs,
             placed = WidgetRefresh.placedOverride ?: placed(),
-            recovery = rec?.let { TodayCopy.recoveryShown(it.readiness, strapScore, TabCopy.RECOVERY_WAITING) },
+            recovery = rec?.let { TodayCopy.recoveryShown(it.readiness, it.strapScore, TabCopy.RECOVERY_WAITING) },
             score = rec?.readiness?.score,
             alert = rec?.readiness?.strainAlert == true,
             noScore = TodayCopy.noScore(rec?.readiness),

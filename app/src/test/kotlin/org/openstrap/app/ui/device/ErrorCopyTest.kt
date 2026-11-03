@@ -3,6 +3,7 @@ package org.openstrap.app.ui.device
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ble.GattTimeoutException
 import org.openstrap.app.device.StrapCommandException
@@ -73,17 +74,38 @@ class ErrorCopyTest {
         )
     }
 
-    @Test fun `the strap and the update server keep their own words`() {
+    @Test fun `the strap keeps its own words`() {
         assertEquals("The strap isn't connected", ErrorCopy.strap(StrapCommandException("The strap isn't connected"), "Couldn't buzz the strap"))
         assertEquals("The strap didn't answer. Try again.", ErrorCopy.strap(raw[7], "Couldn't buzz the strap"))
         assertEquals("Couldn't buzz the strap", ErrorCopy.strap(raw[0], "Couldn't buzz the strap"))
-        assertEquals("Download failed (HTTP 404)", ErrorCopy.firmware(FirmwareCloudException("Download failed (HTTP 404)"), "Download failed"))
         assertEquals("Wait for the sync to finish first", ErrorCopy.firmware(DfuException(-1, "Wait for the sync to finish first"), "Install failed"))
         assertEquals(
             "Couldn't reach the update server. Check your internet connection and try again.",
             ErrorCopy.firmware(raw[8], "Update check failed"),
         )
         assertEquals("Install failed", ErrorCopy.firmware(raw[6], "Install failed"))
+    }
+
+    @Test fun `the update server's replies read in plain words, never with their HTTP code`() {
+        val cloud = FirmwareCloudException.Kind.entries.associateWith { kind ->
+            ErrorCopy.firmware(FirmwareCloudException("Raw $kind (HTTP 503): <html>busy</html>", kind), "Update check failed")
+        }
+        assertEquals(
+            "Zepp's update server didn't accept the sign-in. It may have expired. Sign in again.",
+            cloud[FirmwareCloudException.Kind.Rejected],
+        )
+        assertEquals(
+            "Zepp's update server didn't answer as expected. Try again in a few minutes.",
+            cloud[FirmwareCloudException.Kind.Server],
+        )
+        assertEquals("The firmware download failed. Try again in a few minutes.", cloud[FirmwareCloudException.Kind.Download])
+        assertEquals("The firmware download was damaged. Try again.", cloud[FirmwareCloudException.Kind.Damaged])
+        for (text in cloud.values) {
+            assertFalse(text, "HTTP" in text || "<" in text || "Raw" in text)
+            assertCleanCopy(text)
+        }
+        // What the server sent is kept for Diagnostics, as FirmwareViewModel logs the exception itself.
+        assertTrue(FirmwareCloudException("Download failed (HTTP 404)", FirmwareCloudException.Kind.Download).toString().contains("HTTP 404"))
     }
 
     @Test fun `a Zepp reply never shows its HTTP code`() {

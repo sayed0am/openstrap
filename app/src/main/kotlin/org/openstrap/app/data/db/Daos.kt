@@ -134,9 +134,6 @@ interface HealthDao : RangedReads {
     @Query("SELECT * FROM daily_max_hr WHERE day BETWEEN :from AND :to ORDER BY day")
     suspend fun dailyMaxHrOnce(from: LocalDate, to: LocalDate): List<DailyMaxHr>
 
-    @Query("SELECT * FROM strap_readiness WHERE day = :day")
-    fun strapReadiness(day: LocalDate): Flow<StrapReadinessRow?>
-
     @Query("SELECT COUNT(*) FROM workout")
     suspend fun workoutCount(): Int
 
@@ -687,7 +684,8 @@ interface HealthDao : RangedReads {
     )
     fun dailyHeartRate(from: Long, to: Long): Flow<List<DailyAggregate>>
 
-    @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, SUM(steps) AS value, MIN(steps) AS min, MAX(steps) AS max, COUNT(*) AS count FROM activity_minute WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
+    /** Steps per local day for the charts, minutes over 250 steps left out as bad data, as in [dailyStepsOnce]. */
+    @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, SUM(steps) AS value, MIN(steps) AS min, MAX(steps) AS max, COUNT(*) AS count FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND steps BETWEEN 0 AND 250 GROUP BY day ORDER BY day")
     fun dailySteps(from: Long, to: Long): Flow<List<DailyAggregate>>
 
     @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(milliseconds) AS value, MIN(milliseconds) AS min, MAX(milliseconds) AS max, COUNT(*) AS count FROM hrv WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
@@ -804,11 +802,30 @@ interface HealthDao : RangedReads {
     suspend fun wornMinutesOnce(from: Long, to: Long): List<Long>
 
     /**
-     * A cheap fingerprint of the data in a window: changes when a sync adds minutes, sleep or workouts to it, or when
-     * any sleep is moved, deleted or restored (every edit changes its editedAt).
+     * A cheap fingerprint of what Habit Age reads in a window ([org.openstrap.app.data.HealthspanEngine]), one count and
+     * value sums per table: it changes when a sync adds rows, when a row is replaced in place with new values (a minute
+     * re-sent with more steps, a night's resting HR logged again), and when any sleep is moved, deleted or restored
+     * (every edit changes its editedAt). [fromDay] to [toDay] are the window's days, for the nightly rows keyed by day.
      */
-    @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003 + (SELECT COUNT(*) + COALESCE(SUM(editedAt), 0) FROM sleep_edit) * 31")
-    suspend fun dataFingerprint(from: Long, to: Long): Long
+    @Query(
+        "SELECT (SELECT COUNT(*) || ':' || TOTAL(steps) || ':' || TOTAL(heartRate)" +
+            " FROM activity_minute WHERE timestamp BETWEEN :from AND :to)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(bpm) FROM heart_rate WHERE timestamp BETWEEN :from AND :to)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(`end` - start) || ':' || TOTAL(nap)" +
+            " || ':' || TOTAL(IFNULL(deepMinutes, 0) + IFNULL(lightMinutes, 0) + IFNULL(remMinutes, 0) + IFNULL(awakeMinutes, 0))" +
+            " FROM sleep_session WHERE `end` BETWEEN :from AND :to)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(`end` - start) || ':' || TOTAL(stage)" +
+            " FROM sleep_stage WHERE start BETWEEN :from AND :to)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(editedAt) FROM sleep_edit)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(`end` - start) || ':' || TOTAL(sportType)" +
+            " || ':' || TOTAL(IFNULL(exerciseSeconds, 0)) || ':' || TOTAL(IFNULL(vo2max, 0))" +
+            " FROM workout WHERE start BETWEEN :from AND :to)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(IFNULL(vo2max, 0))" +
+            " FROM sport_effect WHERE `end` BETWEEN :from AND :to + 43200)" +
+            " || '|' || (SELECT COUNT(*) || ':' || TOTAL(IFNULL(rhrLowest30, 0)) || ':' || TOTAL(hrMinutes)" +
+            " FROM night_metrics WHERE day BETWEEN :fromDay AND :toDay)",
+    )
+    suspend fun dataFingerprint(from: Long, to: Long, fromDay: LocalDate, toDay: LocalDate): String
 
     /**
      * The newest key a strap history type left in its table, a `SELECT MAX(...)` the sync builds from the table each
@@ -874,12 +891,12 @@ interface RangedReads {
     @Query("SELECT * FROM badge WHERE earnedAt BETWEEN :from AND :to ORDER BY earnedAt")
     suspend fun badgesEarnedOnce(from: Long, to: Long): List<BadgeRow>
 
-    /** Weeks whose first day (an epoch day) starts in [from, to], in epoch seconds. */
-    @Query("SELECT * FROM week_result WHERE weekStart * 86400 BETWEEN :from AND :to ORDER BY weekStart")
-    suspend fun weekResultsStartingOnce(from: Long, to: Long): List<WeekResult>
+    /** Weeks whose first day is in [fromDay, toDay], epoch days both, as [WeekResult.weekStart] is one. */
+    @Query("SELECT * FROM week_result WHERE weekStart BETWEEN :fromDay AND :toDay ORDER BY weekStart")
+    suspend fun weekResultsStartingOnce(fromDay: Long, toDay: Long): List<WeekResult>
 
-    /** Bests set on a day (an epoch day) that starts in [from, to], in epoch seconds. */
-    @Query("SELECT * FROM personal_best WHERE date * 86400 BETWEEN :from AND :to")
+    /** Bests set in [from, to], in epoch seconds, as [PersonalBest.date] is. */
+    @Query("SELECT * FROM personal_best WHERE date BETWEEN :from AND :to")
     suspend fun personalBestsSetOnce(from: Long, to: Long): List<PersonalBest>
 
     @Query("SELECT * FROM osa_event WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")

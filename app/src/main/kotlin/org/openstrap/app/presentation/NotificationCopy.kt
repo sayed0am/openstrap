@@ -1,6 +1,7 @@
 package org.openstrap.app.presentation
 
 import org.openstrap.app.data.HeartZones
+import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
@@ -40,6 +41,12 @@ data class WorkoutCard(
 }
 
 object NotificationCopy {
+    /**
+     * The strap notification's Recovery: the number Today shows ([TodayCopy.recoveryShown]), so while OpenStrap's own
+     * score is withheld the strap's estimate stands in, as it does there. Null when Today shows none.
+     */
+    fun recovery(r: RecoveryResult): Int? = TodayCopy.recoveryShown(r.readiness, r.strapScore, "").value
+
     /** The question while End waits for a second tap. */
     const val END_QUESTION = "End the workout? Tap Yes, end to save it."
 

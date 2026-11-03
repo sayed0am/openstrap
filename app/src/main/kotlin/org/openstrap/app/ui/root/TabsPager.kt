@@ -32,7 +32,6 @@ import org.openstrap.app.AppContainer
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.Moment
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.data.db.StrapReadinessRow
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.GrowProgress
@@ -90,15 +89,14 @@ class ShownDay(
     val recovery: RecoveryResult?,
     val recoveryFailure: RecoveryFailure?,
     val healthspan: Healthspan.Outcome?,
-    val strapReadiness: StrapReadinessRow?,
     val checkIn: Int?,
     /** How much of the day the strap was worn, for the Partial day tag on the cards it lowers (spec 4.3). */
     val wear: Wear?,
     /** The first real score shows its moment (E4). */
     val firstScore: Boolean,
 ) {
-    /** The strap's own score for the day shown. */
-    val strapScore: Int? get() = strapReadiness?.takeIf { it.day == day.date }?.score
+    /** The strap's own score for the day shown's night, by the strap session it came from ([RecoveryResult.strapScore]). */
+    val strapScore: Int? get() = recovery?.takeIf { it.date == day.date }?.strapScore
 }
 
 /** The stored histories the charts read. */
@@ -262,7 +260,7 @@ private fun TabRoot(
                 onOpenMetric = { openStack(Tab.Today, Detail.OfMetric(it)) },
                 onOpen = { openStack(Tab.Today, it) }, usualSteps = usualSteps,
                 recovery = shown.recovery,
-                strapReadiness = shown.strapReadiness,
+                strapScore = shown.strapScore,
                 checkIn = shown.checkIn,
                 onCheckIn = { v -> rootVm.saveCheckIn(day.date, v) },
                 onOpenRecovery = { openStack(Tab.Today, Detail.Recovery) },

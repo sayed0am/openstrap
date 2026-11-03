@@ -1,5 +1,6 @@
 package org.openstrap.app.data
 
+import android.util.Log
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.HealthDao
@@ -31,7 +32,8 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         val effects = WorkoutEffectEngine(dao)
         // A new profile moves every phone workout's kcal, and the days fit their minutes to it, so those go first.
         for (w in dao.appWorkoutsAll()) if (w.end != null && (w.totalKcal == null || profileChanged)) {
-            runCatching { effects.backfillKcal(w, profile, zone, again = profileChanged) }
+            catching { effects.backfillKcal(w, profile, zone, again = profileChanged) }
+                .onFailure { log("phone workout ${w.start} kcal", it) }
         }
 
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
@@ -46,7 +48,9 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         val firstDay = Weeks.firstDay()
         var written = 0
         for (d in days) {
-            val v = vo2.getOrPut(Weeks.start(d, firstDay)) { runCatching { engine.vo2max(profile, d, zone, firstDay) }.getOrNull() }
+            val v = vo2.getOrPut(Weeks.start(d, firstDay)) {
+                catching { engine.vo2max(profile, d, zone, firstDay) }.onFailure { log("VO2max for $d", it) }.getOrNull()
+            }
             if (write(d, profile, maxHr, v, zone, now)) written++
         }
         return written
@@ -64,14 +68,15 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         val maxHr = engine.maxHeartRate(profile, Instant.ofEpochSecond(now).atZone(zone).toLocalDate(), zone)
         var d = first
         while (d <= last) {
-            write(d, profile, maxHr, runCatching { engine.vo2max(profile, d, zone) }.getOrNull(), zone, now)
+            val vo2max = catching { engine.vo2max(profile, d, zone) }.onFailure { log("VO2max for $d", it) }.getOrNull()
+            write(d, profile, maxHr, vo2max, zone, now)
             d = d.plusDays(1)
         }
     }
 
     /** Works out [d] ([energy]) and writes its row. False when the model can't. */
     private suspend fun write(d: LocalDate, profile: UserProfile, maxHr: Float, vo2max: Float?, zone: ZoneId, now: Long): Boolean {
-        val e = runCatching { energy(d, profile, maxHr, vo2max, zone, now) }.getOrNull() ?: return false
+        val e = catching { energy(d, profile, maxHr, vo2max, zone, now) }.onFailure { log("energy for $d", it) }.getOrNull() ?: return false
         dao.insertDailyEnergy(listOf(row(d, e, now)))
         return true
     }
@@ -93,6 +98,9 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         ) ?: DEFAULT_RESTING_HR
         return engine.energy(d, profile, restingHr, maxHr, vo2max, zone, now)
     }
+
+    /** A day or workout the model couldn't work out: it is left as it was, and the reason goes to the log. */
+    private fun log(what: String, e: Throwable) = Log.w("OpenStrap", "daily energy: $what not worked out: $e")
 
     companion object {
         /** Days back from today rewritten after every sync: the strap's history reaches about a week. */

@@ -135,9 +135,11 @@ class RecoveryEngineComputeTest {
          * As worked out before compute read each table once: Readiness is withheld on the night without HRV, the six
          * days before it score 84, and the hour's walk each evening is the day's moderate minutes. Charge's latest and
          * at wake moved in the fifth figure on 2026-11-04, when each earlier night began to recharge against its own
-         * lowest half hour rather than tonight's.
+         * lowest half hour rather than tonight's. The load (and Strain with it) rose 3 % on 2026-11-04, when the
+         * evening walk, an hour at over 30 % of reserve, became a sustained run and its first two minutes counted too,
+         * as Charge drains them.
          */
-        const val SNAPSHOT = "null|20|[84, 84, 84, 84, 84, 84, null]|50.73785|50.73785|55.833332|50|51.24335|96.531845|241|" +
-            "5.1583033|100|9900|60|7172.55|1736.3221|423.3075|1200|100.0|3|0.0|50.73785|23:00|21"
+        const val SNAPSHOT = "null|20|[84, 84, 84, 84, 84, 84, null]|52.26888|52.26888|55.833332|50|51.24335|96.531845|241|" +
+            "5.292476|100|9900|60|7172.55|1736.3221|423.3075|1200|100.0|3|0.0|52.26888|23:00|21"
     }
 }

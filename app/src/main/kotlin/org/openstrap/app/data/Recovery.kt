@@ -431,6 +431,12 @@ object Recovery {
      */
     const val LOAD_MIN_HRR = 0.35f
 
+    /**
+     * Minutes of heart rate a day needs before its load goes into the load history ([loadDayCounts]): with the strap
+     * mostly off, the load measured says little about the day, so the day holds rather than counts as an easy one.
+     */
+    const val LOAD_MIN_WORN_MINUTES = 8 * 60
+
     const val HARD_DAY_RATIO = 1.5f
 
     /** Fitness (CTL), fatigue (ATL) and form for one day of [fitnessFatigue]. */
@@ -459,7 +465,7 @@ object Recovery {
          * ([sleepRestingHr]).
          */
         val nightRestingHr: Float? = null,
-        /** Tonight's HRV contributor (0-100); scales how well sleep recharges. */
+        /** Tonight's HRV contributor (0-100): it scales how well a sleep without its own ([sleepHrvScore]) recharges. */
         val hrvScore: Int? = null,
         val female: Boolean = false,
         /** Stress score from which a still minute counts as stress (see [stressThreshold]). */
@@ -487,6 +493,12 @@ object Recovery {
          * one, or before the first, [nightRestingHr] stands in.
          */
         val sleepRestingHr: List<Pair<Long, Float?>> = emptyList(),
+        /**
+         * Each main sleep's own HRV contributor (0-100) for how well it recharges, as (sleep start, score), any order,
+         * taken as [sleepRestingHr] is: a sleep minute takes the latest that started at or before it. A null score has
+         * no HRV to go by and recharges as an average night would. Before the first, [hrvScore] stands in.
+         */
+        val sleepHrvScore: List<Pair<Long, Int?>> = emptyList(),
     )
 
     data class ChargePoint(val t: Long, val value: Float, val state: State)

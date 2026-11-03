@@ -2,10 +2,15 @@ package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.DayStat
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.History
+import org.openstrap.app.data.SleepEdits
+import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.presentation.Ranges
+import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.Units
@@ -328,6 +333,13 @@ internal object SleepCopy {
 
     /** The Deleted sleep page once nothing is left in it. */
     const val DELETED_NONE = "Nothing deleted in the last 7 days."
+
+    /**
+     * The day a deleted entry is named by, from its times as they were shown (the user's when they moved it): a night by
+     * the evening before the day it belongs to ([SleepHistory.nightOf]), a nap by its own day.
+     */
+    fun deletedDay(r: SleepEdits.Resolved, zone: ZoneId): LocalDate =
+        if (r.strap.nap) Days.date(r.start, zone) else SleepHistory.nightOf(r.end, zone).minusDays(1)
 
     /** A deleted entry's name: "Night of Wed 29 Oct" or "Nap, Thu 30 Oct". */
     fun deletedName(nap: Boolean, day: String): String = if (nap) "Nap, $day" else "Night of $day"

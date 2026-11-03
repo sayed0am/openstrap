@@ -115,8 +115,27 @@ data class UpdateCheck(
         get() = parts.filter { it.type != null }.sortedBy { FirmwareType.SINGLE_ORDER.indexOf(it.type) }
 }
 
-/** [rejected]: the server refused the app token, so a renewed one may get through. */
-class FirmwareCloudException(message: String, val rejected: Boolean = false) : IOException(message)
+/**
+ * The update server's failure, by its [kind]. The [message] is for Diagnostics: it may hold an HTTP code or the
+ * server's own reply, so the screen words it from the kind instead ([org.openstrap.app.ui.device.ErrorCopy.firmware]).
+ */
+class FirmwareCloudException(message: String, val kind: Kind = Kind.Server) : IOException(message) {
+    enum class Kind {
+        /** The server refused the app token, so a renewed one may get through. */
+        Rejected,
+
+        /** The check got an error or a reply it couldn't read. */
+        Server,
+
+        /** The firmware file didn't come down. */
+        Download,
+
+        /** The firmware file came down twice and failed its MD5 check both times. */
+        Damaged,
+    }
+
+    val rejected: Boolean get() = kind == Kind.Rejected
+}
 
 /**
  * Talks to Zepp's firmware service with the user's own app token. Nothing is sent unless the user asks
@@ -152,7 +171,9 @@ class FirmwareCloud(private val cacheDir: File) {
                 val body = (if (code in 200..299) conn.inputStream else conn.errorStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
                 when (code) {
                     in 200..299 -> parse(body)
-                    401, 403 -> throw FirmwareCloudException("The server rejected the app token (HTTP $code). It may have expired.", rejected = true)
+                    401, 403 -> throw FirmwareCloudException(
+                        "The server rejected the app token (HTTP $code). It may have expired.", FirmwareCloudException.Kind.Rejected,
+                    )
                     else -> throw FirmwareCloudException("Update server returned HTTP $code${body.take(200).let { if (it.isBlank()) "" else ": $it" }}")
                 }
             } finally {
@@ -172,7 +193,9 @@ class FirmwareCloud(private val cacheDir: File) {
             try {
                 conn.connectTimeout = 15_000
                 conn.readTimeout = 30_000
-                if (conn.responseCode !in 200..299) throw FirmwareCloudException("Download failed (HTTP ${conn.responseCode})")
+                if (conn.responseCode !in 200..299) {
+                    throw FirmwareCloudException("Download failed (HTTP ${conn.responseCode})", FirmwareCloudException.Kind.Download)
+                }
                 val total = conn.contentLengthLong.takeIf { it > 0 } ?: part.length
                 val tmp = File(dir, "${part.md5}.part")
                 conn.inputStream.use { input ->
@@ -194,7 +217,9 @@ class FirmwareCloud(private val cacheDir: File) {
                     return@withContext bytes
                 }
                 tmp.delete()
-                if (attempt == 1) throw FirmwareCloudException("Downloaded file failed its MD5 check")
+                if (attempt == 1) {
+                    throw FirmwareCloudException("Downloaded file failed its MD5 check", FirmwareCloudException.Kind.Damaged)
+                }
             } finally {
                 conn.disconnect()
             }

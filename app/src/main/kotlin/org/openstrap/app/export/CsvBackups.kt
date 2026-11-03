@@ -33,8 +33,18 @@ class CsvBackups(
         BackupResult.Saved
     }.getOrElse { BackupResult.Failed(it) }
 
+    /**
+     * The zip, read from a copy of the database made as it starts ([BackupSnapshot]), so a sync running meanwhile can't
+     * change some tables in it and not others. Without room for the copy it reads the database as it goes, as before.
+     */
     override suspend fun writeZip(out: OutputStream) {
-        csv.exportZip(out, settings = SettingsBackup.toJson(settings.backupValues(SettingsBackup::carries)))
+        val json = SettingsBackup.toJson(settings.backupValues(SettingsBackup::carries))
+        withContext(io) {
+            val snapshot = catching { BackupSnapshot.take(context, database) }
+                .onFailure { warn("backup: no copy of the database to read, reading it as it goes: $it") }
+                .getOrNull()
+            snapshot.use { (it?.let { s -> CsvExporter(s.database.healthDao()) } ?: csv).exportZip(out, settings = json) }
+        }
     }
 
     override suspend fun importCsv(from: Uri): BackupResult = catching {

@@ -33,7 +33,6 @@ import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
-import org.openstrap.app.data.db.StrapReadinessRow
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.ConnectionState
@@ -73,8 +72,8 @@ sealed interface FirstScoreDay {
     data class Day(val date: LocalDate) : FirstScoreDay
 }
 
-/** The day shown's own extras: the strap's score for it and the check-in. */
-data class DayExtras(val strapReadiness: StrapReadinessRow? = null, val checkIn: Int? = null)
+/** The day shown's own extras: the check-in. The strap's score comes with its Recovery ([RecoveryResult.strapScore]). */
+data class DayExtras(val checkIn: Int? = null)
 
 /** A badge past history earned, with the weekly goal it was earned at when it is a goal badge. */
 data class EarnedBadge(val badge: Rewards.Badge, val goal: Int?)
@@ -172,9 +171,9 @@ class AppRootViewModel(
 
     private val shownDay = MutableStateFlow<LocalDate?>(null)
 
-    /** The day shown's strap score and check-in, from [dayShown]. */
+    /** The day shown's check-in, from [dayShown]. */
     val dayExtras: StateFlow<DayExtras> = shownDay.filterNotNull().flatMapLatest { date ->
-        combine(dao.strapReadiness(date), health.checkIn(date)) { r, c -> DayExtras(r, c?.feeling) }
+        health.checkIn(date).map { DayExtras(it?.feeling) }
     }.state(DayExtras())
 
     init {

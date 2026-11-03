@@ -2,8 +2,6 @@ package org.openstrap.app.device
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -132,57 +130,22 @@ class HistorySync internal constructor(
                 launch { gatt.notifications.filter { it.characteristic == HISTORY_CONTROL }.collect { control.send(FetchCodec.parse(it.value)) } }
             }
         }
-        // The catch rethrows a CancellationException only once the sync is cancelled ([cancelled]): a timeout is one too.
-        @Suppress("SuspendFunSwallowedCancellation")
+        // catching gives back a CancellationException only once the sync is cancelled: a timeout is one too, and fails it.
         try {
-            // Inside the try: a database error here ends the sync as Failed instead of escaping the app's scope.
-            repairEarlierSyncs()
-            gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_DATA)
-            if (!useChannel) gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_CONTROL)
-            log("history: control via ${if (useChannel) "channel 0x004B" else "HUAMI(0004)"}")
-
-            val version = client.queryVersion()
-            val advertised = version?.supportedTypes()
-            log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + (only?.let { ", syncing $it" } ?: ""))
-
-            HistoryTypeSpecs.featureDisagreements(advertised, session.features).takeIf { it.isNotEmpty() }
-                ?.let { log("history: feature bits clear for advertised types $it; fetching them anyway") }
-            val plan = HistoryTypeSpecs.plan(advertised, session.features).filter { it.parser != null && (only == null || it.code in only) }
-            plan.forEachIndexed { i, spec ->
-                state.value = SyncState.Running("Syncing ${label(spec.type)} (${i + 1}/${plan.size})", i.toFloat() / plan.size)
-                try {
-                    if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec)
-                } catch (e: Exception) {
-                    // A timeout is a CancellationException too, but only a cancelled sync stops here (audit C2).
-                    if (e is FastRechargeModeException || cancelled(e)) throw e
-                    // The link is gone: every later type would fail the same way, and the sync must not end as Done.
-                    if (!gatt.connected.value) throw e
-                    log("history ${spec.type}: $e")
+            catching { sync(only) }.onFailure { e ->
+                if (e is FastRechargeModeException) {
+                    // Zepp ends the sync job at once in this mode (xyk.java:66-70), and the data waits on the strap.
+                    log("history: strap is in fast-charge mode, sync stopped ($e)")
+                    state.value = SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off.")
+                } else {
+                    log("history failed: $e")
+                    // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for
+                    // the card. Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause
+                    // is the link.
+                    val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
+                    state.value = SyncState.Failed(reason ?: "Sync failed")
                 }
             }
-            if (only == null && session.services.has(Endpoints.READINESS)) catching { syncReadiness() }.onFailure { log("readiness: $it") }
-            // A session the strap ran alongside a phone workout has just come in: its figures replace the model's.
-            catching {
-                org.openstrap.app.data.WorkoutEffectEngine(dao)
-                    .takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK, WorkoutSession.LOCK)
-            }
-                .onFailure { log("strap effect: $it") }
-            // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
-            catching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
-                .onSuccess { if (it > 0) log("history: removed $it sleep sessions deleted over a week ago") }
-                .onFailure { log("deleted sleep: $it") }
-            state.value = SyncState.Done(System.currentTimeMillis() / 1000)
-        } catch (e: FastRechargeModeException) {
-            // Zepp ends the sync job at once in this mode (xyk.java:66-70); the data waits on the strap.
-            log("history: strap is in fast-charge mode, sync stopped")
-            state.value = SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off.")
-        } catch (e: Exception) {
-            if (cancelled(e)) throw e
-            log("history failed: $e")
-            // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for the card.
-            // Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause is the link.
-            val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
-            state.value = SyncState.Failed(reason ?: "Sync failed")
         } finally {
             listeners.cancel()
             // A cancelled sync, or anything else that got past the catches, must not stay Running: auto sync skips
@@ -191,9 +154,44 @@ class HistorySync internal constructor(
         }
     }
 
-    /** True when [e] is this sync being cancelled, not a timeout thrown as a CancellationException while it runs. */
-    private suspend fun cancelled(e: Exception): Boolean =
-        e is kotlinx.coroutines.CancellationException && !currentCoroutineContext().isActive
+    /** The sync itself, for [run], which turns what it throws into a Failed state. */
+    private suspend fun sync(only: Set<Int>?) {
+        // Inside [run]'s catch: a database error here ends the sync as Failed instead of escaping the app's scope.
+        repairEarlierSyncs()
+        gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_DATA)
+        if (!useChannel) gatt.enableNotifications(StrapUuids.MAIN_SERVICE, HISTORY_CONTROL)
+        log("history: control via ${if (useChannel) "channel 0x004B" else "HUAMI(0004)"}")
+
+        val version = client.queryVersion()
+        val advertised = version?.supportedTypes()
+        log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + (only?.let { ", syncing $it" } ?: ""))
+
+        HistoryTypeSpecs.featureDisagreements(advertised, session.features).takeIf { it.isNotEmpty() }
+            ?.let { log("history: feature bits clear for advertised types $it; fetching them anyway") }
+        val plan = HistoryTypeSpecs.plan(advertised, session.features).filter { it.parser != null && (only == null || it.code in only) }
+        plan.forEachIndexed { i, spec ->
+            state.value = SyncState.Running("Syncing ${label(spec.type)} (${i + 1}/${plan.size})", i.toFloat() / plan.size)
+            catching { if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec) }.onFailure { e ->
+                // A timeout is a CancellationException too, but catching gives back only a cancelled sync's (audit C2).
+                if (e is FastRechargeModeException) throw e
+                // The link is gone: every later type would fail the same way, and the sync must not end as Done.
+                if (!gatt.connected.value) throw e
+                log("history ${spec.type}: $e")
+            }
+        }
+        if (only == null && session.services.has(Endpoints.READINESS)) catching { syncReadiness() }.onFailure { log("readiness: $it") }
+        // A session the strap ran alongside a phone workout has just come in: its figures replace the model's.
+        catching {
+            org.openstrap.app.data.WorkoutEffectEngine(dao)
+                .takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK, WorkoutSession.LOCK)
+        }
+            .onFailure { log("strap effect: $it") }
+        // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
+        catching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
+            .onSuccess { if (it > 0) log("history: removed $it sleep sessions deleted over a week ago") }
+            .onFailure { log("deleted sleep: $it") }
+        state.value = SyncState.Done(System.currentTimeMillis() / 1000)
+    }
 
     /**
      * Debug aid: fetches every type the strap offers since [fromEpoch] and writes each chunk's payload to

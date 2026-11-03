@@ -22,8 +22,11 @@ import java.util.zip.ZipInputStream
  * transaction, so a zip that fails part way changes nothing. Files this version doesn't know are skipped, and a backup
  * from before deleted workouts were kept restores as it did. The settings file isn't written here: [Result.settings]
  * carries it.
+ *
+ * The big tables (a row a minute, a workout's heart rate) are read and written [batch] rows at a time, so a restore
+ * never holds a whole table (data integrity item 23). Tables keyed by day, text or span are small and read whole.
  */
-class CsvImporter(private val db: OpenStrapDatabase) {
+class CsvImporter(private val db: OpenStrapDatabase, private val batch: Int = CSV_PAGE) {
 
     /**
      * What one restore did: rows added per file, rows left out as the phone has them, and rows unreadable.
@@ -45,96 +48,189 @@ class CsvImporter(private val db: OpenStrapDatabase) {
     private class Pending<T>(val table: CsvTable<T>, val rows: List<Parsed<T>>, val bad: Int)
 
     suspend fun importZip(input: InputStream): Result = db.withTransaction {
-        val tables = CSV_TABLES.associateBy { it.file }
-        val counts = linkedMapOf<String, Int>()
         // Read before the zip's own: one zip is one snapshot, so a range it holds never covers a workout it holds.
-        val dismissed = db.healthDao().dismissedWorkoutsAll()
-        // Starts of the sleeps and workouts this restore added: only their stages and heart rate come with them.
-        val added = mutableMapOf<String, Set<Long>>()
-        // Child tables wait until every parent is in, whatever order the zip lists them in, and the tables a deleted
-        // or discarded workout is left out of wait until every deleted workout is in.
-        val children = mutableListOf<Pending<*>>()
-        val deletable = mutableListOf<Pending<*>>()
-        var present = 0
-        var skipped = 0
-        var settings: String? = null
-        fun count(file: String, o: Outcome) {
-            counts[file] = o.stored; present += o.present; skipped += o.bad
-        }
+        val restore = Restore(db.healthDao().dismissedWorkoutsAll())
         ZipInputStream(input).use { zip ->
-            while (true) {
-                val entry = zip.nextEntry ?: break
-                if (entry.name.substringAfterLast('/') == SettingsBackup.FILE) {
-                    settings = zip.readBytes().toString(Charsets.UTF_8)
-                    continue
-                }
-                val table = tables[entry.name.substringAfterLast('/')] ?: continue
-                // Only this entry, read as it streams: the reader is never closed, so the zip stays open.
-                val pending = table.read(CsvReader(zip.reader(Charsets.UTF_8))) ?: continue
-                when {
-                    table.key.parent != null -> children += pending
-                    table.key.table in DELETABLE -> deletable += pending
-                    else -> count(table.file, pending.backfill(added))
-                }
-            }
+            while (true) restore.file((zip.nextEntry ?: break).name.substringAfterLast('/'), zip)
         }
-        val deleted = db.healthDao().deletedWorkoutsAll()
-        removeResent(deleted)
-        val gone = mapOf(
-            "workout" to deleted.mapTo(HashSet()) { it.start },
-            "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
-            "app_workout" to discarded(deletable, dismissed),
-        )
-        for (p in deletable) count(p.table.file, p.backfill(added, gone[p.table.key.table].orEmpty()))
-        for (p in children) count(p.table.file, p.backfill(added))
-        // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
-        if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
-        Result(counts, present, skipped, settings)
+        restore.finish()
     }
 
-    /**
-     * Starts of the phone workouts in [pending] that lie inside a range the phone had [dismissed]: a Discard deletes the
-     * row and keeps its [Workouts.phoneRange] ([org.openstrap.app.device.SavedWorkoutEditor.discard]), so an older zip
-     * would bring it back. Only inside, so a workout that merely touches a "Not a workout" range comes back.
-     */
-    private fun discarded(pending: List<Pending<*>>, dismissed: List<DismissedWorkout>): Set<Long> =
-        pending.filter { it.table.key.table == "app_workout" }.flatMap { it.rows }.mapNotNullTo(HashSet()) { row ->
-            val w = row.value as? AppWorkout ?: return@mapNotNullTo null
-            val range = Workouts.phoneRange(w, Long.MAX_VALUE)
-            w.start.takeIf { dismissed.any { d -> d.start <= range.first && range.last <= d.end } }
+    /** One restore's state as its files come in, and what it does once they are all read ([finish]). */
+    private inner class Restore(private val dismissed: List<DismissedWorkout>) {
+        private val tables = CSV_TABLES.associateBy { it.file }
+        private val counts = linkedMapOf<String, Int>()
+
+        // Starts of the sleeps and workouts this restore added: only their stages and heart rate come with them.
+        private val added = mutableMapOf<String, Set<Long>>()
+
+        // Child tables wait until every parent is in, whatever order the zip lists them in, and the tables a deleted
+        // or discarded workout is left out of wait until every deleted workout is in.
+        private val children = mutableListOf<Pending<*>>()
+        private val deletable = mutableListOf<Pending<*>>()
+
+        // The rows of each deletable parent the phone has no row for: whether a deleted workout leaves them out is only
+        // known at the end, so their children are written for all of them and taken out again for those left out.
+        private val candidates = mutableMapOf<String, Set<Long>>()
+        private val early = mutableListOf<CsvTable<*>>()
+        private var present = 0
+        private var skipped = 0
+        private var settings: String? = null
+
+        private fun count(file: String, o: Outcome?) {
+            if (o == null) return
+            counts[file] = o.stored
+            present += o.present
+            skipped += o.bad
         }
 
-    /**
-     * Workouts deleted on the old phone that the strap re-sent here before the restore: the restored marker keeps
-     * them out of later syncs, and they go now, with their heart rate and their effect, as a delete would.
-     */
-    private suspend fun removeResent(deleted: List<org.openstrap.app.data.db.DeletedWorkout>) {
-        val dao = db.healthDao()
-        for (d in deleted.filter { dao.workoutOnce(it.start) != null }) {
-            dao.deleteWorkoutHeartRate(d.start)
-            dao.deleteRecoveryHeartRate(d.start)
-            d.effectEnd?.let { dao.deleteSportEffect(it) }
-            dao.deleteWorkoutRow(d.start)
+        /** The zip's entry [name], read from [zip] as it streams: the reader is never closed, so the zip stays open. */
+        suspend fun file(name: String, zip: ZipInputStream) {
+            if (name == SettingsBackup.FILE) {
+                settings = zip.readBytes().toString(Charsets.UTF_8)
+                return
+            }
+            val table = tables[name] ?: return
+            val records = CsvReader(zip.reader(Charsets.UTF_8))
+            val key = table.key
+            val parent = key.parent
+            val starts = parent?.let { added[it] ?: candidates[it] }
+            when {
+                // Its parent's rows are in already (or are candidates): only theirs, a batch at a time.
+                starts != null -> {
+                    count(table.file, table.stream(records) { rows -> rows.filter { it.time in starts } })
+                    if (parent != null && parent !in added) early += table
+                }
+                parent != null -> table.read(records)?.let { children += it }
+                key.table in DELETABLE -> table.read(records)?.let { pending ->
+                    deletable += pending
+                    candidates[key.table] = absent(key, pending.rows)
+                }
+                key.span == null && key.unique == null && key.day == null ->
+                    count(table.file, table.stream(records) { rows -> missing(key, rows) })
+                else -> count(table.file, table.read(records)?.backfill(added))
+            }
         }
+
+        /** Every file read: the tables that waited go in, and the children of parents left out come out again. */
+        suspend fun finish(): Result {
+            val deleted = db.healthDao().deletedWorkoutsAll()
+            removeResent(deleted)
+            val gone = mapOf(
+                "workout" to deleted.mapTo(HashSet()) { it.start },
+                "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
+                "app_workout" to discarded(),
+            )
+            for (p in deletable) count(p.table.file, p.backfill(added, gone[p.table.key.table].orEmpty()))
+            for (t in early) {
+                val parent = t.key.parent ?: continue
+                val removed = removeChildren(t.key, candidates[parent].orEmpty() - added[parent].orEmpty())
+                if (removed > 0) {
+                    counts[t.file] = (counts[t.file] ?: 0) - removed
+                    present += removed
+                }
+            }
+            for (p in children) count(p.table.file, p.backfill(added))
+            // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
+            require(counts.isNotEmpty()) { "This isn't an OpenStrap export." }
+            return Result(counts, present, skipped, settings)
+        }
+
+        /**
+         * Starts of the phone workouts read that lie inside a range the phone had [dismissed]: a Discard deletes the
+         * row and keeps its [Workouts.phoneRange] ([org.openstrap.app.device.SavedWorkoutEditor.discard]), so an older
+         * zip would bring it back. Only inside, so a workout that merely touches a "Not a workout" range comes back.
+         */
+        private fun discarded(): Set<Long> =
+            deletable.filter { it.table.key.table == "app_workout" }.flatMap { it.rows }.mapNotNullTo(HashSet()) { row ->
+                val w = row.value as? AppWorkout ?: return@mapNotNullTo null
+                val range = Workouts.phoneRange(w, Long.MAX_VALUE)
+                w.start.takeIf { dismissed.any { d -> d.start <= range.first && range.last <= d.end } }
+            }
+
+        /**
+         * Workouts deleted on the old phone that the strap re-sent here before the restore: the restored marker keeps
+         * them out of later syncs, and they go now, with their heart rate and their effect, as a delete would.
+         */
+        private suspend fun removeResent(deleted: List<org.openstrap.app.data.db.DeletedWorkout>) {
+            val dao = db.healthDao()
+            for (d in deleted.filter { dao.workoutOnce(it.start) != null }) {
+                dao.deleteWorkoutHeartRate(d.start)
+                dao.deleteRecoveryHeartRate(d.start)
+                d.effectEnd?.let { dao.deleteSportEffect(it) }
+                dao.deleteWorkoutRow(d.start)
+            }
+        }
+
+        /** The times (starts) of [rows] the phone has no row for by key: a deletable parent's candidates. */
+        private fun absent(key: Key, rows: List<Parsed<*>>): Set<Long> {
+            if (rows.isEmpty()) return emptySet()
+            val sql = "SELECT ${key.column} FROM ${key.table} WHERE ${key.column} BETWEEN ? AND ?"
+            val have = query(sql, rows.minOf { it.time }, rows.maxOf { it.time }) { it.getLong(0) }.toHashSet()
+            return rows.mapNotNullTo(HashSet()) { it.time.takeIf { t -> t !in have } }
+        }
+
+        /**
+         * Takes out a child table's rows of the parents at [starts], written early ([stream]) for a parent the restore
+         * then left out (a deleted workout, or one that overlaps the phone's). How many went.
+         */
+        private fun removeChildren(key: Key, starts: Set<Long>): Int =
+            starts.sumOf { db.openHelper.writableDatabase.delete(key.table, "${key.column} = ?", arrayOf<Any?>(it)) }
     }
 
     /** This table's rows from [records], the header first; null for an empty file. */
     private fun <T> CsvTable<T>.read(records: CsvReader): Pending<T>? {
-        val index = (records.next() ?: return null).withIndex().associate { (i, name) -> name to i }
+        val index = header(records) ?: return null
         var bad = 0
         val rows = mutableListOf<Parsed<T>>()
         val zone = ZoneId.systemDefault()
         while (true) {
-            val cells = CsvRow(index, records.next() ?: break, zone)
-            runCatching {
-                val day = key.day
-                val time = if (day != null) DayKey.of(cells.date(day)) else cells.long(key.epoch)
-                val id = (key.unique ?: key.part)?.let { cells.string(it.csv) }
-                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, id, parse(cells), day?.let(cells::legacy))
-            }.onFailure { bad++ }
+            val cells = records.next() ?: break
+            parsed(index, cells, zone)?.let { rows += it } ?: bad++
         }
         return Pending(this, if (key.day != null) oneADay(key, rows, zone) else rows, bad)
     }
+
+    /**
+     * This table's rows from [records] (the header first), [batch] at a time: [keep] picks those to write from each. Null
+     * for an empty file. Rows [keep] leaves out count as present, as [backfill] counts them.
+     */
+    private suspend fun <T> CsvTable<T>.stream(records: CsvReader, keep: (List<Parsed<T>>) -> List<Parsed<T>>): Outcome? {
+        val index = header(records) ?: return null
+        val zone = ZoneId.systemDefault()
+        var stored = 0
+        var present = 0
+        var bad = 0
+        val rows = ArrayList<Parsed<T>>(batch)
+        suspend fun flush() {
+            if (rows.isEmpty()) return
+            val fresh = keep(rows)
+            if (fresh.isNotEmpty()) write(db.healthDao(), fresh.map { it.value })
+            stored += fresh.size
+            present += rows.size - fresh.size
+            rows.clear()
+        }
+        while (true) {
+            val cells = records.next() ?: break
+            parsed(index, cells, zone)?.let { rows += it } ?: bad++
+            if (rows.size >= batch) flush()
+        }
+        flush()
+        return Outcome(stored, present, bad)
+    }
+
+    /** A file's header as column name to position, or null for an empty file. */
+    private fun header(records: CsvReader): Map<String, Int>? =
+        records.next()?.withIndex()?.associate { (i, name) -> name to i }
+
+    /** One record of this table, or null when it can't be read. */
+    private fun <T> CsvTable<T>.parsed(index: Map<String, Int>, record: List<String>, zone: ZoneId): Parsed<T>? = runCatching {
+        val cells = CsvRow(index, record, zone)
+        val day = key.day
+        val time = if (day != null) DayKey.of(cells.date(day)) else cells.long(key.epoch)
+        val id = (key.unique ?: key.part)?.let { cells.string(it.csv) }
+        Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, id, parse(cells), day?.let(cells::legacy))
+    }.getOrNull()
 
     /**
      * A day file's rows, one per day (and tag): an older backup's local midnights from two zones can be one date

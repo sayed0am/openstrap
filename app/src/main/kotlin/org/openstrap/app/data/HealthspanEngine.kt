@@ -11,12 +11,12 @@ import java.time.temporal.TemporalAdjusters
 /**
  * Loads six months of daily inputs for [Healthspan] and runs it. The estimate is weekly: as of local midnight of the
  * latest Sunday, over the [Healthspan.WINDOW_DAYS] before it, so it holds still for the week. Heavy; call off the main
- * thread. The last result is kept until a sync adds data to its window.
+ * thread. The last result is kept until the data in its window changes ([HealthDao.dataFingerprint]).
  */
 class HealthspanEngine(private val dao: HealthDao) {
     /** Sleep as shown, with the user's edits ([SleepEdits]). */
     private val sleepSource = SleepSource(dao)
-    private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: Long)
+    private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: String)
     private var cached: Pair<Key, Healthspan.Outcome>? = null
 
     /**
@@ -29,7 +29,8 @@ class HealthspanEngine(private val dao: HealthDao) {
         val sunday = sundayOf(date)
         val asOf = DayWindow.of(sunday, zone).from
         val from = DayWindow.of(sunday.minusDays(Healthspan.WINDOW_DAYS.toLong()), zone).from
-        val key = Key(asOf, profile, dao.dataFingerprint(from, asOf - 1))
+        val days = DayKey.datesIn(from, asOf - 1, zone)
+        val key = Key(asOf, profile, dao.dataFingerprint(from, asOf - 1, days.start, days.endInclusive))
         cached?.let { (k, v) -> if (k == key) return v }
         val age = profile.age(sunday)
         val d = daily(sunday, from, asOf, zone)

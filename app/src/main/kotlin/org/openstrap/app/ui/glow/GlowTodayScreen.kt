@@ -41,7 +41,6 @@ import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.data.db.StrapReadinessRow
 import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
@@ -154,7 +153,8 @@ fun GlowTodayScreen(
     edits: TodayEdits = TodayEdits(),
     onEditsChange: (TodayEdits) -> Unit = {},
     /** The strap's own Readiness for the day, shown as "Strap's estimate" while OpenStrap's score is withheld. */
-    strapReadiness: StrapReadinessRow? = null,
+    /** The strap's own score for the day's night ([org.openstrap.app.data.RecoveryResult.strapScore]). */
+    strapScore: Int? = null,
     /** The morning check-in (1-5), asked on the waking moment. */
     checkIn: Int? = null,
     onCheckIn: (Int?) -> Unit = {},
@@ -213,7 +213,7 @@ fun GlowTodayScreen(
         restingRange = rememberNormal(Metric.RestingHr, state.date, history),
         firstNights = rec != null && !rec.charge.anchored,
         stuck = strap.paired && syncStuck(isToday, state.asleepSeconds != null, strap.record.failingSince, now.epochSecond, zone),
-        strapScore = strapReadiness?.takeIf { it.day == state.date }?.score,
+        strapScore = strapScore,
         stopped = strap.stopped, staleAfter = strap.staleAfter,
         recoveryFailure = recoveryFailure?.takeIf { it.date == state.date && rec == null },
         partial = partialTag.takeIf { wear?.partial == true },
