@@ -163,7 +163,7 @@ internal class SyncCoordinator(
     private suspend fun updateEffectModel() {
         val model = org.openstrap.app.data.WorkoutEffect.MODEL.toLong()
         if (settings.lastSync(EFFECT_MODEL) == model) return
-        val n = org.openstrap.app.data.WorkoutEffectEngine(dao).recomputeAll(settings.profile.first())
+        val n = org.openstrap.app.data.WorkoutEffectEngine(dao).recomputeAll(settings.profile.first(), WorkoutSession.LOCK)
         settings.setLastSync(EFFECT_MODEL, model)
         log("workout effect: model $model, $n workouts again")
     }

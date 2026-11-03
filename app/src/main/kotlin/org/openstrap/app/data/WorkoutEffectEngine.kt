@@ -1,5 +1,7 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.HealthDao
@@ -71,14 +73,23 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
     /**
      * After a sync: each phone workout that ended since [since] takes the strap's figures when the strap's record of it
      * has come in ([strapEffect]). Only the effect and heart rate columns are written, and only when they change.
+     *
+     * Each workout under [lock], the app's workout lock (`WorkoutSession.LOCK`), read again inside it, so a trim, an
+     * end or a discard made since the list was read stands. Taken a workout at a time, never across the whole list, and
+     * never by a caller that holds it already.
      */
-    suspend fun takeStrapEffects(since: Long) {
-        for (w in dao.appWorkoutsOnce(since, Long.MAX_VALUE)) {
-            if (w.end == null) continue
-            val s = strapEffect(w) ?: continue
-            if (s == w) continue
-            dao.updateAppWorkoutEffect(w.start, s.epoc, s.aerobicTrainingEffect, s.recoveryMinutes, s.vo2max, s.anaerobicTrainingEffect, fromStrap = true, ownRecoveryMinutes = null)
-            dao.updateAppWorkoutHeartRateStats(w.start, s.averageHeartRate, s.maxHeartRate)
+    suspend fun takeStrapEffects(since: Long, lock: Mutex) {
+        for (listed in dao.appWorkoutsOnce(since, Long.MAX_VALUE)) {
+            if (listed.end == null) continue
+            lock.withLock {
+                val w = dao.appWorkoutOnce(listed.start)?.takeIf { it.end != null } ?: return@withLock
+                val s = strapEffect(w)?.takeIf { it != w } ?: return@withLock
+                dao.updateAppWorkoutEffect(
+                    w.start, s.epoc, s.aerobicTrainingEffect, s.recoveryMinutes, s.vo2max, s.anaerobicTrainingEffect, fromStrap = true,
+                    ownRecoveryMinutes = null,
+                )
+                dao.updateAppWorkoutHeartRateStats(w.start, s.averageHeartRate, s.maxHeartRate)
+            }
         }
     }
 
@@ -107,18 +118,26 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
     /**
      * Works out and saves every finished phone workout's figures again, oldest first so each one's activity class and
      * load trend read the earlier ones as now worked out. The workouts done.
+     *
+     * Each workout under [lock], as in [takeStrapEffects]: read again inside it and worked out from the row as it
+     * stands, so a trim made meanwhile isn't written over with figures for its old range.
      */
-    suspend fun recomputeAll(profile: UserProfile): Int {
+    suspend fun recomputeAll(profile: UserProfile, lock: Mutex): Int {
         var n = 0
-        for (w in dao.appWorkoutsAll().filter { it.end != null }.sortedBy { it.start }) {
-            val hr = dao.appWorkoutHeartRateOnce(w.start)
-            if (hr.isEmpty()) continue
-            val e = catching { withEffect(w, hr, profile) }
-                .onFailure { android.util.Log.w(TAG, "workout effect: ${w.start} not worked out again: $it") }
-                .getOrNull() ?: continue
-            if (e.epoc == null) continue
-            dao.updateAppWorkoutEffect(w.start, e.epoc, e.aerobicTrainingEffect, e.recoveryMinutes, e.vo2max, e.anaerobicTrainingEffect, e.effectFromStrap, e.ownRecoveryMinutes)
-            n++
+        for (listed in dao.appWorkoutsAll().sortedBy { it.start }) {
+            val done = lock.withLock {
+                val w = dao.appWorkoutOnce(listed.start)?.takeIf { it.end != null } ?: return@withLock false
+                val hr = dao.appWorkoutHeartRateOnce(w.start).takeIf { it.isNotEmpty() } ?: return@withLock false
+                val e = catching { withEffect(w, hr, profile) }
+                    .onFailure { android.util.Log.w(TAG, "workout effect: ${w.start} not worked out again: $it") }
+                    .getOrNull()?.takeIf { it.epoc != null } ?: return@withLock false
+                dao.updateAppWorkoutEffect(
+                    w.start, e.epoc, e.aerobicTrainingEffect, e.recoveryMinutes, e.vo2max, e.anaerobicTrainingEffect, e.effectFromStrap,
+                    e.ownRecoveryMinutes,
+                )
+                true
+            }
+            if (done) n++
         }
         return n
     }
