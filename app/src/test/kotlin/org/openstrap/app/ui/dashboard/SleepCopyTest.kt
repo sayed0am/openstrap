@@ -158,13 +158,29 @@ class SleepCopyTest {
         lines.forEach { l -> listOf("·", ";", "—").forEach { assertFalse("$l has $it", l.contains(it)) } }
     }
 
+    @Test fun `times past what the strap saw say the stages cover only the strap's part`() {
+        val strapStart = midnight + 7 * 3600
+        val strapEnd = strapStart + 25 * 60
+        // A nap extended to 3 h 40: its stages are still the strap's 25 min.
+        assertEquals(
+            "The stages cover the 25 min the strap saw.",
+            SleepCopy.stagesCover(strapStart - 3 * 3600, strapEnd + 15 * 60, strapStart, strapEnd),
+        )
+        // Extended at one end and trimmed at the other: what's left of the strap's.
+        assertEquals("The stages cover the 15 min the strap saw.", SleepCopy.stagesCover(strapStart + 600, strapEnd + 600, strapStart, strapEnd))
+        // Inside the strap's times, or missing them, says nothing.
+        assertNull(SleepCopy.stagesCover(strapStart + 60, strapEnd, strapStart, strapEnd))
+        assertNull(SleepCopy.stagesCover(strapStart, strapEnd, strapStart, strapEnd))
+        assertNull(SleepCopy.stagesCover(strapEnd + 60, strapEnd + 3600, strapStart, strapEnd))
+    }
+
     @Test fun `the times sheet and the edited note say the times with to, never a dash`() {
         assertEquals("Sleep times", SleepCopy.timesTitle(false))
         assertEquals("Nap times", SleepCopy.timesTitle(true))
         assertEquals("The strap saw 23:20 to 07:21.", SleepCopy.strapSaw("23:20", "07:21"))
         assertEquals("Your times. The strap saw 23:20 to 07:21.", SleepCopy.yourTimes("23:20", "07:21"))
-        assertEquals("Asleep for 7 h 26.", SleepCopy.timesResult(false, 7 * 3600L + 26 * 60))
-        assertEquals("A nap of 42 min.", SleepCopy.timesResult(true, 42 * 60L))
+        assertEquals("23:05 to 08:16, 9 h 11 in bed", SleepCopy.trimLine(false, "23:05", "08:16", 9 * 3600L + 11 * 60))
+        assertEquals("07:17 to 10:57, 3 h 40", SleepCopy.trimLine(true, "07:17", "10:57", 3 * 3600L + 40 * 60))
         assertEquals("Delete last night's sleep?", SleepCopy.deleteTitle(nap = false, today = true))
         assertEquals("Delete this nap?", SleepCopy.deleteTitle(nap = true, today = true))
         assertEquals("Last night's sleep deleted", SleepCopy.deleted(nap = false, today = true, start = "23:20"))

@@ -50,6 +50,32 @@ class TrimTest {
         assertEquals(night.start to night.start + 60, Trim.drag(night.start - 600, false, night.start, night.end, reach, 1, emptyList()))
     }
 
+    @Test fun `a dragged handle stops at the longest and the shortest from the other, as at the reach`() {
+        val reach = night.start - 7200..night.end + 7200
+        val long = 4 * 3600L
+        val short = 3600L
+        // The end, dragged far out, stops at the longest from the start.
+        assertEquals(night.start to night.start + long, Trim.drag(reach.last, false, night.start, night.end, reach, 1, emptyList(), short..long))
+        // The start, dragged far out, stops at the longest from the end.
+        assertEquals(night.end - long to night.end, Trim.drag(reach.first, true, night.start, night.end, reach, 1, emptyList(), short..long))
+        // Dragged in, either stops at the shortest.
+        assertEquals(night.end - short to night.end, Trim.drag(night.end, true, night.start, night.end, reach, 1, emptyList(), short..long))
+        assertEquals(night.start to night.start + short, Trim.drag(night.start, false, night.start, night.end, reach, 1, emptyList(), short..long))
+    }
+
+    @Test fun `on a minute step the length bounds round to keep the length inside them`() {
+        val reach = night.start - 7200..night.end + 7200
+        // The strap's end is 37 s past a minute: the start stops on the minute at or before an hour back, and at or
+        // after four hours back.
+        assertEquals(night.end - 37 - 3600 to night.end, Trim.drag(night.end, true, night.start, night.end, reach, 60, emptyList(), 3600..4 * 3600L))
+        assertEquals(night.end - 37 - 4 * 3600 + 60 to night.end, Trim.drag(reach.first, true, night.start, night.end, reach, 60, emptyList(), 3600..4 * 3600L))
+    }
+
+    @Test fun `when the reach is too tight for the shortest, the handle stays inside the reach`() {
+        val reach = night.start..night.start + 1800
+        assertEquals(night.start to reach.last, Trim.drag(reach.last + 600, false, night.start, night.start + 900, reach, 1, emptyList(), 3600..4 * 3600L))
+    }
+
     @Test fun `kept is bright, the rest of the recording faded, the context past it dimmer still`() {
         val core = night.start..night.end
         assertEquals(Trim.Shade.Kept, Trim.shade(true, night.start - 60, core))

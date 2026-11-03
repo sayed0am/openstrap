@@ -45,6 +45,9 @@ internal object Trim {
     /** The handles never come closer than this. */
     const val MIN_SECONDS = 60L
 
+    /** A workout's handles keep no length but [MIN_SECONDS]. */
+    val ANY_LENGTH = MIN_SECONDS..Long.MAX_VALUE
+
     /** How far a sleep's or nap's handles reach past what the strap detected, either side. */
     const val SLEEP_REACH_SECONDS = 2 * 3600L
 
@@ -98,12 +101,32 @@ internal object Trim {
 
     /**
      * The handles after a drag to [at] (a time on the bar), the start one when [start]: on the [step] ([snap], with
-     * [keep]), inside [reach], and at least [MIN_SECONDS] from the other.
+     * [keep]), a [length] from the other handle (its ends rounded onto the step the way that keeps the length inside
+     * it), inside [reach], and at least [MIN_SECONDS] from the other. When the reach is too tight for the shortest
+     * length, the reach wins and Save's check says why.
      */
-    fun drag(at: Long, start: Boolean, from: Long, to: Long, reach: LongRange, step: Long, keep: List<Long>): Pair<Long, Long> {
-        val t = snap(at, step, keep).coerceIn(reach.first, reach.last)
-        return if (start) t.coerceAtMost(to - MIN_SECONDS) to to else from to t.coerceAtLeast(from + MIN_SECONDS)
+    fun drag(
+        at: Long, start: Boolean, from: Long, to: Long, reach: LongRange, step: Long, keep: List<Long>,
+        length: LongRange = ANY_LENGTH,
+    ): Pair<Long, Long> {
+        val other = if (start) to else from
+        val near = if (start) other - length.first else other + length.first
+        val far = when {
+            length.last == Long.MAX_VALUE -> if (start) Long.MIN_VALUE else Long.MAX_VALUE
+            start -> other - length.last
+            else -> other + length.last
+        }
+        val t = if (start) snap(at, step, keep).coerceAtLeast(ceil(far, step)).coerceAtMost(floor(near, step))
+        else snap(at, step, keep).coerceAtMost(floor(far, step)).coerceAtLeast(ceil(near, step))
+        val inReach = t.coerceIn(reach.first, reach.last)
+        return if (start) inReach.coerceAtMost(to - MIN_SECONDS) to to else from to inReach.coerceAtLeast(from + MIN_SECONDS)
     }
+
+    private fun floor(time: Long, step: Long) =
+        if (step <= 1 || time == Long.MIN_VALUE || time == Long.MAX_VALUE) time else Math.floorDiv(time, step) * step
+
+    private fun ceil(time: Long, step: Long) =
+        if (step <= 1 || time == Long.MIN_VALUE || time == Long.MAX_VALUE) time else -Math.floorDiv(-time, step) * step
 }
 
 /**
@@ -112,8 +135,8 @@ internal object Trim {
  * Polarsteps'). Drag either side in, or out as far as [reach]. Outside [from] to [to] the bars fade back. What was
  * recorded or detected is the [core]: when the reach goes past it, a line under the track marks it, and the heart rate
  * past it is dimmer still, there for context, until the handles take it in. A workout passes a reach equal to its
- * core, so it only trims. The handles move a [step] at a time, landing on a moment in [keep] to the second. The clocks
- * of the reach's ends sit under it.
+ * core, so it only trims. The handles move a [step] at a time, landing on a moment in [keep] to the second, and stop
+ * a [length] apart, as they stop at the reach. The clocks of the reach's ends sit under it.
  */
 // The readings and the moments to keep arrive whole with the workout or the sleep and never change in place.
 @Suppress("UnstableCollections", "ComposeUnstableCollections")
@@ -129,6 +152,7 @@ internal fun TrimBar(
     modifier: Modifier = Modifier,
     step: Long = 1,
     keep: List<Long> = emptyList(),
+    length: LongRange = Trim.ANY_LENGTH,
 ) {
     val first = reach.first
     val last = reach.last.coerceAtLeast(first + 1)
@@ -144,7 +168,7 @@ internal fun TrimBar(
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Canvas(
             Modifier.fillMaxWidth().height(if (marked) TrackHeight + MarkRoom else TrackHeight).testTag(TRIM_BAR_TAG)
-                .pointerInput(first, last, step, keep) {
+                .pointerInput(first, last, step, keep, length) {
                 var start = true
                 var f = 0L
                 var t = 0L
@@ -158,7 +182,7 @@ internal fun TrimBar(
                         start = abs(at - f) <= abs(at - t)
                     },
                 ) { c, _ ->
-                    val (nf, nt) = Trim.drag(timeAt(c.position.x), start, f, t, first..last, step, keep)
+                    val (nf, nt) = Trim.drag(timeAt(c.position.x), start, f, t, first..last, step, keep, length)
                     f = nf
                     t = nt
                     change(f, t)

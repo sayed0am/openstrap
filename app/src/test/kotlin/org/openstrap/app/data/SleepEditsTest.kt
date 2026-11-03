@@ -192,12 +192,4 @@ class SleepEditsTest {
         // Nothing to compare with says nothing.
         assertNull(SleepEdits.stillHeartRate(readings(74f, 72f).filter { it.first >= nap.start }, nap.start, nap.end, deepSeconds = 0))
     }
-
-    @Test fun `a picked clock is read on the day nearest the session`() {
-        assertEquals(at(14, 5), SleepEdits.atNear(14 * 60 + 5, nap.start, zone))
-        // A late nap running past midnight: 00:20 is the next day's.
-        assertEquals(at(0, 20, day = 31), SleepEdits.atNear(20, at(23, 50), zone))
-        // And 23:40 picked for a nap the strap started at 00:10 is the evening before.
-        assertEquals(at(23, 40, day = 29), SleepEdits.atNear(23 * 60 + 40, at(0, 10), zone))
-    }
 }

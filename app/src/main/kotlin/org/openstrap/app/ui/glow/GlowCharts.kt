@@ -173,13 +173,6 @@ fun GlowLineChart(
      * on release. Used without [describe].
      */
     onScrub: ((Int?) -> Unit)? = null,
-    /**
-     * A chosen stretch of the x range, as fractions: shaded in [spanColor] with its two edges drawn in white (a sleep's
-     * times picked against its heart rate).
-     */
-    span: ClosedFloatingPointRange<Float>? = null,
-    /** The shading of [span]; the line's colour by default. */
-    spanColor: Color = color,
     /** Text for the touch readout at a reading; null turns scrubbing off. */
     describe: ((index: Int, value: Float) -> String)? = null,
 ) {
@@ -210,14 +203,6 @@ fun GlowLineChart(
                 val axisLabels = m.measureAll(labels)
                 val h = g.plotBottom
                 onDrawBehind {
-                    if (span != null) {
-                        fun x(f: Float) = inset + f.coerceIn(0f, 1f) * (size.width - inset * 2)
-                        val a = x(span.start)
-                        val b = x(span.endInclusive)
-                        drawRect(spanColor.copy(alpha = 0.18f), Offset(a, 0f), Size(b - a, h))
-                        drawLine(Color.White, Offset(a, 0f), Offset(a, h), 1.5.dp.toPx())
-                        drawLine(Color.White, Offset(b, 0f), Offset(b, h), 1.5.dp.toPx())
-                    }
                     drawLineChartBody(g, paths, color)
 
                     if (average != null) {
