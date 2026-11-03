@@ -51,9 +51,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -225,7 +223,11 @@ internal fun Pill(label: String, dot: Color?, onClick: (() -> Unit)? = null, car
             Canvas(Modifier.size(8.dp)) { drawCircle(dot) }
             Spacer(Modifier.width(8.dp))
         }
-        Text(label, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
+        // Squeezed by the live top bar, a long name ends in an ellipsis and leaves the caret its room.
+        Text(
+            label, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
+        )
         if (caret) {
             Spacer(Modifier.width(6.dp))
             Icon(AppIcons.CaretDown, null, tint = Color.White, modifier = Modifier.size(16.dp))
@@ -351,8 +353,6 @@ internal fun pickedType(type: Int, sides: Map<Int, Boolean>): Int =
 
 /** Room either side of a range chart, so its handles sit whole inside it. */
 private val HandleInset = 14.dp
-/** The trim frame's sides, the handles; the strip is inset by as much so either side can reach its end. */
-private val TrimSide = 12.dp
 
 /** A day of minute heart rate in its zones' colours, with two handles marking a range; outside it dims. */
 @Composable
@@ -500,70 +500,12 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
     }
     QuietPanel {
         PanelTitle("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
-        val known = points.filterNotNull()
-        val lo = (known.minOrNull() ?: 60f) - 10f
-        val hi = (known.maxOrNull() ?: 180f) + 5f
-        // A video trimmer: the workout as thin solid bars in their zone colours, inside one rounded frame whose
-        // thicker sides are the handles (Snapchat's, Polarsteps'); what's left out fades back. Drag either side in.
-        Canvas(
-            Modifier.fillMaxWidth().height(64.dp).pointerInput(summary) {
-                var dragging = 0
-                val inset = TrimSide.toPx()
-                fun timeAt(x: Float) = (first + ((x - inset) / (size.width - 2 * inset) * (last - first)).toLong()).coerceIn(first, last)
-                detectHorizontalDragGestures(
-                    onDragStart = { o ->
-                        val t = timeAt(o.x)
-                        dragging = if (kotlin.math.abs(t - from) <= kotlin.math.abs(t - to)) 0 else 1
-                    },
-                ) { change, _ ->
-                    val t = timeAt(change.position.x)
-                    if (dragging == 0) from = t.coerceAtMost(to - 60) else to = t.coerceAtLeast(from + 60)
-                }
-            },
-        ) {
-            val inset = TrimSide.toPx()
-            val w = size.width - 2 * inset
-            val h = size.height
-            val edge = 3.dp.toPx()
-            fun x(t: Long) = inset + (t - first).toFloat() / (last - first) * w
-            drawRoundRect(Raised, Offset(inset, 0f), Size(w, h), CornerRadius(8.dp.toPx()))
-            // Solid rounded bars, as tall as the heart rate in that stretch (dots are only for numbers, spec 2.7). A
-            // stretch with no reading is left empty.
-            val pitch = 5.dp.toPx()
-            val bar = 3.dp.toPx()
-            val pad = edge + 5.dp.toPx()
-            val cols = (w / pitch).toInt().coerceAtLeast(1)
-            val fx = x(from)
-            val tx = x(to)
-            for (c in 0 until cols) {
-                val cx = inset + (c + 0.5f) * (w / cols)
-                val i = ((c + 0.5f) / cols * points.size).toInt().coerceIn(0, points.size - 1)
-                val v = points[i] ?: continue
-                val zone = WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate, heartZones) ?: continue
-                val barH = ((v - lo) / (hi - lo)).coerceIn(0.1f, 1f) * (h - 2 * pad)
-                val color = ZONE_COLORS[zone]
-                drawRoundRect(
-                    if (cx in fx..tx) color else color.copy(alpha = color.alpha * 0.3f),
-                    Offset(cx - bar / 2, h - pad - barH), Size(bar, barH), CornerRadius(bar / 2),
-                )
-            }
-            // The frame: one rounded outline, its sides thick enough to grab, each with a short grip.
-            val frame = androidx.compose.ui.graphics.Path().apply {
-                fillType = androidx.compose.ui.graphics.PathFillType.EvenOdd
-                addRoundRect(androidx.compose.ui.geometry.RoundRect(fx - inset, 0f, tx + inset, h, CornerRadius(10.dp.toPx())))
-                addRoundRect(androidx.compose.ui.geometry.RoundRect(fx, edge, tx, h - edge, CornerRadius(4.dp.toPx())))
-            }
-            drawPath(frame, Color.White)
-            val grip = 2.dp.toPx()
-            listOf(fx - inset / 2, tx + inset / 2).forEach { gx ->
-                drawRoundRect(Color.Black.copy(alpha = 0.55f), Offset(gx - grip / 2, h / 2 - 8.dp.toPx()), Size(grip, 16.dp.toPx()), CornerRadius(grip / 2))
-            }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            Note(clock(first))
-            Spacer(Modifier.weight(1f))
-            Note(clock(last))
-        }
+        // Recorded is all it can reach for now: the core and the reach are one, so the bar only trims.
+        TrimBar(
+            points, core = first..last, reach = first..last, from = from, to = to,
+            colorOf = { v -> WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate, heartZones)?.let { ZONE_COLORS[it] } },
+            onChange = { f, t -> from = f; to = t },
+        )
         Note("Drag the handles to where the workout really started and ended. Nothing recorded is deleted.")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) { WorkoutButton("Cancel", Raised, Color.White, onCancel) }
