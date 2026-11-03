@@ -1,6 +1,9 @@
 package org.openstrap.app.export
 
 import androidx.room.withTransaction
+import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.db.AppWorkout
+import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.OpenStrapDatabase
 import java.io.InputStream
 import java.util.zip.ZipInputStream
@@ -11,7 +14,8 @@ import java.util.zip.ZipInputStream
  * days a newer backup or a Health Connect import holds. A sleep or workout that overlaps one on the phone is left out
  * too, as the strap can re-send a night with another start, and stages and workout heart rate come back only with their
  * sleep or workout. A strap workout deleted in OpenStrap, on the phone or by the backup, stays deleted: its row and the
- * sport effect deleted with it are left out, so its heart rate is too. Restoring twice changes nothing. Runs as one
+ * sport effect deleted with it are left out, so its heart rate is too. A phone workout discarded since the backup was
+ * made stays gone too, as its range is kept. Restoring twice changes nothing. Runs as one
  * transaction, so a zip that fails part way changes nothing. Files this version doesn't know are skipped, and a backup
  * from before deleted workouts were kept restores as it did. The settings file isn't written here: [Result.settings]
  * carries it.
@@ -37,10 +41,12 @@ class CsvImporter(private val db: OpenStrapDatabase) {
     suspend fun importZip(input: InputStream): Result = db.withTransaction {
         val tables = CSV_TABLES.associateBy { it.file }
         val counts = linkedMapOf<String, Int>()
+        // Read before the zip's own: one zip is one snapshot, so a range it holds never covers a workout it holds.
+        val dismissed = db.healthDao().dismissedWorkoutsAll()
         // Starts of the sleeps and workouts this restore added: only their stages and heart rate come with them.
         val added = mutableMapOf<String, Set<Long>>()
         // Child tables wait until every parent is in, whatever order the zip lists them in, and the tables a deleted
-        // workout is left out of wait until every deleted workout is in.
+        // or discarded workout is left out of wait until every deleted workout is in.
         val children = mutableListOf<Pending<*>>()
         val deletable = mutableListOf<Pending<*>>()
         var present = 0
@@ -71,6 +77,7 @@ class CsvImporter(private val db: OpenStrapDatabase) {
         val gone = mapOf(
             "workout" to deleted.mapTo(HashSet()) { it.start },
             "sport_effect" to deleted.mapNotNullTo(HashSet()) { it.effectEnd },
+            "app_workout" to discarded(deletable, dismissed),
         )
         for (p in deletable) count(p.table.file, p.backfill(added, gone[p.table.key.table].orEmpty()))
         for (p in children) count(p.table.file, p.backfill(added))
@@ -78,6 +85,18 @@ class CsvImporter(private val db: OpenStrapDatabase) {
         if (counts.isEmpty()) throw IllegalArgumentException("This isn't an OpenStrap export.")
         Result(counts, present, skipped, settings)
     }
+
+    /**
+     * Starts of the phone workouts in [pending] that lie inside a range the phone had [dismissed]: a Discard deletes the
+     * row and keeps its [Workouts.phoneRange] ([org.openstrap.app.device.SavedWorkoutEditor.discard]), so an older zip
+     * would bring it back. Only inside, so a workout that merely touches a "Not a workout" range comes back.
+     */
+    private fun discarded(pending: List<Pending<*>>, dismissed: List<DismissedWorkout>): Set<Long> =
+        pending.filter { it.table.key.table == "app_workout" }.flatMap { it.rows }.mapNotNullTo(HashSet()) { row ->
+            val w = row.value as? AppWorkout ?: return@mapNotNullTo null
+            val range = Workouts.phoneRange(w, Long.MAX_VALUE)
+            w.start.takeIf { dismissed.any { d -> d.start <= range.first && range.last <= d.end } }
+        }
 
     /**
      * Workouts deleted on the old phone that the strap re-sent here before the restore: the restored marker keeps
@@ -162,8 +181,11 @@ class CsvImporter(private val db: OpenStrapDatabase) {
         db.openHelper.writableDatabase.query(sql, args).use { c -> buildList { while (c.moveToNext()) add(read(c)) } }
 
     companion object {
-        /** Tables whose rows a deleted strap workout takes with it, by its start (workout) or its effect's end. */
-        private val DELETABLE = setOf("workout", "sport_effect")
+        /**
+         * Tables whose rows a deleted strap workout takes with it, by its start (workout) or its effect's end, and a
+         * discarded phone workout by its start (app_workout).
+         */
+        private val DELETABLE = setOf("workout", "sport_effect", "app_workout")
 
         /** One CSV line into cells, as [CsvReader] reads it. */
         fun parseLine(line: String): List<String> = CsvReader(line.reader()).next() ?: listOf("")

@@ -13,6 +13,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.db.AppWorkout
+import org.openstrap.app.data.db.AppWorkoutHeartRate
+import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.BadgeRow
 import org.openstrap.app.data.db.CheckInRow
@@ -34,6 +36,7 @@ import org.openstrap.app.data.db.SportEffectRow
 import org.openstrap.app.data.db.WearEventRow
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.db.WorkoutHeartRate
+import org.openstrap.app.data.Workouts
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
@@ -363,5 +366,30 @@ class CsvRestoreTest {
         assertEquals(setOf(HealthAlertRow(alertAt, 1, 150), HealthAlertRow(alertAt, 2, 80)), p.healthAlertsOnce(0, Long.MAX_VALUE / 2).toSet())
         assertEquals(2, result.present)
         assertEquals(0, restore(zip).total)
+    }
+
+    @Test fun `a phone workout discarded after the backup was made stays gone, one beside a Not a workout range comes back`() = runTest {
+        // Trimmed at the end: the discard keeps its range as recorded.
+        val gone = AppWorkout(day - 3 * 86_400 + 17 * 3600, day - 3 * 86_400 + 17 * 3600 + 1800, 1, recordedEnd = day - 3 * 86_400 + 18 * 3600)
+        val kept = AppWorkout(day - 86_400 + 9 * 3600, day - 86_400 + 10 * 3600, 1)
+        old.healthDao().insertAppWorkouts(listOf(gone, kept))
+        old.healthDao().insertAppWorkoutHeartRate(listOf(AppWorkoutHeartRate(gone.start, gone.start + 60, 120), AppWorkoutHeartRate(kept.start, kept.start + 60, 110)))
+        val zip = backup(old)
+        restore(zip)
+        // Discard on the phone, as SavedWorkoutEditor does, and a "Not a workout" range that only touches the other.
+        val p = phone.healthDao()
+        p.deleteAppWorkout(gone.start)
+        p.insertDismissedWorkouts(listOf(Workouts.phoneRange(gone, day).let { DismissedWorkout(it.first, it.last) }))
+        p.deleteAppWorkout(kept.start)
+        p.insertDismissedWorkouts(listOf(DismissedWorkout(kept.start - 1800, kept.start + 600)))
+        restore(zip)
+
+        assertNull(p.appWorkoutOnce(gone.start))
+        assertTrue(p.appWorkoutHeartRateOnce(gone.start).isEmpty())
+        assertEquals(kept, p.appWorkoutOnce(kept.start))
+        assertEquals(listOf(110), p.appWorkoutHeartRateOnce(kept.start).map { it.bpm })
+        val once = contents(phone)
+        assertEquals(0, restore(zip).total)
+        assertEquals(once, contents(phone))
     }
 }
