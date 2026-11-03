@@ -41,17 +41,11 @@ class WorkoutGapFill(
         val hr = dao.appWorkoutHeartRateOnce(w.start)
         // The whole recorded span, so a trim or an early end can be undone with its minutes filled. One still recording
         // only up to its last reading: the hours after the app was killed may be the night, and a workout left that
-        // long ends at its last reading ([WorkoutSession.restore]).
+        // long is filled and ended by [LeftRecording] instead.
         val end = w.end?.let { w.recordedEnd ?: it } ?: hr.maxOfOrNull { it.timestamp } ?: return 0
         val missing = WorkoutRecorder.missingMinutes(w.start, end, w.pauseRanges, hr.map { it.timestamp })
         if (missing.isEmpty()) return 0
-        val from = missing.first()
-        val to = missing.last() + 59
-        val perSecond = dao.heartRateOnce(from, to)
-            .filter { it.source == HeartRateSample.SOURCE_HISTORY && it.timestamp % 60 == 0L }
-            .associate { it.timestamp to it.bpm }
-        val minutes = dao.activityOnce(from, to).mapNotNull { m -> m.heartRate?.let { m.timestamp to it } }.toMap()
-        val rows = WorkoutRecorder.fillFromHistory(w.start, missing, perSecond, minutes)
+        val rows = fromHistory(w.start, missing)
         if (rows.isEmpty()) return 0
         dao.insertAppWorkoutHeartRateIfMissing(rows)
         // The recording workout gets its figures when it ends.
@@ -61,6 +55,21 @@ class WorkoutGapFill(
             dao.upsertAppWorkout(runCatching { WorkoutEffectEngine(dao).withEffect(stats, all, profile()) }.getOrDefault(stats))
         }
         return rows.size
+    }
+
+    /**
+     * Rows for the [missing] minutes of the workout [workoutStart] from the strap's history
+     * ([WorkoutRecorder.fillFromHistory]), for the minutes it has a heart rate for. Nothing is written.
+     */
+    suspend fun fromHistory(workoutStart: Long, missing: List<Long>): List<org.openstrap.app.data.db.AppWorkoutHeartRate> {
+        if (missing.isEmpty()) return emptyList()
+        val from = missing.first()
+        val to = missing.last() + 59
+        val perSecond = dao.heartRateOnce(from, to)
+            .filter { it.source == HeartRateSample.SOURCE_HISTORY && it.timestamp % 60 == 0L }
+            .associate { it.timestamp to it.bpm }
+        val minutes = dao.activityOnce(from, to).mapNotNull { m -> m.heartRate?.let { m.timestamp to it } }.toMap()
+        return WorkoutRecorder.fillFromHistory(workoutStart, missing, perSecond, minutes)
     }
 
     private companion object {

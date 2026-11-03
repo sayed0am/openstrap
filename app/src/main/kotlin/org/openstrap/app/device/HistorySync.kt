@@ -160,7 +160,8 @@ class HistorySync internal constructor(
             if (only == null && session.services.has(Endpoints.READINESS)) catching { syncReadiness() }.onFailure { log("readiness: $it") }
             // A session the strap ran alongside a phone workout has just come in: its figures replace the model's.
             catching {
-                org.openstrap.app.data.WorkoutEffectEngine(dao).takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK)
+                org.openstrap.app.data.WorkoutEffectEngine(dao)
+                    .takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK, WorkoutSession.LOCK)
             }
                 .onFailure { log("strap effect: $it") }
             // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.

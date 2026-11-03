@@ -19,6 +19,13 @@ object Rewards {
     /** A workout counts toward the weekly goal from this long ([WorkoutSuggestions.MIN_MINUTES]). */
     const val MIN_SECONDS = WorkoutSuggestions.MIN_MINUTES * 60L
 
+    /**
+     * The weekly goal's rule (workouts spec 3.1, decisions 2026-11-03): a workout counts when you started it, or kept
+     * it when it was noticed for you, and it moved for [MIN_SECONDS] or more. The week count ([Done.counts]) and the
+     * week dots both read it.
+     */
+    fun countsTowardGoal(startedByYou: Boolean, activeSeconds: Long): Boolean = startedByYou && activeSeconds >= MIN_SECONDS
+
     /** At most this many workouts a day count. */
     const val PER_DAY = 2
 
@@ -97,7 +104,7 @@ object Rewards {
         val activeKcal: Float? = null,
     ) {
         /** Counts toward the weekly goal (workouts spec 3.1). */
-        val counts: Boolean get() = startedByYou && activeSeconds >= MIN_SECONDS
+        val counts: Boolean get() = countsTowardGoal(startedByYou, activeSeconds)
 
         /** A run measured by GPS. */
         val gpsRun: Boolean get() = sport in SportTypes.RUNS && gpsMeters != null && gpsMeters > 0f

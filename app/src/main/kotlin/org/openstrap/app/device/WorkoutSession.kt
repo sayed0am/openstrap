@@ -12,6 +12,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onSubscription
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -107,6 +109,8 @@ class WorkoutSession(
     private val clock: () -> Long = { System.currentTimeMillis() / 1000 },
     /** Where the workout's long-lived work runs: the app's scope, `AppContainer.appScope`. */
     private val scope: CoroutineScope = fallbackScope(),
+    /** How long a workout left recording waits for the strap's history ([LeftRecording]). Tests shorten it. */
+    private val leftWaitMs: Long = LEFT_WAIT_MS,
 ) {
     private val lock = LOCK
 
@@ -169,21 +173,26 @@ class WorkoutSession(
 
     /**
      * Picks up a workout left recording when the process died, then starts watching for auto-start. Called once at app
-     * start. One with no reading for [LEFT_RECORDING_S] is ended at its last reading instead, and its summary shows.
+     * start. One with no reading for [LEFT_RECORDING_S] records on too, while it waits for the strap's history of the
+     * time the phone missed ([awaitStrap]). One paused that long is ended at its last reading, and its summary shows.
      */
     fun restore() {
         scope.launch {
             try {
-                lock.withLock {
-                    if (_state.value is WorkoutState.Recording) return@withLock
-                    val w = dao.activeAppWorkout() ?: return@withLock
+                val waiting = lock.withLock {
+                    if (_state.value is WorkoutState.Recording) return@withLock null
+                    val w = dao.activeAppWorkout() ?: return@withLock null
                     val now = now()
                     val stored = dao.appWorkoutHeartRateOnce(w.start)
                     val last = maxOf(w.start, stored.maxOfOrNull { it.timestamp } ?: w.start)
-                    if (now - last > LEFT_RECORDING_S) {
+                    val waits = now - last > LEFT_RECORDING_S
+                    // Paused, nothing the strap measured since is part of it.
+                    if (waits && w.pausedAt != null) {
                         endLeftRecording(w, last)
-                        return@withLock
+                        return@withLock null
                     }
+                    // Set before it shows as recording, so an End tapped at once already waits for the strap.
+                    left = if (waits) LeftRecording.Left(w.start, last, now) else null
                     _recent.value = stored.filter { !it.fromHistory && it.timestamp >= now - RECENT_S }.map { it.timestamp to it.bpm }
                     sum = stored.sumOf { it.bpm.toLong() }
                     count = stored.size.toLong()
@@ -212,7 +221,9 @@ class WorkoutSession(
                     begin(w, maxHr) {
                         it.copy(sets = sets, restUntil = restUntil, exercise = sets.lastOrNull()?.exercise, logSets = log, rounds = rounds)
                     }
+                    left
                 }
+                waiting?.let { scope.launch { awaitStrap(it) } }
             } finally {
                 _restored.value = true
                 // After the restore, so a workout left recording isn't offered as a new one.
@@ -348,7 +359,7 @@ class WorkoutSession(
             when (action) {
                 WorkoutRecorder.StrapAction.PAUSE -> pauseFrom(toStrap = false)
                 WorkoutRecorder.StrapAction.RESUME -> resumeFrom(toStrap = false)
-                WorkoutRecorder.StrapAction.END -> finish(null, AppWorkout.END_USER, toStrap = false)
+                WorkoutRecorder.StrapAction.END -> endNow(toStrap = false)
             }
             return
         }
@@ -374,7 +385,21 @@ class WorkoutSession(
     }
 
     /** Saves the workout; ended while paused, it ends where the pause began. */
-    fun end() = finish(null, AppWorkout.END_USER)
+    fun end() = endNow(toStrap = true)
+
+    /**
+     * End, from the app or the strap. While a workout left recording waits for the strap ([left]), it ends where
+     * activity stopped by what has come so far ([LeftRecording.verdict]), and at now only when the strap says it was
+     * still under way: never at the moment the app came back just because End was tapped then.
+     */
+    private fun endNow(toStrap: Boolean) {
+        val l = left ?: return finish(null, AppWorkout.END_USER, toStrap)
+        scope.launch {
+            val v = judge(l, final = true)
+            if (v is LeftRecording.Verdict.End) finish(v.at, AppWorkout.END_AUTO, toStrap, startOf = l.start)
+            else finish(null, AppWorkout.END_USER, toStrap)
+        }
+    }
 
     /** "End at 18:50": saves the workout ending where the wearer stopped; what came after stays recorded, for undo. */
     fun endAtPrompt() {
@@ -388,11 +413,12 @@ class WorkoutSession(
         _state.update { s -> (s as? WorkoutState.Recording)?.takeIf { it.endPrompt != null }?.copy(endPrompt = null, inCar = false) ?: s }
     }
 
-    /** [toStrap] false when the strap ended its session itself. */
-    private fun finish(at: Long?, reason: Int, toStrap: Boolean = true) {
+    /** [toStrap] false when the strap ended its session itself. [startOf]: only if it is still that workout recording. */
+    private fun finish(at: Long?, reason: Int, toStrap: Boolean = true, startOf: Long? = null) {
         scope.launch {
             lock.withLock {
                 val r = _state.value as? WorkoutState.Recording ?: return@withLock
+                if (startOf != null && r.workout.start != startOf) return@withLock
                 flush()
                 saveDistance()
                 val w = r.workout
@@ -414,6 +440,7 @@ class WorkoutSession(
                     _state.update { s -> (s as? WorkoutState.Recording)?.copy(saveFailed = true) ?: s }
                     return@withLock
                 }
+                left = null
                 // The heart rate stays up for a while after a workout, and that's not a new one to offer.
                 autoStart.offerNotBefore = now()
                 strapState(WorkoutRecorder.closingState(kept), w, send = toStrap)
@@ -459,9 +486,9 @@ class WorkoutSession(
     }
 
     /**
-     * A workout the app was killed during, with no reading for [LEFT_RECORDING_S] (left recording overnight, say):
-     * ended at its [last] reading, as End then would have, and its summary shows. Nothing after [last] is part of it,
-     * so a gap fill has nothing after it to fill. Under [lock].
+     * A workout the app was killed during while paused, with no reading for [LEFT_RECORDING_S]: ended at its [last]
+     * reading, as End then would have, and its summary shows. Nothing after [last] is part of it, so a gap fill has
+     * nothing after it to fill. Under [lock].
      */
     private suspend fun endLeftRecording(w: AppWorkout, last: Long) {
         val route = if (w.keepRoute) catching { dao.routeOnce(w.start).map { it.point } }.getOrDefault(emptyList()) else emptyList()
@@ -485,6 +512,53 @@ class WorkoutSession(
         _state.update { WorkoutState.Ended(w.start) }
         editor.refreshDays(ended.from, last)
         onSaved(w.start)
+    }
+
+    /** The workout restored with no reading for [LEFT_RECORDING_S], while its end waits for the strap, else null. */
+    @Volatile private var left: LeftRecording.Left? = null
+
+    /**
+     * The wait for a workout left recording ([LeftRecording]): it records on, as any restored workout does, and is
+     * judged again as each sync ends, the strap's history of the time the phone missed being in by then. It ends where
+     * activity stopped, or records on when it was still under way. After [leftWaitMs] with no answer (no strap in
+     * reach, say), what came decides, and with nothing from the strap it ends at the phone's last reading.
+     */
+    private suspend fun awaitStrap(l: LeftRecording.Left) {
+        log("workout left recording since ${java.time.Instant.ofEpochSecond(l.leftAt)}: waiting for the strap's history")
+        strap.syncNow()
+        val v = withTimeoutOrNull(leftWaitMs) {
+            // Once at the start too, for a history already in.
+            strap.syncEnded.onSubscription { emit(Unit) }.map { judge(l, final = false) }.first { it != LeftRecording.Verdict.Wait }
+        } ?: judge(l, final = true)
+        when (v) {
+            is LeftRecording.Verdict.End -> {
+                log("workout left recording: ${v.why}, ended at ${java.time.Instant.ofEpochSecond(v.at)}")
+                finish(v.at, AppWorkout.END_AUTO, startOf = l.start)
+            }
+            LeftRecording.Verdict.CarryOn -> {
+                log("workout left recording: still under way, it records on")
+                if (left == l) left = null
+            }
+            // Ended or gone meanwhile.
+            LeftRecording.Verdict.Wait, null -> Unit
+        }
+    }
+
+    /**
+     * [l] judged by what the phone and the strap have seen so far, null once it no longer waits (ended, say). The
+     * strap's minutes it read are written to the workout unless it waits on. Takes [lock].
+     */
+    private suspend fun judge(l: LeftRecording.Left, final: Boolean): LeftRecording.Verdict? = lock.withLock {
+        val r = (_state.value as? WorkoutState.Recording)?.takeIf { left == l && it.workout.start == l.start } ?: return@withLock null
+        catching {
+            val seen = LeftRecording.load(dao, r.workout, l, restingHr, r.maxHeartRate, now())
+            LeftRecording.verdict(l, seen, final).also { v ->
+                if (v != LeftRecording.Verdict.Wait) dao.insertAppWorkoutHeartRateIfMissing(seen.filled)
+            }
+        }.getOrElse {
+            log("workout left recording not judged: ${it.message}")
+            if (final) LeftRecording.Verdict.End(l.leftAt, "the strap's history couldn't be read") else LeftRecording.Verdict.Wait
+        }
     }
 
     /** A set or rest under way closes with the workout at [end], and so does a round's work or rest. */
@@ -1136,8 +1210,13 @@ class WorkoutSession(
          * after a sync, which the strap's sync runs, not the session.
          */
         val LOCK = Mutex()
-        /** A workout left recording with no reading for this long is ended at its last one when the app restarts. */
+        /**
+         * A workout left recording with no reading for this long when the app restarts waits for the strap's history
+         * ([LeftRecording]), and one the strap measured nothing for this long ends at its last reading.
+         */
         const val LEFT_RECORDING_S = 2 * 3600L
+        /** How long a workout left recording waits for a sync to bring the strap's history. */
+        const val LEFT_WAIT_MS = 10 * 60_000L
         /** A safety net should end() never come; the strap's battery is long gone by then. */
         const val MAX_WAKE_MS = 12 * 3600_000L
     }

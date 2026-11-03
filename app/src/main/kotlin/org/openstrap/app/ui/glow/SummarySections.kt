@@ -609,12 +609,12 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
 }
 
 /**
- * The starts of the [workouts] that fill a day on [WeekDaysPanel]: the ones that count toward the weekly goal
- * ([Rewards.Done.counts], started by you and [Rewards.MIN_SECONDS] or more), so the dots and "N days with a workout"
- * agree with "N workouts this week" under them.
+ * The starts of the [workouts] that fill a day on [WeekDaysPanel]: the ones that count toward the weekly goal by the
+ * rule the week count uses ([Rewards.countsTowardGoal]), so the dots and "N days with a workout" agree with "N workouts
+ * this week" under them.
  */
 internal fun goalWeekStarts(workouts: List<WorkoutAnalysis>): List<Long> =
-    workouts.filter { it.startedByYou && it.activeSeconds >= Rewards.MIN_SECONDS }.map { it.shownStart }
+    workouts.filter { Rewards.countsTowardGoal(it.startedByYou, it.activeSeconds) }.map { it.shownStart }
 
 /**
  * The days of [day]'s week as round dots from the locale's first day (board SummaryMind): a day with a workout filled

@@ -26,6 +26,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.data.Activity
+import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.MaxHeartRates
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.SportTypes
@@ -41,6 +42,7 @@ import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.inMemoryDb
 import org.openstrap.app.testing.profile
+import org.openstrap.app.testing.workout
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.AlarmCapabilities
 import org.openstrap.protocol.services.Setting
@@ -88,8 +90,10 @@ class WorkoutSessionTest {
     /** The app's scope as `AppContainer.appScope` builds it, but what it catches lands in [uncaught] for the test. */
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> uncaught += e })
 
-    private fun session() =
-        WorkoutSession(context, dao, SettingsStore(context), strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope)
+    private fun session(leftWaitMs: Long = WorkoutSession.LEFT_WAIT_MS) = WorkoutSession(
+        context, dao, SettingsStore(context), strap, MaxHeartRates(dao, flowOf(profile())), clock = { clock.now }, scope = scope,
+        leftWaitMs = leftWaitMs,
+    )
 
     private fun <T> StateFlow<T>.await(what: String = "state", predicate: (T) -> Boolean): T = runBlocking {
         try {
@@ -277,12 +281,137 @@ class WorkoutSessionTest {
         assertNull(undone.recordedEnd)
     }
 
-    @Test
-    fun aWorkoutLeftRecordingForHoursEndsAtItsLastReading() {
-        // Killed ten minutes into a walk, and the app comes back five hours later.
+    /** Killed ten minutes into a walk that began five hours ago: its phone readings, and the app back now. */
+    private fun leftFiveHoursAgo(): Long {
         val t0 = clock.now - 5 * 3600
         runBlocking {
             db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = null, sportType = 1))
+            db.healthDao().insertAppWorkoutHeartRate((1..600).map { AppWorkoutHeartRate(t0, t0 + it, 120) })
+        }
+        return t0
+    }
+
+    /** The strap's history, a minute at a time from [from] until [to]: its heart rate (null off the wrist) and steps. */
+    private fun strapMinutes(from: Long, to: Long, bpm: Int?, steps: Int) = runBlocking {
+        db.healthDao().insertActivity((from until to step 60).map { ActivityMinute(it, steps, 0, 0, bpm) })
+    }
+
+    /** A sync has ended, once the session listens for it. */
+    private fun synced() {
+        runBlocking { withTimeout(WAIT_MS) { strap.synced.subscriptionCount.first { it > 0 } } }
+        strap.synced.tryEmit(Unit)
+    }
+
+    @Test
+    fun aWorkoutLeftRecordingForHoursWaitsForTheStrapAndEndsWhereActivityStopped() {
+        val t0 = leftFiveHoursAgo()
+        val reopened = clock.now
+        val s = session()
+        s.restore()
+        // Not ended at the phone's last reading: it records on while the strap's history comes in.
+        s.recording()
+        assertNull(stored(t0)!!.end)
+
+        // The strap kept measuring: the walk went on until three hours in, then calm and still until now.
+        strapMinutes(t0 + 600, t0 + 3 * 3600, 130, 100)
+        strapMinutes(t0 + 3 * 3600, reopened, 65, 0)
+        synced()
+        assertEquals(WorkoutState.Ended(t0), s.state.await { it is WorkoutState.Ended })
+        val saved = stored(t0)!!
+        // The end of its last active minute, not the moment the app came back.
+        assertEquals(t0 + 3 * 3600 - 1, saved.end)
+        assertEquals(AppWorkout.END_AUTO, saved.endReason)
+        assertEquals(reopened, saved.recordedEnd)
+        // Filled from the strap's minutes.
+        assertTrue("average ${saved.averageHeartRate}", saved.averageHeartRate!! in 125..130)
+    }
+
+    @Test
+    fun aWorkoutLeftRecordingEndsWithTheStrapsOwnRecordOfIt() {
+        val t0 = leftFiveHoursAgo()
+        val s = session()
+        s.restore()
+        s.recording()
+        strapMinutes(t0 + 600, clock.now, 130, 100)
+        // The strap noticed the walk five minutes in and ended it two hours in.
+        runBlocking { db.healthDao().insertWorkouts(listOf(workout(start = t0 + 300, end = t0 + 7200))) }
+        synced()
+        s.state.await { it is WorkoutState.Ended }
+        assertEquals(t0 + 7200, stored(t0)!!.end)
+    }
+
+    @Test
+    fun aWorkoutLeftRecordingStillUnderWayRecordsOn() {
+        val t0 = leftFiveHoursAgo()
+        val s = session()
+        s.restore()
+        s.recording()
+        strapMinutes(t0 + 600, clock.now, 130, 100)
+        synced()
+        // Judged: the strap's minutes are written to it, and it records on.
+        runBlocking {
+            withTimeout(WAIT_MS) {
+                while (db.healthDao().appWorkoutHeartRateOnce(t0).none { it.fromHistory }) delay(POLL_MS)
+            }
+        }
+        Thread.sleep(SETTLE_MS)
+        s.recording()
+        assertNull(stored(t0)!!.end)
+
+        // Ended later, it ends then, as any workout does.
+        clock.advance(Duration.ofSeconds(600))
+        s.end()
+        s.state.await { it is WorkoutState.Ended }
+        assertEquals(clock.now, stored(t0)!!.end)
+    }
+
+    @Test
+    fun endTappedWhileItWaitsEndsWhereActivityStoppedNotAtTheReopen() {
+        val t0 = leftFiveHoursAgo()
+        // Only the first two hours have come in: active for one, then calm.
+        strapMinutes(t0 + 600, t0 + 3600, 130, 100)
+        strapMinutes(t0 + 3600, t0 + 7200, 65, 0)
+        val s = session()
+        s.restore()
+        s.recording()
+        s.end()
+        s.state.await { it is WorkoutState.Ended }
+        assertEquals(t0 + 3600 - 1, stored(t0)!!.end)
+    }
+
+    @Test
+    fun aStrapTakenOffForHoursEndsItAtItsLastReading() {
+        val t0 = leftFiveHoursAgo()
+        val s = session()
+        s.restore()
+        s.recording()
+        // The strap's minutes came in, with no heart rate: it was off the wrist.
+        strapMinutes(t0 + 600, clock.now, null, 0)
+        synced()
+        s.state.await { it is WorkoutState.Ended }
+        val saved = stored(t0)!!
+        assertEquals(t0 + 600, saved.end)
+        assertEquals(120, saved.averageHeartRate)
+    }
+
+    @Test
+    fun withNothingFromTheStrapItEndsAtItsLastReadingAfterTheWait() {
+        val t0 = leftFiveHoursAgo()
+        val s = session(leftWaitMs = SHORT_WAIT_MS)
+        s.restore()
+        s.restored.await { it }
+        assertEquals(WorkoutState.Ended(t0), s.state.await { it is WorkoutState.Ended })
+        val saved = stored(t0)!!
+        assertEquals(t0 + 600, saved.end)
+        assertEquals(AppWorkout.END_AUTO, saved.endReason)
+        assertEquals(120, saved.averageHeartRate)
+    }
+
+    @Test
+    fun aWorkoutLeftPausedForHoursEndsAtItsLastReadingAtOnce() {
+        val t0 = clock.now - 5 * 3600
+        runBlocking {
+            db.healthDao().upsertAppWorkout(AppWorkout(start = t0, end = null, sportType = 1, pausedAt = t0 + 600))
             db.healthDao().insertAppWorkoutHeartRate((1..600).map { AppWorkoutHeartRate(t0, t0 + it, 120) })
         }
         val s = session()
@@ -290,11 +419,9 @@ class WorkoutSessionTest {
         s.restored.await { it }
         assertEquals(WorkoutState.Ended(t0), s.state.await { it is WorkoutState.Ended })
         val saved = stored(t0)!!
-        assertEquals(t0 + 600, saved.end)
         // Nothing after it is part of the workout, so there is nothing to undo and nothing for a gap fill.
+        assertEquals(t0 + 600, saved.end)
         assertNull(saved.recordedEnd)
-        assertEquals(AppWorkout.END_AUTO, saved.endReason)
-        assertEquals(120, saved.averageHeartRate)
     }
 
     @Test
@@ -489,13 +616,15 @@ class WorkoutSessionTest {
         }
     }
 
-    /** A strap that is never connected, whose live heart rate is [readings]. */
+    /** A strap that is never connected, whose live heart rate is [readings], and whose syncs end when [synced] says. */
     private class FakeStrap : StrapController {
         val readings = MutableSharedFlow<Int>(replay = 1, extraBufferCapacity = 64)
         override val connection: StateFlow<ConnectionState> = MutableStateFlow(ConnectionState.Disconnected)
         override val sync: StateFlow<SyncState> = MutableStateFlow(SyncState.Idle)
         override val syncRecord: StateFlow<SyncRecord> = MutableStateFlow(SyncRecord())
-        override val syncEnded: SharedFlow<Unit> = MutableSharedFlow()
+        /** A sync's end, for the test to send. */
+        val synced = MutableSharedFlow<Unit>(extraBufferCapacity = 8)
+        override val syncEnded: SharedFlow<Unit> = synced
         override val liveHeartRate: StateFlow<Int?> = MutableStateFlow(null)
         override val heartRateReadings: SharedFlow<Int> = readings
         override val liveHeartRateEnabled: StateFlow<Boolean> = MutableStateFlow(false)
@@ -539,5 +668,7 @@ class WorkoutSessionTest {
         /** Long enough for a reading the session wrongly took to show. */
         const val SETTLE_MS = 300L
         const val POLL_MS = 20L
+        /** A wait for the strap's history that runs out within the test. */
+        const val SHORT_WAIT_MS = 1_000L
     }
 }
