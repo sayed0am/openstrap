@@ -69,7 +69,7 @@ class RoomDayRepositoryTest {
 
     @Test fun `the main sleep follows the same rule as the widgets`() {
         val d = day()
-        assertEquals(SleepHistory.mainSleep(listOf(main, short, before, nap), DayWindow.nightEndingOn(date)), d.sleep.main)
+        assertEquals(SleepHistory.mainSleep(listOf(main, short, before, nap), SleepHistory.endingOn(date)), d.sleep.main)
     }
 
     @Test fun `a deleted main sleep gives way to the next, and with none left the longest deleted is offered back`() = runBlocking {

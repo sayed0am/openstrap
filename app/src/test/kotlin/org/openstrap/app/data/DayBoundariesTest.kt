@@ -39,13 +39,15 @@ class DayBoundariesTest {
         assertEquals(0f, next.sum(), 0f)
     }
 
-    @Test fun `a night window runs from the evening before by the clock`() {
-        val w = DayWindow.nightEndingOn(autumn.plusDays(1), berlin)
-        assertEquals(at(autumn, 18), w.from)
-        assertEquals(at(autumn.plusDays(1), 18), w.to)
-        val s = DayWindow.nightEndingOn(spring, berlin)
+    @Test fun `a day's sleep ends between its midnights, and its readings start the evening before by the clock`() {
+        val w = SleepHistory.endingOn(autumn, berlin)
+        assertEquals(DayWindow.of(autumn, berlin), w)
+        val r = SleepHistory.readingsOf(autumn.plusDays(1), berlin)
+        assertEquals(at(autumn, 18), r.from)
+        assertEquals(Days.end(autumn.plusDays(1), berlin) - 1, r.to)
+        val s = SleepHistory.readingsOf(spring, berlin)
         assertEquals(at(spring.minusDays(1), 18), s.from)
-        assertEquals(23 * 3600L, s.to - s.from)
+        assertEquals(29 * 3600L - 1, s.to - s.from)
     }
 
     @Test fun `a day window and the calorie day are the local midnights`() {
@@ -63,9 +65,10 @@ class DayBoundariesTest {
         // A sleep ending in the evening belongs to the day it ended on, not the next.
         val evening = SleepSession(start = at(day, 13), end = at(day, 19))
         assertEquals(day, SleepHistory.nightOf(evening, berlin))
-        assertEquals(Days.date(RecoveryEngine.morningOf(evening, berlin), berlin), SleepHistory.nightOf(evening, berlin))
-        // The strap's own day wins, as in recovery.
+        assertEquals(mapOf(Days.start(day, berlin) to evening), RecoveryEngine.mainsByMorning(listOf(evening), berlin))
+        // The day it ended wins over the strap's own day (user, 2026-11-04), in recovery as on the sleep screens.
         val assigned = evening.copy(day = Days.start(day.plusDays(1), berlin))
-        assertEquals(mapOf(day.plusDays(1) to assigned), SleepHistory.mainSleeps(listOf(assigned), berlin))
+        assertEquals(mapOf(day to assigned), SleepHistory.mainSleeps(listOf(assigned), berlin))
+        assertEquals(mapOf(Days.start(day, berlin) to assigned), RecoveryEngine.mainsByMorning(listOf(assigned), berlin))
     }
 }

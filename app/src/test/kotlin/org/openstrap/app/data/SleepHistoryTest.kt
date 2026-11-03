@@ -35,7 +35,7 @@ class SleepHistoryTest {
 
     @Test
     fun mainSleepOverEditsGoesByTheTimesShown() {
-        val window = DayWindow.nightEndingOn(end, zone)
+        val window = SleepHistory.endingOn(end, zone)
         val long = night(0, -60, 7 * 60)
         val short = night(0, 8 * 60, 9 * 60)
         val nap = night(0, -120, 9 * 60, nap = true)
@@ -49,7 +49,7 @@ class SleepHistoryTest {
 
     @Test
     fun mainSleepOverEditsLeavesTheDeletedOut() {
-        val window = DayWindow.nightEndingOn(end, zone)
+        val window = SleepHistory.endingOn(end, zone)
         val long = night(0, -60, 7 * 60)
         val short = night(0, 8 * 60, 9 * 60)
         val gone = SleepEdits.Resolved(long, SleepEdit(long.start, nap = false, deleted = true))

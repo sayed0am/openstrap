@@ -62,6 +62,11 @@ object Recovery {
         /** The strap's own nightly HRV (ms) and resting HR (bpm) for this night, when it reported them. */
         val strapHrv: Float? = null,
         val strapRestingHr: Float? = null,
+        /**
+         * The strap's own day for this night's session ([SleepHistory.strapDay]), which its nightly rows are keyed by;
+         * null when another, longer night from the same strap day has them.
+         */
+        val strapDay: Long? = null,
     ) {
         /**
          * The validity rule for OpenStrap's own HRV and resting HR: a main sleep of at least 3 h, ≥ [MIN_HRV_SAMPLES]
@@ -448,7 +453,10 @@ object Recovery {
         /** Daytime resting heart rate (the baseline), bpm. */
         val restingHr: Float,
         val maxHr: Float,
-        /** Lowest 30-minute average of the night being simulated, for the sleep relaxation term. */
+        /**
+         * Lowest 30-minute average of the scored day's night, for the sleep relaxation term of a sleep without its own
+         * ([sleepRestingHr]).
+         */
         val nightRestingHr: Float? = null,
         /** Tonight's HRV contributor (0-100); scales how well sleep recharges. */
         val hrvScore: Int? = null,
@@ -472,6 +480,12 @@ object Recovery {
          * covers at least [USUAL_SLEEP_COVER] of one is the strap off overnight ([ChargeDay.strapOffOvernight]).
          */
         val usualSleep: List<LongRange> = emptyList(),
+        /**
+         * Each main sleep's own night resting heart rate for the sleep relaxation term, as (sleep start, bpm), any order:
+         * a sleep minute takes the latest that started at or before it, so a nap takes the night's before it. Without
+         * one, or before the first, [nightRestingHr] stands in.
+         */
+        val sleepRestingHr: List<Pair<Long, Float?>> = emptyList(),
     )
 
     data class ChargePoint(val t: Long, val value: Float, val state: State)

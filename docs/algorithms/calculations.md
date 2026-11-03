@@ -114,9 +114,8 @@ A running average where recent days count more: each day, v = λ·today + (1 −
 ### Days and nights
 
 * A day runs from local midnight to midnight.
-* A night belongs to the **morning it ended on**. The main sleep of a morning is the longest session that isn't a nap.
-* Naps count toward the day they started on.
-* The strap's sleep-apnea summary counts toward the day of its time + 2 hours.
+* A sleep belongs to the **day it ended on** (the day you woke up), midnight to midnight, by its times as shown, so a night the user edits to end after midnight moves to the new day. This is one rule everywhere (`SleepHistory.nightOf`): the Sleep tab, Today, the widgets, Recovery and the nights strip, naps and Health Connect imports included. It wins over the strap's own day for the session, which Zepp follows. The main sleep of a day is the longest session that ended on it and isn't a nap.
+* The strap's own nightly rows (its readiness with the night's HRV and resting HR, and the sleep-apnea summary, whose day is its time + 2 hours) are keyed by the strap's day for the session. They go with the main sleep from that strap session (`SleepHistory.strapDay`), which an edit never changes, so a night that moves day keeps them.
 * Time windows allow two hours of slack so a daylight-saving change doesn't drop a day.
 
 ---

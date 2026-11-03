@@ -115,19 +115,20 @@ class ChargeEditedNightTest {
 
     /**
      * A night with no edit keeps its own lowest half hour, so its Charge is what it was before the strap's night became
-     * the reference. The figures are the ones this night gave then.
+     * the reference. The figures are the ones this night gave then, but for the night before it, which since 2026-11-04
+     * recharges against its own lowest half hour (68 bpm) rather than tonight's (54), so the day starts a little higher.
+     * The single night case, where nothing moved, is pinned in [ChargeNightsTest].
      */
     @Test
     fun anUneditedNightsChargeIsUnchanged() = runTest {
         seed()
         val c = compute().charge
 
-        assertEquals(96.1347f, c.atWake!!, 1e-3f)
-        assertEquals(67.74027f, c.latest!!, 1e-3f)
-        assertEquals(26.6004f, c.recharged, 1e-3f)
-        assertEquals(28.39617f, c.drainedLiving, 1e-3f)
-        assertEquals(0f, c.drainedExercise + c.drainedStress, 1e-3f)
-        assertEquals(241, c.points.size)
-        assertEquals(20377.584, c.points.sumOf { it.value.toDouble() }, 1e-2)
+        // At wake, latest, recharged, drained by living, by exercise and stress, points, and the points' sum.
+        val figures = "%.3f %.3f %.3f %.3f %.3f %d %.1f".format(
+            java.util.Locale.ROOT, c.atWake, c.latest, c.recharged, c.drainedLiving, c.drainedExercise + c.drainedStress,
+            c.points.size, c.points.sumOf { it.value.toDouble() },
+        )
+        assertEquals("96.571 68.048 23.597 28.525 0.000 241 20548.5", figures)
     }
 }

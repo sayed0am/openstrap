@@ -184,7 +184,12 @@ class RecoveryEngine(private val dao: HealthDao) {
         val workoutHr: List<Pair<LongRange, Map<Long, Int>>>,
         /** Naps count with the user's own times when they changed them. */
         val sessions: List<SleepSession>,
-        /** The sleeps of [sessions] the user moved, with the strap's own session for each. */
+        /**
+         * The sleep as shown that ends after the day but began before the end of the Charge run ([Span.simTo]): on a past
+         * day, the night that began that evening (data integrity item 13). Charge alone reads it.
+         */
+        val ahead: List<SleepSession>,
+        /** The sleeps of [sessions] and [ahead] the user moved, with the strap's own session for each. */
         val moved: List<SleepEdits.Resolved>,
         val hrv: List<org.openstrap.app.data.db.HrvSample>,
         val skin: List<org.openstrap.app.data.db.SkinTemperature>,
@@ -209,6 +214,10 @@ class RecoveryEngine(private val dao: HealthDao) {
     private suspend fun gather(span: Span): Reads {
         val strapWorkouts = dao.workoutsOnce(span.loadFrom, span.to)
         val resolved = sleepSource.resolvedOnce(span.from, span.to)
+        // A past day's Charge runs on past its end, so a sleep that began before then and ended later counts as sleep.
+        val after = if (span.simTo > span.to + 1) {
+            sleepSource.resolvedOnce(span.to + 1, span.simTo + SleepEdits.SLEEP_MAX_SECONDS).filter { !it.deleted && it.start < span.simTo }
+        } else emptyList()
         return Reads(
             activity = dao.activityOnce(span.loadFrom, span.readTo),
             heartRate = dao.heartRateOnce(span.loadFrom, span.readTo),
@@ -216,15 +225,17 @@ class RecoveryEngine(private val dao: HealthDao) {
             strapWorkouts = strapWorkouts,
             workoutHr = workoutHeartRates(span.loadFrom, span.to, span.now, strapWorkouts),
             sessions = sleepSource.shown(resolved),
-            moved = resolved.filter { it.moved && !it.deleted },
+            ahead = sleepSource.shown(after),
+            moved = (resolved + after).filter { it.moved && !it.deleted },
             hrv = dao.hrvOnce(span.from, span.to),
             skin = dao.skinTemperatureOnce(span.from, span.to),
             breath = dao.breathRateOnce(span.from, span.to),
             strapResting = dao.restingHrOnce(span.from, span.to),
             pai = dao.paiOnce(span.from, span.to).lastOrNull(),
             sleepSpo2 = dao.sleepSpo2Once(span.from, span.to),
-            osa = dao.osaResultsOnce(span.osaFrom, span.to),
-            strapNights = dao.strapReadinessOnce(span.from, span.to).associateBy { it.day },
+            // The strap's nightly rows are keyed by its own day, which can be a day either side of the night's ([basis]).
+            osa = dao.osaResultsOnce(span.osaFrom, span.to + STRAP_DAY_SLACK),
+            strapNights = dao.strapReadinessOnce(span.from - STRAP_DAY_SLACK, span.to + STRAP_DAY_SLACK).associateBy { it.day },
             // The strap's live wear pushes, where the app was connected to hear them; elsewhere the heart-rate gap rule stands.
             wear = dao.wearEventsOnce(span.simFrom, span.simTo),
             dailyMaxHr = dao.dailyMaxHrOnce(span.loadFrom, span.to),
@@ -264,21 +275,27 @@ class RecoveryEngine(private val dao: HealthDao) {
         val hrAll = minuteHeartRate(reads.heartRate.within(loadFrom, to) { it.timestamp }, activityAll)
         val hr = hrAll.filter { it.first >= span.from }
         val sessions = reads.sessions
-        // A night's summary uses the sleep result's day rule: the date of belongTime + 2 h.
-        val osaByMorning = reads.osa.associateBy {
+        // A night's summary uses the sleep result's day rule: the date of belongTime + 2 h, the strap's day.
+        val osaByStrapDay = reads.osa.associateBy {
             Days.start(it.belongTime + 2 * 3600, zone)
         }
 
         val mains = mainsByMorning(sessions, zone)
         val strapNights = reads.strapNights
-        // Naps count toward a day's total sleep for the debt; a nap belongs to the day it started.
-        val napsByDay = sessions.filter { it.nap }.groupBy { Days.start(it.start, zone) }
+        // The strap's nightly rows go with the main sleep from the strap's own session for their day, which an edit
+        // never changes: by the day a night belongs to, one moved past midnight would lose them. When two main sleeps
+        // come from one strap day, the longer has them.
+        val strapOwners = mains.values.groupBy { SleepHistory.strapDay(it, zone) }.mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+        // Naps count toward a day's total sleep for the debt. A nap belongs to the day it ended, as every sleep.
+        val napsByDay = sessions.filter { it.nap }.groupBy { Days.start(SleepHistory.nightOf(it, zone), zone) }
             .mapValues { (_, v) -> v.sumOf { asleepMinutes(it) } }
         val nights = mains.map { (morning, s) ->
             val stages = reads.stagesOf(s).map { Triple(it.start, it.end, it.stage) }
-            night(morning, s, hr, reads.hrv, reads.skin, reads.breath, reads.sleepSpo2, osaByMorning[morning]).copy(
-                strapHrv = strapNights[morning]?.sleepHrv?.toFloat(),
-                strapRestingHr = strapNights[morning]?.sleepRestingHr?.toFloat(),
+            val strapDay = SleepHistory.strapDay(s, zone).takeIf { strapOwners[it] == s }
+            night(morning, s, hr, reads.hrv, reads.skin, reads.breath, reads.sleepSpo2, strapDay?.let(osaByStrapDay::get)).copy(
+                strapDay = strapDay,
+                strapHrv = strapDay?.let(strapNights::get)?.sleepHrv?.toFloat(),
+                strapRestingHr = strapDay?.let(strapNights::get)?.sleepRestingHr?.toFloat(),
                 wasoMinutes = Recovery.wasoMinutes(stages),
                 napMinutes = napsByDay[morning] ?: 0,
             )
@@ -347,7 +364,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val simFrom = span.simFrom
         val simTo = span.simTo
         val day = span.day
-        val stages = reads.sessions.filter { it.end > simFrom && it.start < simTo }
+        val stages = (reads.sessions + reads.ahead).filter { it.end > simFrom && it.start < simTo }
             .flatMap { s -> reads.stagesOf(s).map { Triple(it.start, it.end, it.stage) } }
         val stress = reads.stress.within(simFrom, simTo) { it.timestamp }.map { it.timestamp to it.value }
         val simActivity = reads.activity.within(simFrom, simTo) { it.timestamp }
@@ -370,26 +387,32 @@ class RecoveryEngine(private val dao: HealthDao) {
         // night gives each its own state); an Alert scales Charge from that sleep's start.
         val bodyByDay = BodySignals.evaluate(base.nights, base.causes).associate { it.day to it.state }
         val bodySignals = base.nights.map { it.start to (bodyByDay[it.day] ?: BodySignals.State.Normal) }
-        val nightRestingHr = chargeNightRestingHr(base.tonight, reads.moved, base.hr)
+        // Each main sleep in the run recharges against its own night's reference, the night after a past day's too.
+        val refHr = base.hr + hrAhead.filter { it.first > day.to }
+        val nightRestingHr = base.mains[span.midnight]?.let { chargeNightRestingHr(it, reads.moved, refHr) } ?: base.tonight?.restingHr
+        val runMains = (base.mains.values + mainsByMorning(reads.ahead, span.zone).values).filter { it.end > simFrom && it.start < simTo }
         val params = Recovery.ChargeParams(
             base.restingHr, base.maxHr, nightRestingHr, hrvScore, base.female, stressThreshold.value, bodySignals,
             mainSleepEnds = base.mains.values.map { it.end }.filter { it in simFrom until simTo },
             usualSleep = usualSleep(base.mains.filterKeys { it <= span.midnight }.values, span.date, span.zone),
+            sleepRestingHr = runMains.map { it.start to chargeNightRestingHr(it, reads.moved, refHr) },
         )
         return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end)
     }
 
     /**
-     * The reference Charge's sleep term measures each minute's relaxation against: [tonight]'s lowest 30-minute heart
+     * The reference Charge's sleep term measures each minute of the main sleep [s] against: its lowest 30-minute heart
      * rate as the strap detected the night. When the user moved its times ([moved]), that comes from the strap's own
      * session, so a trim that cuts off the calmest half hour doesn't make the sleep kept count as more restful. An
-     * unmoved night keeps its own value.
+     * unmoved night keeps its own value, the one [night] works out as its resting heart rate.
      */
-    private fun chargeNightRestingHr(tonight: Recovery.Night?, moved: List<SleepEdits.Resolved>, hr: List<Pair<Long, Int>>): Float? {
-        val strap = moved.firstOrNull { tonight != null && !it.strap.nap && it.start == tonight.start && it.end == tonight.end }?.strap
-            ?: return tonight?.restingHr
-        val sleepHr = hr.filter { it.first in strap.start..strap.end && it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
-        return Recovery.lowestAverage(sleepHr, 30, Recovery.RHR_WINDOW_MIN_MINUTES)?.second ?: tonight?.restingHr
+    private fun chargeNightRestingHr(s: SleepSession, moved: List<SleepEdits.Resolved>, hr: List<Pair<Long, Int>>): Float? {
+        fun lowest(from: Long, to: Long): Float? {
+            val sleepHr = hr.filter { it.first in from..to && it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
+            return Recovery.lowestAverage(sleepHr, 30, Recovery.RHR_WINDOW_MIN_MINUTES)?.second
+        }
+        val strap = moved.firstOrNull { !it.strap.nap && it.start == s.start && it.end == s.end }?.strap
+        return strap?.let { lowest(it.start, it.end) } ?: lowest(s.start, s.end)
     }
 
     /**
@@ -713,19 +736,13 @@ class RecoveryEngine(private val dao: HealthDao) {
             if (mains.isEmpty()) null
             else usualSleep(mains, date, zone).firstOrNull()?.let { Instant.ofEpochSecond(it.first).atZone(zone).toLocalTime() }
 
-        /** One main sleep per morning ([morningOf]): the longest non-nap session ending that day. */
+        /** [SleepHistory.mainSleeps] keyed by each day's local midnight: one main sleep per day, the day it ended. */
         internal fun mainsByMorning(sessions: List<SleepSession>, zone: ZoneId): Map<Long, SleepSession> =
-            sessions.filter { !it.nap }
-                .groupBy { morningOf(it, zone) }
-                .mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+            SleepHistory.mainSleeps(sessions, zone).mapKeys { (day, _) -> Days.start(day, zone) }
 
         /** Asleep minutes: deep + light + REM, else time in bed less awake. */
         fun asleepMinutes(s: SleepSession): Int = listOfNotNull(s.deepMinutes, s.lightMinutes, s.remMinutes).takeIf { it.isNotEmpty() }?.sum()
             ?: (((s.end - s.start) / 60).toInt() - (s.awakeMinutes ?: 0))
-
-        /** Local midnight of the morning a sleep belongs to. */
-        fun morningOf(s: SleepSession, zone: ZoneId): Long =
-            if (s.day > 0) s.day else Days.start(s.end, zone)
 
         /**
          * The daily loads a morning's readiness saw: those of [loadDays] (day start to load, oldest first) before
@@ -750,6 +767,8 @@ class RecoveryEngine(private val dao: HealthDao) {
         const val LOOKAHEAD_SECONDS = 14 * 3600L
         /** Main sleeps the usual sleep time for Charge's not-worn rule is the median of. */
         const val USUAL_SLEEP_NIGHTS = 14
+        /** How far past the nights read the strap's nightly rows are read, as its day can be either side of theirs. */
+        private const val STRAP_DAY_SLACK = 2 * 86_400L
     }
 }
 

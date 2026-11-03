@@ -10,7 +10,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
@@ -152,9 +151,9 @@ class SleepWidgetModelTest {
     @Test fun `the main sleep and the week are the hero's`() {
         val nap = SleepSession(at(today, 14, 0), at(today, 14, 40), nap = true)
         val short = SleepSession(at(today, 3, 0), at(today, 4, 0))
-        val main = SleepHistory.mainSleep(listOf(nap, short, session), DayWindow.nightEndingOn(today, zone))
+        val main = SleepHistory.mainSleep(listOf(nap, short, session), SleepHistory.endingOn(today, zone))
         assertEquals(session, main)
-        assertNull(SleepHistory.mainSleep(listOf(nap), DayWindow.nightEndingOn(today, zone)))
+        assertNull(SleepHistory.mainSleep(listOf(nap), SleepHistory.endingOn(today, zone)))
         // The six nights before, with a sleep: not this one.
         assertEquals(listOf(26_400L, 25_200L, 22_200L).sorted(), SleepHistory.weekOthers(week + (today to session), today).sorted())
     }

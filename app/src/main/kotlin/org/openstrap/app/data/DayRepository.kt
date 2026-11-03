@@ -118,7 +118,8 @@ data class DayData(
     val date: LocalDate,
     val isToday: Boolean = false,
     val day: DayWindow = DayWindow.of(date),
-    val night: DayWindow = DayWindow.nightEndingOn(date),
+    /** What the night's readings are read over ([SleepHistory.readingsOf]). Its sleep is what ended on [date]. */
+    val night: DayWindow = SleepHistory.readingsOf(date),
     /** The day's activity minutes, for the steps by hour and the heart rate series. */
     val minutes: List<ActivityMinute> = emptyList(),
     val heartRate: List<HeartRateSample> = emptyList(),
@@ -132,7 +133,7 @@ data class DayData(
     val sleep: SleepDay = SleepDay(),
     /** The [SleepHistory.NIGHTS] nights ending on [date], oldest first. */
     val nights: List<SleepNight> = emptyList(),
-    /** Heart rate across the night window. */
+    /** Heart rate across the night's readings span ([night]). */
     val nightHeartRate: List<HeartRateSample> = emptyList(),
     /** HRV and skin temperature read during the night's main sleep. */
     val sleepHrv: List<HrvSample> = emptyList(),

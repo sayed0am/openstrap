@@ -106,13 +106,10 @@ class HealthspanEngine(private val dao: HealthDao) {
             stepsByDate[days[i]]?.takeIf { wornPerDay[i] >= Healthspan.STEP_DAY_WORN_MINUTES }?.let { starts[i] to it }
         }.toMap()
 
-        // Main sleeps: the longest non-nap session per morning, as Recovery picks them.
+        // Main sleeps: the longest non-nap session of each day it ended on, as Recovery picks them.
         val resolved = sleepSource.resolvedOnce(from, to)
         val sessions = sleepSource.shown(resolved)
-        val mains = sessions.filter { !it.nap }
-            .groupBy { RecoveryEngine.morningOf(it, zone) }
-            .filterKeys { it in from until asOf }
-            .mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+        val mains = RecoveryEngine.mainsByMorning(sessions, zone).filterKeys { it in from until asOf }
         val asleep = mains.mapValues { RecoveryEngine.asleepMinutes(it.value) }
 
         // Resting HR: the logged lowest 30-minute mean, else worked out from the night's heart rate the same way.
