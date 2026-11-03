@@ -391,7 +391,8 @@ class MomentWidgetModelTest {
         val i = input(midday)
         val m = model(midday, i)
         val next = i.inputs.nextChange(midday, zone)
-        assertEquals(at(19, 40), next)
+        // Three hours before the 22:40 bedtime would be 19:40, and evening starts at 18:00 at the latest.
+        assertEquals(at(18, 0), next)
         assertEquals(next, WidgetUpdater.momentAlarm(true, next, m.tick))
         assertEquals(Moment.Evening, i.inputs.resolve(next!!, zone))
     }

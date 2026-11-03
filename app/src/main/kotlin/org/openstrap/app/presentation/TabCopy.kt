@@ -240,9 +240,9 @@ object TabCopy {
         }
     }
 
-    /** Active minutes over the week against the 150 to aim for. */
+    /** Active minutes over the last 7 days against the 150 to aim for, named as the detail page names the span. */
     fun activeMinutes(week: Int, target: Int): String =
-        if (week >= target) "This week, goal of $target reached" else "This week, goal $target"
+        if (week >= target) "Last 7 days, goal of $target reached" else "Last 7 days, goal $target"
 
     /** Heart points over the last 7 days against the 100 to aim for. */
     fun heartPoints(total: Int, target: Int): String =

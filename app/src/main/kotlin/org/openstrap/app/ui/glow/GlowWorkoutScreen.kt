@@ -186,7 +186,7 @@ private fun PastSummary(
     val others = remember(workouts, w.start) { workouts.filter { it.workout.start != w.start }.sortedByDescending { it.workout.start } }
     val usual = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
     val family = org.openstrap.app.ui.workout.FamilySummary.familyOf(w.sportType, summary.structure)
-    val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+    val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {

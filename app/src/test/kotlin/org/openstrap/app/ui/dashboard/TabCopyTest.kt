@@ -129,8 +129,8 @@ class TabCopyTest {
     }
 
     @Test fun `activity facts`() {
-        assertEquals("This week, goal 150", TabCopy.activeMinutes(90, 150))
-        assertEquals("This week, goal of 150 reached", TabCopy.activeMinutes(160, 150))
+        assertEquals("Last 7 days, goal 150", TabCopy.activeMinutes(90, 150))
+        assertEquals("Last 7 days, goal of 150 reached", TabCopy.activeMinutes(160, 150))
         assertEquals("Last 7 days, aim for 100", TabCopy.heartPoints(64, 100))
         assertEquals("Last 7 days, at 100 or more", TabCopy.heartPoints(100, 100))
         assertEquals("Estimated kcal so far today", TabCopy.energy(partial = true, isToday = true))

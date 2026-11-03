@@ -131,7 +131,7 @@ fun GlowWorkoutSummaryScreen(
         return
     }
     if (step == SummaryStep.Moment && rewards != null) {
-        val starts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+        val starts = remember(workouts) { goalWeekStarts(workouts) }
         GoalMomentScreen(rewards.week.count, rewards.week.goal, rewards.inARow, starts, contentPadding, onSettings = { settings = true }, onContinue = done)
         if (settings && celebrations != null) CelebrationsSheet(
             celebrations.goalMoment, celebrations.weeklyRecap, celebrations.setGoalMoment, celebrations.setWeeklyRecap, onDismiss = { settings = false },
@@ -196,7 +196,7 @@ fun GlowWorkoutSummaryScreen(
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
         SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort) { swell.value }
-        val weekStarts = remember(workouts) { workouts.filter { it.startedByYou }.map { it.shownStart } }
+        val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
         val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
         EarnedChips(earned)
         // The drop only with heart rate to show: recorded in the workout, or arriving live after it.

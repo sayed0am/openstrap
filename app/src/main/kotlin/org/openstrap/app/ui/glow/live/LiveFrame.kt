@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.presentation.WorkoutWords
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.pressClickable
@@ -146,12 +147,13 @@ internal fun LiveFrame(
                 return@Row
             }
             Spacer(Modifier.width(10.dp))
-            Pill(title ?: Workouts.sportName(r.workout.sportType), color)
-            Spacer(Modifier.weight(1f))
+            // The pill takes what the status leaves, so on a narrow screen the sport's name gives way, not the status.
+            Box(Modifier.weight(1f)) { Pill(title ?: Workouts.sportName(r.workout.sportType), color) }
+            Spacer(Modifier.width(10.dp))
             Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 val strap = when {
                     r.paused -> "Paused"
-                    !connected -> "Reconnecting"
+                    !connected -> WorkoutWords.STRAP_GONE
                     battery != null && labelled -> "Strap $battery%"
                     else -> "Strap"
                 }

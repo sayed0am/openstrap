@@ -75,9 +75,9 @@ class MomentNextChangeTest {
     }
 
     @Test fun `the workout window starts and ends 45 minutes either side`() {
-        val i = In(starts = fridays(18, 0))
-        assertEquals(at(17, 15) to Moment.WorkoutWindow, checked(at(16, 0), i))
-        assertEquals(at(18, 45) to Moment.Midday, checked(at(17, 15), i))
+        val i = In(starts = fridays(16, 0))
+        assertEquals(at(15, 15) to Moment.WorkoutWindow, checked(at(14, 0), i))
+        assertEquals(at(16, 45) to Moment.Midday, checked(at(15, 15), i))
     }
 
     @Test fun `waking ends three hours after the main sleep`() {
@@ -90,9 +90,10 @@ class MomentNextChangeTest {
     }
 
     @Test fun `evening and night start before bedtime`() {
-        assertEquals(at(20, 0) to Moment.Evening, checked(at(12, 0), In(sleepEnd = epoch(7, 0))))
+        assertEquals(at(18, 0) to Moment.Evening, checked(at(12, 0), In(sleepEnd = epoch(7, 0))))
         assertEquals(at(22, 15) to Moment.Night, checked(at(20, 0), In(sleepEnd = epoch(7, 0))))
-        assertEquals(at(19, 0) to Moment.Evening, checked(at(12, 0), In(bedtime = null)))
+        assertEquals(at(18, 0) to Moment.Evening, checked(at(12, 0), In(bedtime = null)))
+        assertEquals(at(17, 30) to Moment.Evening, checked(at(12, 0), In(sleepEnd = epoch(7, 0), bedtime = LocalTime.of(20, 30))))
     }
 
     // Past midnight
@@ -122,10 +123,10 @@ class MomentNextChangeTest {
     // Overlaps
 
     @Test fun `after over the window ends at after's end, then the window carries on`() {
-        val i = In(lastWorkoutEnd = epoch(17, 0), starts = fridays(18, 0))
-        assertEquals(at(19, 0) to Moment.Midday, checked(at(17, 30), i))
-        val j = In(lastWorkoutEnd = epoch(16, 30), starts = fridays(18, 0))
-        assertEquals(at(18, 30) to Moment.WorkoutWindow, checked(at(17, 30), j))
+        val i = In(lastWorkoutEnd = epoch(15, 0), starts = fridays(16, 0))
+        assertEquals(at(17, 0) to Moment.Midday, checked(at(15, 30), i))
+        val j = In(lastWorkoutEnd = epoch(14, 30), starts = fridays(16, 0))
+        assertEquals(at(16, 30) to Moment.WorkoutWindow, checked(at(15, 30), j))
     }
 
     @Test fun `waking over evening ends at waking's end, into night`() {
