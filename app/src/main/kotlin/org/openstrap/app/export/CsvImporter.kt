@@ -1,11 +1,14 @@
 package org.openstrap.app.export
 
 import androidx.room.withTransaction
+import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.data.db.DayKeyMerge
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.DismissedWorkout
 import org.openstrap.app.data.db.OpenStrapDatabase
 import java.io.InputStream
+import java.time.ZoneId
 import java.util.zip.ZipInputStream
 
 /**
@@ -32,8 +35,11 @@ class CsvImporter(private val db: OpenStrapDatabase) {
 
     private class Outcome(val stored: Int, val present: Int, val bad: Int)
 
-    /** One CSV row read: its time and, for a span, its end, its text key or key part ([Key.unique], [Key.part]), and the row. */
-    private class Parsed<T>(val time: Long, val end: Long, val id: String?, val value: T)
+    /**
+     * One CSV row read: its time and, for a span, its end, its text key or key part ([Key.unique], [Key.part]), and the
+     * row. A day's time is its [DayKey], and [legacy] its older local midnight when the file had no date.
+     */
+    private class Parsed<T>(val time: Long, val end: Long, val id: String?, val value: T, val legacy: Long? = null)
 
     /** A file's rows as read, waiting to be written, and how many were unreadable. */
     private class Pending<T>(val table: CsvTable<T>, val rows: List<Parsed<T>>, val bad: Int)
@@ -117,15 +123,33 @@ class CsvImporter(private val db: OpenStrapDatabase) {
         val index = (records.next() ?: return null).withIndex().associate { (i, name) -> name to i }
         var bad = 0
         val rows = mutableListOf<Parsed<T>>()
+        val zone = ZoneId.systemDefault()
         while (true) {
-            val cells = CsvRow(index, records.next() ?: break)
+            val cells = CsvRow(index, records.next() ?: break, zone)
             runCatching {
-                val time = cells.long(key.epoch)
+                val day = key.day
+                val time = if (day != null) DayKey.of(cells.date(day)) else cells.long(key.epoch)
                 val id = (key.unique ?: key.part)?.let { cells.string(it.csv) }
-                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, id, parse(cells))
+                rows += Parsed(time, key.span?.let { cells.long(it.epoch) } ?: time, id, parse(cells), day?.let(cells::legacy))
             }.onFailure { bad++ }
         }
-        return Pending(this, rows, bad)
+        return Pending(this, if (key.day != null) oneADay(key, rows, zone) else rows, bad)
+    }
+
+    /**
+     * A day file's rows, one per day (and tag): an older backup's local midnights from two zones can be one date
+     * here, and the row kept is picked by the migration's rules ([DayKeyMerge]), not by the order of the file.
+     */
+    private fun <T> oneADay(key: Key, rows: List<Parsed<T>>, zone: ZoneId): List<Parsed<T>> {
+        val rule = DayKeyMerge.TABLES.first { it.name == key.table }.rule
+        return rows.groupBy { it.time to it.id }.values.map { same ->
+            if (same.size == 1) return@map same.single()
+            val midnight = DayKey.legacyMidnight(DayKey.date(same.first().time), zone)
+            val old = { p: Parsed<T> -> p.legacy ?: midnight }
+            val keep = if (rule == DayKeyMerge.Rule.UNION) DayKeyMerge.unionKeep(same.map(old))
+            else DayKeyMerge.winner(rule, same.map { DayKeyMerge.Candidate(old(it), DayKeyMerge.valueOf(it.value)) }, midnight)
+            same.first { old(it) == keep }
+        }
     }
 
     /** Writes the rows the phone is missing ([missing]), or a child table's rows of the parents just added, less those timed at [gone]. */

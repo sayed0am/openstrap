@@ -14,6 +14,7 @@ import org.openstrap.app.data.AutoStart
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.SettingsStore
 
 /**
@@ -85,7 +86,7 @@ internal class AutoStartWatcher(
     private suspend fun watchEffort() = coroutineScope {
         val maxHr = maxHeartRate()
         val resting = catching {
-            dao.restingHrOnce(now() - WorkoutSession.RESTING_LOOKBACK_S, now()).lastOrNull()?.bpm
+            dao.restingHrIn(now() - WorkoutSession.RESTING_LOOKBACK_S, now(), java.time.ZoneId.systemDefault()).lastOrNull()?.bpm
         }.getOrNull() ?: WorkoutSession.DEFAULT_RESTING_HR
         val threshold = AutoStart.threshold(resting, maxHr)
         val log = { m: String -> (strap as? StrapManager)?.log(m); Unit }

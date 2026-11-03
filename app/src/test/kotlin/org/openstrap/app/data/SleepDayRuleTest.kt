@@ -58,7 +58,7 @@ class SleepDayRuleTest {
     @Test
     fun `a sleep ending between 6 PM and midnight belongs to that day`() = runBlocking {
         // A day sleep after a night shift, 10:00 to 19:30, which the strap gave the next day.
-        val sleep = SleepSession(at(date, 10), at(date, 19, 30), Days.start(date.plusDays(1), zone), score = 75)
+        val sleep = SleepSession(at(date, 10), at(date, 19, 30), DayKey.of(date.plusDays(1)), score = 75)
         dao.insertSleepSessions(listOf(sleep))
 
         assertEquals(sleep, day(date).sleep.main)
@@ -73,9 +73,9 @@ class SleepDayRuleTest {
     fun `a night edited to end after midnight moves to the new day with the strap's rows`() = runBlocking {
         // The strap saw 21:00 to 23:45 and gave it that day. The user says it ran to 02:30.
         val strapDay = Days.start(date.minusDays(1), zone)
-        val strap = SleepSession(at(date.minusDays(1), 21), at(date.minusDays(1), 23, 45), strapDay, score = 60)
+        val strap = SleepSession(at(date.minusDays(1), 21), at(date.minusDays(1), 23, 45), DayKey.of(date.minusDays(1)), score = 60)
         dao.insertSleepSessions(listOf(strap))
-        dao.insertStrapReadiness(listOf(StrapReadinessRow(strapDay, 1, 70, null, null, null, null, sleepHrv = 77, sleepRestingHr = 51, algorithmVersion = "t")))
+        dao.insertStrapReadiness(listOf(StrapReadinessRow(date.minusDays(1), 1, 70, null, null, null, null, sleepHrv = 77, sleepRestingHr = 51, algorithmVersion = "t")))
         // The sleep-apnea summary keyed by the strap's day: its belongTime + 2 h falls on it.
         dao.insertOsaResults(listOf(OsaResultRow(strapDay - 2 * 3600 + 600, 0, 0, 90, 0, eventCount = 3, version = 1)))
         assertEquals(strap.end, compute(date.minusDays(1)).tonight?.end)
@@ -107,7 +107,7 @@ class SleepDayRuleTest {
             val repo = HealthRepository(dao) { at(date.plusDays(3), 12) }
             repo.start(scope, HealthRepository.recoveryInputs(db))
             withTimeout(10_000) { while (repo.recoveryVersion == 0L) delay(20) }
-            val strap = SleepSession(at(date.minusDays(1), 21), at(date.minusDays(1), 23, 45), Days.start(date.minusDays(1), zone), score = 60)
+            val strap = SleepSession(at(date.minusDays(1), 21), at(date.minusDays(1), 23, 45), DayKey.of(date.minusDays(1)), score = 60)
             dao.insertSleepSessions(listOf(strap))
             withTimeout(10_000) { while (repo.recovery(date.minusDays(1), profile()).tonight == null) delay(20) }
             assertNull(repo.recovery(date, profile()).tonight)

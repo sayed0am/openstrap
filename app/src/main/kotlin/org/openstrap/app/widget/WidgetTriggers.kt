@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -48,6 +49,8 @@ internal class WidgetTriggers(
     /** The user's sleep edits: a night or nap moved, deleted or brought back. */
     val sleepEdits: Flow<Any?>,
     val profile: Flow<Any>,
+    /** The phone's clock, date or time zone was changed ([org.openstrap.app.data.Today.changes]). */
+    val clockChanges: Flow<Unit> = emptyFlow(),
     val now: () -> Long,
 )
 
@@ -89,6 +92,8 @@ internal fun CoroutineScope.watchWidgetTriggers(t: WidgetTriggers, changed: (Set
     launch { t.todaySteps.filterNotNull().collect { stepsChanged() } }
     // Everything a widget shows may have moved.
     launch { t.syncEnded.collect { changed(all) } }
+    // A new zone moves today and its midnight: the refresh shows the day it is there and sets midnight's alarm again.
+    launch { t.clockChanges.collect { changed(all) } }
     launch {
         var previous: WorkoutState = WorkoutState.Idle
         t.workoutState.collect { s ->

@@ -46,7 +46,7 @@ class ChargeNightsTest {
     private class Night(val session: SleepSession, val bpm: Int)
 
     private fun night(morning: LocalDate, bpm: Int) =
-        Night(SleepSession(at(morning.minusDays(1), 23), at(morning, 7), Days.start(morning, zone), nap = false, score = 80), bpm)
+        Night(SleepSession(at(morning.minusDays(1), 23), at(morning, 7), DayKey.of(morning), nap = false, score = 80), bpm)
 
     /** [nights] with their stages, heart rate and stress over the days around them, awake at about 75 bpm. */
     private suspend fun seed(vararg nights: Night) = seed(dao, *nights)
@@ -65,7 +65,7 @@ class ChargeNightsTest {
         }
         dao.insertHeartRate(hr)
         dao.insertStress(stress)
-        dao.insertRestingHr((-1..8).map { RestingHeartRate(at(date.minusDays(it.toLong()), 0), 66) })
+        dao.insertRestingHr((-1..8).map { RestingHeartRate(date.minusDays(it.toLong()), 66) })
     }
 
     private suspend fun compute(d: LocalDate, now: Long) = RecoveryEngine(dao).compute(d, profile(), zone, now)
@@ -73,7 +73,7 @@ class ChargeNightsTest {
     @Test
     fun `a past day counts the evening of a night ending the next morning as sleep`() = runTest {
         val last = night(date, 58)
-        val next = Night(SleepSession(at(date, 23), at(date.plusDays(1), 7), Days.start(date.plusDays(1), zone), score = 80), 58)
+        val next = Night(SleepSession(at(date, 23), at(date.plusDays(1), 7), DayKey.of(date.plusDays(1)), score = 80), 58)
         seed(last, next)
         val r = compute(date, at(date.plusDays(3), 12))
 
@@ -92,7 +92,7 @@ class ChargeNightsTest {
         suspend fun firstPoint(tonightBpm: Int): Recovery.ChargePoint {
             val other = inMemoryDb()
             try {
-                val tonight = Night(SleepSession(at(date, 0, 30), at(date, 7), Days.start(date, zone), score = 80), tonightBpm)
+                val tonight = Night(SleepSession(at(date, 0, 30), at(date, 7), DayKey.of(date), score = 80), tonightBpm)
                 seed(other.healthDao(), night(date.minusDays(1), 68), tonight)
                 val r = RecoveryEngine(other.healthDao()).compute(date, profile(), zone, at(date.plusDays(3), 12))
                 assertEquals(tonightBpm.toFloat(), r.tonight!!.restingHr!!, 0.5f)

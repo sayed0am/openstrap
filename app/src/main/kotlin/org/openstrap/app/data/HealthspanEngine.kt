@@ -37,8 +37,10 @@ class HealthspanEngine(private val dao: HealthDao) {
         val missing = listOfNotNull("birth year".takeIf { profile.birthYear == null }, "sex".takeIf { profile.sex == null })
         // This week's result is kept as shown, so next week can compare with it. A past week is never written again:
         // looking back at a day must not replace what that Sunday showed.
-        result?.takeIf { sunday == sundayOf(LocalDate.now(zone)) }?.let { dao.insertHabitAgeWeek(HabitAgeWeekRow(asOf, it.estimate, it.low, it.high, System.currentTimeMillis() / 1000)) }
-        val weeks = dao.habitAgeWeeksOnce(asOf - 8 * 86_400L, asOf - 1).map { it.asOf to it.estimate }
+        result?.takeIf { sunday == sundayOf(LocalDate.now(zone)) }?.let {
+            dao.insertHabitAgeWeek(HabitAgeWeekRow(sunday, it.estimate, it.low, it.high, System.currentTimeMillis() / 1000))
+        }
+        val weeks = dao.habitAgeWeeksOnce(sunday.minusDays(8), sunday.minusDays(1)).map { Days.start(it.asOf, zone) to it.estimate }
         val outcome = Healthspan.Outcome(
             result, withheld, age, missing, d.firstDay?.let { firstEstimate(it, zone) }?.takeIf { withheld == Healthspan.Withheld.Learning },
             lastWeek = Healthspan.lastWeek(weeks, asOf),
@@ -113,7 +115,8 @@ class HealthspanEngine(private val dao: HealthDao) {
         val asleep = mains.mapValues { RecoveryEngine.asleepMinutes(it.value) }
 
         // Resting HR: the logged lowest 30-minute mean, else worked out from the night's heart rate the same way.
-        val logged = dao.nightMetricsOnce(from, to).associateBy { it.day }
+        val logged = DayKey.datesIn(from, to, zone).let { dao.nightMetricsOnce(it.start, it.endInclusive) }
+            .associateBy { Days.start(it.day, zone) }
         val valid = mains.filterValues { s -> s.end - s.start >= Recovery.MIN_VALID_SLEEP_MINUTES * 60L }
         val nightHr = nightHeartRates(valid.filterKeys { logged[it]?.rhrLowest30 == null }.values)
         val restingHr = valid.mapNotNull { (morning, s) ->

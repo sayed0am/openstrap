@@ -4,8 +4,10 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import org.openstrap.app.data.DayKey
+import java.time.LocalDate
 
-/** All timestamps are epoch seconds (UTC). */
+/** All timestamps are epoch seconds (UTC). A day is a [LocalDate], stored as its [DayKey]. */
 
 @Entity(tableName = "heart_rate")
 data class HeartRateSample(
@@ -36,7 +38,10 @@ data class ActivityMinute(
 data class SleepSession(
     @PrimaryKey val start: Long,
     val end: Long,
-    /** Local midnight of the day the strap assigned this sleep to; 0 for rows from before v2. */
+    /**
+     * The day the strap assigned this sleep to, as a [DayKey] (its date's UTC midnight), 0 for
+     * rows from before v2. Kept as the raw key for the 0, read it as [strapDate].
+     */
     @ColumnInfo(defaultValue = "0") val day: Long = 0,
     @ColumnInfo(defaultValue = "0") val nap: Boolean = false,
     val score: Int? = null,
@@ -46,7 +51,10 @@ data class SleepSession(
     val remMinutes: Int? = null,
     val awakeMinutes: Int? = null,
     val wakeCount: Int? = null,
-)
+) {
+    /** The strap's day for this sleep, null for a row from before v2. */
+    val strapDate: LocalDate? get() = day.takeIf { it != 0L }?.let(DayKey::date)
+}
 
 /**
  * The user's own times for a sleep or nap the strap detected, or its removal, kept apart from [SleepSession] because a
@@ -106,8 +114,7 @@ data class HrvSample(
 
 @Entity(tableName = "resting_hr")
 data class RestingHeartRate(
-    /** Start of the local day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val bpm: Int,
 )
 
@@ -449,8 +456,8 @@ data class SportEffectRow(
  */
 @Entity(tableName = "strap_readiness")
 data class StrapReadinessRow(
-    /** Local midnight of the scored day. */
-    @PrimaryKey val day: Long,
+    /** The scored day. */
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     val score: Int?,
     val hrvScore: Int?,
@@ -500,8 +507,7 @@ data class OsaResultRow(
 /** The day's highest exercise heart rate (type 61). */
 @Entity(tableName = "daily_max_hr")
 data class DailyMaxHr(
-    /** Start of the local day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val bpm: Int,
 )
 
@@ -594,8 +600,7 @@ data class DailyPai(val day: String, val daily: Float, val total: Float, val lat
  */
 @Entity(tableName = "check_in")
 data class CheckInRow(
-    /** Local midnight of the day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val feeling: Int,
     val updatedAt: Long,
 )
@@ -603,8 +608,7 @@ data class CheckInRow(
 /** Something the user said happened on [day] that can move body signals: see `DayTag` for the keys. */
 @Entity(tableName = "day_tag", primaryKeys = ["day", "tag"])
 data class DayTagRow(
-    /** Local midnight of the day, epoch seconds. */
-    val day: Long,
+    val day: LocalDate,
     val tag: String,
 )
 
@@ -615,8 +619,8 @@ data class DayTagRow(
  */
 @Entity(tableName = "night_metrics")
 data class NightMetricsRow(
-    /** Local midnight of the morning the sleep ended. */
-    @PrimaryKey val day: Long,
+    /** The morning the sleep ended. */
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     /** `hrv_n`: ln(mean of the gated RMSSD samples during sleep). */
     val hrvLn: Float?,
@@ -639,8 +643,8 @@ data class NightMetricsRow(
  */
 @Entity(tableName = "habit_age_week")
 data class HabitAgeWeekRow(
-    /** Local midnight of the Sunday the estimate is for. */
-    @PrimaryKey val asOf: Long,
+    /** The Sunday the estimate is for. */
+    @PrimaryKey val asOf: LocalDate,
     val estimate: Float,
     val low: Int,
     val high: Int,
@@ -653,8 +657,7 @@ data class HabitAgeWeekRow(
  */
 @Entity(tableName = "daily_energy")
 data class DailyEnergyRow(
-    /** Local midnight of the day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     val totalKcal: Float,
     val activeKcal: Float,

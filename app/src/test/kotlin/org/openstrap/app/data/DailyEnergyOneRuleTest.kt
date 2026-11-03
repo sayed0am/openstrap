@@ -51,8 +51,7 @@ class DailyEnergyOneRuleTest {
     @After fun tearDown() = db.close()
 
     private suspend fun stored(d: LocalDate): Float {
-        val from = DayWindow.of(d, ZoneOffset.UTC).from
-        return checkNotNull(db.healthDao().dailyEnergyOnce(from, from).singleOrNull()) { "no row for $d" }.totalKcal
+        return checkNotNull(db.healthDao().dailyEnergyOnce(d, d).singleOrNull()) { "no row for $d" }.totalKcal
     }
 
     @Test fun `a past day's page shows what the sync wrote for it`() = runBlocking {

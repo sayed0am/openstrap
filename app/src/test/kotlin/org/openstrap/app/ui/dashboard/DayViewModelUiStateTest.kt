@@ -183,7 +183,7 @@ class DayViewModelUiStateTest {
 
         override fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyEnergyRow>> {
             energyWindow = from to to
-            val row = DailyEnergyRow(DayWindow.of(date).from, at(12), 2400f, 400f, 1700f, 600, true, workoutKcal = 150f, walkingKcal = 100f, hourly = "")
+            val row = DailyEnergyRow(date, at(12), 2400f, 400f, 1700f, 600, true, workoutKcal = 150f, walkingKcal = 100f, hourly = "")
             return flowOf(mapOf(date to row, date.minusDays(10) to row))
         }
     }

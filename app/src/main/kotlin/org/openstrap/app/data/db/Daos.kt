@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 import org.openstrap.app.data.HeartRate
+import java.time.LocalDate
 
 // A DAO is its queries, one function each: splitting it by count would only scatter them.
 @Suppress("TooManyFunctions")
@@ -131,10 +132,10 @@ interface HealthDao : RangedReads {
     suspend fun osaResultsOnce(from: Long, to: Long): List<OsaResultRow>
 
     @Query("SELECT * FROM daily_max_hr WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun dailyMaxHrOnce(from: Long, to: Long): List<DailyMaxHr>
+    suspend fun dailyMaxHrOnce(from: LocalDate, to: LocalDate): List<DailyMaxHr>
 
     @Query("SELECT * FROM strap_readiness WHERE day = :day")
-    fun strapReadiness(day: Long): Flow<StrapReadinessRow?>
+    fun strapReadiness(day: LocalDate): Flow<StrapReadinessRow?>
 
     @Query("SELECT COUNT(*) FROM workout")
     suspend fun workoutCount(): Int
@@ -419,6 +420,28 @@ interface HealthDao : RangedReads {
     @Query("SELECT * FROM strap_readiness ORDER BY day")
     suspend fun strapReadinessAll(): List<StrapReadinessRow>
 
+    // The day tables whole, as days ([org.openstrap.app.data.DayKey]): a span of moments can't be read as dates.
+    @Query("SELECT * FROM resting_hr ORDER BY day")
+    suspend fun restingHrAll(): List<RestingHeartRate>
+
+    @Query("SELECT * FROM daily_max_hr ORDER BY day")
+    suspend fun dailyMaxHrAll(): List<DailyMaxHr>
+
+    @Query("SELECT * FROM check_in ORDER BY day")
+    suspend fun checkInsAll(): List<CheckInRow>
+
+    @Query("SELECT * FROM day_tag ORDER BY day, tag")
+    suspend fun dayTagsAll(): List<DayTagRow>
+
+    @Query("SELECT * FROM night_metrics ORDER BY day")
+    suspend fun nightMetricsAll(): List<NightMetricsRow>
+
+    @Query("SELECT * FROM habit_age_week ORDER BY asOf")
+    suspend fun habitAgeWeeksAll(): List<HabitAgeWeekRow>
+
+    @Query("SELECT * FROM daily_energy ORDER BY day")
+    suspend fun dailyEnergyAll(): List<DailyEnergyRow>
+
     @Query("SELECT * FROM recovery_hr ORDER BY workoutStart")
     suspend fun recoveryHeartRateAll(): List<RecoveryHeartRateRow>
 
@@ -428,19 +451,19 @@ interface HealthDao : RangedReads {
     @Query("UPDATE activity_minute SET kind = kind & 15 WHERE kind > 15 AND kind != 126")
     suspend fun fixActivityModeNibble(): Int
 
-    /** The strap re-sends a day's sleep as it updates it; drop the old version first. */
+    /** The strap re-sends a day's sleep as it updates it, so the old version goes first. [day] is the strap's day. */
     @Query("DELETE FROM sleep_stage WHERE sessionStart IN (SELECT start FROM sleep_session WHERE day = :day AND nap = :nap)")
-    suspend fun deleteSleepStagesForDay(day: Long, nap: Boolean)
+    suspend fun deleteSleepStagesForDay(day: LocalDate, nap: Boolean)
 
     @Query("DELETE FROM sleep_session WHERE day = :day AND nap = :nap")
-    suspend fun deleteSleepSessionsForDay(day: Long, nap: Boolean)
+    suspend fun deleteSleepSessionsForDay(day: LocalDate, nap: Boolean)
 
     /**
      * A day's main sleep ([nap] false) or naps as the strap sent them again: the old ones go and [sessions] with their
      * [stages] come in, in one go. Apart, a reader could see the night empty, and a kill between them lost it.
      */
     @androidx.room.Transaction
-    suspend fun replaceSleepDay(day: Long, nap: Boolean, sessions: List<SleepSession>, stages: List<SleepStage>) {
+    suspend fun replaceSleepDay(day: LocalDate, nap: Boolean, sessions: List<SleepSession>, stages: List<SleepStage>) {
         deleteSleepStagesForDay(day, nap)
         deleteSleepSessionsForDay(day, nap)
         if (sessions.isNotEmpty()) insertSleepSessions(sessions)
@@ -563,7 +586,7 @@ interface HealthDao : RangedReads {
     fun hrv(from: Long, to: Long): Flow<List<HrvSample>>
 
     @Query("SELECT * FROM resting_hr WHERE day BETWEEN :from AND :to ORDER BY day")
-    fun restingHr(from: Long, to: Long): Flow<List<RestingHeartRate>>
+    fun restingHr(from: LocalDate, to: LocalDate): Flow<List<RestingHeartRate>>
 
     // One-shot reads for export.
     @Query("SELECT * FROM heart_rate WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")
@@ -602,7 +625,7 @@ interface HealthDao : RangedReads {
     suspend fun hrvOnce(from: Long, to: Long): List<HrvSample>
 
     @Query("SELECT * FROM resting_hr WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun restingHrOnce(from: Long, to: Long): List<RestingHeartRate>
+    suspend fun restingHrOnce(from: LocalDate, to: LocalDate): List<RestingHeartRate>
 
     /**
      * Hours (epoch seconds / 3600) that hold something worth showing: heart rate, steps or the end of a
@@ -648,7 +671,7 @@ interface HealthDao : RangedReads {
     fun osaEvents(from: Long, to: Long): Flow<List<OsaEventRow>>
 
     @Query("SELECT * FROM daily_max_hr WHERE day BETWEEN :from AND :to ORDER BY day")
-    fun dailyMaxHr(from: Long, to: Long): Flow<List<DailyMaxHr>>
+    fun dailyMaxHr(from: LocalDate, to: LocalDate): Flow<List<DailyMaxHr>>
 
     @Query("SELECT * FROM activity_extended WHERE timestamp BETWEEN :from AND :to ORDER BY timestamp")
     fun activityExtended(from: Long, to: Long): Flow<List<ActivityExtendedMinute>>
@@ -703,54 +726,54 @@ interface HealthDao : RangedReads {
     suspend fun insertCheckIns(rows: List<CheckInRow>)
 
     @Query("DELETE FROM check_in WHERE day = :day")
-    suspend fun deleteCheckIn(day: Long)
+    suspend fun deleteCheckIn(day: LocalDate)
 
     @Query("SELECT * FROM check_in WHERE day = :day")
-    fun checkIn(day: Long): Flow<CheckInRow?>
+    fun checkIn(day: LocalDate): Flow<CheckInRow?>
 
     @Query("SELECT * FROM check_in WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun checkInsOnce(from: Long, to: Long): List<CheckInRow>
+    suspend fun checkInsOnce(from: LocalDate, to: LocalDate): List<CheckInRow>
 
     // Each Sunday's Habit Age estimate, for the next week's comparison.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHabitAgeWeek(row: HabitAgeWeekRow)
 
     @Query("SELECT * FROM habit_age_week WHERE asOf BETWEEN :from AND :to ORDER BY asOf")
-    suspend fun habitAgeWeeksOnce(from: Long, to: Long): List<HabitAgeWeekRow>
+    suspend fun habitAgeWeeksOnce(from: LocalDate, to: LocalDate): List<HabitAgeWeekRow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDayTags(rows: List<DayTagRow>)
 
     @Query("DELETE FROM day_tag WHERE day = :day AND tag = :tag")
-    suspend fun deleteDayTag(day: Long, tag: String)
+    suspend fun deleteDayTag(day: LocalDate, tag: String)
 
     @Query("SELECT * FROM day_tag WHERE day BETWEEN :from AND :to ORDER BY day, tag")
-    suspend fun dayTagsOnce(from: Long, to: Long): List<DayTagRow>
+    suspend fun dayTagsOnce(from: LocalDate, to: LocalDate): List<DayTagRow>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNightMetrics(rows: List<NightMetricsRow>)
 
     @Query("SELECT * FROM night_metrics WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun nightMetricsOnce(from: Long, to: Long): List<NightMetricsRow>
+    suspend fun nightMetricsOnce(from: LocalDate, to: LocalDate): List<NightMetricsRow>
 
     // Each day's energy as last worked out, for the history views and the export.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDailyEnergy(rows: List<DailyEnergyRow>)
 
     @Query("SELECT * FROM daily_energy WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun dailyEnergyOnce(from: Long, to: Long): List<DailyEnergyRow>
+    suspend fun dailyEnergyOnce(from: LocalDate, to: LocalDate): List<DailyEnergyRow>
 
     @Query("SELECT * FROM daily_energy WHERE day BETWEEN :from AND :to ORDER BY day")
-    fun dailyEnergy(from: Long, to: Long): Flow<List<DailyEnergyRow>>
+    fun dailyEnergy(from: LocalDate, to: LocalDate): Flow<List<DailyEnergyRow>>
 
     @Query("SELECT day FROM daily_energy")
-    suspend fun dailyEnergyDaysOnce(): List<Long>
+    suspend fun dailyEnergyDaysOnce(): List<LocalDate>
 
     @Query("UPDATE app_workout SET activeKcal = :activeKcal, totalKcal = :totalKcal WHERE start = :start")
     suspend fun updateAppWorkoutKcal(start: Long, activeKcal: Float?, totalKcal: Float?)
 
     @Query("SELECT * FROM strap_readiness WHERE day BETWEEN :from AND :to ORDER BY day")
-    suspend fun strapReadinessOnce(from: Long, to: Long): List<StrapReadinessRow>
+    suspend fun strapReadinessOnce(from: LocalDate, to: LocalDate): List<StrapReadinessRow>
 
     // Healthspan reads six months at once, so these return only what it needs.
 

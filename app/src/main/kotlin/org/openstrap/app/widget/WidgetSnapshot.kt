@@ -136,7 +136,7 @@ class WidgetSnapshot(
             usualBedtime = bedtime,
             steps = goal?.takeIf { WidgetKind.Steps in kinds }?.let { StepsRead(it, day) },
             start = if (WidgetKind.Start in kinds) start() else null,
-            recovery = profile?.takeIf { WidgetKind.Recovery in kinds }?.let { recovery(today, rec, it, zone) },
+            recovery = profile?.takeIf { WidgetKind.Recovery in kinds }?.let { recovery(today, rec, it) },
             sleep = span?.takeIf { WidgetKind.Sleep in kinds }?.let { s ->
                 catching { sleep(s.getOrThrow(), today, zone) }.onFailure { logUnread("sleep for $today", it) }
             },
@@ -215,11 +215,10 @@ class WidgetSnapshot(
     }
 
     /** Today's Recovery with the strap's score, and yesterday's while this morning's isn't in. */
-    private suspend fun recovery(today: LocalDate, result: RecoveryResult?, profile: Result<UserProfile>, zone: ZoneId): RecoveryRead {
+    private suspend fun recovery(today: LocalDate, result: RecoveryResult?, profile: Result<UserProfile>): RecoveryRead {
         suspend fun day(date: LocalDate, known: RecoveryResult?): RecoveryDay? = catching {
             val r = known ?: health.recovery(date, profile.getOrThrow())
-            val dayStart = DayWindow.of(date, zone).from
-            RecoveryDay.of(r, dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score)
+            RecoveryDay.of(r, dao.strapReadinessOnce(date, date).firstOrNull()?.score)
         }.onFailure { logUnread("Recovery for $date", it) }.getOrNull()
         val first = result?.let { day(today, it) }
         val yesterday = if (first?.shown?.value == null) day(today.minusDays(1), null) else null
@@ -259,8 +258,7 @@ class WidgetSnapshot(
         suspend fun <T> read(what: String, default: T, block: suspend () -> T): T =
             catching { block() }.onFailure { logUnread("$what for Moment", it) }.getOrDefault(default)
         val inputs = base.copy(usualBedtime = rec?.usualBedtime ?: r.bedtime)
-        val dayStart = DayWindow.of(today, zone).from
-        val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
+        val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(today, today).firstOrNull()?.score }
         val night = read("last night", null) {
             val sessions = checkNotNull(r.span).getOrThrow()
             SleepHistory.mainSleep(sessions, SleepHistory.endingOn(today, zone))?.let { main ->
@@ -283,7 +281,7 @@ class WidgetSnapshot(
         val hr = read("heart rate", emptyList()) { dao.heartRateOnce(day.from, day.to) }
         val series = Summaries.heartRateSeries(hr, minutes)
         val heart = Summaries.bucketAverage(series).map { ChartPoint(it.first, it.second.toFloat()) }
-        val resting = read("resting heart rate", null) { dao.restingHrOnce(day.from, day.to).firstOrNull()?.bpm }
+        val resting = read("resting heart rate", null) { dao.restingHrOnce(today, today).firstOrNull()?.bpm }
             ?: if (series.size >= RESTING_ESTIMATE_MINUTES) Summaries.estimateRestingHr(series) else null
         return MomentWidgetInput(
             inputs = inputs,

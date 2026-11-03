@@ -30,21 +30,19 @@ class Backtest(private val dao: HealthDao, private val zone: ZoneId = ZoneId.sys
     /** Every day from [from] to [to] inclusive. */
     suspend fun run(from: LocalDate, to: LocalDate, profile: UserProfile): List<Row> {
         val engine = RecoveryEngine(dao)
-        val a = DayWindow.of(from, zone).from
-        val b = DayWindow.of(to, zone).to
-        val strap = dao.strapReadinessOnce(a - 2 * 86_400L, b + 2 * 86_400L).associateBy { it.day }
-        val checkIns = dao.checkInsOnce(a, b).associateBy { it.day }
-        val tags = dao.dayTagsOnce(a, b).groupBy({ it.day }, { it.tag })
+        val strap = dao.strapReadinessOnce(from.minusDays(2), to.plusDays(2)).associateBy { it.day }
+        val checkIns = dao.checkInsOnce(from, to).associateBy { it.day }
+        val tags = dao.dayTagsOnce(from, to).groupBy({ it.day }, { it.tag })
         val days = generateSequence(from) { it.plusDays(1) }.takeWhile { it <= to }.toList()
         return days.map { date ->
             val day = DayWindow.of(date, zone)
             // As of the end of that day, so the charge simulation covers all of it.
             val r = engine.compute(date, profile, zone, now = day.to + 1)
             // The strap's row for the night scored, by the strap's own day, which a moved night keeps.
-            val s = strap[r.tonight?.strapDay ?: day.from]
+            val s = strap[r.tonight?.strapDay ?: date]
             Row(
                 date, r, s?.score, s?.hrvScore, s?.restingHrScore, s?.skinTemperatureScore, s?.breathingScore, s?.sleepHrv,
-                s?.sleepRestingHr, checkIns[day.from]?.feeling, tags[day.from].orEmpty(),
+                s?.sleepRestingHr, checkIns[date]?.feeling, tags[date].orEmpty(),
             )
         }
     }

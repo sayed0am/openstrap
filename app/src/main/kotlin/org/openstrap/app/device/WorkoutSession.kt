@@ -29,6 +29,7 @@ import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.AppWorkoutRoutePoint
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.SettingsStore
 
 sealed interface WorkoutState {
@@ -931,7 +932,8 @@ class WorkoutSession(
         wake = context.getSystemService(PowerManager::class.java)
             .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:workout").apply { acquire(MAX_WAKE_MS) }
         watchForCar()
-        restingHr = runCatching { dao.restingHrOnce(now() - RESTING_LOOKBACK_S, now()).lastOrNull()?.bpm }.getOrNull() ?: DEFAULT_RESTING_HR
+        restingHr = catching { dao.restingHrIn(now() - RESTING_LOOKBACK_S, now(), java.time.ZoneId.systemDefault()).lastOrNull()?.bpm }
+            .getOrNull() ?: DEFAULT_RESTING_HR
         recordJob?.cancelAndJoin()
         for ((t, bpm) in seed) record(t, bpm)
         recordJob = scope.launch {

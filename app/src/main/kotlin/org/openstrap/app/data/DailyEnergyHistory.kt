@@ -3,6 +3,7 @@ package org.openstrap.app.data
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.data.db.DailyEnergyRow
 import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
@@ -36,7 +37,7 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
         val have = dao.dailyEnergyDaysOnce().toHashSet()
         val days = dao.hoursWithData().first().mapTo(sortedSetOf()) { Instant.ofEpochSecond(it * 3600).atZone(zone).toLocalDate() }
-            .filter { d -> d <= today && (profileChanged || d > today.minusDays(RECENT_DAYS.toLong()) || DayWindow.of(d, zone).from !in have) }
+            .filter { d -> d <= today && (profileChanged || d > today.minusDays(RECENT_DAYS.toLong()) || d !in have) }
         if (days.isEmpty()) return 0
 
         // Max HR is today's for every day, so it's worked out once, and VO2max once a week ([energy]).
@@ -71,7 +72,7 @@ class DailyEnergyHistory(private val dao: HealthDao) {
     /** Works out [d] ([energy]) and writes its row. False when the model can't. */
     private suspend fun write(d: LocalDate, profile: UserProfile, maxHr: Float, vo2max: Float?, zone: ZoneId, now: Long): Boolean {
         val e = runCatching { energy(d, profile, maxHr, vo2max, zone, now) }.getOrNull() ?: return false
-        dao.insertDailyEnergy(listOf(row(DayWindow.of(d, zone).from, e, now)))
+        dao.insertDailyEnergy(listOf(row(d, e, now)))
         return true
     }
 
@@ -87,7 +88,8 @@ class DailyEnergyHistory(private val dao: HealthDao) {
     ): EnergyExpenditure.Day? {
         val from = DayWindow.of(d, zone).from
         val restingHr = Recovery.daytimeRestingHr(
-            dao.restingHrOnce(from - Recovery.RHR_DAYS * 86_400L, from).associate { it.day to it.bpm.toFloat() }, emptyMap(), from,
+            dao.restingHrIn(from - Recovery.RHR_DAYS * 86_400L, from, zone).associate { Days.start(it.day, zone) to it.bpm.toFloat() },
+            emptyMap(), from,
         ) ?: DEFAULT_RESTING_HR
         return engine.energy(d, profile, restingHr, maxHr, vo2max, zone, now)
     }
@@ -97,8 +99,8 @@ class DailyEnergyHistory(private val dao: HealthDao) {
         const val RECENT_DAYS = 7
         private const val DEFAULT_RESTING_HR = 60f
 
-        /** [e] as the row for the day starting at [day]. */
-        fun row(day: Long, e: EnergyExpenditure.Day, now: Long) = DailyEnergyRow(
+        /** [e] as the row for [day]. */
+        fun row(day: LocalDate, e: EnergyExpenditure.Day, now: Long) = DailyEnergyRow(
             day = day,
             updatedAt = now,
             totalKcal = e.totalKcal,

@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SportEffectRow
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.LocalDate
 
@@ -115,7 +116,7 @@ class RoomWorkoutRepository(
         .mapLatest { (series, busy, basis) ->
             val (maxHr, zones) = basis
             val at = now()
-            val resting = dao.restingHrOnce(at - 14 * 86_400L, at).lastOrNull()?.bpm ?: 60
+            val resting = dao.restingHrIn(at - 14 * 86_400L, at, java.time.ZoneId.systemDefault()).lastOrNull()?.bpm ?: 60
             WorkoutSuggestions.find(series, resting, maxHr, busy, zones)
         }
 

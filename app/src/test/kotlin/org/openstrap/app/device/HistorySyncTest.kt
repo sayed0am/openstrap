@@ -158,7 +158,8 @@ class HistorySyncTest {
         buildList { while (c.moveToNext()) add((0 until c.columnCount).map { if (c.getType(it) == android.database.Cursor.FIELD_TYPE_FLOAT) c.getDouble(it) else c.getLong(it) }) }
     }
 
-    private fun dayStart(ts: Long) = Instant.ofEpochSecond(ts).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    /** The stored key of the day [ts] falls on here: its date's UTC midnight. */
+    private fun dayKey(ts: Long) = org.openstrap.app.data.DayKey.of(Instant.ofEpochSecond(ts).atZone(zone).toLocalDate())
 
     private fun key(t: HistoryDataType) = "gdsp_${t.code}"
 
@@ -182,7 +183,7 @@ class HistorySyncTest {
         // 0.01 ms on the wire, and 900 ms is out of range.
         assertEquals(listOf(listOf(base, 42.5)), table("SELECT timestamp, milliseconds FROM hrv_sdnn"))
         assertEquals(listOf(listOf(base, 12.5, 80.0, 52L)), table("SELECT timestamp, daily, total, restingHeartRate FROM pai"))
-        assertEquals(listOf(listOf(dayStart(base), 52L)), table("SELECT day, bpm FROM resting_hr"))
+        assertEquals(listOf(listOf(dayKey(base), 52L)), table("SELECT day, bpm FROM resting_hr"))
         // Each cursor ends past its last record: HRV went in two chunks and the second START started after the first.
         assertEquals(base + 901, cursors.values[key(HistoryDataType.HRV_RMSSD)])
         assertTrue(strap.starts.contains(HistoryDataType.HRV_RMSSD.code to base + 301))
@@ -316,6 +317,23 @@ class HistorySyncTest {
 
         assertEquals(base - 3 * day, strap.starts.first { it.first == HistoryDataType.HRV_RMSSD.code }.second)
         assertEquals(listOf(base - 3 * day, base - day), table("SELECT timestamp FROM hrv ORDER BY timestamp").map { it[0] })
+    }
+
+    @Test fun `a day table with no cursor starts a day before its newest date's local midnight`() = runTest {
+        // Away from UTC, where a date's key and its local midnight differ.
+        val saved = java.util.TimeZone.getDefault()
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Kathmandu"))
+        try {
+            val kathmandu = ZoneId.of("Asia/Kathmandu")
+            val date = Instant.ofEpochSecond(base - 3 * day).atZone(kathmandu).toLocalDate()
+            dao.insertRestingHr(listOf(org.openstrap.app.data.db.RestingHeartRate(date, 52)))
+            strap.records[HistoryDataType.RESTING_HEART_RATE.code] = emptyList()
+            runSync()
+            val start = strap.starts.first { it.first == HistoryDataType.RESTING_HEART_RATE.code }.second
+            assertEquals(date.atStartOfDay(kathmandu).toEpochSecond() - day, start)
+        } finally {
+            java.util.TimeZone.setDefault(saved)
+        }
     }
 
     @Test fun `activity after now stays when the phone's clock went back`() = runTest {

@@ -1,6 +1,7 @@
 package org.openstrap.app.data
 
 import org.openstrap.app.data.db.SleepStage
+import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.max
@@ -66,7 +67,7 @@ object Recovery {
          * The strap's own day for this night's session ([SleepHistory.strapDay]), which its nightly rows are keyed by;
          * null when another, longer night from the same strap day has them.
          */
-        val strapDay: Long? = null,
+        val strapDay: LocalDate? = null,
     ) {
         /**
          * The validity rule for OpenStrap's own HRV and resting HR: a main sleep of at least 3 h, ≥ [MIN_HRV_SAMPLES]

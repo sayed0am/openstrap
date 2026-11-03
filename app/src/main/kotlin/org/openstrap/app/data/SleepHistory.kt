@@ -48,11 +48,11 @@ object SleepHistory {
         DayWindow(date.minusDays(1).atTime(READINGS_FROM_HOUR, 0).atZone(zone).toEpochSecond(), endingOn(date, zone).to)
 
     /**
-     * The strap's own day for [s] (its local midnight), kept through an edit: what the strap's nightly rows (its readiness
-     * with the night's HRV and resting heart rate, and the sleep-apnea summary) are keyed by, so they go with the night
-     * from that strap session whichever day it ends on. A session from before v2 has none and takes the day it ended on.
+     * The strap's own day for [s], kept through an edit: what the strap's nightly rows (its readiness with the night's
+     * HRV and resting heart rate, and the sleep-apnea summary) are keyed by, so they go with the night from that strap
+     * session whichever day it ends on. A session from before v2 has none and takes the day it ended on.
      */
-    fun strapDay(s: SleepSession, zone: ZoneId): Long = if (s.day > 0) s.day else Days.start(s.end, zone)
+    fun strapDay(s: SleepSession, zone: ZoneId): LocalDate = s.strapDate ?: Days.date(s.end, zone)
 
     /** The main sleep of each day ([nightOf]): the longest session that ended on it and isn't a nap. */
     fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =

@@ -50,8 +50,8 @@ class ChargeEditedNightTest {
     private val wake = at(date, 8, 16)
 
     private suspend fun seed() {
-        val before = SleepSession(at(date.minusDays(2), 23), at(date.minusDays(1), 7), at(date.minusDays(1), 0), nap = false, score = 80)
-        val tonight = SleepSession(bedtime, wake, at(date, 0), nap = false, score = 79)
+        val before = SleepSession(at(date.minusDays(2), 23), at(date.minusDays(1), 7), DayKey.of(date.minusDays(1)), nap = false, score = 80)
+        val tonight = SleepSession(bedtime, wake, DayKey.of(date), nap = false, score = 79)
         dao.insertSleepSessions(listOf(before, tonight))
         dao.insertSleepStages(
             listOf(
@@ -81,7 +81,7 @@ class ChargeEditedNightTest {
         dao.insertHeartRate(hr)
         dao.insertStress(stress)
         // The strap's daytime resting heart rate, so trimming the night can't move it.
-        dao.insertRestingHr((0..8).map { RestingHeartRate(at(date.minusDays(it.toLong()), 0), 66) })
+        dao.insertRestingHr((0..8).map { RestingHeartRate(date.minusDays(it.toLong()), 66) })
     }
 
     private suspend fun compute() = RecoveryEngine(dao).compute(date, profile(), zone, at(date, 20))

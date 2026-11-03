@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import org.openstrap.app.BuildConfig
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.MomentInputs
+import org.openstrap.app.data.Today
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.SettingsStore
@@ -92,6 +93,7 @@ class WidgetUpdater(
             workoutState = workout.state,
             sleepEdits = sleepEdits,
             profile = settings.profile,
+            clockChanges = Today.changes(app),
             now = { System.currentTimeMillis() / 1000 },
         )
         scope.watchWidgetTriggers(triggers, ::changed, ::stepsChanged)

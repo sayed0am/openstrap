@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.HealthRepository
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.Rewards
@@ -128,7 +129,7 @@ class AppRootViewModel(
     /** Today's hidden and pinned cards, parsed once per change: a new object each time would recompose every tab. */
     val todayEdits: StateFlow<TodayEdits> = combine(settings.todayHiddenNames, settings.todayPinnedNames) { h, p -> TodayEdits.parse(h, p) }
         .state(TodayEdits.parse(null, null))
-    val habitAgeSeenAsOf: StateFlow<Long?> = settings.habitAgeSeenAsOf.state(null)
+    val habitAgeSeenAsOf: StateFlow<LocalDate?> = settings.habitAgeSeenAsOf.state(null)
     val firstScoreDay: StateFlow<FirstScoreDay> = settings.firstScoreDay
         .map { day -> day?.let { FirstScoreDay.Day(LocalDate.ofEpochDay(it)) } ?: FirstScoreDay.None }
         .state(FirstScoreDay.Loading)
@@ -169,11 +170,11 @@ class AppRootViewModel(
         val earned: List<org.openstrap.app.data.db.BadgeRow>,
     )
 
-    private val shownDay = MutableStateFlow<Pair<LocalDate, Long>?>(null)
+    private val shownDay = MutableStateFlow<LocalDate?>(null)
 
     /** The day shown's strap score and check-in, from [dayShown]. */
-    val dayExtras: StateFlow<DayExtras> = shownDay.filterNotNull().flatMapLatest { (date, dayStart) ->
-        combine(dao.strapReadiness(dayStart), health.checkIn(date)) { r, c -> DayExtras(r, c?.feeling) }
+    val dayExtras: StateFlow<DayExtras> = shownDay.filterNotNull().flatMapLatest { date ->
+        combine(dao.strapReadiness(date), health.checkIn(date)) { r, c -> DayExtras(r, c?.feeling) }
     }.state(DayExtras())
 
     init {
@@ -191,8 +192,8 @@ class AppRootViewModel(
     }
 
     /** The day shown moved: [dayExtras] follows it. */
-    fun dayShown(date: LocalDate, dayStart: Long) {
-        shownDay.value = date to dayStart
+    fun dayShown(date: LocalDate) {
+        shownDay.value = date
     }
 
     private fun write(what: String, block: suspend () -> Unit) {
@@ -200,7 +201,7 @@ class AppRootViewModel(
     }
 
     /** Opening Habit Age marks the estimate seen, so Today stops offering it. */
-    fun seeHabitAge(asOf: Long) = write("habit age") { settings.setHabitAgeSeen(asOf) }
+    fun seeHabitAge(asOf: Long) = write("habit age") { settings.setHabitAgeSeen(Days.date(asOf, ZoneId.systemDefault())) }
 
     fun markFirstScore(day: LocalDate) = write("first score") { settings.setFirstScoreDay(day.toEpochDay()) }
 

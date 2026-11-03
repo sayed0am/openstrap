@@ -97,7 +97,7 @@ class RoomDayRepository(
      */
     private fun more(date: LocalDate, day: DayWindow, night: DayWindow): Flow<DayData> = combine(
         combine(health.sleepSpo2(night), health.hrvSdnn(day), health.osaEvents(night)) { a, b, c -> Triple(a, b, c) },
-        health.dailyMaxHr(day),
+        health.dailyMaxHr(date),
         health.activityExtended(day),
         health.healthAlerts(day),
     ) { (sleepSpo2, sdnn, events), maxHr, extended, alerts ->
@@ -206,14 +206,15 @@ class RoomDayRepository(
 
     /** The 7 days ending on [date]: resting heart rate (the strap's, else our own estimate) and HRV. */
     private fun weekly(date: LocalDate, zone: ZoneId): Flow<WeeklyTrends> {
-        val week = DayWindow(DayWindow.of(date.minusDays(6)).from, DayWindow.of(date).to)
+        val first = date.minusDays(6)
+        val week = DayWindow(DayWindow.of(first).from, DayWindow.of(date).to)
         return combine(
-            health.restingHr(week.from, week.to), health.heartRate(week), health.activity(week), health.hrv(week),
+            health.restingHr(first, date), health.heartRate(week), health.activity(week), health.hrv(week),
         ) { resting, hr, act, hrv ->
             val days = (6 downTo 0).map { date.minusDays(it.toLong()) }
             val restingTrend = days.map { d ->
                 val w = DayWindow.of(d, zone)
-                val stored = resting.firstOrNull { it.day in w.from..w.to }?.bpm
+                val stored = resting.firstOrNull { it.day == d }?.bpm
                 // Our own estimate (lowest 30-min average) only means something with most of a day's data.
                 val inDay = { t: Long -> t in w.from..w.to }
                 val series = Summaries.heartRateSeries(hr.filter { inDay(it.timestamp) }, act.filter { inDay(it.timestamp) })
@@ -231,9 +232,11 @@ class RoomDayRepository(
 
     /** Averages over the 7 days before [date]. */
     private fun baselines(date: LocalDate): Flow<Baselines> {
-        val previous = DayWindow(DayWindow.of(date.minusDays(7)).from, DayWindow.of(date.minusDays(1)).to)
+        val first = date.minusDays(7)
+        val last = date.minusDays(1)
+        val previous = DayWindow(DayWindow.of(first).from, DayWindow.of(last).to)
         return combine(
-            combine(health.restingHr(previous.from, previous.to), health.hrv(previous), health.spo2(previous)) { r, h, s ->
+            combine(health.restingHr(first, last), health.hrv(previous), health.spo2(previous)) { r, h, s ->
                 Triple(r, h, s)
             },
             combine(health.stress(previous), health.skinTemperature(previous), health.breathRate(previous)) { st, sk, br ->

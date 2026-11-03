@@ -11,6 +11,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.openstrap.app.data.DayKey
+import java.time.LocalDate
+import java.time.ZoneId
 
 private val Context.dataStore by preferencesDataStore(name = "settings")
 
@@ -428,12 +431,18 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     }
 
     private val habitAgeSeen = longPreferencesKey(SettingsKeys.HABIT_AGE_SEEN)
+    private val habitAgeSeenDay = longPreferencesKey(SettingsKeys.HABIT_AGE_SEEN_DAY)
 
-    /** The Sunday (local midnight) of the last Habit Age estimate opened, so Today stops offering it; null before any. */
-    val habitAgeSeenAsOf: Flow<Long?> = read { it[habitAgeSeen] }
+    /**
+     * The Sunday of the last Habit Age estimate opened, so Today stops offering it, or null before any. Kept as its epoch
+     * day, so a change of zone doesn't offer it again. Builds before that kept its local midnight, read as its date here.
+     */
+    val habitAgeSeenAsOf: Flow<LocalDate?> = read { p ->
+        p[habitAgeSeenDay]?.let(LocalDate::ofEpochDay) ?: p[habitAgeSeen]?.let { DayKey.fromLegacy(it, ZoneId.systemDefault()) }
+    }
 
-    suspend fun setHabitAgeSeen(asOf: Long) {
-        store.edit { it[habitAgeSeen] = asOf }
+    suspend fun setHabitAgeSeen(sunday: LocalDate) {
+        store.edit { it[habitAgeSeenDay] = sunday.toEpochDay() }
     }
 
     private val firstScore = longPreferencesKey(SettingsKeys.FIRST_SCORE_DAY)
@@ -804,7 +813,9 @@ object SettingsKeys {
     const val RECAP_WEEK = "recap_week"
     const val REWARDS_STARTED = "rewards_started"
     const val HISTORY_BADGES_WAITING = "history_badges_waiting"
+    /** The local midnight of the Habit Age Sunday last opened, before it was kept as [HABIT_AGE_SEEN_DAY]. Read only. */
     const val HABIT_AGE_SEEN = "habit_age_seen"
+    const val HABIT_AGE_SEEN_DAY = "habit_age_seen_day"
     const val FIRST_SCORE_DAY = "first_score_day"
     const val COMPANION_ASSOCIATION_ID = "companion_association_id"
     const val COMPANION_DECLINED = "companion_declined"

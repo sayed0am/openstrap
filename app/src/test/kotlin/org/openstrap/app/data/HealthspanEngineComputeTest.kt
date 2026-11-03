@@ -45,7 +45,7 @@ class HealthspanEngineComputeTest {
         val first = sunday.minusDays(days.toLong())
         val sleeps = (0 until days).map { k ->
             val wake = first.plusDays(k + 1L).atStartOfDay(zone).toEpochSecond()
-            SleepSession(wake - 3600, wake + 7 * 3600, wake, nap = false, deepMinutes = 90, lightMinutes = 300, remMinutes = 90, awakeMinutes = 0)
+            SleepSession(wake - 3600, wake + 7 * 3600, DayKey.of(first.plusDays(k + 1L)), nap = false, deepMinutes = 90, lightMinutes = 300, remMinutes = 90, awakeMinutes = 0)
         }
         dao.insertSleepSessions(sleeps)
         dao.insertSleepStages(
@@ -54,7 +54,7 @@ class HealthspanEngineComputeTest {
             },
         )
         dao.insertNightMetrics(
-            sleeps.filterIndexed { i, _ -> i % 2 == 0 }.map { s -> NightMetricsRow(s.day, 0, null, 0, 52f, null, null, 400, null, null) },
+            sleeps.filterIndexed { i, _ -> i % 2 == 0 }.map { s -> NightMetricsRow(s.strapDate!!, 0, null, 0, 52f, null, null, 400, null, null) },
         )
         fun asleep(t: Long) = sleeps.any { t in it.start until it.end }
         val from = first.atStartOfDay(zone).toEpochSecond()

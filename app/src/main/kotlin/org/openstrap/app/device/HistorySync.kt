@@ -10,6 +10,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.StrapUuids
+import org.openstrap.app.data.DayKey
+import org.openstrap.app.data.Days
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.ActivityExtendedMinute
@@ -82,6 +84,7 @@ import org.openstrap.protocol.services.ReadinessCodec
 import org.openstrap.protocol.u8
 import org.openstrap.protocol.toHex
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import org.openstrap.app.data.db.StressSample as DbStress
 import org.openstrap.protocol.history.RestingHeartRate as StrapRestingHr
@@ -331,7 +334,10 @@ class HistorySync internal constructor(
         if (type in WORKOUT_TYPES) return now - WORKOUT_LOOKBACK
         val oldest = now - HISTORY_LOOKBACK
         val newest = NEWEST_KEY[type]?.let { key ->
-            dao.newestKeyOnce(androidx.sqlite.db.SimpleSQLiteQuery(key.sql))?.minus(key.before)
+            dao.newestKeyOnce(androidx.sqlite.db.SimpleSQLiteQuery(key.sql))
+                // A day key is a date: its local midnight here is where that day's records start.
+                ?.let { if (key.day) Days.start(DayKey.date(it), zone) else it }
+                ?.minus(key.before)
         }
         return newest?.coerceIn(oldest, now) ?: oldest
     }
@@ -415,8 +421,12 @@ class HistorySync internal constructor(
         val reply = session.request(Endpoints.READINESS, ReadinessCodec.scoreRequest(since), 8_000) { it.isNotEmpty() && it.u8(0) == ReadinessCodec.SCORE + 1 }
         val scores = ReadinessCodec.parseScores(reply).orEmpty()
         log("readiness: ${scores.joinToString { "${Instant.ofEpochSecond(it.day)} ${it.score}" }.ifEmpty { "none" }}")
+        // The strap's day is its local midnight, taken as its date in the phone's zone, as the strap keeps the phone's.
         val rows = scores.filter { it.score != null }.map {
-            StrapReadinessRow(it.day, it.updatedAt, it.score, it.hrvScore, it.restingHrScore, it.skinTemperatureScore, it.breathingScore, it.sleepHrv, it.sleepRestingHr, it.algorithmVersion)
+            StrapReadinessRow(
+                DayKey.fromLegacy(it.day, zone), it.updatedAt, it.score, it.hrvScore, it.restingHrScore, it.skinTemperatureScore,
+                it.breathingScore, it.sleepHrv, it.sleepRestingHr, it.algorithmVersion,
+            )
         }
         if (rows.isNotEmpty()) dao.insertStrapReadiness(rows)
     }
@@ -497,7 +507,7 @@ class HistorySync internal constructor(
         val sleepSpo2 = mutableListOf<SleepSpo2Sample>()
         val osaEvents = mutableListOf<OsaEventRow>()
         val osaResults = mutableListOf<OsaResultRow>()
-        val maxHr = mutableMapOf<Long, Int>()
+        val maxHr = mutableMapOf<LocalDate, Int>()
         val recoveryHr = mutableListOf<RecoveryHeartRateRow>()
         val extended = mutableListOf<ActivityExtendedMinute>()
         val raw = mutableListOf<RawRecord>()
@@ -521,16 +531,16 @@ class HistorySync internal constructor(
                 r.timestamp, r.recoveryTimeMinutes, r.vo2max, r.epoc, r.trainingLoadWeekly, r.trainingLoadMonthly,
                 r.optimalLoadMin, r.optimalLoadMax, r.maximalHeartRate,
             )
-            is StrapRestingHr -> if (r.heartRate in 30..120) resting += RestingHeartRate(dayStart(r.timestamp), r.heartRate)
+            is StrapRestingHr -> if (r.heartRate in 30..120) resting += RestingHeartRate(dayOf(r.timestamp), r.heartRate)
             // A realtime value (86) must not replace the strap's daily resting HR (58) for the same day.
-            is RestHrRealtime -> if (r.realtimeRestHr in 30..120) restingIfMissing += RestingHeartRate(dayStart(r.timestamp), r.realtimeRestHr)
+            is RestHrRealtime -> if (r.realtimeRestHr in 30..120) restingIfMissing += RestingHeartRate(dayOf(r.timestamp), r.realtimeRestHr)
             is SleepResult -> storeSleep(r)
             is SkinTemperatureSample -> r.skinCelsius?.let { skin += SkinTemperature(r.timestamp, it) }
             is SleepBreathRate -> if (r.breathRate in 4..40) breath += BreathRate(r.timestamp, r.breathRate)
             is PaiRecord -> {
                 pai += PaiSample(r.timestamp, r.dailyPai, r.totalPai, r.restHr, r.maxHr, r.nextActivityScores?.getOrNull(1))
                 // The strap's resting-HR profile; used only for days without a real resting value.
-                if (r.restHr in 30..120) restingIfMissing += RestingHeartRate(dayStart(r.timestamp), r.restHr)
+                if (r.restHr in 30..120) restingIfMissing += RestingHeartRate(dayOf(r.timestamp), r.restHr)
             }
             // Overnight SpO2 legitimately dips below the 80 % floor used for spot readings; below 70 is optical noise.
             is SleepSpO2Sample -> if (r.spo2 in 70..100) sleepSpo2 += SleepSpo2Sample(r.timestamp, r.spo2)
@@ -540,7 +550,7 @@ class HistorySync internal constructor(
             is OsaResult -> osaResults += OsaResultRow(r.timestamp, r.odiValidTime, r.odiRefined, r.odiScore, r.odiDispCode, r.odNumRefined, r.version)
             // The strap updates the day's value as it rises; keep the highest seen.
             is DailyMaxHeartRate -> HeartRateSentinel.valid(r.maxHeartRate)?.let { bpm ->
-                maxHr.merge(dayStart(r.timestamp), bpm, ::maxOf)
+                maxHr.merge(dayOf(r.timestamp), bpm, ::maxOf)
             }
             is RecoveryHeartRate -> if (r.samples.isNotEmpty()) recoveryHr += RecoveryHeartRateRow(r.trackId, r.samples.map { it.toByte() }.toByteArray())
             // A record of 0xFF bytes is buffer padding, not a minute (keepable drops it already).
@@ -579,7 +589,8 @@ class HistorySync internal constructor(
      * nap. The strap re-sends a day as it updates it, so the day's earlier version is replaced.
      */
     private suspend fun storeSleep(r: SleepResult) {
-        val day = r.day(zone)
+        // The strap's day for the result (02 §3.3), stored as its date ([DayKey]). Its times stay moments from r.day.
+        val day = Days.date(r.day(zone), zone)
         var mainWindow: Pair<Long, Long>? = null
         // Every stage the count covers is real; Zepp shows one with an unknown code as light sleep (04 §3.5).
         val main = r.mainStages.filter { it.stop >= it.start }
@@ -593,7 +604,7 @@ class HistorySync internal constructor(
             } else {
                 mainWindow = start to end
                 val session = SleepSession(
-                    start, end, day, nap = false,
+                    start, end, DayKey.of(day), nap = false,
                     score = r.sleepScore.takeIf { it in 1..100 },
                     averageHeartRate = HeartRateSentinel.valid(r.averageHeartRate),
                     deepMinutes = r.deepSleepLength, lightMinutes = r.lightSleepLength,
@@ -612,7 +623,7 @@ class HistorySync internal constructor(
         val napStages = mutableListOf<SleepStage>()
         for ((start, end) in napWindows(r, stages)) {
             if (mainWindow != null && start < mainWindow.second && end > mainWindow.first) continue
-            naps += SleepSession(start, end, day, nap = true)
+            naps += SleepSession(start, end, DayKey.of(day), nap = true)
             napStages += stages.filter { it.start >= start && it.end <= end }.map { it.copy(sessionStart = start) }
         }
         dao.replaceSleepDay(day, nap = true, naps, napStages)
@@ -648,7 +659,10 @@ class HistorySync internal constructor(
     private fun recordSize(code: Int, payload: ByteArray, sizeField: Long): Int =
         if (code != HistoryDataType.ACTIVITY.code) 4 else ActivityLayout.recordSize(payload, sizeField, session.features)
 
-    private fun dayStart(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    private fun dayStart(epoch: Long) = Days.start(epoch, zone)
+
+    /** The day a record's moment falls on in the phone's zone, the day its row is stored under. */
+    private fun dayOf(epoch: Long) = DayKey.dayOf(epoch, zone)
 
     private fun label(t: HistoryDataType) = t.name.lowercase().replace('_', ' ')
 
@@ -664,11 +678,16 @@ class HistorySync internal constructor(
         private const val HISTORY_LOOKBACK = 60L * 24 * 3600
         private const val DAY_SECONDS = 24 * 3600L
 
-        /** The newest stored key of the table a type fills ([store]), and how far before it to start. */
-        private class NewestKey(val sql: String, val before: Long = 0)
+        /**
+         * The newest stored key of the table a type fills ([store]), and how far before it to start. A [day] key is a
+         * date ([DayKey]), read as that date's local midnight.
+         */
+        private class NewestKey(val sql: String, val before: Long = 0, val day: Boolean = false)
 
         private fun newest(table: String, column: String = "timestamp", before: Long = 0, where: String = "") =
             NewestKey("SELECT MAX($column) FROM $table$where", before)
+
+        private fun newestDay(table: String) = NewestKey("SELECT MAX(day) FROM $table", DAY_SECONDS, day = true)
 
         /**
          * Types that share a table read its newest row, whichever type wrote it. A day key starts a day earlier: the
@@ -695,9 +714,9 @@ class HistorySync internal constructor(
                 newest("raw_record", where = " WHERE type = ${HistoryDataType.SLEEP_RESPIRATORY_RATE_EVENT.code}"),
             )
             put(HistoryDataType.RECOVERY_HEART_RATE, newest("recovery_hr", "workoutStart"))
-            for (t in listOf(HistoryDataType.RESTING_HEART_RATE, HistoryDataType.REST_HR)) put(t, newest("resting_hr", "day", DAY_SECONDS))
-            put(HistoryDataType.DAILY_MAX_EXERCISE_HR, newest("daily_max_hr", "day", DAY_SECONDS))
-            put(HistoryDataType.SLEEP_RESULT, newest("sleep_session", "day", DAY_SECONDS))
+            for (t in listOf(HistoryDataType.RESTING_HEART_RATE, HistoryDataType.REST_HR)) put(t, newestDay("resting_hr"))
+            put(HistoryDataType.DAILY_MAX_EXERCISE_HR, newestDay("daily_max_hr"))
+            put(HistoryDataType.SLEEP_RESULT, newestDay("sleep_session"))
         }
         /** Workouts are few and worth having: on first sync, take whatever the strap still holds. */
         private const val WORKOUT_LOOKBACK = 30L * 24 * 3600

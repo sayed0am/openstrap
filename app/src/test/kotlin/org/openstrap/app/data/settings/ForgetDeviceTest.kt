@@ -44,7 +44,7 @@ class ForgetDeviceTest {
             SettingsKeys.SPORT_SETTINGS_PREFIX + "7",
             SettingsKeys.LAST_SYNC_PREFIX + "daily_energy_profile",
             SettingsKeys.LAST_SYNC_PREFIX + "workout_effect_model",
-            SettingsKeys.LAST_SYNC_PREFIX + "body_signals_push",
+            SettingsKeys.LAST_SYNC_PREFIX + "body_signals_push_day",
             SettingsKeys.HISTORY_CURSOR_PREFIX + "1",
             SettingsKeys.HISTORY_CURSOR_PREFIX + "16",
             "a_key_added_later",
