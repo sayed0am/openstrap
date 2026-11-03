@@ -9,6 +9,7 @@ import org.openstrap.app.data.db.strapReadinessIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlin.math.roundToInt
 
@@ -63,6 +64,11 @@ data class RecoveryResult(
      * loads [chronicLoad] is worked out from. Days the strap was mostly off are absent.
      */
     val dailyLoads: List<Pair<LocalDate, Float>> = emptyList(),
+    /**
+     * The strap's own score for [tonight], from its row for the strap session the night came from
+     * ([SleepHistory.strapDay]), so a night moved to another day keeps it. Null without one.
+     */
+    val strapScore: Int? = null,
 )
 
 /** Loads what [Recovery] needs from the database and runs it. All work happens off the main thread by the caller. */
@@ -92,19 +98,20 @@ class RecoveryEngine(private val dao: HealthDao) {
         val base = basis(span, reads, profile)
 
         val readiness = Recovery.readiness(base.tonight, base.nights, base.loads, base.causes, base.sleepNeed)
-        val trend = (6 downTo 0).map { back ->
+        // Each night's readiness as that morning had it: only the nights and loads before it, which [Span.from] reaches
+        // back far enough for on the trend's first day too. Charge takes each sleep's HRV contributor from it.
+        val byMorning = HashMap<Long, Recovery.Readiness>()
+        base.tonight?.let { byMorning[it.day] = readiness }
+        val readinessOf = { n: Recovery.Night ->
+            byMorning.getOrPut(n.day) { Recovery.readiness(n, base.nights, loadsBefore(base.loadDays, n.day), base.causes, base.sleepNeed) }
+        }
+        val trend = (TREND_DAYS - 1 downTo 0).map { back ->
             val d = date.minusDays(back.toLong())
             val m = DayWindow.of(d, zone).from
-            val score = if (back == 0) {
-                readiness.score
-            } else {
-                val night = base.nights.lastOrNull { it.day == m }
-                Recovery.readiness(night, base.nights, loadsBefore(base.loadDays, m), base.causes, base.sleepNeed).score
-            }
-            d to score
+            d to if (back == 0) readiness.score else base.nights.lastOrNull { it.day == m }?.let(readinessOf)?.score
         }
         val stressThreshold = stressThreshold(span, reads, base)
-        val charge = charge(span, reads, base, readiness, stressThreshold)
+        val charge = charge(span, reads, base, readiness, stressThreshold, readinessOf)
         val activity = activity(span, reads, base, profile)
 
         // VO2max: recomputed weekly, as of the first day of the week ([Weeks]), from the nightly resting HR.
@@ -142,13 +149,16 @@ class RecoveryEngine(private val dao: HealthDao) {
             usualBedtime(mains.filterKeys { it <= midnight }.values, date, zone),
             dailyLoads = base.loadDays.map { span.dayOf(it.first) to it.second }
                 .filter { it.first >= date.minusDays(RECENT_LOAD_DAYS.toLong()) },
+            strapScore = tonight?.strapDay?.let(reads.strapNights::get)?.score,
         )
     }
 
     /** The spans [compute] reads and scores for [date]. */
     private class Span(val date: LocalDate, val zone: ZoneId, val now: Long) {
         val day = DayWindow.of(date, zone)
-        val from = DayWindow.of(date.minusDays(Recovery.BASELINE_NIGHTS.toLong() + 1), zone).from
+
+        // The nightly baselines, from far enough back that the readiness trend's first day has its whole baseline too.
+        val from = DayWindow.of(date.minusDays(Recovery.BASELINE_NIGHTS.toLong() + TREND_DAYS), zone).from
         val to = day.to
 
         // The sleep summaries are read from a day before [from].
@@ -328,9 +338,9 @@ class RecoveryEngine(private val dao: HealthDao) {
         val hrByDay = loadHr.groupBy { span.dayOf(it.first) }
         val loadDays = (LOAD_DAYS downTo 1).mapNotNull { back ->
             val d = date.minusDays(back.toLong())
-            val w = DayWindow.of(d, zone)
             val series = hrByDay[d].orEmpty()
-            if (series.size < MIN_WORN_MINUTES) null else w.from to dailyLoad(series).total
+            val load = dailyLoad(series)
+            if (Recovery.loadDayCounts(series.size, load)) DayWindow.of(d, zone).from to load.total else null
         }
         val loads = loadDays.map { it.second }
 
@@ -361,9 +371,13 @@ class RecoveryEngine(private val dao: HealthDao) {
         return Recovery.stressThreshold(calm) { Instant.ofEpochSecond(it).atZone(span.zone).toLocalDate().toEpochDay() }
     }
 
-    /** The day's Charge, run from [Span.simFrom] with each sleep's body-signal state and tonight's HRV contributor. */
+    /**
+     * The day's Charge, run from [Span.simFrom] with each sleep's body-signal state and its own HRV contributor, from
+     * that morning's readiness ([readinessOf]).
+     */
     private suspend fun charge(
         span: Span, reads: Reads, base: Basis, readiness: Recovery.Readiness, stressThreshold: Recovery.StressThreshold,
+        readinessOf: (Recovery.Night) -> Recovery.Readiness,
     ): Recovery.ChargeDay {
         val simFrom = span.simFrom
         val simTo = span.simTo
@@ -386,7 +400,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val minutes = Recovery.minutes(
             simFrom, simTo, simHr, steps, stress, stages, workouts = base.workoutRanges, offWrist = offWrist, wear = wear,
         )
-        val hrvScore = readiness.contributors.firstOrNull { it.factor == Recovery.Factor.HrvBalance }?.score
+        val hrvScore = hrvContributor(readiness)
         // Each main sleep's body-signal state, by the rule Readiness uses (it only looks backwards, so one pass over every
         // night gives each its own state); an Alert scales Charge from that sleep's start.
         val bodyByDay = BodySignals.evaluate(base.nights, base.causes).associate { it.day to it.state }
@@ -400,9 +414,13 @@ class RecoveryEngine(private val dao: HealthDao) {
             mainSleepEnds = base.mains.values.map { it.end }.filter { it in simFrom until simTo },
             usualSleep = usualSleep(base.mains.filterKeys { it <= span.midnight }.values, span.date, span.zone),
             sleepRestingHr = runMains.map { it.start to chargeNightRestingHr(it, reads.moved, refHr) },
+            sleepHrvScore = base.nights.filter { it.end > simFrom && it.start < simTo }.map { it.start to hrvContributor(readinessOf(it)) },
         )
         return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end)
     }
+
+    /** The HRV balance contributor of [r] (0-100), which scales how well that night's sleep recharges. Null without one. */
+    private fun hrvContributor(r: Recovery.Readiness): Int? = r.contributors.firstOrNull { it.factor == Recovery.Factor.HrvBalance }?.score
 
     /**
      * The reference Charge's sleep term measures each minute of the main sleep [s] against: its lowest 30-minute heart
@@ -429,7 +447,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val to = span.to
         val weekFrom = DayWindow.of(date.minusDays(ACTIVITY_DAYS - 1L), zone).from
         val workouts = reads.strapWorkouts.filter { it.end >= weekFrom }
-        val minuteSteps = reads.activity.within(weekFrom, to) { it.timestamp }.filter { it.steps in 0..250 }
+        val minuteSteps = reads.activity.within(weekFrom, to) { it.timestamp }.filter { it.steps in 0..Recovery.MAX_MINUTE_STEPS }
             .associate { it.timestamp / 60 * 60 to it.steps }
         val weekHr = base.hr.filter { it.first >= weekFrom }.toMap()
         val activityDays = (ACTIVITY_DAYS - 1 downTo 0).map { back ->
@@ -534,7 +552,8 @@ class RecoveryEngine(private val dao: HealthDao) {
     ): EnergyExpenditure.Day? {
         val day = DayWindow.of(date, zone)
         val age = profile.age(date)
-        val minuteSteps = reads.activity.filter { it.steps in 0..250 }.associate { it.timestamp / 60 * 60 to it.steps }
+        val minuteSteps = reads.activity.filter { it.steps in 0..Recovery.MAX_MINUTE_STEPS }
+            .associate { it.timestamp / 60 * 60 to it.steps }
         val minuteHr = minuteHeartRate(reads.heartRate, reads.activity).toMap()
         val sessions = reads.sessions
         val strap = reads.strapWorkouts
@@ -568,7 +587,8 @@ class RecoveryEngine(private val dao: HealthDao) {
     ): List<EnergyExpenditure.WorkoutMinute>? {
         val b = EnergyExpenditure.bmrPerMinute(profile, age) ?: return null
         val end = w.end ?: now
-        val steps = dao.activityOnce(w.from - 60, end + 60).filter { it.steps in 0..250 }.associate { it.timestamp / 60 * 60 to it.steps }
+        val steps = dao.activityOnce(w.from - 60, end + 60).filter { it.steps in 0..Recovery.MAX_MINUTE_STEPS }
+            .associate { it.timestamp / 60 * 60 to it.steps }
         val minutes = WorkoutRecorder.kcalMinutes(w, hr ?: dao.appWorkoutHeartRateOnce(w.start), steps, restingHr, maxHr, profile, age, vo2max, now)
             ?: return null
         return EnergyExpenditure.fitted(minutes, w.totalKcal, b)
@@ -717,20 +737,58 @@ class RecoveryEngine(private val dao: HealthDao) {
         /**
          * The usual main sleep on each night of the Charge simulation (the [Recovery.WAKE_HISTORY] + 1 nights ending on
          * [date]'s morning): the median start and end, as clock times, of the last [USUAL_SLEEP_NIGHTS] [mains];
-         * midnight to 06:00 without any. Clock times count from noon, and each end from its own start, so a day sleep
-         * after a night shift that runs past noon (08:00 to 16:00) is a range too rather than nothing.
+         * midnight to 06:00 without any. Each end counts from its own start, so a day sleep after a night shift that
+         * runs past noon (08:00 to 16:00) is a range too rather than nothing. Starts count from the clock time opposite
+         * their circular mean ([circularMean]), so bedtimes either side of any hour stay together: either side of noon
+         * too, where counting from noon split them between its two ends. A usual night (bedtimes around 23:00) counts
+         * from about 11:00, which gives the same medians counting from noon did. Each range ends at the usual wake time
+         * on its day, the day a sleep belongs to ([SleepHistory.nightOf]), so a sleep that starts after noon is placed
+         * on the day it ends too.
          */
         internal fun usualSleep(mains: Collection<SleepSession>, date: LocalDate, zone: ZoneId): List<LongRange> {
             val recent = mains.sortedBy { it.end }.takeLast(USUAL_SLEEP_NIGHTS)
-            fun afterNoon(t: Long) = Instant.ofEpochSecond(t).atZone(zone).toLocalTime().toSecondOfDay().let { ((it - 43_200) % 86_400 + 86_400) % 86_400 }
-            val start = recent.map { afterNoon(it.start).toFloat() }.median()?.toLong() ?: 43_200L
-            val end = recent.map { (afterNoon(it.start) + (it.end - it.start).coerceIn(0L, 86_399L)).toFloat() }.median()?.toLong() ?: (18 * 3600L)
-            if (end <= start) return emptyList()
+            fun clock(t: Long) = Instant.ofEpochSecond(t).atZone(zone).toLocalTime().toSecondOfDay()
+            // Bedtimes spread evenly round the clock have no mean: they count from noon, as all of them used to.
+            val origin = circularMean(recent.map { clock(it.start) })?.let { Math.floorMod(it + HALF_DAY, DAY_SECONDS) }
+                ?: HALF_DAY.takeIf { recent.isNotEmpty() }
+            fun fromOrigin(t: Long) = Math.floorMod(clock(t) - (origin ?: 0), DAY_SECONDS).toLong()
+            val firstStart = recent.map { fromOrigin(it.start).toFloat() }.median()?.toLong()
+            val firstEnd = recent.map { (fromOrigin(it.start) + (it.end - it.start).coerceIn(0L, DAY_SECONDS - 1L)).toFloat() }
+                .median()?.toLong()
+            // The usual wake time by the clock and how long before it the usual sleep starts: 06:00 and 6 hours without any.
+            val (wake, length) = if (origin != null && firstStart != null && firstEnd != null) {
+                Math.floorMod(origin + firstEnd, DAY_SECONDS.toLong()) to firstEnd - firstStart
+            } else {
+                NO_SLEEP_WAKE to NO_SLEEP_WAKE
+            }
+            if (length <= 0) return emptyList()
             return (0..Recovery.WAKE_HISTORY + 1).map { back ->
-                val noon = date.minusDays(back + 1L).atTime(12, 0).atZone(zone).toEpochSecond()
-                noon + start..noon + end
+                val end = date.minusDays(back.toLong()).atTime(LocalTime.ofSecondOfDay(wake)).atZone(zone).toEpochSecond()
+                end - length..end
             }
         }
+
+        /**
+         * The circular mean of clock times [secondsOfDay] (seconds after midnight), so 23:50 and 00:10 average to
+         * midnight rather than noon. Null without any, or when they spread evenly round the clock and have no mean.
+         */
+        internal fun circularMean(secondsOfDay: List<Int>): Int? {
+            val angles = secondsOfDay.map { it * 2 * Math.PI / DAY_SECONDS }
+            val sin = angles.sumOf { kotlin.math.sin(it) }
+            val cos = angles.sumOf { kotlin.math.cos(it) }
+            // None, or spread so evenly that the sum has no length: no mean.
+            if (kotlin.math.hypot(sin, cos) <= NO_MEAN * secondsOfDay.size) return null
+            return Math.floorMod(Math.round(kotlin.math.atan2(sin, cos) / (2 * Math.PI) * DAY_SECONDS).toInt(), DAY_SECONDS)
+        }
+
+        private const val DAY_SECONDS = 86_400
+        private const val HALF_DAY = DAY_SECONDS / 2
+
+        /** Without any sleep, the usual one ends at 06:00 and runs 6 hours: midnight to 06:00. */
+        private const val NO_SLEEP_WAKE = 6 * 3600L
+
+        /** A mean resultant shorter than this, per time, has no direction worth the name. */
+        private const val NO_MEAN = 1e-6
 
         /**
          * The usual bedtime as a clock time: the start of [usualSleep]'s most recent range. Null without any [mains],
@@ -754,6 +812,9 @@ class RecoveryEngine(private val dao: HealthDao) {
          */
         fun loadsBefore(loadDays: List<Pair<Long, Float>>, morning: Long): List<Float> = loadDays.filter { it.first < morning }.map { it.second }
 
+        /** Days of the readiness trend, ending on the day shown. */
+        const val TREND_DAYS = 7
+
         /** Days of load history: CTL's 42-day constant and Strain's 90-day "vs your usual". */
         const val LOAD_DAYS = 90
 
@@ -762,8 +823,6 @@ class RecoveryEngine(private val dao: HealthDao) {
 
         /** Days of daily Load the result carries, before the day shown, for the Load detail's Week and Month. */
         const val RECENT_LOAD_DAYS = 30
-        /** A day needs this many minutes of heart rate before its training load counts. */
-        const val MIN_WORN_MINUTES = 8 * 60
         /** Sleep SpO2 readings needed before a night's mean counts. */
         const val MIN_SPO2_READINGS = 5
         const val MIN_ODI_SLEEP_MINUTES = 120

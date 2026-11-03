@@ -73,7 +73,9 @@ fun Recovery.trimpMinute(hrr: Float, female: Boolean = false): Float = when {
  *   [everydayMinute] passes it: at or above [LOAD_MIN_HRR] of reserve, or at or above [LOAD_WALK_HRR] with at least
  *   [LOAD_WALK_STEPS] steps. At least [LOAD_RUN_MINUTES] of the last [LOAD_RUN_WINDOW] minutes (itself included)
  *   must pass too, so an isolated PPG spike during a few steps doesn't count. Raised HR while sitting (coffee,
- *   stress, heat, a PPG artefact) is not training load.
+ *   stress, heat, a PPG artefact) is not training load. Without steps, a minute counts only inside a sustained run
+ *   ([sustainedRuns]), the rule Charge drains by too: cycling or rowing that wasn't recorded. All of such a run
+ *   counts, its first minutes too.
  *
  * Workout minutes count at any intensity, unlike Zepp, which applies its 35 % line to every minute (native 07
  * §3.3): a recorded workout's easy stretches (warm-up, recoveries between intervals, rests between sets) are part
@@ -92,20 +94,30 @@ fun Recovery.dailyLoad(
     steps: (Long) -> Int?,
 ): DailyLoad {
     var workout = 0.0
-    val everyday = ArrayList<Pair<Long, Float>>()
+    // Each everyday minute: its start, its reserve fraction and whether a sustained run carries it.
+    val everyday = ArrayList<Triple<Long, Float, Boolean>>()
     val inWorkout = MinuteRanges(workouts)
-    for ((t, bpm) in hr.sortedBy { it.first }) {
+    val sorted = hr.sortedBy { it.first }
+    // Charge's stress exclusion: a workout and the minutes after it, where a raised heart rate is the workout's.
+    val excluded = MinuteRanges(stressExcluded(workouts))
+    val sustained = sustainedRuns(sorted.map { it.first }) { k ->
+        val (t, bpm) = sorted[k]
+        !asleep(t) && !excluded(t) && hrr(bpm, rest, maxHr) >= EXERCISE_HRR
+    }
+    for ((k, minute) in sorted.withIndex()) {
+        val (t, bpm) = minute
         val x = hrr(bpm, rest, maxHr)
         when {
             inWorkout(t) -> workout += trimpMinute(x, female)
-            !asleep(t) && everydayMinute(x, steps(t)) -> everyday += t to x
+            !asleep(t) && (sustained[k] || everydayMinute(x, steps(t))) -> everyday += Triple(t, x, sustained[k])
         }
     }
     var lo = 0
     var total = 0.0
     for ((k, m) in everyday.withIndex()) {
         while (everyday[lo].first <= m.first - LOAD_RUN_WINDOW * 60L) lo++
-        if (k - lo + 1 >= LOAD_RUN_MINUTES) total += trimpMinute(m.second, female)
+        // A sustained run is already longer than the window, so all of it counts, as all of it drains Charge.
+        if (m.third || k - lo + 1 >= LOAD_RUN_MINUTES) total += trimpMinute(m.second, female)
     }
     return DailyLoad(workout.toFloat(), total.toFloat())
 }
@@ -167,10 +179,39 @@ fun Recovery.inWorkout(t: Long, workouts: List<LongRange>): Boolean = workouts.a
  * `mode` (`kind`) was 0 ("silent") for every awake minute, never walking or running, so it says nothing; and its
  * `intensity` byte was above Zepp's "> 5" in 79 % of minutes without a step (typing, gesturing at a desk), so
  * Zepp's gate on it would let most of a seated day through, and any higher cut-off would be a guess. A step is
- * unambiguous. The cost is non-stepping exercise (cycling, rowing, weights) outside a recorded workout, which then
- * counts nothing; record a workout for those.
+ * unambiguous. Non-stepping exercise (cycling, rowing) outside a recorded workout counts only as a sustained run
+ * ([sustainedRuns]), and weights between sets rarely make one, so record a workout for those.
  */
 fun Recovery.moving(steps: Int?): Boolean = steps != null && steps in 1..MAX_MINUTE_STEPS
+
+/**
+ * Movement without steps, one rule for Charge ([sustainedEffort]) and daily load ([dailyLoad]): the minutes, at the
+ * minute starts [times] (ascending), in a run of at least [SUSTAINED_EFFORT_MINUTES] back to back that are each
+ * [hard] (awake, outside a workout and the minutes after it, at or above [EXERCISE_HRR] of reserve).
+ */
+fun Recovery.sustainedRuns(times: List<Long>, hard: (Int) -> Boolean): BooleanArray {
+    val out = BooleanArray(times.size)
+    var i = 0
+    while (i < times.size) {
+        if (!hard(i)) {
+            i++
+            continue
+        }
+        var j = i + 1
+        while (j < times.size && hard(j) && times[j] - times[j - 1] <= 60) j++
+        if (j - i >= SUSTAINED_EFFORT_MINUTES) for (k in i until j) out[k] = true
+        i = j
+    }
+    return out
+}
+
+/**
+ * Whether a day goes into the load history: worn at least [LOAD_MIN_WORN_MINUTES] (heart rate minutes [worn]), or
+ * worn less but with a recorded workout's load in it ([load]). A short day with a workout counts what it measured,
+ * as the workout is most of its load, rather than drop the workout from fitness and fatigue. A short day without one
+ * says too little and holds.
+ */
+fun Recovery.loadDayCounts(worn: Int, load: DailyLoad): Boolean = worn >= LOAD_MIN_WORN_MINUTES || load.workout > 0f
 
 /** Whether an awake minute outside workouts, at reserve fraction [x] with [steps], can add everyday load. */
 fun Recovery.everydayMinute(x: Float, steps: Int?): Boolean =

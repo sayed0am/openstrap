@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.SleepEdits
-import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.dashboard.SleepCopy
@@ -21,7 +20,6 @@ import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
-import java.time.Instant
 import java.time.ZoneId
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.TimeOfDay
@@ -49,11 +47,8 @@ fun DeletedSleepPage(
         else item {
             PageRows {
                 deleted.forEachIndexed { i, r ->
-                    // A night is named by the evening it began, a nap by its own day.
-                    val day = if (r.strap.nap) Instant.ofEpochSecond(r.strap.start).atZone(zone).toLocalDate()
-                    else SleepHistory.nightOf(r.strap.end, zone).minusDays(1)
                     PageRow(
-                        SleepCopy.deletedName(r.strap.nap, DayWords.short(day)),
+                        SleepCopy.deletedName(r.strap.nap, DayWords.short(SleepCopy.deletedDay(r, zone))),
                         SleepCopy.deletedLine(clock(r.start), clock(r.end), r.edit?.let { SleepEdits.daysLeft(it, now) } ?: SleepEdits.KEEP_DAYS),
                         below = true, divider = i > 0, icon = AppIcons.Moon,
                     ) { PageButton("Restore", { onRestore(r.strap) }, icon = AppIcons.ArrowCounterClockwise) }

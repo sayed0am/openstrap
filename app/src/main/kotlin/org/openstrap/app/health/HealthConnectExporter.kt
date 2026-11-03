@@ -8,6 +8,7 @@ import androidx.health.connect.client.request.ReadRecordsRequest
 import org.openstrap.app.data.DayKey
 import org.openstrap.app.data.Days
 import org.openstrap.app.data.HeartRate
+import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.HeartRateSample
 import org.openstrap.app.data.db.HrvSample
@@ -343,7 +344,7 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
         }
     }
 
-    private suspend fun steps(from: Long, to: Long): List<Record> = dao.activityOnce(from, to).filter { it.steps > 0 }.map { m ->
+    private suspend fun steps(from: Long, to: Long): List<Record> = dao.activityOnce(from, to).filter { Summaries.steps(it) > 0 }.map { m ->
         StepsRecord(
             startTime = Instant.ofEpochSecond(m.timestamp), startZoneOffset = offset(m.timestamp),
             endTime = Instant.ofEpochSecond(m.timestamp + 60), endZoneOffset = offset(m.timestamp),

@@ -100,6 +100,39 @@ class RecoveryEngineTest {
     }
 
     @Test
+    fun usualSleepWithBedtimesEitherSideOfNoon() {
+        // Asleep at 11:50 one day and 12:10 the next, 8 hours each: the usual sleep is 12:00 to 20:00 on each day. Counted
+        // from noon, the two bedtimes sat at its two ends and their median came out at midnight.
+        val sleeps = (0 until 6).map { back ->
+            val d = date.minusDays(back.toLong())
+            val start = d.atTime(if (back % 2 == 0) java.time.LocalTime.of(11, 50) else java.time.LocalTime.of(12, 10)).toEpochSecond(zone)
+            SleepSession(start = start, end = start + 8 * 3600)
+        }
+        val days = RecoveryEngine.usualSleep(sleeps, date, zone)
+        assertEquals(Recovery.WAKE_HISTORY + 2, days.size)
+        days.forEachIndexed { back, range ->
+            val d = date.minusDays(back.toLong())
+            assertEquals(d.atTime(12, 0).toEpochSecond(zone)..d.atTime(20, 0).toEpochSecond(zone), range)
+        }
+        assertEquals(java.time.LocalTime.NOON, RecoveryEngine.usualBedtime(sleeps, date, zone))
+        // Bedtimes either side of midnight likewise average to midnight.
+        val late = (0 until 6).map { back ->
+            val d = date.minusDays(back.toLong())
+            val start = if (back % 2 == 0) d.minusDays(1).atTime(23, 50).toEpochSecond(zone) else d.atTime(0, 10).toEpochSecond(zone)
+            SleepSession(start = start, end = d.atTime(7, 0).toEpochSecond(zone))
+        }
+        assertEquals(date.atStartOfDay(zone).toEpochSecond()..date.atTime(7, 0).toEpochSecond(zone), RecoveryEngine.usualSleep(late, date, zone).first())
+    }
+
+    @Test
+    fun circularMeanWrapsRoundTheClock() {
+        assertEquals(0, RecoveryEngine.circularMean(listOf(23 * 3600 + 50 * 60, 10 * 60)))
+        assertEquals(12 * 3600, RecoveryEngine.circularMean(listOf(11 * 3600 + 50 * 60, 12 * 3600 + 10 * 60)))
+        assertEquals(null, RecoveryEngine.circularMean(emptyList()))
+        assertEquals(null, RecoveryEngine.circularMean(listOf(0, 12 * 3600)))
+    }
+
+    @Test
     fun usualBedtimeIsTheUsualSleepsStart() {
         assertEquals(java.time.LocalTime.of(23, 0), RecoveryEngine.usualBedtime(sleeps(5, java.time.LocalTime.of(23, 0), java.time.LocalTime.of(7, 0)), date, zone))
         // No main sleep yet: unknown, not usualSleep's midnight stand-in.

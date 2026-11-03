@@ -308,7 +308,7 @@ class StrapService : LifecycleService() {
         val r = org.openstrap.app.data.RecoveryEngine(dao).compute(java.time.LocalDate.now(), settings.profile.first())
         val sport = dao.appWorkoutsAll().maxByOrNull { it.start }?.sportType ?: Workouts.DEFAULT_SPORTS.first()
         val syncedAt = (strap.sync.value as? SyncState.Done)?.atEpochSeconds ?: figures.value?.syncedAt
-        return Figures(r.readiness.score, r.charge.latest?.let(::chargeShown), sport, syncedAt)
+        return Figures(NotificationCopy.recovery(r), r.charge.latest?.let(::chargeShown), sport, syncedAt)
     }
 
     /**

@@ -59,13 +59,22 @@ object ErrorCopy {
     }
 
     /**
-     * A firmware check, download or install that failed. The update server and the strap's update service word their
-     * own reasons, and a Zepp sign-in failure reads as [zepp]. A network failure says so, and anything else gets
+     * A firmware check, download or install that failed. The strap's update service words its own reasons, the update
+     * server's failures read by their kind as a Zepp one reads in [zepp] (their text, with its HTTP code, goes to
+     * Diagnostics), and a Zepp sign-in failure reads as [zepp]. A network failure says so, and anything else gets
      * [fallback].
      */
     fun firmware(e: Throwable, fallback: String): String = when (e) {
         is ZeppCloudException -> zepp(e)
-        is FirmwareCloudException, is DfuException, is StrapCommandException -> e.message ?: fallback
+        is FirmwareCloudException -> when (e.kind) {
+            FirmwareCloudException.Kind.Rejected ->
+                "Zepp's update server didn't accept the sign-in. It may have expired. Sign in again."
+            FirmwareCloudException.Kind.Server ->
+                "Zepp's update server didn't answer as expected. Try again in a few minutes."
+            FirmwareCloudException.Kind.Download -> "The firmware download failed. Try again in a few minutes."
+            FirmwareCloudException.Kind.Damaged -> "The firmware download was damaged. Try again."
+        }
+        is DfuException, is StrapCommandException -> e.message ?: fallback
         is GattTimeoutException -> NO_ANSWER
         is IOException -> "Couldn't reach the update server. Check your internet connection and try again."
         else -> fallback

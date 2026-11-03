@@ -30,7 +30,6 @@ import org.openstrap.app.data.MaxHeartRates
 import org.openstrap.app.data.RewardsKeeper
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.db.OpenStrapDatabase
-import org.openstrap.app.data.db.StrapReadinessRow
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.ConnectionState
@@ -45,7 +44,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.lang.reflect.Proxy
 import java.time.LocalDate
-import java.time.ZoneId
 
 /** The app root's reads and writes, out of the composition (audit A1). */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -124,18 +122,14 @@ class AppRootViewModelTest {
         assertEquals(FirstScoreDay.Day(day), await(vm.firstScoreDay) { it is FirstScoreDay.Day })
     }
 
-    @Test fun `the day's strap score and check-in follow the day shown`() {
+    @Test fun `the day's check-in follows the day shown`() {
         val day = LocalDate.of(2026, 10, 20)
-        val start = day.atStartOfDay(ZoneId.systemDefault()).toEpochSecond()
-        runBlocking { db.healthDao().insertStrapReadiness(listOf(StrapReadinessRow(day, start, 71, null, null, null, null, null, null, "1"))) }
         vm.saveCheckIn(day, 4)
         vm.dayShown(day)
-        val extras = await(vm.dayExtras) { it.checkIn != null && it.strapReadiness != null }
-        assertEquals(4, extras.checkIn)
-        assertEquals(71, extras.strapReadiness?.score)
+        assertEquals(4, await(vm.dayExtras) { it.checkIn != null }.checkIn)
         val next = day.plusDays(1)
         vm.dayShown(next)
-        assertEquals(DayExtras(), await(vm.dayExtras) { it.checkIn == null && it.strapReadiness == null })
+        assertEquals(DayExtras(), await(vm.dayExtras) { it.checkIn == null })
     }
 
     @Test fun `the strap facts follow the connection`() {

@@ -8,7 +8,14 @@ import java.time.ZoneId
 
 /** Pure aggregation helpers for the dashboard; kept free of Android types so they're unit-testable. */
 object Summaries {
-    fun totalSteps(minutes: List<ActivityMinute>): Int = minutes.sumOf { it.steps }
+    /** The day's steps from its [minutes], each counted by [steps]. */
+    fun totalSteps(minutes: List<ActivityMinute>): Int = minutes.sumOf(::steps)
+
+    /**
+     * The steps a minute counts for: its own, or none when over [Recovery.MAX_MINUTE_STEPS], a sentinel or an error.
+     * The one rule for every count of steps, so Today, the charts, Habit Age and the models add up the same minutes.
+     */
+    fun steps(m: ActivityMinute): Int = m.steps.takeIf { it in 0..Recovery.MAX_MINUTE_STEPS } ?: 0
 
     /**
      * 24 buckets of steps for the day starting at [dayStart], one for each hour on the clock in [zone]. A day the
@@ -20,7 +27,7 @@ object Summaries {
         val dayEnd = Days.end(dayStart, zone)
         for (m in minutes) {
             if (m.timestamp < dayStart || m.timestamp >= dayEnd) continue
-            buckets[Instant.ofEpochSecond(m.timestamp).atZone(zone).hour] += m.steps.toFloat()
+            buckets[Instant.ofEpochSecond(m.timestamp).atZone(zone).hour] += steps(m).toFloat()
         }
         return buckets.toList()
     }

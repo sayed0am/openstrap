@@ -176,6 +176,17 @@ private fun sleepDay(start: Long, end: Long, nap: Boolean): Long =
 /** [date]'s local midnight in the phone's zone, what the older day columns hold ([DayColumn.legacy]). */
 private fun legacy(date: LocalDate) = DayKey.legacyMidnight(date, ZoneId.systemDefault())
 
+/**
+ * The epoch days whose local midnight in the phone's zone is in [from, to], as [legacyIn] picks a day table's rows, for
+ * a table that keys a row by its epoch day. The ends are held to the years a date can have, as a whole backup's end is
+ * far past them.
+ */
+private fun epochDaysIn(from: Long, to: Long): LongRange {
+    val moments = DayKey.of(LocalDate.of(1, 1, 2))..DayKey.of(LocalDate.of(9999, 12, 30))
+    val dates = DayKey.datesIn(from.coerceIn(moments), to.coerceIn(moments), ZoneId.systemDefault())
+    return dates.start.toEpochDay()..dates.endInclusive.toEpochDay()
+}
+
 /** The rows of a day table whose older key ([legacy]) is in [from, to], as the read of the local midnights gave. */
 private fun <T> List<T>.legacyIn(from: Long, to: Long, day: (T) -> LocalDate) = filter { legacy(day(it)) in from..to }
 
@@ -407,7 +418,7 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         { d, r -> d.insertBadges(r) }),
     CsvTable("week_result.csv", "week_start_day,goal,count,met",
         Key("week_result", "weekStart", "week_start_day"),
-        { d, f, t -> d.weekResultsStartingOnce(f, t) },
+        { d, f, t -> epochDaysIn(f, t).let { d.weekResultsStartingOnce(it.first, it.last) } },
         { listOf(it.weekStart, it.goal, it.count, it.met) },
         { WeekResult(it.long("week_start_day"), it.int("goal"), it.int("count"), it.bool("met")) },
         { d, r -> d.upsertWeekResults(r) }),

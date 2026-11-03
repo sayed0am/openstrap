@@ -62,7 +62,8 @@ class WidgetSnapshotTest {
     }
 
     @Test fun `live steps carry on from the app's one counter, as Today's do`() = runBlocking {
-        dao.insertActivity(listOf(ActivityMinute(midnight + 3600, 2456, 0, 0, null)))
+        // 2,456 steps over ten minutes, each a plausible count (a minute over 250 is bad data and counts nowhere).
+        dao.insertActivity((0 until 10).map { ActivityMinute(midnight + 3600 + it * 60L, if (it < 9) 250 else 206, 0, 0, null) })
         // Firmware 3.25's counter with its offset: implausible, so counted from the history on.
         live = StepTotals(11368, 1836, 151)
         assertEquals(2456, snapshot.gather(setOf(WidgetKind.Steps), now, zone).steps?.day?.steps)

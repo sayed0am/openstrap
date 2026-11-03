@@ -108,7 +108,9 @@ fun Recovery.charge(
     var living = 0f
     var atWake: Float? = null
     var latest: Float? = null
-    val hrvFactor = params.hrvScore?.let { (0.75f + 0.25f * it / 80f).coerceIn(0.6f, 1.1f) } ?: 1f
+    var hrvFactor = hrvFactor(params.hrvScore)
+    val hrvScores = params.sleepHrvScore.sortedBy { it.first }
+    var hi = 0
     val scoredNightRest = params.nightRestingHr ?: params.restingHr
     var nightRest = scoredNightRest
     val references = params.sleepRestingHr.sortedBy { it.first }
@@ -196,6 +198,7 @@ fun Recovery.charge(
         val x = hr?.let { hrr(it, params.restingHr, params.maxHr) }
         while (si < signals.size && signals[si].first <= m.t) signal = signals[si++].second
         while (ri < references.size && references[ri].first <= m.t) nightRest = references[ri++].second ?: scoredNightRest
+        while (hi < hrvScores.size && hrvScores[hi].first <= m.t) hrvFactor = hrvFactor(hrvScores[hi++].second)
         // Heart rate counts as effort outside workouts only while moving, or in a sustained run (see [ACTIVITY_HRR]).
         val effort = m.workout != null || moving(m.steps) || sustained[i]
         val state: State
@@ -365,25 +368,16 @@ fun Recovery.notWorn(minutes: List<Minute>): BooleanArray {
  * Minutes in a run of at least [SUSTAINED_EFFORT_MINUTES] consecutive awake minutes outside the stress exclusion at
  * or above [EXERCISE_HRR]: effort even without steps.
  */
-fun Recovery.sustainedEffort(minutes: List<Minute>, params: ChargeParams): BooleanArray {
-    val out = BooleanArray(minutes.size)
-    var i = 0
-    fun hard(m: Minute) = m.sleepStage == null && m.workout == null && m.hr != null &&
-        hrr(m.hr, params.restingHr, params.maxHr) >= EXERCISE_HRR
-    while (i < minutes.size) {
-        if (!hard(minutes[i])) {
-            i++
-            continue
-        }
-        var j = i
-        while (j < minutes.size && hard(minutes[j]) && minutes[j].t - minutes[j - (if (j > i) 1 else 0)].t <= 60) j++
-        if (j - i >= SUSTAINED_EFFORT_MINUTES) for (k in i until j) out[k] = true
-        i = j
+fun Recovery.sustainedEffort(minutes: List<Minute>, params: ChargeParams): BooleanArray =
+    sustainedRuns(minutes.map { it.t }) { k ->
+        val m = minutes[k]
+        m.sleepStage == null && m.workout == null && m.hr != null && hrr(m.hr, params.restingHr, params.maxHr) >= EXERCISE_HRR
     }
-    return out
-}
 
 private fun List<Float>.median(): Float? = Stats.median(this)
+
+/** How well a sleep recharges for its night's HRV contributor [score]: 1 at a usual night (80) or without one. */
+private fun hrvFactor(score: Int?): Float = score?.let { (0.75f + 0.25f * it / 80f).coerceIn(0.6f, 1.1f) } ?: 1f
 
 private const val EPOC_THRESHOLD = 5f
 

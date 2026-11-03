@@ -351,7 +351,8 @@ data class ExerciseRow(
 
 /**
  * A personal best ([org.openstrap.app.data.Rewards]) by its [kind] ("run_5k", "lift:Bench press"): the [value] in its
- * kind's unit, the [date] it was set (epoch day) and the workout that set it, if one did (version 25).
+ * kind's unit, the [date] it was set (epoch seconds: the workout's shown start, or the local midnight of a day's
+ * steps) and the workout that set it, if one did (version 25).
  */
 @Entity(tableName = "personal_best")
 data class PersonalBest(

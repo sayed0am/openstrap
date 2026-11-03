@@ -84,7 +84,7 @@ internal fun rememberShownDay(
         if (preview == null && data == null) first.remember?.let(rootVm::markFirstScore)
     }
     return ShownDay(
-        day, recovery, shown.recoveryFailure, healthspan, dayExtras.strapReadiness, dayExtras.checkIn, wear,
+        day, recovery, shown.recoveryFailure, healthspan, dayExtras.checkIn, wear,
         firstScore = first.show || data == DataPreview.FirstScoreShown,
     )
 }
