@@ -16,7 +16,6 @@
     <ID>ImplicitDefaultLocale:Bytes.kt:"%02x".format(it)</ID>
     <ID>ImplicitDefaultLocale:ChannelSession.kt:ChannelSession$"%04x".format(endpoint)</ID>
     <ID>ImplicitDefaultLocale:ChannelSession.kt:ChannelSession$"%04x%s".format(it.key, if (it.value) "*" else "")</ID>
-    <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"No reply to %02X — the strap may be rebooting; reconnect before retrying".format(command)</ID>
     <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X failed: %s".format(cmd, DfuCode.describe(reply.code))</ID>
     <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X failed: %s".format(command, DfuCode.describe(r.code))</ID>
     <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X took too long".format(command)</ID>
@@ -224,7 +223,6 @@
     <ID>MaxLineLength:ChannelSession.kt:ChannelSession$if (v.version != 2 || v.encryptEnable == null) throw ProtocolException("Unsupported channel (v${v.version}, encryption ${v.encryptEnable})")</ID>
     <ID>MaxLineLength:ChannelSession.kt:ChannelSession$services = ServiceList.parse(request(Endpoints.SERVICES, ServiceList.REQUEST, timeoutMs = 5_000, wantReply = false) { it.u8(0) == 0x04 })</ID>
     <ID>MaxLineLength:DeviceFeatures.kt:DeviceFeatures$listOf(version, mask, algorithm, group1?.contentHashCode(), group2?.contentHashCode(), group4?.contentHashCode(), group16?.contentHashCode()).hashCode()</ID>
-    <ID>MaxLineLength:DfuSession.kt:DfuSession$r == null -&gt; throw DfuException(-6, "No reply to %02X — the strap may be rebooting; reconnect before retrying".format(command))</ID>
     <ID>MaxLineLength:FindDevice.kt:FindDevice$/** Zepp's continuous find. Not answered, and on fw 3.25 the strap doesn't vibrate for it (retested alone 2026-10-21); OpenStrap uses [BUZZ]. */</ID>
     <ID>MaxLineLength:Firmware.kt:DfuReply$Protocol : DfuReply</ID>
     <ID>MaxLineLength:GdspClient.kt:GdspClient$* One workout (04 §3.16, `xyk.java:60-150`): START(5, cursor) for the summary, then START(6, same cursor) for its detail. The next cursor is the summary's time + 1 s.</ID>
@@ -257,16 +255,10 @@
     <ID>ReturnCount:Settings.kt:SettingsCodec$fun parseVersion: SettingsProtocol?</ID>
     <ID>ReturnCount:Settings.kt:SettingsCodec$fun versionFlag: Pair&lt;Int, Int&gt;?</ID>
     <ID>ReturnCount:SportSession.kt:SportSession$fun parseVersion: Capabilities?</ID>
-    <ID>SuspendFunSwallowedCancellation:ChannelSession.kt:ChannelSession$runCatching</ID>
-    <ID>SuspendFunSwallowedCancellation:GdspClient.kt:GdspClient$runCatching</ID>
-    <ID>SwallowedException:GdspClient.kt:GdspClient$e: GdspTimeoutException</ID>
     <ID>ThrowingExceptionsWithoutMessageOrCause:DeviceFeatures.kt:DeviceFeatures.Companion$IndexOutOfBoundsException()</ID>
     <ID>ThrowsCount:ChannelCrypto.kt:ChannelCipher$fun decrypt: ByteArray</ID>
     <ID>ThrowsCount:ChannelSession.kt:ChannelSession$suspend fun handshake</ID>
     <ID>ThrowsCount:DfuSession.kt:DfuSession$private suspend fun awaitFinal</ID>
-    <ID>TooGenericExceptionCaught:Chunks.kt:Reassembler$e: Exception</ID>
-    <ID>TooGenericExceptionCaught:RecordParsers.kt:e: IndexOutOfBoundsException</ID>
-    <ID>TooGenericExceptionCaught:Workouts.kt:WorkoutParsers$e: IndexOutOfBoundsException</ID>
     <ID>TooManyFunctions:B163.kt:B163</ID>
     <ID>TooManyFunctions:Settings.kt:SettingsCodec</ID>
     <ID>UnsafeCallOnNullableType:ChannelSession.kt:ChannelSession$Auth.stripReply(command, reply)!!</ID>
