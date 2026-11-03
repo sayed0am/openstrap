@@ -42,6 +42,9 @@ internal class SavedWorkoutEditor(
                 // Not deleted, its summary stays, so Discard can be tried again.
                 val w = catching {
                     dao.appWorkoutOnce(start).also { w ->
+                        // Gone before its twins: a start trimmed into a twin would make it another owner of the
+                        // strap's effect, and the effect would stay, its recovery carried into the next workout.
+                        dao.deleteAppWorkout(start)
                         if (w?.end != null) {
                             val t = clock()
                             val range = org.openstrap.app.data.Workouts.phoneRange(w, t)
@@ -51,7 +54,6 @@ internal class SavedWorkoutEditor(
                             // its time is remembered, and the sync leaves out a strap workout over it.
                             dao.insertDismissedWorkouts(listOf(org.openstrap.app.data.db.DismissedWorkout(range.first, range.last)))
                         }
-                        dao.deleteAppWorkout(start)
                     }
                 }.onFailure { log("workout not discarded: ${it.message}") }.getOrElse { return@withLock }
                 if (w?.end != null) refreshDays(w.start, w.recordedEnd ?: w.end)

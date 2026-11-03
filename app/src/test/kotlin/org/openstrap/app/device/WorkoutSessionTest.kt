@@ -31,6 +31,8 @@ import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.OpenStrapDatabase
+import org.openstrap.app.data.db.SportEffectRow
+import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.inMemoryDb
@@ -178,6 +180,33 @@ class WorkoutSessionTest {
         assertNull(stored(t0))
         // Discarded before the strap's copy synced: its time is remembered, so the copy is left out when it arrives.
         assertEquals(listOf(t0 to t0 + 300), runBlocking { db.healthDao().dismissedWorkoutsAll() }.map { it.start to it.end })
+    }
+
+    @Test
+    fun discardAfterAStartTrimTakesTheStrapCopysEffect() {
+        val s = session()
+        val t0 = clock.now
+        s.start(sportType = 1)
+        s.recording()
+        clock.advance(Duration.ofSeconds(300))
+        s.end()
+        s.state.await { it is WorkoutState.Ended }
+        runBlocking {
+            db.healthDao().insertWorkouts(listOf(Workout(t0 + 3, t0 + 304, 1, 300, null, null, null, null, null, null, null, null, null, 6)))
+            db.healthDao().insertSportEffects(listOf(SportEffectRow(t0 + 306, 45, null, null, null, null, null, null, null)))
+        }
+        // The shown start now lies inside the strap's copy.
+        s.trim(t0, t0 + 60, t0 + 240)
+        storedOnce(t0) { it?.shownStart == t0 + 60 }
+        s.discard(t0)
+        s.state.await { it is WorkoutState.Idle }
+        assertNull(stored(t0))
+        runBlocking {
+            assertNull(db.healthDao().workoutOnce(t0 + 3))
+            // Left, its 45 recovery minutes would carry into the next workout.
+            assertEquals(emptyList<SportEffectRow>(), db.healthDao().sportEffectsOnce(t0, t0 + 3600))
+            assertEquals(listOf(t0 + 306), db.healthDao().deletedWorkoutsAll().map { it.effectEnd })
+        }
     }
 
     @Test
