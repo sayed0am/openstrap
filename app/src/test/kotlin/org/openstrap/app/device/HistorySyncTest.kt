@@ -17,8 +17,14 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.openstrap.app.ble.GattException
 import org.openstrap.app.ble.Notification
+import org.openstrap.app.data.db.ActivityMinute
+import org.openstrap.app.data.db.DeletedWorkout
+import org.openstrap.app.data.db.DismissedWorkout
+import org.openstrap.app.data.db.HrvSample
 import org.openstrap.app.data.db.OpenStrapDatabase
+import org.openstrap.app.data.db.SportEffectRow
 import org.openstrap.app.testing.inMemoryDb
+import org.openstrap.app.testing.workout
 import org.openstrap.protocol.ByteWriter
 import org.openstrap.protocol.ChannelSession
 import org.openstrap.protocol.StrapLink
@@ -287,5 +293,91 @@ class HistorySyncTest {
 
         assertEquals(null, thrown)
         assertTrue("${state.value}", state.value is SyncState.Failed)
+    }
+
+    private val day = 24 * 3600L
+    private val now get() = System.currentTimeMillis() / 1000
+
+    @Test fun `a type with no cursor fetches all the strap still holds`() = runTest {
+        // Forget strap cleared the cursors, and the strap was away for longer than two days.
+        strap.records[HistoryDataType.HRV_RMSSD.code] = listOf(hrv(base - 10 * day, 40), hrv(base - 5 * day, 50))
+        runSync()
+
+        assertEquals(listOf(base - 10 * day, base - 5 * day), table("SELECT timestamp FROM hrv ORDER BY timestamp").map { it[0] })
+        // From as far back as the strap keeps history: 60 days.
+        val first = strap.starts.first { it.first == HistoryDataType.HRV_RMSSD.code }.second
+        assertTrue("$first", first in now - 60 * day - 60..now - 60 * day)
+    }
+
+    @Test fun `a type with no cursor starts at its newest stored row`() = runTest {
+        dao.insertHrv(listOf(HrvSample(base - 3 * day, 45)))
+        strap.records[HistoryDataType.HRV_RMSSD.code] = listOf(hrv(base - 5 * day, 50), hrv(base - 3 * day, 45), hrv(base - day, 60))
+        runSync()
+
+        assertEquals(base - 3 * day, strap.starts.first { it.first == HistoryDataType.HRV_RMSSD.code }.second)
+        assertEquals(listOf(base - 3 * day, base - day), table("SELECT timestamp FROM hrv ORDER BY timestamp").map { it[0] })
+    }
+
+    @Test fun `activity after now stays when the phone's clock went back`() = runTest {
+        val ahead = (now + day) / 60 * 60
+        // Before 2024: a strap whose clock was never set. That still goes.
+        dao.insertActivity(listOf(ActivityMinute(ahead, 40, 10, 1, 90), ActivityMinute(ahead + 60, 35, 10, 1, 92), ActivityMinute(600, 10, 1, 1, 80)))
+        runSync()
+
+        assertEquals(listOf(ahead, ahead + 60), table("SELECT timestamp FROM activity_minute ORDER BY timestamp").map { it[0] })
+    }
+
+    /** A sport effect (type 59) ending at [end], with a recovery time: protobuf field 26 is the end, 11 the recovery. */
+    private fun effect(end: Long) = end to (byteArrayOf(0xD0.toByte(), 0x01) + varint(end) + byteArrayOf(0x58) + varint(300))
+
+    private fun varint(v: Long): ByteArray {
+        val out = mutableListOf<Byte>()
+        var x = v
+        while (x >= 0x80) { out += ((x and 0x7F) or 0x80).toByte(); x = x ushr 7 }
+        out += x.toByte()
+        return out.toByteArray()
+    }
+
+    private fun effectEnds() = table("SELECT `end` FROM sport_effect ORDER BY `end`").map { it[0] }
+
+    @Test fun `an effect over a workout ended under a minute is left out and stays out`() = runTest {
+        // A phone workout ended after 30 s: deleted, its time dismissed. The strap sent its effect but no workout.
+        dao.insertDismissedWorkouts(listOf(DismissedWorkout(base, base + 30)))
+        strap.records[HistoryDataType.SPORT_EFFECT.code] = listOf(effect(base + 57))
+        strap.perChunk[HistoryDataType.SPORT_EFFECT.code] = 1
+        runSync()
+
+        assertEquals(emptyList<Long>(), effectEnds())
+        assertEquals(listOf(DeletedWorkout(base + 57, base + 57, dao.deletedWorkoutsAll().single().deletedAt)), dao.deletedWorkoutsAll())
+
+        // The strap sends it again after the cursor goes back.
+        cursors.values.clear()
+        runSync()
+        assertEquals(emptyList<Long>(), effectEnds())
+    }
+
+    @Test fun `an effect a workout runs to is kept, and one far from a dismissed time`() = runTest {
+        dao.insertDismissedWorkouts(listOf(DismissedWorkout(base, base + 30)))
+        // A strap session that began earlier and ended as the short one did owns the effect.
+        dao.insertWorkouts(listOf(workout(start = base - 1800, end = base + 50)))
+        strap.records[HistoryDataType.SPORT_EFFECT.code] = listOf(effect(base + 57))
+        strap.perChunk[HistoryDataType.SPORT_EFFECT.code] = 1
+        runSync()
+        assertEquals(listOf(base + 57), effectEnds())
+
+        // Over three minutes after the dismissed time: some other workout's.
+        strap.records[HistoryDataType.SPORT_EFFECT.code] = listOf(effect(base + 30 + 121))
+        runSync()
+        assertEquals(listOf(base + 57, base + 151), effectEnds())
+        assertEquals(emptyList<DeletedWorkout>(), dao.deletedWorkoutsAll())
+    }
+
+    @Test fun `an effect stored before over no workout goes at the next sync`() = runTest {
+        dao.insertDismissedWorkouts(listOf(DismissedWorkout(base, base + 30)))
+        dao.insertSportEffects(listOf(SportEffectRow(base + 57, 300, null, null, null, null, null, null, null)))
+        runSync()
+
+        assertEquals(emptyList<Long>(), effectEnds())
+        assertEquals(listOf(base + 57), dao.deletedWorkoutsAll().map { it.effectEnd })
     }
 }

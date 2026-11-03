@@ -786,6 +786,13 @@ interface HealthDao : RangedReads {
      */
     @Query("SELECT (SELECT COUNT(*) FROM activity_minute WHERE timestamp BETWEEN :from AND :to) + (SELECT COUNT(*) FROM heart_rate WHERE timestamp BETWEEN :from AND :to) * 7 + (SELECT COUNT(*) FROM sleep_session WHERE `end` BETWEEN :from AND :to) * 1009 + (SELECT COUNT(*) FROM workout WHERE start BETWEEN :from AND :to) * 100003 + (SELECT COUNT(*) + COALESCE(SUM(editedAt), 0) FROM sleep_edit) * 31")
     suspend fun dataFingerprint(from: Long, to: Long): Long
+
+    /**
+     * The newest key a strap history type left in its table, a `SELECT MAX(...)` the sync builds from the table each
+     * type fills, where a type with no cursor starts ([org.openstrap.app.device.HistorySync]).
+     */
+    @androidx.room.RawQuery
+    suspend fun newestKeyOnce(query: androidx.sqlite.db.SupportSQLiteQuery): Long?
 }
 
 /**
