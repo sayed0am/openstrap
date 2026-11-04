@@ -138,7 +138,7 @@ class ZeppCloudTest {
             listOf("login_token", "os_version", "source", "dn"),
             ZeppCloud.appTokensQuery("login").keys.toList(),
         )
-        assertEquals("com.huami.midong:10.9.0-play:151983", ZeppCloud.appTokensQuery("login")["source"])
+        assertEquals("com.huami.midong:10.10.5-play:151997", ZeppCloud.appTokensQuery("login")["source"])
         val r = ZeppCloud.parseAppTokens("""{"result":"ok","token_info":{"app_token":"new-app","user_id":"42","app_ttl":7776000}}""")
         assertEquals(AppTokenRefresh("new-app", "42", 7_776_000), r)
         val renewed = ZeppCloud.withRefresh(signedIn, r, nowMs = 9_000)
