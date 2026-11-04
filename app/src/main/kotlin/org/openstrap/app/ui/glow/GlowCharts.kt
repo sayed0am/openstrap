@@ -82,6 +82,7 @@ private val Grid = ChartInk.Grid
 private val Target = ChartInk.Target
 
 private val axisText = TextStyle(color = Muted, fontSize = 10.sp, fontFamily = FunnelSans)
+private val valueText = TextStyle(color = Ink, fontSize = 11.sp, fontFamily = FunnelSans)
 private val readoutText = TextStyle(color = Ink, fontSize = 12.sp, fontFamily = FunnelSans)
 
 /** A solid horizontal hairline across the chart: a grid row by default, or a target in [color]. */
@@ -109,6 +110,10 @@ private fun DrawScope.text(r: TextLayoutResult, x: Float, y: Float, align: Float
 
 /** The average's label: the axis text a touch brighter. */
 private val averageText = axisText.copy(color = Ink.copy(alpha = 0.8f))
+/** Today's day name and value on a [GlowTrend], and the other days' values. */
+private val todayAxisText = axisText.copy(color = Ink)
+private val todayValueText = valueText.copy(color = Ink)
+private val pastValueText = valueText.copy(color = Ink.copy(alpha = 0.75f))
 /** A [NormalTrend]'s band label and day labels. */
 private val trendLabelText = axisText.copy(fontSize = 12.sp)
 
@@ -293,6 +298,63 @@ fun GlowBars(
                 }
                 axis(axisLabels, h + 4.dp.toPx())
                 if (picked != null && describe != null) readout(m, describe(picked, values[picked]), pitchX * picked + pitchX / 2, 0f)
+            }
+        },
+    )
+}
+
+/* ------------------------------------------------------------------------------------------------ */
+
+/** A day on a [GlowTrend]. */
+data class GlowDay(val label: String, val value: Float?)
+
+/**
+ * A week as solid stems rising to each day's value, the value printed above. Today (the last day) gets a glowing
+ * ring. A day with no value is left empty. [average] draws a solid line across.
+ */
+@Composable
+fun GlowTrend(
+    days: List<GlowDay>,
+    modifier: Modifier = Modifier,
+    height: Dp = 130.dp,
+    average: Float? = null,
+) {
+    val m = rememberTextMeasurer()
+    Spacer(
+        modifier.fillMaxWidth().height(height).drawWithCache {
+            if (days.isEmpty()) return@drawWithCache nothing()
+            val axisH = 18.dp.toPx()
+            val top = 22.dp.toPx()
+            val h = size.height - axisH
+            val slot = size.width / days.size
+            val known = days.mapNotNull { it.value } + listOfNotNull(average)
+            val lo = (known.minOrNull() ?: 0f) * 0.85f
+            val hi = (known.maxOrNull() ?: 1f).coerceAtLeast(lo + 1f)
+            fun yOf(v: Float) = top + (h - top - 6.dp.toPx()) * (1f - (v - lo) / (hi - lo))
+            val names = days.mapIndexed { i, d -> m.measure(d.label, if (i == days.lastIndex) todayAxisText else axisText) }
+            val figures = days.mapIndexed { i, d ->
+                d.value?.let { m.measure(it.roundToInt().toString(), if (i == days.lastIndex) todayValueText else pastValueText) }
+            }
+            onDrawBehind {
+                average?.let { gridLine(yOf(it), Target) }
+                days.forEachIndexed { i, d ->
+                    val cx = slot * i + slot / 2
+                    val today = i == days.lastIndex
+                    text(names[i], cx, h + 4.dp.toPx(), align = 0.5f)
+                    val v = d.value ?: return@forEachIndexed
+                    val y = yOf(v)
+                    drawLine(
+                        Ink.copy(alpha = if (today) 0.9f else 0.45f), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
+                        strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
+                    )
+                    if (today) {
+                        drawCircle(Ink.copy(alpha = 0.18f), 11.dp.toPx(), Offset(cx, y))
+                        drawCircle(Ink, 6.dp.toPx(), Offset(cx, y))
+                    } else {
+                        drawCircle(Ink, 4.dp.toPx(), Offset(cx, y))
+                    }
+                    figures[i]?.let { text(it, cx, y - 20.dp.toPx(), align = 0.5f) }
+                }
             }
         },
     )
