@@ -197,7 +197,7 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
     }
 
 /**
- * Start a workout (spec 4.2): unlit, with a heart-red light travelling round its border ([movingBorder]), the title
+ * Start a workout (spec 4.2): unlit, with a rainbow light travelling round its border ([movingBorder]), the title
  * with your usual sport under it ("Outdoor run, your usual") and a white play button. One thing to do, so the whole
  * strip is the button and has no caret; it opens Ready with that sport.
  */
@@ -205,7 +205,7 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
 internal fun StartWorkoutStrip(sport: Int, onStart: (Int) -> Unit, modifier: Modifier = Modifier) {
     val name = Workouts.sportName(sport)
     // A strip that does one thing is a button: its title is plain text, with no caret (spec 2.5, Tappable says so).
-    TodayStrip(MetricColors.heart, modifier.movingBorder(MetricColors.heart), onClick = { onStart(sport) }) {
+    TodayStrip(MetricColors.heart, modifier.movingBorder(), onClick = { onStart(sport) }) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(stringResource(R.string.glow_today_start_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)

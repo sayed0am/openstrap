@@ -238,8 +238,8 @@ fun GlowActivityScreen(
  */
 @Composable
 private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
-    // Unlit (its look), with the heart-red light travelling round its border, as on Today.
-    PictureCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart)) {
+    // Unlit (its look), with the rainbow light travelling round its border, as on Today.
+    PictureCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder()) {
         EdgeTitle(stringResource(R.string.glow_activity_start_workout), null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {

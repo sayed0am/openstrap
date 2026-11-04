@@ -24,15 +24,17 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.first
+import org.openstrap.app.ui.theme.MetricColors
 
 /**
- * A light travelling round a card's border, once every [periodMillis], brightest at its head and fading along its
- * tail, with a soft halo outside it. The one moving light on a screen, kept for the action it offers (Start a workout,
- * spec 2.5). It holds still while the list scrolls, the page is off screen or the workout covers it ([LocalGlowPaused],
- * [LocalGlowPagePaused]), as the glows do, and with the system's animations off the light rests at the top.
+ * A light travelling round a card's border, once every [periodMillis], brightest at its head and fading along a
+ * rainbow tail of the cards' own colours ([Rainbow]), with a soft halo outside it. The one moving light on a
+ * screen, kept for the action it offers (Start a workout, spec 2.5). It holds still while the list scrolls, the page
+ * is off screen or the workout covers it ([LocalGlowPaused], [LocalGlowPagePaused]), as the glows do, and with the
+ * system's animations off the light rests at the top.
  */
 @Composable
-fun Modifier.movingBorder(color: Color, periodMillis: Int = MOVING_BORDER_PERIOD): Modifier {
+fun Modifier.movingBorder(periodMillis: Int = MOVING_BORDER_PERIOD): Modifier {
     val context = LocalContext.current
     val animate = remember(context) { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
     // Read through state, so the running loop follows a newly provided lambda rather than the first one it saw.
@@ -60,12 +62,13 @@ fun Modifier.movingBorder(color: Color, periodMillis: Int = MOVING_BORDER_PERIOD
         val halo = 7.dp.toPx()
         val cx = size.width / 2f
         val cy = size.height / 2f
-        // The tail fades in over the last third of the turn to the white-hot head; the rest of the border is dark.
-        val head = lerp(color, Color.White, 0.7f)
-        val stops = floatArrayOf(0f, 0.68f, 0.88f, 0.97f, 0.995f, 1f)
+        // The tail fades in over the last third of the turn, running the spectrum from red to violet, to the white-hot
+        // head; the rest of the border is dark.
+        val stops = floatArrayOf(0f, 0.66f, *RainbowStops, 0.995f, 1f)
         val colors = intArrayOf(
-            Color.Transparent.toArgb(), color.copy(alpha = 0f).toArgb(), color.copy(alpha = 0.55f).toArgb(),
-            color.toArgb(), head.toArgb(), Color.Transparent.toArgb(),
+            Color.Transparent.toArgb(), Rainbow.first().copy(alpha = 0f).toArgb(),
+            *Rainbow.mapIndexed { i, c -> c.copy(alpha = 0.35f + 0.65f * i / Rainbow.lastIndex).toArgb() }.toIntArray(),
+            lerp(Rainbow.last(), Color.White, 0.75f).toArgb(), Color.Transparent.toArgb(),
         )
         val shader = SweepGradient(cx, cy, colors, stops)
         val matrix = Matrix()
@@ -81,6 +84,15 @@ fun Modifier.movingBorder(color: Color, periodMillis: Int = MOVING_BORDER_PERIOD
         }
     }
 }
+
+/**
+ * The tail's colours: the cards' own colours in spectrum order, Heart's red at its end through Energy's orange,
+ * Calories' gold, Steps' lime, Recovery's teal and Sleep's blue to the evening's violet behind the head.
+ */
+private val Rainbow = with(MetricColors) { listOf(heart, charge, calories, steps, readiness, sleepDeep, evening) }
+
+/** Where each [Rainbow] colour sits round the turn, spread over the tail up to just behind the head. */
+private val RainbowStops = FloatArray(Rainbow.size) { 0.72f + 0.25f * it / Rainbow.lastIndex }
 
 /** One turn of [movingBorder] in milliseconds: slow enough to read as a light, not a spinner. */
 const val MOVING_BORDER_PERIOD = 7_000
