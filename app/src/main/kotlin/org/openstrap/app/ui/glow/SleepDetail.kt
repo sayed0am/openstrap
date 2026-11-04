@@ -392,10 +392,7 @@ private fun StageBars(b: Summaries.SleepBreakdown, modifier: Modifier = Modifier
             val secs = b.byStage[st] ?: 0L
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(SLEEP_NAMES[st].orEmpty(), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.width(56.dp))
-                val shape = RoundedCornerShape(50)
-                Box(Modifier.weight(1f).height(10.dp).background(Color.White.copy(alpha = 0.06f), shape)) {
-                    Box(Modifier.fillMaxWidth((secs.toFloat() / total).coerceIn(0f, 1f)).height(10.dp).background(stageColor(st), shape))
-                }
+                FillBar(secs.toFloat() / total, stageColor(st), Modifier.weight(1f), height = 10.dp)
                 Text(
                     Units.duration(secs), color = Color.White, style = GlowType.secondary,
                     modifier = Modifier.padding(start = 12.dp).width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End,

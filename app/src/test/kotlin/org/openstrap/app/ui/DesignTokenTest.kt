@@ -239,11 +239,8 @@ class DesignTokenTest {
     }
 
     private companion object {
-        /**
-         * Glow files still on Material type until the chart batch moves them (ScaleLabel onto ScaleLabels). Only
-         * shrinks.
-         */
-        val materialNotMigrated = setOf("glow/GlowHealthspan.kt")
+        /** Glow files still on Material type. Empty since the charts moved ScaleLabel onto ScaleLabels. */
+        val materialNotMigrated = emptySet<String>()
 
         /** From this radius up a corner is a card's. Tiles, chips, bars and pills stay under it. */
         const val CARD_SIZED = 20f

@@ -54,7 +54,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -371,11 +370,11 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
         val inset = HandleInset.toPx()
         fun x(time: Long) = inset + (time - first).toFloat() / (last - first) * (size.width - 2 * inset)
         fun y(v: Float) = size.height - (v - lo) / (hi - lo) * size.height
-        series.zipWithNext().forEach { (a, b) ->
-            if (b.first - a.first > 300) return@forEach
-            val inside = a.first in f until t
-            val color = ZONE_COLORS[WorkoutRecorder.liveZoneOf(a.second, maxHr, heartZones)].copy(alpha = if (inside) 1f else 0.25f)
-            drawLine(color, Offset(x(a.first), y(a.second.toFloat())), Offset(x(b.first), y(b.second.toFloat())), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+        drawZoneLine(series.size, 2.dp.toPx(), at = { i -> series[i].let { (time, bpm) -> Offset(x(time), y(bpm.toFloat())) } }) { i ->
+            val (time, bpm) = series[i]
+            // More than five minutes without a reading breaks the line.
+            if (series[i + 1].first - time > 300) null
+            else ZONE_COLORS[WorkoutRecorder.liveZoneOf(bpm, maxHr, heartZones)].copy(alpha = if (time in f until t) 1f else 0.25f)
         }
         listOf(f, t).forEach { time ->
             val hx = x(time)

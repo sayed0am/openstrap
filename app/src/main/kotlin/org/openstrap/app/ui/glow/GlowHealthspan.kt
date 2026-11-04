@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -172,7 +171,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
         val label = Color.White.copy(alpha = 0.6f)
         Column {
             // Your age over its hairline, the range under its band, as in the kit, so the two never overlap.
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.yourAge(age), x(age.toFloat()), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.yourAge(age), x(age.toFloat()) / w, label) }
             Canvas(Modifier.fillMaxWidth().height(30.dp)) {
                 val y = size.height / 2
                 fun px(a: Float) = x(a).toPx()
@@ -181,15 +180,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
                 drawLine(Color.White.copy(alpha = 0.6f), Offset(px(age.toFloat()), 0f), Offset(px(age.toFloat()), size.height), 1.dp.toPx())
                 drawCircle(Color.White, 7.dp.toPx(), Offset(px(estimate), y))
             }
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.ageRange(low, high), x((low + high) / 2f), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.ageRange(low, high), x((low + high) / 2f) / w, label) }
         }
     }
-}
-
-/** A label centred on [at] across a scale [width] wide, kept inside it. */
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.ScaleLabel(text: String, at: androidx.compose.ui.unit.Dp, width: androidx.compose.ui.unit.Dp, color: Color) {
-    // Centred on its point by aligning a share of the way across, as BiasAlignment does.
-    val bias = ((at / width) * 2f - 1f).coerceIn(-1f, 1f)
-    Text(text, color = color, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(androidx.compose.ui.BiasAlignment(bias, 0f)))
 }

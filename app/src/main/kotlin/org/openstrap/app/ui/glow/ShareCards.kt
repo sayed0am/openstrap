@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -495,7 +494,8 @@ private fun IndoorStory(card: StoryCard.Indoor) {
         Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.time, DotSize.Detail, 310.dp) }
         Text("Workout time", color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.weight(1f))
-        ZoneStrip(card.zones)
+        // Time in each zone as one strip, its ends rounded.
+        ZoneBar(card.zones, ZONE_COLORS, height = 10.dp, gap = 3.dp, corner = 2.dp, ends = 5.dp)
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 14.dp)) }
         card.chip?.let { Box(Modifier.padding(top = 14.dp)) { StoryChipView(it) } }
     }
@@ -546,57 +546,21 @@ private fun WeekFigures(figures: List<WeekFigure>) {
     }
 }
 
-/** Time in each zone as one strip, each zone as long as its share and in its colour, ends rounded. */
-@Composable
-private fun ZoneStrip(zones: List<Int>) {
-    val total = zones.sum()
-    if (total <= 0) return
-    Row(Modifier.fillMaxWidth().height(10.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        val shown = zones.indices.filter { zones[it] > 0 }
-        shown.forEachIndexed { i, z ->
-            val shape = RoundedCornerShape(
-                topStart = if (i == 0) 5.dp else 2.dp, bottomStart = if (i == 0) 5.dp else 2.dp,
-                topEnd = if (i == shown.lastIndex) 5.dp else 2.dp, bottomEnd = if (i == shown.lastIndex) 5.dp else 2.dp,
-            )
-            Box(Modifier.weight(zones[z].toFloat() / total).fillMaxHeight().clip(shape).background(ZONE_COLORS[z]))
-        }
-    }
-}
-
 /** Board ShareHiit: rounds in dots, a column for each round's peak, the line under them and the brand. */
 @Composable
 private fun RoundsStory(card: StoryCard.Rounds) {
     Column(Modifier.fillMaxSize()) {
         StoryHeading(card.whenLine, card.sport)
         Box(Modifier.padding(top = 30.dp)) { NumberAndUnit(card.done, card.unit, DotSize.Detail, maxWidth = 200.dp) }
-        if (card.peaks.isNotEmpty()) PeakColumns(card.peaks, card.maxHeartRate, Modifier.padding(top = 30.dp))
+        if (card.peaks.isNotEmpty()) {
+            val heartZones = LocalHeartZones.current
+            // Each round's peak in its zone's colour, white once it reached the top zone.
+            fun colorOf(bpm: Int) = WorkoutRecorder.liveZone(bpm, card.maxHeartRate, heartZones)?.takeIf { it < ZONE_COLORS.lastIndex }
+            PeakBars(card.peaks, { bpm -> colorOf(bpm)?.let { ZONE_COLORS[it] } ?: Color.White }, Modifier.padding(top = 30.dp))
+        }
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 2, modifier = Modifier.padding(top = 16.dp)) }
         Spacer(Modifier.weight(1f))
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { Brand() }
-    }
-}
-
-/**
- * Each round's peak as a column, as tall as it sits between the lowest and highest: white once it reached the top
- * zone, else in its zone's colour, faint without a reading.
- */
-@Composable
-private fun PeakColumns(peaks: List<Int?>, maxHr: Int, modifier: Modifier) {
-    val heartZones = LocalHeartZones.current
-    val known = peaks.filterNotNull()
-    val lo = (known.minOrNull() ?: 0) - 8
-    val hi = known.maxOrNull() ?: 1
-    Row(modifier.fillMaxWidth().height(72.dp), horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.Bottom) {
-        peaks.forEach { p ->
-            val share = if (p == null || hi <= lo) 0.3f else 0.35f + 0.65f * (p - lo) / (hi - lo)
-            val zone = WorkoutRecorder.liveZone(p, maxHr, heartZones)
-            val color = when {
-                p == null -> Color.White.copy(alpha = 0.25f)
-                zone == null || zone >= ZONE_COLORS.lastIndex -> Color.White
-                else -> ZONE_COLORS[zone]
-            }
-            Box(Modifier.weight(1f).fillMaxHeight(share).clip(RoundedCornerShape(5.dp)).background(color))
-        }
     }
 }
 
@@ -609,29 +573,10 @@ private fun CalmStory(card: StoryCard.Calm) {
         Spacer(Modifier.weight(1f))
         NumberAndUnit(card.minutes, card.unit, DotSize.Detail)
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 16.dp)) }
-        if (card.heart.count { it != null } >= 2) CalmLine(card.heart, Modifier.padding(top = 16.dp))
+        // The heart rate through the session as one soft white line.
+        PlainLine(card.heart, Color.White.copy(alpha = 0.55f), 40.dp, Modifier.padding(top = 16.dp), smooth = false, stroke = 2.dp)
         Spacer(Modifier.weight(1f))
         Brand(ring = true)
-    }
-}
-
-/** The heart rate through the session as one soft white line. */
-@Composable
-private fun CalmLine(values: List<Float?>, modifier: Modifier) {
-    Canvas(modifier.fillMaxWidth().height(40.dp)) {
-        val known = values.filterNotNull()
-        val lo = known.min() - 2
-        val hi = known.max() + 2
-        val path = Path()
-        var started = false
-        values.forEachIndexed { i, v ->
-            v ?: return@forEachIndexed
-            val x = i / (values.size - 1f) * size.width
-            val y = size.height - (v - lo) / (hi - lo) * size.height
-            if (!started) path.moveTo(x, y) else path.lineTo(x, y)
-            started = true
-        }
-        drawPath(path, Color.White.copy(alpha = 0.55f), style = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
     }
 }
 

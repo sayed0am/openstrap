@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.geometry.Size
 import androidx.compose.foundation.border
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
@@ -67,6 +66,7 @@ import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageSheet
+import org.openstrap.app.ui.glow.ProgressRing
 import org.openstrap.app.ui.glow.QuietPanel
 import org.openstrap.app.ui.glow.Raised
 import org.openstrap.app.ui.glow.MinusPlus
@@ -273,14 +273,7 @@ private fun RestCard(r: WorkoutState.Recording, left: () -> Long, done: Int, bpm
 @Composable
 private fun RestRing(left: () -> Long, total: Long) {
     Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxSize().padding(4.dp)) {
-            val w = 8.dp.toPx()
-            val inset = Offset(w / 2, w / 2)
-            val arc = Size(size.width - w, size.height - w)
-            drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, inset, arc, style = Stroke(w))
-            val sweep = 360f * (left().toFloat() / total).coerceIn(0f, 1f)
-            drawArc(RestGreen, -90f, sweep, false, inset, arc, style = Stroke(w, cap = StrokeCap.Round))
-        }
+        ProgressRing({ left().toFloat() / total }, RestGreen, Modifier.fillMaxSize().padding(4.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             DotClock({ dotClock(left()) }, DotSize.Detail)
             Spacer(Modifier.height(10.dp))

@@ -7,7 +7,6 @@ import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.DayWords
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
@@ -161,9 +160,10 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
         if (range == Range.Week) {
             item {
                 if (daily.all { it == null }) DetailEmpty("No Heart points from the strap for these days yet.")
-                else StackedDayBars(
-                    daily.map { it ?: 0f }, ActivityCopy.HEART_POINTS_TARGET.toFloat(), color, week.map { DayWords.weekdayShort(it) },
-                    Modifier.padding(top = 8.dp),
+                else StackedBars(
+                    remember(daily) { dayOnDay(daily.map { it ?: 0f }) }, dayOnDayColor(color, daily.lastIndex),
+                    ActivityCopy.HEART_POINTS_TARGET.toFloat(), week.map { DayWords.weekdayShort(it) }, spread = false,
+                    Modifier.padding(top = 8.dp), headroom = 18.dp, widest = Dp.Infinity,
                 ) { i ->
                     scrub = i?.let {
                         DetailHeadline(Math.round(daily[it] ?: 0f).toString(), ActivityCopy.earnedLabel(DayWords.short(week[it])), null)
@@ -201,62 +201,26 @@ private fun HeartPointsDetail(ctx: ActivityDetailContext) {
 
 /**
  * Stacked day bars (chart kit): each day's [values] stacked on the days before it, so the last bar is the 7-day total.
- * The oldest day's part is lighter at the foot of every bar: it drops off tomorrow. A solid line at 40% marks the [target].
- * Tapping or holding picks a day ([onPick], null on release).
+ * Each bar's foot is the oldest day's part, the part that drops off tomorrow.
  */
-@Composable
-private fun StackedDayBars(
-    values: List<Float>, target: Float, color: Color, labels: List<String>, modifier: Modifier = Modifier, height: Dp = 200.dp,
-    onPick: (Int?) -> Unit,
-) {
-    val running = remember(values) { var sum = 0f; values.map { sum += it; sum } }
-    var picked by remember(values) { mutableStateOf<Int?>(null) }
-    var width by remember { mutableStateOf(0f) }
-    val tick = rememberScrubHaptics()
-    fun indexAt(x: Float) = if (width <= 0f || values.isEmpty()) null else (x / (width / values.size)).toInt().coerceIn(0, values.lastIndex)
-    Column(modifier) {
-        Canvas(
-            Modifier.fillMaxWidth().height(height).onSizeChanged { width = it.width.toFloat() }
-                .scrub(values) { x -> val i = x?.let(::indexAt); picked = i; tick(i, running, null, false); onPick(i) }
-                .pointerInput(values) {
-                    detectTapGestures { o ->
-                        val i = indexAt(o.x)
-                        picked = if (picked == i) null else i
-                        tick(picked, running, null, false)
-                        onPick(picked)
-                    }
-                },
-        ) {
-            val top = 18.dp.toPx()
-            val hi = maxOf(target, running.maxOrNull() ?: 0f).coerceAtLeast(1f)
-            fun yOf(v: Float) = top + (size.height - top) * (1f - v / hi)
-            val slot = size.width / values.size.coerceAtLeast(1)
-            val w = slot * 0.6f
-            val r = CornerRadius(4.dp.toPx())
-            val ty = yOf(target)
-            drawLine(Color.White.copy(alpha = 0.4f), Offset(0f, ty), Offset(size.width, ty), 1.dp.toPx())
-            val oldest = values.firstOrNull() ?: 0f
-            running.forEachIndexed { i, sum ->
-                if (sum <= 0f) return@forEachIndexed
-                val x = slot * i + (slot - w) / 2
-                val dim = picked != null && picked != i
-                val main = if (i == values.lastIndex) lerp(color, Color.White, 0.3f) else color
-                val a = if (dim) 0.35f else 1f
-                drawRoundRect(main.copy(alpha = a), Offset(x, yOf(sum)), Size(w, size.height - yOf(sum)), r)
-                // The oldest day's points, at the foot: the part that drops off tomorrow.
-                if (oldest > 0f) drawRoundRect(Color.Black.copy(alpha = 0.35f * a), Offset(x, yOf(oldest)), Size(w, size.height - yOf(oldest)), r)
-            }
-        }
-        androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            labels.forEach { l ->
-                Text(
-                    l, color = Color.White.copy(alpha = 0.55f), style = GlowType.secondary, modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1,
-                )
-            }
-        }
+private fun dayOnDay(values: List<Float>): List<List<Float>> {
+    val oldest = values.firstOrNull() ?: 0f
+    var sum = 0f
+    return values.map {
+        sum += it
+        listOf(oldest, sum - oldest)
     }
 }
+
+/** The day bars' colours: the oldest day's part darker at the foot of every bar, the [last] bar (today) lit. */
+private fun dayOnDayColor(color: Color, last: Int): (bar: Int, part: Int) -> Color = { bar, part ->
+    val main = if (bar == last) lerp(color, Color.White, TODAY_LIFT) else color
+    if (part == 0) lerp(main, Color.Black, OLDEST_SHADE) else main
+}
+
+/** How much lighter today's bar is, and how much darker the oldest day's part. */
+private const val TODAY_LIFT = 0.3f
+private const val OLDEST_SHADE = 0.35f
 
 /* ------------------------------------------- Active minutes ----------------------------------------- */
 
@@ -589,7 +553,16 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                 ListPanel(Modifier.padding(top = 8.dp)) { PageRow(ADD_PROFILE, onClick = ctx.onEditProfile, divider = false) }
             }
         } else if (range == Range.Day) {
-            item { GoalBar(CaloriesCopy.share(active, goal), CaloriesCopy.toGoal(active, goal), color) }
+            // The day toward the goal: the bar filled to its share, "102 to your goal of 450" under it.
+            item {
+                Column(Modifier.padding(top = 8.dp)) {
+                    FillBar(CaloriesCopy.share(active, goal), color)
+                    Text(
+                        CaloriesCopy.toGoal(active, goal), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
             item {
                 HourlyKcal(e, color) { h ->
                     scrub = h?.let {
@@ -662,18 +635,6 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     if (info) InfoSheet(InfoCopy.of(Score.Calories), color, null, null, onDismiss = { info = false }, notes = InfoCopy.caloriesNotes(e))
 }
 
-/** The day toward the goal: a 4 dp bar in [color] filled to [share], [text] under it ("102 to your goal of 450"). */
-@Composable
-private fun GoalBar(share: Float, text: String, color: Color) {
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(2.dp)
-    Column(Modifier.padding(top = 8.dp)) {
-        androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.08f), shape)) {
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).height(4.dp).background(color, shape))
-        }
-        Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
-    }
-}
-
 /** The hours' colours: workouts in the ink, walking in its darker shade, everyday moving in white at 40%. */
 private val WalkingKcal = MetricColors.caloriesShade
 private val EverydayKcal = Color.White.copy(alpha = 0.4f)
@@ -689,8 +650,12 @@ private fun HourlyKcal(e: org.openstrap.app.data.EnergyExpenditure.Day, color: C
     val stacks = remember(h) { List(24) { listOf(h.workout[it], h.walking[it], h.everyday[it].coerceAtLeast(0f)) } }
     EdgeCard(color, Modifier.fillMaxWidth().padding(top = 8.dp)) {
         EdgeTitle("By the hour", CaloriesCopy.peak(h.total))
-        KcalBars(stacks, listOf(color, WalkingKcal, EverydayKcal), goal = null, labels = listOf("00", "06", "12", "18", "24"), spread = true, Modifier.padding(top = 16.dp), height = 120.dp, onPick = onPick)
-        KcalLegend(listOf("Workouts" to color, "Walking" to WalkingKcal, "Everyday" to EverydayKcal), Modifier.padding(top = 12.dp))
+        val colors = listOf(color, WalkingKcal, EverydayKcal)
+        StackedBars(
+            stacks, { _, k -> colors[k] }, goal = null, labels = listOf("00", "06", "12", "18", "24"), spread = true,
+            Modifier.padding(top = 16.dp), height = 120.dp, onPick = onPick,
+        )
+        Legend(listOf("Workouts" to color, "Walking" to WalkingKcal, "Everyday" to EverydayKcal), Modifier.padding(top = 12.dp))
     }
 }
 
@@ -720,8 +685,9 @@ private fun RangeKcal(
         else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.monthShort(bars[((bars.size - 1) * it).toInt()].first) }
     }
     Column(Modifier.padding(top = 8.dp)) {
-        KcalBars(
-            bars.map { it.second ?: emptyList() }, listOf(color, WalkingKcal), goal.toFloat(), labels, spread = range != Range.Week, height = 200.dp,
+        StackedBars(
+            bars.map { it.second ?: emptyList() }, { _, k -> if (k == 0) color else WalkingKcal }, goal.toFloat(), labels,
+            spread = range != Range.Week, height = 200.dp,
             onPick = { i ->
                 onScrub(i?.let { bars[it] }?.let { (d, parts) ->
                     parts?.let {
@@ -732,19 +698,20 @@ private fun RangeKcal(
                 })
             },
         )
-        KcalLegend(listOf("Workouts" to color, "The rest" to WalkingKcal), Modifier.padding(top = 12.dp))
+        Legend(listOf("Workouts" to color, "The rest" to WalkingKcal), Modifier.padding(top = 12.dp))
     }
 }
 
 /**
- * Bars stacked from the foot in [colors], one list of parts a bar; an empty bar isn't drawn, only the hairline
- * baseline under them. [goal] draws a solid line at 40% white. Labels under it: one a bar, or [spread] across the
- * width. Tapping or holding picks a bar ([onPick], null on release); the others dim.
+ * Bars stacked from the foot, one list of parts a bar, each part in the colour [colorOf] gives it. An empty bar isn't
+ * drawn, only the hairline baseline under them. [goal] draws a solid line at 40% white over the bars. The tallest bar
+ * or the goal stops [headroom] under the top, and a bar is at most [widest]. Labels under it: one a bar, or [spread]
+ * across the width. Tapping or holding picks a bar ([onPick], null on release), and the others dim.
  */
 @Composable
-private fun KcalBars(
-    stacks: List<List<Float>>, colors: List<Color>, goal: Float?, labels: List<String>, spread: Boolean,
-    modifier: Modifier = Modifier, height: Dp = 200.dp, onPick: (Int?) -> Unit,
+private fun StackedBars(
+    stacks: List<List<Float>>, colorOf: (bar: Int, part: Int) -> Color, goal: Float?, labels: List<String>, spread: Boolean,
+    modifier: Modifier = Modifier, height: Dp = 200.dp, headroom: Dp = 8.dp, widest: Dp = 14.dp, onPick: (Int?) -> Unit,
 ) {
     val sums = remember(stacks) { stacks.map { it.sum() } }
     var picked by remember(stacks) { mutableStateOf<Int?>(null) }
@@ -764,11 +731,11 @@ private fun KcalBars(
                     }
                 },
         ) {
-            val top = 8.dp.toPx()
+            val top = headroom.toPx()
             val hi = maxOf(goal ?: 0f, sums.maxOrNull() ?: 0f).coerceAtLeast(1f)
             fun yOf(v: Float) = top + (size.height - top) * (1f - v / hi)
             val slot = size.width / stacks.size.coerceAtLeast(1)
-            val w = (slot * 0.6f).coerceAtMost(14.dp.toPx())
+            val w = (slot * 0.6f).coerceAtMost(widest.toPx())
             val r = CornerRadius(minOf(4.dp.toPx(), w / 2))
             drawLine(Color.White.copy(alpha = 0.08f), Offset(0f, size.height - 0.5.dp.toPx()), Offset(size.width, size.height - 0.5.dp.toPx()), 1.dp.toPx())
             stacks.forEachIndexed { i, parts ->
@@ -783,7 +750,7 @@ private fun KcalBars(
                     var below = 0f
                     parts.forEachIndexed { k, v ->
                         if (v <= 0f) return@forEachIndexed
-                        val c = colors[k.coerceAtMost(colors.lastIndex)]
+                        val c = colorOf(i, k)
                         drawRect(c.copy(alpha = c.alpha * a), Offset(x, yOf(below + v)), Size(w, yOf(below) - yOf(below + v)))
                         below += v
                     }
@@ -800,20 +767,6 @@ private fun KcalBars(
                     l, color = Color.White.copy(alpha = 0.55f), style = GlowType.secondary, maxLines = 1,
                     modifier = if (spread) Modifier else Modifier.weight(1f), textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                 )
-            }
-        }
-    }
-}
-
-/** What the bars' colours are: a small round swatch and its name, side by side. */
-@Composable
-private fun KcalLegend(items: List<Pair<String, Color>>, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Row(modifier, horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-        items.forEach { (name, c) ->
-            androidx.compose.foundation.layout.Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                androidx.compose.foundation.layout.Box(Modifier.size(8.dp).background(c, androidx.compose.foundation.shape.CircleShape))
-                androidx.compose.foundation.layout.Spacer(Modifier.width(6.dp))
-                Text(name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
             }
         }
     }

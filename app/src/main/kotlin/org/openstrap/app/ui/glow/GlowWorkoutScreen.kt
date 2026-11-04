@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
@@ -342,16 +341,12 @@ private fun ZoneHeartLine(
         if (endIndex in 1 until values.lastIndex) drawLine(
             Color.White.copy(alpha = 0.35f), Offset(endIndex * dx, 0f), Offset(endIndex * dx, size.height), strokeWidth = 1.dp.toPx(),
         )
-        for (i in 0 until values.lastIndex) {
-            val v0 = values[i] ?: continue
-            val v1 = values[i + 1] ?: continue
+        drawZoneLine(values.size, 2.5.dp.toPx(), at = { i -> values[i]?.let { Offset(i * dx, y(it)) } }) { i ->
+            val v = values[i] ?: return@drawZoneLine null
             val t = first + i * HeartStep
-            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v0.roundToInt(), maxHr, heartZones)
-            drawLine(
-                // The strap's history, filled in after: the same line, dimmed (spec 2.7, no dashes).
-                if (history.any { t in it }) color.copy(alpha = color.alpha * 0.45f) else color,
-                Offset(i * dx, y(v0)), Offset((i + 1) * dx, y(v1)), strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round,
-            )
+            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v.roundToInt(), maxHr, heartZones)
+            // The strap's history, filled in after: the same line, dimmed (spec 2.7, no dashes).
+            if (history.any { t in it }) color.copy(alpha = color.alpha * 0.45f) else color
         }
         scrubbed?.let { i ->
             val v = values.getOrNull(i) ?: return@let

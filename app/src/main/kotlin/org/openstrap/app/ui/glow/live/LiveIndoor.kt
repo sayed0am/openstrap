@@ -9,23 +9,21 @@ import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.GlowCard
+import org.openstrap.app.ui.glow.Segment
+import org.openstrap.app.ui.glow.SegmentBar
 import org.openstrap.app.presentation.WorkoutCopy
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -104,19 +102,15 @@ internal fun LiveIndoorScreen(
 internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
     val total = zoneSeconds.sum().coerceAtLeast(1)
     val described = zoneSeconds.withIndex().joinToString(", ") { (z, s) -> "zone ${z + 1} ${if (s < 60) "none" else "${s / 60} min"}" }
-    Row(
-        Modifier.fillMaxWidth().height(8.dp).semantics { contentDescription = "Time in each zone: $described" },
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        zoneSeconds.forEachIndexed { z, s ->
-            val color = when {
-                z == current -> Color.White
-                s == 0 -> Color.White.copy(alpha = 0.18f)
-                else -> ZONE_COLORS[z]
-            }
-            Box(Modifier.weight(maxOf(s.toFloat() / total, 0.04f)).height(8.dp).clip(RoundedCornerShape(50)).background(color))
+    val segments = zoneSeconds.mapIndexed { z, s ->
+        val color = when {
+            z == current -> Color.White
+            s == 0 -> Color.White.copy(alpha = 0.18f)
+            else -> ZONE_COLORS[z]
         }
+        Segment(maxOf(s.toFloat() / total, 0.04f), color)
     }
+    SegmentBar(segments, Modifier.semantics { contentDescription = "Time in each zone: $described" }, height = 8.dp, gap = 3.dp)
 }
 
 /**

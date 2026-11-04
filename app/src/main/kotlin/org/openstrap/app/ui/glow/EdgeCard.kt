@@ -3,15 +3,12 @@ package org.openstrap.app.ui.glow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -99,22 +96,13 @@ fun EdgeCard(
         CompositionLocalProvider(LocalCardNumbers provides opening?.numbers, LocalCardOpens provides (onClick != null)) { content() }
         if (light.progressBar && progress != null) {
             Spacer(Modifier.weight(1f, fill = false).padding(top = 12.dp))
-            ProgressBar(progress, tint)
+            FillBar(progress, tint)
         }
     }
 }
 
 /** How far past its level a level card's light fades out. */
 internal val LevelFade = 40.dp
-
-/** The 4 dp bar inside a progress edge card. */
-@Composable
-private fun ProgressBar(progress: Float, color: Color) {
-    val shape = RoundedCornerShape(2.dp)
-    Box(Modifier.fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.08f), shape)) {
-        Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(4.dp).background(color, shape))
-    }
-}
 
 /**
  * An edge glow, after the CSS `box-shadow: inset` it was designed with: [alpha] of the colour, its hard edge [shift]

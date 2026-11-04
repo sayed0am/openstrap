@@ -83,28 +83,18 @@ private fun GoalWeekCard(
                 DotMatrixText("$count", dot = DotSize.Hero)
                 Text("of $goal workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
             }
-            if (bar) GoalBar(count, goal, Modifier.padding(top = 18.dp)) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
+            // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
+            if (bar) SegmentBar(
+                List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
+                Modifier.padding(top = 18.dp).semantics { contentDescription = "$count of $goal workouts" }, height = 8.dp, gap = 6.dp,
+            ) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
             Text(line, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 14.dp))
         }
     }
 }
 
-/** The week's workouts against the goal as a bar of [goal] segments, [count] of them white. */
-@Composable
-private fun GoalBar(count: Int, goal: Int, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(
-        modifier.fillMaxWidth().height(8.dp).semantics { contentDescription = "$count of $goal workouts" },
-    ) {
-        val n = goal.coerceIn(1, 14)
-        val gap = 6.dp.toPx()
-        val w = (size.width - gap * (n - 1)) / n
-        val corner = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
-        for (i in 0 until n) drawRoundRect(
-            Color.White.copy(alpha = if (i < count) 1f else 0.2f), androidx.compose.ui.geometry.Offset(i * (w + gap), 0f),
-            androidx.compose.ui.geometry.Size(w, size.height), corner,
-        )
-    }
-}
+/** The most workouts the goal bar splits into, so each part stays wide enough to read. */
+private const val MAX_GOAL_SHOWN = 14
 
 /** A week's distance shows from a tenth of a km, the first the figure can write. */
 private const val MIN_WEEK_METERS = 100f

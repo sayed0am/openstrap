@@ -24,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -45,6 +44,9 @@ import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.EdgeCard
 import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.PeakBars
+import org.openstrap.app.ui.glow.Segment
+import org.openstrap.app.ui.glow.SegmentBar
 import org.openstrap.app.ui.glow.Raised
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
@@ -207,18 +209,16 @@ internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = n
     else if (m.phase is Phase.Work && m.left != null && workLength != null && workLength > 0) {
         (1f - m.left.toFloat() / workLength).coerceIn(0f, 1f)
     } else 0f
-    Canvas(Modifier.fillMaxWidth().height(6.dp).semantics { contentDescription = "$done of ${m.rounds} rounds done" }) {
-        val n = m.rounds.coerceIn(1, 20)
-        val gap = 6.dp.toPx()
-        val w = (size.width - gap * (n - 1)) / n
-        val corner = CornerRadius(size.height / 2)
-        for (i in 0 until n) {
-            val x = i * (w + gap)
-            drawRoundRect(Color.White.copy(alpha = if (i < done) 1f else 0.25f), Offset(x, 0f), Size(w, size.height), corner)
-            if (i == done && under > 0f) drawRoundRect(Color.White, Offset(x, 0f), Size(w * under, size.height), corner)
-        }
-    }
+    SegmentBar(
+        List(m.rounds.coerceIn(1, MAX_ROUNDS_SHOWN)) { i ->
+            Segment(1f, Color.White.copy(alpha = if (i < done) 1f else 0.25f), filled = if (i == done) under else 0f, fill = Color.White)
+        },
+        Modifier.semantics { contentDescription = "$done of ${m.rounds} rounds done" }, height = 6.dp, gap = 6.dp,
+    )
 }
+
+/** The most rounds the bar splits into, so each stays wide enough to read. */
+private const val MAX_ROUNDS_SHOWN = 20
 
 /**
  * A phase: where you are and what's next, its word large, the seconds in the screen's one dotted number, a line under.
@@ -271,25 +271,15 @@ private fun HeartStripDark(bpm: Int?, maxHr: Int, paused: Boolean, modifier: Mod
 @Composable
 private fun RoundPeaks(rounds: List<AppWorkoutRound>, total: Int) {
     val peaks = rounds.filter { it.workEnd != null }.map { it.peakBpm }
-    if (peaks.isEmpty()) return
-    val top = peaks.filterNotNull().maxOrNull() ?: return
-    val low = (peaks.filterNotNull().minOrNull() ?: top) - 15
+    if (peaks.all { it == null }) return
     EdgeCard(WorkRed, Modifier.fillMaxWidth()) {
         Text("Peak each round", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
         Spacer(Modifier.height(12.dp))
-        Canvas(
-            Modifier.fillMaxWidth().height(56.dp).semantics { contentDescription = "Peak heart rate per round: " + peaks.filterNotNull().joinToString(", ") },
-        ) {
-            val n = total.coerceAtLeast(peaks.size)
-            val gap = 6.dp.toPx()
-            val w = (size.width - gap * (n - 1)) / n
-            for (i in 0 until n) {
-                val p = peaks.getOrNull(i)
-                val h = if (p == null) 4.dp.toPx() else ((p - low).toFloat() / (top - low).coerceAtLeast(1)).coerceIn(0.15f, 1f) * size.height
-                val c = if (p == null) Color.White.copy(alpha = 0.12f) else MetricColors.heart
-                drawRoundRect(c, Offset(i * (w + gap), size.height - h), Size(w, h), CornerRadius(3.dp.toPx()))
-            }
-        }
+        PeakBars(
+            peaks, { MetricColors.heart },
+            Modifier.semantics { contentDescription = "Peak heart rate per round: " + peaks.filterNotNull().joinToString(", ") },
+            height = 56.dp, rounds = total, corner = 3.dp,
+        )
         Spacer(Modifier.height(6.dp))
         Text(peaks.filterNotNull().joinToString(", ") + " bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
     }
