@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The week story (ui/dashboard/WeekStory.kt), opened from Your week on Today: last week day by day, its steps, active
+  minutes, workouts and sleep, against the week before where that week is kept.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Part of a day's row under its steps, beside the day's workouts and sleep: its active minutes. Lower case, the row's first letter is made upper case. -->
+    <plurals name="day_week_active_minutes">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> active minute</item>
+        <item quantity="other"><xliff:g id="minutes" example="42">%1$d</xliff:g> active minutes</item>
+    </plurals>
+    <!-- Part of a day's row: the night after it, time asleep. -->
+    <string name="day_week_asleep"><xliff:g id="time" example="7 h 40">%1$s</xliff:g> asleep</string>
+    <!-- Under the chart: the day of the week with the most steps, and its steps written out ("12,400"). -->
+    <plurals name="day_week_busiest">
+        <item quantity="one">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="1">%1$s</xliff:g> steps.</item>
+        <item quantity="other">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="12,400">%1$s</xliff:g> steps.</item>
+    </plurals>
+    <!-- Under the chart: no workouts this week or the week before. -->
+    <string name="day_week_workouts_none">No workouts, nor the week before.</string>
+    <!-- Under the chart: the week's workouts ("Two workouts"), as many as the week before. -->
+    <string name="day_week_workouts_same"><xliff:g id="workouts" example="Two workouts">%1$s</xliff:g>, as many as the week before.</string>
+    <!-- Under the chart: the week's workouts ("Three workouts"), and how many more than the week before, a number word ("two"). -->
+    <string name="day_week_workouts_more"><xliff:g id="workouts" example="Three workouts">%1$s</xliff:g>, <xliff:g id="more" example="two">%2$s</xliff:g> more than the week before.</string>
+    <!-- Under the chart: the week's workouts ("One workout"), and how many fewer than the week before, a number word ("one"). -->
+    <string name="day_week_workouts_fewer"><xliff:g id="workouts" example="One workout">%1$s</xliff:g>, <xliff:g id="fewer" example="one">%2$s</xliff:g> fewer than the week before.</string>
+    <!-- Under the chart: the steps against the week before ("Steps up 12%"). -->
+    <string name="day_week_steps_change"><xliff:g id="change" example="Steps up 12%">%1$s</xliff:g> on the week before.</string>
+    <!-- The label under the week's big number, its steps a day. Lower case, it reads on from the number. The dates are "12 to 18 Oct". -->
+    <string name="day_week_label">steps a day, <xliff:g id="dates" example="12 to 18 Oct">%1$s</xliff:g></string>
+    <!-- Day by day: a day, or a run of days ("Monday to Thursday"), with nothing recorded. -->
+    <string name="day_week_nothing">Nothing recorded</string>
+</resources>

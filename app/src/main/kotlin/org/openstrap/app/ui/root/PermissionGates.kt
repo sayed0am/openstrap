@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.root
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import android.Manifest
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -52,6 +54,8 @@ internal fun rememberPermissionGates(
 ): PermissionGates {
     val context = LocalContext.current
     val activity = LocalActivity.current
+    val bluetoothRequired = stringResource(R.string.day_bluetooth_required)
+    val locationDeclined = stringResource(R.string.day_location_declined)
     var pending by rememberSaveable(stateSaver = PendingAction.Saver) { mutableStateOf<PendingAction?>(null) }
     val blocked = rememberSaveable { mutableStateOf(false) }
     val btLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
@@ -62,7 +66,7 @@ internal fun rememberPermissionGates(
         when {
             BlePermissions.granted(result) -> waiting?.let(start) ?: strapAction?.invoke()
             activity != null && BlePermissions.turnedDownForGood(activity, BlePermissions.bluetooth) -> blocked.value = true
-            else -> Toast.makeText(context, "Bluetooth permission is required.", Toast.LENGTH_LONG).show()
+            else -> Toast.makeText(context, bluetoothRequired, Toast.LENGTH_LONG).show()
         }
     }
     val requestBluetooth: (() -> Unit) -> Unit = { then ->
@@ -80,7 +84,7 @@ internal fun rememberPermissionGates(
     var afterLocation by remember { mutableStateOf<(() -> Unit)?>(null) }
     val locationLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { result ->
         if (result.values.none { it }) {
-            Toast.makeText(context, "Without location, distance comes from the strap's steps.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, locationDeclined, Toast.LENGTH_LONG).show()
         }
         val waiting = pending as? PendingAction.StartPlan
         if (waiting != null) {
@@ -113,15 +117,14 @@ internal fun BluetoothBlockedDialog(gates: PermissionGates) {
     if (!gates.bluetoothBlocked) return
     val context = LocalContext.current
     PageConfirm(
-        title = "Allow Nearby devices",
-        text = "OpenStrap needs Nearby devices to find and connect to your strap. Android won't ask again, " +
-            "so turn it on in OpenStrap's settings, under Permissions.",
-        confirm = "Open settings",
+        title = stringResource(R.string.day_nearby_title),
+        text = stringResource(R.string.day_nearby_text),
+        confirm = stringResource(R.string.day_nearby_open_settings),
         onConfirm = {
             gates.dismissBlocked()
             context.startActivity(BlePermissions.settingsIntent(context))
         },
         onDismiss = gates::dismissBlocked,
-        dismiss = "Not now",
+        dismiss = stringResource(R.string.day_nearby_not_now),
     )
 }

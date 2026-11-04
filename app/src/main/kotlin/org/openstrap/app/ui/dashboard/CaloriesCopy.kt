@@ -1,8 +1,10 @@
 package org.openstrap.app.ui.dashboard
 
+import org.openstrap.app.R
 import org.openstrap.app.data.EnergyExpenditure
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.i18n.Strings
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -17,15 +19,19 @@ import org.openstrap.app.presentation.Range
 /*
  * The words and sums of Calories (calories spec 4.4 to 4.6): the Activity row, the detail's day and its ranges, where
  * the kcal came from, and a workout's place in its day. Active kcal leads everywhere, the total under it. Pure, so
- * every rule is tested without a screen.
+ * every rule is tested without a screen. The text is in res/values/strings_day_calories.xml.
  */
 internal object CaloriesCopy {
 
     /* ----------------------------------------------- Row ------------------------------------------------ */
 
     /** The Activity row's line: "Active, of 450. Total 1,468", or "Active, goal met. Total 2,140". */
-    fun rowLine(active: Int, goal: Int, total: Int, locale: Locale = Locale.getDefault()): String =
-        (if (active >= goal) "Active, goal met" else "Active, of ${Units.count(goal, locale)}") + ". Total ${Units.count(total, locale)}"
+    fun rowLine(active: Int, goal: Int, total: Int, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        if (active >= goal) {
+            strings.format(R.string.day_calories_row_line_met, Units.count(total, locale))
+        } else {
+            strings.format(R.string.day_calories_row_line, Units.count(goal, locale), Units.count(total, locale))
+        }
 
     /** How far toward the goal, 0..1, for the row's ring and the detail's bar. */
     fun share(active: Int, goal: Int): Float = if (goal <= 0) 0f else (active / goal.toFloat()).coerceIn(0f, 1f)
@@ -33,26 +39,27 @@ internal object CaloriesCopy {
     /* ----------------------------------------------- Day ------------------------------------------------ */
 
     /** The headline's label on Day. */
-    fun dayLabel(today: Boolean): String = if (today) "active kcal so far today" else "active kcal"
+    fun dayLabel(today: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (today) R.string.day_calories_day_label_today else R.string.day_calories_day_label)
 
     /** Under the goal bar: "102 to your goal of 450", or "Goal of 450 met". */
-    fun toGoal(active: Int, goal: Int, locale: Locale = Locale.getDefault()): String =
+    fun toGoal(active: Int, goal: Int, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
         if (active >= goal) {
-            "Goal of ${Units.count(goal, locale)} met"
+            strings.format(R.string.day_calories_to_goal_met, Units.count(goal, locale))
         } else {
-            "${Units.count(goal - active, locale)} to your goal of ${Units.count(goal, locale)}"
+            strings.format(R.string.day_calories_to_goal, Units.count(goal - active, locale), Units.count(goal, locale))
         }
 
     /** The busiest hour, for the hourly card's note: "Peak 07:00, 228". Null while every hour is under 1 kcal. */
-    fun peak(hourly: List<Float>, locale: Locale = Locale.getDefault()): String? {
+    fun peak(hourly: List<Float>, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String? {
         val h = hourly.indices.maxByOrNull { hourly[it] } ?: return null
         val v = Math.round(hourly[h])
-        return if (v < 1) null else "Peak ${hourClock(h, locale)}, ${Units.count(v.toLong(), locale)}"
+        return if (v < 1) null else strings.format(R.string.day_calories_peak, hourClock(h, locale), Units.count(v.toLong(), locale))
     }
 
     /** An hour's kcal in the headline while it's picked: "active kcal, 07:00 to 08:00". */
-    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault()): String =
-        "active kcal, ${Ranges.of(hourClock(hour, locale), hourClock(hour + 1, locale))}"
+    fun hourLabel(hour: Int, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        strings.format(R.string.day_calories_hour_label, Ranges.of(hourClock(hour, locale), hourClock(hour + 1, locale)))
 
     /** The start of [hour] on the phone's clock: "07:00", or "7:00 AM". */
     private fun hourClock(hour: Int, locale: Locale) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR, locale = locale)
@@ -69,7 +76,7 @@ internal object CaloriesCopy {
      */
     fun sources(
         workouts: List<WorkoutAnalysis>, date: LocalDate, day: EnergyExpenditure.Day, bmrPerMinute: Float?,
-        zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(),
+        zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
     ): List<Source> {
         val onDay = workouts.filter { Instant.ofEpochSecond(it.shownStart).atZone(zone).toLocalDate() == date }
         val phone = onDay.filter { it.fromPhone }
@@ -78,11 +85,18 @@ internal object CaloriesCopy {
         val rows = shown.mapNotNull { w ->
             val kcal = Workouts.activeKcal(w, bmrPerMinute) ?: return@mapNotNull null
             val at = TimeOfDay.format(w.shownStart, zone, locale = locale)
-            Source(w.sportName, "$at, ${minutes(w.activeSeconds)}", kcal, w.workout.start, w.workout.sportType)
+            val line = strings.format(R.string.day_calories_source_workout_line, at, minutes(w.activeSeconds))
+            Source(w.sportName, line, kcal, w.workout.start, w.workout.sportType)
         }
         return rows + listOf(
-            Source("Walking", walkingLine(day.walkingMinutes), Math.round(day.walkingKcal)),
-            Source("Everyday moving", "Standing, chores and getting about", Math.round(day.everydayKcal.coerceAtLeast(0f))),
+            Source(
+                strings.get(R.string.day_calories_source_walking), walkingLine(day.walkingMinutes, strings),
+                Math.round(day.walkingKcal),
+            ),
+            Source(
+                strings.get(R.string.day_calories_source_everyday), strings.get(R.string.day_calories_source_everyday_line),
+                Math.round(day.everydayKcal.coerceAtLeast(0f)),
+            ),
         )
     }
 
@@ -92,11 +106,12 @@ internal object CaloriesCopy {
     private const val HALF_MINUTE_S = 30L
 
     /** The walking row's line, from its minutes at a walking cadence outside workouts. */
-    fun walkingLine(minutes: Int): String = when (minutes) {
-        0 -> "No walking outside workouts"
-        1 -> "1 min walking or running, outside workouts"
-        else -> "$minutes min walking or running, outside workouts"
-    }
+    fun walkingLine(minutes: Int, strings: Strings = Strings.app): String =
+        if (minutes == 0) {
+            strings.get(R.string.day_calories_walking_none)
+        } else {
+            strings.plural(R.plurals.day_calories_walking, minutes, minutes)
+        }
 
     /* ---------------------------------------------- Ranges ---------------------------------------------- */
 
@@ -151,13 +166,18 @@ internal object CaloriesCopy {
     }
 
     /** The headline's label on a range: "active kcal a day, last 7 days". */
-    fun rangeLabel(range: Range): String = "active kcal a day, " + when (range) {
-        Range.Year -> "last 12 months"
-        else -> "last ${range.days} days"
+    fun rangeLabel(range: Range, strings: Strings = Strings.app): String = when (range) {
+        Range.Year -> strings.get(R.string.day_calories_range_label_year)
+        else -> strings.plural(R.plurals.day_calories_range_label, range.days, range.days)
     }
 
     /** The headline's word: "Goal met on 4 of 7 days". Null without days. */
-    fun goalDays(s: RangeSummary): String? = if (s.days == 0) null else "Goal met on ${s.goalMet} of ${s.days} ${if (s.days == 1) "day" else "days"}"
+    fun goalDays(s: RangeSummary, strings: Strings = Strings.app): String? =
+        if (s.days == 0) {
+            null
+        } else {
+            strings.format(R.string.day_calories_goal_days, s.goalMet, strings.plural(R.plurals.day_calories_days, s.days, s.days))
+        }
 
     /** The change's figure: "+42", "−18" with a true minus, "0". */
     fun signed(n: Int): String = when {
@@ -167,27 +187,36 @@ internal object CaloriesCopy {
     }
 
     /** The change's name: "vs the 7 days before", "vs the year before". */
-    fun vsLabel(range: Range): String = if (range == Range.Year) "vs the year before" else "vs the ${range.days} days before"
+    fun vsLabel(range: Range, strings: Strings = Strings.app): String =
+        if (range == Range.Year) {
+            strings.get(R.string.day_calories_vs_year)
+        } else {
+            strings.plural(R.plurals.day_calories_vs_days, range.days, range.days)
+        }
 
     /**
      * The range's sentence: how much of it workouts made, else its busiest day. Null without days.
      */
-    fun rangeSentence(s: RangeSummary, locale: Locale = Locale.getDefault()): String? {
+    fun rangeSentence(s: RangeSummary, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String? {
         val busiest = s.busiest ?: return null
         val share = s.workoutShare
-        return if (share != null && share >= 1) "Workouts made $share% of your active kcal, the rest came from walking and moving about."
-        else "Your busiest day was ${DayWords.short(busiest.date, locale)}, " +
-            "with ${Units.count(Math.round(busiest.active).toLong(), locale)} active kcal."
+        return if (share != null && share >= 1) strings.format(R.string.day_calories_range_workouts, share)
+        else strings.format(
+            R.string.day_calories_range_busiest, DayWords.short(busiest.date, locale),
+            Units.count(Math.round(busiest.active).toLong(), locale),
+        )
     }
 
     /* ------------------------------------------- A workout's day ---------------------------------------- */
 
     /** The day word in "of today's 702": "today's", "yesterday's", "that day's". */
-    fun dayWord(date: LocalDate, today: LocalDate): String = when (date) {
-        today -> "today's"
-        today.minusDays(1) -> "yesterday's"
-        else -> "that day's"
-    }
+    fun dayWord(date: LocalDate, today: LocalDate, strings: Strings = Strings.app): String = strings.get(
+        when (date) {
+            today -> R.string.day_calories_day_word_today
+            today.minusDays(1) -> R.string.day_calories_day_word_yesterday
+            else -> R.string.day_calories_day_word_that_day
+        },
+    )
 
     /**
      * The workout page's In your day card: "This run is 486 of today's 702 active kcal. The day counts it exactly as
@@ -195,9 +224,12 @@ internal object CaloriesCopy {
      * sport as it reads mid-sentence ([org.openstrap.app.ui.workout.WorkoutDetailCopy.sport]). Null when the day's
      * figure isn't there yet, or is behind the workout's (its row not yet written again).
      */
-    fun inYourDay(sport: String, workout: Int, dayActive: Int?, dayWord: String, fromPhone: Boolean, locale: Locale = Locale.getDefault()): String? {
+    fun inYourDay(
+        sport: String, workout: Int, dayActive: Int?, dayWord: String, fromPhone: Boolean, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String? {
         if (dayActive == null || dayActive < workout || workout <= 0) return null
-        val head = "This $sport is ${Units.count(workout, locale)} of $dayWord ${Units.count(dayActive, locale)} active kcal."
-        return head + if (fromPhone) " The day counts it exactly as shown here." else " The day counts it from the strap's own figure."
+        val id = if (fromPhone) R.string.day_calories_in_your_day_phone else R.string.day_calories_in_your_day_strap
+        return strings.format(id, sport, Units.count(workout, locale), dayWord, Units.count(dayActive, locale))
     }
 }

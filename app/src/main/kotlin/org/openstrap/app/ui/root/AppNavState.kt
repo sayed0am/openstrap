@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.root
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,11 +18,15 @@ import org.openstrap.app.ui.dashboard.TabNav
 import org.openstrap.app.ui.dashboard.openBeside
 
 /** The four tabs, in the bar's order. Their icons and colours are in [tabItems]. */
-enum class Tab(val label: String) {
-    Today("Today"),
-    Recovery("Recovery"),
-    Sleep("Sleep"),
-    Activity("Activity"),
+enum class Tab(@StringRes private val labelRes: Int) {
+    Today(R.string.day_tab_today),
+    Recovery(R.string.day_tab_recovery),
+    Sleep(R.string.day_tab_sleep),
+    Activity(R.string.day_tab_activity),
+    ;
+
+    /** The tab's name in the bar, in the app's language. */
+    val label: String get() = Strings.app.get(labelRes)
 }
 
 /**

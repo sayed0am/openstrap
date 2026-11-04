@@ -1,8 +1,11 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.continuityScore
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.durationScore
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.RecoveryBands
 import org.openstrap.app.presentation.SleepBands
 import org.openstrap.app.presentation.Units
@@ -10,15 +13,20 @@ import kotlin.math.abs
 
 /**
  * Plain-language headlines and ratings for the dashboard. The thresholds are general sleep and activity
- * guidance, not anything the strap reports; the UI says so where ratings appear.
+ * guidance, not anything the strap reports. The UI says so where ratings appear. The text is in
+ * res/values/strings_day_sleep.xml and strings_day_today.xml.
  */
 object Narrative {
     /** A rating's word. No colour of its own: a value off your normal takes its metric's ink (spec 2.2). */
-    enum class Rating(val label: String) {
-        OPTIMAL("Very good"),
-        GOOD("Good"),
-        FAIR("Fair"),
-        LOW("Low"),
+    enum class Rating(@StringRes private val labelRes: Int) {
+        OPTIMAL(R.string.day_rating_very_good),
+        GOOD(R.string.day_rating_good),
+        FAIR(R.string.day_rating_fair),
+        LOW(R.string.day_rating_low),
+        ;
+
+        /** The word, in the app's language. */
+        val label: String get() = Strings.app.get(labelRes)
     }
 
     fun rate(value: Float, optimal: Float, good: Float, fair: Float): Rating = when {
@@ -53,7 +61,7 @@ object Narrative {
      * cause, since stages aren't rated (see [sleepContributors]), so it's named only when nothing else is and the
      * score is below Good. Null without a score; callers fall back to time asleep.
      */
-    fun sleepHeadline(session: SleepSession, asleepSeconds: Long): String? {
+    fun sleepHeadline(session: SleepSession, asleepSeconds: Long, strings: Strings = Strings.app): String? {
         val score = session.score ?: return null
         val asleepMin = asleepSeconds / 60
         val short = asleepMin < SHORT_NIGHT_MINUTES
@@ -61,19 +69,25 @@ object Narrative {
         val deep = session.deepMinutes
         val rem = session.remMinutes
         val light = deep != null && rem != null && asleepMin > 0 && (deep + rem) < LIGHT_SLEEP_SHARE * asleepMin
-        return when {
-            short && broken -> "Short, broken night"
-            short -> "Short night"
-            broken -> "Broken sleep"
-            score >= SleepBands.GREAT_FROM -> "Solid night"
-            score >= SleepBands.GOOD_FROM -> "Good night"
-            light -> "Light sleep"
-            else -> "Okay night"
-        }
+        return strings.get(
+            when {
+                short && broken -> R.string.day_sleep_headline_short_broken
+                short -> R.string.day_sleep_headline_short
+                broken -> R.string.day_sleep_headline_broken
+                score >= SleepBands.GREAT_FROM -> R.string.day_sleep_headline_solid
+                score >= SleepBands.GOOD_FROM -> R.string.day_sleep_headline_good
+                light -> R.string.day_sleep_headline_light
+                else -> R.string.day_sleep_headline_okay
+            },
+        )
     }
 
-    /** One sleep contributor: rating plus how full its bar is. */
+    /** One sleep contributor: rating plus how full its bar is. [label] is [TOTAL_SLEEP] or [CONTINUITY], a key never shown. */
     data class Contributor(val label: String, val rating: Rating, val fraction: Float, val detail: String)
+
+    /** The keys of the two contributors. */
+    const val TOTAL_SLEEP = "Total sleep"
+    const val CONTINUITY = "Continuity"
 
     /**
      * What shaped the night: total sleep against need (and too much of it) and continuity (wake after sleep onset). Deep and REM aren't
@@ -85,15 +99,17 @@ object Narrative {
         asleepSeconds: Long,
         needMinutes: Int = org.openstrap.app.data.Recovery.SLEEP_NEED_MINUTES,
         wasoMinutes: Int? = null,
+        strings: Strings = Strings.app,
     ): List<Contributor> = buildList {
         val asleepMin = (asleepSeconds / 60).toInt()
         val duration = org.openstrap.app.data.Recovery.durationScore(asleepMin, needMinutes)
-        val total = Units.duration(asleepSeconds) + " of ${Units.duration(needMinutes * 60L)}"
-        add(Contributor("Total sleep", totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), total))
+        val need = Units.duration(needMinutes * 60L)
+        val total = strings.format(R.string.day_sleep_factor_asleep_detail, Units.duration(asleepSeconds), need)
+        add(Contributor(TOTAL_SLEEP, totalSleepRating(asleepMin, duration), asleepMin / needMinutes.toFloat(), total))
         if (wasoMinutes != null && asleepMin > 0) {
             val c = org.openstrap.app.data.Recovery.continuityScore(wasoMinutes)
-            val awake = "${Units.duration(wasoMinutes * 60L)} awake after falling asleep"
-            add(Contributor("Continuity", ratingFor(Math.round(c)), c / 100f, awake))
+            val awake = strings.format(R.string.day_sleep_factor_awake_detail, Units.duration(wasoMinutes * 60L))
+            add(Contributor(CONTINUITY, ratingFor(Math.round(c)), c / 100f, awake))
         }
     }
 
@@ -126,16 +142,21 @@ object Narrative {
     }
 
     /** A Charge as its band's word from the info sheet's scale. */
-    fun chargeHeadline(charge: Int): String = InfoCopy.CHARGE_SCALE[InfoCopy.chargeBar(charge)]
+    fun chargeHeadline(charge: Int, strings: Strings = Strings.app): String = InfoCopy.chargeWords(strings)[InfoCopy.chargeBar(charge)]
 
     /** Where stress starts counting, and why: the user's calm level, or how long until there is one. */
-    fun stressThreshold(t: org.openstrap.app.data.Recovery.StressThreshold): String {
+    fun stressThreshold(t: org.openstrap.app.data.Recovery.StressThreshold, strings: Strings = Strings.app): String {
         val calm = t.calmLevel
         val left = org.openstrap.app.data.Recovery.MIN_STRESS_DAYS - t.days
         return when {
-            calm != null -> "Stress counts from ${t.value}: ${org.openstrap.app.data.Recovery.STRESS_MARGIN} above your calm level of $calm over the last ${t.days} days."
-            left > 0 -> "Stress counts from ${t.value} for now. After ${if (left == 1) "1 more day" else "$left more days"} of wear it adjusts to your own calm level."
-            else -> "Stress counts from ${t.value} for now, until there are enough calm readings to find your own level."
+            calm != null -> strings.format(
+                R.string.day_stress_counts_from_calm, t.value, org.openstrap.app.data.Recovery.STRESS_MARGIN, calm,
+                strings.plural(R.plurals.day_stress_last_days, t.days, t.days),
+            )
+            left > 0 -> strings.format(
+                R.string.day_stress_counts_for_now, t.value, strings.plural(R.plurals.day_stress_more_days, left, left),
+            )
+            else -> strings.format(R.string.day_stress_counts_until, t.value)
         }
     }
 }

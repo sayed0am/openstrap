@@ -1,15 +1,18 @@
 package org.openstrap.app.ui.dashboard
 
 import java.time.LocalDate
+import org.openstrap.app.R
 import org.openstrap.app.data.EnergyExpenditure
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Units
 
 /*
  * Data states (spec 4.3, patterns E3 and E4): pairing as one stage, first nights, no sleep last night and a partial
  * day. Only what the screens say and show changes; every rule here is a plain function, so each boundary is tested.
+ * The text is in res/values/strings_day_today.xml.
  */
 
 /* --------------------------------------------- Pairing --------------------------------------------- */
@@ -34,15 +37,17 @@ fun pairStep(paired: Boolean, scanning: Boolean, found: Boolean, connection: Con
 }
 
 /** The pairing stage's sentence for [step]. */
-fun pairSentence(step: PairStep): String = when (step) {
-    PairStep.Ready -> "Put the strap on its charger, close to this phone."
-    PairStep.Searching -> "Looking for your strap nearby."
-    PairStep.Found -> "Found a strap nearby. Pick it to pair."
-    PairStep.Connecting -> "Connecting to your strap. Keep it close."
-    PairStep.Connected -> "Connected. The first sync starts now."
-    PairStep.Failed -> "Couldn't connect yet. Keep the strap on its charger, near the phone."
-    PairStep.KeyRejected -> "The strap turned the key down. Open your strap to pair again."
-}
+fun pairSentence(step: PairStep, strings: Strings = Strings.app): String = strings.get(
+    when (step) {
+        PairStep.Ready -> R.string.day_pair_ready
+        PairStep.Searching -> R.string.day_pair_searching
+        PairStep.Found -> R.string.day_pair_found
+        PairStep.Connecting -> R.string.day_pair_connecting
+        PairStep.Connected -> R.string.day_pair_connected
+        PairStep.Failed -> R.string.day_pair_failed
+        PairStep.KeyRejected -> R.string.day_pair_key_rejected
+    },
+)
 
 /** How long Today keeps the stage on Connected, the line solid, before the day's own hero takes over. */
 const val PAIRED_HOLD_MS = 3_000L
@@ -50,7 +55,7 @@ const val PAIRED_HOLD_MS = 3_000L
 /* ------------------------------------------ No sleep, first ------------------------------------------ */
 
 /** The tag on the Recovery hero the day the first real score shows (E4). */
-const val FIRST_SCORE = "First score"
+val FIRST_SCORE: String get() = Strings.app.get(R.string.day_first_score)
 
 /** The day remembered for scores from before the app kept a first score, so the marker never shows for them. */
 val BEFORE_FIRST_SCORE: LocalDate = LocalDate.of(1970, 1, 1)
@@ -118,29 +123,30 @@ fun DayUiState.wear(recovery: RecoveryResult?, isToday: Boolean): Wear? {
 }
 
 /** The marker next to the title of a card whose figures a partial day lowers. */
-const val PARTIAL_DAY = "Partial day"
+val PARTIAL_DAY: String get() = Strings.app.get(R.string.day_partial_day)
 
 /** The partial day sheet's line: how much wear the figures cover. */
-fun partialLine(w: Wear, isToday: Boolean): String {
+fun partialLine(w: Wear, isToday: Boolean, strings: Strings = Strings.app): String {
     val worn = Units.duration(w.wornMinutes * 60L)
-    return if (isToday) "The strap recorded $worn of the ${Units.duration(w.ofMinutes * 60L)} so far today."
-    else "The strap recorded $worn of the day."
+    return if (isToday) strings.format(R.string.day_partial_line_today, worn, Units.duration(w.ofMinutes * 60L))
+    else strings.format(R.string.day_partial_line, worn)
 }
 
 /** The partial day sheet (spec 6.2, with no scale): what it means. [partialLine] and [PARTIAL_DAY_ROWS] go under it. */
-val PARTIAL_DAY_INFO = Info(
+val PARTIAL_DAY_INFO: Info get() = Info(
     name = PARTIAL_DAY,
-    meaning = "The strap was worn for part of the day, so its totals are low.",
+    meaning = Strings.app.get(R.string.day_partial_meaning),
     scale = emptyList(), how = "", moves = "", off = "",
 )
 
 /** The sheet's folded rows: what a partial day lowers, and when a day counts as one. */
-val PARTIAL_DAY_ROWS = listOf(
-    "What it lowers" to "Steps, calories and Energy count only the time the strap was on. Charging pauses them too.",
-    "When a day counts as partial" to
-        "When the strap was worn for under ${Units.duration(EnergyExpenditure.FULL_DAY_MINUTES * 60L)} of the day, " +
-            "or under that share of the day so far.",
-)
+val PARTIAL_DAY_ROWS: List<Pair<String, String>> get() = Strings.app.let { strings ->
+    listOf(
+        strings.get(R.string.day_partial_lowers_title) to strings.get(R.string.day_partial_lowers),
+        strings.get(R.string.day_partial_when_title) to
+            strings.format(R.string.day_partial_when, Units.duration(EnergyExpenditure.FULL_DAY_MINUTES * 60L)),
+    )
+}
 
 /* ------------------------------------------ Debug previews ------------------------------------------ */
 

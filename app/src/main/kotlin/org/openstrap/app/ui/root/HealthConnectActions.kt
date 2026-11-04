@@ -3,6 +3,8 @@
 
 package org.openstrap.app.ui.root
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -47,9 +49,9 @@ internal class HealthConnectActions(
     val auto: (Boolean) -> Unit,
 )
 
-internal const val HC_UNAVAILABLE = "Health Connect isn't available on this phone."
-internal const val HC_INSTALL_FIRST = "Install Health Connect first."
-private const val HC_NOT_GRANTED = "Health Connect permissions were not granted."
+internal val HC_UNAVAILABLE: String get() = Strings.app.get(R.string.day_hc_unavailable)
+internal val HC_INSTALL_FIRST: String get() = Strings.app.get(R.string.day_hc_install_first)
+private val HC_NOT_GRANTED: String get() = Strings.app.get(R.string.day_hc_not_granted)
 
 /**
  * What a Health Connect action says when Health Connect isn't there: install it first where the Play Store has it

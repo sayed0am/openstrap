@@ -3,6 +3,8 @@
 
 package org.openstrap.app.ui.root
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
@@ -101,7 +103,7 @@ internal fun DetailHost(
             BackHandler(onBack = pop)
             GlowRecoveryScreen(
                 day, shown.recovery, histories.daily,
-                header = { PageHeader("Recovery", pop, subtitle = dayName(day.date)) },
+                header = { PageHeader(stringResource(R.string.day_tab_recovery), pop, subtitle = dayName(day.date)) },
                 contentPadding = padding, onOpenMetric = { push(Detail.OfMetric(it)) },
                 onOpenScore = { push(Detail.OfScore(it)) }, strapScore = shown.strapScore,
                 healthspan = shown.healthspan, onOpenHealthspan = { seeHabitAge(); push(Detail.Healthspan) }, onOpenProfile = onOpenProfile,
@@ -112,7 +114,7 @@ internal fun DetailHost(
         Detail.Sleep -> {
             BackHandler(onBack = pop)
             GlowSleepScreen(
-                day, header = { PageHeader("Sleep", pop, subtitle = dayName(day.date)) },
+                day, header = { PageHeader(stringResource(R.string.day_tab_sleep), pop, subtitle = dayName(day.date)) },
                 contentPadding = padding, onOpen = push, recovery = shown.recovery, onRestore = dayVm::restoreSleep,
             )
         }

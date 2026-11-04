@@ -17,10 +17,12 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.openstrap.app.R
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.SleepRegularity
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.theme.MetricColors
@@ -51,12 +53,12 @@ internal class NightVital(
  * rate, blood oxygen, skin temperature (as its change from your normal once there is one) and average heart rate.
  * HRV, breathing, blood oxygen and skin temperature are read against your previous nights once there are a week of them.
  */
-internal fun nightVitals(state: DayUiState, firstNights: Boolean = false): List<NightVital> {
+internal fun nightVitals(state: DayUiState, firstNights: Boolean = false, strings: Strings = Strings.app): List<NightVital> {
     val session = state.sleep
     val missing = when {
         firstNights && session == null -> AFTER_FIRST_NIGHT
-        session == null -> "No sleep recorded"
-        else -> "No reading last night"
+        session == null -> strings.get(R.string.day_sleep_vital_no_sleep)
+        else -> strings.get(R.string.day_sleep_vital_no_reading)
     }
     // The same value and normal the night-scoped detail shows ([SleepCopy]).
     fun against(metric: Metric, label: String, color: Color, show: (Float, History.Normal?) -> String): NightVital {
@@ -64,7 +66,8 @@ internal fun nightVitals(state: DayUiState, firstNights: Boolean = false): List<
         val n = SleepCopy.nightNormal(state, metric)
         val direction = History.status(v, n)
         val status = if (n == null) {
-            "Learning, ${SleepCopy.nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)} of ${History.MIN_NORMAL_DAYS} nights"
+            val nights = SleepCopy.nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
+            strings.format(R.string.day_sleep_vital_learning, nights, History.MIN_NORMAL_DAYS)
         } else TodayCopy.normalWord(direction)
         return NightVital(metric, label, color, show(v, n), status, direction.takeIf { n != null })
     }
@@ -72,17 +75,22 @@ internal fun nightVitals(state: DayUiState, firstNights: Boolean = false): List<
     val average = SleepCopy.averageHeart(state)
     return listOf(
         NightVital(
-            Metric.HeartRate, "Lowest heart rate", MetricColors.heart, lowest?.y?.roundToInt()?.toString(),
-            lowest?.let { "At ${clockOf(it.x)}" } ?: missing,
+            Metric.HeartRate, strings.get(R.string.day_sleep_vital_lowest_heart), MetricColors.heart, lowest?.y?.roundToInt()?.toString(),
+            lowest?.let { strings.format(R.string.day_sleep_vital_lowest_at, clockOf(it.x)) } ?: missing,
         ),
-        against(Metric.Hrv, "HRV", MetricColors.hrv) { v, _ -> "${v.roundToInt()}" },
-        against(Metric.Breathing, "Breathing rate", MetricColors.sleepLight) { v, _ -> Metric.Breathing.format(v) },
-        against(Metric.Spo2, "Blood oxygen", MetricColors.spo2) { v, _ -> "${v.roundToInt()}%" },
+        against(Metric.Hrv, strings.get(R.string.day_info_hrv_name), MetricColors.hrv) { v, _ -> "${v.roundToInt()}" },
+        against(Metric.Breathing, strings.get(R.string.day_info_breathing_name), MetricColors.sleepLight) { v, _ ->
+            Metric.Breathing.format(v)
+        },
+        against(Metric.Spo2, strings.get(R.string.day_info_spo2_name), MetricColors.spo2) { v, _ -> "${v.roundToInt()}%" },
         // Skin temperature means little on its own; once there's a normal, show how far off it is.
-        against(Metric.SkinTemperature, "Skin temperature", MetricColors.temperature) { v, n ->
+        against(Metric.SkinTemperature, strings.get(R.string.day_info_skin_temp_name), MetricColors.temperature) { v, n ->
             n?.let { Metric.SkinTemperature.formatChange(v - it.mean) } ?: Metric.SkinTemperature.format(v)
         },
-        NightVital(Metric.HeartRate, "Average heart rate", MetricColors.heart, average?.toString(), if (average != null) "While asleep" else missing),
+        NightVital(
+            Metric.HeartRate, strings.get(R.string.day_sleep_vital_average_heart), MetricColors.heart, average?.toString(),
+            if (average != null) strings.get(R.string.day_sleep_vital_while_asleep) else missing,
+        ),
     )
 }
 

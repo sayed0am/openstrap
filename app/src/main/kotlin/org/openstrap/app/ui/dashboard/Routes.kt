@@ -1,9 +1,12 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.saveable.Saver
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.HeartZones
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Metric
 
 /**
@@ -17,11 +20,19 @@ import org.openstrap.app.presentation.Metric
  * what the screens say. Energy was `Charge` and Calories was `Energy`, and they keep those names there, so a stack
  * saved before the rename still opens the same detail and a saved "Energy" only ever means Calories.
  */
-enum class Score(val title: String, private val savedAs: String? = null) {
-    Recovery("Recovery"), Energy("Energy", savedAs = "Charge"), Sleep("Sleep score"), Regularity("Sleep regularity"),
-    Naps("Naps"), HeartPoints("Heart points"), ActiveMinutes("Active minutes"), Load("Load"), Vo2Max("VO2 max"),
-    Recover("Time to recover"), Calories("Calories", savedAs = "Energy"), Distance("Distance"),
+enum class Score(@StringRes val titleRes: Int, private val savedAs: String? = null) {
+    Recovery(R.string.day_score_recovery), Energy(R.string.day_score_energy, savedAs = "Charge"),
+    Sleep(R.string.day_score_sleep), Regularity(R.string.day_score_regularity), Naps(R.string.day_score_naps),
+    HeartPoints(R.string.day_score_heart_points), ActiveMinutes(R.string.day_score_active_minutes), Load(R.string.day_score_load),
+    Vo2Max(R.string.day_score_vo2max), Recover(R.string.day_score_recover), Calories(R.string.day_score_calories, savedAs = "Energy"),
+    Distance(R.string.day_score_distance),
     ;
+
+    /** The detail's title, in the app's language. */
+    val title: String get() = title()
+
+    /** [title] in [strings]. */
+    fun title(strings: Strings = Strings.app): String = strings.get(titleRes)
 
     /** The name a saved stack knows it by. */
     val key: String get() = savedAs ?: name

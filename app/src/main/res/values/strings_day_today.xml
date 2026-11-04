@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Today and the frame around the day pages (ui/dashboard): the header and its strap chip, the day calendar, the cards
+  Edit Today lists, the details' titles, pairing, the first score, a partial day, sync trouble, and the words for
+  ratings and the stress level. Energy, Recovery, Load and Habit Age are the app's names for its scores.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A detail's title at the top of its page, and the title of its info sheet. A few words. -->
+    <string name="day_score_recovery">Recovery</string>
+    <string name="day_score_energy">Energy</string>
+    <string name="day_score_sleep">Sleep score</string>
+    <string name="day_score_regularity">Sleep regularity</string>
+    <string name="day_score_naps">Naps</string>
+    <string name="day_score_heart_points">Heart points</string>
+    <string name="day_score_active_minutes">Active minutes</string>
+    <string name="day_score_load">Load</string>
+    <string name="day_score_vo2max">VO2 max</string>
+    <string name="day_score_recover">Time to recover</string>
+    <string name="day_score_calories">Calories</string>
+    <string name="day_score_distance">Distance</string>
+
+    <!-- A Today card's name in Edit Today, a row in a list. The card offering to go back to a workout still recording. -->
+    <string name="day_card_offer">Workout under way</string>
+    <!-- The card offering to save a workout the strap noticed. -->
+    <string name="day_card_suggestion">Workout to save</string>
+    <!-- The card with the strap's health alerts. -->
+    <string name="day_card_alerts">From your strap</string>
+    <!-- The morning check-in, asking how the user feels. -->
+    <string name="day_card_check_in">How do you feel</string>
+    <string name="day_card_body_morning">Your body this morning</string>
+    <string name="day_card_right_now">Right now</string>
+    <string name="day_card_last_night">Last night</string>
+    <string name="day_card_heart_rate">Heart rate</string>
+    <string name="day_card_activity">Steps</string>
+    <string name="day_card_recovery">Recovery</string>
+    <string name="day_card_charge">Energy</string>
+    <string name="day_card_load">Load and time to recover</string>
+    <!-- The card about the workout just finished. -->
+    <string name="day_card_workout">The workout</string>
+    <string name="day_card_week">Your week</string>
+    <string name="day_card_habit_age">Habit Age</string>
+    <string name="day_card_start_workout">Start a workout</string>
+
+    <!-- Today while pairing a strap, under the strap: before the scan. -->
+    <string name="day_pair_ready">Put the strap on its charger, close to this phone.</string>
+    <string name="day_pair_searching">Looking for your strap nearby.</string>
+    <string name="day_pair_found">Found a strap nearby. Pick it to pair.</string>
+    <string name="day_pair_connecting">Connecting to your strap. Keep it close.</string>
+    <string name="day_pair_connected">Connected. The first sync starts now.</string>
+    <string name="day_pair_failed">Couldn\'t connect yet. Keep the strap on its charger, near the phone.</string>
+    <!-- The strap refused the pairing key. Open your strap means the Strap page. -->
+    <string name="day_pair_key_rejected">The strap turned the key down. Open your strap to pair again.</string>
+
+    <!-- The tag on the Recovery score the day the first score shows. A chip, two words. -->
+    <string name="day_first_score">First score</string>
+    <!-- The marker beside the title of a card whose figures are low because the strap was worn for part of the day. A chip, two words. Also the title of its sheet. -->
+    <string name="day_partial_day">Partial day</string>
+    <!-- The partial day sheet, on today: the time worn, of the day so far. -->
+    <string name="day_partial_line_today">The strap recorded <xliff:g id="worn" example="5 h 10">%1$s</xliff:g> of the <xliff:g id="so_far" example="9 h 30">%2$s</xliff:g> so far today.</string>
+    <!-- The partial day sheet, on an earlier day: the time worn. -->
+    <string name="day_partial_line">The strap recorded <xliff:g id="worn" example="13 h 10">%1$s</xliff:g> of the day.</string>
+    <!-- The partial day sheet's meaning, in bold. -->
+    <string name="day_partial_meaning">The strap was worn for part of the day, so its totals are low.</string>
+    <!-- The partial day sheet's folded row title. -->
+    <string name="day_partial_lowers_title">What it lowers</string>
+    <string name="day_partial_lowers">Steps, calories and Energy count only the time the strap was on. Charging pauses them too.</string>
+    <!-- The partial day sheet's folded row title. -->
+    <string name="day_partial_when_title">When a day counts as partial</string>
+    <!-- The time a full day needs worn ("20 h"). -->
+    <string name="day_partial_when">When the strap was worn for under <xliff:g id="full_day" example="20 h">%1$s</xliff:g> of the day, or under that share of the day so far.</string>
+
+    <!-- The marker beside a card's title when its data stops at a time because syncing stopped: that clock time. A chip. -->
+    <string name="day_up_to">Up to <xliff:g id="time" example="09:40">%1$s</xliff:g></string>
+    <!-- Today's hero while last night is still on the strap: its title. -->
+    <string name="day_stuck_last_night_title">Last night</string>
+    <string name="day_stuck_last_night">Last night is still on the strap.</string>
+    <!-- Under the sync trouble hero's sentence. -->
+    <string name="day_stuck_keep_near">Keep it near your phone and it comes across.</string>
+    <!-- Today's hero while syncing has failed for hours: its title. -->
+    <string name="day_stuck_not_synced_title">Not synced</string>
+    <!-- Its sentence: the time the data on the phone reaches. -->
+    <string name="day_stuck_data_since">Your data since <xliff:g id="time" example="09:40">%1$s</xliff:g> is still on the strap.</string>
+    <!-- On the sync trouble hero: the last time a sync was tried, a clock time. -->
+    <string name="day_last_tried">Last tried <xliff:g id="time" example="07:42">%1$s</xliff:g></string>
+    <!-- On the Recovery card when the score couldn't be worked out, with Try again. -->
+    <string name="day_recovery_failed">Couldn\'t work out today\'s score.</string>
+    <!-- On the Energy card when it couldn't be worked out, with Try again. -->
+    <string name="day_charge_failed">Couldn\'t work out today\'s Energy.</string>
+    <!-- The same on a small card, a few words. -->
+    <string name="day_failed_short">Couldn\'t work it out</string>
+    <!-- A button. -->
+    <string name="day_try_again">Try again</string>
+    <!-- On a card waiting for last night to sync, in place of its value. -->
+    <string name="day_waiting_last_night">Waiting for last night</string>
+    <!-- When a sync failed or can't start: nothing is lost. -->
+    <string name="day_data_on_strap">Your data is still on the strap.</string>
+
+    <!-- The strap chip in the header: no strap paired. One or two words. -->
+    <string name="day_chip_not_paired">Not paired</string>
+    <!-- Read out by a screen reader for the chip. -->
+    <string name="day_chip_not_paired_description">No strap paired</string>
+    <!-- Read out for the chip while connecting. -->
+    <string name="day_chip_connecting_description">Connecting to the strap</string>
+    <!-- Read out for the chip when the strap is gone: "Just now", "18 min ago", "3 h ago" or "2 days ago". -->
+    <string name="day_chip_last_seen_description">Strap last seen <xliff:g id="ago" example="18 min ago">%1$s</xliff:g></string>
+    <!-- The chip when the strap isn't connected and hasn't been seen. One or two words. -->
+    <string name="day_chip_not_connected">Not connected</string>
+    <string name="day_chip_not_connected_description">Strap not connected</string>
+    <!-- The chip while the strap charges: its battery. A few words. -->
+    <string name="day_chip_charging">Charging <xliff:g id="percent" example="64">%1$d</xliff:g>%%</string>
+    <string name="day_chip_charging_description">Strap charging, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</string>
+    <!-- The chip when the last sync failed. One or two words. -->
+    <string name="day_chip_not_synced">Not synced</string>
+    <string name="day_chip_not_synced_description">Strap connected, not synced</string>
+    <!-- Read out for the chip when connected, before the battery is known. -->
+    <string name="day_chip_connected_description">Strap connected</string>
+    <!-- The chip when all is well: the strap's battery. -->
+    <string name="day_chip_battery"><xliff:g id="percent" example="64">%1$d</xliff:g>%%</string>
+    <string name="day_chip_battery_low_description">Strap connected, battery low, <xliff:g id="percent" example="12">%1$d</xliff:g> percent</string>
+    <string name="day_chip_battery_description">Strap connected, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</string>
+    <!-- How long ago the strap was last seen, on the chip: under a minute. -->
+    <string name="day_ago_now">Just now</string>
+    <!-- Minutes ago, on the chip. Short. -->
+    <string name="day_ago_minutes"><xliff:g id="minutes" example="18">%1$d</xliff:g> min ago</string>
+    <!-- Hours ago, on the chip. Short. -->
+    <string name="day_ago_hours"><xliff:g id="hours" example="3">%1$d</xliff:g> h ago</string>
+    <!-- Days ago, on the chip. Short. -->
+    <plurals name="day_ago_days">
+        <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> day ago</item>
+        <item quantity="other"><xliff:g id="days" example="2">%1$d</xliff:g> days ago</item>
+    </plurals>
+
+    <!-- The header's avatar button, read out by a screen reader: the You page. -->
+    <string name="day_header_you">You</string>
+    <!-- The same while a new version of the app waits to be installed. -->
+    <string name="day_header_you_update">You, a new version is ready</string>
+    <!-- What tapping the avatar does, read out by a screen reader. -->
+    <string name="day_header_open_you">Open You</string>
+    <!-- The header's button for every metric, read out by a screen reader. -->
+    <string name="day_header_all_metrics">All metrics</string>
+    <string name="day_header_open_all_metrics">Open all metrics</string>
+    <!-- What tapping the day in the header does, read out by a screen reader. -->
+    <string name="day_header_pick_day">Pick a day</string>
+    <!-- The day in the header, read out by a screen reader: the moment or page title, then the date ("Thu 23 Oct"). -->
+    <string name="day_header_day_description"><xliff:g id="title" example="Morning">%1$s</xliff:g>, <xliff:g id="date" example="Thu 23 Oct">%2$s</xliff:g></string>
+    <!-- What tapping the strap chip does, read out by a screen reader. -->
+    <string name="day_header_open_strap">Open your strap</string>
+
+    <!-- The day calendar's arrows, read out by a screen reader. -->
+    <string name="day_calendar_previous_month">Previous month</string>
+    <string name="day_calendar_next_month">Next month</string>
+    <!-- The calendar's legend: the lit days. -->
+    <string name="day_calendar_has_data">Has data</string>
+    <!-- The calendar's legend: today's dot. -->
+    <string name="day_calendar_today">Today</string>
+    <!-- A button that picks today. -->
+    <string name="day_calendar_go_to_today">Go to today</string>
+
+    <!-- A rating against general guidance, a word or two. -->
+    <string name="day_rating_very_good">Very good</string>
+    <string name="day_rating_good">Good</string>
+    <string name="day_rating_fair">Fair</string>
+    <string name="day_rating_low">Low</string>
+
+    <!-- Where stress starts counting: the level, the margin above the user's calm level, that calm level, then the days it's from (day_stress_last_days). -->
+    <string name="day_stress_counts_from_calm">Stress counts from <xliff:g id="level" example="35">%1$d</xliff:g>: <xliff:g id="margin" example="10">%2$d</xliff:g> above your calm level of <xliff:g id="calm" example="25">%3$d</xliff:g> over the last <xliff:g id="days" example="5 days">%4$s</xliff:g>.</string>
+    <!-- The days in day_stress_counts_from_calm. -->
+    <plurals name="day_stress_last_days">
+        <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> day</item>
+        <item quantity="other"><xliff:g id="days" example="5">%1$d</xliff:g> days</item>
+    </plurals>
+    <!-- Before there's a calm level: the level for now, then how much more wear it needs (day_stress_more_days). -->
+    <string name="day_stress_counts_for_now">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now. After <xliff:g id="more" example="2 more days">%2$s</xliff:g> of wear it adjusts to your own calm level.</string>
+    <!-- The wear in day_stress_counts_for_now. -->
+    <plurals name="day_stress_more_days">
+        <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> more day</item>
+        <item quantity="other"><xliff:g id="days" example="2">%1$d</xliff:g> more days</item>
+    </plurals>
+    <!-- Before there's a calm level, with enough wear but too few calm readings. -->
+    <string name="day_stress_counts_until">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now, until there are enough calm readings to find your own level.</string>
+</resources>

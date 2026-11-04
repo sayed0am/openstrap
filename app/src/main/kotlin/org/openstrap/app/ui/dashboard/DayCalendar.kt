@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -78,8 +80,14 @@ fun DayCalendarSheet(selected: LocalDate, available: Set<LocalDate>, onPick: (Lo
                     month.format(DateTimeFormatter.ofPattern("MMMM yyyy")), color = Color.White, style = GlowType.cardTitle,
                     maxLines = 1, modifier = Modifier.weight(1f),
                 )
-                RoundIconButton(AppIcons.CaretLeft, "Previous month", { month = month.minusMonths(1) }, enabled = month > first)
-                RoundIconButton(AppIcons.CaretRight, "Next month", { month = month.plusMonths(1) }, enabled = month < last)
+                RoundIconButton(
+                    AppIcons.CaretLeft, stringResource(R.string.day_calendar_previous_month), { month = month.minusMonths(1) },
+                    enabled = month > first,
+                )
+                RoundIconButton(
+                    AppIcons.CaretRight, stringResource(R.string.day_calendar_next_month), { month = month.plusMonths(1) },
+                    enabled = month < last,
+                )
             }
             Spacer(Modifier.height(16.dp))
 
@@ -111,14 +119,17 @@ fun DayCalendarSheet(selected: LocalDate, available: Set<LocalDate>, onPick: (Lo
             Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 Box(Modifier.size(12.dp).background(DayFill, CircleShape))
                 Spacer(Modifier.width(6.dp))
-                Text("Has data", style = GlowType.secondary, color = LegendInk)
+                Text(stringResource(R.string.day_calendar_has_data), style = GlowType.secondary, color = LegendInk)
                 Spacer(Modifier.width(14.dp))
                 Box(Modifier.size(6.dp).background(TodayDot, CircleShape))
                 Spacer(Modifier.width(6.dp))
-                Text("Today", style = GlowType.secondary, color = LegendInk)
+                Text(stringResource(R.string.day_calendar_today), style = GlowType.secondary, color = LegendInk)
                 Spacer(Modifier.weight(1f))
                 if (selected != today) {
-                    PageButton("Go to today", { onPick(today); onDismiss() }, icon = AppIcons.CalendarBlank, size = ButtonSize.Row)
+                    PageButton(
+                        stringResource(R.string.day_calendar_go_to_today), { onPick(today); onDismiss() }, icon = AppIcons.CalendarBlank,
+                        size = ButtonSize.Row,
+                    )
                 }
             }
         }
