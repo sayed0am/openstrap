@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Today: the hero's sentences, its small facts and the header's title (presentation/TodayCopy.kt, HeaderCopy.kt and
+  FirstNightCopy.kt). The widgets and the Recovery and Sleep tabs show some of them too.
+  OpenStrap is the app's name, keep it as it is. Recovery, Energy and Load are the names of the app's scores, written
+  with a capital where they stand for the score.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- What a card or widget waiting for the first night says in place of its value. Short, one line. -->
+    <string name="core_first_night_after">After your first night</string>
+
+    <!-- The header's title on Today during a workout whose sport has no verb of its own. One word if it can. -->
+    <string name="core_header_during_workout">Workout</string>
+    <!-- The header's title after a workout of a sport with no short name. -->
+    <string name="core_header_after_workout">After your workout</string>
+    <!-- The header's title after a workout. The sport is a short noun: "run", "walk", "ride", "swim", "hike" or "row". -->
+    <string name="core_header_after_sport">After your <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- The header's title around the time you usually work out. -->
+    <string name="core_header_workout_window">Workout time</string>
+    <!-- The header's title in the morning. -->
+    <string name="core_header_waking">Waking up</string>
+    <!-- The header's title at night. -->
+    <string name="core_header_night">Night</string>
+    <!-- The header's title in the evening. -->
+    <string name="core_header_evening">Evening</string>
+    <!-- The header's title in the middle of the day. -->
+    <string name="core_header_midday">Midday</string>
+
+    <!--
+      A sport as a short noun, used inside sentences such as "After your run", "a run", "You usually run around now",
+      "From this run". In English each is also the verb. Lower case.
+    -->
+    <string name="core_header_sport_run">run</string>
+    <!-- A sport as a short noun, as above: walking. -->
+    <string name="core_header_sport_walk">walk</string>
+    <!-- A sport as a short noun, as above: cycling. -->
+    <string name="core_header_sport_ride">ride</string>
+    <!-- A sport as a short noun, as above: swimming. -->
+    <string name="core_header_sport_swim">swim</string>
+    <!-- A sport as a short noun, as above: hiking. -->
+    <string name="core_header_sport_hike">hike</string>
+    <!-- A sport as a short noun, as above: rowing. -->
+    <string name="core_header_sport_row">row</string>
+    <!-- The header's title during a run. One word. -->
+    <string name="core_header_doing_run">Running</string>
+    <!-- The header's title during a walk. One word. -->
+    <string name="core_header_doing_walk">Walking</string>
+    <!-- The header's title during a ride. One word. -->
+    <string name="core_header_doing_ride">Cycling</string>
+    <!-- The header's title during a swim. One word. -->
+    <string name="core_header_doing_swim">Swimming</string>
+    <!-- The header's title during a hike. One word. -->
+    <string name="core_header_doing_hike">Hiking</string>
+    <!-- The header's title during rowing. One word. -->
+    <string name="core_header_doing_row">Rowing</string>
+
+    <!-- A value against your usual range, beside it on a card, before there is a usual range. -->
+    <string name="core_today_normal_learning">Learning your normal</string>
+    <!-- A value against your usual range: above it. -->
+    <string name="core_today_normal_above">Above your normal</string>
+    <!-- A value against your usual range: below it. -->
+    <string name="core_today_normal_below">Below your normal</string>
+    <!-- A value against your usual range: within it. -->
+    <string name="core_today_normal_usual">Usual</string>
+
+    <!-- What a Recovery score means for the day, when overnight signals are off your usual. -->
+    <string name="core_today_meaning_alert">Some overnight signals are off your normal. An easy day suits.</string>
+    <!-- What a Recovery score of 85 or more means for the day. -->
+    <string name="core_today_meaning_ready_for_more">Well recovered. A good day for a hard session.</string>
+    <!-- What a Recovery score of 70 to 84 means for the day. -->
+    <string name="core_today_meaning_ready">Recovered enough for your usual training.</string>
+    <!-- What a middling Recovery score means for the day. -->
+    <string name="core_today_meaning_moderate">Not fully recovered. Keep the effort moderate.</string>
+    <!-- What a low Recovery score means for the day. -->
+    <string name="core_today_meaning_low">Still catching up. An easy day helps.</string>
+
+    <!-- Why there is no Recovery score yet: nights so far of the nights the first score needs. -->
+    <string name="core_today_no_score_learning">OpenStrap is still learning your nights, <xliff:g id="nights" example="5">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g>.</string>
+    <!-- Why there is no Recovery score: the night lacked the heart readings a score needs. -->
+    <string name="core_today_no_score_heart">Not enough heart data last night for a Recovery score.</string>
+
+    <!-- The morning hero's first sentence. The time asleep is "7 h 40", "7 h" or "40 min". Another sentence may follow. -->
+    <string name="core_today_slept">Slept <xliff:g id="duration" example="7 h 40">%1$s</xliff:g>.</string>
+    <!-- The morning hero on a past day with no sleep recorded. -->
+    <string name="core_today_no_sleep_that_night">No sleep recorded that night.</string>
+    <!-- The Recovery heroes before the strap has seen a night. -->
+    <string name="core_today_recovery_first_night">Recovery starts after your first night with the strap.</string>
+    <!-- Today's morning hero and the Sleep tab with no sleep recorded last night. -->
+    <string name="core_today_no_sleep">No sleep recorded last night. Was the strap on?</string>
+    <!-- In place of the above when the user deleted last night's sleep. -->
+    <string name="core_today_deleted_last_night">You deleted last night\'s sleep.</string>
+    <!-- In place of the above on a past day whose night the user deleted. -->
+    <string name="core_today_deleted_that_night">You deleted that night\'s sleep.</string>
+    <!-- The word beside the strap's own Recovery number, shown while OpenStrap's score isn't ready. Short. -->
+    <string name="core_today_strap_estimate">Strap\'s estimate</string>
+    <!-- The line under the strap's estimate when OpenStrap's own score isn't ready. -->
+    <string name="core_today_own_score_not_ready">OpenStrap\'s own score isn\'t ready yet.</string>
+
+    <!-- The Energy hero before the first night. -->
+    <string name="core_today_energy_first_night">Energy starts after your first night. Sleep is what fills it.</string>
+    <!-- The Energy hero before noon: how much Energy the morning used. A sentence follows. -->
+    <string name="core_today_energy_morning_drained">The morning drained <xliff:g id="amount" example="22">%1$d</xliff:g>.</string>
+    <!-- The Energy hero after noon: how much Energy the day used so far. A sentence follows. -->
+    <string name="core_today_energy_day_drained">The day so far drained <xliff:g id="amount" example="40">%1$d</xliff:g>.</string>
+    <!-- The Energy hero when nothing was used since waking. A sentence follows. -->
+    <string name="core_today_energy_nothing_drained">Nothing drained since waking.</string>
+    <!-- The Energy hero with 50 or more left. -->
+    <string name="core_today_energy_plenty">Plenty left for this evening.</string>
+    <!-- The Energy hero with 25 to 49 left. -->
+    <string name="core_today_energy_enough">Enough left for an easy evening.</string>
+    <!-- The Energy hero with under 25 left. -->
+    <string name="core_today_energy_low">Running low. An early night helps.</string>
+
+    <!-- The workout time hero's title before there is a Recovery score. -->
+    <string name="core_today_window_title_usual">Your usual workout time</string>
+    <!-- The workout time hero's title with a good Recovery score. -->
+    <string name="core_today_window_title_ready">Ready for effort</string>
+    <!-- The workout time hero's title with a middling Recovery score. -->
+    <string name="core_today_window_title_steady">Fine for a steady session</string>
+    <!-- The workout time hero's title with a low Recovery score. -->
+    <string name="core_today_window_title_easy">An easy session suits today</string>
+    <!--
+      The workout time hero. The activity is a sport's short noun used as a verb ("run", "ride", "walk") or
+      "work out" (core_today_window_work_out). A sentence about Energy may follow.
+    -->
+    <string name="core_today_window_usually">You usually <xliff:g id="activity" example="run">%1$s</xliff:g> around now.</string>
+    <!-- Goes into "You usually … around now." when the sport has no short name. -->
+    <string name="core_today_window_work_out">work out</string>
+    <!-- The workout time hero's second sentence, with 50 or more Energy left. -->
+    <string name="core_today_window_energy_plenty">Energy is <xliff:g id="energy" example="58">%1$d</xliff:g>, plenty left.</string>
+    <!-- The same with 25 to 49 left. -->
+    <string name="core_today_window_energy_enough">Energy is <xliff:g id="energy" example="30">%1$d</xliff:g>, enough for something easy.</string>
+    <!-- The same with under 25 left. -->
+    <string name="core_today_window_energy_low">Energy is <xliff:g id="energy" example="20">%1$d</xliff:g>, running low.</string>
+
+    <!-- After a workout, before the strap sends heart rate. -->
+    <string name="core_today_after_waiting">Heart rate since the end shows once the strap sends it.</string>
+    <!-- After a workout: the heart rate now, in beats a minute, before there is a resting heart rate. -->
+    <string name="core_today_after_now">Heart rate <xliff:g id="bpm" example="74">%1$d</xliff:g> now.</string>
+    <!-- After a workout, with the heart near its resting rate. -->
+    <string name="core_today_after_settled">Heart rate back near resting.</string>
+    <!-- After a workout, with the heart still coming down. -->
+    <string name="core_today_after_settling">Heart rate settling.</string>
+
+    <!-- The evening hero after a big day. The day's list follows, "A run, 13,860 steps and a Load above your usual". -->
+    <string name="core_today_evening_full">A full day. <xliff:g id="list" example="A run, 13,860 steps and a Load above your usual">%1$s</xliff:g>.</string>
+    <!-- The evening hero after a quiet day, the list as above. -->
+    <string name="core_today_evening_quiet">A quiet day. <xliff:g id="list" example="2,100 steps and a Load below your usual">%1$s</xliff:g>.</string>
+    <!-- The evening hero after an ordinary day, the list as above. -->
+    <string name="core_today_evening_steady">A steady day. <xliff:g id="list" example="A workout and 6,000 steps">%1$s</xliff:g>.</string>
+    <!-- An item of the evening list: one workout of a sport with a short name ("run", "ride"). Its first letter is capitalised when it leads the list. -->
+    <string name="core_today_evening_one_sport">a <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- An item of the evening list: one workout of a sport with no short name. -->
+    <string name="core_today_evening_one_workout">a workout</string>
+    <!-- An item of the evening list: how many workouts (2 or more in English). -->
+    <plurals name="core_today_evening_workouts">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout</item>
+        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> workouts</item>
+    </plurals>
+    <!-- An item of the evening list: the day's steps, the number with the language's thousands mark. -->
+    <plurals name="core_today_evening_steps">
+        <item quantity="one"><xliff:g id="count" example="1">%1$s</xliff:g> step</item>
+        <item quantity="other"><xliff:g id="count" example="13,860">%1$s</xliff:g> steps</item>
+    </plurals>
+    <!-- An item of the evening list: the day's Load against your usual. -->
+    <string name="core_today_evening_load_above">a Load above your usual</string>
+    <!-- An item of the evening list, as above. -->
+    <string name="core_today_evening_load_below">a Load below your usual</string>
+    <!-- An item of the evening list, as above. -->
+    <string name="core_today_evening_load_usual">a usual Load</string>
+    <!-- Joins the evening list's items before the last: "a run, 13,860 steps". -->
+    <string name="core_today_list_comma"><xliff:g id="first" example="a run">%1$s</xliff:g>, <xliff:g id="next" example="13,860 steps">%2$s</xliff:g></string>
+    <!-- Joins the evening list's last item: "a run, 13,860 steps and a Load above your usual". -->
+    <string name="core_today_list_and"><xliff:g id="first" example="a run, 13,860 steps">%1$s</xliff:g> and <xliff:g id="last" example="a Load above your usual">%2$s</xliff:g></string>
+
+    <!-- The day's steps against the step goal, an item of the evening list: at or past it. Lower case. -->
+    <string name="core_today_goal_past">past your step goal</string>
+    <!-- The same, from 80% of the goal. -->
+    <string name="core_today_goal_close">close to your step goal</string>
+    <!-- The same, from half the goal. -->
+    <string name="core_today_goal_short">short of your step goal</string>
+    <!-- The same, under half the goal. -->
+    <string name="core_today_goal_well_short">well short of your step goal</string>
+
+    <!-- Until your usual bedtime. The time is "1 h 10", "1 h" or "30 min". -->
+    <string name="core_today_bedtime_in">Bedtime in <xliff:g id="duration" example="1 h 10">%1$s</xliff:g></string>
+
+    <!-- Time to recover from a workout, once over. Short. -->
+    <string name="core_today_recovered">Recovered</string>
+    <!-- Time to recover, beside the hours left shown as a number: ready later today at a time ("20:30" or "8:30 PM"). -->
+    <plurals name="core_today_recover_by">
+        <item quantity="one">Hour left, ready by <xliff:g id="time" example="19:30">%1$s</xliff:g></item>
+        <item quantity="other">Hours left, ready by <xliff:g id="time" example="20:30">%1$s</xliff:g></item>
+    </plurals>
+    <!-- Time to recover, beside the hours left shown as a number: ready tomorrow. -->
+    <plurals name="core_today_recover_tomorrow">
+        <item quantity="one">Hour left, ready tomorrow</item>
+        <item quantity="other">Hours left, ready tomorrow</item>
+    </plurals>
+    <!-- Time to recover, beside the hours left shown as a number: ready on a weekday, "Friday". -->
+    <plurals name="core_today_recover_day">
+        <item quantity="one">Hour left, ready <xliff:g id="weekday" example="Friday">%1$s</xliff:g></item>
+        <item quantity="other">Hours left, ready <xliff:g id="weekday" example="Friday">%1$s</xliff:g></item>
+    </plurals>
+    <!-- Time to recover on a small card, under the hours left: ready later today at a time. Short. -->
+    <string name="core_today_recover_short_by">Ready by <xliff:g id="time" example="20:00">%1$s</xliff:g></string>
+    <!-- Time to recover on a small card: ready tomorrow. -->
+    <string name="core_today_recover_short_tomorrow">Ready tomorrow</string>
+    <!-- Time to recover on a small card: ready on a weekday, "Friday". -->
+    <string name="core_today_recover_short_day">Ready <xliff:g id="weekday" example="Friday">%1$s</xliff:g></string>
+
+    <!-- The line under Load today's number before there is a usual Load. -->
+    <string name="core_today_load_line_learning">Load, learning your usual</string>
+    <!-- The line under Load today's number. -->
+    <string name="core_today_load_line_above">Load above your usual</string>
+    <!-- The line under Load today's number. -->
+    <string name="core_today_load_line_usual">Your usual Load</string>
+    <!-- The line under Load today's number. -->
+    <string name="core_today_load_line_below">Load below your usual</string>
+    <!-- The line under Load today's number, before the evening. -->
+    <string name="core_today_load_line_so_far">Load so far today</string>
+    <!-- A small card's word for Load before there is a usual Load. Short. -->
+    <string name="core_today_load_word_learning">Learning your usual</string>
+
+    <!-- Under Your week before there is a week to compare with. The day is the week's first, "Monday" or "Sunday". -->
+    <string name="core_today_week_first">Week on week comparisons start next <xliff:g id="weekday" example="Monday">%1$s</xliff:g>.</string>
+    <!-- Your week: steps this week against the week before, up. -->
+    <string name="core_today_steps_up">Steps up <xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
+    <!-- Your week: steps this week against the week before, down. -->
+    <string name="core_today_steps_down">Steps down <xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
+    <!-- Your week: steps the same as the week before. -->
+    <string name="core_today_steps_steady">Steps held steady</string>
+
+    <!-- The Last night strip: time asleep and the sleep score. -->
+    <string name="core_today_last_night_score"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g>, score <xliff:g id="score" example="83">%2$d</xliff:g></string>
+
+    <!-- How to read the heart rate line, when your resting range is drawn behind it. -->
+    <string name="core_today_heart_note_band">Hold to scrub, the number follows. The band is your resting range.</string>
+    <!-- How to read the heart rate line. -->
+    <string name="core_today_heart_note">Hold to scrub, the number follows.</string>
+    <!-- The heart rate card's line under its number while it is live. Short. -->
+    <string name="core_today_heart_live">Live now</string>
+    <!-- The heart rate card's line: when the reading shown was taken, "20:52". Short. -->
+    <string name="core_today_heart_at">At <xliff:g id="time" example="20:52">%1$s</xliff:g></string>
+    <!-- The heart rate card's line before any reading. Short. -->
+    <string name="core_today_heart_waiting">Waiting for the strap</string>
+</resources>

@@ -1,11 +1,14 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+
 /*
  * The first nights (spec 4.3): what a card says before there's a night to score, and what leads the waking hero.
  */
 
 /** What a card waiting for the first night says in place of its value (spec 4.3). */
-const val AFTER_FIRST_NIGHT = "After your first night"
+val AFTER_FIRST_NIGHT: String get() = Strings.app.get(R.string.core_first_night_after)
 
 /** What leads the waking hero: Recovery, or Charge when there was no sleep to score (spec 4.3). */
 enum class WakingLead { Recovery, Charge }

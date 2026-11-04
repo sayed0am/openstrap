@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import kotlin.math.max
 
 /**
@@ -13,7 +16,15 @@ import kotlin.math.max
 object BodySignals {
 
     /** Independent signal families: only flags from different families count as separate votes. */
-    enum class Family(val label: String) { Cardiac("resting heart rate"), Thermal("skin temperature"), Respiratory("breathing rate") }
+    enum class Family(@StringRes val labelId: Int) {
+        Cardiac(R.string.core_body_family_cardiac),
+        Thermal(R.string.core_body_family_thermal),
+        Respiratory(R.string.core_body_family_respiratory),
+        ;
+
+        /** Its name for the push text, lower case: "resting heart rate". */
+        val label: String get() = Strings.app.get(labelId)
+    }
 
     enum class Flag(val family: Family?, val core: Boolean) {
         /** rhr − c ≥ max([RHR_FLAG_BPM], [FLAG_SCALES]·s). */
@@ -79,9 +90,11 @@ object BodySignals {
 
     /**
      * Runs the state machine over [nights] (any order; one per morning) and returns one [Day] per night, oldest first.
-     * [causes] gives the likely causes noted for a morning (tags, a hard previous day).
+     * [causes] gives the likely causes noted for a morning (tags, a hard previous day). It stays the last parameter for
+     * callers that pass it as a trailing lambda, so the signals' words come from [Strings.app].
      */
     fun evaluate(nights: List<Recovery.Night>, causes: (Long) -> List<String> = { emptyList() }): List<Day> {
+        val strings = Strings.app
         val sorted = nights.sortedBy { it.day }
         val out = ArrayList<Day>(sorted.size)
         for ((i, n) in sorted.withIndex()) {
@@ -99,21 +112,30 @@ object BodySignals {
                     val d = rhr - rhrBase.centre
                     if (d >= max(RHR_FLAG_BPM, FLAG_SCALES * rhrBase.scale)) flags += Flag.RhrFlag
                     if (d >= RHR_WATCH_BPM) flags += Flag.RhrWatch
-                    if (d >= RHR_WATCH_BPM) signals += "resting heart rate up ${d.toInt()} bpm"
+                    if (d >= RHR_WATCH_BPM) signals += strings.format(R.string.core_body_signal_rhr, d.toInt())
                 }
                 val tempBase = Recovery.baseline(pool.mapNotNull { it.skinTemperature }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.TEMP_SD_FLOOR, MIN_ALERT_NIGHTS)
                 if (tempBase != null) n.skinTemperature?.let { t ->
                     val d = t - tempBase.centre
-                    if (d >= TEMP_FLAG_C && d >= FLAG_SCALES * tempBase.scale) { flags += Flag.TempFlag; signals += "skin temperature up from your usual" }
+                    if (d >= TEMP_FLAG_C && d >= FLAG_SCALES * tempBase.scale) {
+                        flags += Flag.TempFlag
+                        signals += strings.get(R.string.core_body_signal_temperature)
+                    }
                 }
                 val rrBase = Recovery.baseline(pool.mapNotNull { it.breathRate }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.BREATH_SD_FLOOR, MIN_ALERT_NIGHTS)
                 if (rrBase != null) n.breathRate?.let { rr ->
                     val d = rr - rrBase.centre
-                    if (d >= RR_FLAG_PER_MIN && d >= FLAG_SCALES * rrBase.scale) { flags += Flag.RrFlag; signals += "breathing rate up ${"%.1f".format(d)}/min" }
+                    if (d >= RR_FLAG_PER_MIN && d >= FLAG_SCALES * rrBase.scale) {
+                        flags += Flag.RrFlag
+                        signals += strings.format(R.string.core_body_signal_breathing, "%.1f".format(d))
+                    }
                     if (d >= RR_ALERT_PER_MIN && d >= FLAG_SCALES * rrBase.scale) rrBig = true
                 }
                 val hrvBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.hrvLn }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.HRV_LN_SD_FLOOR, MIN_ALERT_NIGHTS)
-                if (hrvBase != null) hrvOf(n)?.let { if (hrvBase.z(it) <= HRV_SUPPORT_Z) { flags += Flag.HrvSupport; signals += "HRV well below your normal" } }
+                if (hrvBase != null) hrvOf(n)?.takeIf { hrvBase.z(it) <= HRV_SUPPORT_Z }?.let {
+                    flags += Flag.HrvSupport
+                    signals += strings.get(R.string.core_body_signal_hrv)
+                }
             }
             val core = flags.filter { it.core }
             val families = core.mapNotNull { it.family }.distinct()
@@ -145,7 +167,7 @@ object BodySignals {
                 else -> State.Normal
             }
             val noted = if (state == State.Normal) emptyList() else causes(n.day)
-            out += Day(n.day, state, flags, signals, families.map { it.label }, nightsOff, noted, baselineNights)
+            out += Day(n.day, state, flags, signals, families.map { strings.get(it.labelId) }, nightsOff, noted, baselineNights)
         }
         return out
     }

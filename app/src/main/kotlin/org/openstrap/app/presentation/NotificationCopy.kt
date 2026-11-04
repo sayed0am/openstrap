@@ -1,10 +1,12 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.R
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.i18n.Strings
 import java.util.Locale
 
 /**
@@ -12,7 +14,7 @@ import java.util.Locale
  * colour, one more figure and the flat zone strip: the time, the bpm, and distance for a GPS workout or the target or
  * the time in this zone otherwise, with the active kcal after the time where it fits. Collapsed it's the sport, the
  * time, the kcal where it fits and the bpm. Each part is its own text element, so nothing here joins them with a
- * separator.
+ * separator. The text is in res/values/strings_core_notification.xml.
  */
 data class WorkoutCard(
     val sport: String,
@@ -47,8 +49,8 @@ object NotificationCopy {
      */
     fun recovery(r: RecoveryResult): Int? = TodayCopy.recoveryShown(r.readiness, r.strapScore, "").value
 
-    /** The question while End waits for a second tap. */
-    const val END_QUESTION = "End the workout? Tap Yes, end to save it."
+    /** The question while End waits for a second tap. A getter, so it follows the app's language. */
+    val END_QUESTION: String get() = Strings.app.get(R.string.core_notif_end_question)
 
     /**
      * The card for a workout recording now. [bpm] is the live reading while the strap is [connected]. [distanceMeters]
@@ -58,20 +60,20 @@ object NotificationCopy {
     fun card(
         sport: String, activeSeconds: Long, paused: Boolean, connected: Boolean, bpm: Int?, maxHr: Int, zones: HeartZones, gps: Boolean,
         distanceMeters: Float?, distanceFromSteps: Boolean, target: WorkoutTarget?, zoneSeconds: List<Int>, confirming: Boolean,
-        activeKcal: Float? = null, locale: Locale = Locale.getDefault(),
+        activeKcal: Float? = null, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
     ): WorkoutCard {
         val reading = bpm.takeIf { connected && !paused }
         val zone = WorkoutRecorder.liveZone(reading, maxHr, zones)
         val slot = when {
-            paused -> "Paused"
+            paused -> strings.get(R.string.core_notif_paused)
             !connected -> WorkoutWords.STRAP_GONE
-            reading == null -> "Waiting"
-            else -> "$reading bpm"
+            reading == null -> strings.get(R.string.core_notif_waiting)
+            else -> strings.format(R.string.core_notif_bpm, reading)
         }
         val zoneLine = when {
-            confirming -> END_QUESTION
+            confirming -> strings.get(R.string.core_notif_end_question)
             paused -> null
-            !connected -> "Still recording"
+            !connected -> strings.get(R.string.core_notif_still_recording)
             else -> zone?.let(WorkoutWords::zoneLine)
         }
         val detail = when {
@@ -79,10 +81,10 @@ object NotificationCopy {
             paused -> null
             target is WorkoutTarget.Zones -> {
                 val inTarget = zoneSeconds.withIndex().filter { it.index in target.low..target.high }.sumOf { it.value }
-                "${inTarget / 60} min in ${target.label}"
+                strings.format(R.string.core_notif_minutes_in_target, inTarget / 60, target.label)
             }
-            target is WorkoutTarget.Time -> "Goal ${target.label}"
-            target is WorkoutTarget.Kcal -> "Goal ${target.label}"
+            target is WorkoutTarget.Time -> strings.format(R.string.core_notif_goal, target.label)
+            target is WorkoutTarget.Kcal -> strings.format(R.string.core_notif_goal, target.label)
             zone != null -> WorkoutWords.zoneTime(zoneSeconds.getOrElse(zone) { 0 })
             else -> null
         }

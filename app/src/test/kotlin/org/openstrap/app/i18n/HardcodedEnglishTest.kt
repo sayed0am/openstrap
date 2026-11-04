@@ -98,8 +98,11 @@ class HardcodedEnglishTest {
          */
         val IGNORED = mapOf(
             ("ble/BleScanner.kt" to "listOf") to "The names the official app accepts for the strap, matched in scans",
+            ("ble/GattClient.kt" to "fail") to "Why a GATT call failed, for the diagnostics log. Callers show their own words",
+            ("ble/GattClient.kt" to "failAny") to "Why the link failed, for the diagnostics log. Callers show their own words",
             ("data/DetailRoutes.kt" to "") to "Health Connect detail route ids, read back by the app, never shown",
             ("data/db/DayKeyMigration.kt" to "") to "The migration's notes for the diagnostics log",
+            ("data/settings/SettingsStore.kt" to "PairedDevice") to "The strap's product name, a name in every language",
             ("device/StrapManager.kt" to "step") to "Connection steps named in the diagnostics log",
             ("device/StrapPresenceService.kt" to "appeared") to "Presence events named in the diagnostics log",
             ("device/WorkoutGapFill.kt" to "") to "Its result line for the diagnostics log",
@@ -107,6 +110,7 @@ class HardcodedEnglishTest {
             ("export/BackupFiles.kt" to "if") to "Matches the system's own No space error message",
             ("export/CsvBackups.kt" to "warn") to "Backup warnings for the diagnostics log",
             ("health/AutoHealthConnect.kt" to "guarded") to "Write names for the diagnostics log",
+            ("health/HealthConnectExporter.kt" to "Device") to "The strap's maker and model as Health Connect records them",
             ("ui/glow/draw/GlowStyle.kt" to "listOf") to "Names of the glow presets, kept for tuning and never shown",
             ("ui/root/AppRootViewModel.kt" to "write") to "Setting names for the log line when a write fails",
             ("ui/theme/AppIcons.kt" to "line") to "Icon names, the ImageVector's own name",
@@ -120,22 +124,10 @@ class HardcodedEnglishTest {
          * strings_<area>.xml and takes them off. Wave 6 empties it.
          */
         val ALLOWED = setOf(
-            "ble/GattClient.kt",
-            "data/BodySignals.kt", "data/BodySignalsCopy.kt", "data/CheckIn.kt", "data/Coaching.kt", "data/Healthspan.kt",
-            "data/HealthspanEngine.kt", "data/Recovery.kt", "data/RecoveryEngine.kt", "data/Rewards.kt",
-            "data/SleepRegularity.kt", "data/Strength.kt", "data/Vo2max.kt", "data/Workouts.kt",
-            "data/settings/SettingsStore.kt", "data/settings/Units.kt",
             "device/AutoDetectNotifier.kt", "device/ConnectErrors.kt", "device/HealthAlertNotifier.kt",
             "device/HistorySync.kt", "device/KeepRecordingNotice.kt", "device/LeftRecording.kt", "device/PairingErrors.kt",
             "device/StrapCommands.kt", "device/StrapService.kt", "device/WearReminder.kt", "device/WeeklyRecap.kt",
             "device/WorkoutNotification.kt", "device/WorkoutSession.kt", "device/WorkoutTileService.kt",
-            "firmware/FirmwareCloud.kt",
-            "health/HealthConnectExporter.kt",
-            "presentation/ActivityCopy.kt", "presentation/Bands.kt", "presentation/DataCopy.kt", "presentation/DayWords.kt",
-            "presentation/DetailCopy.kt", "presentation/FirstNightCopy.kt", "presentation/HeaderCopy.kt",
-            "presentation/MetricCopy.kt", "presentation/NotificationCopy.kt", "presentation/Ranges.kt",
-            "presentation/RewardsCopy.kt", "presentation/TabCopy.kt", "presentation/TodayCopy.kt", "presentation/Units.kt",
-            "presentation/WorkoutCopy.kt", "presentation/WorkoutWords.kt",
             "ui/alarms/AlarmsScreen.kt", "ui/alarms/AlarmsViewModel.kt", "ui/alarms/PhoneAlertsScreen.kt",
             "ui/alarms/PhoneAlertsViewModel.kt",
             "ui/components/PullToSync.kt",

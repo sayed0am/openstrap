@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Habit Age (data/Healthspan.kt and data/HealthspanEngine.kt): the habits it weighs, named on its page, and why there
+  is no estimate yet, shown on its card. Habit Age is the feature's name. VO2 max is a fitness measure, keep it as is.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A habit Habit Age weighs, as a row title on its page. -->
+    <string name="core_healthspan_habit_strength">Strength training</string>
+    <!-- A habit Habit Age weighs, as a row title. -->
+    <string name="core_healthspan_habit_vo2max">Fitness (VO2 max)</string>
+    <!-- A habit Habit Age weighs, as a row title. -->
+    <string name="core_healthspan_habit_steps">Steps</string>
+    <!-- A habit Habit Age weighs, as a row title. How alike your sleep times are from day to day. -->
+    <string name="core_healthspan_habit_regularity">Sleep regularity</string>
+    <!-- A habit Habit Age weighs, as a row title. -->
+    <string name="core_healthspan_habit_resting_hr">Resting heart rate</string>
+    <!-- A habit Habit Age weighs, as a row title. -->
+    <string name="core_healthspan_habit_time_asleep">Time asleep</string>
+
+    <!-- Why there is no Habit Age, on its card: no birth year. -->
+    <string name="core_healthspan_withheld_no_age">Add your birth year in your profile to start your estimate.</string>
+    <!-- Why there is no Habit Age: the user's age is outside the range it's built for. -->
+    <string name="core_healthspan_withheld_age">Habit Age is for ages 20 to 79.</string>
+    <!-- Why there is no Habit Age: no sex in the profile. -->
+    <string name="core_healthspan_withheld_sex">Add your sex in your profile: the typical values differ for women and men.</string>
+    <!-- Why there is no Habit Age: the profile says beta-blockers or pregnancy. -->
+    <string name="core_healthspan_withheld_medication">Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn\'t reflect fitness then.</string>
+    <!-- Why there is no Habit Age yet: too little wear so far. -->
+    <string name="core_healthspan_withheld_learning">Needs 30 days of wear before a first estimate.</string>
+    <!-- Why there is no Habit Age yet: too few nights with resting heart rate. -->
+    <string name="core_healthspan_withheld_resting_hr">Needs more nights of resting heart rate: about half the nights.</string>
+    <!-- Why there is no Habit Age yet: too few days worn most of the day. -->
+    <string name="core_healthspan_withheld_steps">Needs more days worn for 10 hours or more: about half the days.</string>
+    <!-- Why there is no Habit Age yet: too few weeks to measure sleep regularity. -->
+    <string name="core_healthspan_withheld_regularity">Needs more weeks of sleep regularity.</string>
+    <!-- Why there is no Habit Age yet: too few nights of sleep. -->
+    <string name="core_healthspan_withheld_sleep">Needs more nights of sleep: about half the nights.</string>
+
+    <!-- What's missing from the profile, lower case, put into "Add your birth year and sex in your profile to see your Habit Age." -->
+    <string name="core_healthspan_missing_birth_year">birth year</string>
+    <!-- What's missing from the profile, lower case, as above. -->
+    <string name="core_healthspan_missing_sex">sex</string>
+</resources>

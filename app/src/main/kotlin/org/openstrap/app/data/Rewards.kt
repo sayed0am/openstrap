@@ -1,5 +1,7 @@
 package org.openstrap.app.data
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
@@ -8,6 +10,7 @@ import org.openstrap.app.data.db.AppWorkoutSet
 import org.openstrap.app.data.db.BadgeRow
 import org.openstrap.app.data.db.PersonalBest
 import org.openstrap.app.data.db.WeekResult
+import org.openstrap.app.i18n.Strings
 
 /**
  * The weekly goal, personal bests and badges (workouts spec 3, requests spec 7), worked out from the workouts and days
@@ -249,35 +252,49 @@ object Rewards {
 
     enum class Group { Firsts, Milestones, Weekly, Kinds }
 
-    /** A badge: its [id], [title], [group], the [short] text on its art, and for a milestone how much it [needs]. */
-    data class Badge(val id: String, val title: String, val group: Group, val short: String, val needs: Long? = null, val unit: String = "")
+    /**
+     * A badge: its [id], [title], [group], the [short] text on its art, and for a milestone how much it [needs]. The
+     * art is a number ([art]) or letters a translator may change ([artId]). [unit] is a key for the progress line.
+     */
+    data class Badge(
+        val id: String,
+        @StringRes private val titleId: Int,
+        val group: Group,
+        private val art: String = "",
+        val needs: Long? = null,
+        val unit: String = "",
+        @StringRes private val artId: Int? = null,
+    ) {
+        val title: String get() = Strings.app.get(titleId)
+        val short: String get() = artId?.let { Strings.app.get(it) } ?: art
+    }
 
     /** About 24 (workouts spec 3.3): the requests spec 7.1 set with weekly goal badges for streaks, and a first per kind. */
     val BADGES: List<Badge> = listOf(
-        Badge("first_workout", "First workout", Group.Firsts, "1"),
-        Badge("first_10k_steps", "First 10,000 step day", Group.Firsts, "10K", 10_000, "steps"),
-        Badge("workouts_10", "10 workouts", Group.Milestones, "10", 10, "workouts"),
-        Badge("workouts_50", "50 workouts", Group.Milestones, "50", 50, "workouts"),
-        Badge("workouts_100", "100 workouts", Group.Milestones, "100", 100, "workouts"),
-        Badge("workouts_500", "500 workouts", Group.Milestones, "500", 500, "workouts"),
-        Badge("km_100", "100 km in all", Group.Milestones, "100", 100, "km"),
-        Badge("km_500", "500 km in all", Group.Milestones, "500", 500, "km"),
-        Badge("km_1000", "1,000 km in all", Group.Milestones, "1000", 1000, "km"),
-        Badge("steps_1m", "A million steps", Group.Milestones, "1M", 1_000_000, "steps"),
-        Badge("goal_first", "First weekly goal met", Group.Weekly, "✓", 1, "weeks"),
-        Badge("goal_4", "4 weeks in a row", Group.Weekly, "4", 4, "weeks"),
-        Badge("goal_12", "12 weeks in a row", Group.Weekly, "12", 12, "weeks"),
-        Badge("goal_26", "26 weeks in a row", Group.Weekly, "26", 26, "weeks"),
-        Badge("goal_52", "52 weeks in a row", Group.Weekly, "52", 52, "weeks"),
-        Badge("first_run", "First run", Group.Kinds, "Run"),
-        Badge("first_5k", "First 5 km run", Group.Kinds, "5K", 5000, "m"),
-        Badge("first_10k", "First 10 km run", Group.Kinds, "10K", 10_000, "m"),
-        Badge("first_indoor", "First indoor workout", Group.Kinds, "In"),
-        Badge("first_log", "First logged strength session", Group.Kinds, "Kg"),
-        Badge("first_tabata", "First Tabata", Group.Kinds, "Tab"),
-        Badge("first_reps", "First run intervals", Group.Kinds, "Reps"),
-        Badge("first_mind", "First yoga or calm session", Group.Kinds, "Om"),
-        Badge("first_game", "First game", Group.Kinds, "Play"),
+        Badge("first_workout", R.string.core_badge_first_workout, Group.Firsts, "1"),
+        Badge("first_10k_steps", R.string.core_badge_first_10k_steps, Group.Firsts, "10K", 10_000, "steps"),
+        Badge("workouts_10", R.string.core_badge_workouts_10, Group.Milestones, "10", 10, "workouts"),
+        Badge("workouts_50", R.string.core_badge_workouts_50, Group.Milestones, "50", 50, "workouts"),
+        Badge("workouts_100", R.string.core_badge_workouts_100, Group.Milestones, "100", 100, "workouts"),
+        Badge("workouts_500", R.string.core_badge_workouts_500, Group.Milestones, "500", 500, "workouts"),
+        Badge("km_100", R.string.core_badge_km_100, Group.Milestones, "100", 100, "km"),
+        Badge("km_500", R.string.core_badge_km_500, Group.Milestones, "500", 500, "km"),
+        Badge("km_1000", R.string.core_badge_km_1000, Group.Milestones, "1000", 1000, "km"),
+        Badge("steps_1m", R.string.core_badge_steps_1m, Group.Milestones, "1M", 1_000_000, "steps"),
+        Badge("goal_first", R.string.core_badge_goal_first, Group.Weekly, "✓", 1, "weeks"),
+        Badge("goal_4", R.string.core_badge_goal_4, Group.Weekly, "4", 4, "weeks"),
+        Badge("goal_12", R.string.core_badge_goal_12, Group.Weekly, "12", 12, "weeks"),
+        Badge("goal_26", R.string.core_badge_goal_26, Group.Weekly, "26", 26, "weeks"),
+        Badge("goal_52", R.string.core_badge_goal_52, Group.Weekly, "52", 52, "weeks"),
+        Badge("first_run", R.string.core_badge_first_run, Group.Kinds, artId = R.string.core_badge_art_run),
+        Badge("first_5k", R.string.core_badge_first_5k, Group.Kinds, "5K", 5000, "m"),
+        Badge("first_10k", R.string.core_badge_first_10k, Group.Kinds, "10K", 10_000, "m"),
+        Badge("first_indoor", R.string.core_badge_first_indoor, Group.Kinds, artId = R.string.core_badge_art_indoor),
+        Badge("first_log", R.string.core_badge_first_log, Group.Kinds, artId = R.string.core_badge_art_log),
+        Badge("first_tabata", R.string.core_badge_first_tabata, Group.Kinds, artId = R.string.core_badge_art_tabata),
+        Badge("first_reps", R.string.core_badge_first_reps, Group.Kinds, artId = R.string.core_badge_art_reps),
+        Badge("first_mind", R.string.core_badge_first_mind, Group.Kinds, artId = R.string.core_badge_art_mind),
+        Badge("first_game", R.string.core_badge_first_game, Group.Kinds, artId = R.string.core_badge_art_game),
     )
 
     fun badge(id: String): Badge? = BADGES.firstOrNull { it.id == id }

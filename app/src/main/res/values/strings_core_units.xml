@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Units and ranges every screen, widget and notification writes (presentation/Units.kt, presentation/Ranges.kt,
+  data/settings/Units.kt). The numbers come in already written in the phone's digits, so only the unit and its place
+  are here. Keep the units short: they sit beside big figures and in chips.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A distance under a kilometre. -->
+    <string name="core_unit_meters"><xliff:g id="meters" example="820">%1$s</xliff:g> m</string>
+    <!-- A distance in kilometres, with one or two decimals. -->
+    <string name="core_unit_km"><xliff:g id="km" example="5.21">%1$s</xliff:g> km</string>
+    <!-- A length of time under an hour. -->
+    <string name="core_unit_minutes"><xliff:g id="minutes" example="40">%1$s</xliff:g> min</string>
+    <!-- A length of time on the hour. -->
+    <string name="core_unit_hours"><xliff:g id="hours" example="7">%1$s</xliff:g> h</string>
+    <!-- A length of time in hours and minutes, the minutes always two digits: "7 h 05". -->
+    <string name="core_unit_hours_minutes"><xliff:g id="hours" example="7">%1$s</xliff:g> h <xliff:g id="minutes" example="40">%2$s</xliff:g></string>
+    <!-- A finished workout or a gap under a minute, in seconds. -->
+    <string name="core_unit_seconds"><xliff:g id="seconds" example="45">%1$s</xliff:g> s</string>
+    <!-- A pace, minutes and seconds per kilometre. -->
+    <string name="core_unit_pace"><xliff:g id="pace" example="5:24">%1$s</xliff:g> /km</string>
+    <!-- Active energy burned, in kilocalories. -->
+    <string name="core_unit_kcal"><xliff:g id="kcal" example="312">%1$s</xliff:g> kcal</string>
+    <!-- Heart rate's unit, beats per minute, shown beside a figure. -->
+    <string name="core_unit_bpm">bpm</string>
+    <!-- Heart rate variability's unit, milliseconds, shown beside a figure. -->
+    <string name="core_unit_ms">ms</string>
+    <!-- Skin temperature's unit, shown beside a figure. -->
+    <string name="core_unit_celsius">°C</string>
+    <!-- Breathing rate's unit, breaths per minute, shown beside a figure. -->
+    <string name="core_unit_breaths">br/min</string>
+    <!-- Steps' unit, shown beside a figure such as 13,860. -->
+    <string name="core_unit_steps">steps</string>
+    <!-- Body weight in pounds, on the profile. -->
+    <string name="core_unit_lb"><xliff:g id="pounds" example="165">%1$d</xliff:g> lb</string>
+    <!-- Body weight in kilograms, on the profile. -->
+    <string name="core_unit_kg"><xliff:g id="kilograms" example="75">%1$d</xliff:g> kg</string>
+    <!-- Height in feet and inches, on the profile. -->
+    <string name="core_unit_feet_inches"><xliff:g id="feet" example="5">%1$d</xliff:g>′<xliff:g id="inches" example="10">%2$d</xliff:g>″</string>
+    <!-- Height in centimetres, on the profile. -->
+    <string name="core_unit_cm"><xliff:g id="centimeters" example="178">%1$d</xliff:g> cm</string>
+    <!--
+      A range between two values already written: times ("11:05 PM to 8:16 AM"), numbers ("8,000 to 10,000"), days
+      ("Mon 3 Nov to Sun 9 Nov"). Never a dash, so a line that doesn't fit wraps.
+    -->
+    <string name="core_range"><xliff:g id="from" example="22:58">%1$s</xliff:g> to <xliff:g id="to" example="06:56">%2$s</xliff:g></string>
+</resources>

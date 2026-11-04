@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Activity: the Activity tab's details and its cards' lines (presentation/ActivityCopy.kt). Steps against your usual,
+  Heart points, active minutes, Load, VO2 max, time to recover, calories and distance. Load and Heart points are the
+  app's names for two measures, keep them capitalised as names.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Steps detail, the status beside today's steps: about as many as you usually have by this time of day. One line. -->
+    <string name="core_activity_pace_more_now">More than usual by now</string>
+    <string name="core_activity_pace_about_now">About usual by now</string>
+    <string name="core_activity_pace_fewer_now">Fewer than usual by now</string>
+    <!-- Steps detail, the status beside a past day's steps: against the steps of your usual whole day. One line. -->
+    <string name="core_activity_pace_more_day">More than your usual day</string>
+    <string name="core_activity_pace_about_day">About your usual day</string>
+    <string name="core_activity_pace_fewer_day">Fewer than your usual day</string>
+
+    <!-- How far toward the step goal, once it's reached. Short, beside the steps. -->
+    <string name="core_activity_goal_met">Goal met</string>
+    <!-- How far toward the step goal: a share of it. -->
+    <string name="core_activity_goal_share"><xliff:g id="percent" example="62">%1$d</xliff:g>%% of your goal</string>
+
+    <!-- Today's Activity card under the steps: the goal share, then the steps against your usual. The share is "62% of your goal" or "Goal met". One line. -->
+    <string name="core_activity_line_more_now"><xliff:g id="share" example="62% of your goal">%1$s</xliff:g>, more than usual by now</string>
+    <string name="core_activity_line_about_now"><xliff:g id="share" example="62% of your goal">%1$s</xliff:g>, about usual by now</string>
+    <string name="core_activity_line_fewer_now"><xliff:g id="share" example="62% of your goal">%1$s</xliff:g>, fewer than usual by now</string>
+    <!-- The same line for a past day, against your usual whole day. -->
+    <string name="core_activity_line_more_day"><xliff:g id="share" example="Goal met">%1$s</xliff:g>, more than your usual day</string>
+    <string name="core_activity_line_about_day"><xliff:g id="share" example="Goal met">%1$s</xliff:g>, about your usual day</string>
+    <string name="core_activity_line_fewer_day"><xliff:g id="share" example="Goal met">%1$s</xliff:g>, fewer than your usual day</string>
+
+    <!-- Steps detail, the label under the number while one hour's bar is tapped. The times are clock times in the phone's 12 or 24 hour style. -->
+    <string name="core_activity_hour_label">steps, <xliff:g id="from" example="09:00">%1$s</xliff:g> to <xliff:g id="to" example="10:00">%2$s</xliff:g></string>
+
+    <!-- Heart points detail, the status word beside the 7-day total once it reaches the weekly aim. -->
+    <string name="core_activity_points_at_aim">At your aim</string>
+    <!-- Heart points detail, under the total once the aim (100) is reached. -->
+    <string name="core_activity_points_week_met">Keeping it at <xliff:g id="aim" example="100">%1$d</xliff:g> or more week after week is what counts.</string>
+    <!-- Heart points detail, under the total: how many points are left to reach the aim. -->
+    <string name="core_activity_points_week_to_go"><xliff:g id="left" example="36">%1$d</xliff:g> to go for <xliff:g id="aim" example="100">%2$d</xliff:g>.</string>
+    <!-- Heart points detail: the points the oldest day of the 7 earned, which leave the total tomorrow. The day is a weekday name. -->
+    <plurals name="core_activity_points_drop_off">
+        <item quantity="one">Tomorrow <xliff:g id="day" example="Thursday">%2$s</xliff:g>\'s <xliff:g id="points" example="1">%1$d</xliff:g> point drops off.</item>
+        <item quantity="other">Tomorrow <xliff:g id="day" example="Thursday">%2$s</xliff:g>\'s <xliff:g id="points" example="12">%1$d</xliff:g> points drop off.</item>
+    </plurals>
+    <!-- Heart points detail, the label under one day's points while its bar is tapped. The day is a short date. -->
+    <string name="core_activity_points_earned">points earned, <xliff:g id="day" example="Tue 20 Oct">%1$s</xliff:g></string>
+    <!-- Heart points detail, the month's sentence when no day reached the aim: the lowest and highest 7-day totals. -->
+    <string name="core_activity_points_month_under">Under <xliff:g id="aim" example="100">%1$d</xliff:g> every day in the last 30, between <xliff:g id="lowest" example="40">%2$d</xliff:g> and <xliff:g id="highest" example="96">%3$d</xliff:g>.</string>
+    <!-- Heart points detail, the month's sentence when every day with a total reached the aim. -->
+    <string name="core_activity_points_month_all">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more every day with a total in the last 30.</string>
+    <!-- Heart points detail, the month's sentence: on how many of the days with a total it reached the aim. -->
+    <string name="core_activity_points_month_some">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more on <xliff:g id="days_at_aim" example="12">%2$d</xliff:g> of <xliff:g id="days" example="30">%3$d</xliff:g> days in the last 30.</string>
+
+    <!-- Active minutes detail, the status word beside the week's minutes once the weekly goal is reached. -->
+    <string name="core_activity_active_goal_met">Goal met</string>
+    <!-- Active minutes detail, under the week's minutes when they are exactly the target (150). -->
+    <string name="core_activity_active_week_at">Right at the <xliff:g id="target" example="150">%1$d</xliff:g> to aim for.</string>
+    <!-- Active minutes detail, under the week's minutes: by how many minutes they are past the target. -->
+    <string name="core_activity_active_week_past"><xliff:g id="over" example="10">%1$d</xliff:g> past the <xliff:g id="target" example="150">%2$d</xliff:g> to aim for.</string>
+    <!-- Active minutes detail, under the week's minutes: how many minutes are left to the target. -->
+    <string name="core_activity_active_week_to_go"><xliff:g id="left" example="54">%1$d</xliff:g> to go for <xliff:g id="target" example="150">%2$d</xliff:g>.</string>
+    <!-- A number of minutes, inside the active minutes day sentences below. -->
+    <plurals name="core_activity_minutes">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> minute</item>
+        <item quantity="other"><xliff:g id="minutes" example="20">%1$d</xliff:g> minutes</item>
+    </plurals>
+    <!-- Active minutes detail, the day's sentence with no active minutes. -->
+    <string name="core_activity_active_none_today">No active minutes so far today.</string>
+    <string name="core_activity_active_none_day">No active minutes that day.</string>
+    <!-- Active minutes detail, the day's sentence with only moderate minutes. The minutes are "20 minutes" or "1 minute". -->
+    <string name="core_activity_active_brisk_today">So far today, <xliff:g id="minutes" example="20 minutes">%1$s</xliff:g> of brisk movement.</string>
+    <string name="core_activity_active_brisk_day">That day, <xliff:g id="minutes" example="20 minutes">%1$s</xliff:g> of brisk movement.</string>
+    <!-- Active minutes detail, the day's sentence with only vigorous minutes. -->
+    <string name="core_activity_active_hard_today">So far today, <xliff:g id="minutes" example="4 minutes">%1$s</xliff:g> of hard effort.</string>
+    <string name="core_activity_active_hard_day">That day, <xliff:g id="minutes" example="4 minutes">%1$s</xliff:g> of hard effort.</string>
+    <!-- Active minutes detail, the day's sentence with both: moderate (brisk) first, then vigorous (hard). -->
+    <string name="core_activity_active_both_today">So far today, <xliff:g id="brisk" example="20 minutes">%1$s</xliff:g> brisk and <xliff:g id="hard" example="4 minutes">%2$s</xliff:g> hard.</string>
+    <string name="core_activity_active_both_day">That day, <xliff:g id="brisk" example="20 minutes">%1$s</xliff:g> brisk and <xliff:g id="hard" example="4 minutes">%2$s</xliff:g> hard.</string>
+
+    <!-- Load detail, the label of the band on the chart that marks your usual daily Load. -->
+    <string name="core_activity_usual_band">Your usual, <xliff:g id="low" example="30">%1$d</xliff:g> to <xliff:g id="high" example="50">%2$d</xliff:g></string>
+    <!-- Load detail, the day's sentence before a week of wear. -->
+    <string name="core_activity_load_learning">Your usual shows after a week of wear.</string>
+    <!-- Load detail, the day's sentence: the share of your days in the last 3 months with this Load or less. -->
+    <string name="core_activity_load_harder_today">So far today, as hard as or harder than <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <string name="core_activity_load_harder_day">That day, as hard as or harder than <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <!-- Load detail, the day's sentence: the share of your days in the last 3 months with a higher Load. -->
+    <string name="core_activity_load_easier_today">So far today, easier than <xliff:g id="percent" example="60">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <string name="core_activity_load_easier_day">That day, easier than <xliff:g id="percent" example="60">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <!-- Load detail, the week's sentence when the week's balance is Building. -->
+    <string name="core_activity_balance_building">Your last 7 days are well above your usual, so you\'re building.</string>
+    <!-- Load detail, the week's sentence when the week's balance is Easing off. -->
+    <string name="core_activity_balance_easing">Your last 7 days are well below your usual, so you\'re easing off.</string>
+    <!-- Load detail, the week's sentence when the week's balance is Steady. -->
+    <string name="core_activity_balance_steady">Your last 7 days are close to your usual, a steady stretch.</string>
+    <!-- Load detail, the week's sentence when no day was above your usual band. -->
+    <string name="core_activity_span_none_week">No day above your usual in the last 7 days.</string>
+    <string name="core_activity_span_none_month">No day above your usual in the last 30 days.</string>
+    <!-- Load detail, the week's sentence when one day was above your usual band. -->
+    <string name="core_activity_span_one_week">One day above your usual in the last 7 days.</string>
+    <string name="core_activity_span_one_month">One day above your usual in the last 30 days.</string>
+    <!-- Load detail: how many days of the last 7 sat above your usual band. Used from 2 days up. -->
+    <plurals name="core_activity_span_days_week">
+        <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> day above your usual in the last 7 days.</item>
+        <item quantity="other"><xliff:g id="days" example="3">%1$d</xliff:g> days above your usual in the last 7 days.</item>
+    </plurals>
+    <!-- Load detail: how many days of the last 30 sat above your usual band. Used from 2 days up. -->
+    <plurals name="core_activity_span_days_month">
+        <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> day above your usual in the last 30 days.</item>
+        <item quantity="other"><xliff:g id="days" example="8">%1$d</xliff:g> days above your usual in the last 30 days.</item>
+    </plurals>
+    <!-- Load detail, a row's status: the weekly load range the strap itself calls productive. -->
+    <string name="core_activity_strap_range">The strap\'s productive range is <xliff:g id="low" example="120">%1$d</xliff:g> to <xliff:g id="high" example="340">%2$d</xliff:g></string>
+
+    <!-- VO2 max detail, the sentence when the number comes from a workout. -->
+    <string name="core_activity_vo2_workout">From your latest workout the strap could read it from.</string>
+    <!-- VO2 max detail, the sentence when the number is estimated from the profile. -->
+    <string name="core_activity_vo2_profile">Estimated from your profile and resting heart rate, updated weekly.</string>
+
+    <!-- Time to recover detail: when the workout ended. The day is "today", "yesterday", a weekday or a short date, the time a clock time. -->
+    <string name="core_activity_ended"><xliff:g id="day" example="yesterday">%1$s</xliff:g> at <xliff:g id="time" example="18:30">%2$s</xliff:g></string>
+    <!-- Time to recover detail, under the hours: which workout they count from. The sport is in lower case ("run"), the end like "yesterday at 18:30". -->
+    <string name="core_activity_recover">Counted from your <xliff:g id="sport" example="run">%1$s</xliff:g>, which ended <xliff:g id="ended" example="yesterday at 18:30">%2$s</xliff:g>.</string>
+
+    <!-- Calories detail, under the day's kcal. The number has the phone's thousands mark. -->
+    <string name="core_activity_calories_at_rest">Your body uses about <xliff:g id="kcal" example="1,650">%1$s</xliff:g> kcal a day at rest, before any movement.</string>
+
+    <!-- Distance row's line and the detail's label: the kilometres were worked out from steps. Short. -->
+    <string name="core_activity_distance_from_steps">km, from your steps</string>
+    <!-- Distance row's line and the detail's label: the strap measured the kilometres. Short. -->
+    <string name="core_activity_distance_from_strap">km, from the strap</string>
+    <!-- Distance detail, under the kilometres: the steps they come from. The number has the phone's thousands mark. -->
+    <string name="core_activity_distance_steps_today">Over <xliff:g id="steps" example="8,432">%1$s</xliff:g> steps so far today.</string>
+    <string name="core_activity_distance_steps_day">Over <xliff:g id="steps" example="8,432">%1$s</xliff:g> steps that day.</string>
+</resources>

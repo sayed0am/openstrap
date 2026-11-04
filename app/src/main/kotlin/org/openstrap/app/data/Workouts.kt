@@ -1,8 +1,11 @@
 package org.openstrap.app.data
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.db.SportEffectRow
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.db.WorkoutHeartRate
+import org.openstrap.app.i18n.Strings
 
 /** A workout with what the strap recorded around it, worked out for display. */
 data class WorkoutAnalysis(
@@ -228,7 +231,8 @@ object Workouts {
         Stats.upperMiddle(hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm })
 
     /** Zepp's sport type ids (Type.type in the summary) for the sports a strap is likely to record. */
-    fun sportName(type: Int): String = SPORT_NAMES[type] ?: "Workout"
+    fun sportName(type: Int, strings: Strings = Strings.app): String =
+        strings.get(SPORT_NAMES[type] ?: R.string.core_workouts_sport_workout)
 
     /**
      * [a]'s active kcal, rounded: a phone workout's saved figure; a strap workout's kcal less [bmrPerMinute] for each
@@ -244,9 +248,9 @@ object Workouts {
     }
 
     /** Every sport a workout can be started as, by name, one id per name (Zepp has two "Free training"). */
-    val sports: List<Pair<Int, String>> by lazy {
-        SPORT_NAMES.entries.filter { it.key !in HIDDEN }.distinctBy { it.value }.map { it.key to it.value }.sortedBy { it.second }
-    }
+    val sports: List<Pair<Int, String>>
+        get() = SPORT_NAMES.entries.filter { it.key !in HIDDEN }.distinctBy { it.value }.map { it.key to Strings.app.get(it.value) }
+            .sortedBy { it.second }
 
     /**
      * Sports kept for naming workouts already recorded (by the strap, Zepp or an import) but not offered for new ones:
@@ -260,17 +264,27 @@ object Workouts {
      * shows. [outdoor] is the sport's key, the type its tile starts. [indoorByDefault] is the side
      * shown before you've picked one.
      */
-    data class Sides(val outdoor: Int, val indoor: Int, val outdoorName: String, val indoorName: String, val indoorByDefault: Boolean = false) {
+    data class Sides(
+        val outdoor: Int,
+        val indoor: Int,
+        @StringRes private val outdoorNameId: Int,
+        @StringRes private val indoorNameId: Int,
+        val indoorByDefault: Boolean = false,
+    ) {
+        /** The switch's words for each side: "Outdoor", "Treadmill". */
+        val outdoorName: String get() = Strings.app.get(outdoorNameId)
+        val indoorName: String get() = Strings.app.get(indoorNameId)
+
         /** The sport type for the [indoor] side. */
         fun type(indoor: Boolean): Int = if (indoor) this.indoor else outdoor
     }
 
     val SIDES = listOf(
-        Sides(1, 2, "Outdoor", "Treadmill"),
-        Sides(4, 8, "Outdoor", "Indoor"),
+        Sides(1, 2, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_treadmill),
+        Sides(4, 8, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
         // Most swims are in a pool.
-        Sides(7, 6, "Open water", "Pool", indoorByDefault = true),
-        Sides(3, 40, "Outdoor", "Indoor"),
+        Sides(7, 6, R.string.core_workouts_side_open_water, R.string.core_workouts_side_pool, indoorByDefault = true),
+        Sides(3, 40, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
     )
 
     /** The [Sides] [type] is one of, or null for a sport with one kind. */
@@ -306,21 +320,26 @@ object Workouts {
 
     /** The tiles' short names; a sport with two kinds has one name for both. */
     private val SHORT_NAMES = mapOf(
-        1 to "Run", 2 to "Run", 3 to "Walk", 40 to "Walk", 15 to "Hike", 4 to "Cycling", 8 to "Cycling", 7 to "Swim", 6 to "Swim",
-        52 to "Strength", 49 to "HIIT", 60 to "Yoga", 61 to "Pilates", 23 to "Rowing", 9 to "Elliptical", 5 to "Other",
+        1 to R.string.core_workouts_short_run, 2 to R.string.core_workouts_short_run, 3 to R.string.core_workouts_short_walk,
+        40 to R.string.core_workouts_short_walk, 15 to R.string.core_workouts_short_hike, 4 to R.string.core_workouts_short_cycling,
+        8 to R.string.core_workouts_short_cycling, 7 to R.string.core_workouts_short_swim, 6 to R.string.core_workouts_short_swim,
+        52 to R.string.core_workouts_short_strength, 49 to R.string.core_workouts_short_hiit, 60 to R.string.core_workouts_short_yoga,
+        61 to R.string.core_workouts_short_pilates, 23 to R.string.core_workouts_short_rowing, 9 to R.string.core_workouts_short_elliptical,
+        5 to R.string.core_workouts_short_other,
     )
 
     /** "Run" for an outdoor run or a treadmill: the picker's name, else the sport's full name. */
-    fun shortName(type: Int): String = SHORT_NAMES[type] ?: sportName(type)
+    fun shortName(type: Int, strings: Strings = Strings.app): String = SHORT_NAMES[type]?.let(strings::get) ?: sportName(type, strings)
 
     /** The type a sport's tile stands for: a sport with two kinds by its key, any other as itself. */
     fun tileType(type: Int): Int = sidesOf(type)?.outdoor ?: type
 
     /** More sports: every sport offered that isn't an everyday tile or behind one's switch, A to Z. */
-    val MORE: List<Int> by lazy {
-        val behindTiles = EVERYDAY.toSet() + SIDES.flatMap { listOf(it.outdoor, it.indoor) }
-        sports.map { it.first }.filter { it !in behindTiles }
-    }
+    val MORE: List<Int>
+        get() {
+            val behindTiles = EVERYDAY.toSet() + SIDES.flatMap { listOf(it.outdoor, it.indoor) }
+            return sports.map { it.first }.filter { it !in behindTiles }
+        }
 
     /**
      * What a search for [query] finds, as tiles: everyday sports by their short name, then every other sport, both
@@ -417,15 +436,30 @@ object Workouts {
     const val GENERIC_ACTIVITY = 223
 
     private val SPORT_NAMES = mapOf(
-        1 to "Outdoor run", 2 to "Treadmill", 3 to "Walk", 4 to "Outdoor cycling", 5 to "Free training",
-        6 to "Pool swim", 7 to "Open water swim", 8 to "Indoor cycling", 9 to "Elliptical", 10 to "Climbing",
-        11 to "Trail run", 12 to "Skiing", 15 to "Hiking", 16 to "Free training", 17 to "Tennis", 18 to "Soccer",
-        21 to "Jump rope", 23 to "Rowing machine", 24 to "Indoor fitness", 40 to "Indoor walk", 49 to "HIIT",
-        50 to "Core training", 51 to "Mixed aerobic", 52 to "Strength training", 53 to "Stretching",
-        55 to "Flexibility", 57 to "Step training", 58 to "Stair stepper", 60 to "Yoga", 61 to "Pilates",
-        70 to "Rock climbing", 76 to "Dance", 83 to "Golf", 85 to "Basketball", 88 to "Volleyball",
-        89 to "Table tennis", 92 to "Badminton", 97 to "Boxing", 108 to "Stair climbing", 109 to "Aerobics",
-        130 to "Cross-training", 143 to "Spinning", 204 to "Pickleball", 205 to "Padel", 215 to "Dog walking",
-        222 to "HYROX training", 223 to "Activity", 224 to "Mountain hike", 225 to "Rucking", 226 to "Hybrid training",
+        1 to R.string.core_workouts_sport_outdoor_run, 2 to R.string.core_workouts_sport_treadmill,
+        3 to R.string.core_workouts_sport_walk, 4 to R.string.core_workouts_sport_outdoor_cycling,
+        5 to R.string.core_workouts_sport_free_training, 6 to R.string.core_workouts_sport_pool_swim,
+        7 to R.string.core_workouts_sport_open_water_swim, 8 to R.string.core_workouts_sport_indoor_cycling,
+        9 to R.string.core_workouts_sport_elliptical, 10 to R.string.core_workouts_sport_climbing,
+        11 to R.string.core_workouts_sport_trail_run, 12 to R.string.core_workouts_sport_skiing,
+        15 to R.string.core_workouts_sport_hiking, 16 to R.string.core_workouts_sport_free_training,
+        17 to R.string.core_workouts_sport_tennis, 18 to R.string.core_workouts_sport_soccer,
+        21 to R.string.core_workouts_sport_jump_rope, 23 to R.string.core_workouts_sport_rowing_machine,
+        24 to R.string.core_workouts_sport_indoor_fitness, 40 to R.string.core_workouts_sport_indoor_walk,
+        49 to R.string.core_workouts_sport_hiit, 50 to R.string.core_workouts_sport_core_training,
+        51 to R.string.core_workouts_sport_mixed_aerobic, 52 to R.string.core_workouts_sport_strength_training,
+        53 to R.string.core_workouts_sport_stretching, 55 to R.string.core_workouts_sport_flexibility,
+        57 to R.string.core_workouts_sport_step_training, 58 to R.string.core_workouts_sport_stair_stepper,
+        60 to R.string.core_workouts_sport_yoga, 61 to R.string.core_workouts_sport_pilates,
+        70 to R.string.core_workouts_sport_rock_climbing, 76 to R.string.core_workouts_sport_dance,
+        83 to R.string.core_workouts_sport_golf, 85 to R.string.core_workouts_sport_basketball,
+        88 to R.string.core_workouts_sport_volleyball, 89 to R.string.core_workouts_sport_table_tennis,
+        92 to R.string.core_workouts_sport_badminton, 97 to R.string.core_workouts_sport_boxing,
+        108 to R.string.core_workouts_sport_stair_climbing, 109 to R.string.core_workouts_sport_aerobics,
+        130 to R.string.core_workouts_sport_cross_training, 143 to R.string.core_workouts_sport_spinning,
+        204 to R.string.core_workouts_sport_pickleball, 205 to R.string.core_workouts_sport_padel,
+        215 to R.string.core_workouts_sport_dog_walking, 222 to R.string.core_workouts_sport_hyrox_training,
+        223 to R.string.core_workouts_sport_activity, 224 to R.string.core_workouts_sport_mountain_hike,
+        225 to R.string.core_workouts_sport_rucking, 226 to R.string.core_workouts_sport_hybrid_training,
     )
 }

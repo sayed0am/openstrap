@@ -3,6 +3,8 @@ package org.openstrap.app.firmware
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.protocol.firmware.FirmwareType
 import org.openstrap.protocol.services.SettingsCodec
 import org.openstrap.protocol.services.SettingsGroup
@@ -92,13 +94,14 @@ data class FirmwarePart(
     val flag: Int,
 ) {
     val type: Int? get() = FirmwareType.BY_PREFIX[prefix]
+    /** The part's name on the firmware page, or its prefix for a kind the app doesn't know. */
     val label: String get() = when (prefix) {
-        "firmware" -> "Firmware"
-        "resource" -> "Resources"
-        "baseResource" -> "Base resources"
-        "extResource" -> "Extra resources"
-        "font" -> "Font"
-        "gps" -> "GPS"
+        "firmware" -> Strings.app.get(R.string.core_firmware_part_firmware)
+        "resource" -> Strings.app.get(R.string.core_firmware_part_resources)
+        "baseResource" -> Strings.app.get(R.string.core_firmware_part_base_resources)
+        "extResource" -> Strings.app.get(R.string.core_firmware_part_extra_resources)
+        "font" -> Strings.app.get(R.string.core_firmware_part_font)
+        "gps" -> Strings.app.get(R.string.core_firmware_part_gps)
         else -> prefix
     }
 }
