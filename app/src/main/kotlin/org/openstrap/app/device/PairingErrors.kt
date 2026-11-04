@@ -1,5 +1,7 @@
 package org.openstrap.app.device
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.protocol.auth.AuthException
 
 /** Turns the strap's auth status codes (docs/protocol/01 §3.4) into what the user should do next. */
@@ -13,24 +15,15 @@ object PairingErrors {
     private const val BINDING_PROTECTED = 0x41
     private const val CLOUD_BIND_REQUIRED = 0x81
 
-    fun authFailure(e: AuthException): ConnectionState.Failed = when (e.status) {
-        WRONG_KEY, CIPHERTEXT_MISMATCH, AES_FAILED -> ConnectionState.Failed(
-            "The strap rejected this auth key. Use the key from the strap's most recent Zepp bind: every new bind " +
-                "creates a new key, and keys from other devices on the account won't work.",
-            keyRejected = true,
-        )
-        NO_KEY -> ConnectionState.Failed(
-            "The strap has no key, which means it was unbound from Zepp or reset. Bind it in the Zepp app again, " +
-                "get the new key, and don't unbind it afterwards.",
-            keyRejected = true,
-        )
-        SIGNATURE_FAILED, BINDING_PROTECTED, CLOUD_BIND_REQUIRED -> ConnectionState.Failed(
-            "The strap only accepts a key from a Zepp bind. Bind it in the Zepp app first, then use that bind's key.",
-            keyRejected = true,
-        )
-        WORKOUT_RUNNING -> ConnectionState.Failed("A workout is running on the strap. End it, then tap Connect.")
+    fun authFailure(e: AuthException, strings: Strings = Strings.app): ConnectionState.Failed = when (e.status) {
+        WRONG_KEY, CIPHERTEXT_MISMATCH, AES_FAILED ->
+            ConnectionState.Failed(strings.get(R.string.system_pairing_wrong_key), keyRejected = true)
+        NO_KEY -> ConnectionState.Failed(strings.get(R.string.system_pairing_no_key), keyRejected = true)
+        SIGNATURE_FAILED, BINDING_PROTECTED, CLOUD_BIND_REQUIRED ->
+            ConnectionState.Failed(strings.get(R.string.system_pairing_cloud_bind), keyRejected = true)
+        WORKOUT_RUNNING -> ConnectionState.Failed(strings.get(R.string.system_pairing_workout_running))
         else -> ConnectionState.Failed(
-            "Pairing failed (${e.message ?: "unknown error"}). Put the strap on its charger and tap Connect to try again.",
+            strings.format(R.string.system_pairing_failed, e.message ?: strings.get(R.string.system_pairing_unknown_error)),
         )
     }
 }

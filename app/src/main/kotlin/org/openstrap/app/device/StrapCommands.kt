@@ -1,7 +1,10 @@
 package org.openstrap.app.device
 
+import androidx.annotation.StringRes
 import kotlinx.coroutines.flow.StateFlow
+import org.openstrap.app.R
 import org.openstrap.app.data.catching
+import org.openstrap.app.i18n.Strings
 import org.openstrap.protocol.ChannelSession
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.AlarmCapabilities
@@ -36,11 +39,11 @@ internal class StrapCommands(
         timeoutMs: Long = COMMAND_TIMEOUT_MS,
         matches: (ByteArray) -> Boolean = { it.isNotEmpty() && it.u8(0) == request.u8(0) + 1 },
     ): ByteArray {
-        val s = link.activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
+        val s = link.activeSession ?: throw StrapCommandException(R.string.system_command_not_connected)
+        if (firmwareUpdating.value) throw StrapCommandException(R.string.system_command_firmware_updating)
         val reply = catching {
             s.request(endpoint, request, timeoutMs, matches = matches)
-        }.getOrElse { throw StrapCommandException("The strap didn't answer") }
+        }.getOrElse { throw StrapCommandException(R.string.system_command_no_answer) }
         log("cmd %04x > %s < %s".format(Locale.ROOT, endpoint, request.toHex(), reply.toHex()))
         return reply
     }
@@ -49,13 +52,13 @@ internal class StrapCommands(
 
     private suspend fun alarmCaps(): AlarmCapabilities = alarmCaps ?: (
         AlarmCodec.parseVersion(command(Endpoints.ALARMS, AlarmCodec.versionRequest))
-            ?: throw StrapCommandException("The strap sent an unexpected alarm reply")
+            ?: throw StrapCommandException(R.string.system_command_alarm_reply)
         ).also { alarmCaps = it }
 
     suspend fun readAlarms(): Pair<AlarmCapabilities, List<Alarm>> {
         val caps = alarmCaps()
         val list = AlarmCodec.parseList(command(Endpoints.ALARMS, AlarmCodec.listRequest), caps.titles)
-            ?: throw StrapCommandException("The strap sent an unexpected alarm list")
+            ?: throw StrapCommandException(R.string.system_command_alarm_list)
         return caps to list
     }
 
@@ -66,14 +69,14 @@ internal class StrapCommands(
         } else {
             AlarmCodec.modify(alarm, caps.titles, caps.workdaysSupported)
         }
-        alarmCommand(request, "The strap didn't save the alarm")
+        alarmCommand(request, R.string.system_command_alarm_not_saved)
     }
 
-    suspend fun deleteAlarm(index: Int) = alarmCommand(AlarmCodec.delete(index), "The strap didn't delete the alarm")
+    suspend fun deleteAlarm(index: Int) = alarmCommand(AlarmCodec.delete(index), R.string.system_command_alarm_not_deleted)
 
-    suspend fun clearAlarms() = alarmCommand(AlarmCodec.clearAllRequest, "The strap didn't delete the alarms")
+    suspend fun clearAlarms() = alarmCommand(AlarmCodec.clearAllRequest, R.string.system_command_alarms_not_deleted)
 
-    private suspend fun alarmCommand(request: ByteArray, refused: String) {
+    private suspend fun alarmCommand(request: ByteArray, @StringRes refused: Int) {
         if (!AlarmCodec.isSuccess(request, command(Endpoints.ALARMS, request))) throw StrapCommandException(refused)
     }
 
@@ -92,13 +95,15 @@ internal class StrapCommands(
         val protocol = settingsProtocol()
         val reply = settingsQuery(SettingsCodec.GROUP_HEALTH)
         return SettingsCodec.parse(reply, protocol?.version)
-            ?: throw StrapCommandException("The strap couldn't read its settings (code ${SettingsCodec.replyCode(reply)})")
+            ?: throw StrapCommandException(
+                Strings.app.format(R.string.system_command_settings_unread_code, "${SettingsCodec.replyCode(reply)}"),
+            )
     }
 
     suspend fun writeHealthSettings(version: Int, settings: List<Setting>) {
         val reply = command(Endpoints.SETTINGS, SettingsCodec.write(SettingsCodec.GROUP_HEALTH, version, settings))
         if (!SettingsCodec.isWriteSuccess(reply)) {
-            throw StrapCommandException("The strap didn't accept the setting (code ${reply.getOrNull(1)})")
+            throw StrapCommandException(Strings.app.format(R.string.system_command_setting_refused, "${reply.getOrNull(1)}"))
         }
     }
 
@@ -108,13 +113,13 @@ internal class StrapCommands(
     suspend fun restartStrap() {
         val query = settingsQuery(SettingsCodec.GROUP_GENERAL, listOf(SettingsCodec.KEY_RESTART), withOptions = false)
         val group = SettingsCodec.parse(query, settingsProtocol()?.version)
-            ?: throw StrapCommandException("The strap couldn't read its settings")
-        val request = SettingsCodec.restartFor(group) ?: throw StrapCommandException("This strap can't be restarted from the app")
+            ?: throw StrapCommandException(R.string.system_command_settings_unread)
+        val request = SettingsCodec.restartFor(group) ?: throw StrapCommandException(R.string.system_command_no_restart)
         log("restart: asking the strap to restart")
         val reply = catching { command(Endpoints.SETTINGS, request) }
             .getOrElse { e -> if (link.activeSession == null) { log("restart: link dropped before the ack"); return } else throw e }
         if (!SettingsCodec.isWriteSuccess(reply)) {
-            throw StrapCommandException("The strap didn't accept the restart (code ${reply.getOrNull(1)})")
+            throw StrapCommandException(Strings.app.format(R.string.system_command_restart_refused, "${reply.getOrNull(1)}"))
         }
     }
 
@@ -140,18 +145,20 @@ internal class StrapCommands(
     // Each throw is a reason the user is shown.
     @Suppress("ThrowsCount")
     suspend fun sportSession(state: SportSession.State, sportType: Int, startTime: Long, elapsedSeconds: Long) {
-        val s = link.activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (!s.services.has(SportSession.ENDPOINT)) throw StrapCommandException("The strap has no sport module")
+        val s = link.activeSession ?: throw StrapCommandException(R.string.system_command_not_connected)
+        if (!s.services.has(SportSession.ENDPOINT)) throw StrapCommandException(R.string.system_command_no_sport_module)
         suspend fun send(request: ByteArray): ByteArray {
             val reply = catching { s.request(SportSession.ENDPOINT, request, COMMAND_TIMEOUT_MS) { SportSession.isReplyTo(request, it) } }
-                .getOrElse { throw StrapCommandException("The strap didn't answer") }
+                .getOrElse { throw StrapCommandException(R.string.system_command_no_answer) }
             log("sport > ${request.toHex()} < ${reply.toHex()}")
-            if (!SportSession.isOk(reply)) throw StrapCommandException("The strap refused the workout command")
+            if (!SportSession.isOk(reply)) throw StrapCommandException(R.string.system_command_workout_refused)
             return reply
         }
         val caps = sportCaps
-            ?: (SportSession.parseVersion(send(SportSession.versionRequest)) ?: throw StrapCommandException("Unknown sport module version"))
-                .also { sportCaps = it }
+            ?: (
+                SportSession.parseVersion(send(SportSession.versionRequest))
+                    ?: throw StrapCommandException(R.string.system_command_sport_version)
+                ).also { sportCaps = it }
         if (state == SportSession.State.START) send(SportSession.config(sportType, caps))
         send(SportSession.state(state, startTime, elapsedSeconds, caps))
     }

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  What the strap's link says to the user (device/): why connecting or pairing failed, why a command to the strap
+  failed, and how a sync is going. They show on the Strap page, in a card's line or a message under a button, a
+  sentence or two. OpenStrap is the app's name and Zepp the strap maker's app. Keep both as they are.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Why connecting failed. Nearby devices is Android's name for the Bluetooth permission, in the app's settings. -->
+    <string name="system_connect_permission">OpenStrap isn\'t allowed to use Bluetooth. Allow Nearby devices in the app\'s settings, then tap Connect.</string>
+    <string name="system_connect_bad_address">The saved strap address isn\'t valid. Forget the strap and pair it again.</string>
+    <string name="system_connect_timeout">The strap stopped answering.</string>
+    <string name="system_connect_link_dropped">The Bluetooth link to the strap dropped.</string>
+    <string name="system_connect_protocol">The strap answered in a way OpenStrap doesn\'t understand.</string>
+    <string name="system_connect_failed">Couldn\'t connect to the strap.</string>
+
+    <!-- Why pairing failed. The auth key is the strap's secret, copied from a Zepp bind of it. -->
+    <string name="system_pairing_wrong_key">The strap rejected this auth key. Use the key from the strap\'s most recent Zepp bind: every new bind creates a new key, and keys from other devices on the account won\'t work.</string>
+    <string name="system_pairing_no_key">The strap has no key, which means it was unbound from Zepp or reset. Bind it in the Zepp app again, get the new key, and don\'t unbind it afterwards.</string>
+    <string name="system_pairing_cloud_bind">The strap only accepts a key from a Zepp bind. Bind it in the Zepp app first, then use that bind\'s key.</string>
+    <string name="system_pairing_workout_running">A workout is running on the strap. End it, then tap Connect.</string>
+    <!-- Any other failure. The reason is the strap's own, in English, or "unknown error". -->
+    <string name="system_pairing_failed">Pairing failed (<xliff:g id="reason" example="status 3">%1$s</xliff:g>). Put the strap on its charger and tap Connect to try again.</string>
+    <!-- The reason in the line above when the strap gave none. -->
+    <string name="system_pairing_unknown_error">unknown error</string>
+
+    <!-- Pairing through Android's own companion device dialog, which finds the strap and asks to pair it. -->
+    <string name="system_companion_unsupported">This phone doesn\'t support companion devices.</string>
+    <!-- The reason is Android's own, in the phone's language, or "no reason given". -->
+    <string name="system_companion_not_found">Android couldn\'t find the strap (<xliff:g id="reason" example="Timed out">%1$s</xliff:g>). Keep it on its charger near the phone and try again.</string>
+    <!-- The reason in the line above when Android gave none. -->
+    <string name="system_companion_no_reason">no reason given</string>
+
+    <!-- Why a firmware update couldn't start, on the Firmware page. -->
+    <string name="system_firmware_already_running">An update is already running</string>
+    <string name="system_firmware_wait_for_sync">Wait for the sync to finish first</string>
+    <!-- Fast-charge mode is a strap mode where it only charges. -->
+    <string name="system_firmware_fast_charge">Turn off fast-charge mode on the strap first</string>
+    <string name="system_firmware_no_service">This strap doesn\'t offer the firmware update service</string>
+
+    <!-- Why a command to the strap failed: an alarm, a setting, a restart, find my strap, a workout. -->
+    <string name="system_command_not_connected">The strap isn\'t connected</string>
+    <string name="system_command_firmware_updating">Wait for the firmware update to finish</string>
+    <string name="system_command_no_answer">The strap didn\'t answer</string>
+    <string name="system_command_alarm_reply">The strap sent an unexpected alarm reply</string>
+    <string name="system_command_alarm_list">The strap sent an unexpected alarm list</string>
+    <string name="system_command_alarm_not_saved">The strap didn\'t save the alarm</string>
+    <string name="system_command_alarm_not_deleted">The strap didn\'t delete the alarm</string>
+    <string name="system_command_alarms_not_deleted">The strap didn\'t delete the alarms</string>
+    <!-- The code is the strap's reply code, a number for support. -->
+    <string name="system_command_settings_unread_code">The strap couldn\'t read its settings (code <xliff:g id="code" example="2">%1$s</xliff:g>)</string>
+    <string name="system_command_settings_unread">The strap couldn\'t read its settings</string>
+    <string name="system_command_setting_refused">The strap didn\'t accept the setting (code <xliff:g id="code" example="2">%1$s</xliff:g>)</string>
+    <string name="system_command_no_restart">This strap can\'t be restarted from the app</string>
+    <string name="system_command_restart_refused">The strap didn\'t accept the restart (code <xliff:g id="code" example="2">%1$s</xliff:g>)</string>
+    <!-- The sport module is the part of the strap that records workouts. -->
+    <string name="system_command_no_sport_module">The strap has no sport module</string>
+    <string name="system_command_workout_refused">The strap refused the workout command</string>
+    <string name="system_command_sport_version">Unknown sport module version</string>
+    <!-- Find my strap: the strap was asked to buzz and didn't. -->
+    <string name="system_command_no_buzz">The strap didn\'t buzz</string>
+
+    <!-- A sync's progress, on the Strap page and in the strap's notification. -->
+    <string name="system_sync_preparing">Preparing…</string>
+    <!-- The kind of data is the strap's own name for it, in English: "heart rate", "spo2 osa". Then which of how many. -->
+    <string name="system_sync_step">Syncing <xliff:g id="kind" example="heart rate">%1$s</xliff:g> (<xliff:g id="index" example="3">%2$d</xliff:g>/<xliff:g id="count" example="12">%3$d</xliff:g>)</string>
+    <!-- A developer's dump of one kind of data, by its number. -->
+    <string name="system_sync_dumping">Dumping type <xliff:g id="code" example="18">%1$d</xliff:g></string>
+    <!-- Why a sync failed. Fast-charge mode is a strap mode where it only charges. -->
+    <string name="system_sync_fast_charge">The strap is in fast-charge mode. Sync again once it\'s off.</string>
+    <string name="system_sync_link_dropped">The link to the strap dropped.</string>
+    <string name="system_sync_failed">Sync failed</string>
+    <string name="system_sync_stopped">Sync stopped before it finished.</string>
+</resources>

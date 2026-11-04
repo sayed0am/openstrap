@@ -22,6 +22,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
+import org.openstrap.app.R
 import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.Summaries
@@ -191,7 +192,7 @@ private fun StepsLine(m: StepsWidgetModel, height: Float?, f: WidgetFrame) {
     }
     Image(
         ImageProvider(bitmap),
-        contentDescription = "Steps so far today, ${m.share}",
+        contentDescription = LocalContext.current.getString(R.string.system_widget_steps_line_description, m.share),
         modifier = GlanceModifier.fillMaxWidth().height(height.dp),
         contentScale = ContentScale.FillBounds,
     )
@@ -221,7 +222,9 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
             Text(m.weekLine, style = WidgetType.secondary, maxLines = 1)
         }
         Spacer(GlanceModifier.height(StepsLayout.WEEK_LINE_GAP_DP.dp))
-        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), "Steps each day this week", m.week.map { it.letter to (it.state == StepsDay.Today) }, week.column)
+        val description = LocalContext.current.getString(R.string.system_widget_steps_week_description)
+        val today = m.week.map { it.letter to (it.state == StepsDay.Today) }
+        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), description, today, week.column)
     }
 }
 

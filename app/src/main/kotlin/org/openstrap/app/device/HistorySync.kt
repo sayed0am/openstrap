@@ -6,9 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.openstrap.app.R
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.StrapUuids
 import org.openstrap.app.data.DayKey
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.Days
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.catching
@@ -121,7 +123,7 @@ class HistorySync internal constructor(
 
     /** Syncs every type, or only the codes in [only] (an on-demand sync after a data-available push). */
     suspend fun run(only: Set<Int>? = null) = coroutineScope {
-        state.value = SyncState.Running("Preparing…")
+        state.value = SyncState.Running(Strings.app.get(R.string.system_sync_preparing))
         val listeners = launch {
             launch { gatt.notifications.filter { it.characteristic == HISTORY_DATA }.collect { data.send(it.value) } }
             if (useChannel) {
@@ -136,21 +138,22 @@ class HistorySync internal constructor(
                 if (e is FastRechargeModeException) {
                     // Zepp ends the sync job at once in this mode (xyk.java:66-70), and the data waits on the strap.
                     log("history: strap is in fast-charge mode, sync stopped ($e)")
-                    state.value = SyncState.Failed("The strap is in fast-charge mode. Sync again once it's off.")
+                    state.value = SyncState.Failed(Strings.app.get(R.string.system_sync_fast_charge))
                 } else {
                     log("history failed: $e")
                     // A wrapped system error's message is just its class name (android.os.DeadObjectException), not for
                     // the card. Whatever a call on a dropped link threw (a missing characteristic, a closed op), the cause
                     // is the link.
-                    val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
-                    state.value = SyncState.Failed(reason ?: "Sync failed")
+                    val reason = if (!gatt.connected.value) Strings.app.get(R.string.system_sync_link_dropped)
+                    else e.message?.takeUnless { e.cause != null && it == e.cause.toString() }
+                    state.value = SyncState.Failed(reason ?: Strings.app.get(R.string.system_sync_failed))
                 }
             }
         } finally {
             listeners.cancel()
             // A cancelled sync, or anything else that got past the catches, must not stay Running: auto sync skips
             // while it is, and the notification would show progress for good.
-            if (state.value is SyncState.Running) state.value = SyncState.Failed("Sync stopped before it finished.")
+            if (state.value is SyncState.Running) state.value = SyncState.Failed(Strings.app.get(R.string.system_sync_stopped))
         }
     }
 
@@ -164,13 +167,14 @@ class HistorySync internal constructor(
 
         val version = client.queryVersion()
         val advertised = version?.supportedTypes()
-        log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + (only?.let { ", syncing $it" } ?: ""))
+        log("history version ${version?.version}, strap offers types ${advertised?.sorted()}" + only?.let { ", syncing $it" }.orEmpty())
 
         HistoryTypeSpecs.featureDisagreements(advertised, session.features).takeIf { it.isNotEmpty() }
             ?.let { log("history: feature bits clear for advertised types $it; fetching them anyway") }
         val plan = HistoryTypeSpecs.plan(advertised, session.features).filter { it.parser != null && (only == null || it.code in only) }
         plan.forEachIndexed { i, spec ->
-            state.value = SyncState.Running("Syncing ${label(spec.type)} (${i + 1}/${plan.size})", i.toFloat() / plan.size)
+            val step = Strings.app.format(R.string.system_sync_step, label(spec.type), i + 1, plan.size)
+            state.value = SyncState.Running(step, i.toFloat() / plan.size)
             catching { if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec) }.onFailure { e ->
                 // A timeout is a CancellationException too, but catching gives back only a cancelled sync's (audit C2).
                 if (e is FastRechargeModeException) throw e
@@ -212,7 +216,7 @@ class HistorySync internal constructor(
             val codes = only?.sorted() ?: version?.supportedTypes()?.sorted().orEmpty()
             log("dump: types $codes (strap offers ${version?.supportedTypes()?.sorted()})")
             for (code in codes) {
-                state.value = SyncState.Running("Dumping type $code")
+                state.value = SyncState.Running(Strings.app.format(R.string.system_sync_dumping, code))
                 catching {
                     var cursor = fromEpoch
                     repeat(DUMP_CHUNKS) {
@@ -383,8 +387,10 @@ class HistorySync internal constructor(
                     val (records, parsedNext) = holdBackPartialMinute(result.records, result.nextCursor, cursor)
                     val kept = keepable(spec.type, records, now)
                     val dropped = records.size - kept.size
-                    val droppedNote = if (dropped > 0) " ($dropped unfinished or with impossible times dropped)" else ""
-                    log("history ${spec.type}: ${kept.size} records$droppedNote")
+                    log(
+                        "history ${spec.type}: ${kept.size} records" +
+                            if (dropped > 0) " ($dropped unfinished or with impossible times dropped)" else "",
+                    )
                     // The chunk's rows commit together, before the ACK and the cursor: a kill before the commit keeps
                     // none of them and the cursor where it was, a kill after it fetches the chunk again, and storing
                     // it again replaces the same rows.

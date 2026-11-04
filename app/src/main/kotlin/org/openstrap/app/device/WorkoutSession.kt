@@ -470,7 +470,8 @@ class WorkoutSession(
                     _state.update { WorkoutState.Idle }
                     // A toast, so it shows whether it ended in the app or from the notification.
                     context.mainExecutor.execute {
-                        android.widget.Toast.makeText(context, "Under a minute, so not saved", android.widget.Toast.LENGTH_SHORT).show()
+                        val tooShort = org.openstrap.app.R.string.system_workout_too_short
+                        android.widget.Toast.makeText(context, tooShort, android.widget.Toast.LENGTH_SHORT).show()
                     }
                     return@withLock
                 }

@@ -1,8 +1,10 @@
 package org.openstrap.app.device
 
+import org.openstrap.app.R
 import org.openstrap.app.ble.GattException
 import org.openstrap.app.ble.GattTimeoutException
 import org.openstrap.app.ble.GattUnusableException
+import org.openstrap.app.i18n.Strings
 import org.openstrap.protocol.ProtocolException
 import org.openstrap.protocol.ProtocolTimeoutException
 
@@ -11,14 +13,16 @@ import org.openstrap.protocol.ProtocolTimeoutException
  * the log only (audit E6).
  */
 object ConnectErrors {
-    fun reason(e: Throwable): String = when {
-        e.isPermission() -> "OpenStrap isn't allowed to use Bluetooth. Allow Nearby devices in the app's settings, then tap Connect."
-        e is GattUnusableException -> "The saved strap address isn't valid. Forget the strap and pair it again."
-        e is GattTimeoutException || e is ProtocolTimeoutException -> "The strap stopped answering."
-        e is GattException -> "The Bluetooth link to the strap dropped."
-        e is ProtocolException -> "The strap answered in a way OpenStrap doesn't understand."
-        else -> "Couldn't connect to the strap."
-    }
+    fun reason(e: Throwable, strings: Strings = Strings.app): String = strings.get(
+        when {
+            e.isPermission() -> R.string.system_connect_permission
+            e is GattUnusableException -> R.string.system_connect_bad_address
+            e is GattTimeoutException || e is ProtocolTimeoutException -> R.string.system_connect_timeout
+            e is GattException -> R.string.system_connect_link_dropped
+            e is ProtocolException -> R.string.system_connect_protocol
+            else -> R.string.system_connect_failed
+        },
+    )
 
     /** True when trying again can't help until the user acts, so no reconnect is scheduled (audit E4). */
     fun isFinal(e: Throwable): Boolean = e is GattUnusableException || e.isPermission()

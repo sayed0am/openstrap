@@ -9,6 +9,7 @@ import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.i18n.Strings
 
 /**
  * Shown when Android refuses the workout's foreground service (a start from the background on Android 12 and up, a
@@ -18,7 +19,7 @@ import org.openstrap.app.data.Workouts
  * there to be seen in time. It stands in for the workout's own notification, which can't show without the service.
  */
 object KeepRecordingNotice {
-    const val TEXT = "Android may stop it while OpenStrap is closed. Tap to keep it going."
+    val TEXT: String get() = Strings.app.get(R.string.system_keep_recording_text)
 
     /** A channel's importance is fixed once it exists, so the heads-up needed a new id, not the workout's. */
     const val CHANNEL = "workout_keep_recording"
@@ -28,7 +29,8 @@ object KeepRecordingNotice {
     private const val REQUEST_OPEN = 8
 
     /** "Keep recording your outdoor run", "Keep recording your HIIT": the sport as the app names it, in a sentence. */
-    fun title(sportType: Int): String = "Keep recording your ${inSentence(Workouts.sportName(sportType))}"
+    fun title(sportType: Int, strings: Strings = Strings.app): String =
+        strings.format(R.string.system_keep_recording_title, inSentence(Workouts.sportName(sportType)))
 
     /** Lower case, word by word, except an acronym like HIIT or HYROX. */
     private fun inSentence(name: String): String =
@@ -39,8 +41,9 @@ object KeepRecordingNotice {
      * well as with the service's channels, since the notice shows exactly when the service couldn't start.
      */
     fun createChannel(context: Context) {
-        val channel = NotificationChannel(CHANNEL, "Keep recording", NotificationManager.IMPORTANCE_HIGH).apply {
-            description = "Asks you to open OpenStrap when Android may stop a workout."
+        val name = Strings.app.get(R.string.system_channel_keep_recording)
+        val channel = NotificationChannel(CHANNEL, name, NotificationManager.IMPORTANCE_HIGH).apply {
+            description = Strings.app.get(R.string.system_channel_keep_recording_description)
             setSound(null, null)
             enableVibration(false)
         }
@@ -56,11 +59,12 @@ object KeepRecordingNotice {
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        val text = TEXT
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
             .setContentTitle(title(sportType))
-            .setContentText(TEXT)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(TEXT))
+            .setContentText(text)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setOnlyAlertOnce(true)
             .setAutoCancel(true)

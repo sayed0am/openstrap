@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.Rewards
 import org.openstrap.app.data.catching
 import org.openstrap.app.presentation.RewardsCopy
@@ -71,7 +72,9 @@ object WeeklyRecap {
 
     private fun show(context: Context, range: String, text: String) {
         val manager = context.getSystemService(NotificationManager::class.java)
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Weekly recap", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, Strings.app.get(R.string.system_channel_recap), NotificationManager.IMPORTANCE_DEFAULT),
+        )
         val intent = Intent(context, MainActivity::class.java)
             .putExtra(MainActivity.EXTRA_OPEN_RECAP, true)
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
@@ -80,7 +83,7 @@ object WeeklyRecap {
             ID,
             NotificationCompat.Builder(context, CHANNEL)
                 .setSmallIcon(R.drawable.ic_stat_openstrap)
-                .setContentTitle("Your week, $range")
+                .setContentTitle(Strings.app.format(R.string.system_recap_title, range))
                 .setContentText(text)
                 .setAutoCancel(true)
                 .setContentIntent(open)
