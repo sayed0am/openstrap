@@ -2,11 +2,8 @@ package org.openstrap.app.ui.glow.live
 
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.layout.Arrangement
-import org.openstrap.app.ui.glow.draw.chart
-import org.openstrap.app.ui.glow.draw.GlowMotion
-import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.Segment
@@ -14,7 +11,6 @@ import org.openstrap.app.ui.glow.SegmentBar
 import org.openstrap.app.presentation.WorkoutCopy
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -125,22 +121,15 @@ private fun CompactHeartCard(
     val heartZones = LocalHeartZones.current
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
-    val style = GlowStyle.chart(workoutColor(r, liveHeartRate, connected, heartZones)).copy(
-        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
-        lightLevel = WorkoutCopy.zoneLightLevel(zone),
-        outline = r.paused,
-    )
+    val style = liveHeartStyle(workoutColor(r, liveHeartRate, connected, heartZones), bpm, zone, r.paused)
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
-                if (bpm != null) {
-                    DotMatrixText("$bpm", dot = DotSize.Detail)
-                    Spacer(Modifier.width(8.dp))
-                    Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-                } else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
+                if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    zone?.let { WorkoutCopy.zoneLine(it) } ?: if (r.paused) "No zone while paused" else "No zone yet",
+                    zone?.let { WorkoutCopy.zoneLine(it) } ?: WorkoutCopy.noZone(r.paused),
                     color = Color.White, style = GlowType.secondary, maxLines = 1,
                 )
             }

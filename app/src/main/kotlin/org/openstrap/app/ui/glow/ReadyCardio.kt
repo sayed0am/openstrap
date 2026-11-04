@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.ui.glow.draw.EdgeSurface
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -43,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -81,7 +81,6 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
-import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.workout.readyHero
 
 /*
@@ -107,25 +106,14 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
     val light = if (bpm != null) 1f else 0.4f
-    Row(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
-            .drawBehind {
-                // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
-                drawCardLight(
-                    color, Offset(size.width / 2, size.height * HEART_LIGHT_BELOW),
-                    size.width * HEART_LIGHT_WIDTH, size.height * HEART_LIGHT_HEIGHT,
-                    HeartLight.map { (at, alpha) -> at to alpha * light },
-                )
-            }
-            .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalAlignment = Alignment.Bottom,
+    // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
+    LitPanel(
+        color, HeartLight.map { (at, alpha) -> at to alpha * light },
+        lightCenter = { Offset(it.width / 2, it.height * HEART_LIGHT_BELOW) },
+        reach = { Size(it.width * HEART_LIGHT_WIDTH, it.height * HEART_LIGHT_HEIGHT) },
     ) {
-        if (bpm != null) {
-            DotMatrixText(bpm.toString(), dot = DotSize.Hero)
-            Spacer(Modifier.width(14.dp))
-            Text("bpm, live from your strap", color = Color.White.copy(alpha = 0.8f), style = GlowType.body, modifier = Modifier.weight(1f))
-        } else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (bpm != null) HeroValue(bpm.toString(), "bpm, live from your strap", gap = 14.dp)
+        else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(hero.title, color = Color.White, style = GlowType.sentence)
             Text(hero.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }

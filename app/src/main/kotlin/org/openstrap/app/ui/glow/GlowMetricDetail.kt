@@ -10,6 +10,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,6 +49,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
@@ -59,6 +61,7 @@ import org.openstrap.app.ui.components.detailSurface
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
+import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
 import org.openstrap.app.presentation.Metric
@@ -291,21 +294,30 @@ internal fun DetailSentence(text: String) {
 /**
  * A detail's second figures side by side, each in an equal share of the width: the value as text in Body, its name
  * under it in Secondary. Text, not dots, since the header's number is the detail's one dotted number (spec 2.3). A
- * figure without a value shows "No reading" in its place.
+ * figure without a value shows [missing] ("No reading") in its place, or the waiting dash when [missing] is null. A
+ * workout's hero shows its three figures larger ([valueStyle] Row value) and close under them ([gap]).
  */
 @Composable
-internal fun DetailFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
+internal fun DetailFigures(
+    figures: List<Pair<String?, String>>,
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = GlowType.body.copy(fontFeatureSettings = "tnum"),
+    missing: String? = "No reading",
+    gap: Dp = 4.dp,
+) {
     Row(modifier.fillMaxWidth()) {
         figures.forEachIndexed { i, (value, label) ->
             val end = i == figures.lastIndex && i > 0
             Column(
                 Modifier.weight(1f), horizontalAlignment = if (end) Alignment.End else Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(gap),
             ) {
-                Text(
-                    value ?: "No reading", color = if (value != null) Color.White else Color.White.copy(alpha = 0.3f),
-                    style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1,
-                )
+                when {
+                    value != null -> Text(value, color = Color.White, style = valueStyle, maxLines = 1)
+                    missing != null -> Text(missing, color = Color.White.copy(alpha = 0.3f), style = valueStyle, maxLines = 1)
+                    // As tall as a Row value line, so a missing figure keeps its label level with the others.
+                    else -> WaitingDash(Modifier.padding(vertical = 10.5.dp))
+                }
                 Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
             }
         }
@@ -657,26 +669,51 @@ internal fun series(
  */
 @Composable
 private fun RelatedList(related: List<Metric>, state: DayUiState, history: DailyHistory, onOpen: (Detail) -> Unit, sleepRow: Boolean = false) {
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
-        if (sleepRow) {
-            val score = state.sleep?.score
-            ListRow(
-                org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
-                onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
-                icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
-            )
-        }
-        related.forEachIndexed { i, m ->
-            val normal = rememberNormal(m, state.date, history)
-            val v = dayValue(m, state)
-            val status = if (m == Metric.HeartRate) null else History.status(v, normal)
-            ListRow(
-                m.title, colorOf(m), v?.let { m.format(it) },
-                if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-                offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = i > 0 || sleepRow,
-                icon = m.rowIcon(),
-            )
-        }
+    RelatedPanel {
+        if (sleepRow) SleepScoreRow(state, divider = false, onOpen)
+        related.forEachIndexed { i, m -> RelatedMetricRow(m, state, history, divider = i > 0 || sleepRow, onOpen) }
     }
+}
+
+/** The "Related" list at the foot of a detail: the details next to this one, each a row opening it. */
+@Composable
+internal fun RelatedPanel(content: @Composable ColumnScope.() -> Unit) =
+    ListPanel(Modifier.padding(top = 8.dp), title = "Related", content = content)
+
+/** A score as a related row: its [value] and [word] beside its name and icon, opening its detail. */
+@Composable
+internal fun ScoreRow(score: Score, color: Color, value: String?, word: String, divider: Boolean, onOpen: (Detail) -> Unit) = ListRow(
+    score.title, color, value, word, onClick = { onOpen(Detail.OfScore(score)) }, divider = divider, icon = score.rowIcon(),
+)
+
+/** The night's Sleep score as a related row, with its word. */
+@Composable
+internal fun SleepScoreRow(state: DayUiState, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val score = state.sleep?.score
+    ScoreRow(
+        Score.Sleep, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
+        score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE, divider, onOpen,
+    )
+}
+
+/** The day's Recovery as a related row, with its word. */
+@Composable
+internal fun RecoveryScoreRow(ready: org.openstrap.app.data.Recovery.Readiness?, divider: Boolean, onOpen: (Detail) -> Unit) = ScoreRow(
+    Score.Recovery, org.openstrap.app.ui.theme.MetricColors.readiness, ready?.score?.toString(),
+    ready?.score?.let { org.openstrap.app.presentation.TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE, divider, onOpen,
+)
+
+/** A body signal as a related row: the day's value and its word against your normal, marked when it's off normal. */
+@Composable
+internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistory, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val normal = rememberNormal(m, state.date, history)
+    val v = dayValue(m, state)
+    // The heart rate moves all day, so it has no word against a normal.
+    val status = if (m == Metric.HeartRate) null else History.status(v, normal)
+    ListRow(
+        m.title, colorOf(m), v?.let { m.format(it) },
+        if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+        offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        icon = m.rowIcon(),
+    )
 }

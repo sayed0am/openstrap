@@ -174,9 +174,9 @@ fun GlowActivityScreen(
                         heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
                         onClick = { open(Score.HeartPoints) },
                     )
-                    ActivityCard.Load -> LoadCard(r) { open(Score.Load) }
+                    ActivityCard.Load -> DayLoadCard(r) { open(Score.Load) }
                     ActivityCard.HeartRate -> HeartCard(state, live, { onOpenMetric(Metric.HeartRate) }, restingRange = restingRange)
-                    ActivityCard.Facts -> FactsList(state, r, workouts, isToday, onEditProfile, open, partial)
+                    ActivityCard.Facts -> DayFactsList(state, r, workouts, isToday, onEditProfile, open, partial)
                     ActivityCard.Workouts -> WorkoutsList(
                         state.date, workouts, suggestion?.takeIf { isToday }, onOpenWorkout, onAllWorkouts, onAddWorkout,
                         onSaveSuggestion, onDismissSuggestion,
@@ -308,7 +308,7 @@ private val HourPillsHeight = 56.dp
  * As high as its title and number, not the grid's Wide height, which left a band of empty light under them (user, 2026-11-04).
  */
 @Composable
-private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
+private fun DayLoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
     EdgeCard(
@@ -327,8 +327,10 @@ private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
  * The day's smaller facts: VO2 max, time to recover, calories and distance, each opening its detail. Active minutes and
  * Heart points are the Small pair above.
  */
+// One branch per fact and its missing case, as flat as the list reads. It was FactsList before the rename.
+@Suppress("CyclomaticComplexMethod")
 @Composable
-private fun FactsList(
+private fun DayFactsList(
     state: DayUiState, r: RecoveryResult?, workouts: List<WorkoutAnalysis>, isToday: Boolean, onEditProfile: () -> Unit, open: (Score) -> Unit,
     /** The Partial day tag: calories and distance are the day's totals. */
     tag: TitleTag? = null,

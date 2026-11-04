@@ -8,6 +8,7 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -15,6 +16,9 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
@@ -95,7 +99,36 @@ fun GlowSwitch(checked: Boolean, onCheckedChange: (Boolean) -> Unit, modifier: M
 }
 
 /** How wide a number of [digits] digits is in [dot] dots, so a space can be sized for the widest it will show. */
-internal fun dotNumberWidth(digits: Int, dot: DotSize): Dp {
-    val columns = digits * DotFont.DIGIT_COLUMNS + (digits - 1).coerceAtLeast(0)
-    return (dot.dot + dot.gap) * columns - dot.gap
+internal fun dotNumberWidth(digits: Int, dot: DotSize): Dp = dotTextWidth("0".repeat(digits), dot)
+
+/** How wide [text] is in [dot] dots at full size, as [DotMatrixText] lays it out. */
+internal fun dotTextWidth(text: String, dot: DotSize): Dp = (dot.dot + dot.gap) * DotFont.columns(text) - dot.gap
+
+/** The [DotMatrixText] scale that fits [text] in [dot] dots into [room]: 1 when it fits already, never larger. */
+internal fun dotFitScale(text: String, dot: DotSize, room: Dp): Float = (room / dotTextWidth(text, dot)).coerceAtMost(1f)
+
+/**
+ * A card's one dotted number with the word after it on the digits' baseline (spec 2.3), in Body at 72%: "42 min",
+ * "78 bpm". [gap] is the room between them, which differs a little by card. [maxWidth] shrinks a long number to fit
+ * (a share card's distance). A blank [unit] leaves the number alone. The word takes what the number leaves and wraps
+ * there, so a long one ("bpm, live from your strap") stays on the card.
+ */
+@Composable
+internal fun HeroValue(
+    value: String,
+    unit: String,
+    modifier: Modifier = Modifier,
+    dot: DotSize = DotSize.Hero,
+    gap: Dp = 8.dp,
+    color: Color = Color.White,
+    unitStyle: TextStyle = GlowType.body,
+    maxWidth: Dp = Dp.Infinity,
+) {
+    Row(modifier, verticalAlignment = Alignment.Bottom) {
+        DotMatrixText(value, dot = dot, color = color, scale = dotFitScale(value, dot, maxWidth))
+        if (unit.isNotBlank()) Text(
+            unit, Modifier.padding(start = gap).weight(1f, fill = false),
+            color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = unitStyle,
+        )
+    }
 }

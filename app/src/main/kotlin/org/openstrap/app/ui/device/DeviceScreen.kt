@@ -55,7 +55,7 @@ import org.openstrap.app.ui.alarms.phoneAlertsSummary
 import org.openstrap.app.ui.dashboard.agoText
 import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DestructiveInk
-import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.draw.GlowStyle
@@ -326,10 +326,7 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
             // Clear of the strap on the right too, which sits centred and so lower as this grows.
             Column(Modifier.fillMaxWidth().padding(top = 128.dp, bottom = 5.dp, end = 112.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The card's one dotted number (spec 2.3); the word after it sits on the digits' baseline in Body at 72%.
-                if (battery != null) Row(verticalAlignment = Alignment.Bottom) {
-                    DotMatrixText("$battery", dot = org.openstrap.app.ui.glow.draw.DotSize.Hero)
-                    Text("% battery", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
-                }
+                if (battery != null) HeroValue("$battery", "% battery")
                 if (sync is SyncState.Running) {
                     PageProgress()
                     Text(sync.step, style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))

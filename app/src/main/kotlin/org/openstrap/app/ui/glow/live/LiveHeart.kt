@@ -248,12 +248,7 @@ internal fun WorkoutHeartCard(
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
     val color = workoutColor(r, liveHeartRate, connected, heartZones)
-    val style = GlowStyle.chart(color).copy(
-        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
-        lightLevel = WorkoutCopy.zoneLightLevel(zone),
-        outline = r.paused,
-    )
-    GlowCard(style, modifier) {
+    GlowCard(liveHeartStyle(color, bpm, zone, r.paused), modifier) {
         Column(if (fill) Modifier.fillMaxSize() else Modifier) {
             GlowHeader("Heart rate", trailing = bpm?.let { "${it * 100 / r.maxHeartRate}% of max" })
             BoxWithConstraints(Modifier.fillMaxWidth().then(if (fill) Modifier.weight(1f) else Modifier.height(220.dp))) {
@@ -266,7 +261,7 @@ internal fun WorkoutHeartCard(
                 // Sized for three digits inside the arc, whatever the reading, so the number never spills past it
                 // and doesn't jump in size as the heart rate crosses 100.
                 val inside = (minOf(maxWidth, maxHeight) - 18.dp) * 0.78f
-                val scale = (inside / dotNumberWidth(3, DotSize.Live)).coerceAtMost(1f)
+                val scale = dotFitScale("000", DotSize.Live, inside)
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (bpm != null) {
                         DotMatrixText(bpm.toString(), dot = DotSize.Live, scale = scale)
@@ -286,7 +281,7 @@ internal fun WorkoutHeartCard(
                     Spacer(Modifier.width(6.dp))
                     Text(word, color = Color.White.copy(alpha = 0.75f), style = GlowType.sentence, modifier = Modifier.weight(1f))
                     Text(zoneRange(zone, r.maxHeartRate), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary)
-                } else Text(if (r.paused) "No zone while paused" else "No zone yet", color = Color.White, style = GlowType.sentence)
+                } else Text(WorkoutCopy.noZone(r.paused), color = Color.White, style = GlowType.sentence)
             }
             if (zoneBar) {
                 Spacer(Modifier.height(12.dp))
@@ -297,6 +292,16 @@ internal fun WorkoutHeartCard(
         }
     }
 }
+
+/**
+ * The live heart card's glow (pattern D1): [color] beating at [bpm], lit as high as the [zone], and only its outline
+ * while [paused]. The full card and the short one on a phone on its side light alike.
+ */
+internal fun liveHeartStyle(color: Color, bpm: Int?, zone: Int?, paused: Boolean) = GlowStyle.chart(color).copy(
+    motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
+    lightLevel = WorkoutCopy.zoneLightLevel(zone),
+    outline = paused,
+)
 
 /** The time in the [zone] you're in on the left of the heart card's foot, and the target's progress on the right. */
 @Composable

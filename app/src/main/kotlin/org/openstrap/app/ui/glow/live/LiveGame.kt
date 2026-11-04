@@ -23,7 +23,7 @@ import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.draw.GlowMotion
@@ -92,11 +92,8 @@ internal fun LiveGameScreen(
         if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
-                    if (bpm != null) {
-                        Spacer(Modifier.width(8.dp))
-                        Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-                    }
+                    if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                    else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                     Spacer(Modifier.weight(1f))
                     WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)?.let { z ->
                         Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
@@ -130,7 +127,7 @@ private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, pha
 
 /** Effort 1 to 5 as five steps, lit up to it in the zones' colours, "Effort 3 of 5" beside them. */
 @Composable
-private fun EffortBar(effort: Int?) {
+internal fun EffortBar(effort: Int?) {
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         SegmentBar(
             List(5) { i -> Segment(1f, if (effort != null && i < effort) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)) },

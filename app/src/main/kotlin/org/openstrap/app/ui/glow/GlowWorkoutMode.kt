@@ -407,63 +407,97 @@ internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifie
 }
 
 /**
- * What the app did to the end, with undo (an early end it proposed, or a trim), then "Trim start and end", which opens
- * the trimmer in place.
+ * A phone workout's trim (the user's choice, 2026-11-04): "Trim" on its heart rate card opens the trimmer in a sheet
+ * ([TrimSheet]), and what was done to its times reads under the card's chart with Undo ([TrimNote]). [onTrim] saves
+ * new times, [onUndo] puts back the recorded ones. Whether the sheet is open outlives a rotation.
  */
 @Composable
-internal fun TrimSection(summary: PhoneSummary, onTrim: (from: Long, to: Long) -> Unit, onUndoTrim: () -> Unit) {
-    var trimming by rememberSaveable { mutableStateOf(false) }
+internal fun rememberWorkoutTrim(summary: PhoneSummary, onTrim: (from: Long, to: Long) -> Unit, onUndo: () -> Unit): WorkoutTrim {
+    val open = rememberSaveable { mutableStateOf(false) }
+    return WorkoutTrim(summary, open, onTrim, onUndo)
+}
+
+/** What [rememberWorkoutTrim] gives the page: the sheet's open state, and what Save and Undo do. */
+@androidx.compose.runtime.Stable
+internal class WorkoutTrim(
+    val summary: PhoneSummary,
+    private val shown: androidx.compose.runtime.MutableState<Boolean>,
+    val save: (from: Long, to: Long) -> Unit,
+    val undo: () -> Unit,
+) {
+    val isOpen: Boolean get() = shown.value
+    val open: () -> Unit = { shown.value = true }
+    val close: () -> Unit = { shown.value = false }
+}
+
+/** The trim sheet while [trim] is open: Save saves the new times and closes it. */
+@Composable
+internal fun TrimSheet(trim: WorkoutTrim) {
+    if (!trim.isOpen) return
+    TrimSheet(
+        trim.summary,
+        onSave = { from, to ->
+            trim.close()
+            trim.save(from, to)
+        },
+        onDismiss = trim.close,
+    )
+}
+
+/** "Trim" in a heart rate card's title row: a small button on the card's glass, scissors before the word. */
+@Composable
+internal fun TrimButton(onClick: () -> Unit) = PageButton("Trim", onClick, size = ButtonSize.Row, icon = AppIcons.Scissors, onCard = true)
+
+/**
+ * What the app did to the workout's times, with Undo as a button: an early end it proposed (in a car, or when you'd
+ * stopped), or a trim. Nothing while they're as recorded. [onCard] puts Undo on a card's glass.
+ */
+@Composable
+internal fun TrimNote(summary: PhoneSummary, onUndo: () -> Unit, modifier: Modifier = Modifier, onCard: Boolean = true) {
+    val text = trimNote(summary) ?: return
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.weight(1f))
+        PageButton("Undo", onUndo, size = ButtonSize.Row, icon = AppIcons.ArrowCounterClockwise, onCard = onCard)
+    }
+}
+
+/** The words of [TrimNote], null while the workout's times are as recorded. */
+internal fun trimNote(summary: PhoneSummary): String? {
     val a = summary.analysis
-    val w = a.workout
-    // What the app did, with undo: an early end it proposed, or a trim.
-    a.recordedEnd?.let { recorded ->
-        val cut = recorded - a.end
-        val left = if (cut < 60) "$cut s" else "${cut / 60} min"
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                if (summary.endReason == AppWorkout.END_CAR && a.shownStart == w.start) "Ended at ${clock(a.end)}. $left of driving were left out."
-                else if (summary.endReason == AppWorkout.END_AUTO && a.shownStart == w.start) "Ended at ${clock(a.end)}, when you'd stopped. $left after that were left out."
-                else "Trimmed, now from ${Ranges.times(a.shownStart, a.end)}. The rest is kept.",
-                color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f),
-            )
-            Text(
-                "Undo", color = Color.White, style = MediumBody,
-                modifier = Modifier.clip(RoundedCornerShape(50)).pressClickable(onUndoTrim, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-        }
-    } ?: if (a.shownStart != w.start) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("Trimmed to start at ${clock(a.shownStart)}. The rest is kept.", color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f))
-            Text(
-                "Undo", color = Color.White, style = MediumBody,
-                modifier = Modifier.clip(RoundedCornerShape(50)).pressClickable(onUndoTrim, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp),
-            )
-        }
-    } else Unit
-    if (trimming) {
-        TrimPanel(summary, onSave = { from, to -> onTrim(from, to); trimming = false }, onCancel = { trimming = false })
-    } else {
-        Row(
-            Modifier.fillMaxWidth().glass(GlassRowShape, { trimming = true }).padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("Trim start and end", color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-            TapCaret(ROW_CARET_ALPHA)
-        }
+    val untouched = a.shownStart == a.workout.start
+    val recorded = a.recordedEnd ?: return if (untouched) null else "Trimmed to start at ${clock(a.shownStart)}. The rest is kept."
+    val cut = recorded - a.end
+    val left = if (cut < 60) "$cut s" else "${cut / 60} min"
+    return when {
+        summary.endReason == AppWorkout.END_CAR && untouched -> "Ended at ${clock(a.end)}. $left of driving were left out."
+        summary.endReason == AppWorkout.END_AUTO && untouched ->
+            "Ended at ${clock(a.end)}, when you'd stopped. $left after that were left out."
+        else -> "Trimmed, now from ${Ranges.times(a.shownStart, a.end)}. The rest is kept."
     }
 }
 
 /**
- * Moves the start and end on the whole recording, as WHOOP allows: drag either handle along the heart rate; what
- * falls outside dims. Saving changes only what is shown; nothing recorded is deleted.
+ * The trimmer in a sheet, as the sleep page opens a night's times: the times it was recorded as the note, then
+ * [WorkoutTrimBar]. Saving changes only what is shown, and nothing recorded is deleted.
  */
 @Composable
-internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCancel: () -> Unit) {
+internal fun TrimSheet(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onDismiss: () -> Unit) {
+    PageSheet(onDismiss, "Trim start and end", note = SummaryCopy.trimRecorded(clock(summary.recordedStart), clock(summary.recordedEnd))) {
+        WorkoutTrimBar(summary, onSave, onDismiss)
+    }
+}
+
+/**
+ * Moves the start and end on the whole recording, as WHOOP allows: the times and length above the bar, then drag
+ * either handle along the heart rate in its zones' colours, and what falls outside dims. Cancel and Save under it.
+ */
+@Composable
+internal fun WorkoutTrimBar(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCancel: () -> Unit) {
     val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val first = summary.recordedStart
     val last = summary.recordedEnd.coerceAtLeast(first + 60)
-    // The handles outlive a rotation, a fold and process death while the panel stays open (audit K7). They start again
+    // The handles outlive a rotation, a fold and process death while the sheet stays open (audit K7). They start again
     // only when the workout or its shown range changes.
     var from by rememberSaveable(a.workout.start, a.shownStart, a.end) { mutableLongStateOf(a.shownStart) }
     var to by rememberSaveable(a.workout.start, a.shownStart, a.end) { mutableLongStateOf(a.end) }
@@ -472,18 +506,18 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
         val n = ((last - first) / step + 1).toInt().coerceAtLeast(2)
         org.openstrap.app.data.Summaries.bucketMeans(summary.recorded, n, { ((it.timestamp - first) / step).toInt() }, { it.bpm.toFloat() })
     }
-    QuietPanel {
-        GlowHeader("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(SummaryCopy.trimHeader(clock(from), clock(to), to - from), color = Color.White, style = GlowType.body)
         // Recorded is all it can reach for now: the core and the reach are one, so the bar only trims.
         TrimBar(
             points, core = first..last, reach = first..last, from = from, to = to,
             colorOf = { v -> WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate, heartZones)?.let { ZONE_COLORS[it] } },
             onChange = { f, t -> from = f; to = t },
         )
-        PageNote("Drag the handles to where the workout really started and ended. Nothing recorded is deleted.")
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Cancel", Raised, Color.White, onCancel) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Save", Color.White, Color.Black, { onSave(from, to) }) }
+        Text(SummaryCopy.TRIM_HINT, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PageButton("Cancel", onCancel, Modifier.weight(1f))
+            PageButton("Save", { onSave(from, to) }, Modifier.weight(1f), primary = true)
         }
     }
 }

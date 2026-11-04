@@ -173,8 +173,9 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
                 Text(clock, color = Color.White, style = GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
             }
             Spacer(Modifier.height(18.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                if (glance.figure != null) DotMatrixText(glance.figure, dot = DotSize.Hero) else WaitingDash(Modifier.padding(vertical = 12.dp))
+            if (glance.figure != null) HeroValue(glance.figure, glance.unit.orEmpty(), gap = 10.dp, unitStyle = GlowType.sentence)
+            else Row(verticalAlignment = Alignment.Bottom) {
+                WaitingDash(Modifier.padding(vertical = 12.dp))
                 glance.unit?.let {
                     Spacer(Modifier.width(10.dp))
                     Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.sentence)

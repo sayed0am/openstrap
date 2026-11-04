@@ -223,9 +223,14 @@ internal fun AlertsStrip(alerts: List<HealthAlertRow>, onOpenMetric: (Metric) ->
 
 /* ------------------------------------------- Edge cards --------------------------------------------- */
 
-/** An edge card's title row: [title] left with its sync [marker] or neutral [tag] beside it ([TitleMark]), [note] right. */
+/**
+ * An edge card's title row: [title] left with its sync [marker] or neutral [tag] beside it ([TitleMark]), [note] right,
+ * and a small [action] after the note (a workout's Trim).
+ */
 @Composable
-internal fun EdgeTitle(title: String, note: String?, marker: String? = null, tag: TitleTag? = null) {
+internal fun EdgeTitle(
+    title: String, note: String?, marker: String? = null, tag: TitleTag? = null, action: (@Composable () -> Unit)? = null,
+) {
     // The note drops under the title when they can't share a line, so the title never wraps.
     TitleRow(
         start = {
@@ -234,7 +239,14 @@ internal fun EdgeTitle(title: String, note: String?, marker: String? = null, tag
                 if (marker != null || tag != null) TitleMark(marker, tag, Modifier.padding(start = 8.dp))
             }
         },
-        end = note?.let { { NoteText(it) } },
+        end = if (note == null && action == null) null else {
+            {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    note?.let { NoteText(it) }
+                    action?.invoke()
+                }
+            }
+        },
     )
 }
 

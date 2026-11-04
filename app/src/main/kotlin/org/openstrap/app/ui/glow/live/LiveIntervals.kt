@@ -41,6 +41,7 @@ import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.EdgeCard
 import org.openstrap.app.ui.glow.GlowType
@@ -309,18 +310,13 @@ internal fun RepCard(r: WorkoutState.Recording, route: List<Route.Point>, readin
             if (pace != null) Text("$pace /km now", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         Spacer(Modifier.height(12.dp))
-        Row(verticalAlignment = Alignment.Bottom) {
-            val (value, unit) = when {
-                m.metersLeft != null && m.phase is Phase.Work -> "${m.metersLeft.toInt()}" to "m to go"
-                m.left != null -> dotClock(m.left) to if (resting) "rest left" else "left"
-                else -> null to ""
-            }
-            if (value != null) {
-                DotMatrixText(value, dot = DotSize.Detail)
-                Spacer(Modifier.width(8.dp))
-                Text(unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-            } else Text(if (m.phase == Phase.WarmUp) "Start the reps when you're ready" else "", color = Color.White, style = GlowType.body)
+        val (value, unit) = when {
+            m.metersLeft != null && m.phase is Phase.Work -> "${m.metersLeft.toInt()}" to "m to go"
+            m.left != null -> dotClock(m.left) to if (resting) "rest left" else "left"
+            else -> null to ""
         }
+        if (value != null) HeroValue(value, unit, dot = DotSize.Detail)
+        else Text(if (m.phase == Phase.WarmUp) "Start the reps when you're ready" else "", color = Color.White, style = GlowType.body)
         val done = r.rounds.filter { it.workEnd != null }
         if (done.isNotEmpty()) {
             Spacer(Modifier.height(12.dp))

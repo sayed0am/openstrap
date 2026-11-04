@@ -123,7 +123,7 @@ internal fun LiveMindScreen(
  * faint track. Without the [ring], the time and its line alone.
  */
 @Composable
-private fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
+internal fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
     // The time is read by the ring's draw and the clock's text, so the second composes only the text again.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         // The strength rest ring's line and track, so the app's rings read as one.
