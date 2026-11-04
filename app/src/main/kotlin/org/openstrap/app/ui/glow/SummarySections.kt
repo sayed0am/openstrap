@@ -269,7 +269,7 @@ private fun RouteCard(summary: PhoneSummary) {
 private fun SentenceCard(title: String, sentence: String) {
     QuietPanel {
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            PanelTitle(title)
+            GlowHeader(title)
             Text(sentence, color = Color.White.copy(alpha = 0.85f), style = GlowType.body)
         }
     }
@@ -463,7 +463,7 @@ private fun ZoneStrip(zones: ZoneSeconds, modifier: Modifier = Modifier) {
 internal fun ZoneStripPanel(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     QuietPanel {
-        PanelTitle("Time in zones", FamilySummary.mostlyZone(zones))
+        GlowHeader("Time in zones", FamilySummary.mostlyZone(zones))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             ZoneStrip(zones)
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -519,7 +519,7 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 3) }
     QuietPanel {
         if (line) Column {
-            PanelTitle("Heart rate", Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
+            GlowHeader("Heart rate", Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
             SmoothLine(values, MetricColors.heart, Modifier.padding(top = 8.dp), height = 64.dp, peak = true)
         }
         target?.let { (text, reached) ->
@@ -629,7 +629,7 @@ internal fun WeekDaysPanel(weekStarts: List<Long>, note: String? = null, day: Lo
     val today = LocalDate.now()
     val thisWeek = days.any { it.first == today }
     QuietPanel {
-        PanelTitle(if (thisWeek) "This week" else "That week")
+        GlowHeader(if (thisWeek) "This week" else "That week")
         WeekDots(
             days.map { (d, on) -> d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) to on }, color,
             today = days.indexOfFirst { it.first == today }.takeIf { it >= 0 }, ticks = false, dot = 24.dp,
@@ -675,7 +675,7 @@ internal fun WeekDots(
 internal fun EarnedChips(lines: List<EarnedLine>) {
     if (lines.isEmpty()) return
     Column(Modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Earned", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp))
+        SectionLabel("Earned")
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             lines.forEach { l ->
                 val (icon, color) = when (l.kind) {
@@ -683,16 +683,8 @@ internal fun EarnedChips(lines: List<EarnedLine>) {
                     EarnedLine.Kind.Badge -> AppIcons.CheckCircle to MetricColors.good
                     EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) MetricColors.good else Color.White
                 }
-                Row(
-                    Modifier.clip(CircleShape).background(Raised).padding(horizontal = 14.dp, vertical = 9.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
-                    Text(
-                        listOfNotNull(l.text, l.value).joinToString(", "), color = Color.White, style = GlowType.secondary, maxLines = 1,
-                        modifier = Modifier.padding(start = 8.dp),
-                    )
-                }
+                val text = listOfNotNull(l.text, l.value).joinToString(", ")
+                IconPill(text, null, icon = icon, tint = color, height = 36.dp, style = GlowType.secondary)
             }
         }
     }

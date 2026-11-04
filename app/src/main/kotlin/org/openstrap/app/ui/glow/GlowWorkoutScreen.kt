@@ -120,7 +120,7 @@ fun GlowWorkoutDetailScreen(
             item {
                 PageHeader(
                     (shown ?: a)?.sportName ?: "Workout", onBack,
-                    trailing = if ((shown ?: a)?.startedByYou == false) ({ FoundTag() }) else null,
+                    trailing = if ((shown ?: a)?.startedByYou == false) ({ OutlineTag(TabCopy.AUTO_DETECTED) }) else null,
                 )
             }
             if (shown == null) return@ScreenList
@@ -195,7 +195,7 @@ private fun PastSummary(
                 PageHeader(
                     a.sportName, onBack,
                     subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${Ranges.times(a.shownStart, a.end)}",
-                    trailing = if (foundTag) ({ FoundTag() }) else null,
+                    trailing = if (foundTag) ({ OutlineTag(TabCopy.AUTO_DETECTED) }) else null,
                 )
             }
             item {

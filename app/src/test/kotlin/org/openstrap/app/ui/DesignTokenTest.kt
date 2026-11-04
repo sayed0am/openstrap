@@ -246,8 +246,7 @@ class DesignTokenTest {
          */
         val typeNotMigrated = mapOf(
             "dashboard/SleepPanels.kt" to 1,
-            "glow/AllMetricsScreen.kt" to 1,
-            "glow/GlowActivityScreen.kt" to 2,
+            "glow/GlowActivityScreen.kt" to 1,
             "glow/GlowCharts.kt" to 4,
             "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,

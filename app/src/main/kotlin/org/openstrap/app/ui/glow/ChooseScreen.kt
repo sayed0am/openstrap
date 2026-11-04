@@ -113,7 +113,7 @@ fun GlowChooseScreen(
         // The search opens a page of its own (board ActivitySearchTyping).
         SearchEntry("Search all sports") { searching = true }
         if (recent.isNotEmpty()) {
-            ChipLabel("Recent")
+            SectionLabel("Recent")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { chip ->
                     when (chip) {
@@ -134,7 +134,7 @@ fun GlowChooseScreen(
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap * 2)) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ChipLabel("More sports")
+                        SectionLabel("More sports")
                         MoreSportsList(onReady)
                     }
                 }
@@ -377,7 +377,7 @@ private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
 @Composable
 private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, isSelected: (Int) -> Boolean, onPick: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (title != null) ChipLabel(title)
+        if (title != null) SectionLabel(title)
         types.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
                 row.forEach { type -> SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), type in Workouts.OUTDOOR_ONLY, isSelected(type)) { onPick(type) } }

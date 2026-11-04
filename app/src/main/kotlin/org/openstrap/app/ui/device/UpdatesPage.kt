@@ -26,7 +26,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowSwitch
+import org.openstrap.app.ui.glow.PageSwitchRow
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PagePanel
@@ -80,9 +80,7 @@ fun UpdatesPage(
                     "Check now", UpdateCopy.checkStatus(state, now), onClick = onCheck, below = true, divider = newest != null,
                     enabled = !state.checking, icon = AppIcons.Refresh04,
                 )
-                PageRow("Check every day", "Notifies you of new versions", onClick = { onAuto(!auto) }, below = true, icon = AppIcons.CalendarBlank) {
-                    GlowSwitch(auto, onAuto)
-                }
+                PageSwitchRow("Check every day", "Notifies you of new versions", auto, onAuto, icon = AppIcons.CalendarBlank)
                 PageRow("All releases", "On GitHub", onClick = onGitHub, below = true, icon = AppIcons.Info)
             }
         }

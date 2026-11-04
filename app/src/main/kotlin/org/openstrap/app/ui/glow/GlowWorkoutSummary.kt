@@ -45,7 +45,6 @@ import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
 import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.familyColor
-import org.openstrap.app.ui.components.pressClickable
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
@@ -479,9 +478,5 @@ internal fun SummaryButtons(onShare: () -> Unit, onDone: () -> Unit) {
 
 /** Done as a small pill beside the title, to leave without scrolling to the bottom. */
 @Composable
-internal fun TopDone(onDone: () -> Unit) {
-    Box(
-        Modifier.height(40.dp).clip(CircleShape).background(Raised).pressClickable(onDone, CircleShape).padding(horizontal = 18.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text("Done", color = Color.White, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold), maxLines = 1) }
-}
+internal fun TopDone(onDone: () -> Unit) =
+    IconPill("Done", onDone, height = 40.dp, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold))

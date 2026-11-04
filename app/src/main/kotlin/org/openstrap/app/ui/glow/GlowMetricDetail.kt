@@ -6,7 +6,6 @@ import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,7 +14,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +23,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -59,7 +56,6 @@ import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.components.LocalCardsGrow
 import org.openstrap.app.ui.components.detailNumber
 import org.openstrap.app.ui.components.detailSurface
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
@@ -82,27 +78,6 @@ import org.openstrap.app.ui.theme.ControlSurface
 
 /** [date] as a heading: "Today", "Yesterday", the weekday within the week, then the date ([DayWords.relative]). */
 internal fun dayName(date: LocalDate): String = DayWords.relative(date, LocalDate.now())
-
-/** A row of choices on a faint pill; the chosen one is a soft white pill. */
-@Composable
-internal fun GlowSegments(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.06f)).padding(4.dp),
-    ) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).clip(RoundedCornerShape(50))
-                    .background(if (on) Color.White.copy(alpha = 0.16f) else Color.Transparent)
-                    .pressClickable({ onSelect(i) }, RoundedCornerShape(50), scale = 0.97f)
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(label, color = if (on) Color.White else Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
 
 /* ---------------------------------------------- Template --------------------------------------------- */
 
@@ -213,7 +188,11 @@ internal fun DetailTemplate(
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
-            if (ranges.size > 1) item { RangePills(ranges, range, onRange) }
+            if (ranges.size > 1) item {
+                GlowSegments(
+                    ranges.map { it.label }, ranges.indexOf(range), { onRange(ranges[it]) }, Modifier.padding(top = 6.dp), role = Role.Tab,
+                )
+            }
             body()
         }
     }
@@ -288,36 +267,16 @@ private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (Loc
     }
 }
 
-/** Day, Week, Month, Year: a dark track with the chosen one on a soft pill. */
-@Composable
-private fun RangePills(ranges: List<Range>, range: Range, onRange: (Range) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp).clip(shape).background(Color(0xFF121214)).border(1.dp, Color.White.copy(alpha = 0.07f), shape).padding(4.dp),
-    ) {
-        ranges.forEach { r ->
-            val on = r == range
-            Box(
-                Modifier.weight(1f).clip(shape).background(if (on) Color.White.copy(alpha = 0.12f) else Color.Transparent)
-                    .clickable(role = Role.Tab) { onRange(r) }.padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) { Text(r.label, color = if (on) Color.White else Color.White.copy(alpha = 0.55f), style = GlowType.body) }
-        }
-    }
-}
-
 /** The switcher's choices, as a sheet over the detail: the group's details, the one showing ticked. */
 @Composable
 private fun SwitcherSheet(siblings: List<DetailSibling>, color: Color, onDismiss: () -> Unit) {
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 16.dp)) {
-            ListPanel {
-                siblings.forEachIndexed { i, s ->
-                    ListRow(
-                        s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
-                        onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
-                    )
-                }
+    PageSheet(onDismiss, side = 16.dp) {
+        ListPanel {
+            siblings.forEachIndexed { i, s ->
+                ListRow(
+                    s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
+                    onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
+                )
             }
         }
     }

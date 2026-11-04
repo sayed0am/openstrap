@@ -48,19 +48,16 @@ import kotlinx.coroutines.delay
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.catching
 import org.openstrap.app.device.StrapManager
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.device.ErrorCopy
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
+import org.openstrap.app.ui.glow.OptionButton
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PagePanel
 import org.openstrap.app.ui.glow.PageProgress
 import org.openstrap.app.ui.glow.PageTextButton
-import org.openstrap.app.ui.glow.ROW_CARET_ALPHA
-import org.openstrap.app.ui.glow.RowCaretGap
-import org.openstrap.app.ui.glow.TapCaret
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.zepp.BoundDevice
@@ -283,29 +280,8 @@ private fun Line(label: String, value: String) {
 @Composable
 fun ComputerGuideButton(modifier: Modifier = Modifier.fillMaxWidth()) {
     val uri = LocalUriHandler.current
-    OptionButton("Can't sign in with email?", "Get the key on a computer", modifier) { uri.openUri(COMPUTER_KEY_GUIDE_URL) }
+    OptionButton("Can't sign in with email?", "Get the key on a computer", { uri.openUri(COMPUTER_KEY_GUIDE_URL) }, modifier)
 }
-
-/**
- * A secondary choice: a tile on the Control surface (spec 2.4) with a [caption] in Secondary over the [label] in Body,
- * and the tap caret at its end, so it reads as something that opens.
- */
-@Composable
-fun OptionButton(caption: String, label: String, modifier: Modifier = Modifier.fillMaxWidth(), onClick: () -> Unit) {
-    Row(
-        modifier.clip(GlowLayout.TileShape).background(ControlSurface).pressClickable(onClick, GlowLayout.TileShape)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(caption, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-            Text(label, color = Color.White, style = GlowType.body)
-        }
-        Spacer(Modifier.width(RowCaretGap))
-        TapCaret(ROW_CARET_ALPHA)
-    }
-}
-
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable

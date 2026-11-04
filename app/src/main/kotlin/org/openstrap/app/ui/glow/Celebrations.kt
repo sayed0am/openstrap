@@ -85,7 +85,7 @@ internal fun BadgeArt(
 @Composable
 private fun CloseRow(title: String?, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(title.orEmpty(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.weight(1f).padding(start = 4.dp))
+        SectionLabel(title.orEmpty(), Modifier.weight(1f))
         RoundIconButton(AppIcons.X, "Close", onClose, size = 40.dp)
     }
 }

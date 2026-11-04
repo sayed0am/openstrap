@@ -174,18 +174,8 @@ internal fun LiveFrame(
                         ClockText(time, GlowType.sentence.copy(fontFeatureSettings = "tnum"), maxLines = 1)
                         // Under it, the GPS where there is one (run reps), else that it's the total.
                         val (under, dot) = status.firstOrNull() ?: ("Total" to if (connected) TrendGood else TrendBad)
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(under, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
-                            Spacer(Modifier.width(8.dp))
-                            Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
-                        }
-                    } else lines.forEach { (text, dot) ->
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(text, color = Color.White.copy(alpha = 0.65f), style = GlowType.secondary, maxLines = 1)
-                            Spacer(Modifier.width(8.dp))
-                            Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
-                        }
-                    }
+                        StatusDot(under, dot, dotAfter = true)
+                    } else lines.forEach { (text, dot) -> StatusDot(text, dot, dotAfter = true) }
                 }
             }
             val bigTime = time.takeIf { !smallTime }
@@ -536,7 +526,7 @@ internal fun FlatButton(container: Color, size: Dp, modifier: Modifier = Modifie
 @Composable
 internal fun StoppedPrompt(r: WorkoutState.Recording, at: Long, onEnd: () -> Unit, onKeep: () -> Unit) {
     QuietPanel {
-        PanelTitle(if (r.inCar) "Looks like you're in a car" else "Looks like you've stopped")
+        GlowHeader(if (r.inCar) "Looks like you're in a car" else "Looks like you've stopped")
         PageNote(
             if (r.inCar) "You last moved at ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} there, so the drive isn't counted?"
             else "Your heart rate has been back near resting since ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} at ${clock(at)}?",
