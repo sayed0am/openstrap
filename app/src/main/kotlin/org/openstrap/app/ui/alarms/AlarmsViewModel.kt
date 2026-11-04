@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.alarms
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -85,7 +87,7 @@ class AlarmsViewModel(private val strap: StrapController) : ViewModel() {
     fun setEnum(key: Int, value: Int) = writeHealth { listOf(SettingsCodec.enumSetting(key, value)) }
 
     private fun writeHealth(build: (SettingsGroup) -> List<Setting>) = run {
-        val g = _state.value.health ?: throw StrapCommandException("Settings haven't loaded yet")
+        val g = _state.value.health ?: throw StrapCommandException(Strings.app.get(R.string.you_alarms_not_loaded))
         strap.writeHealthSettings(g.version, build(g))
     }
 
@@ -108,7 +110,10 @@ class AlarmsViewModel(private val strap: StrapController) : ViewModel() {
             _state.update { s ->
                 read.fold(
                     { (caps, alarms, health) -> s.copy(loading = false, busy = false, error = error, caps = caps, alarms = alarms, health = health) },
-                    { e -> s.copy(loading = false, busy = false, error = error ?: ErrorCopy.strap(e, "Couldn't read from the strap")) },
+                    { e ->
+                        val failed = error ?: ErrorCopy.strap(e, Strings.app.get(R.string.you_alarms_read_failed))
+                        s.copy(loading = false, busy = false, error = failed)
+                    },
                 )
             }
         }

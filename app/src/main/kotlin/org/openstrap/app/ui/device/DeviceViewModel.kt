@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.openstrap.app.R
 import org.openstrap.app.ble.FoundDevice
 import org.openstrap.app.data.BackupRepository
 import org.openstrap.app.data.BackupResult
@@ -32,6 +33,7 @@ import org.openstrap.app.device.SyncState
 import org.openstrap.app.export.AutoBackup
 import org.openstrap.app.health.HealthConnectAutoSync
 import org.openstrap.app.health.HealthConnectExporter
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
@@ -60,6 +62,9 @@ class DeviceViewModel(
     private val autoHealthConnect: HealthConnectAutoSync,
     private val sampleData: suspend () -> Unit,
 ) : ViewModel() {
+    /** The words of its messages, in res/values/strings_you_*.xml. Read on each use, so they follow the app's language. */
+    private val strings: Strings get() = Strings.app
+
     val paired: StateFlow<PairedDevice?> =
         settings.pairedDevice.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -114,13 +119,13 @@ class DeviceViewModel(
         val key = normalizeAuthKey(authKey)
         if (key == null) {
             val n = authKey.trim().removePrefix("0x").removePrefix("0X").count { it.isLetterOrDigit() }
-            _message.value = "The auth key must be 32 characters of 0 to 9 and a to f. You entered $n."
+            _message.value = strings.format(R.string.you_pair_key_invalid, n)
             return
         }
         // Trimmed once, as the sheet's own check does, so a pasted address with a trailing space pairs (audit E7).
         val mac = pairAddress(address)
         if (mac == null) {
-            _message.value = "The Bluetooth address should look like C8:0F:10:AB:CD:EF. Scan to fill it in."
+            _message.value = strings.get(R.string.you_pair_address_invalid)
             return
         }
         stopScan()
@@ -137,12 +142,12 @@ class DeviceViewModel(
         settings.saveZeppAccount(listing.session.toAccount(listing.apiBase, strap?.china == true, System.currentTimeMillis()))
         val key = strap?.authKey
         if (strap != null && key != null) pair(strap.macAddress, DEFAULT_NAME, key)
-        else _message.value = "Zepp sign-in saved, but no auth key came with it. Get the key on a computer and enter it by hand."
+        else _message.value = strings.get(R.string.you_pair_no_key)
     }
 
     fun loadSampleData() = viewModelScope.launch {
         sampleData()
-        _message.value = "Loaded a week of sample data."
+        _message.value = strings.get(R.string.you_strap_sample_loaded)
     }
 
     /** Set at the end of pairing: the strap page then asks Android to associate the strap, once. */
@@ -164,28 +169,29 @@ class DeviceViewModel(
 
     /** The association prompt's answer. Turned down, the page says what else keeps the strap connected. */
     fun associationResult(resultCode: Int) {
-        if (!companion.onResult(resultCode)) showMessage("Not linked. You can turn off battery optimization for OpenStrap instead.")
+        if (!companion.onResult(resultCode)) showMessage(strings.get(R.string.you_strap_not_linked))
     }
 
     fun showMessage(text: String) { _message.value = text }
 
     /** Find strap: buzzes it until stopped or Zepp's 60 s are up. */
     fun findStrap() = viewModelScope.launch {
-        catching { strap.findStrap() }.onFailure { failed("find strap", it, ErrorCopy.strap(it, "Couldn't buzz the strap")) }
+        catching { strap.findStrap() }
+            .onFailure { failed("find strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_buzz_failed))) }
     }
 
     fun stopFindingStrap() = viewModelScope.launch {
         catching { strap.stopFindingStrap() }
-            .onFailure { failed("stop finding strap", it, ErrorCopy.strap(it, "Couldn't stop the strap buzzing")) }
+            .onFailure { failed("stop finding strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_stop_buzz_failed))) }
     }
 
     /** Restarts the strap; the link drops and the usual reconnect brings it back. */
     fun restartStrap() = viewModelScope.launch {
         _message.value = catching {
             strap.restartStrap()
-            "Restarting the strap. OpenStrap reconnects when it's back."
+            strings.get(R.string.you_strap_restarting)
         }
-            .getOrElse { failed("restart strap", it, ErrorCopy.strap(it, "Couldn't restart the strap")) }
+            .getOrElse { failed("restart strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_restart_failed))) }
     }
 
     fun forget() = viewModelScope.launch {
@@ -197,7 +203,7 @@ class DeviceViewModel(
     fun exportCsv(uri: Uri) = viewModelScope.launch {
         _message.value = when (val result = backups.exportCsv(uri)) {
             is BackupResult.Failed -> failed("save a copy", result.error, ErrorCopy.saveCopy(result.error))
-            else -> "Saved a copy."
+            else -> strings.get(R.string.you_backup_saved_copy)
         }
     }
 
@@ -226,7 +232,7 @@ class DeviceViewModel(
      */
     fun chooseBackupFolder(uri: Uri) = viewModelScope.launch {
         if (!autoBackup.chooseFolder(uri)) {
-            _message.value = "OpenStrap can't keep writing to that folder. Choose another one."
+            _message.value = strings.get(R.string.you_backup_folder_refused)
             return@launch
         }
         backUpNow(quiet = true)
@@ -251,9 +257,9 @@ class DeviceViewModel(
     fun importHealthConnect() = viewModelScope.launch {
         _message.value = catching {
             val n = withContext(Dispatchers.IO) { healthConnect.import() }
-            if (n == 0) "Health Connect has no OpenStrap data to restore."
-            else "Restored ${Units.count(n.toLong())} records from Health Connect."
-        }.getOrElse { failed("health connect import", it, ErrorCopy.healthConnect("Couldn't restore from Health Connect", it)) }
+            if (n == 0) strings.get(R.string.you_hc_restored_none)
+            else strings.plural(R.plurals.you_hc_restored, n, Units.count(n.toLong()))
+        }.getOrElse { failed("health connect import", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_restore_failed), it)) }
     }
 
     fun exportHealthConnect() = viewModelScope.launch {
@@ -261,8 +267,8 @@ class DeviceViewModel(
             val now = System.currentTimeMillis() / 1000
             val n = healthConnect.export(now - 30L * 24 * 3600, now)
             settings.setHealthConnectSynced(now)
-            "Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { failed("health connect export", it, ErrorCopy.healthConnect("Couldn't write to Health Connect", it)) }
+            strings.plural(R.plurals.you_hc_wrote, n, n)
+        }.getOrElse { failed("health connect export", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_write_failed), it)) }
     }
 
     /** Auto sync to Health Connect, for the You page's row. */
@@ -274,9 +280,9 @@ class DeviceViewModel(
         if (!on) { settings.setHealthConnectAuto(false); return@launch }
         _message.value = catching {
             val n = autoHealthConnect.turnOn()
-            "Auto sync is on. Wrote $n records to Health Connect (last 30 days)."
+            strings.plural(R.plurals.you_hc_auto_wrote, n, n)
         }.getOrElse {
-            failed("health connect auto sync", it, ErrorCopy.healthConnect("Auto sync is on, but the first copy didn't work", it))
+            failed("health connect auto sync", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_auto_failed), it))
         }
     }
 

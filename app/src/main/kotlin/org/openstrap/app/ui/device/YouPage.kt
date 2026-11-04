@@ -9,14 +9,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.BuildConfig
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.health.HcAvailability
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import java.util.concurrent.TimeUnit.MINUTES
@@ -32,14 +36,21 @@ import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
 
 /** The Goals row's value: "8,000 steps, 300 active kcal, 8 active hours". */
-fun goalsLine(goals: Goals, locale: java.util.Locale = java.util.Locale.getDefault()): String =
-    "${Units.count(goals.steps.toLong(), locale)} steps, ${Units.count(goals.calories.toLong(), locale)} active kcal, " +
-        "${goals.activeHours} active hours"
+fun goalsLine(goals: Goals, locale: java.util.Locale = java.util.Locale.getDefault(), strings: Strings = Strings.app): String =
+    strings.format(
+        R.string.you_goals_line,
+        strings.plural(R.plurals.you_goals_steps, goals.steps, Units.count(goals.steps.toLong(), locale)),
+        strings.format(R.string.you_goals_active_kcal, Units.count(goals.calories.toLong(), locale)),
+        strings.plural(R.plurals.you_goals_active_hours, goals.activeHours, goals.activeHours),
+    )
 
 /** The Sleep goal row's value, with the sleep need Recovery uses beside it: "7 h 30. Your sleep need is 8 h". */
-fun sleepGoalLine(goals: Goals, needMinutes: Int): String =
-    "${Units.duration(MINUTES.toSeconds(goals.sleepMinutes.toLong()))}. " +
-        "Your sleep need is ${Units.duration(MINUTES.toSeconds(needMinutes.toLong()))}"
+fun sleepGoalLine(goals: Goals, needMinutes: Int, strings: Strings = Strings.app): String =
+    strings.format(
+        R.string.you_sleep_goal_line,
+        Units.duration(MINUTES.toSeconds(goals.sleepMinutes.toLong())),
+        Units.duration(MINUTES.toSeconds(needMinutes.toLong())),
+    )
 
 /**
  * The auto sync row's value: on and when it last wrote, by [DayWords.at] ("On. Last synced 10:42", "yesterday 10:42",
@@ -52,16 +63,19 @@ fun healthConnectLine(
     zone: java.time.ZoneId,
     locale: java.util.Locale = java.util.Locale.getDefault(),
     availability: HcAvailability = HcAvailability.AVAILABLE,
+    strings: Strings = Strings.app,
 ): String {
-    if (!auto.on) return when (auto.stopped) {
-        HealthConnectAuto.Stopped.PERMISSIONS -> "Stopped. Health Connect permissions were turned off"
-        HealthConnectAuto.Stopped.UNAVAILABLE ->
-            if (availability == HcAvailability.INSTALLABLE) "Stopped. Install Health Connect to turn it back on"
-            else "Stopped. Health Connect isn't available on this phone"
-        null -> "Off. Copies new data after each strap sync"
-    }
-    val last = auto.lastSynced ?: return "On. Copies new data after each strap sync"
-    return "On. Last synced " + DayWords.at(last, now, zone, locale = locale)
+    if (!auto.on) return strings.get(
+        when (auto.stopped) {
+            HealthConnectAuto.Stopped.PERMISSIONS -> R.string.you_hc_line_stopped_permissions
+            HealthConnectAuto.Stopped.UNAVAILABLE ->
+                if (availability == HcAvailability.INSTALLABLE) R.string.you_hc_line_stopped_install
+                else R.string.you_hc_line_stopped_unavailable
+            null -> R.string.you_hc_line_off
+        },
+    )
+    val last = auto.lastSynced ?: return strings.get(R.string.you_hc_line_on)
+    return strings.format(R.string.you_hc_line_last, DayWords.at(last, now, zone, locale = locale))
 }
 
 /** The You page's Health Connect row: on and when it last wrote, off, or stopped and why, in a few words. */
@@ -71,14 +85,17 @@ fun healthConnectSummary(
     zone: java.time.ZoneId,
     locale: java.util.Locale = java.util.Locale.getDefault(),
     availability: HcAvailability = HcAvailability.AVAILABLE,
+    strings: Strings = Strings.app,
 ): String =
     when {
-        auto.on && auto.lastSynced != null -> healthConnectLine(auto, now, zone, locale)
-        auto.on -> "On"
-        auto.stopped == HealthConnectAuto.Stopped.PERMISSIONS -> "Stopped. Permissions were turned off"
-        auto.stopped == HealthConnectAuto.Stopped.UNAVAILABLE ->
-            if (availability == HcAvailability.INSTALLABLE) "Stopped. Install Health Connect" else "Stopped. Not available on this phone"
-        else -> "Off"
+        auto.on && auto.lastSynced != null -> healthConnectLine(auto, now, zone, locale, strings = strings)
+        auto.on -> strings.get(R.string.you_value_on)
+        auto.stopped == HealthConnectAuto.Stopped.PERMISSIONS -> strings.get(R.string.you_hc_summary_stopped_permissions)
+        auto.stopped == HealthConnectAuto.Stopped.UNAVAILABLE -> strings.get(
+            if (availability == HcAvailability.INSTALLABLE) R.string.you_hc_summary_stopped_install
+            else R.string.you_hc_summary_stopped_unavailable,
+        )
+        else -> strings.get(R.string.you_value_off)
     }
 
 /**
@@ -121,59 +138,82 @@ fun YouPage(
     onDiagnostics: () -> Unit,
     onSampleData: (() -> Unit)?,
     onBack: () -> Unit,
-    /** The row whose page is open beside the list on a wide screen, by its title ("Profile"), or null. */
+    /** The row whose page is open beside the list on a wide screen, by its key in [PageRowKeys], or null. */
     selected: String? = null,
 ) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("You", onBack) }
+        item { PageHeader(stringResource(R.string.you_title), onBack) }
         item {
             PageRows {
-                PageRow("Profile", profile.summary(), onClick = onProfile, below = true, divider = false, icon = AppIcons.User, selected = selected == "Profile")
+                PageRow(
+                    stringResource(R.string.you_row_profile), profile.summary(), onClick = onProfile, below = true, divider = false,
+                    icon = AppIcons.User,
+                    selected = selected == PageRowKeys.PROFILE,
+                )
                 PageRow(
                     org.openstrap.app.ui.workout.HeartZonesCopy.TITLE, org.openstrap.app.ui.workout.HeartZonesCopy.youLine(maxHeartRate), onClick = onHeartZones,
-                    below = true, icon = AppIcons.Heartbeat, selected = selected == org.openstrap.app.ui.workout.HeartZonesCopy.TITLE,
+                    below = true, icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEART_ZONES,
                 )
-                PageRow("Goals", goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
-                PageRow("Sleep goal", sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true, icon = AppIcons.Moon)
+                PageRow(stringResource(R.string.you_row_goals), goalsLine(goals), onClick = onGoals, below = true, icon = AppIcons.Target)
                 PageRow(
-                    "Goals and bests", "${goals.workoutsPerWeek} workouts a week, personal bests and badges", onClick = onGoalsAndBests, below = true,
-                    icon = AppIcons.FlagCheckered, selected = selected == "Goals and bests",
+                    stringResource(R.string.you_row_sleep_goal), sleepGoalLine(goals, sleepNeedMinutes), onClick = onGoals, below = true,
+                    icon = AppIcons.Moon,
+                )
+                PageRow(
+                    stringResource(R.string.you_row_goals_and_bests),
+                    pluralStringResource(R.plurals.you_goals_and_bests_line, goals.workoutsPerWeek, goals.workoutsPerWeek),
+                    onClick = onGoalsAndBests,
+                    below = true, icon = AppIcons.FlagCheckered, selected = selected == PageRowKeys.GOALS_AND_BESTS,
                 )
             }
         }
-        item { SectionLabel("Your data", Modifier.padding(top = 4.dp), PanelLabelInset) }
+        item { SectionLabel(stringResource(R.string.you_section_your_data), Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
                 // Read again whenever either changes, so "today" and "yesterday" follow the last one.
                 val now = remember(healthConnectAuto, backup) { System.currentTimeMillis() / 1000 }
                 val zone = java.time.ZoneId.systemDefault()
                 PageRow(
-                    "Health Connect", healthConnectSummary(healthConnectAuto, now, zone, availability = healthConnectAvailability), onClick = onHealthConnect, below = true, divider = false,
-                    icon = AppIcons.Heartbeat, selected = selected == "Health Connect",
+                    stringResource(R.string.you_row_health_connect),
+                    healthConnectSummary(healthConnectAuto, now, zone, availability = healthConnectAvailability), onClick = onHealthConnect,
+                    below = true, divider = false,
+                    icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEALTH_CONNECT,
                 )
-                PageRow("Backup", BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true, icon = AppIcons.ShieldCheck, selected = selected == "Backup")
+                PageRow(
+                    stringResource(R.string.you_row_backup), BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true,
+                    icon = AppIcons.ShieldCheck, selected = selected == PageRowKeys.BACKUP,
+                )
                 if (deletedSleep > 0) PageRow(
-                    "Deleted sleep", org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep), onClick = onDeletedSleep, below = true,
-                    icon = AppIcons.Trash, selected = selected == "Deleted sleep",
+                    stringResource(R.string.you_row_deleted_sleep), org.openstrap.app.ui.dashboard.SleepCopy.deletedCount(deletedSleep),
+                    onClick = onDeletedSleep, below = true,
+                    icon = AppIcons.Trash, selected = selected == PageRowKeys.DELETED_SLEEP,
                 )
             }
         }
-        item { SectionLabel("Help", Modifier.padding(top = 4.dp), PanelLabelInset) }
+        item { SectionLabel(stringResource(R.string.you_section_help), Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
                 val now = remember(updates) { System.currentTimeMillis() / 1000 }
                 PageRow(
-                    "Updates", UpdateCopy.summary(updates, installedVersion, now), onClick = onUpdates, below = true, divider = false,
-                    icon = AppIcons.ArrowCircleUp, selected = selected == "Updates", dot = updateWaiting,
+                    stringResource(R.string.you_row_updates), UpdateCopy.summary(updates, installedVersion, now), onClick = onUpdates,
+                    below = true, divider = false,
+                    icon = AppIcons.ArrowCircleUp, selected = selected == PageRowKeys.UPDATES, dot = updateWaiting,
                 )
-                PageRow("Diagnostics", "$logLines lines, for bug reports", onClick = onDiagnostics, below = true, icon = AppIcons.Bug, selected = selected == "Diagnostics")
-                if (onSampleData != null) PageRow("Load sample data", "Debug builds only", onClick = onSampleData, below = true, icon = AppIcons.Flask)
+                PageRow(
+                    stringResource(R.string.you_row_diagnostics), pluralStringResource(R.plurals.you_diagnostics_line, logLines, logLines),
+                    onClick = onDiagnostics, below = true, icon = AppIcons.Bug, selected = selected == PageRowKeys.DIAGNOSTICS,
+                )
+                if (onSampleData != null) PageRow(
+                    stringResource(R.string.you_row_sample_data), stringResource(R.string.you_row_sample_data_note), onClick = onSampleData,
+                    below = true,
+                    icon = AppIcons.Flask,
+                )
             }
         }
         item {
             Text(
-                "OpenStrap ${BuildConfig.VERSION_NAME}. Everything stays on this phone.",
+                stringResource(R.string.you_footer, BuildConfig.VERSION_NAME),
                 Modifier.fillMaxWidth().padding(top = 4.dp),
                 color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary, textAlign = TextAlign.Center,
             )

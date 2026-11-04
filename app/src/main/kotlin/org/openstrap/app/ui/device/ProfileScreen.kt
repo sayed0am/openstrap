@@ -29,6 +29,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.settings.Units
 import org.openstrap.app.data.settings.UserProfile
 import androidx.compose.foundation.layout.height
@@ -45,11 +48,18 @@ import org.openstrap.app.ui.glow.PageSwitchRow
 import java.time.LocalDate
 
 /** One line for the settings row: "34 years, male, 72 kg, 178 cm", or a prompt when empty. */
-fun UserProfile.summary(): String =
-    if (isEmpty) "Add age and sex for accurate effort and recovery"
+fun UserProfile.summary(strings: Strings = Strings.app): String =
+    if (isEmpty) strings.get(R.string.you_profile_empty)
     else listOfNotNull(
-        age()?.let { "$it years" },
-        sex?.name?.lowercase(),
+        age()?.let { strings.plural(R.plurals.you_profile_age, it, it) },
+        sex?.let {
+            strings.get(
+                when (it) {
+                    UserProfile.Sex.Female -> R.string.you_profile_summary_female
+                    UserProfile.Sex.Male -> R.string.you_profile_summary_male
+                },
+            )
+        },
         weightKg?.let { Units.formatWeight(it, usesImperial) },
         heightCm?.let { Units.formatHeight(it, usesImperial) },
     ).joinToString(", ")
@@ -109,9 +119,10 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
     BackHandler(onBack = back)
     if (confirmDiscard) {
         PageConfirm(
-            "Discard changes?", "Your profile changes haven't been saved.",
-            confirm = "Discard", onConfirm = { confirmDiscard = false; onBack() }, onDismiss = { confirmDiscard = false },
-            dismiss = "Keep editing",
+            stringResource(R.string.you_profile_discard_title), stringResource(R.string.you_profile_discard_text),
+            confirm = stringResource(R.string.you_profile_discard), onConfirm = { confirmDiscard = false; onBack() },
+            onDismiss = { confirmDiscard = false },
+            dismiss = stringResource(R.string.you_profile_keep_editing),
         )
     }
     val save: () -> Unit = {
@@ -145,53 +156,80 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
         // The list ends clear of Save and the fade behind it (ScreenList adds its own 24 dp).
         ScreenList(PaddingValues(bottom = PinnedFade.listClearance(bottom + 12.dp + SaveHeight, listEnd = 24.dp)), gutter = GlowLayout.Gutter) {
-            item { PageHeader("Your profile", back) }
+            item { PageHeader(stringResource(R.string.you_profile_title), back) }
             item {
                 PagePanel {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PageNote(
-                            "Age sets your maximum heart rate, which every effort and recovery number depends on. " +
-                                "All fields are optional and stay on this phone.",
+                        PageNote(stringResource(R.string.you_profile_note))
+                        PageNumberField(
+                            age, { age = it }, stringResource(R.string.you_profile_age), stringResource(R.string.you_profile_age_unit),
+                            age.isNotBlank() && ageValue == null,
                         )
-                        PageNumberField(age, { age = it }, "Age", "years", age.isNotBlank() && ageValue == null)
                         // Sex as labelled segments like Units, not two bare symbols beside Age. Tapping the chosen one
                         // again clears it.
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PageNote("Sex, for energy, Load, fitness and Habit Age")
-                            org.openstrap.app.ui.glow.GlowSegments(listOf("Female", "Male"), if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i })
+                            PageNote(stringResource(R.string.you_profile_sex_note))
+                            org.openstrap.app.ui.glow.GlowSegments(
+                                listOf(stringResource(R.string.you_profile_sex_female), stringResource(R.string.you_profile_sex_male)),
+                                if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i },
+                            )
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PageNote("Units")
-                            org.openstrap.app.ui.glow.GlowSegments(listOf("Metric", "Imperial"), if (imperial) 1 else 0, { switchUnits(it == 1) })
+                            PageNote(stringResource(R.string.you_profile_units))
+                            org.openstrap.app.ui.glow.GlowSegments(
+                                listOf(
+                                    stringResource(R.string.you_profile_units_metric), stringResource(R.string.you_profile_units_imperial),
+                                ),
+                                if (imperial) 1 else 0, { switchUnits(it == 1) },
+                            )
                         }
                         PageNumberField(
-                            weight, { weight = it }, "Weight", if (imperial) "lb" else "kg",
+                            weight, { weight = it }, stringResource(R.string.you_profile_weight),
+                            stringResource(if (imperial) R.string.you_profile_unit_lb else R.string.you_profile_unit_kg),
                             weight.isNotBlank() && weightValue == null, decimal = true,
                         )
                         if (imperial) {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 val wrong = !heightBlank && heightValue == null
-                                PageNumberField(feet, { feet = it.take(1) }, "Feet", "ft", wrong, Modifier.weight(1f))
-                                PageNumberField(inches, { inches = it.take(2) }, "Inches", "in", wrong, Modifier.weight(1f))
+                                PageNumberField(
+                                    feet, { feet = it.take(1) }, stringResource(R.string.you_profile_feet),
+                                    stringResource(R.string.you_profile_unit_ft), wrong,
+                                    Modifier.weight(1f),
+                                )
+                                PageNumberField(
+                                    inches, { inches = it.take(2) }, stringResource(R.string.you_profile_inches),
+                                    stringResource(R.string.you_profile_unit_in), wrong,
+                                    Modifier.weight(1f),
+                                )
                             }
                         } else {
-                            PageNumberField(heightCm, { heightCm = it }, "Height", "cm", !heightBlank && heightValue == null)
+                            PageNumberField(
+                                heightCm, { heightCm = it }, stringResource(R.string.you_profile_height),
+                                stringResource(R.string.you_profile_unit_cm),
+                                !heightBlank && heightValue == null,
+                            )
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            PageNote("Usual activity, for the fitness estimate")
+                            PageNote(stringResource(R.string.you_profile_activity_note))
                             // Tapping the chosen level again clears it.
                             org.openstrap.app.ui.glow.GlowSegments((1..5).map { "$it" }, activity, { i -> activity = if (activity == i) -1 else i })
-                            PageNote(if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity] else "Pick the level that best matches a usual week.")
+                            PageNote(
+                                if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity]
+                                else stringResource(R.string.you_profile_activity_pick),
+                            )
                         }
-                        PageSwitchRow("Taking beta-blockers", null, betaBlocker, { betaBlocker = it }, divider = false)
-                        PageSwitchRow("Pregnant", null, pregnant, { pregnant = it }, divider = false)
+                        PageSwitchRow(
+                            stringResource(R.string.you_profile_beta_blockers), null, betaBlocker, { betaBlocker = it }, divider = false,
+                        )
+                        PageSwitchRow(stringResource(R.string.you_profile_pregnant), null, pregnant, { pregnant = it }, divider = false)
                         // Your max is set on the Heart rate zones page, with the zones that follow it.
                         PageRow(
                             org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW, org.openstrap.app.ui.workout.HeartZonesCopy.profileLine(profile.maxHeartRate),
                             onClick = onHeartZones, below = true, divider = false,
                         )
                         PageNumberField(
-                            sleepNeed, { sleepNeed = it }, "Sleep need (7 to 9, blank for your age's default)", "h",
+                            sleepNeed, { sleepNeed = it }, stringResource(R.string.you_profile_sleep_need),
+                            stringResource(R.string.you_unit_h),
                             sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true,
                         )
                     }
@@ -200,7 +238,9 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         }
         // Black from the bottom of the screen up to Save, fading out above it, so the page scrolls away under it.
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().pinnedFade().padding(start = side, end = side, bottom = bottom + 12.dp)) {
-            PageButton("Save", save, Modifier.fillMaxWidth().height(SaveHeight), enabled = valid, primary = true)
+            PageButton(
+                stringResource(R.string.you_action_save), save, Modifier.fillMaxWidth().height(SaveHeight), enabled = valid, primary = true,
+            )
         }
     }
 }

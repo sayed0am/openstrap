@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.alarms
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.Flow
@@ -66,13 +68,13 @@ class PhoneAlertsViewModel(private val settings: SettingsStore, private val aler
     /** Keeps [style] and plays it for a few seconds, so the two can be compared on the wrist. */
     fun pickCallBuzz(style: CallBuzz) = viewModelScope.launch {
         settings.setCallBuzzStyle(style)
-        _callPreviewError.value = catching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: NO_BUZZ }
+        _callPreviewError.value = catching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: noBuzz }
     }
 
     /** Keeps [pattern] and plays it once, so it can be felt before the next notification. */
     fun pickPattern(pattern: BuzzPattern) = viewModelScope.launch {
         settings.setNotificationPattern(pattern)
-        _previewError.value = catching { alerts.preview(pattern) }.exceptionOrNull()?.let { it.message ?: NO_BUZZ }
+        _previewError.value = catching { alerts.preview(pattern) }.exceptionOrNull()?.let { it.message ?: noBuzz }
     }
 
     /** The page closed: a failed preview isn't said again next time, as before the page had a view model. */
@@ -88,9 +90,8 @@ class PhoneAlertsViewModel(private val settings: SettingsStore, private val aler
 
     private fun <T> Flow<T>.state(initial: T): StateFlow<T> = stateIn(viewModelScope, SharingStarted.Eagerly, initial)
 
-    private companion object {
-        const val NO_BUZZ = "Couldn't buzz the strap"
-    }
+    /** What a preview that failed without a reason of its own says. */
+    private val noBuzz: String get() = Strings.app.get(R.string.you_strap_buzz_failed)
 }
 
 private fun PhoneAlerts.asBuzzAlerts(): BuzzAlerts = object : BuzzAlerts {

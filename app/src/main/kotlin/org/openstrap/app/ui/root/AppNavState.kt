@@ -16,6 +16,7 @@ import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Reselect
 import org.openstrap.app.ui.dashboard.TabNav
 import org.openstrap.app.ui.dashboard.openBeside
+import org.openstrap.app.ui.device.PageRowKeys
 
 /** The four tabs, in the bar's order. Their icons and colours are in [tabItems]. */
 enum class Tab(@StringRes private val labelRes: Int) {
@@ -34,26 +35,29 @@ enum class Tab(@StringRes private val labelRes: Int) {
  * and the Strap page and what it opens. Shallowest first.
  */
 enum class Page(
-    /** The row on the You or Strap page that opens this page, marked while it's open beside the list on a wide screen. */
+    /**
+     * The key of the row on the You or Strap page that opens this page ([PageRowKeys], never shown), marked while it's
+     * open beside the list on a wide screen.
+     */
     val row: String? = null,
 ) {
     You,
-    Profile("Profile"),
-    HeartZones("Heart rate zones"),
-    HealthConnect("Health Connect"),
-    Backup("Backup"),
-    DeletedSleep("Deleted sleep"),
-    Updates("Updates"),
-    Diagnostics("Diagnostics"),
-    GoalsAndBests("Goals and bests"),
+    Profile(PageRowKeys.PROFILE),
+    HeartZones(PageRowKeys.HEART_ZONES),
+    HealthConnect(PageRowKeys.HEALTH_CONNECT),
+    Backup(PageRowKeys.BACKUP),
+    DeletedSleep(PageRowKeys.DELETED_SLEEP),
+    Updates(PageRowKeys.UPDATES),
+    Diagnostics(PageRowKeys.DIAGNOSTICS),
+    GoalsAndBests(PageRowKeys.GOALS_AND_BESTS),
     AllBadges,
     WeeklyRecap,
     Strap,
-    Alarms("Alarms"),
-    PhoneAlerts("Phone alerts"),
-    HealthAlerts("Health alerts"),
-    Firmware("Firmware"),
-    ZeppAccount("Zepp account"),
+    Alarms(PageRowKeys.ALARMS),
+    PhoneAlerts(PageRowKeys.PHONE_ALERTS),
+    HealthAlerts(PageRowKeys.HEALTH_ALERTS),
+    Firmware(PageRowKeys.FIRMWARE),
+    ZeppAccount(PageRowKeys.ZEPP_ACCOUNT),
 }
 
 /** Keeps the open pages across process death, as their names ("Strap,Alarms"). */

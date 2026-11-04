@@ -120,6 +120,12 @@ class HardcodedEnglishTest {
             ("ui/dashboard/SyncStates.kt" to "Failed") to "The debug strap preview's sync failure reason, never shown",
             ("health/HealthConnectExporter.kt" to "Device") to "The strap's maker and model as Health Connect records them",
             ("ui/glow/draw/GlowStyle.kt" to "listOf") to "Names of the glow presets, kept for tuning and never shown",
+            ("ui/device/DeviceViewModel.kt" to "") to "The strap's product name, saved as a new strap's name, the same in every language",
+            ("ui/device/DeviceViewModel.kt" to "failed") to "Failed actions named in the diagnostics log",
+            ("ui/zepp/ZeppSignIn.kt" to "mapOf") to "Sign-in providers' brand names, the same in every language",
+            ("ui/device/PageRowKeys.kt" to "") to "The page host's keys for the You and Strap rows, matched and never shown",
+            ("ui/firmware/FirmwareViewModel.kt" to "failed") to "Failed steps named in the diagnostics log",
+            ("ui/zepp/ZeppSignIn.kt" to "diagnostics") to "The device list's failure for the diagnostics log",
             ("ui/root/AppRootViewModel.kt" to "write") to "Setting names for the log line when a write fails",
             ("ui/theme/AppIcons.kt" to "line") to "Icon names, the ImageVector's own name",
             ("update/ReleaseNotes.kt" to "startsWith") to "GitHub's generated release notes line it leaves out",
@@ -131,17 +137,7 @@ class HardcodedEnglishTest {
          * Every file that still has English in Kotlin, which wave 0 found. Each wave moves its files' text to
          * strings_<area>.xml and takes them off. Wave 6 empties it.
          */
-        val ALLOWED = setOf(
-            "ui/alarms/AlarmsScreen.kt", "ui/alarms/AlarmsViewModel.kt", "ui/alarms/PhoneAlertsScreen.kt",
-            "ui/alarms/PhoneAlertsViewModel.kt",
-            "ui/device/BackupCopy.kt", "ui/device/BackupPage.kt", "ui/device/DeletedSleepPage.kt",
-            "ui/device/DeviceScreen.kt", "ui/device/DeviceViewModel.kt", "ui/device/ErrorCopy.kt",
-            "ui/device/GoalsSheet.kt", "ui/device/HealthConnectPage.kt", "ui/device/ProfileScreen.kt",
-            "ui/device/UpdatesPage.kt", "ui/device/YouPage.kt",
-            "ui/firmware/FirmwareScreen.kt", "ui/firmware/FirmwareViewModel.kt",
-            "ui/root/AppNavState.kt",
-            "ui/zepp/ZeppSignIn.kt",
-        )
+        val ALLOWED = emptySet<String>()
     }
 }
 
