@@ -60,6 +60,8 @@ import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.chart
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /* -------------------------------------------- Live screen -------------------------------------------- */
 
@@ -250,7 +252,10 @@ internal fun WorkoutHeartCard(
     val color = workoutColor(r, liveHeartRate, connected, heartZones)
     GlowCard(liveHeartStyle(color, bpm, zone, r.paused), modifier) {
         Column(if (fill) Modifier.fillMaxSize() else Modifier) {
-            GlowHeader("Heart rate", trailing = bpm?.let { "${it * 100 / r.maxHeartRate}% of max" })
+            GlowHeader(
+                stringResource(R.string.workout_live_heart_title),
+                trailing = bpm?.let { stringResource(R.string.workout_live_heart_of_max, it * 100 / r.maxHeartRate) },
+            )
             BoxWithConstraints(Modifier.fillMaxWidth().then(if (fill) Modifier.weight(1f) else Modifier.height(220.dp))) {
                 val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
                 val values = remember(recent) { bucketRecent(recent, now) }
@@ -266,7 +271,10 @@ internal fun WorkoutHeartCard(
                     if (bpm != null) {
                         DotMatrixText(bpm.toString(), dot = DotSize.Live, scale = scale)
                         Spacer(Modifier.height(8.dp))
-                        Text("bpm, last 10 min behind", color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary)
+                        Text(
+                            stringResource(R.string.workout_live_heart_behind), color = Color.White.copy(alpha = 0.75f),
+                            style = GlowType.secondary,
+                        )
                     } else Text(
                         WorkoutCopy.noHeartRate(r.paused, connected),
                         color = Color.White, style = GlowType.sentence,
@@ -310,8 +318,11 @@ internal fun HeartNotes(r: WorkoutState.Recording, zone: Int?, zoneSeconds: Zone
         zone?.let { PageNote(WorkoutCopy.zoneTime(zoneSeconds[it])) }
         Spacer(Modifier.weight(1f))
         when (val t = WorkoutTarget.parse(r.workout.target)) {
-            is WorkoutTarget.Zones -> PageNote("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
-            is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
+            is WorkoutTarget.Zones -> PageNote(
+                if (t.low == t.high) stringResource(R.string.workout_live_target_zone, t.low + 1)
+                else stringResource(R.string.workout_live_target_zones, t.low + 1, t.high + 1),
+            )
+            is WorkoutTarget.Time -> TimeTargetNote(active, t.seconds)
             is WorkoutTarget.Kcal -> PageNote(WorkoutCopy.kcalProgress(kcal, t))
             is WorkoutTarget.Distance -> PageNote(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
             null -> Unit
@@ -342,9 +353,12 @@ fun GlowWorkoutGlance(
     }
 }
 
-/** "12:30 of 30 min" under the heart card: its own scope, so only it reads the time. */
+/** "12:30 of 30 min" under the heart card, [seconds] the goal's: its own scope, so only it reads the time. */
 @Composable
-private fun TimeTargetNote(active: () -> Long, target: String) = PageNote("${workoutClock(active())} of $target")
+private fun TimeTargetNote(active: () -> Long, seconds: Long) {
+    val minutes = seconds / 60
+    PageNote(stringResource(R.string.workout_live_time_target, workoutClock(active()), minutes))
+}
 
 private const val BUCKET_S = 5L
 private const val WINDOW_S = 600L

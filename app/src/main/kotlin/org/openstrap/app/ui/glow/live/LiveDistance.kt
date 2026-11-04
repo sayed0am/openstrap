@@ -73,6 +73,8 @@ import org.openstrap.app.ui.glow.WaitingDash
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /**
  * A distance workout with GPS (workouts spec 2.3, boards Run and Map): two views, swiped, under the moving time. Pace:
@@ -137,7 +139,7 @@ internal fun LiveDistanceScreen(
     // Reps skip instead of marking laps: the rounds are the laps.
     val lap: (@Composable () -> Unit)? = when {
         r.paused -> null
-        reps -> ({ LapButton(onSkip, label = true, text = "Skip") })
+        reps -> ({ LapButton(onSkip, label = true, skip = true) })
         else -> ({ LapButton(onLap, label = true) })
     }
     val battery = (connection as? ConnectionState.Connected)?.batteryPercent
@@ -146,9 +148,10 @@ internal fun LiveDistanceScreen(
             r, color, connected, contentPadding, controls, lap, time = { active.value }, battery = battery, status = status,
             paused = {
                 LivePaused(r, liveHeartRate.takeIf { connected }, recent, listOf(
-                    Units.km(distance, Units.Precision.Workout) to "km",
-                    (if (speed) speedText(averagePace()) else Pace.clock(averagePace())) to if (speed) "Avg km/h" else "Avg pace",
-                    stats?.average?.toString() to "Avg bpm",
+                    Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
+                    (if (speed) speedText(averagePace()) else Pace.clock(averagePace())) to
+                        stringResource(if (speed) R.string.workout_live_figure_avg_kmh else R.string.workout_live_figure_avg_pace),
+                    stats?.average?.toString() to stringResource(R.string.workout_live_figure_avg_bpm),
                 ))
             },
         ) {}
@@ -178,7 +181,8 @@ internal fun LiveDistanceScreen(
                 LiveView.Heart -> if (reps) LiveFrame(
                     r, color, connected, pagePadding, controls, lap, time = { active.value }, smallTime = true, battery = battery,
                     status = status,
-                    fill = true, title = "${Workouts.sportName(r.workout.sportType)}, intervals", bottomRoom = bar,
+                    fill = true, title = stringResource(R.string.workout_live_reps_title, Workouts.sportName(r.workout.sportType)),
+                    bottomRoom = bar,
                 ) {
                     RepPage(r, route, readings, bpm, color, compact, if (shortLandscape(compact)) Modifier else Modifier.weight(1f))
                 } else LiveFrame(
@@ -187,17 +191,18 @@ internal fun LiveDistanceScreen(
                 ) {
                     if (compact) Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
                         LiveFigures(listOf(
-                            Units.km(distance, Units.Precision.Workout) to "km",
-                            (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
-                            kcal?.active?.toInt()?.toString() to "Active kcal",
+                            Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
+                            (if (speed) speedText(pace) else Pace.clock(pace)) to
+                                stringResource(if (speed) R.string.workout_live_unit_kmh else R.string.workout_live_figure_pace_km),
+                            kcal?.active?.toInt()?.toString() to stringResource(R.string.workout_live_figure_active_kcal),
                         ))
                     } else Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                         PaceCard(pace, averagePace, splits, speed, Modifier.weight(1f))
                         if (!split) LitHeartPill(bpm, r.maxHeartRate, color, r.paused, 56.dp, Modifier.fillMaxWidth())
                         LiveFigures(listOf(
-                            Units.km(distance, Units.Precision.Workout) to "km",
-                            climb?.toInt()?.toString() to "Climb m",
-                            kcal?.active?.toInt()?.toString() to "Active kcal",
+                            Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
+                            climb?.toInt()?.toString() to stringResource(R.string.workout_live_figure_climb),
+                            kcal?.active?.toInt()?.toString() to stringResource(R.string.workout_live_figure_active_kcal),
                         ))
                     }
                     // Each kilometre gets a line for a few seconds, with one tick. This page stays composed beside the
@@ -209,8 +214,9 @@ internal fun LiveDistanceScreen(
                     LiveMapScreen(
                         r, route, readings, bpm, color, contentPadding, controls,
                         figures = listOf(
-                            Units.km(distance, Units.Precision.Workout) to "km",
-                            (if (speed) speedText(pace) else Pace.clock(pace)) to if (speed) "km/h" else "Pace /km",
+                            Units.km(distance, Units.Precision.Workout) to stringResource(R.string.workout_live_figure_km),
+                            (if (speed) speedText(pace) else Pace.clock(pace)) to
+                                stringResource(if (speed) R.string.workout_live_unit_kmh else R.string.workout_live_figure_pace_km),
                         ),
                         time = { active.value }, bottomRoom = bar, heartPill = !split,
                     )
@@ -238,10 +244,15 @@ private fun RepPage(
     val now = nowTicking()
     val m = org.openstrap.app.ui.workout.intervalMoment(r, now, bpm, readings, route) ?: return
     val structure = r.structure as? org.openstrap.app.data.Structure.Reps ?: return
-    val repName = org.openstrap.app.ui.workout.StartCopy.repParts(structure).let { (n, unit) -> "$n $unit" }
+    val (repLength, repUnit) = org.openstrap.app.ui.workout.StartCopy.repParts(structure)
+    val repName = stringResource(R.string.workout_live_rep_length, repLength, repUnit)
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text(
-            "${org.openstrap.app.ui.workout.StartCopy.structureName(structure)}, ${org.openstrap.app.ui.workout.StartCopy.restText(structure.rest)} rest",
+            stringResource(
+                R.string.workout_live_reps_plan,
+                org.openstrap.app.ui.workout.StartCopy.structureName(structure),
+                org.openstrap.app.ui.workout.StartCopy.restText(structure.rest),
+            ),
             color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, maxLines = 1,
         )
         val underWay = structure.meters?.let { meters -> m.metersLeft?.let { 1f - it / meters } }
@@ -249,17 +260,19 @@ private fun RepPage(
         Row(Modifier.fillMaxWidth()) {
             Text(
                 when (m.phase) {
-                    is org.openstrap.app.data.Phase.Work -> "Rep ${m.round} of ${m.rounds}"
-                    is org.openstrap.app.data.Phase.Rest -> "${m.round - 1} of ${m.rounds} done"
-                    org.openstrap.app.data.Phase.WarmUp -> "Warm up"
-                    org.openstrap.app.data.Phase.Done -> "All ${m.rounds} reps done"
+                    is org.openstrap.app.data.Phase.Work -> stringResource(R.string.workout_live_rep_of, m.round, m.rounds)
+                    is org.openstrap.app.data.Phase.Rest -> stringResource(R.string.workout_live_done_of, m.round - 1, m.rounds)
+                    org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_warm_up)
+                    org.openstrap.app.data.Phase.Done -> stringResource(R.string.workout_live_all_reps_done, m.rounds)
                 },
                 color = Color.White, style = MediumBody, maxLines = 1, modifier = Modifier.weight(1f),
             )
             val next = when (m.phase) {
-                is org.openstrap.app.data.Phase.Work -> m.nextRest?.let { "Then rest ${org.openstrap.app.ui.workout.StartCopy.restText(it)}" } ?: "Last rep"
-                is org.openstrap.app.data.Phase.Rest -> "Rep ${m.round} next"
-                org.openstrap.app.data.Phase.WarmUp -> "${m.rounds} reps after it"
+                is org.openstrap.app.data.Phase.Work ->
+                    m.nextRest?.let { stringResource(R.string.workout_live_then_rest, org.openstrap.app.ui.workout.StartCopy.restText(it)) }
+                        ?: stringResource(R.string.workout_live_last_rep)
+                is org.openstrap.app.data.Phase.Rest -> stringResource(R.string.workout_live_rep_next, m.round)
+                org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_reps_after, m.rounds)
                 org.openstrap.app.data.Phase.Done -> ""
             }
             Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
@@ -272,12 +285,19 @@ private fun RepPage(
             val work = m.phase is org.openstrap.app.data.Phase.Work
             val rest = m.phase is org.openstrap.app.data.Phase.Rest
             Text(
-                when { work -> "$repName rep"; rest -> "Rest"; m.phase == org.openstrap.app.data.Phase.WarmUp -> "Warming up"; else -> "Done" },
+                when {
+                    work -> stringResource(R.string.workout_live_rep_word, repName)
+                    rest -> stringResource(R.string.workout_live_phase_rest)
+                    m.phase == org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_phase_warming_up)
+                    else -> stringResource(R.string.workout_live_phase_done)
+                },
                 color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
             )
             val (value, unit) = when {
-                work && m.metersLeft != null -> "${m.metersLeft.toInt()}" to "m to go"
-                m.left != null -> dotClock(m.left) to if (rest) "rest left" else "left"
+                work && m.metersLeft != null -> "${m.metersLeft.toInt()}" to stringResource(R.string.workout_live_unit_m_to_go)
+                m.left != null -> dotClock(m.left) to stringResource(
+                    if (rest) R.string.workout_live_unit_rest_left else R.string.workout_live_unit_left,
+                )
                 else -> null to ""
             }
             if (value != null) {
@@ -286,11 +306,12 @@ private fun RepPage(
             }
             val line = when {
                 work -> Route.currentPace(route)?.let { pace ->
-                    structure.meters?.let { "Pace ${workoutClock((pace * it / 1000).toLong())} per $repName" }
-                        ?: Pace.clock(pace)?.let { "Pace $it /km" }
+                    structure.meters?.let { meters -> workoutClock((pace * meters / 1000).toLong()) }
+                        ?.let { stringResource(R.string.workout_live_rep_pace, it, repName) }
+                        ?: Pace.clock(pace)?.let { stringResource(R.string.workout_live_rep_pace_km, it) }
                 }
-                m.phase == org.openstrap.app.data.Phase.WarmUp -> "Skip starts the reps when you're ready"
-                m.phase == org.openstrap.app.data.Phase.Done -> "Hold the square to end, or keep going"
+                m.phase == org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_reps_skip_hint)
+                m.phase == org.openstrap.app.data.Phase.Done -> stringResource(R.string.workout_live_end_or_keep)
                 else -> null
             }
             if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
@@ -306,7 +327,10 @@ private fun RepPage(
                     Modifier.clip(RoundedCornerShape(50)).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("Rep ${round.index + 1}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                    Text(
+                        stringResource(R.string.workout_live_rep_chip, round.index + 1),
+                        color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
+                    )
                     Spacer(Modifier.width(8.dp))
                     Text(workoutClock(round.workEnd!! - round.workStart), color = Color.White, style = MediumBody, maxLines = 1)
                 }
@@ -341,7 +365,10 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
 private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
     EdgeCard(MetricColors.steps, modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
-            Text(if (speed) "Speed" else "Pace", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(if (speed) R.string.workout_live_speed_title else R.string.workout_live_pace_title), color = Color.White,
+                style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f),
+            )
             AveragePace(averagePace, speed)
         }
         // The pace sits in the middle of whatever height the card is given, the splits on its floor.
@@ -355,7 +382,10 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
                 val fit = now?.let { dotFitScale(it, DotSize.Live, room).coerceAtLeast(0.5f) } ?: 1f
                 if (now != null) DotMatrixText(now, dot = DotSize.Live, scale = fit) else WaitingDash(Modifier.padding(vertical = 18.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(if (speed) "km/h" else "/km", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
+                Text(
+                    stringResource(if (speed) R.string.workout_live_unit_kmh else R.string.workout_live_unit_per_km),
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1,
+                )
             }
         }
         Spacer(Modifier.height(16.dp).weight(1f))
@@ -369,7 +399,7 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
 @Composable
 private fun AveragePace(averagePace: () -> Double?, speed: Boolean) {
     val average = averagePace()
-    val avg = if (speed) speedText(average)?.let { "Avg $it" } else Pace.clock(average)?.let { "Avg $it" }
+    val avg = (if (speed) speedText(average) else Pace.clock(average))?.let { stringResource(R.string.workout_live_avg, it) }
     if (avg != null) Text(avg, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
 }
 
@@ -385,9 +415,11 @@ private fun KmSplitBars(splits: List<Route.Split>) {
     val fastest = done.minByOrNull { it.pace }
     val slowest = done.maxOfOrNull { it.pace } ?: 0.0
     val quickest = fastest?.pace ?: 0.0
-    val described = done.takeLast(4).joinToString(", ") { workoutClock(it.seconds) }
+    val described = stringResource(
+        R.string.workout_live_splits_description, done.takeLast(4).joinToString(", ") { workoutClock(it.seconds) },
+    )
     Row(
-        Modifier.fillMaxWidth().semantics { contentDescription = "Kilometre splits: $described" },
+        Modifier.fillMaxWidth().semantics { contentDescription = described },
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         shown.forEach { s ->
@@ -415,7 +447,7 @@ private fun KmSplitBars(splits: List<Route.Split>) {
                     } else drawRoundRect(if (best) lime else lime.copy(alpha = 0.35f), Offset(0f, size.height - h), Size(size.width, h), corner)
                 }
                 Text(
-                    if (underWay) "Km ${s.index + 1}" else workoutClock(s.seconds),
+                    if (underWay) stringResource(R.string.workout_live_split_km, s.index + 1) else workoutClock(s.seconds),
                     color = if (best) Color.White else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                     style = GlowType.caption.copy(fontWeight = if (best) FontWeight.SemiBold else null), maxLines = 1,
                 )

@@ -22,6 +22,8 @@ import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.dotClock
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /**
  * A paused workout (workouts spec 2.3, board Paused): the time stops and the pause counts up in dots, "Paused for",
@@ -36,16 +38,20 @@ internal fun ColumnScope.LivePaused(r: WorkoutState.Recording, liveHeartRate: In
         Modifier.fillMaxWidth().padding(top = 24.dp), horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text("Paused for", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Text(
+            stringResource(R.string.workout_live_paused_for), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            style = GlowType.secondary,
+        )
         DotMatrixText(dotClock((now - at).coerceAtLeast(0)), dot = DotSize.Detail)
         val before = Workouts.heartRateAt(recent, at) ?: recent.lastOrNull { it.first <= at }?.second
         val drop = if (before != null && liveHeartRate != null) before - liveHeartRate else null
         if (liveHeartRate != null) Text(
-            "Heart rate $liveHeartRate" + (drop?.takeIf { it > 0 }?.let { ", down $it since you stopped" } ?: ""),
+            drop?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_paused_heart_down, liveHeartRate, it) }
+                ?: stringResource(R.string.workout_live_paused_heart, liveHeartRate),
             color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center,
         )
         Text(
-            "Pausing keeps this time out of your pace and averages", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            stringResource(R.string.workout_live_paused_note), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             style = GlowType.secondary, textAlign = TextAlign.Center,
         )
     }

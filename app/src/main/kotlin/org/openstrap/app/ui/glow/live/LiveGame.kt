@@ -42,6 +42,8 @@ import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /**
  * Games and sports (workouts spec 2.7, board LiveGame), made for the phone in a bag: the period and the time in it,
@@ -79,9 +81,9 @@ internal fun LiveGameScreen(
     val effort = Games.effort(zoneSeconds.toIntArray())
     val hard = remember(readings.size / 10, heartZones) { Games.hardEfforts(readings, r.maxHeartRate, heartZones) }
     val figures = listOf(
-        kcal?.active?.toInt()?.toString() to "Active kcal",
-        stats?.max?.toString() to "Peak bpm",
-        hard.toString() to "Hard efforts",
+        kcal?.active?.toInt()?.toString() to stringResource(R.string.workout_live_figure_active_kcal),
+        stats?.max?.toString() to stringResource(R.string.workout_live_figure_peak_bpm),
+        hard.toString() to stringResource(R.string.workout_live_figure_hard_efforts),
     )
     LiveFrame(
         r, color, connected, contentPadding, controls, time = { active.value }, smallTime = compact || periods != null,
@@ -92,7 +94,7 @@ internal fun LiveGameScreen(
         if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                    if (bpm != null) HeroValue("$bpm", stringResource(R.string.workout_live_unit_bpm), dot = DotSize.Detail)
                     else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                     Spacer(Modifier.weight(1f))
                     WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)?.let { z ->
@@ -105,7 +107,10 @@ internal fun LiveGameScreen(
         LiveFigures(figures)
         Spacer(Modifier.weight(1f))
         if (periods != null && phase is Phase.Work) WorkoutButton(StartCopy.breakName(periods.rounds), Color.White, Color.Black, onHalfTime, icon = AppIcons.PauseFill, height = 64.dp)
-        if (periods != null && phase is Phase.Rest) WorkoutButton("Start ${StartCopy.periodName(phase.round + 1, periods.rounds).lowercase()}", Color.White, Color.Black, onHalfTime, icon = AppIcons.PlayFill, height = 64.dp)
+        if (periods != null && phase is Phase.Rest) WorkoutButton(
+            stringResource(R.string.workout_live_game_start_period, StartCopy.periodName(phase.round + 1, periods.rounds).lowercase()),
+            Color.White, Color.Black, onHalfTime, icon = AppIcons.PlayFill, height = 64.dp,
+        )
     }
 }
 
@@ -116,8 +121,11 @@ private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, pha
         is Phase.Work -> StartCopy.periodName(phase.round, periods.rounds) to
             workoutClock((WorkoutRecorder.activeSeconds(r.workout, now()) - WorkoutRecorder.activeSeconds(r.workout, phase.start)).coerceAtLeast(0))
         is Phase.Rest -> StartCopy.breakName(periods.rounds) to
-            (workoutClock((phase.endsAt - WorkoutRecorder.activeSeconds(r.workout, now())).coerceAtLeast(0)) + " left")
-        else -> "Full time" to workoutClock(active())
+            stringResource(
+                R.string.workout_live_game_break_left,
+                workoutClock((phase.endsAt - WorkoutRecorder.activeSeconds(r.workout, now())).coerceAtLeast(0)),
+            )
+        else -> stringResource(R.string.workout_live_game_full_time) to workoutClock(active())
     }
     Row(Modifier.fillMaxWidth()) {
         Text(title, color = Color.White, style = GlowType.pageTitle, modifier = Modifier.weight(1f))
@@ -128,13 +136,15 @@ private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, pha
 /** Effort 1 to 5 as five steps, lit up to it in the zones' colours, "Effort 3 of 5" beside them. */
 @Composable
 internal fun EffortBar(effort: Int?) {
+    val of = effort?.let { stringResource(R.string.workout_live_effort_of, it) }
+    val described = of ?: stringResource(R.string.workout_live_effort_none)
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
         SegmentBar(
             List(5) { i -> Segment(1f, if (effort != null && i < effort) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)) },
-            Modifier.weight(1f).semantics { contentDescription = effort?.let { "Effort $it of 5" } ?: "No effort yet" },
+            Modifier.weight(1f).semantics { contentDescription = described },
             height = 8.dp, gap = 4.dp,
         )
         Spacer(Modifier.width(12.dp))
-        Text(effort?.let { "Effort $it of 5" } ?: "Effort", color = Color.White, style = GlowType.secondary)
+        Text(of ?: stringResource(R.string.workout_live_effort), color = Color.White, style = GlowType.secondary)
     }
 }

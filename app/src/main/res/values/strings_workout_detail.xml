@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The page of a past workout: its sentence, its small facts, the heart rate drop, and the (i) sheet on its Load card
+  (ui/workout/WorkoutDetailCopy.kt). OpenStrap is the app's name, keep it. Load is the app's name for how much a workout
+  asked of your body, and EPOC and VO2 max are the usual names of those measures. A sport in these lines is its short
+  noun in lower case ("run", "walk", "ride") or its name ("strength training", "HIIT").
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- How hard a workout was against your usual. One word. -->
+    <string name="workout_detail_effort_easy">Easy</string>
+    <!-- How hard a workout was against your usual. One word. -->
+    <string name="workout_detail_effort_steady">Steady</string>
+    <!-- How hard a workout was against your usual. One word. -->
+    <string name="workout_detail_effort_hard">Hard</string>
+    <!-- How hard a workout was against your usual. -->
+    <string name="workout_detail_effort_very_hard">Very hard</string>
+
+    <!-- The page's sentence: an easy workout of the sport. -->
+    <string name="workout_detail_sentence_easy">Easy <xliff:g id="sport" example="walk">%1$s</xliff:g>.</string>
+    <!-- The page's sentence: an easy workout, and the heart rate zone it spent most time in. -->
+    <string name="workout_detail_sentence_easy_zone">Easy <xliff:g id="sport" example="walk">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="2">%2$d</xliff:g>.</string>
+    <!-- The page's sentence: a steady workout. -->
+    <string name="workout_detail_sentence_steady">Steady <xliff:g id="sport" example="run">%1$s</xliff:g>.</string>
+    <!-- The page's sentence: a steady workout, and its zone. -->
+    <string name="workout_detail_sentence_steady_zone">Steady <xliff:g id="sport" example="strength training">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="2">%2$d</xliff:g>.</string>
+    <!-- The page's sentence: a hard workout. -->
+    <string name="workout_detail_sentence_hard">Hard <xliff:g id="sport" example="run">%1$s</xliff:g>.</string>
+    <!-- The page's sentence: a hard workout, and its zone. -->
+    <string name="workout_detail_sentence_hard_zone">Hard <xliff:g id="sport" example="run">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="4">%2$d</xliff:g>.</string>
+    <!-- The page's sentence: a very hard workout. -->
+    <string name="workout_detail_sentence_very_hard">Very hard <xliff:g id="sport" example="HIIT">%1$s</xliff:g>.</string>
+    <!-- The page's sentence: a very hard workout, and its zone. -->
+    <string name="workout_detail_sentence_very_hard_zone">Very hard <xliff:g id="sport" example="HIIT">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="4">%2$d</xliff:g>.</string>
+    <!-- The page's sentence: a workout under five minutes, whatever its effort. -->
+    <string name="workout_detail_sentence_short">Short <xliff:g id="sport" example="run">%1$s</xliff:g>.</string>
+    <!-- The page's sentence: a workout under five minutes, and its zone. -->
+    <string name="workout_detail_sentence_short_zone">Short <xliff:g id="sport" example="walk">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="1">%2$d</xliff:g>.</string>
+    <!-- The page's sentence with no effort to tell, for a sport with a short noun. -->
+    <string name="workout_detail_sentence_a">A <xliff:g id="sport" example="run">%1$s</xliff:g>.</string>
+    <!-- As above, and its zone. -->
+    <string name="workout_detail_sentence_a_zone">A <xliff:g id="sport" example="run">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="2">%2$d</xliff:g>.</string>
+    <!-- The page's sentence with no effort to tell: the sport's name alone, capitalised. -->
+    <string name="workout_detail_sentence_sport"><xliff:g id="sport" example="Strength training">%1$s</xliff:g>.</string>
+    <!-- As above, and its zone. -->
+    <string name="workout_detail_sentence_sport_zone"><xliff:g id="sport" example="Strength training">%1$s</xliff:g>, mostly in zone <xliff:g id="zone" example="2">%2$d</xliff:g>.</string>
+
+    <!-- A fact's name on the page, beside its number. One word. -->
+    <string name="workout_detail_fact_distance">Distance</string>
+    <!-- Under Distance: the number is in kilometres. -->
+    <string name="workout_detail_fact_km">Kilometres</string>
+    <!-- Under Distance: the number is in metres. -->
+    <string name="workout_detail_fact_m">Metres</string>
+    <!-- Under Distance: in kilometres, worked out from steps with no GPS. -->
+    <string name="workout_detail_fact_km_from_steps">Kilometres, estimated from your steps</string>
+    <!-- Under Distance: in metres, worked out from steps with no GPS. -->
+    <string name="workout_detail_fact_m_from_steps">Metres, estimated from your steps</string>
+    <!-- A fact's name: how long the workout was paused. One word. -->
+    <string name="workout_detail_fact_paused">Paused</string>
+    <!-- Under Paused. -->
+    <string name="workout_detail_fact_paused_note">Not counted in the time</string>
+    <!-- A fact's name. One word. -->
+    <string name="workout_detail_fact_steps">Steps</string>
+    <!-- A fact's name: the active calories, burned on top of resting. One word. -->
+    <string name="workout_detail_fact_calories">Calories</string>
+    <!-- Under Calories: all of them, resting ones included. -->
+    <string name="workout_detail_fact_calories_total">Total <xliff:g id="kcal" example="1,612">%1$s</xliff:g></string>
+    <!-- Under Calories when there is only the total: the unit, kilocalories. -->
+    <string name="workout_detail_fact_kcal">kcal</string>
+    <!-- A fact's name: the calorie target set before the workout. One word. -->
+    <string name="workout_detail_fact_target">Target</string>
+    <!-- The calorie target's value. -->
+    <string name="workout_detail_target_kcal"><xliff:g id="kcal" example="300">%1$s</xliff:g> kcal</string>
+    <!-- Under Target: reached at a time into the workout. -->
+    <string name="workout_detail_target_reached_at">Reached at <xliff:g id="time" example="24:40">%1$s</xliff:g></string>
+    <!-- Under Target: reached. -->
+    <string name="workout_detail_target_reached">Reached</string>
+    <!-- Under Target: not reached, how many of the calories were burned. -->
+    <string name="workout_detail_target_short">Not reached, <xliff:g id="burned" example="212">%1$s</xliff:g> of <xliff:g id="kcal" example="300">%2$s</xliff:g></string>
+    <!-- Under Target: not reached, with no figure to show. -->
+    <string name="workout_detail_target_not_reached">Not reached</string>
+
+    <!-- The Load card's line: how many bpm the heart rate fell in the minute after the end. -->
+    <string name="workout_detail_drop">Heart rate drop <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute.</string>
+    <!-- As above, bigger than your usual drop. -->
+    <string name="workout_detail_drop_quick">Heart rate drop <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute, quick for you.</string>
+    <!-- As above, smaller than your usual drop. -->
+    <string name="workout_detail_drop_slow">Heart rate drop <xliff:g id="bpm" example="20">%1$d</xliff:g> bpm in the first minute, slow for you.</string>
+    <!-- As above, near your usual drop. -->
+    <string name="workout_detail_drop_usual">Heart rate drop <xliff:g id="bpm" example="25">%1$d</xliff:g> bpm in the first minute, about usual for you.</string>
+
+    <!-- Training effect's scale from 0 to 5, its first band (under 2). One or two words, under a bar. -->
+    <string name="workout_detail_scale_light">Light</string>
+    <!-- Training effect's band from 2 to 3: keeps the fitness you have. One or two words. -->
+    <string name="workout_detail_scale_keeps">Keeps</string>
+    <!-- Training effect's band from 3 to 4: builds fitness. One or two words. -->
+    <string name="workout_detail_scale_builds">Builds</string>
+    <!-- Training effect's band from 4 to 5. A few words. -->
+    <string name="workout_detail_scale_builds_a_lot">Builds a lot</string>
+    <!-- Training effect's band at 5: more than the body can use right away. One or two words. -->
+    <string name="workout_detail_scale_overreach">Overreach</string>
+
+    <!-- The (i) sheet's title. -->
+    <string name="workout_detail_info_name">Load and training effect</string>
+    <!-- The (i) sheet's first line. -->
+    <string name="workout_detail_info_meaning">What this workout asked of your body, and what it trained.</string>
+    <!-- Under the scale's bar: where this workout's aerobic training effect sits. The number is "3.2". -->
+    <string name="workout_detail_here">You are here. Aerobic <xliff:g id="effect" example="3.2">%1$s</xliff:g> on the 0 to 5 scale.</string>
+    <!-- A row's title in the (i) sheet. -->
+    <string name="workout_detail_row_load">Load</string>
+    <!-- The Load row's text, with this workout's Load. -->
+    <string name="workout_detail_load_text">Load on a workout is EPOC: the extra oxygen your body uses afterwards to recover, in ml per kg of body weight. The harder and longer the workout, the higher it goes. It isn\'t the day\'s Load, which counts every minute on another scale. This workout: <xliff:g id="load" example="85">%1$d</xliff:g>.</string>
+    <!-- The Load row's text, with this workout's Load and your usual. -->
+    <string name="workout_detail_load_text_usual">Load on a workout is EPOC: the extra oxygen your body uses afterwards to recover, in ml per kg of body weight. The harder and longer the workout, the higher it goes. It isn\'t the day\'s Load, which counts every minute on another scale. This workout: <xliff:g id="load" example="85">%1$d</xliff:g>. Your usual is <xliff:g id="usual" example="70">%2$d</xliff:g>.</string>
+    <!-- A row's title in the (i) sheet. -->
+    <string name="workout_detail_row_effect">Training effect</string>
+    <!-- The Training effect row's text. The figures are "aerobic 3.2, anaerobic 1.1". -->
+    <string name="workout_detail_effect_text">Two scales from 0 to 5. Aerobic is what the workout did for your endurance, anaerobic for short, hard efforts. Under 2 trains little, 2 to 3 keeps what you have, 3 to 4 builds on it, 4 to 5 builds a lot, and 5 is more than your body can use right away. This workout: <xliff:g id="figures" example="aerobic 3.2, anaerobic 1.1">%1$s</xliff:g>.</string>
+    <!-- One of a workout's figures in a list: its aerobic training effect, in lower case. -->
+    <string name="workout_detail_figure_aerobic">aerobic <xliff:g id="effect" example="3.2">%1$s</xliff:g></string>
+    <!-- One of a workout's figures in a list: its anaerobic training effect, in lower case. -->
+    <string name="workout_detail_figure_anaerobic">anaerobic <xliff:g id="effect" example="1.1">%1$s</xliff:g></string>
+    <!-- One of a workout's figures in a list: its Load. -->
+    <string name="workout_detail_figure_load">Load <xliff:g id="load" example="80">%1$d</xliff:g></string>
+    <!-- One of a workout's figures in a list: its time to recover, in lower case. The time is "12 h". -->
+    <string name="workout_detail_figure_recover">time to recover <xliff:g id="time" example="12 h">%1$s</xliff:g></string>
+    <!-- A row's title in the (i) sheet. -->
+    <string name="workout_detail_row_recover">Time to recover</string>
+    <!-- The Time to recover row's text. The time is "14 h", or "4 min from this walk, 16 h in all with what's left from earlier". -->
+    <string name="workout_detail_recover_text">How long until your body is ready for another hard workout, from the training effect and how tired you\'ve been lately. It never drops below what earlier workouts left. This workout: <xliff:g id="time" example="14 h">%1$s</xliff:g>.</string>
+    <!-- A row's title in the (i) sheet. -->
+    <string name="workout_detail_row_drop">Heart rate drop</string>
+    <!-- The Heart rate drop row's value, after its explanation: how many bpm in the first minute. -->
+    <string name="workout_detail_drop_value">This workout: down <xliff:g id="bpm" example="30">%1$d</xliff:g> in the first minute.</string>
+    <!-- As above, and in the first two minutes. -->
+    <string name="workout_detail_drop_value_two">This workout: down <xliff:g id="bpm" example="30">%1$d</xliff:g> in the first minute, <xliff:g id="bpm_two" example="48">%2$d</xliff:g> in two.</string>
+    <!-- The Heart rate drop row's value after an easy end. -->
+    <string name="workout_detail_drop_not_rated">You finished at <xliff:g id="bpm" example="110">%1$d</xliff:g> bpm, close to resting, so there was little to come down from and it isn\'t rated.</string>
+    <!-- A row's title in the (i) sheet. -->
+    <string name="workout_detail_row_vo2max">VO2 max</string>
+    <!-- The VO2 max row's text. -->
+    <string name="workout_detail_vo2max_text">The most oxygen your body can use, in ml per kg per minute, estimated from this workout: <xliff:g id="vo2max" example="48">%1$d</xliff:g>.</string>
+    <!-- A row's title in the (i) sheet: who worked these figures out. -->
+    <string name="workout_detail_row_where">Where these come from</string>
+    <!-- The Where row for a phone workout whose figures are the strap's own. -->
+    <string name="workout_detail_where_strap_too">From the strap, which recorded this workout alongside the phone and worked these out itself.</string>
+    <!-- The Where row for a phone workout the app worked out. -->
+    <string name="workout_detail_where_phone">Worked out by OpenStrap from your heart rate, on the strap\'s own scales.</string>
+    <!-- The Where row for a workout the strap recorded. -->
+    <string name="workout_detail_where_strap">From the strap, worked out during the workout.</string>
+    <!-- After the Where row: the strap kept its own record of this phone workout. The figures are "aerobic 3.0, anaerobic 0.8, Load 80, time to recover 12 h". -->
+    <string name="workout_detail_strap_one">The strap recorded this workout too. Its own figures: <xliff:g id="figures" example="aerobic 3.0, Load 80">%1$s</xliff:g>.</string>
+    <!-- After the Where row: the strap split this phone workout into several of its own. Each follows as a sentence. -->
+    <plurals name="workout_detail_strap_many">
+        <item quantity="one">The strap recorded it as <xliff:g id="count" example="1">%d</xliff:g> workout of its own.</item>
+        <item quantity="other">The strap recorded it as <xliff:g id="count" example="2">%d</xliff:g> workouts of its own.</item>
+    </plurals>
+    <!-- One of the strap's own records: when it started, then its figures. -->
+    <string name="workout_detail_strap_from">From <xliff:g id="time" example="18:05">%1$s</xliff:g>: <xliff:g id="figures" example="aerobic 2.1, Load 20">%2$s</xliff:g>.</string>
+    <!-- One of the strap's own records with no start time kept. -->
+    <string name="workout_detail_strap_from_start">From its start: <xliff:g id="figures" example="aerobic 2.1, Load 20">%1$s</xliff:g>.</string>
+</resources>
