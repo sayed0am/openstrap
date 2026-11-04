@@ -4,7 +4,6 @@ import org.openstrap.app.R
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.TimeOfDay
-import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.data.Stats
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
@@ -194,6 +193,8 @@ fun GlowTodayScreen(
     wear: Wear? = null,
     /** Today's Recovery is the first real score, marked once (E4). */
     firstScore: Boolean = false,
+    /** Each day's steps and the best before, for the Steps card's goal tag ([ActivityHistory.stepsFacts]). Null climbs only to what the goal tells. */
+    activity: org.openstrap.app.ui.dashboard.ActivityHistory? = null,
 ) {
     val list = rememberLazyListState()
     var editing by rememberSaveable { mutableStateOf(false) }
@@ -231,6 +232,8 @@ fun GlowTodayScreen(
     )
     // Before the first estimate Habit Age never shows on Today, pinned or not.
     val unavailable = if (healthspan?.result == null) setOf(TodayCard.HabitAge) else emptySet()
+    val stepsGoal = LocalGoals.current.steps
+    val stepsFacts = activity?.stepsFacts(state.date, state.steps, stepsGoal)
     val morning = LocalTime.now().hour < 12
     val live = liveHeartRate != null
     // The moment the cards are laid out for, with no moment yet resolved as todayCards does.
@@ -272,7 +275,8 @@ fun GlowTodayScreen(
                                         else -> TodayRow(slot, ctx, healthspan, history, checkIn, onCheckIn, onOpenMetric,
                                             onOpenWorkout, onOpenHealthspan, onOpenProfile, offer, onRecordOffer, onDeclineOffer, suggestion,
                                             onSaveSuggestion, onDismissSuggestion, onOpen, usualSteps, onRetryRecovery,
-                                            if (slot.size == CardSize.Small) Modifier.fillMaxSize() else Modifier, onStartSport = onStartSport)
+                                            if (slot.size == CardSize.Small) Modifier.fillMaxSize() else Modifier, onStartSport = onStartSport,
+                                            stepsFacts = stepsFacts)
                                     }
                                 }
                             }
@@ -319,9 +323,6 @@ private data class TodayContext(
     /** Today's Recovery is the first real score (E4). */
     val firstScore: Boolean,
 ) {
-    /** The evening and night hero shows the day's steps in dots ([EveningHero]), so the Steps card needn't. */
-    val stepsInHero: Boolean get() = (moment == Moment.Evening || moment == Moment.Night) && !stuck
-
     /** "Up to 09:40" for a card whose [newest] reading is stale while syncing has stopped ([upToMarker]). */
     fun upTo(newest: Long?): String? = upToMarker(newest, now, stopped, isToday, zone, staleAfter)
 
@@ -365,16 +366,6 @@ private data class TodayContext(
      * by the date, as on the Activity tab and in the Load detail, not by the moment.
      */
     val loadStatus get() = rec?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = !isToday) }
-
-    /** How far Load has come toward your usual day's, for its bar. Null before there's a usual. */
-    val loadShare: Float? get() = rec?.let { r -> r.chronicLoad?.takeIf { it > 0f }?.let { r.load / it } }
-
-    /** Time to recover from the latest workout that says how long it needs, or null when none does. */
-    val recover: Pair<String?, String>?
-        get() {
-            val w = latestRecoveryEstimate(workouts) ?: return null
-            return TodayCopy.recoverText(TodayCopy.recoverLeft(w.end, w.recoveryMinutes ?: 0, now), now, zone)
-        }
 
     /** Your usual sport: the one you start most, over the same 28 days as your usual workout time. */
     val usualSport: Int
@@ -436,7 +427,7 @@ private fun Hero(
             HeroKind.Midday -> ChargeHero(ctx, onOpenCharge, onRetryRecovery, m)
             HeroKind.NoSleep -> ChargeHero(ctx, onOpenCharge, onRetryRecovery, m, noSleep = true)
             HeroKind.Window -> WindowHero(ctx, lightAngle, onStartSport, onOtherSport, m)
-            HeroKind.After -> AfterHero(ctx, lightAngle, onOpenWorkout, m)
+            HeroKind.After -> AfterHero(ctx, onOpenWorkout, m)
             HeroKind.Evening -> EveningHero(ctx, lightAngle, bedtime, energyHidden, onOpenRecovery, m)
             HeroKind.During -> (running ?: lastRunning.value)?.let { DuringHero(it, onOpenRunning, liveHero, m) }
         }
@@ -576,15 +567,17 @@ private fun WindowHero(ctx: TodayContext, lightAngle: Float?, onStart: (Int) -> 
 
 /**
  * After a workout: how long since, and the heart coming down, drawn from the readings since it ended. The heart rate
- * now in dots, the end and resting rates as text beside it. Calm light from below, the rim at 80% (spec 4.2).
+ * now in dots, the end and resting rates as text beside it. Recovery teal, calm light from below, the rim at 80%
+ * (spec 4.2).
  */
 @Composable
-private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {
+private fun AfterHero(ctx: TodayContext, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {
     val w = ctx.lastWorkout ?: return
     val since = ctx.state.heartRate.filter { it.x >= w.end }
     val nowHr = ctx.live ?: since.lastOrNull()?.y?.toInt()
     val noun = sportNoun(w.workout.sportType) ?: stringResource(R.string.glow_today_workout_noun)
-    GlowCard(heroStyle(MetricColors.heart, lightAngle, rim = AFTER_RIM), modifier, onClick = { onOpenWorkout(w.workout.start) }) {
+    // Recovery teal, from below with the rim calmed: red stays for effort, so it stops once the run is done (spec 2.6, 4.2).
+    GlowCard(heroStyle(MetricColors.readiness, LightAngle.Below, rim = AFTER_RIM), modifier, onClick = { onOpenWorkout(w.workout.start) }) {
         Column {
             GlowHeader(stringResource(R.string.glow_today_since_your, noun), trailing = Units.duration(ctx.now - w.end))
             HeroSentence(TodayCopy.after(nowHr, ctx.state.restingHeartRate))
@@ -758,8 +751,12 @@ private fun TodayRow(
     modifier: Modifier = Modifier,
     /** Opens Ready with a sport, for Start a workout. */
     onStartSport: (Int) -> Unit = {},
+    /** The day's steps against the goal, for the Steps card's goal tag. */
+    stepsFacts: org.openstrap.app.ui.dashboard.GoalFacts? = null,
 ) {
     val s = ctx.state
+    // Each card draws its picture at the size its slot gives it (spec 4.2): a Small small, the rest wide.
+    val size = pictureSize(slot.size)
     // Your normal over 30 days, as the Recovery tab's body signals measure against, so both say the same.
     @Composable fun normal(m: Metric) = rememberNormal(m, s.date, history)
     val openScore = { score: org.openstrap.app.ui.dashboard.Score -> onOpen(org.openstrap.app.ui.dashboard.Detail.OfScore(score)) }
@@ -791,34 +788,28 @@ private fun TodayRow(
             ),
             ctx.waiting, onOpenMetric,
         )
-        TodayCard.RightNow -> BodyList(
-            stringResource(R.string.glow_today_right_now),
-            listOf(
-                BodyRow(
-                    stringResource(R.string.glow_today_stress), MetricColors.stress, s.stress.lastOrNull()?.y, normal(Metric.Stress), "",
-                    Metric.Stress,
-                ),
-                BodyRow(
-                    stringResource(R.string.glow_today_hrv), MetricColors.hrv, s.hrv.lastOrNull()?.y, normal(Metric.Hrv), "", Metric.Hrv,
-                ),
-            ),
-            ctx.waiting, onOpenMetric, upTo = ctx.upTo(listOfNotNull(s.stress.lastOrNull(), s.hrv.lastOrNull()).maxOfOrNull { it.x }),
-        )
         TodayCard.LastNight ->
             if (slot.size == CardSize.Strip) LastNightStrip(s, onOpenSleep, stuck = ctx.stuck, firstNights = ctx.firstNights)
-            else LastNightCard(s, ctx.firstNights, onOpenSleep, stuck = ctx.stuck)
+            else LastNightCard(s, ctx.firstNights, onOpenSleep, modifier, stuck = ctx.stuck, size = size)
         // A live reading is never stale.
-        TodayCard.HeartRate -> HeartCard(
-            s, ctx.live, { onOpenMetric(Metric.HeartRate) }, restingRange = ctx.restingRange,
+        TodayCard.HeartRate -> HeartDayCard(
+            s, ctx.live, size, { onOpenMetric(Metric.HeartRate) }, modifier, restingRange = ctx.restingRange, normal = normal(Metric.HeartRate),
             upTo = if (ctx.live == null) ctx.upTo(s.heartRate.lastOrNull()?.x) else null,
         )
-        // Steps come in the same records as the rest of the day, so the day's newest reading is how far they go.
-        // In the evening and at night the hero has the day's steps in dots, so the card leads with its sentence.
-        TodayCard.Activity -> ActivityCard(
-            s, { onOpenMetric(Metric.Steps) }, usual = usualSteps, upTo = ctx.upTo(ctx.newest), tag = ctx.partial,
-            count = !ctx.stepsInHero,
+        TodayCard.Stress -> StressDayCard(
+            s, size, normal(Metric.Stress), ctx.waiting, { onOpenMetric(Metric.Stress) }, modifier,
+            upTo = ctx.upTo(s.stress.lastOrNull()?.x),
         )
-        TodayCard.Recovery -> RecoveryEarlierCard(ctx.recoveryShown, { openScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, failure = ctx.recoveryFailure, onRetry = onRetryRecovery)
+        // Steps come in the same records as the rest of the day, so the day's newest reading is how far they go. The
+        // count stays in dots in the evening too, under the hero's: the goal tag needs a number to sit by (spec 2.5).
+        TodayCard.Activity -> ActivityCard(
+            s, { onOpenMetric(Metric.Steps) }, modifier, usual = usualSteps, upTo = ctx.upTo(ctx.newest), tag = ctx.partial,
+            size = size, facts = stepsFacts,
+        )
+        TodayCard.Recovery -> RecoveryEarlierCard(
+            ctx.recoveryShown, { openScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, modifier, failure = ctx.recoveryFailure,
+            onRetry = onRetryRecovery, size = size, recovery = ctx.rec,
+        )
         TodayCard.Charge -> {
             val c = ctx.rec?.charge
             // What the day drained, gross, as the hero, Recovery's Drained Small and the Charge detail say it.
@@ -837,41 +828,23 @@ private fun TodayRow(
                 upTo = ctx.upTo(ctx.newest), tag = ctx.partial,
             )
         }
-        // After a workout, what it did as a Small pair: Load toward your usual (from below) and time to recover.
-        TodayCard.LoadToday -> if (slot.size == CardSize.Small) SmallCard(
-            MetricColors.load, stringResource(R.string.glow_today_load), ctx.rec?.load?.let { Math.round(it).toString() }, null,
+        // Before and after a workout, as a pair: Load filling toward your usual, and the ring toward Ready.
+        TodayCard.LoadToday -> LoadCard(
+            ctx.rec?.load, ctx.rec?.chronicLoad, endOfDay = !ctx.isToday,
             when { ctx.recoveryFailure != null -> FAILED_SHORT; ctx.rec == null -> ctx.waiting; else -> TodayCopy.loadWord(ctx.loadStatus) },
-            modifier, rim = Rim.End.takeIf { ctx.loadStatus == LoadBand.Above },
-            onClick = { openScore(org.openstrap.app.ui.dashboard.Score.Load) },
-        ) else LoadList(
-            when (ctx.moment) {
-                Moment.WorkoutWindow -> stringResource(R.string.glow_today_load_before)
-                Moment.After -> stringResource(
-                    R.string.glow_today_load_after,
-                    ctx.lastWorkout?.let { sportNoun(it.workout.sportType) } ?: stringResource(R.string.glow_today_workout_noun),
-                )
-                else -> stringResource(R.string.glow_today_load_today)
-            },
-            ctx.rec?.load, TodayCopy.loadLine(ctx.loadStatus), ctx.recover,
-            onLoad = { openScore(org.openstrap.app.ui.dashboard.Score.Load) }, onRecover = { openScore(org.openstrap.app.ui.dashboard.Score.Recover) },
+            size, { openScore(org.openstrap.app.ui.dashboard.Score.Load) }, modifier,
         )
-        TodayCard.Recover -> {
-            val left = latestRecoveryEstimate(ctx.workouts)
-                ?.let { w -> TodayCopy.recoverShort(TodayCopy.recoverLeft(w.end, w.recoveryMinutes ?: 0, ctx.now), ctx.now, ctx.zone) }
-            SmallCard(
-                MetricColors.load, stringResource(R.string.glow_today_to_recover), left?.first,
-                stringResource(R.string.glow_today_hours_unit),
-                left?.second ?: stringResource(R.string.glow_today_recover_no_estimate), modifier,
-                onClick = { openScore(org.openstrap.app.ui.dashboard.Score.Recover) },
-            )
-        }
+        TodayCard.Recover -> RecoverCard(
+            latestRecoveryEstimate(ctx.workouts), ctx.now, ctx.zone, size, { openScore(org.openstrap.app.ui.dashboard.Score.Recover) }, modifier,
+        )
         TodayCard.Workout -> ctx.lastWorkout?.let { w -> WorkoutCard(w, { onOpenWorkout(w.workout.start) }) }
-        TodayCard.Week -> WeekCard(s, ctx.workouts, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })
+        TodayCard.Week -> WeekCard(s, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })
         // Habit Age's home is the foot of Recovery; Today shows the same card when there's a new estimate, or pinned.
         TodayCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
-        TodayCard.StartWorkout -> StartWorkoutStrip(ctx.usualSport, onStartSport)
-        TodayCard.Stress -> Unit
-        TodayCard.Hero, TodayCard.EditToday -> Unit
+        // Never at night, whatever the plan says: the day's done (spec 4.2).
+        TodayCard.StartWorkout -> if (ctx.moment != Moment.Night) StartWorkoutStrip(ctx.usualSport, onStartSport)
+        // Right now is in no moment any more, and a pin of it saved before drops out.
+        TodayCard.RightNow, TodayCard.Hero, TodayCard.EditToday -> Unit
     }
 }
 
