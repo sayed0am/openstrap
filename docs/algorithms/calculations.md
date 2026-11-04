@@ -213,7 +213,7 @@ Each contributor scores 0–100. Weights are a design choice, and the evidence r
 | **HRV balance** | 30 % | 0.4 × z(tonight) + 0.6 × z(7-night average), on the log scale, through the dead zone, then z → score. The 7-night average needs ≥ 3 valid nights in the past 7 days (tonight included); below 5 it's marked "thin". Without it, tonight alone. The detail shows the % difference from usual. |
 | **Resting heart rate** | 22 % | Tonight's lowest 30-minute average vs baseline, flipped so lower is better, through the dead zone, then z → score. |
 | **Last night's sleep** | 16 % | The strap's sleep score when it gave one, otherwise OpenStrap's (section 9). |
-| **Sleep balance** | 12 % | 100 − 25 points per hour of sleep debt (section 9), floored at 0. So 1 h of debt → 75 and 2 h → 50. |
+| **Sleep balance** | 12 % | 100 up to 1 h of sleep debt (section 9), then falling linearly to 0 at 6 h. So 2 h of debt → 80, 3 h → 60 and 4 h → 40. |
 | **Body temperature** | 6 % | Distance from your usual nightly skin temperature, in **either** direction, through the dead zone, then z → score. |
 | **Breathing rate** | 4 % | Like temperature: a change either way counts. |
 | **Previous day's load** | 4 % | Yesterday's training load ÷ your usual (fitness, section 8, up to the day before). A ratio up to 1.5 → 100, then −25 points per extra 1.0, never below 30. Needs 7 days of load. |
@@ -421,10 +421,9 @@ The sleep score (the strap's, or OpenStrap's above) is rated in Zepp's bands: **
 The headline names what pulled the night down, checked in this order:
 
 * **Short night:** under 6 h asleep (the bottom of Zepp's duration bands).
-* **Broken sleep:** 30 min or more awake after falling asleep (where continuity starts losing points), or 6 or more wake-ups (about one an hour, set high because wake detection is the least reliable part of staging).
+* **Broken sleep:** 30 min or more awake after falling asleep (where continuity starts losing points). The number of wake-ups isn't used: wearables catch only 29–52 % of real wake time, so a count adds up their errors.
 * Both → **Short, broken night**. Either one wins over the score: a short night at 70 is still "Short night".
-* Otherwise by score: 90+ **Great night**, 80+ **Good night**.
-* Below 80, **Light sleep** if deep + REM is under 25 % of time asleep (adults usually spend 40–50 % there), else **Okay night**. This is the weakest cause because stages aren't reliable.
+* Otherwise by score: 90+ **Solid night**, 80+ **Restful night**, below 80 **Okay night**. Deep and REM never name the night: wearable staging is too unreliable (the Mi Band 5, the closest published relative of the strap, scored kappa 0.22).
 
 Total sleep in "What shaped the score" is rated against need, plus Zepp's oversleep bands: over 9 h 30 is Fair, over 10 h Pay attention.
 
@@ -438,9 +437,9 @@ Total sleep in "What shaped the score" is rated against need, plus Zepp's oversl
 Built over the last 14 nights, oldest first. Naps count, and missing nights are skipped. For each night, shortfall d = need − total sleep:
 
 * **Short night (d ≥ 0):** debt = debt × 0.906 + d
-* **Long night (d < 0):** debt = max(0, debt × 0.906 − min(half the surplus, 60 min))
+* **Long night (d < 0):** debt = max(0, debt × 0.906 − min(the surplus, 2 h))
 
-0.906 means old debt halves over 7 nights. A long night only repays half its extra sleep, at most an hour, because one long lie-in doesn't fully undo a short week. Needs 7 of the 14 nights.
+0.906 means old debt halves over 7 nights. A long night repays all its extra sleep, at most 2 h: in the lab the first free night ran about 2.2 h above need (Kitamura 2016), and one lie-in still can't undo a short week on its own. Needs 7 of the 14 nights.
 
 ### Sleep Regularity Index (SRI)
 
@@ -528,7 +527,7 @@ Taken in this order:
 
 | Minute | kcal |
 |---|---|
-| Inside a recorded workout | the workout's own calories spread evenly over its minutes, never below b |
+| Inside a recorded workout | a strap workout's own calories spread evenly over its minutes, a phone workout's own per-minute calories (shaped by its heart rate, scaled to its saved total), never below b |
 | Asleep | 0.95 × b |
 | ≥ 60 steps | b + extra for the activity's MET (below) |
 | A few steps, or steps in a neighbouring minute | 1.3 × b |
@@ -556,7 +555,7 @@ Taken in this order:
 
 ## 12. Estimated fitness (VO2max) and fitness age
 
-A non-exercise estimate (Jurca et al. 2005), recalculated weekly as of the latest Monday.
+A non-exercise estimate (Jurca et al. 2005), recalculated weekly as of the first day of the week in the phone's locale (Sunday in the US).
 
 ### Formula
 
@@ -629,7 +628,7 @@ The strap works these out for the workouts it records. Zepp works them out for a
 EPOC ← EPOC + 0.077 × (e^(4.5x) − 1) × minutes
 
 * The share rises steeply with intensity, as EPOC does (Børsheim & Bahr 2003), and grows with duration.
-* The workout's EPOC is the total, shown as a whole number labelled "EPOC", as the strap's is, so the two compare. It is the workout's effect figure, not daily load: daily load is TRIMP only (section 8).
+* The workout's EPOC is the total, shown as a whole number labelled "Load", as the strap's is, so the two compare. It is the workout's effect figure, not daily load: daily load is TRIMP only (section 8).
 * 0.077 is fitted to the strap's own EPOC on three of its workouts with the same heart rate (37 minutes at 117 bpm gave 16.3, 9 minutes at 119 gave 6), all easy; 4.5 keeps harder work where it was aimed: 30 minutes at 60 % HRR ≈ 31 (TE 2.5), six 3-minute intervals at 92 % ≈ TE 3.7, an hour at 85 % at TE 5.
 * An earlier version (until `WorkoutEffect.MODEL` 2) let EPOC clear as it went and took its peak. It held a long easy walk to about a third of the strap's figure.
 

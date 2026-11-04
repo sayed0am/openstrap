@@ -22,14 +22,15 @@ class HealthspanTest {
 
     @Test fun `example A, close to average`() {
         val t = Healthspan.terms(Healthspan.Habits(58f, 7000f, 75f, 400f, 0f, 44f), 35f, man)
-        assertTerm(-0.07f, -0.09f, -0.06f, t.each.getValue(Habit.RestingHr))
+        assertTerm(-0.13f, -0.14f, -0.11f, t.each.getValue(Habit.RestingHr))
         assertTerm(1.22f, 0.61f, 1.50f, t.each.getValue(Habit.Steps))
         assertTerm(-0.93f, -1.17f, -0.71f, t.each.getValue(Habit.Vo2max))
-        assertTerm(0.22f, -0.65f, 0.74f, t.fitness)
+        assertTerm(0.16f, -0.70f, 0.68f, t.fitness)
         assertTerm(0.71f, 0.35f, 1.06f, t.each.getValue(Habit.Regularity))
-        assertTerm(0f, 0f, 0f, t.each.getValue(Habit.TimeAsleep))
+        // 6 h 40 asleep is just under 7 h: HR 1.01 at 6 h 30, joined to 1.00 at 7 h.
+        assertTerm(0.07f, 0.04f, 0.11f, t.each.getValue(Habit.TimeAsleep))
         assertTerm(0f, 0f, 0f, t.each.getValue(Habit.Strength))
-        assertEquals(0.93f, t.sum.years, 0.02f)
+        assertEquals(0.94f, t.sum.years, 0.02f)
         val (estimate, low, high) = Healthspan.range(35, t, Healthspan.MIN_SPREAD)
         assertEquals(35.6f, estimate, 0.05f)
         assertEquals(34, low)
@@ -38,29 +39,29 @@ class HealthspanTest {
 
     @Test fun `example B, healthy`() {
         val t = Healthspan.terms(Healthspan.Habits(55f, 10_000f, 87f, 450f, 40f, 46.4f), 35f, man)
-        assertTerm(-0.35f, -0.46f, -0.28f, t.each.getValue(Habit.RestingHr))
+        assertTerm(-0.64f, -0.71f, -0.54f, t.each.getValue(Habit.RestingHr))
         assertTerm(-0.86f, -1.29f, -0.43f, t.each.getValue(Habit.Steps))
         assertTerm(-1.45f, -1.82f, -1.10f, t.each.getValue(Habit.Vo2max))
         assertTerm(-0.49f, -0.57f, -0.25f, t.each.getValue(Habit.Regularity))
-        // Upper CI at 40 min is 0.864 on the digitized figure (§7 used 0.86, so −1.65).
-        assertTerm(-2.03f, -2.03f, -1.60f, t.each.getValue(Habit.Strength))
-        assertEquals(-5.19f, t.sum.years, 0.03f)
+        // 40 min a week sits between Zhang's 15 and 45 min points: HR 0.917 (0.878-0.953).
+        assertTerm(-0.95f, -1.42f, -0.52f, t.each.getValue(Habit.Strength))
+        assertEquals(-4.39f, t.sum.years, 0.03f)
         val (estimate, low, high) = Healthspan.range(35, t, Healthspan.MIN_SPREAD)
-        assertEquals(31.9f, estimate, 0.05f)
+        assertEquals(32.4f, estimate, 0.05f)
         assertEquals(30, low)
         assertEquals(34, high)
     }
 
     @Test fun `example C, the fitness limit binds`() {
         val t = Healthspan.terms(Healthspan.Habits(80f, 4000f, 75f, 400f, 0f, 30f), 35f, man)
-        assertTerm(2.00f, 1.57f, 2.63f, t.each.getValue(Habit.RestingHr))
+        assertTerm(3.64f, 3.04f, 4.00f, t.each.getValue(Habit.RestingHr))
         // The steps band is ±50 % after the limit (§3.2), so a capped term keeps a range.
         assertTerm(1.50f, 0.75f, 1.50f, t.each.getValue(Habit.Steps))
         assertTerm(2.00f, 1.59f, 2.00f, t.each.getValue(Habit.Vo2max))
-        assertTerm(5.00f, 3.91f, 5.00f, t.fitness)
+        assertTerm(5.00f, 5.00f, 5.00f, t.fitness)
         assertTrue(t.fitnessCapped)
         val (estimate, low, high) = Healthspan.range(35, t, Healthspan.MIN_SPREAD)
-        assertEquals(38.4f, estimate, 0.05f)
+        assertEquals(38.5f, estimate, 0.05f)
         assertEquals(36, low)
         assertEquals(40, high)
     }
@@ -82,14 +83,19 @@ class HealthspanTest {
 
     @Test fun `short sleep only adds years, up to 4`() {
         assertEquals(0f, Healthspan.sleepTerm(480f).years, 0f)
-        assertEquals(2.12f, Healthspan.sleepTerm(330f).years, 0.01f)
-        assertEquals(4f, Healthspan.sleepTerm(240f).years, 0f)
+        assertEquals(0f, Healthspan.sleepTerm(420f).years, 0f)
+        assertEquals(1.62f, Healthspan.sleepTerm(330f).years, 0.01f)
+        assertEquals(2.78f, Healthspan.sleepTerm(300f).years, 0.01f)
+        // Held at 4.5 h's 3.98 below it, inside the 4-year limit.
+        assertEquals(3.98f, Healthspan.sleepTerm(240f).years, 0.01f)
     }
 
-    @Test fun `strength gives credit only, none from 140 minutes`() {
-        assertEquals(-1.77f, Healthspan.strengthTerm(30f).years, 0.01f)
+    @Test fun `strength gives credit only, with no penalty at high doses`() {
+        assertEquals(-0.79f, Healthspan.strengthTerm(30f).years, 0.01f)
+        assertEquals(-1.52f, Healthspan.strengthTerm(105f).years, 0.01f)
         assertEquals(0f, Healthspan.strengthTerm(0f).years, 0f)
-        assertEquals(0f, Healthspan.strengthTerm(200f).years, 0f)
+        // Above 135 min the credit holds at Zhang's 120+ category, HR 0.92.
+        assertEquals(-0.91f, Healthspan.strengthTerm(200f).years, 0.01f)
     }
 
     @Test fun `pace is 1x inside the noise gate`() {

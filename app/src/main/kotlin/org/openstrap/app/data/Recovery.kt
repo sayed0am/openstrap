@@ -337,23 +337,31 @@ object Recovery {
     /** Sleep debt halves over 7 nights: λ = 0.5^(1/7) ≈ 0.906, so a 14-night build-up still counts. */
     const val SLEEP_DEBT_HALF_LIFE_NIGHTS = 7.0
     val SLEEP_DEBT_DECAY = 0.5.pow(1 / SLEEP_DEBT_HALF_LIFE_NIGHTS).toFloat()
-    /** A long night repays half its surplus, at most an hour. */
-    const val SLEEP_DEBT_CREDIT_FRACTION = 0.5f
-    const val SLEEP_DEBT_MAX_CREDIT_MINUTES = 60f
+    /**
+     * A long night repays its whole surplus, at most 2 h: the first free night after restriction ran about 2.2 h
+     * above need (Kitamura 2016).
+     */
+    const val SLEEP_DEBT_CREDIT_FRACTION = 1f
+    const val SLEEP_DEBT_MAX_CREDIT_MINUTES = 120f
     const val SLEEP_DEBT_NIGHTS = 14
     const val SLEEP_DEBT_MIN_NIGHTS = 7
 
     internal const val DAY = 86_400L
     /** Local midnights a DST change apart are an hour off a whole number of days. */
     internal const val DST_SLACK = 2 * 3600L
-    /** Readiness points lost per hour of average nightly shortfall (1 h short ≈ 75, 2 h ≈ 50). */
-    const val SLEEP_DEBT_POINTS_PER_HOUR = 25
+    /**
+     * Sleep balance scores 100 up to this much debt: an hour short is common and a few nights repay it. The debt is a
+     * decayed 14-night sum, so a fixed per-hour slope would score 0 for anyone 30 min short every night (≈ 4 h).
+     */
+    const val SLEEP_DEBT_FREE_MINUTES = 60f
+    /** Debt at which sleep balance reaches 0: 5 h past the free hour (RISE's "keep it under 5 h"). 3 h ≈ 60, 4 h ≈ 40. */
+    const val SLEEP_DEBT_ZERO_MINUTES = 360f
 
     const val RED_FLAG = 40
     const val RED_FLAG_HEADROOM = 30
-    /** Where OpenStrap's "Take it steady" (Fair) band starts, which `Narrative.ratingFor` uses. */
+    /** Where OpenStrap's "Moderate" band starts, which `Narrative.ratingFor` uses. */
     const val FAIR_FROM = 55
-    /** One below the Fair band, so an Alert day always rates in the lowest band ("Take it easy"). */
+    /** One below the Moderate band, so an Alert day always rates in the lowest band ("Take it easy"). */
     const val ALERT_CAP = FAIR_FROM - 1
     internal const val MIN_CHRONIC_LOAD = 20f
     /** Readiness points lost per % of nightly SpO2 below baseline, beyond a 1 % dead band (−2 % ≈ 75, −3 % ≈ 50). */
@@ -641,7 +649,7 @@ object Recovery {
     const val ALERT_RECHARGE = 0.5f
     const val ALERT_DRAIN = 1.5f
 
-    /** Charge's EPOC-like debt, and a workout's EPOC at rest ([WorkoutEffect]), are multiplied by this each minute (half-life ≈ 20 min). */
+    /** Charge's EPOC-like debt is multiplied by this each minute out of exercise (half-life ≈ 20 min). A workout's EPOC only adds. */
     const val EPOC_DECAY = 0.966f
 
     /**

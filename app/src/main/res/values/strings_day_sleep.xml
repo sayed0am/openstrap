@@ -223,6 +223,5 @@
     <string name="day_sleep_headline_solid">Solid night</string>
     <string name="day_sleep_headline_good">Restful night</string>
     <!-- Little deep and REM sleep. -->
-    <string name="day_sleep_headline_light">Shallow night</string>
     <string name="day_sleep_headline_okay">Okay night</string>
 </resources>

@@ -76,8 +76,10 @@ Most contributors are z-scores (deviation from the baseline centre in units of i
 * **Need** (`sleepNeed`): 480 min for ages 18–64, `SLEEP_NEED_65_MINUTES` = 450 from 65 (NSF 7–9 h and 7–8 h, above the AASM ≥ 7 h floor). The user can set their own, `SLEEP_NEED_MIN`–`SLEEP_NEED_MAX` = 420–540 min, in the profile (individual optimal sleep ran 7.3–9.3 h, Kitamura et al. 2016). The optional personal need learnt from unconstrained nights is not implemented yet.
 
 **Sleep balance** (weight 0.12)
-* Input: sleep debt (`sleepDebtMinutes`) over the last `SLEEP_DEBT_NIGHTS` = 14 nights, oldest to newest; missing nights are skipped and naps count toward total sleep. λ = `SLEEP_DEBT_DECAY` = 0.5^(1/7) ≈ 0.906 (half-life 7 nights). With d = need − TST: d ≥ 0 gives debt = debt·λ + d; d < 0 gives debt = max(0, debt·λ − min(0.5·|d|, 60 min)).
-* Score: 100 − `SLEEP_DEBT_POINTS_PER_HOUR` = 25 points per hour of debt, so 1 h ≈ 75 and 2 h ≈ 50. Withheld with fewer than `SLEEP_DEBT_MIN_NIGHTS` = 7 of 14 nights.
+* Input: sleep debt (`sleepDebtMinutes`) over the last `SLEEP_DEBT_NIGHTS` = 14 nights, oldest to newest; missing nights are skipped and naps count toward total sleep. λ = `SLEEP_DEBT_DECAY` = 0.5^(1/7) ≈ 0.906 (half-life 7 nights). With d = need − TST: d ≥ 0 gives debt = debt·λ + d; d < 0 gives debt = max(0, debt·λ − min(|d|, 120 min)).
+* Score: 100 up to `SLEEP_DEBT_FREE_MINUTES` = 1 h of debt, then falling linearly to 0 at `SLEEP_DEBT_ZERO_MINUTES` = 6 h: 100 × (1 − (debt − 60) ÷ 300). So 2 h ≈ 80, 3 h ≈ 60, 4 h ≈ 40. Withheld with fewer than `SLEEP_DEBT_MIN_NIGHTS` = 7 of 14 nights.
+* Why the free hour and the 6 h end: debt is a decayed 14-night sum, so 30 min short every night settles near 4 h. The old 25 points an hour scored that 0. Now it scores about 40, and RISE's "keep it under 5 h" is where the score bottoms out once the free hour is counted.
+* Why a long night repays its whole surplus, up to 2 h: the first free night after restriction ran about 2.2 h above need (Kitamura 2016). Repaying half, at most an hour, left debt that had already been slept off.
 * The debt is cumulative, so it saturates fast: 30 min short every night for two weeks is about 4 h of debt, a score of 0. Worth checking at the review.
 * Why half-life 7: the old 4-night half-life discounted nights 8–14 to 25 % or less, undercounting the 14-day build-up. One 10 h recovery night is incomplete (Banks et al. 2010), and about 1 h of debt took 4 nights to clear (Kitamura 2016).
 * Source: Van Dongen et al. 2003 (Sleep 26:117): 6 h nights for 14 days caused deficits that built up night by night, equal to one or two nights of total deprivation, which subjects didn't notice.
@@ -110,10 +112,10 @@ Most contributors are z-scores (deviation from the baseline centre in units of i
 * Zepp's 5 / 15 / 30 break points (`bn50.java`) are apnea severity bands applied to the strap's desaturation counts. They are never shown: naming them (normal / mild / moderate / severe) would breach the 2026 wellness guidance. It's a wellness estimate, not a diagnosis.
 
 **Previous day's load** (weight 0.04)
-* Input: yesterday's TRIMP divided by the chronic EWMA load. Above 1.5× the score falls by 25 points per unit, to a floor of 30.
+* Input: yesterday's TRIMP divided by CTL (the 42-day fitness load) up to the day before. Above 1.5× the score falls by 25 points per unit, to a floor of 30.
 
 **Training load balance** (not part of Readiness: the Load panel on the Activity screen, labelled "contested")
-* Input: acute:chronic ratio from EWMA, 7 vs 28 days (`acwr`), needing ≥ 14 days of load.
+* Input: acute:chronic ratio from EWMA, 7 vs 28 days (`acwr`), needing ≥ 21 days of load (7 acute plus `ACWR_MIN_CHRONIC_DAYS` = 14 chronic).
 * Out of Readiness because the evidence is against scoring with it: the coupling critique is accepted by its own proponents (BJSM 53/15/921), ACWR rescales acute load (Impellizzeri 2021), and the 2025 meta-analysis for 0.8–1.3 has a CI of 0.14–0.94 (Qin et al. 2025).
 
 Weights (a design choice, to be checked with the backtest) add up to 1: autonomic (HRV + resting HR) 52 %, sleep 28 %, other body signals 13 %, previous day's load 4 %, recovery index 3 %. They're renormalised over the contributors present, so only their ratios matter. Polar's only public hint is that heart rate has "the biggest influence"; bounding sleep's share keeps one short night from carrying the score.
@@ -129,9 +131,9 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 ### Combining contributors
 
 * **Weighting:** weights are renormalised over the contributors that have data. Without HRV or resting HR there is no score (see "Withheld").
-* **Red-flag cap:** if any physiological contributor (HRV, resting HR, temperature, breathing) is below `RED_FLAG` = 40, readiness can't exceed that contributor + 30. One collapsed body signal shouldn't be averaged away by a good sleep score.
+* **Red-flag cap:** if any physiological contributor (HRV, resting HR, temperature, breathing, blood oxygen) is below `RED_FLAG` = 40, readiness can't exceed that contributor + 30. One collapsed body signal shouldn't be averaged away by a good sleep score.
 * **Soft minimum (comparison only):** `Recovery.softMinimum` combines the same contributors Zepp's way, w = weight · e^(−(s/100)²) and Σ w·s / Σ w, in place of the weighted mean and the red-flag cap (the Alert cap still applies). It is returned as `softMinScore` and written by the backtest; the app doesn't show it while `SOFT_MIN_FUSION` is off. See [readiness-calibration.md](readiness-calibration.md).
-* **Body signals off baseline:** in the Alert state (below) readiness is capped at `ALERT_CAP` = 54 and `strainAlert` is set. The cap is `FAIR_FROM` − 1, one below where the "Take it steady" (Fair) band starts at 55, so a capped Alert day always rates in the lowest band ("Prioritise recovery"). A cap of 55 would put a capped Alert day in Fair, telling the user to take it steady on a day their body signals say otherwise. Nights in Watch or Alert stay out of every Readiness baseline.
+* **Body signals off baseline:** in the Alert state (below) readiness is capped at `ALERT_CAP` = 54 and `strainAlert` is set. The cap is `FAIR_FROM` − 1, one below where the "Moderate" band starts at 55, so a capped Alert day always rates in the lowest band ("Take it easy"). A cap of 55 would put a capped Alert day in Moderate, on a day their body signals say otherwise. Nights in Watch or Alert stay out of every Readiness baseline.
 * **Wording** (FDA General Wellness guidance, revised 6 January 2026): the feature is called "Body signals off baseline" and never names illness, infection, fever or COVID. Copy lives in `BodySignalsCopy`; the push text is the evidence review's: "Several of your overnight signals (…) are outside your usual range for the second night. This can happen with heavy training, alcohol, travel, poor sleep, or when your body is fighting something off. Consider an easier day. If you feel unwell, checking in with a healthcare professional may be helpful. This is a wellness estimate, not a medical assessment." No screen shows a temperature threshold.
 
 ## Sleep regularity and sleep health (Sleep screen, not Readiness)
@@ -147,7 +149,7 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 
 `BodySignals.kt`, a night-by-night state machine (evidence-review.md, "Body-signal alerts"). Resting HR is the best-validated early-warning signal (NightSignal, Alavi et al. 2022: +3 bpm a warning, ≥ +4 bpm on 2 consecutive nights an alert). Persistence is what controls false alarms (≥ 3 anomalous nights in 7 cut breathing rate's healthy-period hit rate from 13.4 % to 0.88 %, Natarajan et al. 2021). Only different signal families vote: cardiac, thermal and respiratory; HRV + resting HR is closer to one signal counted twice. That conjunction part is reasoning, not a measured result.
 
-**Baseline per signal:** the last `ALERT_BASELINE_NIGHTS` = 28 valid nights, excluding the `RECENT_EXCLUDED` = 2 most recent and any Watch or Alert nights; median + 1.4826·MAD with the Readiness floors. No alerts before `MIN_ALERT_NIGHTS` = 14 valid nights. Resting HR here is the overnight mean sleep HR (NightSignal's metric); Readiness keeps the lowest 30-minute window. On a night whose own values fail the validity rule, the strap's values stand in.
+**Baseline per signal:** the last `ALERT_BASELINE_NIGHTS` = 28 nights, excluding the `RECENT_EXCLUDED` = 2 most recent and any Watch or Alert nights; median + 1.4826·MAD with the Readiness floors. Resting HR and HRV count valid nights only. Temperature and breathing count any night with a value. No alerts before `MIN_ALERT_NIGHTS` = 14 valid nights. Resting HR here is the overnight mean sleep HR (NightSignal's metric); Readiness keeps the lowest 30-minute window. On a night whose own values fail the validity rule, the strap's values stand in.
 
 | Flag | Condition | Role |
 |---|---|---|
@@ -158,9 +160,9 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 | `HrvSupport` | z(`hrv_n`) ≤ −2.0 | support, never a core vote |
 
 * **Watch** (in the app, no push): any single core flag, or `RhrWatch` + `HrvSupport`.
-* **Alert** (one push per morning after a sync; Readiness capped at 54), any of: `RhrFlag` on 2 consecutive nights; ≥ 2 different core families on the same night; a core flag tonight and on ≥ 3 of the last 7 nights; rr − c ≥ `RR_ALERT_PER_MIN` = 3.0 /min on its own.
+* **Alert** (one push per morning after a sync; Readiness capped at 54), any of: `RhrFlag` on 2 consecutive nights; ≥ 2 different core families on the same night; a core flag tonight and on ≥ 3 of the last 7 nights; rr − c ≥ `RR_ALERT_PER_MIN` = 3.0 /min and ≥ 2 spreads, on its own.
 * One missing night is bridged; two or more reset persistence. An alert clears after `CLEAR_NIGHTS` = 2 consecutive nights with no core flag.
-* A likely cause is annotated, never used to suppress: a previous day with TRIMP > `HARD_DAY_RATIO` = 1.5× the chronic load. (Day tags were removed from the app; old `day_tag` rows are still exported and imported.)
+* A likely cause is annotated, never used to suppress: a previous day with TRIMP > `HARD_DAY_RATIO` = 1.5× the 28-day EWMA load (not CTL, which Readiness's previous-day load uses). (Day tags were removed from the app; old `day_tag` rows are still exported and imported.)
 * SpO2 and desaturations never vote; they stay in Readiness and the Breathing card. +0.5 °C is the lowest temperature line that won't fire every menstrual cycle (the luteal rise is about +0.3 °C), and it is never shown on screen.
 
 ## Energy (0–100, minute by minute)
@@ -266,7 +268,7 @@ Code: `LoadModel.kt`.
   * **Without steps:** a minute outside workouts also counts when it is part of a sustained run (`sustainedRuns`): `SUSTAINED_EFFORT_MINUTES` = 10 or more awake minutes in a row at x ≥ `EXERCISE_HRR` = 0.30, outside the stress exclusion (a workout and its 20 minutes after). It is the rule Energy drains as Exercise by, so unrecorded cycling or rowing counts in both or neither. All of a run counts, its first minutes too. Weights between sets rarely make a run, so record a workout for them.
 * No HR-load method is validated on free-living minutes, and even in sessions Banister's test–retest CV is 15.6 % (Wallace et al. 2014); it's the least-bad choice (Lucia needs lab thresholds, Edwards' zones start at 50 % HRmax, which walking crosses).
 * Days with fewer than `LOAD_MIN_WORN_MINUTES` = 8 h of heart-rate data are left out of the load history (`LOAD_DAYS` = 90 days of it), unless a recorded workout put load in them (`loadDayCounts`): the workout is most of such a day's load, and leaving it out dropped it from fitness and fatigue.
-* TRIMP is the only daily load. A workout's EPOC (the strap's sport effect, or OpenStrap's for phone workouts) is shown on the workout as "EPOC" and never enters the daily total, CTL/ATL or the ratio.
+* TRIMP is the only daily load. A workout's EPOC (the strap's sport effect, or OpenStrap's for phone workouts) is shown on the workout as "Load" and never enters the daily total, CTL/ATL or the ratio.
 
 ### Load screen (Activity → Training load; descriptive)
 
@@ -315,7 +317,7 @@ Code: `LoadModel.kt`.
 * METs = 2.77·sex (female 0, male 1) − 0.10·age − 0.17·BMI − 0.03·RHR + SR-PA score + 18.07; × 3.5 for ml/kg/min. SEE 1.45 METs (NASA; 1.50 and 1.97 in the other cohorts), so the band is ±1 SEE ≈ ±5 ml/kg/min, rounded, never a decimal.
 * SR-PA is the worksheet's five-level question; the scores are the model's dummy weights 0 / 0.32 / 1.06 / 1.76 / 3.03, not 0–4.
 * RHR = median of the last 7 nightly resting HRs (needs ≥ 5 in 14 days). A sleeping RHR runs a few bpm below a seated one; at −0.03 METs/bpm that's small next to the SEE, so it's documented, not corrected.
-* Recomputed weekly (as of Monday). Withheld when: age outside 20–79 (the model was derived on 20–70), sex unset, weight or height missing or not confirmed in 90 days, the activity question not answered in 180 days, beta-blockers or pregnancy flagged, or < 5 nightly RHRs in 14 days.
+* Recomputed weekly, as of the first day of the week in the phone's locale (`Weeks`, Sunday in the US). Withheld when: age outside 20–79 (the model was derived on 20–70), sex unset, weight or height missing or not confirmed in 90 days, the activity question not answered in 180 days, beta-blockers or pregnancy flagged, or < 5 nightly RHRs in 14 days.
 * The estimate feeds the energy model's HR branch.
 * FRIEND 2022 band: [Kaminsky et al. 2022](https://doi.org/10.1016/j.mayocp.2021.08.020) (Mayo Clin Proc 97(2):285–293, apparently healthy US adults), Table 3, treadmill rows (RER ≥ 1.0), copied into `Vo2max.Friend` and checked value by value against the published table. Jurca was validated against treadmill VO2max, so the treadmill rows are used. The paper reports only the 10th–90th percentiles, so the evidence review's 25 / 75 / 97.7 cut points are replaced by the nearest reported ones: < 30 / 30–50 / 50–70 / 70–90 / ≥ 90 ("Top 10 %"), against the user's age decade. Nothing is interpolated or extrapolated.
 * Fitness age: the age at which the sex-specific 50th percentile equals the estimate. Each decade's median sits at its midpoint (25, 35 … 85), and the points are joined linearly (the medians fall every decade). The centre is clamped to 20–80 and shown as ±10 years, also clamped: "typical of a woman aged about 35–55". Above the 20–29 median the centre stays at 25, so the youngest range is 20–35. Withheld whenever the estimate is.

@@ -126,7 +126,7 @@ private fun DrawScope.glowDot(at: Offset, color: Color) {
 }
 
 /**
- * Each habit against the typical person your age, as a grouped list (spec 5.4): the habit's metric icon in its ink, what
+ * Each habit against its typical value, as a grouped list (spec 5.4): the habit's metric icon in its ink, what
  * it takes off or adds and the numbers behind it, and its bar on the shared scale. No row opens anything.
  */
 @Composable
@@ -181,7 +181,7 @@ internal fun BoxScope.ScaleLabel(text: String, at: Float, color: Color = Color.W
 
 /**
  * One habit's effect as a bar out from the middle: left takes years off, right adds them. Drawn in the quiet
- * panels' bar style: a faint track, a glowing line and a dot at its end, green for years off and amber for years added. A habit
+ * panels' bar style: a faint track, a glowing line and a dot at its end, in Habit Age's own ink either way. A habit
  * with no effect shows only the track and the middle mark.
  */
 @Composable

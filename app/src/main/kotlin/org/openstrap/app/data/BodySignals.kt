@@ -53,7 +53,7 @@ object BodySignals {
         val families: List<String>,
         /** Consecutive nights (bridging one missing night) with a core flag, ending tonight. */
         val nightsOff: Int,
-        /** Likely causes the user noted or the load shows; annotated, never used to suppress. */
+        /** Likely causes the load shows (a hard previous day); annotated, never used to suppress. */
         val causes: List<String>,
         /** Valid nights in the resting-HR baseline; no alerts below [MIN_ALERT_NIGHTS]. */
         val baselineNights: Int,
@@ -90,7 +90,7 @@ object BodySignals {
 
     /**
      * Runs the state machine over [nights] (any order; one per morning) and returns one [Day] per night, oldest first.
-     * [causes] gives the likely causes noted for a morning (tags, a hard previous day). It stays the last parameter for
+     * [causes] gives the likely causes noted for a morning (a hard previous day). It stays the last parameter for
      * callers that pass it as a trailing lambda, so the signals' words come from [Strings.app].
      */
     fun evaluate(nights: List<Recovery.Night>, causes: (Long) -> List<String> = { emptyList() }): List<Day> {
