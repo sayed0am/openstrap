@@ -2,7 +2,6 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.R
 import org.openstrap.app.presentation.Ranges
-import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Vo2maxCopy
 import org.openstrap.app.presentation.TimeOfDay
@@ -89,6 +88,30 @@ import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.level
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.presentation.topSports
+import org.openstrap.app.presentation.LoadBands
+import org.openstrap.app.data.History
+import org.openstrap.app.ui.components.scrub
+import org.openstrap.app.ui.components.cardNumber
+import org.openstrap.app.ui.dashboard.GoalFacts
+import org.openstrap.app.ui.dashboard.GoalMetric
+import org.openstrap.app.ui.dashboard.NewsTag
+import org.openstrap.app.ui.dashboard.OffStatus
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.bodyOffStatus
+import org.openstrap.app.ui.dashboard.goalTag
+import org.openstrap.app.ui.dashboard.loadOffStatus
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.dashboard.recoveryOffStatus
+import org.openstrap.app.ui.glow.pictures.Blocks
+import org.openstrap.app.ui.glow.pictures.DayBars
+import org.openstrap.app.ui.glow.pictures.DayLine
+import org.openstrap.app.ui.glow.pictures.LevelFill
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.dayLineRim
+import org.openstrap.app.ui.glow.pictures.levelFillRim
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.runtime.mutableIntStateOf
 
 /** Heart points' weekly aim: 100 or more over the last seven days. */
 private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
@@ -162,22 +185,36 @@ fun GlowActivityScreen(
             tabCards(slots) { card, m ->
                 when (card) {
                     ActivityCard.Start -> StartCard(sports, onStartWorkout, onAllSports)
-                    ActivityCard.Steps -> StepsGlow(state, usualSteps, partial) { onOpenMetric(Metric.Steps) }
+                    ActivityCard.Steps -> StepsGlow(state, usualSteps, activity, partial) { onOpenMetric(Metric.Steps) }
                     ActivityCard.ActiveMinutes -> r?.activity.let { a ->
-                        SmallCard(
-                            MetricColors.steps, stringResource(R.string.glow_activity_active_minutes), a?.weekEquivalent?.toString(), null,
+                        // Blocks toward the week's target, a block per 5 minutes. A target, never off: no rim.
+                        PictureSmall(
+                            MetricColors.steps, stringResource(R.string.glow_activity_active_minutes), a?.weekEquivalent?.toString(),
+                            stringResource(R.string.glow_unit_min).takeIf { a != null },
                             a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: NO_READING, m,
                             onClick = { open(Score.ActiveMinutes) },
+                            picture = a?.let { w ->
+                                { pm -> Blocks(w.weekEquivalent, MetricColors.steps, PictureSize.Small, pm, target = Activity.MVPA_WEEKLY_TARGET) }
+                            },
                         )
                     }
-                    ActivityCard.HeartPoints -> SmallCard(
-                        MetricColors.heart, stringResource(R.string.glow_activity_heart_points),
-                        heartPoints?.roundToInt()?.toString(), null,
-                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
-                        onClick = { open(Score.HeartPoints) },
-                    )
+                    ActivityCard.HeartPoints -> {
+                        val week = remember(stored, state.date, state.pai) { heartPointsWeek(state.date, stored, state.pai?.daily) }
+                        // The last 7 days as bars, today's in full ink. The aim is the week's total, so no line per day.
+                        PictureSmall(
+                            MetricColors.heart, stringResource(R.string.glow_activity_heart_points),
+                            heartPoints?.roundToInt()?.toString(), null,
+                            heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
+                            onClick = { open(Score.HeartPoints) },
+                            picture = week.takeIf { days -> days.any { it != null } }?.let { days ->
+                                { pm -> DayBars(days, MetricColors.heart, PictureSize.Small, pm) }
+                            },
+                        )
+                    }
                     ActivityCard.Load -> DayLoadCard(r) { open(Score.Load) }
-                    ActivityCard.HeartRate -> HeartCard(state, live, { onOpenMetric(Metric.HeartRate) }, restingRange = restingRange)
+                    ActivityCard.HeartRate -> HeartRateCard(
+                        state, live, restingRange, rememberNormal(Metric.HeartRate, state.date, history),
+                    ) { onOpenMetric(Metric.HeartRate) }
                     ActivityCard.Facts -> DayFactsList(state, r, workouts, isToday, onEditProfile, open, partial)
                     ActivityCard.Workouts -> WorkoutsList(
                         state.date, workouts, suggestion?.takeIf { isToday }, onOpenWorkout, onAllWorkouts, onAddWorkout,
@@ -244,8 +281,10 @@ private const val MORE_BY_USE = 8
  * back. Opens the Steps detail.
  */
 @Composable
-private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, onClick: () -> Unit) {
+private fun StepsGlow(state: DayUiState, usual: List<Float>?, history: ActivityHistory, tag: TitleTag?, onClick: () -> Unit) {
     val goal = LocalGoals.current.steps
+    // The goal tag after the number once met, climbing the ladder (spec 2.5, Tags), none while the history loads.
+    val goalTag = history.stepsFacts(state.date, value = state.steps, goal = goal)?.let { goalTag(GoalMetric.Steps, it) }
     val share = if (goal > 0) state.steps / goal.toFloat() else 0f
     val isToday = state.date == LocalDate.now()
     val now = java.time.LocalTime.now()
@@ -264,11 +303,16 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, on
             // screen's hero, so its number is the second glow's size, as on the Charge battery.
             val h = hour
             val picked = h?.let { state.hourlySteps.getOrNull(it) }
-            HeroFigure(
-                Units.count(if (h != null && picked != null) Math.round(picked) else state.steps, Units.DOT_LOCALE),
-                if (h != null && picked != null) ActivityCopy.hourLabel(h) else ActivityCopy.activityLine(state.steps, goal, pace, isToday),
-                big = true, dot = DotSize.Second, labelLines = 2,
-            )
+            // The tag is the day's, so a picked hour leaves it out.
+            val (count, label) = if (h != null && picked != null) Math.round(picked) to ActivityCopy.hourLabel(h)
+            else state.steps to ActivityCopy.activityLine(state.steps, goal, pace, isToday)
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                TaggedNumber(Units.count(count, Units.DOT_LOCALE), null, goalTag.takeIf { h == null || picked == null }, dot = DotSize.Second)
+                Text(
+                    label,
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
+                )
+            }
         }
     }
 }
@@ -308,27 +352,152 @@ private val HourPillsHeight = 56.dp
 /* ------------------------------------------------ Load ---------------------------------------------- */
 
 /**
- * Load today, its light filling across toward your usual for a day, and the week's balance in a word. Above your
- * usual it glows stronger. Opens the Load detail, where Strain, fitness and fatigue live. TODO(step 6): the ghost line
- * of your usual Load by this time needs past days' Load hour by hour. The engine keeps each past day's Load only as a
+ * Load today as a level fill over your usual band ([LoadBands.usualRange], spec 2.7), "12 today", "Your usual is 40"
+ * and the week's balance in a word beside the title. Off your usual it carries the rim at the fill's end and "Above
+ * usual" or "Below usual" after the number. A low Load is only so far until the day is over, so today never says Below
+ * ([loadOffStatus]). Opens the Load detail, where Strain, fitness and fatigue live. TODO(step 6): the ghost line of
+ * your usual Load by this time needs past days' Load hour by hour. The engine keeps each past day's Load only as a
  * total ([org.openstrap.app.data.Recovery.dailyLoad]); hours would mean re-running it 24 times for each of 30 days in
  * every recompute, with nothing to cache them in.
- * As high as its title and number, not the grid's Wide height, which left a band of empty light under them (user, 2026-11-04).
  */
 @Composable
 private fun DayLoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
-    val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
-    PictureCard(
-        MetricColors.load, Modifier.fillMaxWidth(),
-        rim = Rim.End.takeIf { status == LoadBand.Above }, onClick = onClick,
-    ) {
+    val band = LoadBands.usualRange(usual)
+    val load = r?.load
+    val past = r != null && r.date != LocalDate.now()
+    val tag = offTag(OffWords.Usual, loadOffStatus(load, usual, endOfDay = past))
+    val rim = if (tag != null && load != null) levelFillRim(load, band, PictureSize.Wide) else null
+    PictureCard(MetricColors.load, Modifier.fillMaxWidth().gridSize(CardSize.Wide), rim = rim, onClick = onClick) {
         EdgeTitle(stringResource(R.string.glow_activity_load), TabCopy.loadBalance(r?.loadTrend))
-        EdgeValue(
-            r?.load?.roundToInt()?.toString(), stringResource(R.string.glow_activity_load_today),
-            if (r == null) NO_READING else TabCopy.loadUsual(usual),
+        if (load != null) {
+            Spacer(Modifier.height(GlowLayout.TitleGap))
+            LevelFill(load, band, MetricColors.load, PictureSize.Wide, Modifier.fillMaxWidth().height(LevelFillHeight))
+        }
+        TaggedNumber(
+            load?.roundToInt()?.toString(),
+            stringResource(if (past) R.string.glow_activity_load_that_day else R.string.glow_activity_load_today), tag,
+            Modifier.padding(top = 14.dp),
         )
+        StatusLine(if (r == null) NO_READING else TabCopy.loadUsual(usual))
     }
+}
+
+/** The level fill's height on the Load card: its 16 dp band with room for the dot's glow. */
+private val LevelFillHeight = 28.dp
+
+/* --------------------------------------------- Heart rate ------------------------------------------- */
+
+/**
+ * Heart rate (spec 5.3, 6): the day's line through your [resting] range as a dim band ([DayLine]), the number under it
+ * following the finger while you hold the line. When the latest reading is off your heart rate [normal] the rim lights
+ * at the line's end, over the top when above and the foot when below, with "Above normal" or "Below normal" after the
+ * number (spec 2.5). Opens the heart rate detail.
+ */
+@Composable
+private fun HeartRateCard(state: DayUiState, live: Int?, resting: History.Normal?, normal: History.Normal?, onClick: () -> Unit) {
+    val step = HEART_STEP_SECONDS
+    val values = remember(state.heartRate, state.dayStart) { bucket(state.heartRate, state.dayStart..state.dayEnd, step) }
+    var picked by remember(values) { mutableStateOf<Int?>(null) }
+    var width by remember { mutableIntStateOf(0) }
+    val pad = with(LocalDensity.current) { LinePad.toPx() }
+    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.roundToInt() to state.dayStart + i * step } }
+    val now = scrubbed?.first ?: live ?: state.latestHeartRate
+    val status = bodyOffStatus(state.latestHeartRate?.toFloat(), normal)
+    val tag = offTag(OffWords.Normal, status)
+    val rim = if (tag != null) dayLineRim(values, status == OffStatus.Above, PictureSize.Wide) else null
+    PictureCard(MetricColors.heart, Modifier.fillMaxWidth().gridSize(CardSize.Wide), rim = rim, onClick = onClick) {
+        EdgeTitle(
+            stringResource(R.string.glow_today_heart_rate), state.restingHeartRate?.let { stringResource(R.string.glow_today_resting, it) },
+        )
+        if (state.heartRate.size >= 2) {
+            Spacer(Modifier.height(GlowLayout.TitleGap))
+            DayLine(
+                values, resting?.let { it.low..it.high }, MetricColors.heart, PictureSize.Wide,
+                Modifier
+                    .fillMaxWidth()
+                    .height(DayLineHeight)
+                    .onSizeChanged { width = it.width }
+                    .scrub(values) { x -> picked = x?.let { nearestReading(values, it, width.toFloat(), pad) } },
+            )
+        }
+        // The tag is about now, so a scrubbed point leaves it out.
+        TaggedNumber(
+            now?.toString(), stringResource(R.string.glow_unit_bpm), tag.takeIf { scrubbed == null }, Modifier.padding(top = 14.dp),
+        )
+        val at = scrubbed?.second ?: state.heartRate.lastOrNull()?.x
+        StatusLine(TodayCopy.heartAt(live != null && scrubbed == null, at?.let(::clock)))
+    }
+}
+
+/** The heart rate line's buckets: 10 minutes each. */
+private const val HEART_STEP_SECONDS = 10 * 60L
+
+/** The line's height on the card and the inset [DayLine] draws inside its edges. */
+private val DayLineHeight = 70.dp
+private val LinePad = 4.dp
+
+/* ---------------------------------------------- Smalls ---------------------------------------------- */
+
+/**
+ * A Small with its picture (spec 2.5, Picture card): the title, the [picture] in the ink filling what the card has
+ * left, the number in dots with its [unit], and the [status] in Secondary. Without a picture (waiting) the number sits
+ * at the foot. Never lit: Active minutes and Heart points are targets, not readings with a normal.
+ */
+@Composable
+private fun PictureSmall(
+    ink: Color, title: String, value: String?, unit: String?, status: String, modifier: Modifier, onClick: () -> Unit,
+    picture: (@Composable (Modifier) -> Unit)?,
+) {
+    PictureCard(ink, modifier, onClick = onClick) {
+        CardTitle(title)
+        if (picture != null) {
+            Spacer(Modifier.height(10.dp))
+            picture(Modifier.fillMaxWidth().weight(1f))
+        } else {
+            Spacer(Modifier.weight(1f))
+        }
+        TaggedNumber(value, unit, null, Modifier.padding(top = 8.dp))
+        StatusLine(status)
+    }
+}
+
+/**
+ * Heart points earned on each of the 7 days ending on [date], oldest first: the stored days, with [today]'s from the
+ * strap's latest record when there is one. Null for a day with none stored.
+ */
+internal fun heartPointsWeek(
+    date: LocalDate, stored: Map<LocalDate, org.openstrap.app.ui.dashboard.HeartPointsDay>, today: Float?,
+): List<Float?> = (6L downTo 0L).map { back ->
+    val d = date.minusDays(back)
+    if (back == 0L) today ?: stored[d]?.daily else stored[d]?.daily
+}
+
+/* ---------------------------------------------- Numbers --------------------------------------------- */
+
+/**
+ * A card's number in dots with its [unit] and news [tag] after it ([NumberWithTag]), or the waiting dash. The number
+ * stays white, whatever the tag says (spec 2.2).
+ */
+@Composable
+private fun TaggedNumber(value: String?, unit: String?, tag: NewsTag?, modifier: Modifier = Modifier, dot: DotSize = DotSize.Edge) {
+    NumberWithTag(tag.takeIf { value != null }, modifier) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            if (value != null) DotMatrixText(value, Modifier.cardNumber(value), dot = dot) else WaitingDash(Modifier.padding(vertical = 8.dp))
+            if (unit != null && value != null) {
+                Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}
+
+/** A card's status line, in Secondary. */
+@Composable
+private fun StatusLine(text: String) {
+    Text(
+        text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+        modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /* ------------------------------------------------ Facts --------------------------------------------- */
@@ -378,10 +547,18 @@ private fun DayFactsList(
         val e = r?.calories
         val goal = LocalGoals.current.calories
         val active = e?.activeKcal?.roundToInt()
+        // Its goal tag in the status's place once met: no bests are stored for calories, so it climbs no higher than
+        // Double goal, and stops at Goal met on a day Load is above your usual or Recovery below it (spec 2.5).
+        val easeOff = r != null && (
+            loadOffStatus(r.load, r.chronicLoad?.takeIf { it > 0f }, endOfDay = !isToday) == OffStatus.Above ||
+                recoveryOffStatus(r) == OffStatus.Below
+            )
+        val caloriesTag = active?.let { goalTag(GoalMetric.Calories, GoalFacts(it, goal), easeOff) }
         ListRow(
             stringResource(R.string.glow_activity_calories), MetricColors.calories, active?.let { Units.count(it) },
             e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) }
                 ?: stringResource(R.string.glow_activity_add_profile_to_see),
+            tag = caloriesTag,
             onClick = if (e == null && r != null) onEditProfile else { { open(Score.Calories) } }, dash = e != null,
             icon = Score.Calories.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
         )

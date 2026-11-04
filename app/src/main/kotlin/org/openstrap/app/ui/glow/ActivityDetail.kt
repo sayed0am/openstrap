@@ -65,7 +65,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The Activity tab's details (spec 5.3 and 6.1) in the metric template: Heart points, active minutes, Load, VO2 max,
@@ -683,12 +682,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                 CaloriesCopy.rangeSentence(summary)?.let { item { DetailSentence(it) } }
             }
         }
-        // On Day the list of sources sits right above, so Related takes the neutral edge (spec 2.5).
-        item {
-            androidx.compose.runtime.CompositionLocalProvider(
-                LocalEdgeOverride provides if (range == Range.Day && e != null) EdgeOverride(edge = Edge.Bottom) else EdgeOverride(),
-            ) { ActivityRelated(Score.Calories, ctx, null) }
-        }
+        item { ActivityRelated(Score.Calories, ctx, null) }
     }
     if (info) InfoSheet(InfoCopy.of(Score.Calories), color, null, null, onDismiss = { info = false }, notes = InfoCopy.caloriesNotes(e))
 }

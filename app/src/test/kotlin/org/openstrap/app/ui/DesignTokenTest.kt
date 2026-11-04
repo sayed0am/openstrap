@@ -151,7 +151,7 @@ class DesignTokenTest {
         val steps = code.substringAfter("private fun StepsGlow(").substringBefore("\n}\n")
         assertTrue("StepsGlow uses the level recipe", "GlowStyle.level(MetricColors.steps" in steps)
         assertTrue("StepsGlow's number is 3.6 dp", "DotSize.Second" in steps)
-        assertTrue("the bars come before the number", steps.indexOf("HourPills(") in 0 until steps.indexOf("HeroFigure("))
+        assertTrue("the bars come before the number", steps.indexOf("HourPills(") in 0 until steps.indexOf("TaggedNumber("))
     }
 
     @Test fun `every hypnogram is drawn in the stage colours`() {
