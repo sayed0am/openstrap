@@ -58,7 +58,7 @@ class StepsWidgetModelTest {
     @Test fun `the Small shortens five digits to thousands, the Wide and Large keep them all`() {
         assertEquals("9,999", model(steps = 9_999).smallText)
         val m = model(steps = 10_000)
-        assertEquals("10.0k", m.smallText)
+        assertEquals("10k", m.smallText)
         assertEquals("10,000", m.stepsText)
         assertEquals("12.3k", model(steps = 12_345).smallText)
         // Cut down, never up: 12,999 hasn't reached 13,000.
@@ -69,6 +69,23 @@ class StepsWidgetModelTest {
         assertEquals("0", model(steps = 0).smallText)
         // TalkBack still reads every step.
         assertTrue(model(steps = 12_345).description.startsWith("12,345 steps today"))
+    }
+
+    @Test fun `the Small drops a decimal of 0, whole thousands read 10k`() {
+        assertEquals("10k", model(steps = 10_099).smallText)
+        assertEquals("10.1k", model(steps = 10_100).smallText)
+        assertEquals("11k", model(steps = 11_050).smallText)
+        assertEquals("20k", model(steps = 20_000).smallText)
+        assertEquals("99k", model(steps = 99_000).smallText)
+    }
+
+    @Test fun `in German a decimal of 0 drops its comma too`() {
+        assertEquals("10k", StepsWidgetModel.short(10_000, Locale.GERMANY))
+        assertEquals("10k", StepsWidgetModel.short(10_099, Locale.GERMANY))
+        assertEquals("11k", StepsWidgetModel.short(11_050, Locale.GERMANY))
+        assertEquals("10,1k", StepsWidgetModel.short(10_100, Locale.GERMANY))
+        assertEquals("12,9k", StepsWidgetModel.short(12_999, Locale.GERMANY))
+        assertEquals("100k", StepsWidgetModel.short(100_000, Locale.GERMANY))
     }
 
     @Test fun `the Small's decimal mark follows the locale, in the dot font's digits`() {
