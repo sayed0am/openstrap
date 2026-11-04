@@ -1,6 +1,8 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.ActivityCopy
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
@@ -73,13 +75,16 @@ data class StepsWidgetModel(
     val showLine: Boolean get() = steps > 0 && line.size >= 2
 
     /** What TalkBack reads for the dotted number, in the phone's language: "8,432 steps today, 84% of your goal". */
-    val description: String get() = "${Units.count(steps.toLong())} steps today, ${share.replaceFirstChar { it.lowercase() }}"
+    val description: String
+        get() = Strings.app.plural(
+            R.plurals.system_widget_steps_description, steps, Units.count(steps.toLong()), share.replaceFirstChar { it.lowercase() },
+        )
 
     companion object {
-        const val TITLE = "Steps"
-        const val TODAY = "today"
-        const val GOAL_MET = "Goal met"
-        const val THIS_WEEK = "This week"
+        val TITLE: String get() = Strings.app.get(R.string.widget_steps_name)
+        val TODAY: String get() = Strings.app.get(R.string.system_widget_steps_today)
+        val GOAL_MET: String get() = Strings.app.get(R.string.system_widget_steps_goal_met)
+        val THIS_WEEK: String get() = Strings.app.get(R.string.system_widget_this_week)
 
         /**
          * The widget for [today] at [hour]: [steps] so far (the live total, as Today's card shows it), the day's
@@ -88,7 +93,7 @@ data class StepsWidgetModel(
          */
         fun from(
             today: LocalDate, steps: Int, hourly: List<Float>, hour: Int, goal: Int, past: Map<LocalDate, Int>,
-            locale: Locale = Locale.getDefault(),
+            locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
         ): StepsWidgetModel {
             val line = Summaries.runningSteps(hourly, hour)
             val week = week(today, steps, goal, past, locale)
@@ -96,21 +101,21 @@ data class StepsWidgetModel(
             val met = counted.count { (it.steps ?: 0) >= goal }
             return StepsWidgetModel(
                 date = today,
-                title = TITLE,
+                title = strings.get(R.string.widget_steps_name),
                 goal = goal,
-                goalNote = "Goal ${Units.count(goal.toLong(), locale)}",
+                goalNote = strings.format(R.string.system_widget_steps_goal, Units.count(goal.toLong(), locale)),
                 steps = steps,
                 stepsText = Units.count(steps.toLong(), Units.DOT_LOCALE),
                 smallText = short(steps, locale),
-                word = TODAY,
-                toGo = toGo(steps, goal, locale),
+                word = strings.get(R.string.system_widget_steps_today),
+                toGo = toGo(steps, goal, locale, strings),
                 share = ActivityCopy.goalShare(steps, goal),
                 progress = if (goal <= 0) 1f else (steps / goal.toFloat()).coerceIn(0f, 1f),
                 line = line,
                 // The goal at the top, so the line fills toward it. Past the goal the day's total is the top.
                 lineMax = maxOf(goal.toFloat(), steps.toFloat(), line.filterNotNull().maxOrNull() ?: 0f),
                 week = week,
-                weekLine = weekLine(met, counted.size),
+                weekLine = weekLine(met, counted.size, strings),
             )
         }
 
@@ -139,11 +144,13 @@ data class StepsWidgetModel(
         }
 
         /** "1,568 to go", or "Goal met" from the goal on. */
-        fun toGo(steps: Int, goal: Int, locale: Locale = Locale.getDefault()): String =
-            if (steps >= goal) GOAL_MET else "${Units.count((goal - steps).toLong(), locale)} to go"
+        fun toGo(steps: Int, goal: Int, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+            if (steps >= goal) strings.get(R.string.system_widget_steps_goal_met)
+            else strings.format(R.string.system_widget_steps_to_go, Units.count((goal - steps).toLong(), locale))
 
         /** "Goal met 2 of 6 days", "Goal met 0 of 1 day". */
-        fun weekLine(met: Int, of: Int): String = "Goal met $met of $of ${if (of == 1) "day" else "days"}"
+        fun weekLine(met: Int, of: Int, strings: Strings = Strings.app): String =
+            strings.format(R.string.system_widget_steps_week, met, strings.plural(R.plurals.system_widget_steps_days, of, of))
 
         /** The days of [today]'s week, from [locale]'s first day ([Weeks]), each as it stands against [goal]. */
         fun week(today: LocalDate, steps: Int, goal: Int, past: Map<LocalDate, Int>, locale: Locale): List<StepsWeekDay> =

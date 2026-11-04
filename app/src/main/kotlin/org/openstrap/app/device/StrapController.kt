@@ -1,6 +1,8 @@
 package org.openstrap.app.device
 
+import androidx.annotation.StringRes
 import kotlinx.coroutines.flow.StateFlow
+import org.openstrap.app.i18n.Strings
 import org.openstrap.protocol.services.Alarm
 import org.openstrap.protocol.services.AlarmCapabilities
 import org.openstrap.protocol.services.Setting
@@ -199,4 +201,7 @@ interface StrapController {
 }
 
 /** The strap couldn't be asked, or said no. [message] is fit to show. */
-class StrapCommandException(message: String) : Exception(message)
+class StrapCommandException(message: String) : Exception(message) {
+    /** With a [reason] from res/values/strings_system_strap.xml, in the app's language. */
+    constructor(@StringRes reason: Int) : this(Strings.app.get(reason))
+}

@@ -30,6 +30,7 @@ import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.R
 import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
@@ -265,7 +266,7 @@ private fun StageRows(rows: List<SleepStageRow>, f: WidgetFrame) {
                 Spacer(GlanceModifier.width(SleepLayout.STAGE_GAP_DP.dp))
                 Image(
                     ImageProvider(stageRowBar(r, track, f.density)),
-                    contentDescription = "${r.name} ${r.time}",
+                    contentDescription = LocalContext.current.getString(R.string.system_widget_sleep_stage_description, r.name, r.time),
                     modifier = GlanceModifier.defaultWeight().height(SleepLayout.STAGE_BAR_DP.dp),
                     contentScale = ContentScale.FillBounds,
                 )

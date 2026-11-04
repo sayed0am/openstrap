@@ -1,5 +1,7 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.StrapBands
 import org.openstrap.app.presentation.TimeOfDay
@@ -49,15 +51,20 @@ fun strapStateChanged(paired: Boolean, battery: Int?, charging: Boolean, wasPair
  * The line's words: "Pair your strap", "Strap at 12%", "Syncing", and "Synced 09:10" today, then by [DayWords]
  * "Synced yesterday", the weekday within the week ("Synced Tuesday") and the date before that ("Synced Tue 21 Oct").
  */
-fun strapStatusLine(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String = when (status) {
-    StrapStatus.NotPaired -> "Pair your strap"
-    is StrapStatus.LowBattery -> "Strap at ${status.percent}%"
-    StrapStatus.Syncing -> "Syncing"
-    is StrapStatus.StaleSync -> {
-        val then = Instant.ofEpochSecond(status.at).atZone(zone).toLocalDate()
-        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        "Synced " + if (then >= today) TimeOfDay.format(status.at, zone, locale = locale) else DayWords.inSentence(then, today, locale)
-    }
+fun strapStatusLine(
+    status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+): String = when (status) {
+    StrapStatus.NotPaired -> strings.get(R.string.system_widget_status_not_paired)
+    is StrapStatus.LowBattery -> strings.format(R.string.system_widget_status_low_battery, status.percent)
+    StrapStatus.Syncing -> strings.get(R.string.system_widget_status_syncing)
+    is StrapStatus.StaleSync -> strings.format(R.string.system_widget_status_synced, syncedWhen(status.at, now, zone, locale))
+}
+
+/** When the last sync was, as the stale line says it after "Synced": "09:10" today, else by [DayWords.inSentence]. */
+internal fun syncedWhen(at: Long, now: Long, zone: ZoneId, locale: Locale): String {
+    val then = Instant.ofEpochSecond(at).atZone(zone).toLocalDate()
+    val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
+    return if (then >= today) TimeOfDay.format(at, zone, locale = locale) else DayWords.inSentence(then, today, locale)
 }
 
 /**

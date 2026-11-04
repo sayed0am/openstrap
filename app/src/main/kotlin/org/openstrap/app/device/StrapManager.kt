@@ -16,6 +16,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.GattStrapLink
 import org.openstrap.app.ble.StrapUuids
@@ -673,16 +675,20 @@ class StrapManager(
 
     override suspend fun installFirmware(file: ByteArray, type: Int, onProgress: (DfuProgress) -> Unit) {
         val client = connections.gatt
-        if (client == null || connection.value !is ConnectionState.Connected) throw DfuException(-1, "The strap isn't connected")
+        if (client == null || connection.value !is ConnectionState.Connected) {
+            throw DfuException(-1, Strings.app.get(R.string.system_command_not_connected))
+        }
         // Claimed first, so a sync can't start between the check below and the claim: startSync gives way to it.
-        if (!firmwareUpdating.compareAndSet(false, true)) throw DfuException(-1, "An update is already running")
+        if (!firmwareUpdating.compareAndSet(false, true)) throw DfuException(-1, Strings.app.get(R.string.system_firmware_already_running))
         // Given back on a refusal, and when the caller is cancelled during the fast-charge query.
         var claimed = false
         try {
-            if (sync.value is SyncState.Running || syncs.isSyncing) throw DfuException(-1, "Wait for the sync to finish first")
+            if (sync.value is SyncState.Running || syncs.isSyncing) {
+                throw DfuException(-1, Strings.app.get(R.string.system_firmware_wait_for_sync))
+            }
             val s = connections.session
             if (s != null && s.services.has(Endpoints.SETTINGS) && commands.fastRechargeOn(s) == true) {
-                throw DfuException(-1, "Turn off fast-charge mode on the strap first")
+                throw DfuException(-1, Strings.app.get(R.string.system_firmware_fast_charge))
             }
             claimed = true
         } finally {
@@ -695,7 +701,7 @@ class StrapManager(
             catching {
                 if (live.isRunning) live.pause()
                 val link = GattDfuLink(client)
-                if (!link.available) throw DfuException(-1, "This strap doesn't offer the firmware update service")
+                if (!link.available) throw DfuException(-1, Strings.app.get(R.string.system_firmware_no_service))
                 // Bigger ATT packets make the transfer several times faster. Refused, it falls back to 20-byte writes.
                 catching { client.requestMtu(247) }.onFailure { log("dfu: mtu request failed: $it") }
                 log("dfu: ${file.size} bytes, type ${"%02x".format(type)}, crc ${"%08x".format(crc32(file))}, att mtu ${client.mtu}")

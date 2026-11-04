@@ -1,5 +1,6 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
 import org.openstrap.app.data.DetailRoutes
 import android.content.Context
 import androidx.compose.runtime.Composable
@@ -171,7 +172,8 @@ private fun Week(week: List<RecoveryWeekDay>, column: Float, density: Float) {
     val width = WeekBarsLook.width(week.size, column)
     val bars = weekBars(RecoveryLayout.barValues(week), density, column)
     val bitmap = renderToBitmap(width * density, WeekBarsLook.HEIGHT_DP * density) { drawWeekBars(it, bars, week.indexOfFirst { d -> d.shown }, Ink) }
-    WeekChart(ImageProvider(bitmap), "Recovery each day for the last seven days", week.map { it.letter to it.shown }, column)
+    val description = LocalContext.current.getString(R.string.system_widget_recovery_week_description)
+    WeekChart(ImageProvider(bitmap), description, week.map { it.letter to it.shown }, column)
 }
 
 /* ------------------------------------------------------------------------------------------------ */

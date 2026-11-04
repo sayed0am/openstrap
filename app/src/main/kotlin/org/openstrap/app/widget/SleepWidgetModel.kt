@@ -1,9 +1,11 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.StageSpan
 import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.presentation.SLEEP_NAMES
@@ -84,28 +86,38 @@ data class SleepWidgetModel(
     val waiting: String?,
 ) {
     /** What TalkBack reads for the dotted number: "Sleep score 82, good". */
-    val scoreDescription: String? get() = score?.let { s -> word?.let { "Sleep score $s, ${it.lowercase()}" } ?: "Sleep score $s" }
+    val scoreDescription: String?
+        get() = score?.let { s ->
+            word?.let { Strings.app.format(R.string.system_widget_sleep_score_word, s, it.lowercase()) }
+                ?: Strings.app.format(R.string.system_widget_sleep_score, s)
+        }
 
     /** The Large's right of the score row: how often you woke, else time asleep. */
     val largeRight: String? get() = woke ?: asleep
 
     companion object {
-        const val TITLE = "Last night"
+        val TITLE: String get() = Strings.app.get(R.string.system_widget_sleep_title)
 
         /** The title while yesterday's night stands in: it isn't last night. */
-        const val STALE_TITLE = "Sleep"
-        const val LAST_SYNCED = "Last synced night"
+        val STALE_TITLE: String get() = Strings.app.get(R.string.widget_sleep_name)
+        val LAST_SYNCED: String get() = Strings.app.get(R.string.system_widget_sleep_last_synced)
 
         /**
          * The widget for [today]'s night, or [yesterday]'s with "Last synced night" as the note while this morning's
          * isn't synced. Before any: the title and why, "After your first night" before the strap has seen one
          * ([firstNight]), else what the Sleep tab says for a day with no night ([napsToday] as it reads them).
          */
-        fun from(today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean, zone: ZoneId = ZoneId.systemDefault(), deleted: Boolean = false): SleepWidgetModel {
-            today?.let { return night(it, stale = false, zone) }
-            yesterday?.let { return night(it, stale = true, zone) }
+        fun from(
+            today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean,
+            zone: ZoneId = ZoneId.systemDefault(), deleted: Boolean = false, strings: Strings = Strings.app,
+        ): SleepWidgetModel {
+            today?.let { return night(it, stale = false, zone, strings) }
+            yesterday?.let { return night(it, stale = true, zone, strings) }
             val line = if (firstNight) AFTER_FIRST_NIGHT else TabCopy.noNight(napsToday, isToday = true, deleted = deleted)
-            return SleepWidgetModel(null, TITLE, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line)
+            val title = strings.get(R.string.system_widget_sleep_title)
+            return SleepWidgetModel(
+                null, title, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line,
+            )
         }
 
         /** Each stage's name, time and share of the night's stage seconds, as the Sleep score detail lists them. */
@@ -116,15 +128,15 @@ data class SleepWidgetModel(
             }
         }
 
-        private fun night(n: SleepWidgetNight, stale: Boolean, zone: ZoneId): SleepWidgetModel {
+        private fun night(n: SleepWidgetNight, stale: Boolean, zone: ZoneId, strings: Strings): SleepWidgetModel {
             val s = n.session
             val score = s.score
             // Stage totals as text, never dots (spec 2.3): a stage under a minute leaves its segment and legend out.
             val totals = n.breakdown?.let { stageTotals(it.byStage) }.orEmpty()
             return SleepWidgetModel(
                 date = n.date,
-                title = if (stale) STALE_TITLE else TITLE,
-                note = if (stale) LAST_SYNCED else TabCopy.nightTimes(s.start, s.end, zone),
+                title = strings.get(if (stale) R.string.widget_sleep_name else R.string.system_widget_sleep_title),
+                note = if (stale) strings.get(R.string.system_widget_sleep_last_synced) else TabCopy.nightTimes(s.start, s.end, zone),
                 stale = stale,
                 score = score?.toString(),
                 word = score?.let(TabCopy::sleepScoreWord),

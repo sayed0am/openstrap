@@ -10,6 +10,7 @@ import org.openstrap.app.MainActivity
 import org.openstrap.app.R
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.Workout
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Ranges
 import java.time.ZoneId
 
@@ -21,7 +22,9 @@ class AutoDetectNotifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Auto-detected workouts", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, Strings.app.get(R.string.system_channel_auto_detected), NotificationManager.IMPORTANCE_DEFAULT),
+        )
     }
 
     fun show(w: Workout) {
@@ -33,7 +36,7 @@ class AutoDetectNotifier(private val context: Context) {
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
             .setContentTitle(title(w))
-            .setContentText("The strap noticed it and recorded it for you.")
+            .setContentText(Strings.app.get(R.string.system_auto_detected_text))
             .setWhen(w.end * 1000)
             .setShowWhen(true)
             .setCategory(NotificationCompat.CATEGORY_WORKOUT)
@@ -51,7 +54,7 @@ class AutoDetectNotifier(private val context: Context) {
          * "Running detected, 10:02 to 10:40", in the phone's clock as every time is (decision 4 in
          * [org.openstrap.app.presentation.Units]).
          */
-        fun title(w: Workout, zone: ZoneId = ZoneId.systemDefault()): String =
-            "${Workouts.sportName(w.sportType)} detected, ${Ranges.times(w.start, w.end, zone)}"
+        fun title(w: Workout, zone: ZoneId = ZoneId.systemDefault(), strings: Strings = Strings.app): String =
+            strings.format(R.string.system_auto_detected_title, Workouts.sportName(w.sportType), Ranges.times(w.start, w.end, zone))
     }
 }

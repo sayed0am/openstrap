@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import org.openstrap.app.R
 import org.openstrap.app.data.catching
 import org.openstrap.protocol.services.Endpoints
 import org.openstrap.protocol.services.FindDevice
@@ -55,7 +56,7 @@ internal class BuzzCoordinator(
 
     private suspend fun playMotor(pattern: List<Int>) {
         if (!MotorVibrate.isOk(commands.command(Endpoints.MOTOR_VIBRATE, MotorVibrate.play(pattern)))) {
-            throw StrapCommandException("The strap didn't buzz")
+            throw StrapCommandException(R.string.system_command_no_buzz)
         }
         motorBusyUntil = SystemClock.elapsedRealtime() + pattern.sum()
     }
@@ -112,7 +113,7 @@ internal class BuzzCoordinator(
             delay(BUZZ_RESET_MS)
             commands.command(Endpoints.FIND_DEVICE, FindDevice.BUZZ, BUZZ_REPLY_MS)
         }
-        if (!FindDevice.isBuzzOk(reply)) throw StrapCommandException("The strap didn't buzz")
+        if (!FindDevice.isBuzzOk(reply)) throw StrapCommandException(R.string.system_command_no_buzz)
         findBuzzOn = true
     }
 
@@ -182,11 +183,11 @@ internal class BuzzCoordinator(
     // Each throw is a reason the user is shown.
     @Suppress("ThrowsCount")
     private suspend fun sendFindDevice(request: ByteArray) {
-        val s = link.activeSession ?: throw StrapCommandException("The strap isn't connected")
-        if (firmwareUpdating.value) throw StrapCommandException("Wait for the firmware update to finish")
+        val s = link.activeSession ?: throw StrapCommandException(R.string.system_command_not_connected)
+        if (firmwareUpdating.value) throw StrapCommandException(R.string.system_command_firmware_updating)
         log("cmd %04x > %s".format(Locale.ROOT, Endpoints.FIND_DEVICE, request.toHex()))
         if (request.contentEquals(FindDevice.STOP)) findBuzzOn = false
-        catching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException("The strap didn't answer") }
+        catching { s.send(Endpoints.FIND_DEVICE, request) }.getOrElse { throw StrapCommandException(R.string.system_command_no_answer) }
     }
 
     private companion object {

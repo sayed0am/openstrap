@@ -7,7 +7,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
+import org.openstrap.app.R
 import org.openstrap.app.data.BodySignalsCopy
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.protocol.services.HealthAlert
 import java.time.Instant
@@ -21,22 +23,16 @@ class HealthAlertNotifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Health alerts", NotificationManager.IMPORTANCE_HIGH))
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, Strings.app.get(R.string.system_channel_health), NotificationManager.IMPORTANCE_HIGH),
+        )
     }
 
     fun show(alert: HealthAlert) {
         val now = System.currentTimeMillis() / 1000
         // The timestamp unit isn't confirmed on hardware (03 §7); fall back to now if it doesn't look like seconds.
         val at = alert.timestamp.takeIf { it in MIN_EPOCH..now + 86_400 } ?: now
-        val (title, text) = when (alert.type) {
-            HealthAlert.Type.HIGH_HEART_RATE -> "High heart rate" to "Your heart rate reached ${alert.value} bpm."
-            HealthAlert.Type.LOW_HEART_RATE -> "Low heart rate" to "Your heart rate dropped to ${alert.value} bpm."
-            HealthAlert.Type.HIGH_STRESS -> "High stress" to "Your stress is at ${alert.value}. Take a moment to breathe."
-            HealthAlert.Type.LOW_SPO2 -> "Low blood oxygen" to "Your blood oxygen was ${alert.value}%."
-            HealthAlert.Type.IRREGULAR_RHYTHM ->
-                "Irregular heart rhythm" to
-                    "The strap noticed an irregular heart rhythm at ${TimeOfDay.format(at, ZoneId.systemDefault())}."
-        }
+        val (title, text) = words(alert, at)
         val day = Instant.ofEpochSecond(at).atZone(ZoneId.systemDefault()).toLocalDate()
         val open = openRoute(route(alert.type), day, NOTIFICATION_BASE + alert.type.code)
         val notification = NotificationCompat.Builder(context, CHANNEL)
@@ -60,7 +56,7 @@ class HealthAlertNotifier(private val context: Context) {
     fun showBodySignals(signals: List<String>, nights: Int) {
         val text = BodySignalsCopy.pushText(signals, nights)
         // Body signals lead the Recovery screen, so that's where the notification opens.
-        val open = openRoute("Recovery", java.time.LocalDate.now(), BODY_SIGNALS_ID)
+        val open = openRoute(RECOVERY_ROUTE, java.time.LocalDate.now(), BODY_SIGNALS_ID)
         val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_warning)
             .setContentTitle(BodySignalsCopy.TITLE)
@@ -87,6 +83,23 @@ class HealthAlertNotifier(private val context: Context) {
     )
 
     internal companion object {
+        /** The alert's title and text, in the app's language. [at] is when it was raised, epoch seconds. */
+        fun words(
+            alert: HealthAlert, at: Long, zone: ZoneId = ZoneId.systemDefault(), strings: Strings = Strings.app,
+        ): Pair<String, String> {
+            val (title, text) = when (alert.type) {
+                HealthAlert.Type.HIGH_HEART_RATE ->
+                    R.string.system_alert_high_heart_rate_title to R.string.system_alert_high_heart_rate_text
+                HealthAlert.Type.LOW_HEART_RATE -> R.string.system_alert_low_heart_rate_title to R.string.system_alert_low_heart_rate_text
+                HealthAlert.Type.HIGH_STRESS -> R.string.system_alert_high_stress_title to R.string.system_alert_high_stress_text
+                HealthAlert.Type.LOW_SPO2 -> R.string.system_alert_low_spo2_title to R.string.system_alert_low_spo2_text
+                HealthAlert.Type.IRREGULAR_RHYTHM ->
+                    R.string.system_alert_irregular_rhythm_title to R.string.system_alert_irregular_rhythm_text
+            }
+            val value: Any = if (alert.type == HealthAlert.Type.IRREGULAR_RHYTHM) TimeOfDay.format(at, zone) else alert.value
+            return strings.get(title) to strings.format(text, value)
+        }
+
         /**
          * The metric screen an alert opens, by its `Metric` name in ui.dashboard, written out so device code doesn't
          * depend on the screens. A test checks each one still names a metric.
@@ -97,6 +110,7 @@ class HealthAlertNotifier(private val context: Context) {
             HealthAlert.Type.LOW_SPO2 -> "Spo2"
         }
 
+        private const val RECOVERY_ROUTE = "Recovery"
         private const val CHANNEL = "health"
         private const val BODY_SIGNALS_ID = 99
         private const val NOTIFICATION_BASE = 100

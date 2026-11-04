@@ -1,12 +1,14 @@
 package org.openstrap.app.widget
 
 import androidx.compose.ui.graphics.Color
+import org.openstrap.app.R
 import org.openstrap.app.data.Moment
 import org.openstrap.app.data.MomentInputs
 import org.openstrap.app.data.MomentLead
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.momentLead
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.Ranges
@@ -195,15 +197,17 @@ data class MomentWidgetModel(
         /** How often a count of minutes on the widget moves on: every [TICK_MINUTES] on the clock. */
         const val TICK_MINUTES = 5L
 
-        const val ENERGY_LEFT = "Energy left"
-        const val LEFT = "left"
+        val ENERGY_LEFT: String get() = Strings.app.get(R.string.system_widget_moment_energy_left)
+        val LEFT: String get() = Strings.app.get(R.string.system_widget_moment_left)
 
         /**
          * The widget at [now]: the moment [org.openstrap.app.data.MomentResolver] gives for the [input] (or a
          * [forced] one, the debug gallery's), what it leads with ([momentLead], then the moment's next lead where the
          * lead has nothing to show), and everything in it.
          */
-        fun from(input: MomentWidgetInput, now: Instant, zone: ZoneId, forced: Moment? = null): MomentWidgetModel {
+        fun from(
+            input: MomentWidgetInput, now: Instant, zone: ZoneId, forced: Moment? = null, strings: Strings = Strings.app,
+        ): MomentWidgetModel {
             val moment = forced ?: input.inputs.resolve(now, zone)
             val lead = lead(moment, input)
             val noSleep = moment == Moment.Waking &&
@@ -216,7 +220,7 @@ data class MomentWidgetModel(
             }
             val name = todayTitle(moment, local.toLocalDate(), sport, today = local.toLocalDate())
             val mood = momentMood(moment)
-            val c = Content(input, moment, now, zone)
+            val c = Content(input, moment, now, zone, strings)
             return when (lead) {
                 MomentLead.Recovery -> c.recovery(lead, name, mood)
                 MomentLead.LastNight -> c.lastNight(lead, name, mood)
@@ -268,7 +272,7 @@ data class MomentWidgetModel(
     }
 
     /** Builds each lead's model from the [input] at [now]. */
-    private class Content(val input: MomentWidgetInput, val moment: Moment, val now: Instant, val zone: ZoneId) {
+    private class Content(val input: MomentWidgetInput, val moment: Moment, val now: Instant, val zone: ZoneId, val strings: Strings) {
         val t = now.epochSecond
         val energy = input.energy
 
@@ -283,13 +287,16 @@ data class MomentWidgetModel(
                 number = shown?.value?.toString(),
                 words = listOfNotNull(word),
                 shortWords = listOfNotNull(word),
-                figures = listOfNotNull(energy?.atWake?.let { "Energy at waking $it" }),
+                figures = listOfNotNull(energy?.atWake?.let { strings.format(R.string.system_widget_moment_energy_at_waking, it) }),
                 sentences = shorter(TodayCopy.waking(input.night?.asleepSeconds, input.score, input.alert, input.noScore, input.firstNights, isToday = true, deleted = input.nightDeleted)),
                 waiting = null, start = null, startLabel = null, recording = null,
                 chart = stagesChart(),
                 light = MomentLight(MetricColors.readiness, LightAngle.LowerLeft),
                 mood = mood,
-                numberDescription = shown?.value?.let { v -> "Recovery $v" + (word?.let { ", $it" } ?: "") },
+                numberDescription = shown?.value?.let { v ->
+                    word?.let { strings.format(R.string.system_widget_moment_recovery_word, v, it) }
+                        ?: strings.format(R.string.system_widget_moment_recovery, v)
+                },
                 tick = null,
             )
         }
@@ -315,7 +322,7 @@ data class MomentWidgetModel(
                 chart = stagesChart(),
                 light = MomentLight(MetricColors.sleepDeep, LightAngle.Above),
                 mood = mood,
-                numberDescription = "Sleep score $score, ${word.lowercase()}",
+                numberDescription = strings.format(R.string.system_widget_sleep_score_word, score.toString(), word.lowercase()),
                 tick = null,
             )
         }
@@ -332,7 +339,14 @@ data class MomentWidgetModel(
             else TodayCopy.charge(left, e?.let { TabCopy.drainedAmount(it.drained).toInt() }, e?.anchored == true, now.atZone(zone).hour)
             return energyModel(
                 lead, name, mood,
-                figures = if (e != null && left != null && drained != null) listOf("Drained $drained, recharged ${e.recharged}", "Drained $drained") else emptyList(),
+                figures = if (e != null && left != null && drained != null) {
+                    listOf(
+                        strings.format(R.string.system_widget_moment_drained, drained, e.recharged),
+                        strings.format(R.string.system_widget_moment_drained_short, drained),
+                    )
+                } else {
+                    emptyList()
+                },
                 sentences = shorter(sentence),
             )
         }
@@ -347,18 +361,25 @@ data class MomentWidgetModel(
             return MomentWidgetModel(
                 moment, lead, name,
                 number = e?.toString(),
-                words = listOf(ENERGY_LEFT),
-                shortWords = listOf(LEFT),
+                words = listOf(strings.get(R.string.system_widget_moment_energy_left)),
+                shortWords = listOf(strings.get(R.string.system_widget_moment_left)),
                 figures = emptyList(),
-                sentences = listOf("$title. $usual", usual, "$title."),
+                sentences = listOf(
+                    strings.format(R.string.system_widget_moment_two_sentences, title, usual),
+                    usual,
+                    strings.format(R.string.system_widget_moment_sentence, title),
+                ),
                 waiting = if (e == null) title else null,
                 start = sport,
-                startLabel = "Start ${noun ?: org.openstrap.app.data.Workouts.sportName(sport).lowercase()}",
+                startLabel = strings.format(
+                    R.string.system_widget_moment_start,
+                    noun ?: org.openstrap.app.data.Workouts.sportName(sport).lowercase(),
+                ),
                 recording = null,
                 chart = energyChart(),
                 light = MomentLight(MetricColors.heart, LightAngle.UpperRight, rim = WINDOW_RIM),
                 mood = mood,
-                numberDescription = e?.let { "Energy $it left" },
+                numberDescription = e?.let { strings.format(R.string.system_widget_moment_energy, it) },
                 tick = null,
             )
         }
@@ -371,7 +392,11 @@ data class MomentWidgetModel(
                 moment, lead, name,
                 number = null, words = emptyList(), shortWords = emptyList(), figures = emptyList(), sentences = emptyList(),
                 waiting = null, start = null, startLabel = null,
-                recording = MomentRecording(StartSport.recorded(r.sportType), "Recording since $since", "Since $since"),
+                recording = MomentRecording(
+                    StartSport.recorded(r.sportType),
+                    strings.format(R.string.system_widget_moment_recording_since, since),
+                    strings.format(R.string.system_widget_since, since),
+                ),
                 chart = null,
                 light = MomentLight(MetricColors.heart, LightAngle.Below),
                 mood = mood,
@@ -384,21 +409,24 @@ data class MomentWidgetModel(
         fun after(lead: MomentLead, name: String, mood: GlowMood): MomentWidgetModel {
             val w = input.lastWorkout!!
             val minutes = ((t - w.end).coerceAtLeast(0) / 60).toInt()
-            val noun = sportNoun(w.sportType) ?: "workout"
+            val noun = sportNoun(w.sportType) ?: strings.get(R.string.system_widget_moment_workout)
             val since = input.heartRate.filter { it.x >= w.end && it.x <= t }
             val load = input.load?.let { Math.round(it) }
             return MomentWidgetModel(
                 moment, lead, name,
                 number = minutes.toString(),
-                words = listOf("min since your $noun", "min since", "min"),
-                shortWords = listOf("min since your $noun", "min since", "min"),
-                figures = listOfNotNull(load?.let { "Load today $it" }, load?.let { "Load $it" }),
+                words = sinceWords(noun),
+                shortWords = sinceWords(noun),
+                figures = listOfNotNull(
+                    load?.let { strings.format(R.string.system_widget_moment_load_today, it) },
+                    load?.let { strings.format(R.string.system_widget_moment_load, it) },
+                ),
                 sentences = listOf(TodayCopy.after(since.lastOrNull()?.y?.toInt(), input.restingHr)),
                 waiting = null, start = null, startLabel = null, recording = null,
-                chart = heartChart(since, w.end, "Heart rate since your $noun"),
+                chart = heartChart(since, w.end, strings.format(R.string.system_widget_moment_heart_since, noun)),
                 light = MomentLight(MetricColors.heart, LightAngle.Below, rim = AFTER_RIM),
                 mood = mood,
-                numberDescription = "$minutes minutes since your $noun",
+                numberDescription = strings.plural(R.plurals.system_widget_moment_minutes_since, minutes, minutes, noun),
                 tick = nextTick(now),
             )
         }
@@ -425,7 +453,7 @@ data class MomentWidgetModel(
         fun night(lead: MomentLead, name: String, mood: GlowMood): MomentWidgetModel {
             val bed = input.inputs.usualBedtime
             val light = MomentLight(MetricColors.sleepDeep, LightAngle.Below)
-            val bedtime = bed?.let { "Bedtime ${TimeOfDay.format(it)}" }
+            val bedtime = bed?.let { strings.format(R.string.system_widget_moment_bedtime, TimeOfDay.format(it)) }
             val clock = now.atZone(zone).toLocalTime()
             val left = bed?.let { afterNoon(it) - afterNoon(clock) }?.takeIf { it > 0 }
             if (left == null) {
@@ -435,15 +463,15 @@ data class MomentWidgetModel(
             return MomentWidgetModel(
                 moment, lead, name,
                 number = left.toString(),
-                words = listOf("min to bedtime", "min"),
-                shortWords = listOf("min to bedtime", "min"),
+                words = toBedtimeWords(),
+                shortWords = toBedtimeWords(),
                 figures = listOfNotNull(bedtime),
                 sentences = shorter(daySentence()),
                 waiting = null, start = null, startLabel = null, recording = null,
                 chart = dayHeartChart(),
                 light = light,
                 mood = mood,
-                numberDescription = "$left minutes to bedtime",
+                numberDescription = strings.plural(R.plurals.system_widget_moment_minutes_to_bedtime, left, left),
                 tick = tick,
             )
         }
@@ -457,8 +485,8 @@ data class MomentWidgetModel(
             return MomentWidgetModel(
                 moment, lead, name,
                 number = now?.toString(),
-                words = listOf(ENERGY_LEFT),
-                shortWords = listOf(LEFT),
+                words = listOf(strings.get(R.string.system_widget_moment_energy_left)),
+                shortWords = listOf(strings.get(R.string.system_widget_moment_left)),
                 figures = if (now == null) emptyList() else figures,
                 sentences = sentences,
                 waiting = if (now == null) AFTER_FIRST_NIGHT else null,
@@ -467,10 +495,21 @@ data class MomentWidgetModel(
                 // Energy is lit to its level from below (spec 2.5), as Today's Charge hero.
                 light = light ?: MomentLight(MetricColors.charge, LightAngle.Below, level = (now ?: 0) / 100f),
                 mood = mood,
-                numberDescription = now?.let { "Energy $it left" },
+                numberDescription = now?.let { strings.format(R.string.system_widget_moment_energy, it) },
                 tick = tick,
             )
         }
+
+        /** Beside the minutes since a workout, longest first: "min since your run", "min since", "min". */
+        fun sinceWords(noun: String): List<String> = listOf(
+            strings.format(R.string.system_widget_moment_min_since_your, noun),
+            strings.get(R.string.system_widget_moment_min_since),
+            strings.get(R.string.system_widget_moment_min),
+        )
+
+        /** Beside the minutes to bedtime, longest first. */
+        fun toBedtimeWords(): List<String> =
+            listOf(strings.get(R.string.system_widget_moment_min_to_bedtime), strings.get(R.string.system_widget_moment_min))
 
         /** The evening hero's sentence: what kind of day it was, then what made it. */
         fun daySentence(): String {
@@ -486,7 +525,7 @@ data class MomentWidgetModel(
             val to = clock(n.session.end)
             return MomentChart(
                 MomentChartKind.Stages, stages = n.stages, from = from, to = to,
-                description = "Last night's stages, ${Ranges.of(from, to)}",
+                description = strings.format(R.string.system_widget_moment_stages_description, Ranges.of(from, to)),
             )
         }
 
@@ -516,7 +555,8 @@ data class MomentWidgetModel(
             val nowValue = e.now
             return MomentChart(
                 MomentChartKind.Line, values = values, low = 0f, high = 100f, from = from, to = to,
-                description = "Energy since $from" + (nowValue?.let { ", $it now" } ?: ""),
+                description = nowValue?.let { strings.format(R.string.system_widget_moment_energy_since_now, from, it) }
+                    ?: strings.format(R.string.system_widget_moment_energy_since, from),
             )
         }
 
@@ -540,7 +580,7 @@ data class MomentWidgetModel(
         fun dayHeartChart(): MomentChart? {
             val start = now.atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
             val points = input.heartRate.filter { it.x in start..t }
-            return heartChart(points, points.firstOrNull()?.x ?: start, "Your heart rate today")
+            return heartChart(points, points.firstOrNull()?.x ?: start, strings.get(R.string.system_widget_moment_heart_today))
         }
 
     }
@@ -614,7 +654,7 @@ object MomentLayout {
 
     /** Open, as Start's while recording. */
     const val OPEN_PAD_DP = 14f
-    const val OPEN = "Open"
+    val OPEN: String get() = Strings.app.get(R.string.system_widget_open)
 
     /** The least gap between blocks, and the most a tall cell should show. */
     const val MIN_GAP_DP = 4f

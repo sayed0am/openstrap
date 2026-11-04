@@ -23,6 +23,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.settings.SettingsStore
 
 /**
@@ -71,7 +73,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
      * which [launch] starts; pass the activity result to [onResult]. [onError] gets a message to show.
      */
     fun associate(activity: Activity, address: String, launch: (IntentSender) -> Unit, onError: (String) -> Unit) {
-        val cdm = cdm ?: return onError("This phone doesn't support companion devices.")
+        val cdm = cdm ?: return onError(Strings.app.get(R.string.system_companion_unsupported))
         // The strap is a BLE device; the classic filter also matches it once Android knows it from a connection.
         val request = AssociationRequest.Builder()
             .addDeviceFilter(BluetoothLeDeviceFilter.Builder().setScanFilter(ScanFilter.Builder().setDeviceAddress(address).build()).build())
@@ -92,7 +94,8 @@ class CompanionLink(private val context: Context, private val settings: Settings
 
             override fun onFailure(error: CharSequence?) {
                 Log.w(TAG, "association failed: $error")
-                onError("Android couldn't find the strap (${error ?: "no reason given"}). Keep it on its charger near the phone and try again.")
+                val reason = error ?: Strings.app.get(R.string.system_companion_no_reason)
+                onError(Strings.app.format(R.string.system_companion_not_found, reason))
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) cdm.associate(request, activity.mainExecutor, callback)
