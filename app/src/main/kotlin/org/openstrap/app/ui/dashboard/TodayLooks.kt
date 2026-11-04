@@ -42,7 +42,7 @@ private fun ownLook(slot: TodaySlot, moment: Moment?): CardLook = when (slot.car
     TodayCard.Hero -> glow(heroHue(moment))
     TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts -> strip(Hue.Heart)
     TodayCard.CheckIn, TodayCard.StartWorkout -> strip(Hue.Neutral)
-    TodayCard.BodyMorning, TodayCard.RightNow -> ListLook
+    TodayCard.BodyMorning -> ListLook
     TodayCard.LastNight -> if (slot.size == CardSize.Strip) strip(Hue.Sleep) else picture(Hue.Sleep, PictureKind.StageBar)
     TodayCard.HeartRate -> picture(Hue.Heart, PictureKind.Line)
     TodayCard.Stress -> picture(Hue.Stress, PictureKind.DayStrip)

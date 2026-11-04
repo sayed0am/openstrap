@@ -41,10 +41,10 @@ import org.openstrap.app.ui.dashboard.items
  * The edge card override that draws [this] look: the side it fixes, and the neutral light for a neutral card. Glow
  * cards and lists get none, so a list stays a list.
  */
-internal fun CardLook.edgeOverride(): EdgeOverride = when (tier) {
+internal fun CardLook.cardOverride(): CardOverride = when (tier) {
     // An unlit card drawn as a picture card (Activity's Start a workout, Plain) has no light; a list ignores it.
-    Tier.List, Tier.Plain -> EdgeOverride(plain = true)
-    else -> EdgeOverride()
+    Tier.List, Tier.Plain -> CardOverride(plain = true)
+    else -> CardOverride()
 }
 
 /**
@@ -61,7 +61,7 @@ internal fun <C> GlowBlocks.tabCards(slots: List<TabSlot<C>>, focus: C? = null, 
         val block: @Composable () -> Unit = {
             GridRowBlock(row) { i, m ->
                 val slot = slots[i]
-                CompositionLocalProvider(LocalEdgeOverride provides slot.look.edgeOverride()) { draw(slot.card, m) }
+                CompositionLocalProvider(LocalCardOverride provides slot.look.cardOverride()) { draw(slot.card, m) }
             }
         }
         // Keyed on its cards, so a card keeps its saved state when one is added or hidden above it (audit K5).

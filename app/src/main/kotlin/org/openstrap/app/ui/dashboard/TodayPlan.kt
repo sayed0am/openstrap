@@ -27,7 +27,6 @@ enum class TodayCard(@StringRes private val labelRes: Int?, val editable: Boolea
      * The Right now list, gone from Today (spec 4.2: Stress has its card, HRV lives on Recovery). No moment has it and
      * Edit Today no longer offers it, so a pin of it saved before drops out ([TodayEdits.parse]).
      */
-    RightNow(R.string.day_card_right_now, editable = false),
     LastNight(R.string.day_card_last_night, pinnable = true),
     HeartRate(R.string.day_card_heart_rate, pinnable = true),
     /** Stress as a day strip, calm to high: a Small beside Heart rate at midday (spec 4.2). */

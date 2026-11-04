@@ -20,7 +20,6 @@ import org.openstrap.app.ui.dashboard.TodayCard.LoadToday
 import org.openstrap.app.ui.dashboard.TodayCard.Offer
 import org.openstrap.app.ui.dashboard.TodayCard.Recover
 import org.openstrap.app.ui.dashboard.TodayCard.Recovery
-import org.openstrap.app.ui.dashboard.TodayCard.RightNow
 import org.openstrap.app.ui.dashboard.TodayCard.Stress
 import org.openstrap.app.ui.dashboard.TodayCard.Suggestion
 import org.openstrap.app.ui.dashboard.TodayCard.Week
@@ -64,7 +63,6 @@ class TodayPlanTest {
         for (m in listOf(Moment.WorkoutWindow, Moment.During, Moment.After)) assertFalse("$m", HeartRate in cards(m, TodayFacts(workout = true)))
         for (m in Moment.entries) {
             assertEquals("$m", m == Moment.Midday, Stress in cards(m, TodayFacts(workout = true)))
-            assertFalse("$m", RightNow in cards(m, TodayFacts(workout = true)))
         }
     }
 

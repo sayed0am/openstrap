@@ -260,8 +260,8 @@ fun GlowTodayScreen(
                             val dim = if (pairing != null && slot.card != TodayCard.Hero && slot.card != TodayCard.EditToday) Modifier.alpha(0.45f) else Modifier
                             val look = slot.lookOr(looksFor, live)
                             // An unlit card drawn as a picture card skips its light.
-                            val override = EdgeOverride(plain = look.tier == Tier.List)
-                            CompositionLocalProvider(LocalEdgeOverride provides override) {
+                            val override = CardOverride(plain = look.tier == Tier.List)
+                            CompositionLocalProvider(LocalCardOverride provides override) {
                                 Column(m.then(dim)) {
                                     when (slot.card) {
                                         TodayCard.Hero -> Hero(
@@ -844,7 +844,7 @@ private fun TodayRow(
         // Never at night, whatever the plan says: the day's done (spec 4.2).
         TodayCard.StartWorkout -> if (ctx.moment != Moment.Night) StartWorkoutStrip(ctx.usualSport, onStartSport)
         // Right now is in no moment any more, and a pin of it saved before drops out.
-        TodayCard.RightNow, TodayCard.Hero, TodayCard.EditToday -> Unit
+        TodayCard.Hero, TodayCard.EditToday -> Unit
     }
 }
 

@@ -28,7 +28,6 @@
     <!-- The morning check-in, asking how the user feels. -->
     <string name="day_card_check_in">How do you feel?</string>
     <string name="day_card_body_morning">Your body this morning</string>
-    <string name="day_card_right_now">Right now</string>
     <string name="day_card_last_night">Last night</string>
     <string name="day_card_heart_rate">Heart rate</string>
     <!-- The card with the day's stress as a strip, calm to high. -->

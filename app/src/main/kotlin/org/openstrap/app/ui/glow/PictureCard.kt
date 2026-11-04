@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.components.LocalCardNumbers
 import org.openstrap.app.ui.components.cardOpening
 import org.openstrap.app.ui.components.pressClickable
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.draw.EdgeSurface
 
 /*
@@ -59,13 +58,12 @@ data class Rim(val x: Float, val y: Float, val reachX: Float = 0.6f, val reachY:
 
 /**
  * A screen's say over the next picture card: [plain] draws it as a list panel, a dark panel with a list's hairline,
- * for a card [varyLooks] moved to another look. [edge] and [color] are left from the edge light and do nothing; they
- * go once no screen sets them.
+ * for a card [varyLooks] moved to another look.
  */
 @Immutable
-data class EdgeOverride(val edge: Edge? = null, val color: Color? = null, val plain: Boolean = false)
+data class CardOverride(val plain: Boolean = false)
 
-val LocalEdgeOverride = staticCompositionLocalOf { EdgeOverride() }
+val LocalCardOverride = staticCompositionLocalOf { CardOverride() }
 
 private val CardShape = GlowLayout.CardShape
 
@@ -92,7 +90,7 @@ fun PictureCard(
     contentPadding: PaddingValues = GlowLayout.CardPadding,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val plain = LocalEdgeOverride.current.plain
+    val plain = LocalCardOverride.current.plain
     val mood = LocalGlowMood.current
     // Tapped, the card grows into what it opens (spec 3.5).
     val opening = cardOpening(onClick, CardShape)
