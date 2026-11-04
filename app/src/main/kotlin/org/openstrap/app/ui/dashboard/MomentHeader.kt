@@ -83,14 +83,20 @@ fun MomentHeader(
             // You and the Strap page grow out of the button tapped (spec 3.5).
             start = {
                 growClick(onOpenYou).let { g ->
-                    RoundIconButton(AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", g.onClick, g.modifier, surface = Avatar, iconSize = 20.dp, clickLabel = "Open You", dot = updateWaiting)
+                    RoundIconButton(
+                        AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", g.onClick, g.modifier,
+                        surface = Avatar, iconSize = 20.dp, clickLabel = "Open You", dot = updateWaiting,
+                    )
                 }
             },
             centre = { DaySwitcher(title, date, hasNext, onPrev, onNext, { calendarOpen = true }, Modifier) },
             end = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onOpenAllMetrics != null) {
-                        RoundIconButton(AppIcons.ChartBar, "All metrics", onOpenAllMetrics, surface = Avatar, iconSize = 20.dp, clickLabel = "Open all metrics")
+                        RoundIconButton(
+                            AppIcons.ChartBar, "All metrics", onOpenAllMetrics, surface = Avatar, iconSize = 20.dp,
+                            clickLabel = "Open all metrics",
+                        )
                         Spacer(Modifier.width(8.dp))
                     }
                     growClick(onOpenStrap).let { g -> StrapChipButton(chip, g.onClick, g.modifier) }

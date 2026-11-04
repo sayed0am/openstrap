@@ -96,11 +96,15 @@ internal fun WorkoutGoalField(value: Int, onChange: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("Workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoundIconButton(AppIcons.Minus, "Fewer workouts a week", { onChange((value - 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp)
+            RoundIconButton(
+                AppIcons.Minus, "Fewer workouts a week", { onChange((value - 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
+            )
             Box(Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface), contentAlignment = Alignment.Center) {
                 Text("$value a week", color = Color.White, style = GlowType.body, maxLines = 1)
             }
-            RoundIconButton(AppIcons.Plus, "More workouts a week", { onChange((value + 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp)
+            RoundIconButton(
+                AppIcons.Plus, "More workouts a week", { onChange((value + 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
+            )
         }
         PageNote("Workouts of 10 minutes or more count, two a day at most.")
     }
@@ -130,7 +134,11 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text("Calories", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            RoundIconButton(AppIcons.Minus, "Lower the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) }, size = 44.dp)
+            RoundIconButton(
+                AppIcons.Minus, "Lower the calorie goal",
+                { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) },
+                size = 44.dp,
+            )
             Box(
                 Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface)
                     .let { if (typing) it else it.clickable(onClickLabel = "Type the calorie goal", role = Role.Button) { text = value.toString(); refused = false; typing = true } },
@@ -150,7 +158,11 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
                     Text("${Units.count(value.toLong())} active kcal", color = Color.White, style = GlowType.body, maxLines = 1)
                 }
             }
-            RoundIconButton(AppIcons.Plus, "Raise the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) }, size = 44.dp)
+            RoundIconButton(
+                AppIcons.Plus, "Raise the calorie goal",
+                { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) },
+                size = 44.dp,
+            )
         }
         if (refused) PageNote(GoalCopy.outOfRange(Goals.CALORIES), MetricColors.warn)
         if (suggested != null) {

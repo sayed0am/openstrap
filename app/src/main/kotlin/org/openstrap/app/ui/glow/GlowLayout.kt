@@ -317,7 +317,8 @@ internal val CaretSize = 14.dp
  */
 @Composable
 internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) = RoundIconButton(
-    AppIcons.Info, label, onClick, modifier, size = InfoButtonSize, iconSize = 16.dp, tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+    AppIcons.Info, label, onClick, modifier, size = InfoButtonSize, iconSize = 16.dp,
+    tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
 )
 
 internal val InfoButtonSize = 32.dp

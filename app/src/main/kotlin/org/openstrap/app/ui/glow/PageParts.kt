@@ -101,7 +101,12 @@ val PageHeaderHeight = 64.dp
  */
 @Composable
 fun BackButton(onBack: () -> Unit, enabled: Boolean = true) =
-    RoundIconButton(AppIcons.ArrowLeft, "Back", onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp, enabled = enabled)
+    RoundIconButton(
+        AppIcons.ArrowLeft, "Back", onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp, enabled = enabled,
+    )
+
+/** How much of a [RoundIconButton] its icon takes by default. */
+private const val ROUND_ICON_SHARE = 0.47f
 
 /**
  * A round button holding just an [icon]: [size] across on [surface] (10% white by default), the icon [iconSize]
@@ -116,7 +121,7 @@ fun RoundIconButton(
     modifier: Modifier = Modifier,
     size: Dp = 38.dp,
     surface: Color = Color.White.copy(alpha = 0.10f),
-    iconSize: Dp = size * 0.47f,
+    iconSize: Dp = size * ROUND_ICON_SHARE,
     tint: Color = Color.White,
     clickLabel: String = label,
     enabled: Boolean = true,

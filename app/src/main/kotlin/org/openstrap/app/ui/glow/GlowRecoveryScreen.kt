@@ -58,6 +58,8 @@ import org.openstrap.app.ui.glow.draw.DotSize
  * The hero, the contributors and the Charge battery open their details on this tab's stack.
  */
 
+// A whole tab, filling the pane like the other tab screens: nothing outside places it.
+@Suppress("ModifierMissing")
 @Composable
 fun GlowRecoveryScreen(
     state: DayUiState,
@@ -297,7 +299,7 @@ private fun ChargeTall(
 
 /** Recharged or Drained beside the Charge battery: a number and a word. */
 @Composable
-private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier, failed: Boolean = false) {
+private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier = Modifier, failed: Boolean = false) {
     val ready = c != null && c.anchored && c.latest != null
     val value = c?.takeIf { ready }?.let {
         if (recharged) TabCopy.chargeAmount(it.recharged, +1)

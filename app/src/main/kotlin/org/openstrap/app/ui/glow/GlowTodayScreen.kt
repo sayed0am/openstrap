@@ -460,7 +460,9 @@ private enum class HeroKind { Pair, Stuck, Waking, NoSleep, Midday, Window, Afte
  */
 @Composable
 private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit, onRetry: () -> Unit, modifier: Modifier) {
-    ctx.recoveryFailure?.let { return RecoveryFailedHero(it, heroStyle(MetricColors.readiness, lightAngle), onOpen, onRetry, modifier, gap = 24.dp) }
+    ctx.recoveryFailure?.let {
+        return RecoveryFailedHero(it, heroStyle(MetricColors.readiness, lightAngle), onOpen, onRetry, modifier, gap = 24.dp)
+    }
     val score = ctx.score
     val shown = ctx.recoveryShown
     val before = ctx.rec?.readinessTrend?.dropLast(1)?.lastOrNull()?.second
@@ -558,7 +560,10 @@ private fun WindowHero(ctx: TodayContext, lightAngle: Float?, onStart: (Int) -> 
             HeroSentence(TodayCopy.window(noun, ctx.charge))
             Spacer(Modifier.height(28.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PageButton("Start ${noun ?: Workouts.sportName(sport).lowercase()}", { onStart(sport) }, Modifier.weight(1f), primary = true, icon = AppIcons.PlayFill, size = ButtonSize.Hero)
+                PageButton(
+                    "Start ${noun ?: Workouts.sportName(sport).lowercase()}", { onStart(sport) }, Modifier.weight(1f),
+                    primary = true, icon = AppIcons.PlayFill, size = ButtonSize.Hero,
+                )
                 PageButton("Other sport", onOther, size = ButtonSize.Hero, onCard = true)
             }
         }
@@ -716,7 +721,10 @@ private fun StuckHero(ctx: TodayContext, strap: TodayStrap, onSyncNow: () -> Uni
             HeroSentence(copy.sentence)
             Text(copy.line, color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
             Spacer(Modifier.height(28.dp))
-            PageButton("Sync now", { if (strap.canSync) onSyncNow() else haptics.perform(HapticEvent.SyncFailed) }, primary = true, size = ButtonSize.Hero)
+            PageButton(
+                "Sync now", { if (strap.canSync) onSyncNow() else haptics.perform(HapticEvent.SyncFailed) },
+                primary = true, size = ButtonSize.Hero,
+            )
         }
     }
 }

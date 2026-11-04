@@ -380,7 +380,10 @@ private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, 
         if (title != null) ChipLabel(title)
         types.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                row.forEach { type -> SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), type in Workouts.OUTDOOR_ONLY, isSelected(type)) { onPick(type) } }
+                row.forEach { type ->
+                    val outdoor = type in Workouts.OUTDOOR_ONLY
+                    SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type)) { onPick(type) }
+                }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }

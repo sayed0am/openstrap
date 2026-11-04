@@ -261,7 +261,10 @@ internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () 
             Spacer(Modifier.width(10.dp))
             Column {
                 Text("Looks like a workout", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
-                PageNote("Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?")
+                PageNote(
+                    "Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. " +
+                        "Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?",
+                )
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {

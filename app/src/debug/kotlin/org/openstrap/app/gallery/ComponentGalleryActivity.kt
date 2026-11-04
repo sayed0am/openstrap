@@ -200,6 +200,8 @@ private fun Gallery() {
 }
 
 /** Packs [cards] with [packGrid] and lays the rows out one under the other, [GlowGrid.Gap] apart. */
+// The gallery builds its card lists once and never changes them in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 private fun GlowGridColumn(cards: List<GridCard>, modifier: Modifier = Modifier) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {

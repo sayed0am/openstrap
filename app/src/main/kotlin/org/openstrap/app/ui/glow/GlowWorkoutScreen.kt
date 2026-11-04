@@ -230,7 +230,9 @@ private fun PastSummary(
                     }
                     if (inDay != null) InYourDayCard(inDay, onOpenDay)
                     val drop = WorkoutDetailCopy.dropLine(a.recovery60, a.recoveryIsMeaningful, null)
-                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, drop = drop, onInfo = { info = true })
+                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) {
+                        LoadCard(a, usual, drop = drop, onInfo = { info = true })
+                    }
                     // Zones and splits for the kinds whose section doesn't already show them.
                     val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
                     if (zonesShown) ZoneStripPanel(zones)
