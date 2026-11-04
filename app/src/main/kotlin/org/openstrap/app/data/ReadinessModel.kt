@@ -151,7 +151,8 @@ private fun Recovery.restingHeartRate(tonight: Night, base: Baseline?): Contribu
 /** Sleep balance: debt built over the last 14 nights, against need (naps count). */
 private fun Recovery.sleepBalance(nights: List<Night>, tonight: Night, sleepNeed: Int): Contributor? =
     sleepDebtMinutes(nights, tonight.day, sleepNeed)?.let { debt ->
-        val score = (100 * (1 - (debt - SLEEP_DEBT_FREE_MINUTES) / (SLEEP_DEBT_ZERO_MINUTES - SLEEP_DEBT_FREE_MINUTES))).toInt().coerceIn(0, 100)
+        val scored = (debt - SLEEP_DEBT_FREE_MINUTES) / (SLEEP_DEBT_ZERO_MINUTES - SLEEP_DEBT_FREE_MINUTES)
+        val score = (100 * (1 - scored)).toInt().coerceIn(0, 100)
         Contributor(Factor.SleepBalance, score, Detail.SleepDebt(if (debt < SLEEP_DEBT_NAMED_FROM) 0 else debt.toInt()))
     }
 
