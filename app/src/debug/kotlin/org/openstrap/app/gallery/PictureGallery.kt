@@ -88,12 +88,10 @@ private fun androidx.compose.foundation.layout.ColumnScope.Sample(title: String,
 
 @Composable
 private fun Number(value: String, unit: String?, tag: String?) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        DotMatrixText(value, dot = DotSize.Edge)
-        if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))
-        if (tag != null) {
-            Spacer(Modifier.width(8.dp))
-            NewsPill(NewsTag(tag, goal = false))
+    org.openstrap.app.ui.glow.NumberWithTag(tag?.let { NewsTag(it, goal = false) }) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            DotMatrixText(value, dot = DotSize.Edge)
+            if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))
         }
     }
 }
