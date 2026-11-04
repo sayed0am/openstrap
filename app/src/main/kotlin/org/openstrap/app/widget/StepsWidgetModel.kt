@@ -49,7 +49,7 @@ data class StepsWidgetModel(
     val steps: Int,
     /** The number in dots, "8,432" with the dot font's ASCII digits and marks ([Units.DOT_LOCALE]), and its word. */
     val stepsText: String,
-    /** The Small's number: [stepsText] up to 9,999, then "12.3k" to fit the smallest cell ([short]). */
+    /** The Small's number: [stepsText] up to 9,999, then "12.3k" or "10k" to fit the smallest cell ([short]). */
     val smallText: String,
     val word: String,
     /** "1,568 to go", or "Goal met" past the goal. */
@@ -122,15 +122,19 @@ data class StepsWidgetModel(
 
         /**
          * The Small's number for [steps]: "9,999" in full, then "12.3k" with one decimal cut down, never rounded up
-         * (12,999 is "12.9k", as it hasn't reached 13,000), and "100k" with no decimal from 100,000. ASCII digits for
-         * the dot font, and [locale]'s decimal mark when it's a comma ("12,3k" in German), which the font has too.
+         * (12,999 is "12.9k", as it hasn't reached 13,000), with no decimal when it's 0 (10,099 is "10k", 11,050 is
+         * "11k") and none from 100,000 ("100k"). ASCII digits for the dot font, and [locale]'s decimal mark when it's a
+         * comma ("12,3k" in German), which the font has too.
          */
-        fun short(steps: Int, locale: Locale = Locale.getDefault()): String = when {
-            steps < SHORT_FROM -> Units.count(steps.toLong(), Units.DOT_LOCALE)
-            steps >= WHOLE_FROM -> "${steps / THOUSAND}k"
-            else -> {
-                val mark = if (DecimalFormatSymbols.getInstance(locale).decimalSeparator == ',') ',' else '.'
-                "${steps / THOUSAND}$mark${steps % THOUSAND / HUNDRED}k"
+        fun short(steps: Int, locale: Locale = Locale.getDefault()): String {
+            val tenth = steps % THOUSAND / HUNDRED
+            return when {
+                steps < SHORT_FROM -> Units.count(steps.toLong(), Units.DOT_LOCALE)
+                steps >= WHOLE_FROM || tenth == 0 -> "${steps / THOUSAND}k"
+                else -> {
+                    val mark = if (DecimalFormatSymbols.getInstance(locale).decimalSeparator == ',') ',' else '.'
+                    "${steps / THOUSAND}$mark${tenth}k"
+                }
             }
         }
 
