@@ -28,6 +28,13 @@ jobs:
       - name: Install Android SDK packages
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" "build-tools;36.0.0" > /dev/null
 
+      # Robolectric downloads its Android jar (about 200 MB) from Maven Central into ~/.m2 while the tests run, outside
+      # the Gradle cache. Fetched on every run, it gets rate limited (HTTP 429) and every Robolectric test fails.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml', 'app/src/test/resources/robolectric.properties') }}
+
       - name: Test
         run: ./gradlew :protocol:test :app:testDebugUnitTest
 
