@@ -78,3 +78,27 @@ The generation line: `ui/glow/PageParts.kt`, `GlowCard`, `EdgeCard` and `GlowTyp
 `GlowCard`, `EdgeCard`, `PageHeader`, `GlowHeader`, `ListRow`, `PageRow`, `PageSwitchRow`, `GlowSwitch`, `PageSheet` / `GlassSheet`, `WorkoutButton`, `FlatButton`, `BarPill`, `PageTextButton`, `TypedNumber`, `NoteText`, `GlowLineChart`, `ArcGauge`, `HorizonArc`, `ZoneArc`, `PageDots`, `WeekStrip`, `HeroNumber`, `HeroFigure`, `DetailScoreNumber`, `DetailHero` / `DetailTemplate`, Today heroes, live cards, Ready plan cards, `Modifier.scrub`, `CardLooks.kt` / `TodayLooks.kt` (card look rules).
 
 Small moves: `OptionButton` (ZeppSignIn.kt:285) and `NumberField` (ProfileScreen.kt:209) to PageParts.kt. `DayCalendarSheet` restyle off Material type. Check whether `KeepConnectedRow` (DeviceScreen.kt:282) is just a `PageSwitchRow` and whether `RestCard` can use GlowCard's outline style.
+
+## Status 2026-11-04
+
+Done on `refactor/components` (cut from develop a75cc38), in three batches after the first two commits:
+
+- Sections 1, 2, 3 and 5 are done, with these exceptions, left on purpose:
+  - `TrendDots` stays: a 52 dp sparkline with no room for NormalTrend's labels.
+  - `GlowTrend` stays: the resting heart rate week chart needs its stems, values and today ring.
+  - `GlowBars` stays apart from `StackedBars`: single value pill bars shared with the widgets.
+  - `WeekDots` and `SetDots`: different marks.
+  - `ZonesList`, `ZoneStripPanel` and `ZonesEdgeCard`: three card designs on purpose. All three now use `ZoneBar`.
+  - `RepPage` and `PhaseFigure`: different boards.
+  - `drawZoneLine` covers `ZoneHeartLine` and `RangeChart` only. `DropLine` draws white.
+- New shared parts:
+  - In PageParts: `PageSwitchRow(icon)`, `GlowSegments`, `IconPill(style)`, `SectionLabel`, `StatusDot`, `PageSheet(title, side)`, `PageNumberField`, `OptionButton`.
+  - In GlowLayout: `GlowHeader` (PanelTitle gone), `OutlineTag`.
+  - In GlowCharts: `SegmentBar`, `Legend`, `FillBar`, `ProgressRing`, `PlainLine`, `PeakBars`, `drawZoneLine`.
+  - In GlowParts: `HeroValue`, `dotTextWidth`, `dotFitScale`.
+  - In CardLight: `LitPanel`, `effortGlow`.
+  - In GlowQuiet: `OutlineCard`.
+  - Also `RelatedPanel` and the score rows, `liveHeartStyle`, `MovingTime`, `ScrollPane`, `ControlsHint`.
+- No Material type, colour scheme, IconButton, TextButton or Surface is left under ui/glow (DesignTokenTest).
+- The workout trim moved from a lone row to a Trim button on the heart rate card, with a sheet (user, 2026-11-04).
+- The debug component gallery has a "Live parts" section: `--es section live`.
