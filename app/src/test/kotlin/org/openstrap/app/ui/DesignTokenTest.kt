@@ -120,7 +120,7 @@ class DesignTokenTest {
             "glow/TodayCards.kt" to cards("WeekCard"),
             "glow/GlowRecoveryScreen.kt" to cards("RecoveryHero", "RecoveryFailedHero", "ChargeTall", "ChargeSmall"),
             "glow/GlowSleepScreen.kt" to cards("NightHero", "RegularityCard", "BreathingCard"),
-            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "LoadCard"),
+            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "DayLoadCard"),
             "glow/GlowHealthspan.kt" to cards("HabitAgeEdgeCard"),
         ).forEach { (path, fn) ->
             val code = sources.getValue(path).joinToString("\n")
@@ -188,6 +188,14 @@ class DesignTokenTest {
             }
         }
         if (found.isNotEmpty()) fail("Dot sizes come from DotSize (spec 2.3):\n" + found.joinToString("\n"))
+    }
+
+    @Test fun `a workout hero's glow and a lit panel are each built in one place`() {
+        // The summary, the past workout and the heart rate drop light by effortGlow, Ready's heart and the max heart
+        // rate's hero are LitPanel (component consolidation, 2026-11-04). The share cards light a whole image, not a panel.
+        val found = find(Regex("""lightAngle\s*=\s*LightAngle\.Below,\s*lightLevel"""), except = setOf("glow/CardLight.kt")) +
+            find(Regex("""\bdrawCardLight\("""), except = setOf("glow/CardLight.kt", "glow/ShareCards.kt"))
+        if (found.isNotEmpty()) fail("Use effortGlow and LitPanel:\n" + found.joinToString("\n"))
     }
 
     /** Card-sized corners: anything this round is a card, a panel or a sheet, and takes [GlowLayout.CardShape]. */

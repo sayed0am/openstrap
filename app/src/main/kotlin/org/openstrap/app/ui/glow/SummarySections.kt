@@ -156,21 +156,6 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
     }
 }
 
-/** The hero's figures: values in Row value type over their labels, the last one to the right; a missing one is the dash. */
-@Composable
-internal fun SummaryFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
-    Row(modifier.fillMaxWidth()) {
-        figures.forEachIndexed { i, (value, label) ->
-            val end = i == figures.lastIndex && i > 0
-            Column(Modifier.weight(1f), horizontalAlignment = if (end) Alignment.End else Alignment.Start) {
-                if (value != null) Text(value, color = Color.White, style = GlowType.rowValue, maxLines = 1)
-                else WaitingDash(Modifier.padding(vertical = 10.5.dp))
-                Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
-            }
-        }
-    }
-}
-
 /**
  * The section for [family] (boards SummaryRun to SummaryGame): an edge card in the kind's colour, then a quiet card.
  * [week] is this week's count toward the goal, for the line under a calm session's week. Returns whether it ended on

@@ -168,7 +168,13 @@ object SummaryCopy {
         averageBpm?.let { "average $it bpm" },
     ).joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null }
 
-    /** The trim panel's header: "18:02 to 18:40, 38:12". */
+    /** Under the trim sheet's title: the times the workout was recorded, which the handles can reach back to. */
+    fun trimRecorded(from: String, to: String): String = "Recorded ${Ranges.of(from, to)}."
+
+    /** How to use the trim sheet's bar, under it. */
+    const val TRIM_HINT = "Drag the handles to where the workout really started and ended. Nothing recorded is deleted."
+
+    /** The trim sheet's header: "18:02 to 18:40, 38:12". */
     fun trimHeader(from: String, to: String, seconds: Long): String = "${Ranges.of(from, to)}, ${Units.workoutClock(seconds)}"
 
     /** The last part's distance, down to "0 m" where the smoothed total leaves next to nothing. */

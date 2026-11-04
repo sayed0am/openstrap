@@ -25,10 +25,10 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.openstrap.app.data.HeartZones
 
-/** The trim handles keep where they were dragged while the panel stays open across a recreate (audit K7). */
+/** The trim handles keep where they were dragged while the sheet stays open across a recreate (audit K7). */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
-class TrimPanelRestoreTest {
+class WorkoutTrimRestoreTest {
     private val compose = ComposeRules()
 
     @get:Rule val rules: RuleChain = RuleChain.outerRule(ZoneRule()).around(compose)
@@ -46,19 +46,19 @@ class TrimPanelRestoreTest {
         val s = summary()
         var saved: Pair<Long, Long>? = null
         StateRestorationTester(compose.compose).let { tester ->
-            tester.setContent { TrimPanel(s, onSave = { f, t -> saved = f to t }, onCancel = {}) }
+            tester.setContent { WorkoutTrimBar(s, onSave = { f, t -> saved = f to t }, onCancel = {}) }
             val opened = SummaryCopy.trimHeader(clock(s.analysis.shownStart), clock(s.analysis.end), s.analysis.end - s.analysis.shownStart)
             compose.compose.onNodeWithText(opened).assertExists()
 
-            // The strip sits between the panel's title and the clocks under it, as wide as they are.
-            val title = compose.compose.onNodeWithText("Trim").fetchSemanticsNode().boundsInRoot
+            // The strip sits between the times over it and the clocks under it, as wide as they are.
+            val title = compose.compose.onNodeWithText(opened).fetchSemanticsNode().boundsInRoot
             val left = compose.compose.onNodeWithText(clock(s.recordedStart)).fetchSemanticsNode().boundsInRoot
             val right = compose.compose.onNodeWithText(clock(s.recordedEnd)).fetchSemanticsNode().boundsInRoot
             val y = (title.bottom + left.top) / 2
             val from = left.left + 2f
             compose.compose.onRoot().performTouchInput { swipe(Offset(from, y), Offset((left.left + right.right) / 2, y), 400) }
             compose.compose.waitForIdle()
-            // Dragged: the header no longer reads the range the panel opened on.
+            // Dragged: the times no longer read the range the sheet opened on.
             compose.compose.onNodeWithText(opened).assertDoesNotExist()
 
             tester.emulateSavedInstanceStateRestore()
