@@ -586,7 +586,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
     ) {
         if (e == null || active == null) {
             if (ctx.r != null) item {
-                ListPanel(Modifier.padding(top = 8.dp)) { LinkRow(ADD_PROFILE, ctx.onEditProfile, divider = false) }
+                ListPanel(Modifier.padding(top = 8.dp)) { PageRow(ADD_PROFILE, onClick = ctx.onEditProfile, divider = false) }
             }
         } else if (range == Range.Day) {
             item { GoalBar(CaloriesCopy.share(active, goal), CaloriesCopy.toGoal(active, goal), color) }

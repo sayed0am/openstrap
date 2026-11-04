@@ -173,7 +173,7 @@ fun GlowWorkoutSummaryScreen(
             TopDone(done)
         }
         if (summary == null || a == null) {
-            Note("Loading…")
+            PageNote("Loading…")
             return@WorkoutPage
         }
         val w = a.workout
@@ -315,11 +315,11 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
         }
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth()) {
-            Box(Modifier.weight(1f)) { Note("Last minute") }
-            Box(Modifier.weight(1f)) { Note("End") }
+            Box(Modifier.weight(1f)) { PageNote("Last minute") }
+            Box(Modifier.weight(1f)) { PageNote("End") }
             Box(Modifier.weight(1f)) {
-                Note("1 min")
-                Box(Modifier.align(Alignment.CenterEnd)) { Note("2 min") }
+                PageNote("1 min")
+                Box(Modifier.align(Alignment.CenterEnd)) { PageNote("2 min") }
             }
         }
     }

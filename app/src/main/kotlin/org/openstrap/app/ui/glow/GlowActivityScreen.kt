@@ -211,11 +211,11 @@ private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: ()
                 horizontalArrangement = Arrangement.spacedBy(StartTileGap),
             ) {
                 sports.take(columns - 1).forEach { type ->
-                    SportTile(SportIcons.of(type), Workouts.sportName(type), outdoor = type in Workouts.OUTDOOR, Modifier.weight(1f)) {
+                    SportTile(SportIcons.of(type), Workouts.sportName(type), Modifier.weight(1f), outdoor = type in Workouts.OUTDOOR) {
                         onStart(type)
                     }
                 }
-                SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
+                SportTile(AppIcons.MoreHorizontalCircle01, "All sports", Modifier.weight(1f), outdoor = false, onClick = onAllSports)
             }
         }
     }
@@ -228,35 +228,6 @@ private val StartTileGap = 8.dp
 /** How many sports by use a wide Start card offers before the everyday ones pad it. */
 private const val MORE_BY_USE = 8
 
-private val SportTileSize = 64.dp
-private val SportTileShape = RoundedCornerShape(GlowLayout.TileCorner)
-
-/**
- * A sport as a tile: its icon on a 64 dp Control tile, its name in Secondary under it, up to two lines. An [outdoor]
- * sport carries a small location mark in the tile's corner.
- */
-@Composable
-private fun SportTile(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, outdoor: Boolean, modifier: Modifier, onClick: () -> Unit,
-) {
-    Column(
-        modifier.pressClickable(onClick, SportTileShape).semantics(mergeDescendants = true) { role = Role.Button },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(SportTileSize).background(ControlSurface, SportTileShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
-            if (outdoor) Icon(
-                AppIcons.Location01, null, tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                modifier = Modifier.align(Alignment.TopEnd).padding(7.dp).size(12.dp),
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
-            textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 /* ----------------------------------------------- Steps ---------------------------------------------- */
 
@@ -442,8 +413,8 @@ private fun WorkoutsList(
             }
             WorkoutRow(a, usual, divider()) { onOpen(a.workout.start) }
         }
-        LinkRow("Add a workout you didn't record", onAdd, divider = divider())
-        LinkRow("All workouts", onAll)
+        PageRow("Add a workout you didn't record", onClick = onAdd, divider = divider())
+        PageRow("All workouts", onClick = onAll)
     }
 }
 

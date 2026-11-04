@@ -137,20 +137,6 @@ internal fun ContributorRow(
     }
 }
 
-/** The last rows of a list: an action or a way on, with a caret. */
-@Composable
-internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .topHairline(divider, RowHairline)
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-        TapCaret(ROW_CARET_ALPHA)
-    }
-}
-
 /** A dot in [color] and a short [text], for a caveat like "Learning, 9 of 14 nights". */
 @Composable
 internal fun CaveatLine(text: String, color: Color, modifier: Modifier = Modifier) {

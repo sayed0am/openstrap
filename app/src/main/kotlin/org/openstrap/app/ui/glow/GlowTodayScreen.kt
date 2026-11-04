@@ -460,7 +460,7 @@ private enum class HeroKind { Pair, Stuck, Waking, NoSleep, Midday, Window, Afte
  */
 @Composable
 private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit, onRetry: () -> Unit, modifier: Modifier) {
-    ctx.recoveryFailure?.let { return FailedHero(it, lightAngle, onOpen, onRetry, modifier) }
+    ctx.recoveryFailure?.let { return RecoveryFailedHero(it, heroStyle(MetricColors.readiness, lightAngle), onOpen, onRetry, modifier, gap = 24.dp) }
     val score = ctx.score
     val shown = ctx.recoveryShown
     val before = ctx.rec?.readinessTrend?.dropLast(1)?.lastOrNull()?.second
@@ -479,23 +479,6 @@ private fun WakingHero(ctx: TodayContext, lightAngle: Float?, onOpen: () -> Unit
                 shown.value?.toString(),
                 listOfNotNull(shown.value?.let { shown.word ?: ctx.waiting }, atWake?.let { "Energy at waking $it" }),
             )
-        }
-    }
-}
-
-/** Today's Recovery failed (E5): yesterday's score dimmed, one line, one action. Never waiting forever. */
-@Composable
-private fun FailedHero(f: RecoveryFailure, lightAngle: Float?, onOpen: () -> Unit, onRetry: () -> Unit, modifier: Modifier) {
-    GlowCard(heroStyle(MetricColors.readiness, lightAngle), modifier, onClick = onOpen) {
-        Column {
-            GlowHeader("Recovery")
-            HeroSentence(RECOVERY_FAILED)
-            f.yesterday?.let { y ->
-                Spacer(Modifier.height(24.dp))
-                HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
-            }
-            Spacer(Modifier.height(24.dp))
-            PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
 }

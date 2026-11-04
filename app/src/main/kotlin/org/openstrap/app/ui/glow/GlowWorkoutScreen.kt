@@ -300,9 +300,9 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
         }
         ZoneHeartLine(values, first, a.end, a.maxHeartRate, a.historyRanges, scrubbed, { scrubbed = it }, Modifier.padding(top = 16.dp))
         Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            Note(clock(first))
+            PageNote(clock(first))
             Spacer(Modifier.weight(1f))
-            Note(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
+            PageNote(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
         }
         if (a.historyRanges.isNotEmpty()) Text(
             "Dimmed: " + a.historyRanges.joinToString(", ") { Ranges.times(it.first, it.last + 1) } +

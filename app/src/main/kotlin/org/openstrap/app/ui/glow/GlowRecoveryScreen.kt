@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,6 +19,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
@@ -108,7 +108,10 @@ fun GlowRecoveryScreen(
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->
                 when (card) {
                     RecoveryCard.Hero ->
-                        if (failure != null) RecoveryFailedHero(failure, onOpen = { onOpenScore(Score.Recovery) }, onRetry = onRetryRecovery)
+                        if (failure != null) RecoveryFailedHero(
+                            failure, recoveryHeroStyle(MetricColors.readiness), { onOpenScore(Score.Recovery) }, onRetryRecovery,
+                            Modifier.fillMaxWidth().gridSize(CardSize.Wide), gap = 22.dp,
+                        )
                         else RecoveryHero(
                             r, onOpen = { onOpenScore(Score.Recovery) }, onInfo = { info = true }, firstNights = firstNights,
                             noSleep = isToday && state.loaded && state.asleepSeconds == null, deleted = state.deletedSleep != null, firstScore = firstScore,
@@ -208,19 +211,26 @@ private fun RecoveryHero(
 
 /**
  * Today's score failed to work out (spec 4.3, E5): yesterday's stays, dimmed, with the line and Try again, so the
- * hero never waits forever.
+ * hero never waits forever. The Recovery tab and Today both show it, each in its own hero [style] and [gap].
  */
 @Composable
-private fun RecoveryFailedHero(failure: RecoveryFailure, onOpen: () -> Unit, onRetry: () -> Unit) {
-    GlowCard(recoveryHeroStyle(MetricColors.readiness), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
+internal fun RecoveryFailedHero(
+    failure: RecoveryFailure,
+    style: GlowStyle,
+    onOpen: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier,
+    gap: Dp,
+) {
+    GlowCard(style, modifier, onClick = onOpen) {
         Column {
             GlowHeader("Recovery")
             HeroSentence(RECOVERY_FAILED)
             failure.yesterday?.let { y ->
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.height(gap))
                 HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
             }
-            Spacer(Modifier.height(22.dp))
+            Spacer(Modifier.height(gap))
             PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
@@ -365,8 +375,3 @@ private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Met
         }
     }
 }
-
-/* --------------------------------------------- Shared ------------------------------------------------ */
-
-@Composable
-internal fun Note(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)

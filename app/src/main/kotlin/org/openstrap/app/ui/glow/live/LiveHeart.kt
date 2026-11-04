@@ -302,13 +302,13 @@ internal fun WorkoutHeartCard(
 @Composable
 internal fun HeartNotes(r: WorkoutState.Recording, zone: Int?, zoneSeconds: ZoneSeconds, active: () -> Long, kcal: Float?) {
     Row {
-        zone?.let { Note(WorkoutCopy.zoneTime(zoneSeconds[it])) }
+        zone?.let { PageNote(WorkoutCopy.zoneTime(zoneSeconds[it])) }
         Spacer(Modifier.weight(1f))
         when (val t = WorkoutTarget.parse(r.workout.target)) {
-            is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
+            is WorkoutTarget.Zones -> PageNote("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
             is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
-            is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
-            is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
+            is WorkoutTarget.Kcal -> PageNote(WorkoutCopy.kcalProgress(kcal, t))
+            is WorkoutTarget.Distance -> PageNote(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
             null -> Unit
         }
     }
@@ -339,7 +339,7 @@ fun GlowWorkoutGlance(
 
 /** "12:30 of 30 min" under the heart card: its own scope, so only it reads the time. */
 @Composable
-private fun TimeTargetNote(active: () -> Long, target: String) = Note("${workoutClock(active())} of $target")
+private fun TimeTargetNote(active: () -> Long, target: String) = PageNote("${workoutClock(active())} of $target")
 
 private const val BUCKET_S = 5L
 private const val WINDOW_S = 600L

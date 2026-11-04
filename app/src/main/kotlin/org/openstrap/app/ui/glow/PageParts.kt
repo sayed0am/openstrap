@@ -172,23 +172,15 @@ fun PageHeader(
 }
 
 /**
- * A grouped panel for free content (text, fields, buttons): the [ListPanel] surface with even padding, an optional
- * [title] row and [note] on its right.
+ * A grouped panel for free content (text, fields, buttons): a [QuietPanel] with an optional [title] row and [note]
+ * on its right ([PanelTitle]).
  */
 @Composable
-fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String? = null, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier.fillMaxWidth().background(PanelSurface, PanelShape).border(1.dp, Color.White.copy(alpha = 0.06f), PanelShape)
-            .padding(GlowLayout.CardPadding),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        if (title != null) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-            if (note != null) Text(note, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-        }
+fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String? = null, content: @Composable ColumnScope.() -> Unit) =
+    QuietPanel(modifier) {
+        if (title != null) PanelTitle(title, note)
         content()
     }
-}
 
 /** A grouped list of [PageRow]s, without a title row (the rows carry the names). */
 @Composable

@@ -236,7 +236,7 @@ internal fun SuggestionPanel(
             Column {
                 Text("Looks like you worked out", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 val day = dayName(Instant.ofEpochSecond(s.start).atZone(ZoneId.systemDefault()).toLocalDate())
-                Note(
+                PageNote(
                     "$day ${Ranges.times(s.start, s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average. " +
                         "Nobody pressed Start.",
                 )
@@ -261,7 +261,7 @@ internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () 
             Spacer(Modifier.width(10.dp))
             Column {
                 Text("Looks like a workout", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
-                Note("Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?")
+                PageNote("Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?")
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -302,22 +302,22 @@ fun GlowAddWorkoutScreen(
     WorkoutPage(Color.Transparent, contentPadding, pinned = { WorkoutButton("Choose the sport", Color.White, Color.Black, { picking = true }) }) {
         PageHeader("Add a workout", onBack, subtitle = dayName(date))
         if (minuteHr == null) {
-            QuietPanel { Note("Loading…") }
+            QuietPanel { PageNote("Loading…") }
             return@WorkoutPage
         }
         if (series.size < 2) {
-            QuietPanel { Note("The strap hasn't sent heart rate for this day yet. Sync, then try again.") }
+            QuietPanel { PageNote("The strap hasn't sent heart rate for this day yet. Sync, then try again.") }
             return@WorkoutPage
         }
         QuietPanel {
             PanelTitle("When was it?", trailing = Ranges.times(from, to))
             RangeChart(series, first, last, from, to, maxHr) { f, t -> from = f; to = t }
             Row(Modifier.fillMaxWidth()) {
-                Note(clock(first))
+                PageNote(clock(first))
                 Spacer(Modifier.weight(1f))
-                Note(clock(last))
+                PageNote(clock(last))
             }
-            Note("Drag the handles to where the workout began and ended. Its heart rate comes from the strap's minute records.")
+            PageNote("Drag the handles to where the workout began and ended. Its heart rate comes from the strap's minute records.")
         }
     }
 }
@@ -478,7 +478,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
             colorOf = { v -> WorkoutRecorder.liveZone(v.toInt(), a.maxHeartRate, heartZones)?.let { ZONE_COLORS[it] } },
             onChange = { f, t -> from = f; to = t },
         )
-        Note("Drag the handles to where the workout really started and ended. Nothing recorded is deleted.")
+        PageNote("Drag the handles to where the workout really started and ended. Nothing recorded is deleted.")
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Box(Modifier.weight(1f)) { WorkoutButton("Cancel", Raised, Color.White, onCancel) }
             Box(Modifier.weight(1f)) { WorkoutButton("Save", Color.White, Color.Black, { onSave(from, to) }) }

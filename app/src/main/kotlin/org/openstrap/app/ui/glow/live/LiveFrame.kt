@@ -204,7 +204,7 @@ internal fun LiveFrame(
                 return@WorkoutPage
             }
             if (!connected && !r.paused) {
-                Note(WorkoutCopy.STRAP_GONE_NOTE)
+                PageNote(WorkoutCopy.STRAP_GONE_NOTE)
             }
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
             if (!fill || r.paused) Spacer(Modifier.weight(1f))
@@ -258,7 +258,7 @@ private fun ColumnScope.LandscapePanes(
                 ) {
                     // Beside a shared bar the moving time stays over the page, as it is upright.
                     if (bar && time != null) MovingTime(time)
-                    if (!bar && !connected && !r.paused) Note(WorkoutCopy.STRAP_GONE_NOTE)
+                    if (!bar && !connected && !r.paused) PageNote(WorkoutCopy.STRAP_GONE_NOTE)
                     if (!bar) r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
                     if (r.paused && paused != null) paused() else content()
                 }
@@ -445,7 +445,7 @@ internal fun LiveBottomBar(
 ) {
     val density = androidx.compose.ui.platform.LocalDensity.current
     val items: @Composable ColumnScope.() -> Unit = {
-        if (!connected) Note(WorkoutCopy.STRAP_GONE_NOTE)
+        if (!connected) PageNote(WorkoutCopy.STRAP_GONE_NOTE)
         r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
         val at = position()
         Box(Modifier.fillMaxWidth().semantics { contentDescription = "View ${kotlin.math.round(at).toInt() + 1} of $count" }) {
@@ -537,7 +537,7 @@ internal fun FlatButton(container: Color, size: Dp, modifier: Modifier = Modifie
 internal fun StoppedPrompt(r: WorkoutState.Recording, at: Long, onEnd: () -> Unit, onKeep: () -> Unit) {
     QuietPanel {
         PanelTitle(if (r.inCar) "Looks like you're in a car" else "Looks like you've stopped")
-        Note(
+        PageNote(
             if (r.inCar) "You last moved at ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} there, so the drive isn't counted?"
             else "Your heart rate has been back near resting since ${clock(at)}. End the ${Workouts.sportName(r.workout.sportType).lowercase()} at ${clock(at)}?",
         )

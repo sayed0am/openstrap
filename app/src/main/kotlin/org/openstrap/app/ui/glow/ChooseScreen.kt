@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -190,21 +191,32 @@ private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) =
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 
 /**
- * A sport's tile in the picker (spec 6.3): a 64 dp Control tile with 16 dp corners, the icon at 24 dp, the name in
- * Secondary under it. The chosen sport's tile is white with a black icon; a sport done only outdoors carries the
- * 12 dp location mark in its corner.
+ * A sport's tile (spec 6.3), in the picker and on Activity's Start a workout: a 64 dp Control tile with 16 dp corners,
+ * the [icon] at 24 dp, the [name] in Secondary under it. The chosen sport's tile is white with a black icon; an
+ * [outdoor] sport carries the 12 dp location mark in its corner.
  */
 @Composable
-private fun SportTile(type: Int, name: String, modifier: Modifier, selected: Boolean = false, onClick: () -> Unit) {
+internal fun SportTile(
+    icon: ImageVector,
+    name: String,
+    modifier: Modifier,
+    outdoor: Boolean,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+) {
     // Tight corners and room underneath, so the press area never clips a label that fills the width.
-    Column(modifier.pressClickable(onClick, RoundedCornerShape(8.dp)).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier.pressClickable(onClick, RoundedCornerShape(8.dp)).semantics(mergeDescendants = true) { role = Role.Button }
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Box(
             Modifier.size(SportTileSize).clip(GlowLayout.TileShape).background(if (selected) Color.White else Raised),
             contentAlignment = Alignment.Center,
         ) {
             val ink = if (selected) Color.Black else Color.White
-            Icon(SportIcons.of(type), null, tint = ink, modifier = Modifier.size(24.dp))
-            if (type in Workouts.OUTDOOR_ONLY) Icon(
+            Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
+            if (outdoor) Icon(
                 SportIcons.Location, "Outdoors", tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
             )
@@ -368,7 +380,7 @@ private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, 
         if (title != null) ChipLabel(title)
         types.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                row.forEach { type -> SportTile(type, name(type), Modifier.weight(1f), selected = isSelected(type)) { onPick(type) } }
+                row.forEach { type -> SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), type in Workouts.OUTDOOR_ONLY, isSelected(type)) { onPick(type) } }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }

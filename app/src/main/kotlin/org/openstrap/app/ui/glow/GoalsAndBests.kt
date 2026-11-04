@@ -172,7 +172,7 @@ fun GoalsAndBestsPage(
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Goals and bests", onBack) }
         if (view == null) {
-            item { Note("Loading…") }
+            item { PageNote("Loading…") }
             return@ScreenList
         }
         item {
