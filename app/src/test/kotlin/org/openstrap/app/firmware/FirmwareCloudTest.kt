@@ -13,6 +13,15 @@ class FirmwareCloudTest {
 
     private fun query(s: StrapIdentity = strap) = FirmwareCloud.queryParams(s, "1234", Locale.UK, "Europe/London", 34)
 
+    /** The server keys new firmware on the Zepp version, so the check names the current one, as the account calls do. */
+    @Test
+    fun namesTheCurrentZeppApp() {
+        val q = query()
+        assertEquals("151997_10.10.5-play", q["cv"])
+        assertEquals("10.10.5-play_151997", q["appVersion"])
+        assertEquals(ZeppApp.ID, q["appid"])
+    }
+
     @Test
     fun sendsZeppDefaultsWhenStrapReportsNoResources() {
         val q = query()

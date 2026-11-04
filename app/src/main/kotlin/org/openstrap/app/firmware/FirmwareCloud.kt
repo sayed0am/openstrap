@@ -228,10 +228,10 @@ class FirmwareCloud(private val cacheDir: File) {
     }
 
     companion object {
-        // Identify as the Zepp app version this work was based on; the server keys answers on it.
-        private const val APP_ID = "428135909242707968"
-        private const val APP_VERSION_NAME = "10.9.0-play"
-        private const val APP_VERSION_CODE = "151983"
+        // Identify as the Zepp app ZeppApp names, since the server keys its answers on it.
+        private const val APP_ID = ZeppApp.ID
+        private const val APP_VERSION_NAME = ZeppApp.VERSION_NAME
+        private const val APP_VERSION_CODE = ZeppApp.VERSION_CODE
 
         private val PREFIXES = listOf("firmware", "resource", "baseResource", "extResource", "font", "gps")
 

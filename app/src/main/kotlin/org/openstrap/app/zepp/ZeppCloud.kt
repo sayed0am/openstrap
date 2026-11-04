@@ -5,6 +5,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import org.openstrap.app.data.settings.ZeppAccount
 import org.openstrap.app.firmware.StrapIdentity
+import org.openstrap.app.firmware.ZeppApp
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
@@ -65,11 +66,11 @@ class ZeppCloudException(message: String, val rejected: Boolean = false) : IOExc
  * sends the token and user ID, nothing about the strap or its data.
  */
 object ZeppCloud {
-    // Same identity as the firmware check.
-    private const val APP_ID = "428135909242707968"
-    private const val APP_VERSION_NAME = "10.9.0-play"
-    private const val APP_VERSION_CODE = "151983"
-    private const val APP_NAME = "com.huami.midong"
+    // Same identity as the firmware check (ZeppApp).
+    private const val APP_ID = ZeppApp.ID
+    private const val APP_VERSION_NAME = ZeppApp.VERSION_NAME
+    private const val APP_VERSION_CODE = ZeppApp.VERSION_CODE
+    private const val APP_NAME = ZeppApp.NAME
 
     /**
      * Zepp's universal login, set up as watchface.zepp.com's sign-in: after the password it returns to that
