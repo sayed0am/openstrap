@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -38,6 +37,7 @@ import org.openstrap.app.data.db.WorkoutHeartRate
 import org.openstrap.app.data.settings.UserProfile
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.ZoneRule
+import org.openstrap.app.testing.endMain
 import org.openstrap.app.testing.inMemoryDb
 import org.openstrap.app.testing.profile
 import org.robolectric.RobolectricTestRunner
@@ -87,10 +87,8 @@ class WorkoutsViewModelThreadsTest {
     }
 
     @After fun tearDown() {
-        collectors.forEach { it.cancel() }
-        vms.forEach { it.viewModelScope.coroutineContext[Job]?.cancel() }
+        endMain(collectors + vms.map { it.viewModelScope.coroutineContext[Job] })
         db.close()
-        Dispatchers.resetMain()
     }
 
     private fun vm(profile: Flow<UserProfile> = flowOf(profile()), onTestTime: Boolean = false): WorkoutsViewModel {

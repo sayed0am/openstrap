@@ -9,7 +9,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,6 +28,7 @@ import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.data.settings.SettingsStore
+import org.openstrap.app.testing.endMain
 
 /** The Phone alerts page writes through its view model, and quiet hours change from what is stored (audit A2). */
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -52,9 +51,7 @@ class PhoneAlertsViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After fun tearDown() {
-        vms.forEach { it.viewModelScope.coroutineContext[Job]?.cancel() }
-        scope.cancel()
-        Dispatchers.resetMain()
+        endMain(vms.map { it.viewModelScope.coroutineContext[Job] } + scope.coroutineContext[Job])
     }
 
     private fun vm() = PhoneAlertsViewModel(settings, alerts).also { vms += it }
