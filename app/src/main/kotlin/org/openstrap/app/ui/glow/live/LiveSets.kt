@@ -212,7 +212,7 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: () -> Long,
 
 /**
  * The set, the rest or the next set on one row (half a folded phone): what it is and its exercise, and the set's clock
- * or the rest left in dots, on an edge card in the screen's colour.
+ * or the rest left in dots, on an unlit picture card.
  */
 @Composable
 private fun CompactCard(

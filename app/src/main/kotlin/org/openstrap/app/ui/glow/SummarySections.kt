@@ -28,7 +28,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,13 +61,12 @@ import org.openstrap.app.ui.workout.RoundLine
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
 import org.openstrap.app.ui.workout.familyColor
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
  * The summary's parts that differ by kind of workout (workouts spec 2.8, boards SummaryRun to SummaryGame): the hero's
- * one number and three figures, then each kind's own section. Cards alternate their look down the page (an edge card
- * in the kind's colour, then a quiet one), so each section says whether it ended on an edge card for the card under it.
+ * one number and three figures, then each kind's own section: an unlit picture card in the kind's colour, then a
+ * quiet one, so two cards in a row differ by what they draw.
  */
 
 /**
@@ -185,9 +183,8 @@ internal fun joined(parts: List<String>, strings: Strings = Strings.app): String
     parts.reduceOrNull { a, b -> strings.format(R.string.glow_summary_join, a, b) }
 
 /**
- * The section for [family] (boards SummaryRun to SummaryGame): an edge card in the kind's colour, then a quiet card.
- * [week] is this week's count toward the goal, for the line under a calm session's week. Returns whether it ended on
- * an edge card, so the card under it can take another edge.
+ * The section for [family] (boards SummaryRun to SummaryGame): an unlit picture card drawing the kind's own picture,
+ * then a quiet card. [week] is this week's count toward the goal, for the line under a calm session's week.
  */
 @Composable
 internal fun FamilySection(
@@ -195,7 +192,7 @@ internal fun FamilySection(
     /** False on a past workout's page, whose heart rate card has the line already: the lines under it stay. */
     heartLine: Boolean = true,
     week: Rewards.WeekLine? = null,
-): Boolean {
+) {
     val heartZones = LocalHeartZones.current
     val a = summary.analysis
     val readings = remember(summary) { FamilySummary.readings(summary) }
@@ -204,31 +201,27 @@ internal fun FamilySection(
     when (family) {
         Workouts.Family.Distance -> {
             RouteCard(summary)
-            return SplitsList(summary, liveRoute, markFastest = true)
+            SplitsList(summary, liveRoute, markFastest = true)
         }
         Workouts.Family.IndoorCardio -> {
-            // Board SummaryIndoor: the zones lit from the right in the zone you were mostly in, the heart rate quiet
-            // under it, then how it compares with last time as a line of its own.
-            val zonesShown = zones.sum() > 0
-            if (zonesShown) ZonesEdgeCard(zones)
+            // Board SummaryIndoor: the zones, the heart rate quiet under them, then how it compares with last time as
+            // a line of its own.
+            if (zones.sum() > 0) ZonesCard(zones)
             val kcal = a.activeKcal?.let(Math::round)
             val target = org.openstrap.app.ui.workout.SummaryCopy.targetLine(a.target, a.targetReachedSeconds, kcal)?.let {
                 it to FamilySummary.targetReached(a.target, a.targetReachedSeconds, kcal)
             }
-            val heartShown = IndoorHeartCard(readings, target, chart = heartLine)
+            IndoorHeartCard(readings, target, chart = heartLine)
             FamilySummary.versusLast(a, others)?.let { VersusLast(it.replaceFirstChar { c -> c.lowercase() }) }
-            return zonesShown && !heartShown
         }
         Workouts.Family.Strength -> {
             val groups = remember(summary) { FamilySummary.exerciseSets(summary.sets, readings) }
             if (groups.isNotEmpty()) SetsCard(groups, a.maxHeartRate)
             val below = summary.restBelow
             val rest = remember(summary) { FamilySummary.restRecovery(summary.sets, readings, below) }
-            val restShown = below != null && rest != null
-            if (restShown) {
+            if (below != null && rest != null) {
                 SentenceCard(stringResource(R.string.glow_summary_rest_title), FamilySummary.restLine(rest, below, summary.restBefore))
             }
-            return groups.isNotEmpty() && !restShown
         }
         Workouts.Family.Intervals -> {
             val reps = summary.structure is Structure.Reps
@@ -242,24 +235,20 @@ internal fun FamilySection(
             val rest = (summary.structure as? Structure.Timed)?.rest ?: (summary.structure as? Structure.Reps)?.rest
             val line = FamilySummary.roundsLine(lines, rest)
             if (line != null) SentenceCard(stringResource(R.string.glow_summary_recovery_title), line)
-            return (peaks || (reps && times.isNotEmpty())) && line == null
         }
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             HeartLineCard(readings, MetricColors.evening, settled, chart = heartLine)
             val day = java.time.Instant.ofEpochSecond(a.shownStart).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
             WeekDaysPanel(weekStarts, note = week?.let { FamilySummary.weekGoalLine(it.count, it.goal) }, day = day, color = MetricColors.evening)
-            return false
         }
         Workouts.Family.Games -> {
             // Named out of the periods it was set up with, not the ones played, so ending early doesn't rename them.
             val of = (summary.structure as? org.openstrap.app.data.Structure.Periods)?.rounds ?: summary.rounds.count { it.workEnd != null }
             val periods = remember(summary, heartZones) { FamilySummary.periods(summary.rounds, readings, a.maxHeartRate, of, heartZones) }
             val read = FamilySummary.gameRead(readings, a.shownStart, a.end)
-            val periodsShown = periods.isNotEmpty() || read != null
-            if (periodsShown) PeriodsCard(periods, of, read)
+            if (periods.isNotEmpty() || read != null) PeriodsCard(periods, of, read)
             if (zones.sum() > 0) ZoneStripPanel(zones)
-            return periodsShown && zones.sum() <= 0
         }
     }
 }
@@ -287,7 +276,7 @@ private fun SentenceCard(title: String, sentence: String) {
 }
 
 /**
- * The sets by exercise (board SummaryStrength), lit from the left in strength's orange: each set's number, what was
+ * The sets by exercise (board SummaryStrength), unlit with strength's orange as its ink: each set's number, what was
  * lifted, its peak and a bar as long as the peak against the hardest set's, in the zone it reached.
  */
 @Composable
@@ -333,7 +322,7 @@ private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
 private const val LabelledRounds = 10
 
 /**
- * Each round as a column (board SummaryHiit), lit from the left in heart red: its peak over it, as tall as the peak
+ * Each round as a column (board SummaryHiit), unlit with heart red as its ink: its peak over it, as tall as the peak
  * against the hardest round's, in the zone it reached, the hardest outlined. Under a hairline, how far the heart rate
  * came down in the rest after each.
  */
@@ -422,7 +411,7 @@ private fun RepTimesCard(times: List<Long>) {
 private val RoundColumnHeight = 52.dp
 
 /**
- * A game's halves or periods (board SummaryGame), lit from the left in the games colour: each one's hard efforts, a
+ * A game's halves or periods (board SummaryGame), unlit in the games colour: each one's hard efforts, a
  * bar as long as its average heart rate against the highest, that one full colour, and the average beside it. Then
  * how the game went.
  */
@@ -495,32 +484,30 @@ internal fun ZoneStripPanel(zones: ZoneSeconds) {
 }
 
 /**
- * Time in zones on an edge card lit from the right in the zone you were mostly in (board SummaryIndoor): the strip,
- * then each zone with time in it by name and minutes, that zone's row bold.
+ * Time in zones on an unlit picture card (board SummaryIndoor): the strip, then each zone with time in it by name and
+ * minutes, the zone you were mostly in bold.
  */
 @Composable
-private fun ZonesEdgeCard(zones: ZoneSeconds) {
+private fun ZonesCard(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     val most = zones.indices.maxByOrNull { zones[it] } ?: 0
-    CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Right)) {
-        PictureCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
-            EdgeTitle(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
-            ZoneBar(
-                zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
-            )
-            zones.indices.filter { zones[it] > 0 }.forEach { z ->
-                val style = if (z == most) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary
-                Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(8.dp).background(ZONE_COLORS[z], CircleShape))
-                    Text(
-                        stringResource(R.string.glow_summary_zone_name, z + 1, ZONE_NAMES[z].lowercase()),
-                        color = Color.White, style = style, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 10.dp),
-                    )
-                    Text(
-                        stringResource(R.string.glow_summary_minutes, minutes[z]), color = Color.White,
-                        style = style.copy(fontFeatureSettings = "tnum"), maxLines = 1,
-                    )
-                }
+    PictureCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
+        EdgeTitle(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
+        ZoneBar(
+            zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
+        )
+        zones.indices.filter { zones[it] > 0 }.forEach { z ->
+            val style = if (z == most) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary
+            Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(8.dp).background(ZONE_COLORS[z], CircleShape))
+                Text(
+                    stringResource(R.string.glow_summary_zone_name, z + 1, ZONE_NAMES[z].lowercase()),
+                    color = Color.White, style = style, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 10.dp),
+                )
+                Text(
+                    stringResource(R.string.glow_summary_minutes, minutes[z]), color = Color.White,
+                    style = style.copy(fontFeatureSettings = "tnum"), maxLines = 1,
+                )
             }
         }
     }
@@ -572,7 +559,7 @@ private fun VersusLast(line: String) {
 private const val HeartPoints = 60
 
 /**
- * The heart rate over a calm session on an edge card lit from the left (board SummaryMind): how far it came down in
+ * The heart rate over a calm session on an unlit picture card (board SummaryMind): how far it came down in
  * the title row, a smooth line with its two ends marked, then the start and end figures ([settled]). Without them the
  * range in the title row and the line alone; with [chart] off, the figures alone.
  */
