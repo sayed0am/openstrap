@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Sleep tab's details (ui/dashboard/SleepCopy.kt, SleepPanels.kt and Narrative.kt): the night vitals, the Sleep
+  score and what shaped it, Sleep regularity, naps, adjusting a sleep's times, deleting a sleep and the Deleted sleep
+  page. "Last night" is the night before today, "That night" an earlier one. Health Connect is a name, keep it.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The label under a night vital's value on Day, after its unit ("ms", "bpm", "%"). Lower case after the comma. -->
+    <string name="day_sleep_night_label_day"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average asleep</string>
+    <!-- The same on Week. -->
+    <string name="day_sleep_night_label_week"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average of the last 7 nights</string>
+    <!-- The same on Month, for a value read only in sleep. -->
+    <string name="day_sleep_night_label_month_nights"><xliff:g id="unit" example="%">%1$s</xliff:g>, last 30 nights</string>
+    <!-- The same on Month, for a value whose days are read day and night. -->
+    <string name="day_sleep_night_label_month_days"><xliff:g id="unit" example="ms">%1$s</xliff:g>, last 30 days, day and night</string>
+    <!-- The same on Year, for a value read only in sleep. -->
+    <string name="day_sleep_night_label_year_nights"><xliff:g id="unit" example="%">%1$s</xliff:g>, nights of the last 12 months</string>
+    <!-- The same on Year, for a value whose days are read day and night. -->
+    <string name="day_sleep_night_label_year_days"><xliff:g id="unit" example="ms">%1$s</xliff:g>, last 12 months, day and night</string>
+
+    <!-- In place of a night value, a word or two, when there was no sleep. -->
+    <string name="day_sleep_no_sleep">No sleep</string>
+    <!-- Under it, on today. -->
+    <string name="day_sleep_none_last_night">None recorded last night</string>
+    <!-- Under it, on an earlier day. -->
+    <string name="day_sleep_none_that_night">None recorded that night</string>
+    <!-- In place of a night vital's value, a word or two, when the night had none of it. -->
+    <string name="day_sleep_no_reading">No reading</string>
+    <!-- Under it, on today. -->
+    <string name="day_sleep_not_measured_last_night">Not measured last night</string>
+    <!-- Under it, on an earlier day. -->
+    <string name="day_sleep_not_measured_that_night">Not measured that night</string>
+
+    <!-- Night heart rate's sentence: the lowest while asleep, when (a clock time), then the average while asleep. -->
+    <string name="day_sleep_heart_lowest_last_night">Lowest <xliff:g id="lowest" example="48">%1$d</xliff:g> bpm at <xliff:g id="time" example="03:10">%2$s</xliff:g> last night, <xliff:g id="average" example="55">%3$d</xliff:g> on average while asleep.</string>
+    <!-- The same for an earlier night. -->
+    <string name="day_sleep_heart_lowest_that_night">Lowest <xliff:g id="lowest" example="48">%1$d</xliff:g> bpm at <xliff:g id="time" example="03:10">%2$s</xliff:g> that night, <xliff:g id="average" example="55">%3$d</xliff:g> on average while asleep.</string>
+    <!-- Night heart rate's sentence without readings for the lowest. -->
+    <string name="day_sleep_heart_average_last_night"><xliff:g id="average" example="55">%1$d</xliff:g> bpm on average while asleep last night.</string>
+    <!-- The same for an earlier night. -->
+    <string name="day_sleep_heart_average_that_night"><xliff:g id="average" example="55">%1$d</xliff:g> bpm on average while asleep that night.</string>
+    <!-- Night heart rate's week, with one night in it. -->
+    <string name="day_sleep_heart_week_one">One night with an average heart rate in the last 7 so far.</string>
+    <!-- Night heart rate's week: the average, then the lowest and highest night. -->
+    <string name="day_sleep_heart_week">Averaged <xliff:g id="average" example="55">%1$d</xliff:g> bpm asleep over the last 7 nights, from <xliff:g id="low" example="51">%2$d</xliff:g> to <xliff:g id="high" example="60">%3$d</xliff:g>.</string>
+
+    <!-- The label under the Sleep score, on today. Lower case. -->
+    <string name="day_sleep_score_label_last_night">last night</string>
+    <!-- The same on an earlier day. -->
+    <string name="day_sleep_score_label_that_night">that night</string>
+    <!-- In place of the Sleep score when the strap gave none, a word or two. -->
+    <string name="day_sleep_no_score">No score</string>
+    <!-- Under it, on today. -->
+    <string name="day_sleep_no_score_last_night">The strap didn\'t score last night</string>
+    <!-- Under it, on an earlier day. -->
+    <string name="day_sleep_no_score_that_night">The strap didn\'t score that night</string>
+    <!-- The night's headline ("Short night") as the first sentence of the Sleep score's sentence. -->
+    <string name="day_sleep_headline_sentence"><xliff:g id="headline" example="Short night">%1$s</xliff:g>.</string>
+
+    <!-- What shaped the score: the row about time asleep. -->
+    <string name="day_sleep_factor_time_asleep">Time asleep</string>
+    <!-- What shaped the score: the row about waking in the night. -->
+    <string name="day_sleep_factor_staying_asleep">Staying asleep</string>
+    <!-- Under Time asleep: the time asleep, then the user's sleep need. -->
+    <string name="day_sleep_factor_asleep_detail"><xliff:g id="asleep" example="7 h 40">%1$s</xliff:g> of <xliff:g id="need" example="8 h">%2$s</xliff:g></string>
+    <!-- Under Staying asleep: the minutes awake after first falling asleep. -->
+    <string name="day_sleep_factor_awake_detail"><xliff:g id="awake" example="45 min">%1$s</xliff:g> awake after falling asleep</string>
+    <!-- What a row did to the night, beside it: much better than guidance asks. A word or two. -->
+    <string name="day_sleep_factor_helping">Helping</string>
+    <!-- What a row did: as guidance asks. -->
+    <string name="day_sleep_factor_good">Good</string>
+    <!-- What a row did: a little short of guidance. -->
+    <string name="day_sleep_factor_fair">Holding it back a little</string>
+    <!-- What a row did: well short of guidance. -->
+    <string name="day_sleep_factor_low">Holding it back</string>
+
+    <!-- The label over the bedtime figure. -->
+    <string name="day_sleep_fell_asleep">Fell asleep</string>
+    <!-- The label over the wake time figure. -->
+    <string name="day_sleep_woke">Woke</string>
+    <!-- The label over the time asleep figure. -->
+    <string name="day_sleep_asleep">Asleep</string>
+
+    <!-- The label under the Sleep regularity number. Lower case. -->
+    <string name="day_sleep_regularity_label">last 7 nights</string>
+    <!-- In place of the regularity number while there isn't enough wear. A word. -->
+    <string name="day_sleep_regularity_learning">Learning</string>
+    <!-- The week's regularity sentence, by its band. -->
+    <string name="day_sleep_regularity_very_regular">Very regular this week. Your days kept nearly the same sleep times.</string>
+    <string name="day_sleep_regularity_regular">Regular this week. Most days kept similar sleep times.</string>
+    <string name="day_sleep_regularity_fair">Fair this week. Your sleep times moved on some days.</string>
+    <string name="day_sleep_regularity_irregular">Irregular this week. Your sleep times moved a lot from day to day.</string>
+    <!-- The week's regularity sentence before the full measure: how much the middle of the user's sleep moved. -->
+    <string name="day_sleep_regularity_midpoint">The middle of your sleep moved about <xliff:g id="time" example="40 min">%1$s</xliff:g> this week. The full measure needs more wear.</string>
+    <!-- The week's regularity sentence with nothing yet. -->
+    <string name="day_sleep_regularity_needs">Regularity needs about 5 days of wear around the clock.</string>
+
+    <!-- Last night's bedtime and wake time, as clock times, without a usual bedtime to compare. -->
+    <string name="day_sleep_bedtime_last_night">Last night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>.</string>
+    <!-- The same, within 20 minutes of the usual bedtime. -->
+    <string name="day_sleep_bedtime_last_night_usual">Last night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, close to your usual.</string>
+    <!-- The same, a bedtime later than usual by the time given. -->
+    <string name="day_sleep_bedtime_last_night_later">Last night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, <xliff:g id="by" example="30 min">%3$s</xliff:g> later than usual.</string>
+    <!-- The same, a bedtime earlier than usual by the time given. -->
+    <string name="day_sleep_bedtime_last_night_earlier">Last night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, <xliff:g id="by" example="30 min">%3$s</xliff:g> earlier than usual.</string>
+    <!-- The four above, for an earlier night. -->
+    <string name="day_sleep_bedtime_that_night">That night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>.</string>
+    <string name="day_sleep_bedtime_that_night_usual">That night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, close to your usual.</string>
+    <string name="day_sleep_bedtime_that_night_later">That night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, <xliff:g id="by" example="30 min">%3$s</xliff:g> later than usual.</string>
+    <string name="day_sleep_bedtime_that_night_earlier">That night you fell asleep at <xliff:g id="bed" example="23:40">%1$s</xliff:g> and woke at <xliff:g id="wake" example="07:05">%2$s</xliff:g>, <xliff:g id="by" example="30 min">%3$s</xliff:g> earlier than usual.</string>
+    <!-- On today, without a sleep. -->
+    <string name="day_sleep_no_night_last_night">No sleep recorded last night.</string>
+    <!-- On an earlier day, without a sleep. -->
+    <string name="day_sleep_no_night_that_night">No sleep recorded that night.</string>
+
+    <!-- The label under the time napped, on today. Lower case. -->
+    <string name="day_sleep_naps_label_today">napped today</string>
+    <!-- The same on an earlier day. -->
+    <string name="day_sleep_naps_label_that_day">napped that day</string>
+    <!-- In place of the time napped, a word or two. -->
+    <string name="day_sleep_no_naps">No naps</string>
+    <!-- Under it, on today. -->
+    <string name="day_sleep_no_naps_today">None recorded today</string>
+    <!-- Under it, on an earlier day. -->
+    <string name="day_sleep_no_naps_that_day">None recorded that day</string>
+    <!-- The day's naps with one nap: its length. -->
+    <string name="day_sleep_naps_one">One nap, <xliff:g id="length" example="45 min">%1$s</xliff:g>.</string>
+    <!-- The day's naps with more: how many ("Two naps"), then their length together. -->
+    <string name="day_sleep_naps_many"><xliff:g id="naps" example="Two naps">%1$s</xliff:g>, <xliff:g id="length" example="1 h 10">%2$s</xliff:g> in all.</string>
+    <!-- Under a nap's heart rate line: the lowest, then the average. -->
+    <string name="day_sleep_nap_heart">Lowest <xliff:g id="lowest" example="58">%1$d</xliff:g> bpm, <xliff:g id="average" example="64">%2$d</xliff:g> on average.</string>
+    <!-- On a nap the strap recorded without sleep stages. -->
+    <string name="day_sleep_nap_no_stages">The strap didn\'t record stages for this nap.</string>
+
+    <!-- The title of the sheet that adjusts a nap's times. -->
+    <string name="day_sleep_times_title_nap">Nap times</string>
+    <!-- The title of the sheet that adjusts a night's times. -->
+    <string name="day_sleep_times_title_night">Sleep times</string>
+    <!-- Under the sheet's title: the times the strap recorded ("23:20 to 07:21"). -->
+    <string name="day_sleep_strap_saw">The strap saw <xliff:g id="times" example="23:20 to 07:21">%1$s</xliff:g>.</string>
+    <!-- How to read the sheet's heart rate line. -->
+    <string name="day_sleep_times_hint">Your heart rate drops as you fall asleep and rises as you wake.</string>
+    <!-- Above the sheet's bar for a night: the times, then how long they span in bed. -->
+    <string name="day_sleep_trim_line_night"><xliff:g id="times" example="23:05 to 08:16">%1$s</xliff:g>, <xliff:g id="length" example="9 h 11">%2$s</xliff:g> in bed</string>
+    <!-- Above the sheet's bar for a nap: the times, then its length. -->
+    <string name="day_sleep_trim_line_nap"><xliff:g id="times" example="07:17 to 10:57">%1$s</xliff:g>, <xliff:g id="length" example="3 h 40">%2$s</xliff:g></string>
+    <!-- Under the stages of a sleep whose times reach past what the strap saw: how much of it the stages cover. -->
+    <string name="day_sleep_stages_cover">The stages cover the <xliff:g id="length" example="15 min">%1$s</xliff:g> the strap saw.</string>
+    <!-- On a sleep with the user's own times, then day_sleep_strap_saw ("The strap saw 23:20 to 07:21."). -->
+    <string name="day_sleep_your_times">Your times. <xliff:g id="strap_saw" example="The strap saw 23:20 to 07:21.">%1$s</xliff:g></string>
+    <!-- On the Sleep score's sheet, when the score was moved for the user's times. -->
+    <string name="day_sleep_score_from_your_times">The strap\'s score, adjusted for your times.</string>
+
+    <!-- The delete sheet's question for a nap. -->
+    <string name="day_sleep_delete_title_nap">Delete this nap?</string>
+    <!-- The delete sheet's question for last night. -->
+    <string name="day_sleep_delete_title_last_night">Delete last night\'s sleep?</string>
+    <!-- The delete sheet's question for an earlier night. -->
+    <string name="day_sleep_delete_title_that_night">Delete that night\'s sleep?</string>
+    <!-- What a delete does. -->
+    <string name="day_sleep_delete_what">It won\'t count toward your totals, scores or Health Connect. Heart rate and the other readings stay.</string>
+    <!-- Where to undo a delete later: You, then Your data, then Deleted sleep are the way there. -->
+    <string name="day_sleep_delete_restore">You can bring it back from You, Your data, Deleted sleep for 7 days.</string>
+    <!-- The snackbar after deleting a nap, with Undo: the nap's start time. -->
+    <string name="day_sleep_deleted_nap">Nap at <xliff:g id="start" example="10:40">%1$s</xliff:g> deleted</string>
+    <!-- The snackbar after deleting last night, with Undo. -->
+    <string name="day_sleep_deleted_last_night">Last night\'s sleep deleted</string>
+    <!-- The snackbar after deleting an earlier night, with Undo. -->
+    <string name="day_sleep_deleted_that_night">That night\'s sleep deleted</string>
+    <!-- The title of the card in a deleted night's place. -->
+    <string name="day_sleep_no_sleep_title">No sleep recorded</string>
+    <!-- The card in last night's place after it was deleted: the deleted times ("23:20 to 07:21"). -->
+    <string name="day_sleep_deleted_night_last_night">You deleted <xliff:g id="times" example="23:20 to 07:21">%1$s</xliff:g>. Recovery this morning works without last night, as on a night the strap was off.</string>
+    <!-- The same for an earlier night. -->
+    <string name="day_sleep_deleted_night_that_night">You deleted <xliff:g id="times" example="23:20 to 07:21">%1$s</xliff:g>. Recovery that morning works without that night, as on a night the strap was off.</string>
+    <!-- The label in place of the Sleep score on a deleted night, on today. -->
+    <string name="day_sleep_deleted_label_last_night">Last night</string>
+    <!-- The same on an earlier day. -->
+    <string name="day_sleep_deleted_label_that_night">That night</string>
+
+    <!-- The Deleted sleep page's introduction. -->
+    <string name="day_sleep_deleted_intro">Sleep and naps you deleted in the last 7 days. Restoring puts it back in your totals, scores and Health Connect.</string>
+    <!-- The Deleted sleep page's foot. -->
+    <string name="day_sleep_deleted_foot">After 7 days they are deleted for good, even if the strap syncs them again.</string>
+    <!-- The Deleted sleep page once nothing is left in it. -->
+    <string name="day_sleep_deleted_none">Nothing deleted in the last 7 days.</string>
+    <!-- A deleted nap's name on the Deleted sleep page: its day ("Thu 30 Oct"). -->
+    <string name="day_sleep_deleted_name_nap">Nap, <xliff:g id="day" example="Thu 30 Oct">%1$s</xliff:g></string>
+    <!-- A deleted night's name on the Deleted sleep page: the evening it started ("Wed 29 Oct"). -->
+    <string name="day_sleep_deleted_name_night">Night of <xliff:g id="day" example="Wed 29 Oct">%1$s</xliff:g></string>
+    <!-- Under a deleted entry, on two lines so neither wraps beside Restore: its times, then the days before it's gone for good. -->
+    <plurals name="day_sleep_deleted_line">
+        <item quantity="one"><xliff:g id="times" example="10:40 to 11:05">%2$s</xliff:g>\n<xliff:g id="days" example="1">%1$d</xliff:g> day left</item>
+        <item quantity="other"><xliff:g id="times" example="23:20 to 07:21">%2$s</xliff:g>\n<xliff:g id="days" example="6">%1$d</xliff:g> days left</item>
+    </plurals>
+    <!-- Under a nap whose heart rate stayed as when sitting still: that heart rate in bpm. -->
+    <string name="day_sleep_still_nap">Heart rate stayed at <xliff:g id="bpm" example="72">%1$d</xliff:g>, as when you sit still. Might not be a nap.</string>
+    <!-- The You page's Deleted sleep row: how many deleted sleeps and naps can be restored. -->
+    <plurals name="day_sleep_deleted_count">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> you can restore</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> you can restore</item>
+    </plurals>
+
+    <!-- The Sleep tab's night vitals: a value missing because there was no sleep. -->
+    <string name="day_sleep_vital_no_sleep">No sleep recorded</string>
+    <!-- A night vital missing on a night with sleep. -->
+    <string name="day_sleep_vital_no_reading">No reading last night</string>
+    <!-- A night vital while its normal is still being learned: the nights so far, of the nights needed. -->
+    <string name="day_sleep_vital_learning">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <!-- The night vital for the lowest heart rate while asleep. -->
+    <string name="day_sleep_vital_lowest_heart">Lowest heart rate</string>
+    <!-- Under the lowest heart rate: when it was, a clock time. -->
+    <string name="day_sleep_vital_lowest_at">At <xliff:g id="time" example="03:10">%1$s</xliff:g></string>
+    <!-- The night vital for the average heart rate while asleep. -->
+    <string name="day_sleep_vital_average_heart">Average heart rate</string>
+    <!-- Under the average heart rate. -->
+    <string name="day_sleep_vital_while_asleep">While asleep</string>
+
+    <!-- The night's headline above the Sleep score: short and broken. A few words. -->
+    <string name="day_sleep_headline_short_broken">Short, broken night</string>
+    <string name="day_sleep_headline_short">Short night</string>
+    <string name="day_sleep_headline_broken">Broken sleep</string>
+    <string name="day_sleep_headline_solid">Solid night</string>
+    <string name="day_sleep_headline_good">Good night</string>
+    <!-- Little deep and REM sleep. -->
+    <string name="day_sleep_headline_light">Light sleep</string>
+    <string name="day_sleep_headline_okay">Okay night</string>
+</resources>

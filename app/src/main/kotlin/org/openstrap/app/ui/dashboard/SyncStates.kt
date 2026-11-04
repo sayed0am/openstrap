@@ -3,9 +3,11 @@ package org.openstrap.app.ui.dashboard
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
+import org.openstrap.app.R
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.ClockSetting
 import org.openstrap.app.presentation.StrapBands
 import org.openstrap.app.presentation.TimeOfDay
@@ -13,7 +15,8 @@ import org.openstrap.app.presentation.TimeOfDay
 /*
  * Sync and strap states (spec 4.3, patterns E1, E2 and E5): quiet until they matter. A stopped sync turns the chip
  * amber and marks the cards whose data is old with "Up to 09:40". Only a sync still failing after hours, or in the
- * morning with last night on the strap, takes Today's hero. Plain functions, so every boundary is tested.
+ * morning with last night on the strap, takes Today's hero. Plain functions, so every boundary is tested. The text is
+ * in res/values/strings_day_today.xml.
  */
 
 /**
@@ -44,10 +47,10 @@ fun syncStopped(paired: Boolean, connection: ConnectionState, sync: SyncState): 
  */
 fun upToMarker(
     newest: Long?, now: Long, stopped: Boolean, isToday: Boolean, zone: ZoneId,
-    staleAfter: Long = STALE_AFTER_S, use24Hour: Boolean = ClockSetting.use24Hour,
+    staleAfter: Long = STALE_AFTER_S, use24Hour: Boolean = ClockSetting.use24Hour, strings: Strings = Strings.app,
 ): String? =
     if (!isToday || !stopped || newest == null || now - newest < staleAfter) null
-    else "Up to ${TimeOfDay.format(newest, zone, use24Hour)}"
+    else strings.format(R.string.day_up_to, TimeOfDay.format(newest, zone, use24Hour))
 
 /**
  * Whether a failing sync takes Today's hero (spec 4.3): on today, still failing [STUCK_AFTER_S] after the first
@@ -67,34 +70,41 @@ data class StuckCopy(val title: String, val sentence: String, val line: String)
  * The stuck hero's words. Without last night it's about the night. With last night in, a sync failing for hours is
  * about the day since [upTo] (a clock time, null when nothing came today).
  */
-fun stuckCopy(hasLastNight: Boolean, upTo: String?): StuckCopy =
-    if (!hasLastNight) StuckCopy("Last night", "Last night is still on the strap.", "Keep it near your phone and it comes across.")
-    else StuckCopy(
-        "Not synced",
-        upTo?.let { "Your data since $it is still on the strap." } ?: DATA_ON_STRAP,
-        "Keep it near your phone and it comes across.",
-    )
+fun stuckCopy(hasLastNight: Boolean, upTo: String?, strings: Strings = Strings.app): StuckCopy =
+    if (!hasLastNight) {
+        StuckCopy(
+            strings.get(R.string.day_stuck_last_night_title), strings.get(R.string.day_stuck_last_night),
+            strings.get(R.string.day_stuck_keep_near),
+        )
+    } else {
+        StuckCopy(
+            strings.get(R.string.day_stuck_not_synced_title),
+            upTo?.let { strings.format(R.string.day_stuck_data_since, it) } ?: strings.get(R.string.day_data_on_strap),
+            strings.get(R.string.day_stuck_keep_near),
+        )
+    }
 
 /** "Last tried 07:42", for the stuck hero; null when no attempt was seen. */
-fun lastTried(record: SyncRecord, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour): String? =
-    record.lastAttempt?.let { "Last tried ${TimeOfDay.format(it, zone, use24Hour)}" }
+fun lastTried(record: SyncRecord, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, strings: Strings = Strings.app): String? =
+    record.lastAttempt?.let { strings.format(R.string.day_last_tried, TimeOfDay.format(it, zone, use24Hour)) }
 
 /** Recovery couldn't be worked out (spec 4.3, E5): yesterday's score stays, dimmed, with this line and [TRY_AGAIN]. */
-const val RECOVERY_FAILED = "Couldn't work out today's score."
+val RECOVERY_FAILED: String get() = Strings.app.get(R.string.day_recovery_failed)
 
 /** Charge is worked out with Recovery, so it fails with it. */
-const val CHARGE_FAILED = "Couldn't work out today's Energy."
+val CHARGE_FAILED: String get() = Strings.app.get(R.string.day_charge_failed)
 
 /** The same on a small card, whose status line has room for a few words: Load, Charge's parts. */
-const val FAILED_SHORT = "Couldn't work it out"
+val FAILED_SHORT: String get() = Strings.app.get(R.string.day_failed_short)
 
-const val TRY_AGAIN = "Try again"
+/** The button beside [RECOVERY_FAILED]. */
+val TRY_AGAIN: String get() = Strings.app.get(R.string.day_try_again)
 
 /** What a card waiting on a stuck night says in place of its value. */
-const val WAITING_LAST_NIGHT = "Waiting for last night"
+val WAITING_LAST_NIGHT: String get() = Strings.app.get(R.string.day_waiting_last_night)
 
 /** Where a failed sync or one that can't start is told: the data is safe. */
-const val DATA_ON_STRAP = "Your data is still on the strap."
+val DATA_ON_STRAP: String get() = Strings.app.get(R.string.day_data_on_strap)
 
 /**
  * Debug only: a strap state to show on a phone whose strap is fine, from the `strap_state` extra. It changes what the

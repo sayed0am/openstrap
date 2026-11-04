@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -84,8 +86,10 @@ fun MomentHeader(
             start = {
                 growClick(onOpenYou).let { g ->
                     RoundIconButton(
-                        AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", g.onClick, g.modifier,
-                        surface = Avatar, iconSize = 20.dp, clickLabel = "Open You", dot = updateWaiting,
+                        AppIcons.User,
+                        stringResource(if (updateWaiting) R.string.day_header_you_update else R.string.day_header_you),
+                        g.onClick, g.modifier,
+                        surface = Avatar, iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_you), dot = updateWaiting,
                     )
                 }
             },
@@ -94,8 +98,8 @@ fun MomentHeader(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onOpenAllMetrics != null) {
                         RoundIconButton(
-                            AppIcons.ChartBar, "All metrics", onOpenAllMetrics, surface = Avatar, iconSize = 20.dp,
-                            clickLabel = "Open all metrics",
+                            AppIcons.ChartBar, stringResource(R.string.day_header_all_metrics), onOpenAllMetrics, surface = Avatar,
+                            iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_all_metrics),
                         )
                         Spacer(Modifier.width(8.dp))
                     }
@@ -147,6 +151,7 @@ private fun DaySwitcher(
     val prev by rememberUpdatedState(onPrev)
     val next by rememberUpdatedState(onNext)
     val canNext by rememberUpdatedState(hasNext)
+    val description = stringResource(R.string.day_header_day_description, title, dateLine(date))
     Row(
         modifier.height(60.dp)
             .pointerInput(threshold) {
@@ -171,9 +176,9 @@ private fun DaySwitcher(
         Peek(peekDay(date.minusDays(1)))
         Column(
             Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(CircleShape)
-                .clickable(onClickLabel = "Pick a day", onClick = onPick)
+                .clickable(onClickLabel = stringResource(R.string.day_header_pick_day), onClick = onPick)
                 .padding(horizontal = 10.dp, vertical = 4.dp)
-                .semantics { contentDescription = "$title, ${dateLine(date)}" },
+                .semantics { contentDescription = description },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
@@ -201,7 +206,7 @@ private fun StrapChipButton(chip: StrapChip, onClick: () -> Unit, modifier: Modi
     val shape = CircleShape
     Row(
         modifier.clip(shape).background(ChipSurface).border(1.dp, Color.White.copy(alpha = 0.07f), shape)
-            .clickable(onClickLabel = "Open your strap", onClick = onClick)
+            .clickable(onClickLabel = stringResource(R.string.day_header_open_strap), onClick = onClick)
             .semantics { contentDescription = chip.description }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

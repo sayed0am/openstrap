@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.components
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -73,6 +75,8 @@ fun PullToSync(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val context = LocalContext.current
+    val syncFailed = stringResource(R.string.day_pull_sync_failed, DATA_ON_STRAP)
+    val notConnected = stringResource(R.string.day_pull_not_connected)
     val haptics = LocalHapticFeedback.current
     val feedback = rememberHaptics()
     var pulled by remember { mutableStateOf(false) }
@@ -91,7 +95,7 @@ fun PullToSync(
                 started = false
                 if (syncNow is SyncState.Failed) {
                     feedback.perform(HapticEvent.SyncFailed)
-                    Toast.makeText(context, "Couldn't sync. $DATA_ON_STRAP", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, syncFailed, Toast.LENGTH_SHORT).show()
                 } else haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
             }
             // The strap busy or dropping: a sync that doesn't start soon just lets go.
@@ -106,7 +110,7 @@ fun PullToSync(
         onRefresh = {
             if (!connected) {
                 feedback.perform(HapticEvent.SyncFailed)
-                Toast.makeText(context, "The strap isn't connected", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, notConnected, Toast.LENGTH_SHORT).show()
             } else {
                 haptics.performHapticFeedback(HapticFeedbackType.Confirm)
                 pulled = true
@@ -148,11 +152,13 @@ fun PullSyncReveal() {
                 tint = if (ready || syncing) Color.White else HintInk,
             )
             Spacer(Modifier.width(8.dp))
-            val label = when {
-                syncing -> "Syncing strap…"
-                ready -> "Release to sync strap"
-                else -> "Pull to sync strap"
-            }
+            val label = stringResource(
+                when {
+                    syncing -> R.string.day_pull_syncing
+                    ready -> R.string.day_pull_release
+                    else -> R.string.day_pull_pull
+                },
+            )
             // One line at a time: the old one fades out before the new one fades in, so "Pull to sync strap" never
             // draws over "Syncing strap…" as a sync starts.
             AnimatedContent(

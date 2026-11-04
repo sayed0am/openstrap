@@ -3,9 +3,11 @@ package org.openstrap.app.ui.dashboard
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.R
 import org.openstrap.app.data.Moment
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.StrapBands
 import org.openstrap.app.ui.glow.draw.LightAngle
@@ -78,42 +80,63 @@ const val STARTUP_GRACE_S = 120L
  * gone is the news. A charging strap isn't worn and stops syncing in fast-charge mode, so charging explains a failed
  * sync rather than the other way round; the data waits on the strap.
  */
-fun strapChip(paired: Boolean, connection: ConnectionState, sync: SyncState, lastSeen: Long?, now: Long, sinceStart: Long = Long.MAX_VALUE): StrapChip {
-    if (!paired || connection == ConnectionState.NotPaired) return StrapChip("Not paired", StrapChip.Dot.Quiet, "No strap paired")
-    if (connection !is ConnectionState.Connected && sinceStart < STARTUP_GRACE_S) return StrapChip("", StrapChip.Dot.Quiet, "Connecting to the strap")
+fun strapChip(
+    paired: Boolean, connection: ConnectionState, sync: SyncState, lastSeen: Long?, now: Long, sinceStart: Long = Long.MAX_VALUE,
+    strings: Strings = Strings.app,
+): StrapChip {
+    if (!paired || connection == ConnectionState.NotPaired) {
+        return StrapChip(
+            strings.get(R.string.day_chip_not_paired), StrapChip.Dot.Quiet, strings.get(R.string.day_chip_not_paired_description),
+        )
+    }
+    val connecting = { StrapChip("", StrapChip.Dot.Quiet, strings.get(R.string.day_chip_connecting_description)) }
+    if (connection !is ConnectionState.Connected && sinceStart < STARTUP_GRACE_S) return connecting()
     val ago = lastSeen?.let { now - it }
     val unseen = if (ago != null) {
-        val text = agoText(ago)
-        StrapChip(text, StrapChip.Dot.Warn, "Strap last seen $text")
-    } else StrapChip("Not connected", StrapChip.Dot.Warn, "Strap not connected")
+        val text = agoText(ago, strings)
+        StrapChip(text, StrapChip.Dot.Warn, strings.format(R.string.day_chip_last_seen_description, text))
+    } else {
+        StrapChip(
+            strings.get(R.string.day_chip_not_connected), StrapChip.Dot.Warn, strings.get(R.string.day_chip_not_connected_description),
+        )
+    }
     return when (connection) {
         is ConnectionState.Connected -> {
             val battery = connection.batteryPercent
             when {
-                connection.charging && battery != null -> StrapChip("Charging $battery%", StrapChip.Dot.Charging, "Strap charging, battery $battery percent")
-                sync is SyncState.Failed -> StrapChip("Not synced", StrapChip.Dot.Warn, "Strap connected, not synced")
-                battery == null -> StrapChip("", StrapChip.Dot.Fine, "Strap connected")
-                StrapBands.lowBattery(battery, connection.charging) ->
-                    StrapChip("$battery%", StrapChip.Dot.Low, "Strap connected, battery low, $battery percent")
-                else -> StrapChip("$battery%", StrapChip.Dot.Fine, "Strap connected, battery $battery percent")
+                connection.charging && battery != null -> StrapChip(
+                    strings.format(R.string.day_chip_charging, battery), StrapChip.Dot.Charging,
+                    strings.format(R.string.day_chip_charging_description, battery),
+                )
+                sync is SyncState.Failed -> StrapChip(
+                    strings.get(R.string.day_chip_not_synced), StrapChip.Dot.Warn, strings.get(R.string.day_chip_not_synced_description),
+                )
+                battery == null -> StrapChip("", StrapChip.Dot.Fine, strings.get(R.string.day_chip_connected_description))
+                StrapBands.lowBattery(battery, connection.charging) -> StrapChip(
+                    strings.format(R.string.day_chip_battery, battery), StrapChip.Dot.Low,
+                    strings.format(R.string.day_chip_battery_low_description, battery),
+                )
+                else -> StrapChip(
+                    strings.format(R.string.day_chip_battery, battery), StrapChip.Dot.Fine,
+                    strings.format(R.string.day_chip_battery_description, battery),
+                )
             }
         }
         // A moment's connecting (the app coming to the front) isn't news; a strap gone for minutes is.
         ConnectionState.Connecting, ConnectionState.Authenticating ->
-            if (ago != null && ago >= CONNECTING_GRACE_S) unseen else StrapChip("", StrapChip.Dot.Quiet, "Connecting to the strap")
+            if (ago != null && ago >= CONNECTING_GRACE_S) unseen else connecting()
         else -> unseen
     }
 }
 
 /** "Just now", "18 min ago", "3 h ago", "2 days ago". */
-fun agoText(seconds: Long): String {
+fun agoText(seconds: Long, strings: Strings = Strings.app): String {
     val minutes = seconds.coerceAtLeast(0) / 60
     return when {
-        minutes < 1 -> "Just now"
-        minutes < 60 -> "$minutes min ago"
-        minutes < 24 * 60 -> "${minutes / 60} h ago"
-        minutes < 48 * 60 -> "1 day ago"
-        else -> "${minutes / (24 * 60)} days ago"
+        minutes < 1 -> strings.get(R.string.day_ago_now)
+        minutes < 60 -> strings.format(R.string.day_ago_minutes, minutes)
+        minutes < 24 * 60 -> strings.format(R.string.day_ago_hours, minutes / 60)
+        else -> (minutes / (24 * 60)).toInt().let { strings.plural(R.plurals.day_ago_days, it, it) }
     }
 }
 
