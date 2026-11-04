@@ -626,7 +626,7 @@ class WorkoutSessionTest {
         val n = keepRecording(present = true)!!
         assertEquals("Keep recording your outdoor run", n.extras.getString(android.app.Notification.EXTRA_TITLE))
         assertEquals(KeepRecordingNotice.TEXT, n.extras.getCharSequence(android.app.Notification.EXTRA_TEXT).toString())
-        assertEquals(WorkoutNotification.CHANNEL, n.channelId)
+        assertEquals(KeepRecordingNotice.CHANNEL, n.channelId)
         // A tap brings the app forward on the live screen.
         val tap = shadowOf(n.contentIntent).savedIntent
         assertEquals(org.openstrap.app.MainActivity::class.java.name, tap.component?.className)
