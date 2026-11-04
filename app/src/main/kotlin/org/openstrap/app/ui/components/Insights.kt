@@ -28,8 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.ui.input.pointer.pointerInput
+import org.openstrap.app.ui.glow.GlowType
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -72,14 +72,8 @@ fun FloatingNavBar(
         }.navigationBarsPadding().padding(horizontal = 28.dp, vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            border = GlassEdge,
-            // No shadow: it would show through the glass as a dark smudge.
-            modifier = Modifier.widthIn(max = 440.dp).fillMaxWidth()
-                .clip(CircleShape).hazeBlur(HazeInput.Sources(glass), GlassBlur),
-        ) {
+        // No shadow: it would show through the glass as a dark smudge.
+        Box(Modifier.widthIn(max = 440.dp).fillMaxWidth().glassPill(glass)) {
             // Measured width, so the pill knows how wide a cell is (BoxWithConstraints can't size to its row).
             var barWidth by remember { mutableIntStateOf(0) }
             val density = androidx.compose.ui.platform.LocalDensity.current
@@ -122,13 +116,7 @@ fun FloatingNavRail(
         modifier.fillMaxHeight().systemBarsPadding().displayCutoutPadding().padding(horizontal = 10.dp, vertical = 20.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Surface(
-            shape = CircleShape,
-            color = Color.Transparent,
-            border = GlassEdge,
-            modifier = Modifier.width(NavRailWidth - 20.dp).heightIn(max = 380.dp).fillMaxHeight()
-                .clip(CircleShape).hazeBlur(HazeInput.Sources(glass), GlassBlur),
-        ) {
+        Box(Modifier.width(NavRailWidth - 20.dp).heightIn(max = 380.dp).fillMaxHeight().glassPill(glass)) {
             var barHeight by remember { mutableIntStateOf(0) }
             val density = androidx.compose.ui.platform.LocalDensity.current
             Box(Modifier.padding(6.dp).onSizeChanged { barHeight = it.height }) {
@@ -154,6 +142,13 @@ fun FloatingNavRail(
         }
     }
 }
+
+/**
+ * The bar's black glass pill: what scrolls under it blurred, the glass edge round it. It takes every touch inside it,
+ * so a tap between two tabs never lands on the card under the bar.
+ */
+private fun Modifier.glassPill(glass: HazeState): Modifier =
+    clip(CircleShape).hazeBlur(HazeInput.Sources(glass), GlassBlur).border(GlassEdge, CircleShape).pointerInput(Unit) {}
 
 /** The capsule under the tab showing: its section colour, eased as it slides; plain glass white on Today. */
 @Composable
@@ -229,7 +224,7 @@ private fun NavCell(item: NavItem, on: Boolean, modifier: Modifier, verticalArra
             if (on) item.selectedIcon else item.icon, item.label, tint = tint,
             modifier = Modifier.size(22.dp).graphicsLayer { scaleX = iconScale; scaleY = iconScale },
         )
-        Text(item.label, style = MaterialTheme.typography.labelSmall, color = tint, maxLines = 1)
+        Text(item.label, style = GlowType.caption, color = tint, maxLines = 1)
     }
 }
 
