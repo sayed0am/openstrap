@@ -16,6 +16,7 @@ import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.health.HcAvailability
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import java.util.concurrent.TimeUnit.MINUTES
@@ -40,12 +41,21 @@ fun sleepGoalLine(goals: Goals, needMinutes: Int): String =
 
 /**
  * The auto sync row's value: on and when it last wrote, by [DayWords.at] ("On. Last synced 10:42", "yesterday 10:42",
- * "Tuesday 10:42", "Tue 12 Oct 10:42"), off, or stopped by itself and why. [now] in epoch seconds.
+ * "Tuesday 10:42", "Tue 12 Oct 10:42"), off, or stopped by itself and why. [now] in epoch seconds. Stopped with
+ * Health Connect gone says to install it where the Play Store has it ([availability]).
  */
-fun healthConnectLine(auto: HealthConnectAuto, now: Long, zone: java.time.ZoneId, locale: java.util.Locale = java.util.Locale.getDefault()): String {
+fun healthConnectLine(
+    auto: HealthConnectAuto,
+    now: Long,
+    zone: java.time.ZoneId,
+    locale: java.util.Locale = java.util.Locale.getDefault(),
+    availability: HcAvailability = HcAvailability.AVAILABLE,
+): String {
     if (!auto.on) return when (auto.stopped) {
         HealthConnectAuto.Stopped.PERMISSIONS -> "Stopped. Health Connect permissions were turned off"
-        HealthConnectAuto.Stopped.UNAVAILABLE -> "Stopped. Health Connect isn't available on this phone"
+        HealthConnectAuto.Stopped.UNAVAILABLE ->
+            if (availability == HcAvailability.INSTALLABLE) "Stopped. Install Health Connect to turn it back on"
+            else "Stopped. Health Connect isn't available on this phone"
         null -> "Off. Copies new data after each strap sync"
     }
     val last = auto.lastSynced ?: return "On. Copies new data after each strap sync"
@@ -53,12 +63,19 @@ fun healthConnectLine(auto: HealthConnectAuto, now: Long, zone: java.time.ZoneId
 }
 
 /** The You page's Health Connect row: on and when it last wrote, off, or stopped and why, in a few words. */
-fun healthConnectSummary(auto: HealthConnectAuto, now: Long, zone: java.time.ZoneId, locale: java.util.Locale = java.util.Locale.getDefault()): String =
+fun healthConnectSummary(
+    auto: HealthConnectAuto,
+    now: Long,
+    zone: java.time.ZoneId,
+    locale: java.util.Locale = java.util.Locale.getDefault(),
+    availability: HcAvailability = HcAvailability.AVAILABLE,
+): String =
     when {
         auto.on && auto.lastSynced != null -> healthConnectLine(auto, now, zone, locale)
         auto.on -> "On"
         auto.stopped == HealthConnectAuto.Stopped.PERMISSIONS -> "Stopped. Permissions were turned off"
-        auto.stopped == HealthConnectAuto.Stopped.UNAVAILABLE -> "Stopped. Not available on this phone"
+        auto.stopped == HealthConnectAuto.Stopped.UNAVAILABLE ->
+            if (availability == HcAvailability.INSTALLABLE) "Stopped. Install Health Connect" else "Stopped. Not available on this phone"
         else -> "Off"
     }
 
@@ -90,6 +107,8 @@ fun YouPage(
     onGoalsAndBests: () -> Unit,
     /** Auto sync to Health Connect, said on its row; the row opens the Health Connect page. */
     healthConnectAuto: HealthConnectAuto,
+    /** Whether Health Connect is there or can be installed, for the row's stopped wording. */
+    healthConnectAvailability: HcAvailability,
     onHealthConnect: () -> Unit,
     /** Automatic backup, said on its row; the row opens the Backup page. */
     backup: BackupState,
@@ -134,7 +153,7 @@ fun YouPage(
                 val now = remember(healthConnectAuto, backup) { System.currentTimeMillis() / 1000 }
                 val zone = java.time.ZoneId.systemDefault()
                 PageRow(
-                    "Health Connect", healthConnectSummary(healthConnectAuto, now, zone), onClick = onHealthConnect, below = true, divider = false,
+                    "Health Connect", healthConnectSummary(healthConnectAuto, now, zone, availability = healthConnectAvailability), onClick = onHealthConnect, below = true, divider = false,
                     icon = AppIcons.Heartbeat, selected = selected == "Health Connect",
                 )
                 PageRow("Backup", BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true, icon = AppIcons.ShieldCheck, selected = selected == "Backup")

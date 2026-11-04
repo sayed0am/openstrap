@@ -61,11 +61,14 @@ import org.openstrap.app.ui.device.BackupPage
 import org.openstrap.app.ui.device.DeletedSleepPage
 import org.openstrap.app.ui.device.DeviceScreen
 import org.openstrap.app.ui.device.DiagnosticsScreen
+import org.openstrap.app.ui.device.HC_STORE_FAILED
 import org.openstrap.app.ui.device.HealthConnectPage
 import org.openstrap.app.ui.device.ProfileScreen
 import org.openstrap.app.ui.device.UpdatesPage
 import org.openstrap.app.ui.device.YouPage
+import org.openstrap.app.ui.device.installHealthConnect
 import org.openstrap.app.ui.device.openHealthConnect
+import org.openstrap.app.ui.device.rememberHealthConnectAvailability
 import org.openstrap.app.ui.firmware.FirmwareScreen
 import org.openstrap.app.ui.firmware.ZeppAccountScreen
 import org.openstrap.app.ui.glow.GlowLayout
@@ -271,6 +274,7 @@ private fun YouPageHost(
     val goals by hooks.rootVm.goals.collectAsStateWithLifecycle()
     val log by container.strap.log.collectAsStateWithLifecycle()
     val hcAuto by deviceVm.healthConnectAuto.collectAsStateWithLifecycle()
+    val hcAvailability = rememberHealthConnectAvailability()
     val backup by deviceVm.backup.collectAsStateWithLifecycle()
     val updates by container.updater.state.collectAsStateWithLifecycle()
     val updateWaiting by hooks.rootVm.updateWaiting.collectAsStateWithLifecycle()
@@ -289,6 +293,7 @@ private fun YouPageHost(
         onGoals = onGoals,
         onGoalsAndBests = { open(Page.GoalsAndBests) },
         healthConnectAuto = hcAuto,
+        healthConnectAvailability = hcAvailability,
         onHealthConnect = { open(Page.HealthConnect) },
         backup = backup,
         onBackup = { open(Page.Backup) },
@@ -344,18 +349,22 @@ private fun HealthConnectPageHost(hooks: PageHooks, padding: PaddingValues, onBa
     val context = LocalContext.current
     val deviceVm = hooks.deviceVm
     val hcAuto by deviceVm.healthConnectAuto.collectAsStateWithLifecycle()
+    val hcAvailability = rememberHealthConnectAvailability()
     // As on the You page: the switch says so when permissions were taken back meanwhile.
     LifecycleResumeEffect(Unit) {
         deviceVm.checkAutoHealthConnect()
         onPauseOrDispose { }
     }
     HealthConnectPage(
-        hcAuto, padding,
+        hcAuto, hcAvailability, padding,
         onAuto = hooks.healthConnect.auto,
         onCopyNow = hooks.healthConnect.export,
         onRestore = hooks.healthConnect.import,
         onOpen = {
-            if (!openHealthConnect(context)) Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
+            if (!openHealthConnect(context)) Toast.makeText(context, hcMissingMessage(hcAvailability), Toast.LENGTH_LONG).show()
+        },
+        onInstall = {
+            if (!installHealthConnect(context)) Toast.makeText(context, HC_STORE_FAILED, Toast.LENGTH_LONG).show()
         },
         onBack = onBack,
     )
