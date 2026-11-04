@@ -95,6 +95,8 @@ fun Recovery.charge(
     start: Float = 50f,
     sampleSeconds: Long = 300,
     mainSleepEnd: Long? = null,
+    /** When the main sleep began: Charge then is [ChargeDay.atBedtime], Recharged's start. */
+    bedtime: Long? = null,
     /** Report nothing until a sleep has been seen (see [ChargeDay.anchored]); tests switch this off. */
     requireAnchor: Boolean = true,
 ): ChargeDay {
@@ -107,6 +109,8 @@ fun Recovery.charge(
     var stress = 0f
     var living = 0f
     var atWake: Float? = null
+    var atBedtime: Float? = null
+    var bedtimeSeen = false
     var latest: Float? = null
     var hrvFactor = hrvFactor(params.hrvScore)
     val hrvScores = params.sleepHrvScore.sortedBy { it.first }
@@ -143,6 +147,11 @@ fun Recovery.charge(
             }
             notWornCount = 0
             wi++
+        }
+        // Charge as the main sleep began, before its first minute: none when the strap was off then.
+        if (bedtime != null && !bedtimeSeen && m.t >= bedtime) {
+            bedtimeSeen = true
+            if (!invalid && !off[i]) atBedtime = c
         }
         if (off[i]) {
             notWornCount++
@@ -305,7 +314,7 @@ fun Recovery.charge(
     if (!anchored && requireAnchor) return ChargeDay(emptyList(), null, null, 0f, 0f, 0f, 0f, null, null, anchored = false)
     return ChargeDay(
         points, latest, atWake ?: estimatedWake, recharged, exercise, stress, living, values.maxOrNull(), values.minOrNull(), anchored,
-        strapOffOvernight = offOvernight,
+        strapOffOvernight = offOvernight, atBedtime = atBedtime,
     )
 }
 

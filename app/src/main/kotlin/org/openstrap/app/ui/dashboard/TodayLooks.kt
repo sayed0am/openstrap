@@ -2,64 +2,71 @@ package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.data.Moment
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.Pane
 
 /*
- * How each Today card looks, and the rule that no two cards next to each other look the same (spec 2.4), with the
+ * How each Today card looks, and the rule that no two cards next to each other look the same (spec 2.5), with the
  * looks themselves in CardLooks.kt. Plain functions over the final list of cards, after Edit Today, so every moment
  * and every pin and hide is tested without a screen.
  */
 
-private fun glow(h: Hue) = CardLook(Tier.Glow, h)
-private fun edge(h: Hue, e: Edge) = CardLook(Tier.Edge, h, e)
-private fun strip(h: Hue, e: Edge) = CardLook(Tier.Strip, h, e)
+private fun glow(h: Hue, p: PictureKind? = null) = CardLook(Tier.Glow, h, picture = p)
+private fun picture(h: Hue, p: PictureKind) = CardLook(Tier.Picture, h, picture = p)
+private fun strip(h: Hue) = CardLook(Tier.Strip, h, picture = PictureKind.None)
 private val ListLook = CardLook(Tier.List, Hue.Neutral)
 
 /** The colour of the hero for [moment] (spec 4.2, How each moment looks). */
 private fun heroHue(moment: Moment?): Hue = when (moment) {
     Moment.Midday -> Hue.Charge
-    Moment.WorkoutWindow, Moment.During, Moment.After -> Hue.Heart
+    Moment.WorkoutWindow, Moment.During -> Hue.Heart
+    // Red is for effort: once the run is done the hero is Recovery teal.
+    Moment.After -> Hue.Recovery
     Moment.Evening -> Hue.Evening
     Moment.Night -> Hue.Sleep
     Moment.Waking, null -> Hue.Recovery
 }
 
 /**
- * The look [slot] has on its own (spec 2.4): the edge follows what the card is about, and a Small or Tall is a shape
- * of its own. Heart rate is lit from the right only while the reading is [live]. Your week is a neutral edge from the
- * bottom: a summary of steps, sleep and workouts at their usual, in no one metric's colour. After a workout Load is a
- * Small toward your usual (from below) and Time to recover the Small beside it. Last night, Your week and Start a
- * workout are unlit, like a list: light is kept for cards where it says something (Steps toward the goal, heart rate
- * live), so it still points at them. An unlit strip reads apart from an unlit card ([Shape.Strip]).
+ * The look [slot] has on its own (spec 2.5, 2.7, 4.2): each metric draws its own picture, at a Small or a Wide alike,
+ * and no two cards Today can show draw the same kind, so neighbours differ by picture. Strips and Start a workout are
+ * unlit strips with no picture, Your body this morning a list, Edit Today a plain piece. Last night is its stage bar
+ * as a card, and words alone as a strip. Energy as the second glow draws its curve in a level glow; stepped down
+ * ([options]) it's the same curve on a picture card. [live] no longer changes a look: the rim, not an edge, says
+ * what's off, and that is the screen's to draw.
  */
-fun defaultLook(slot: TodaySlot, moment: Moment?, live: Boolean = false): CardLook = ownLook(slot, moment, live).let { l ->
-    l.copy(shape = if (l.tier == Tier.List && slot.size == CardSize.Strip) Shape.Strip else Shape.of(slot.size))
-}
+@Suppress("UNUSED_PARAMETER")
+fun defaultLook(slot: TodaySlot, moment: Moment?, live: Boolean = false): CardLook =
+    ownLook(slot, moment).copy(shape = Shape.of(slot.size))
 
-private fun ownLook(slot: TodaySlot, moment: Moment?, live: Boolean): CardLook = when (slot.card) {
+private fun ownLook(slot: TodaySlot, moment: Moment?): CardLook = when (slot.card) {
     TodayCard.Hero -> glow(heroHue(moment))
-    TodayCard.Offer -> strip(Hue.Heart, Edge.Right)
-    TodayCard.Suggestion -> strip(Hue.Heart, Edge.Left)
-    TodayCard.Alerts -> strip(Hue.Heart, Edge.Top)
-    // A strip is lit from below in the neutral light (spec 2.5): the check-in is a question, not Recovery's.
-    TodayCard.CheckIn -> strip(Hue.Neutral, Edge.Bottom)
+    TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts -> strip(Hue.Heart)
+    TodayCard.CheckIn, TodayCard.StartWorkout -> strip(Hue.Neutral)
     TodayCard.BodyMorning, TodayCard.RightNow -> ListLook
-    TodayCard.LoadToday -> if (slot.size == CardSize.Small) edge(Hue.Load, Edge.Bottom) else ListLook
-    TodayCard.Recover -> edge(Hue.Load, Edge.Bottom)
-    TodayCard.LastNight -> ListLook
-    TodayCard.HeartRate -> edge(Hue.Heart, if (live) Edge.Right else Edge.Bottom)
-    TodayCard.Activity -> edge(Hue.Steps, Edge.Bottom)
-    TodayCard.Recovery -> edge(Hue.Recovery, Edge.Left)
-    // Charge is the screen's second glow, a level glow filling across from the left (Recovery's battery on its side),
-    // so it doesn't read as the hero's glow above it. The level edge card is only its step down ([options]).
-    TodayCard.Charge -> if (slot.secondGlow) CardLook(Tier.Glow, Hue.Charge, Edge.Left) else CardLook(Tier.Level, Hue.Charge, Edge.Left)
-    TodayCard.Workout -> edge(Hue.Heart, Edge.Left)
-    TodayCard.Week -> ListLook
-    TodayCard.HabitAge -> edge(Hue.HabitAge, Edge.Left)
-    TodayCard.StartWorkout -> ListLook
+    TodayCard.LastNight -> if (slot.size == CardSize.Strip) strip(Hue.Sleep) else picture(Hue.Sleep, PictureKind.StageBar)
+    TodayCard.HeartRate -> picture(Hue.Heart, PictureKind.Line)
+    TodayCard.Stress -> picture(Hue.Stress, PictureKind.DayStrip)
+    TodayCard.Activity -> picture(Hue.Steps, PictureKind.HourlyBars)
+    TodayCard.Recovery -> picture(Hue.Recovery, PictureKind.WeekDots)
+    TodayCard.Charge -> if (slot.secondGlow) glow(Hue.Charge, PictureKind.Curve) else picture(Hue.Charge, PictureKind.Curve)
+    TodayCard.LoadToday -> picture(Hue.Load, PictureKind.LevelFill)
+    TodayCard.Recover -> picture(Hue.Load, PictureKind.CountdownRing)
+    TodayCard.Workout -> picture(Hue.Heart, PictureKind.ZoneBar)
+    TodayCard.Week -> picture(Hue.Steps, PictureKind.WeekRings)
+    TodayCard.HabitAge -> picture(Hue.HabitAge, PictureKind.AgeScale)
     TodayCard.EditToday -> CardLook(Tier.Plain, Hue.Neutral)
 }
+
+/**
+ * The strips that need an answer (spec 4.2), stacked under the hero by urgency with nothing allowed between them.
+ * Unlit strips with no picture look alike, so a run of these is the one place two strips may touch: each holds its
+ * own question and buttons.
+ */
+private val ANSWER = setOf(TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts, TodayCard.CheckIn)
+
+/** Whether [a] and [b], neighbours, look the same in [look]s: the same design, unless both are strips needing an answer. */
+private fun clash(a: TodaySlot, b: TodaySlot, look: (TodaySlot) -> CardLook): Boolean =
+    look(a).sameDesign(look(b)) && !(a.card in ANSWER && b.card in ANSWER)
 
 /** The look a slot ends up with: the one [varyLooks] gave it, or its own. */
 fun TodaySlot.lookOr(moment: Moment?, live: Boolean = false): CardLook = look ?: defaultLook(this, moment, live)
@@ -84,7 +91,7 @@ fun neighbours(slots: List<TodaySlot>, wide: Boolean, smallsAcross: Boolean = fa
 fun lookClashes(
     slots: List<TodaySlot>, wide: Boolean, moment: Moment? = null, live: Boolean = false, smallsAcross: Boolean = false,
 ): List<Pair<Int, Int>> =
-    neighbours(slots, wide, smallsAcross).filter { (a, b) -> slots[a].lookOr(moment, live).sameDesign(slots[b].lookOr(moment, live)) }
+    neighbours(slots, wide, smallsAcross).filter { (a, b) -> clash(slots[a], slots[b]) { it.lookOr(moment, live) } }
         .sortedWith(compareBy({ it.second }, { it.first }))
 
 /** Cards whose place the spec leaves open: pins (only "under the hero"), and Your week and Habit Age, which close the list. */
@@ -100,37 +107,21 @@ private fun rowStarts(slots: List<TodaySlot>): Set<Int> {
     }
 }
 
-private fun opposite(e: Edge) = when (e) { Edge.Top -> Edge.Bottom; Edge.Bottom -> Edge.Top; Edge.Left -> Edge.Right; Edge.Right -> Edge.Left }
-
-/** [e]'s opposite first, then the two across from it. */
-private fun flips(e: Edge): List<Edge> = listOf(opposite(e)) + Edge.entries.filter { it != e && it != opposite(e) }
-
 /**
- * The other looks [s] may take, in the order they're tried: the edge flipped, then another tier the spec gives the
- * card, then the neutral edge. Last night is a strip or a wide card. A list can sit on an edge card in the neutral
- * light. Charge as the second glow can step down to its level card. Other glows, a level and Edit Today have no
- * other look, and an alert from the strap keeps its colour.
+ * The other looks [s] may take (spec 2.5): another tier the spec gives the card. Energy as the second glow steps down
+ * to its picture card. Last night as a card becomes a strip, and as a strip a card. A Last night Small stays in its
+ * pair. Every other card has one look.
  */
-private fun options(s: TodaySlot): List<TodaySlot> {
-    val l = s.look ?: return emptyList()
-    if (s.secondGlow) return listOf(s.copy(secondGlow = false, look = CardLook(Tier.Level, l.hue, Edge.Left)))
-    if (l.tier == Tier.Level) return emptyList()
-    if (l.tier == Tier.List) return (listOf(Edge.Bottom) + flips(Edge.Bottom)).map { s.copy(look = CardLook(Tier.Edge, Hue.Neutral, it)) }
-    val e = l.edge ?: return emptyList()
-    val sides = listOf(e) + flips(e)
-    return buildList {
-        flips(e).forEach { add(s.copy(look = l.copy(edge = it))) }
-        if (s.card == TodayCard.LastNight) {
-            val (size, tier) = if (l.tier == Tier.Edge) CardSize.Strip to Tier.Strip else CardSize.Wide to Tier.Edge
-            sides.forEach { add(s.copy(size = size, look = l.copy(tier = tier, edge = it))) }
-        }
-        if (l.hue != Hue.Neutral && s.card != TodayCard.Alerts) sides.forEach { add(s.copy(look = l.copy(hue = Hue.Neutral, edge = it))) }
-    }
+private fun options(s: TodaySlot): List<TodaySlot> = when {
+    s.secondGlow -> listOf(s.copy(secondGlow = false)).map { it.copy(look = defaultLook(it, null)) }
+    s.card == TodayCard.LastNight && s.size == CardSize.Wide -> listOf(s.copy(size = CardSize.Strip)).map { it.copy(look = defaultLook(it, null)) }
+    s.card == TodayCard.LastNight && s.size == CardSize.Strip -> listOf(s.copy(size = CardSize.Wide)).map { it.copy(look = defaultLook(it, null)) }
+    else -> emptyList()
 }
 
 /** Whether no two neighbours among the first [upTo] + 1 slots look the same. */
 private fun settled(slots: List<TodaySlot>, upTo: Int, wide: Boolean, across: Boolean) =
-    neighbours(slots, wide, across).none { (a, b) -> b <= upTo && slots[a].look!!.sameDesign(slots[b].look) }
+    neighbours(slots, wide, across).none { (a, b) -> b <= upTo && clash(slots[a], slots[b]) { it.look!! } }
 
 /**
  * Goes down the list and, where a card looks like a neighbour before it, gives the card another look ([options]).
@@ -139,7 +130,7 @@ private fun settled(slots: List<TodaySlot>, upTo: Int, wide: Boolean, across: Bo
 private fun restyle(slots: List<TodaySlot>, wide: Boolean, across: Boolean): List<TodaySlot> {
     val out = slots.toMutableList()
     for (i in out.indices) {
-        val clashing = neighbours(out, wide, across).filter { (a, b) -> b == i && out[a].look!!.sameDesign(out[i].look) }.map { it.first }
+        val clashing = neighbours(out, wide, across).filter { (a, b) -> b == i && clash(out[a], out[i]) { it.look!! } }.map { it.first }
         if (clashing.isEmpty()) continue
         fun tryAt(at: Int): Boolean {
             val pick = options(out[at]).firstOrNull { o -> settled(out.toMutableList().also { it[at] = o }, i, wide, across) } ?: return false
@@ -152,18 +143,22 @@ private fun restyle(slots: List<TodaySlot>, wide: Boolean, across: Boolean): Lis
 }
 
 /**
- * [slots] with a look each, such that no two neighbours ([neighbours]) look the same (spec 2.4). A clash is resolved
- * first by flipping the later card's edge, then by another tier or the neutral edge, and only then by moving a card
- * whose place the spec leaves open down to the nearest place it fits. [live] is whether heart rate is live, [wide]
- * whether Today has two columns, and [smallsAcross] whether a Small pair spans both of them ([todayPanes]).
+ * [slots] with a look each, such that no two neighbours ([neighbours]) look the same (spec 2.5). Each card first takes
+ * its own look, which draws its own picture ([defaultLook]). A clash left (two strips, a pin beside its twin) is
+ * resolved first by the later card taking another tier the spec gives it (Last night as a strip or a card, the second
+ * glow as its picture card), and only then by moving a card whose place the spec leaves open (a pin, Your week, Habit
+ * Age) to the nearest place it fits, never splitting a pair, with the row rules kept ([fitRows]). [live] is whether
+ * heart rate is live, [wide] whether Today has two columns, and [smallsAcross] whether a Small pair spans both of
+ * them ([todayPanes]).
  */
 fun varyLooks(slots: List<TodaySlot>, moment: Moment?, live: Boolean = false, wide: Boolean = false, smallsAcross: Boolean = false): List<TodaySlot> {
     val across = smallsAcross && wide
-    var base = slots.map { it.copy(look = defaultLook(it, moment, live)) }
+    val dress = { l: List<TodaySlot> -> fitRows(l).map { if (it.look == null) it.copy(look = defaultLook(it, moment, live)) else it } }
+    var base = dress(slots.map { it.copy(look = null) })
     repeat(slots.size + 1) {
         val styled = restyle(base, wide, across)
         val clash = lookClashes(styled, wide, smallsAcross = across).firstOrNull() ?: return styled
-        base = move(base, clash, wide, across) ?: return styled
+        base = move(base, clash, wide, across, dress) ?: return styled
     }
     return restyle(base, wide, across)
 }
@@ -171,9 +166,11 @@ fun varyLooks(slots: List<TodaySlot>, moment: Moment?, live: Boolean = false, wi
 /**
  * [base] with one movable card moved to the nearest place where it looks like none of its neighbours and fewer cards
  * clash overall: a card of the [clash] first, the later one first, then any other. Nothing moves above the hero and
- * the strips that need an answer, or past Edit Today.
+ * the strips that need an answer, or past Edit Today. [dress] keeps the row rules and gives a resized card its look.
  */
-private fun move(base: List<TodaySlot>, clash: Pair<Int, Int>, wide: Boolean, across: Boolean): List<TodaySlot>? {
+private fun move(
+    base: List<TodaySlot>, clash: Pair<Int, Int>, wide: Boolean, across: Boolean, dress: (List<TodaySlot>) -> List<TodaySlot>,
+): List<TodaySlot>? {
     val before = lookClashes(restyle(base, wide, across), wide, smallsAcross = across).size
     val top = base.indexOfFirst { it.card !in URGENT }.let { if (it < 0) base.size else it }
     val end = base.indexOfFirst { it.card == TodayCard.EditToday }.let { if (it < 0) base.size else it }
@@ -186,7 +183,7 @@ private fun move(base: List<TodaySlot>, clash: Pair<Int, Int>, wide: Boolean, ac
         val starts = rowStarts(rest)
         val places = (top until end).filter { it != from && it in starts }.sortedWith(compareBy({ kotlin.math.abs(it - from) }, { it < from }))
         for (to in places) {
-            val moved = rest.toMutableList().also { it.add(to, card) }
+            val moved = dress(rest.toMutableList().also { it.add(to, card) })
             val clashes = lookClashes(restyle(moved, wide, across), wide, smallsAcross = across)
             if (clashes.size < before && clashes.none { it.first == to || it.second == to }) return moved
         }

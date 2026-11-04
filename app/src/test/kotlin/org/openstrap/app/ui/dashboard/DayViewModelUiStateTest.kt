@@ -160,10 +160,57 @@ class DayViewModelUiStateTest {
         vm.viewModelScope.coroutineContext[Job]?.cancel()
     }
 
+    @Test fun `Steps' goal facts get the days before and the best before today`() = runTest {
+        val repo = FakeDays()
+        val clock = FixedClock(Instant.parse("2026-01-15T12:00:00Z"))
+        val vm = DayViewModel(repo, clock = { clock.clock }, work = UnconfinedTestDispatcher(testScheduler))
+        val collector = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.activityHistory.collect {} }
+        // The stored best is today's own, so the best before today is read from the whole history.
+        repo.stored.value = org.openstrap.app.data.db.PersonalBest(
+            org.openstrap.app.data.Rewards.Kind.MOST_STEPS, 30000.0, date.atStartOfDay(ZoneOffset.UTC).toEpochSecond(),
+        )
+        var h = vm.activityHistory.first { it.date == date && it.stepsBest == 25000 }
+        assertEquals(date.minusDays(ActivityHistory.STEPS_DAYS.toLong()) to date.plusDays(6), repo.stepsWindow)
+        assertEquals(GoalFacts(9500, 8000, 25000, 12000, 3), h.stepsFacts(date, 9500, 8000))
+        // An older stored best stands, raised to the loaded days' when they're higher.
+        repo.stored.value = org.openstrap.app.data.db.PersonalBest(
+            org.openstrap.app.data.Rewards.Kind.MOST_STEPS, 11000.0, date.minusDays(100).atStartOfDay(ZoneOffset.UTC).toEpochSecond(),
+        )
+        h = vm.activityHistory.first { it.stepsBest == 12000 }
+        assertEquals(12000, h.stepsFacts(date, 9500, 8000)!!.best)
+        collector.cancel()
+        vm.viewModelScope.coroutineContext[Job]?.cancel()
+    }
+
+    @Test fun `the day's state carries the sleep normals and the stress strip`() {
+        val nights = (13 downTo 0).map { back ->
+            val d = date.minusDays(back.toLong())
+            val start = d.minusDays(1).atTime(23, 0).toEpochSecond(ZoneOffset.UTC)
+            org.openstrap.app.data.SleepNight(d, SleepSession(start, start + 8 * 3600, lightMinutes = 480 - back, deepMinutes = 0, remMinutes = 0))
+        }
+        val stress = listOf(org.openstrap.app.data.db.StressSample(at(9), 50), org.openstrap.app.data.db.StressSample(at(9, 30), 70))
+        val s = DayViewModel.toUiState(DayData(date, nights = nights, stress = stress))
+        assertEquals(14, s.sleepLengthNormal?.days)
+        assertEquals(11 * 60f, s.bedtimeNormal!!.mean, 0.01f)
+        assertEquals(24, s.stressStrip.size)
+        assertEquals(0.6f, s.stressStrip[9]!!, 0.0001f)
+        assertNull(s.stressStrip[10])
+    }
+
     /** A day repository with one day of Heart points and energy, noting the windows asked for. */
     private inner class FakeDays : DayRepository {
         var paiWindow: Pair<LocalDate, LocalDate>? = null
         var energyWindow: Pair<LocalDate, LocalDate>? = null
+        var stepsWindow: Pair<LocalDate, LocalDate>? = null
+        val stored = kotlinx.coroutines.flow.MutableStateFlow<org.openstrap.app.data.db.PersonalBest?>(null)
+
+        override fun dailySteps(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, Int>> {
+            stepsWindow = from to to
+            return flowOf(mapOf(date to 9000, date.minusDays(1) to 8000, date.minusDays(2) to 12000, date.minusDays(3) to 100))
+        }
+
+        override fun personalBest(kind: String): Flow<org.openstrap.app.data.db.PersonalBest?> = stored
+        override suspend fun mostStepsBefore(date: LocalDate): Int = 25000
 
         override fun day(date: LocalDate, isToday: Boolean): Flow<DayData> = flowOf(DayData(date, isToday))
         override fun daysWithData(): Flow<Set<LocalDate>> = flowOf(emptySet())

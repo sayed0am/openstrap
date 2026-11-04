@@ -48,9 +48,7 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
-import org.openstrap.app.ui.dashboard.Hue
 import org.openstrap.app.ui.dashboard.Tier
-import org.openstrap.app.ui.dashboard.defaultLook
 import org.openstrap.app.ui.dashboard.lookOr
 import org.openstrap.app.ui.dashboard.todayPanes
 import org.openstrap.app.ui.dashboard.varyLooks
@@ -257,15 +255,9 @@ fun GlowTodayScreen(
                             val slot = slots[i]
                             // Before a strap is paired, everything under the pairing hero waits, dimmed.
                             val dim = if (pairing != null && slot.card != TodayCard.Hero && slot.card != TodayCard.EditToday) Modifier.alpha(0.45f) else Modifier
-                            // Where the look differs from the card's own, its edge card is told the side and colour to use.
-                            val own = defaultLook(slot.copy(look = null), looksFor, live)
                             val look = slot.lookOr(looksFor, live)
-                            val override = EdgeOverride(
-                                edge = look.edge.takeIf { it != own.edge },
-                                color = EdgeNeutral.takeIf { look.hue == Hue.Neutral && own.hue != Hue.Neutral },
-                                // An unlit card drawn as an edge card (Last night, Your week, Start) skips its light.
-                                plain = look.tier == Tier.List,
-                            )
+                            // An unlit card drawn as a picture card skips its light.
+                            val override = EdgeOverride(plain = look.tier == Tier.List)
                             CompositionLocalProvider(LocalEdgeOverride provides override) {
                                 Column(m.then(dim)) {
                                     when (slot.card) {
@@ -878,6 +870,7 @@ private fun TodayRow(
         // Habit Age's home is the foot of Recovery; Today shows the same card when there's a new estimate, or pinned.
         TodayCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
         TodayCard.StartWorkout -> StartWorkoutStrip(ctx.usualSport, onStartSport)
+        TodayCard.Stress -> Unit
         TodayCard.Hero, TodayCard.EditToday -> Unit
     }
 }

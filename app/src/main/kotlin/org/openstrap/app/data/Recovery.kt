@@ -539,6 +539,11 @@ object Recovery {
          * [atWake] is then that restart value.
          */
         val strapOffOvernight: Boolean = false,
+        /**
+         * Charge as the main sleep began (its first minute, often the evening before the day), where Recharged
+         * starts from. Null without a main sleep, or when the strap was off then.
+         */
+        val atBedtime: Float? = null,
     )
 
     /** Sleep recharge rate per minute, as a fraction of the remaining headroom (≈30 → 92 over 7.5 h). */

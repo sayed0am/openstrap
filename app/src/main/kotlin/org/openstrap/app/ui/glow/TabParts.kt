@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openstrap.app.ui.components.cardOpening
 import org.openstrap.app.ui.dashboard.CardLook
-import org.openstrap.app.ui.dashboard.Hue
 import org.openstrap.app.ui.dashboard.TabSlot
 import org.openstrap.app.ui.dashboard.Tier
 import org.openstrap.app.ui.dashboard.items
@@ -43,8 +42,7 @@ import org.openstrap.app.ui.dashboard.items
  * cards and lists get none, so a list stays a list.
  */
 internal fun CardLook.edgeOverride(): EdgeOverride = when (tier) {
-    Tier.Edge, Tier.Strip -> EdgeOverride(edge = edge, color = EdgeNeutral.takeIf { hue == Hue.Neutral })
-    // An unlit card drawn as an edge card (Activity's Start a workout, Plain) has no light; a list ignores it.
+    // An unlit card drawn as a picture card (Activity's Start a workout, Plain) has no light; a list ignores it.
     Tier.List, Tier.Plain -> EdgeOverride(plain = true)
     else -> EdgeOverride()
 }

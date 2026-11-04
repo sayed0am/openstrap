@@ -284,6 +284,20 @@ fun Recovery.breathingDisturbances(tonight: Night?, history: List<Night>): Breat
 }
 
 /**
+ * The usual band of breathing disturbances for the night of [day] (local midnight), for the week picture: the median
+ * of the [BASELINE_NIGHTS] nights before it with a value, ± their standard deviation, never under 0. [History.Normal.mean]
+ * holds that median, the same usual [breathingDisturbances] gives. Null under [SCORED_NIGHTS] such nights.
+ */
+fun Recovery.disturbancesUsual(history: List<Night>, day: Long): History.Normal? {
+    val past = history.filter { it.day < day }.sortedBy { it.day }.takeLast(BASELINE_NIGHTS).mapNotNull { it.odi }
+    if (past.size < SCORED_NIGHTS) return null
+    val median = percentile(past, 0.5f) ?: return null
+    val mean = past.average()
+    val sd = kotlin.math.sqrt(past.sumOf { (it - mean) * (it - mean) } / (past.size - 1)).toFloat()
+    return History.Normal(median, (median - sd).coerceAtLeast(0f), median + sd, past.size)
+}
+
+/**
  * Our sleep score when the strap didn't give one: 0.7·duration + 0.3·continuity. No stage target: four-stage
  * agreement across six devices was kappa 0.21-0.53 (Schyvens et al. 2025), so stages are shown, not scored. And
  * low wake specificity inflates wearable efficiency, so continuity uses wake after sleep onset, not time in bed.
