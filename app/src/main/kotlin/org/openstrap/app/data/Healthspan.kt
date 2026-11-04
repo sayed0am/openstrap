@@ -340,6 +340,9 @@ object Healthspan {
         val reason: String get() = Strings.app.get(reasonId)
     }
 
+    /** What the profile can be missing for an estimate. */
+    enum class ProfileGap { BirthYear, Sex }
+
     /**
      * What the card and screen show: the estimate, or why it's withheld together with what the starting state needs:
      * the user's [age] (the estimate starts there), what's [missing] from the profile, and the Sunday a first estimate
@@ -349,7 +352,7 @@ object Healthspan {
         val result: Result?,
         val withheld: Withheld?,
         val age: Int? = null,
-        val missing: List<String> = emptyList(),
+        val missing: List<ProfileGap> = emptyList(),
         val firstEstimate: Long? = null,
         /** Last week's estimate as it was shown ([lastWeek]), for "1 year younger than last week"; null until there's one. */
         val lastWeek: Float? = null,

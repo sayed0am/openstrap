@@ -128,15 +128,16 @@
     <string name="workout_summary_game_stronger">You finished stronger than you started.</string>
     <!-- How a game went: steady to the end. -->
     <string name="workout_summary_game_kept_up">You kept your effort up to the end.</string>
-    <!-- How many workouts this week, the start of the line under the week's days. -->
-    <plurals name="workout_summary_week_count">
-        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout this week</item>
-        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> workouts this week</item>
+    <!-- The line under the week's days once the weekly goal is met. The count is this week's workouts. -->
+    <plurals name="workout_summary_week_goal_met">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> workout this week, goal met.</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> workouts this week, goal met.</item>
     </plurals>
-    <!-- The line under the week's days once the weekly goal is met. The start is "4 workouts this week". -->
-    <string name="workout_summary_week_goal_met"><xliff:g id="week" example="4 workouts this week">%1$s</xliff:g>, goal met.</string>
-    <!-- The line under the week's days: how many more workouts the weekly goal needs. The start is "3 workouts this week". -->
-    <string name="workout_summary_week_goal_more"><xliff:g id="week" example="3 workouts this week">%1$s</xliff:g>, <xliff:g id="more" example="1">%2$d</xliff:g> more for your goal.</string>
+    <!-- The line under the week's days: this week's workouts so far, then how many more the weekly goal needs. The form follows the first count. -->
+    <plurals name="workout_summary_week_goal_more">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> workout this week, <xliff:g id="more" example="3">%2$d</xliff:g> more for your goal.</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> workouts this week, <xliff:g id="more" example="1">%2$d</xliff:g> more for your goal.</item>
+    </plurals>
     <!-- The heart rate zone the workout spent most time in. Short, about 16 characters. -->
     <string name="workout_summary_mostly_zone">Mostly zone <xliff:g id="zone" example="3">%1$d</xliff:g></string>
     <!-- Against the last workout of the same sport and length: a lower average heart rate. The day is a weekday, "Monday". -->

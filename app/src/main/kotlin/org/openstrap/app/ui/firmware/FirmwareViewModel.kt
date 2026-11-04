@@ -211,7 +211,7 @@ class FirmwareViewModel(
             if (battery == null) add(strings.get(R.string.you_firmware_block_battery_unknown))
             else if (battery <= MIN_BATTERY) add(strings.format(R.string.you_firmware_block_battery, MIN_BATTERY, battery))
         }
-        if (strap.info.value?.dfuAvailable == false) add(strings.get(R.string.you_firmware_block_no_service))
+        if (strap.info.value?.dfuAvailable == false) add(strings.get(R.string.system_firmware_no_service))
     }
 
     fun install(image: ReadyImage) {

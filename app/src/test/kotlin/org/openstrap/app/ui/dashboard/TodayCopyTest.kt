@@ -16,6 +16,9 @@ import org.openstrap.app.presentation.TodayCopy
 /** Today's hero sentences and small facts (spec 4.2, 4.3, 7). */
 class TodayCopyTest {
     private val zone = ZoneId.of("Europe/London")
+
+    /** Strength: a sport with no short noun. */
+    private val OTHER_SPORT = 52
     private fun at(h: Int, m: Int = 0, day: Int = 23) = ZonedDateTime.of(2026, 10, day, h, m, 0, 0, zone).toEpochSecond()
 
     @Test fun `durations read like the mockups`() {
@@ -81,9 +84,11 @@ class TodayCopyTest {
         assertEquals("Fine for a steady session", TodayCopy.windowTitle(60))
         assertEquals("An easy session suits today", TodayCopy.windowTitle(40))
         assertEquals("Your usual workout time", TodayCopy.windowTitle(null))
-        assertEquals("You usually run around now. Energy is 58, plenty left.", TodayCopy.window("run", 58))
+        assertEquals("You usually run around now. Energy is 58, plenty left.", TodayCopy.window(1, 58))
         assertEquals("You usually work out around now.", TodayCopy.window(null, null))
-        assertEquals("You usually ride around now. Energy is 20, running low.", TodayCopy.window("ride", 20))
+        assertEquals("You usually ride around now. Energy is 20, running low.", TodayCopy.window(4, 20))
+        assertEquals("You usually swim around now.", TodayCopy.window(6, null))
+        assertEquals("You usually work out around now.", TodayCopy.window(OTHER_SPORT, null))
     }
 
     @Test fun `after a workout the heart settles toward resting`() {
@@ -112,14 +117,15 @@ class TodayCopyTest {
     @Test fun `evening tells the day`() {
         assertEquals(
             "A full day. A run, 13,860 steps and a Load above your usual.",
-            TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadBand.Above, Locale.UK),
+            TodayCopy.evening(listOf(1), 13_860, 8_000, LoadBand.Above, Locale.UK),
         )
         assertEquals("A quiet day. 2,100 steps and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadBand.Below, Locale.UK))
-        assertEquals("A steady day. 2 workouts and 6,000 steps.", TodayCopy.evening(listOf("run", null), 6_000, 8_000, null, Locale.UK))
-        assertEquals("A steady day. A workout and 6,000 steps.", TodayCopy.evening(listOf(null), 6_000, 8_000, LoadBand.SoFar, Locale.UK))
+        assertEquals("A steady day. 2 workouts and 6,000 steps.", TodayCopy.evening(listOf(1, OTHER_SPORT), 6_000, 8_000, null, Locale.UK))
+        assertEquals("A steady day. A workout and 6,000 steps.", TodayCopy.evening(listOf(OTHER_SPORT), 6_000, 8_000, LoadBand.SoFar, Locale.UK))
+        assertEquals("A steady day. A ride and 6,000 steps.", TodayCopy.evening(listOf(4), 6_000, 8_000, null, Locale.UK))
         // The app's hero says the steps against the goal, since it shows the count in dots.
         assertEquals("A quiet day. Well short of your step goal and a Load below your usual.", TodayCopy.evening(emptyList(), 2_100, 8_000, LoadBand.Below, Locale.UK, stepCount = false))
-        assertEquals("A full day. A run, past your step goal and a Load above your usual.", TodayCopy.evening(listOf("run"), 13_860, 8_000, LoadBand.Above, Locale.UK, stepCount = false))
+        assertEquals("A full day. A run, past your step goal and a Load above your usual.", TodayCopy.evening(listOf(1), 13_860, 8_000, LoadBand.Above, Locale.UK, stepCount = false))
     }
 
     @Test fun `bedtime counts down and stops once passed`() {
@@ -177,6 +183,10 @@ class TodayCopyTest {
         assertEquals("Steps up 10%", TodayCopy.stepsChange(1100.0, 1000.0))
         assertEquals("Steps held steady", TodayCopy.stepsChange(1001.0, 1000.0))
         assertNull(TodayCopy.stepsChange(1000.0, null))
+        assertEquals("10% more steps than the week before.", TodayCopy.weekStepsLine(1100.0, 1000.0))
+        assertEquals("3% fewer steps than the week before.", TodayCopy.weekStepsLine(970.0, 1000.0))
+        assertEquals("About the same steps as the week before.", TodayCopy.weekStepsLine(1001.0, 1000.0))
+        assertNull(TodayCopy.weekStepsLine(null, 1000.0))
         assertEquals("7 h 40, score 83", TodayCopy.lastNight((7 * 60 + 40) * 60L, 83))
         assertEquals("6 h", TodayCopy.lastNight(6 * 3600L, null))
         assertNull(TodayCopy.lastNight(null, 83))
@@ -186,7 +196,7 @@ class TodayCopyTest {
         val all = listOf(
             TodayCopy.waking(1000, 80, false, null, false, true), TodayCopy.waking(1000, null, false, learning, false, true),
             TodayCopy.WEEK_FIRST, TodayCopy.recoverText(5000, at(10), zone).second, TodayCopy.charge(50, 30, true, 10),
-            TodayCopy.window("run", 50), TodayCopy.after(80, 50), TodayCopy.evening(listOf("run"), 9000, 8000, LoadBand.Usual, Locale.UK),
+            TodayCopy.window(1, 50), TodayCopy.after(80, 50), TodayCopy.evening(listOf(1), 9000, 8000, LoadBand.Usual, Locale.UK),
         )
         assertCleanCopy(all)
     }

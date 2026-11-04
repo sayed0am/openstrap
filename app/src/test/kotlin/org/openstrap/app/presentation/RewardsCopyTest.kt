@@ -92,6 +92,7 @@ class RewardsCopyTest {
     @Test
     fun goalLineSaysWhatsLeft() {
         assertEquals("2 more to go this week", RewardsCopy.goalLine(Rewards.WeekLine(1, 3, false), 0).note)
+        assertEquals("1 more to go this week", RewardsCopy.goalLine(Rewards.WeekLine(2, 3, false), 0).note)
         assertEquals("6 weeks in a row", RewardsCopy.goalLine(Rewards.WeekLine(4, 4, true), 6).note)
         assertEquals("Weekly goal", RewardsCopy.goalLine(Rewards.WeekLine(5, 4, false), 6).text)
     }
@@ -107,6 +108,7 @@ class RewardsCopyTest {
         assertEquals("27 October to 2 November", RewardsCopy.weekRange(LocalDate.parse("2026-10-27"), Locale.UK))
         assertEquals("5 of 4 workouts, goal met. 6 weeks in a row.", RewardsCopy.recapText(WeekResult(0, 4, 5, true), 6))
         assertEquals("2 of 4 workouts.", RewardsCopy.recapText(WeekResult(0, 4, 2, false), 0))
+        assertEquals("0 of 1 workout.", RewardsCopy.recapText(WeekResult(0, 1, 0, false), 0))
     }
 
     @Test

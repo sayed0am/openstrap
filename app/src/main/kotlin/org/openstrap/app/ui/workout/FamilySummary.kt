@@ -295,11 +295,10 @@ object FamilySummary {
      * goal." or, once it's met, "4 workouts this week, goal met."
      */
     fun weekGoalLine(count: Int, goal: Int, strings: Strings = Strings.app): String {
-        val first = strings.plural(R.plurals.workout_summary_week_count, count, count)
         return if (count >= goal) {
-            strings.format(R.string.workout_summary_week_goal_met, first)
+            strings.plural(R.plurals.workout_summary_week_goal_met, count, count)
         } else {
-            strings.format(R.string.workout_summary_week_goal_more, first, goal - count)
+            strings.plural(R.plurals.workout_summary_week_goal_more, count, count, goal - count)
         }
     }
 

@@ -48,6 +48,11 @@ class LiveGlanceTest {
         assertNull(g.goal)
     }
 
+    @Test fun `a zone goal reads Target zone, zone in lower case`() {
+        assertEquals("Target zone 2", Glance.of(run(target = WorkoutTarget.Zones(1, 1))).goal)
+        assertEquals("Target zone 2 to 3", Glance.of(run(target = WorkoutTarget.Zones(1, 2))).goal)
+    }
+
     @Test fun `a time goal counts the minutes down, and a met goal says so`() {
         val g = Glance.of(run(target = WorkoutTarget.Time(30 * 60)))
         assertEquals("24:51, 6 min to go", g.line2)

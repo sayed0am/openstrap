@@ -161,7 +161,7 @@
     <!-- The hero's split strip: the last kilometre's average heart rate. -->
     <string name="workout_glance_split_average">Avg <xliff:g id="bpm" example="146">%1$d</xliff:g> bpm.</string>
 
-    <!-- The hero's line under its bar for a heart rate zone target. The target is "zone 2" or "zones 2 to 3", in lower case. -->
+    <!-- The hero's line under its bar for a heart rate zone target. The target is "zone 2" or "zone 2 to 3", in lower case. -->
     <string name="workout_glance_target">Target <xliff:g id="target" example="zone 2">%1$s</xliff:g></string>
     <!-- The hero's line under its bar: the goal. The goal is "5 km", "30 min" or "400 kcal". -->
     <string name="workout_glance_goal">Goal <xliff:g id="goal" example="5 km">%1$s</xliff:g></string>

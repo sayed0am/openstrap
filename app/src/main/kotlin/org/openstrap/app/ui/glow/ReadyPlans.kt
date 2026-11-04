@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -212,7 +213,7 @@ internal fun ReadyRows(content: @Composable ColumnScope.() -> Unit) {
 /** Work and rest along the rounds, each as wide as its time: work in heart red, rest in sleep blue. */
 @Composable
 private fun RoundsStrip(s: Structure.Timed) {
-    val described = stringResource(R.string.glow_ready_rounds_description, s.rounds, s.work, s.rest)
+    val described = pluralStringResource(R.plurals.glow_ready_rounds_description, s.rounds, s.rounds, s.work, s.rest)
     Row(
         Modifier.fillMaxWidth().height(10.dp).semantics { contentDescription = described },
         horizontalArrangement = Arrangement.spacedBy(2.dp),

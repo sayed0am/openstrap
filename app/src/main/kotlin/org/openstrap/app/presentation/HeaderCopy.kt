@@ -34,14 +34,37 @@ fun todayTitle(
         Moment.Midday -> strings.get(R.string.core_header_midday)
     }
 
-/** The sports with a short noun, each with its noun ("run") and what you're doing in it ("Running"). */
-private enum class ShortSport(@StringRes val noun: Int, @StringRes val doing: Int) {
-    Run(R.string.core_header_sport_run, R.string.core_header_doing_run),
-    Walk(R.string.core_header_sport_walk, R.string.core_header_doing_walk),
-    Ride(R.string.core_header_sport_ride, R.string.core_header_doing_ride),
-    Swim(R.string.core_header_sport_swim, R.string.core_header_doing_swim),
-    Hike(R.string.core_header_sport_hike, R.string.core_header_doing_hike),
-    Row(R.string.core_header_sport_row, R.string.core_header_doing_row),
+/**
+ * The sports with a short noun, each with its noun ("run"), what you're doing in it ("Running"), the workout window's
+ * sentence ("You usually run around now.") and the evening list's item ("a run").
+ */
+private enum class ShortSport(
+    @StringRes val noun: Int, @StringRes val doing: Int, @StringRes val usually: Int, @StringRes val one: Int,
+) {
+    Run(
+        R.string.core_header_sport_run, R.string.core_header_doing_run, R.string.core_today_window_usually_run,
+        R.string.core_today_evening_one_run,
+    ),
+    Walk(
+        R.string.core_header_sport_walk, R.string.core_header_doing_walk, R.string.core_today_window_usually_walk,
+        R.string.core_today_evening_one_walk,
+    ),
+    Ride(
+        R.string.core_header_sport_ride, R.string.core_header_doing_ride, R.string.core_today_window_usually_ride,
+        R.string.core_today_evening_one_ride,
+    ),
+    Swim(
+        R.string.core_header_sport_swim, R.string.core_header_doing_swim, R.string.core_today_window_usually_swim,
+        R.string.core_today_evening_one_swim,
+    ),
+    Hike(
+        R.string.core_header_sport_hike, R.string.core_header_doing_hike, R.string.core_today_window_usually_hike,
+        R.string.core_today_evening_one_hike,
+    ),
+    Row(
+        R.string.core_header_sport_row, R.string.core_header_doing_row, R.string.core_today_window_usually_row,
+        R.string.core_today_evening_one_row,
+    ),
 }
 
 // Sport ids as the strap numbers them, read here only, so naming each would add nothing.
@@ -58,6 +81,14 @@ private fun shortSport(sportType: Int): ShortSport? = when (sportType) {
 
 /** A sport as a short noun ("run", "ride"), for "After your run", or null where none reads well, so it says "workout". */
 internal fun sportNoun(sportType: Int, strings: Strings = Strings.app): String? = shortSport(sportType)?.let { strings.get(it.noun) }
+
+/** The workout window's sentence for [sportType]: "You usually run around now.", or "work out" for any other sport or none. */
+internal fun sportUsually(sportType: Int?, strings: Strings = Strings.app): String =
+    strings.get(sportType?.let(::shortSport)?.usually ?: R.string.core_today_window_usually_workout)
+
+/** One workout of [sportType] as an item of the evening list: "a run", or "a workout" for any other sport. */
+internal fun sportOne(sportType: Int, strings: Strings = Strings.app): String =
+    strings.get(shortSport(sportType)?.one ?: R.string.core_today_evening_one_workout)
 
 /** A sport as what you're doing ("Running"), for the header during it; its name where no verb reads well. */
 internal fun sportDoing(sportType: Int, strings: Strings = Strings.app): String =

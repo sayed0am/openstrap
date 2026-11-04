@@ -74,6 +74,9 @@
     <string name="glow_ready_unit_s_off">s off</string>
     <!-- Beside an every minute round's length in seconds, "60 s a round". Very short. -->
     <string name="glow_ready_unit_s_a_round">s a round</string>
-    <!-- Spoken for the strip of HIIT work and rest under the plan, for screen readers. -->
-    <string name="glow_ready_rounds_description"><xliff:g id="rounds" example="8">%1$d</xliff:g> rounds of <xliff:g id="work" example="20">%2$d</xliff:g> seconds work and <xliff:g id="rest" example="10">%3$d</xliff:g> seconds rest</string>
+    <!-- Spoken for the strip of HIIT work and rest under the plan, for screen readers. The form follows the rounds. Work and rest are seconds. -->
+    <plurals name="glow_ready_rounds_description">
+        <item quantity="one"><xliff:g id="rounds" example="1">%1$d</xliff:g> round, <xliff:g id="work" example="20">%2$d</xliff:g> s work, <xliff:g id="rest" example="10">%3$d</xliff:g> s rest</item>
+        <item quantity="other"><xliff:g id="rounds" example="8">%1$d</xliff:g> rounds, <xliff:g id="work" example="20">%2$d</xliff:g> s work, <xliff:g id="rest" example="10">%3$d</xliff:g> s rest</item>
+    </plurals>
 </resources>

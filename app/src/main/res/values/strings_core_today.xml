@@ -120,12 +120,17 @@
     <!-- The workout time hero's title with a low Recovery score. -->
     <string name="core_today_window_title_easy">An easy session suits today</string>
     <!--
-      The workout time hero. The activity is a sport's short noun used as a verb ("run", "ride", "walk") or
-      "work out" (core_today_window_work_out). A sentence about Energy may follow.
+      The workout time hero: the sport the wearer usually does at this hour, one sentence per sport (running, walking,
+      cycling, swimming, hiking, rowing). A sentence about Energy may follow.
     -->
-    <string name="core_today_window_usually">You usually <xliff:g id="activity" example="run">%1$s</xliff:g> around now.</string>
-    <!-- Goes into "You usually … around now." when the sport has no short name. -->
-    <string name="core_today_window_work_out">work out</string>
+    <string name="core_today_window_usually_run">You usually run around now.</string>
+    <string name="core_today_window_usually_walk">You usually walk around now.</string>
+    <string name="core_today_window_usually_ride">You usually ride around now.</string>
+    <string name="core_today_window_usually_swim">You usually swim around now.</string>
+    <string name="core_today_window_usually_hike">You usually hike around now.</string>
+    <string name="core_today_window_usually_row">You usually row around now.</string>
+    <!-- The same, for any other sport. -->
+    <string name="core_today_window_usually_workout">You usually work out around now.</string>
     <!-- The workout time hero's second sentence, with 50 or more Energy left. -->
     <string name="core_today_window_energy_plenty">Energy is <xliff:g id="energy" example="58">%1$d</xliff:g>, plenty left.</string>
     <!-- The same with 25 to 49 left. -->
@@ -148,9 +153,18 @@
     <string name="core_today_evening_quiet">A quiet day. <xliff:g id="list" example="2,100 steps and a Load below your usual">%1$s</xliff:g>.</string>
     <!-- The evening hero after an ordinary day, the list as above. -->
     <string name="core_today_evening_steady">A steady day. <xliff:g id="list" example="A workout and 6,000 steps">%1$s</xliff:g>.</string>
-    <!-- An item of the evening list: one workout of a sport with a short name ("run", "ride"). Its first letter is capitalised when it leads the list. -->
-    <string name="core_today_evening_one_sport">a <xliff:g id="sport" example="run">%1$s</xliff:g></string>
-    <!-- An item of the evening list: one workout of a sport with no short name. -->
+    <!--
+      An item of the evening list: the day's one workout, one item per sport (running, walking, cycling, swimming,
+      hiking, rowing). Lower case: the app capitalises the first letter when the item leads the list ("A run, 13,860
+      steps and a Load above your usual").
+    -->
+    <string name="core_today_evening_one_run">a run</string>
+    <string name="core_today_evening_one_walk">a walk</string>
+    <string name="core_today_evening_one_ride">a ride</string>
+    <string name="core_today_evening_one_swim">a swim</string>
+    <string name="core_today_evening_one_hike">a hike</string>
+    <string name="core_today_evening_one_row">a row</string>
+    <!-- An item of the evening list: one workout of any other sport. Capitalised by the app when it leads, as above. -->
     <string name="core_today_evening_one_workout">a workout</string>
     <!-- An item of the evening list: how many workouts (2 or more in English). -->
     <plurals name="core_today_evening_workouts">

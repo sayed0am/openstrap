@@ -45,20 +45,24 @@ class WeekStoryTest {
     @Test fun `the sentence compares only what the week before has`() {
         assertEquals("Busiest on Thursday, 12,400 steps.", WeekStory.busiest(days(), Locale.UK))
         assertNull(WeekStory.workoutsChange(1, null))
-        assertEquals("One workout, one fewer than the week before.", WeekStory.workoutsChange(1, 2))
-        assertEquals("Three workouts, two more than the week before.", WeekStory.workoutsChange(3, 1))
-        assertEquals("Two workouts, as many as the week before.", WeekStory.workoutsChange(2, 2))
+        assertEquals("1 workout, 1 fewer than the week before.", WeekStory.workoutsChange(1, 2))
+        assertEquals("3 workouts, 2 more than the week before.", WeekStory.workoutsChange(3, 1))
+        assertEquals("2 workouts, as many as the week before.", WeekStory.workoutsChange(2, 2))
+        assertEquals("1 workout, 1 more than the week before.", WeekStory.workoutsChange(1, 0))
+        assertEquals("0 workouts, 2 fewer than the week before.", WeekStory.workoutsChange(0, 2))
         assertEquals(
-            "Busiest on Thursday, 12,400 steps. Steps up 12% on the week before. One workout, as many as the week before.",
-            WeekStory.sentence(days(), "Steps up 12%", 1, Locale.UK),
+            "Busiest on Thursday, 12,400 steps. Steps up 12% on the week before. 1 workout, as many as the week before.",
+            WeekStory.sentence(days(), 12, 1, Locale.UK),
         )
+        assertEquals("Steps down 3% on the week before.", WeekStory.stepsChange(-3))
+        assertEquals("Steps held steady on the week before.", WeekStory.stepsChange(0))
         assertEquals("steps a day, 12 to 18 Oct", WeekStory.label(week, Locale.UK))
         assertEquals("steps a day, 28 Sep to 4 Oct", WeekStory.label(LocalDate.of(2026, 9, 28)..LocalDate.of(2026, 10, 4), Locale.US))
     }
 
     @Test fun `no week story line uses an interpunct, semicolon or em dash`() {
         val lines = days().mapNotNull(WeekStory::dayLine) + listOfNotNull(
-            WeekStory.sentence(days(), "Steps down 3%", 0, Locale.UK), WeekStory.workoutsChange(0, 0), WeekStory.label(week, Locale.UK),
+            WeekStory.sentence(days(), -3, 0, Locale.UK), WeekStory.workoutsChange(0, 0), WeekStory.label(week, Locale.UK),
         ) + listOf(InfoCopy.WEEK.meaning, InfoCopy.WEEK.how, InfoCopy.WEEK.moves, InfoCopy.WEEK.off)
         lines.forEach { s -> assertFalse("\"$s\"", s.any { it == '·' || it == ';' || it == '—' }) }
     }

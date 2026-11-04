@@ -59,10 +59,12 @@
     <string name="glow_healthspan_resting_hr"><xliff:g id="bpm" example="54">%1$d</xliff:g> bpm asleep, typical: about <xliff:g id="typical" example="60">%2$s</xliff:g></string>
     <!-- The time asleep habit's line: yours, and the length below which it counts. -->
     <string name="glow_healthspan_time_asleep"><xliff:g id="duration" example="5 h 40">%1$s</xliff:g> a night, only counts below <xliff:g id="limit" example="6 h 30">%2$s</xliff:g></string>
-    <!-- The Habit Age card when one thing is missing from the profile, "birth year" or "sex". -->
-    <string name="glow_healthspan_profile_one">Add your <xliff:g id="missing" example="birth year">%1$s</xliff:g> in your profile to see your Habit Age.</string>
-    <!-- The Habit Age card when two things are missing from the profile, "birth year" and "sex". -->
-    <string name="glow_healthspan_profile_two">Add your <xliff:g id="first" example="birth year">%1$s</xliff:g> and <xliff:g id="second" example="sex">%2$s</xliff:g> in your profile to see your Habit Age.</string>
+    <!-- The Habit Age card when the profile has no birth year. -->
+    <string name="glow_healthspan_profile_birth_year">Add your birth year to your profile to see your Habit Age.</string>
+    <!-- The Habit Age card when the profile has no sex. -->
+    <string name="glow_healthspan_profile_sex">Add your sex to your profile to see your Habit Age.</string>
+    <!-- The Habit Age card when the profile has neither birth year nor sex. -->
+    <string name="glow_healthspan_profile_both">Add your birth year and sex to your profile to see your Habit Age.</string>
     <!-- Title of the Habit Age card and page. -->
     <string name="glow_healthspan_title">Habit Age</string>
     <!-- What the info button beside the Habit Age title does, for screen readers. -->

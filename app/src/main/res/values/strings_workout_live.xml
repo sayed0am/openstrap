@@ -92,9 +92,9 @@
     <string name="workout_live_stopped_car_title">Looks like you\'re in a car</string>
     <!-- The panel's title when the heart rate has been back near resting for a while. One line. -->
     <string name="workout_live_stopped_title">Looks like you\'ve stopped</string>
-    <!-- The panel's note when the phone moves like a car. The time is "18:40" or "6:40 PM", the sport its name in lower case ("run", "outdoor cycling"). -->
+    <!-- The panel's note when the phone moves like a car. The time is "18:40" or "6:40 PM", the sport a short lower case noun ("run", "ride", "walk") or "workout" for any other sport. -->
     <string name="workout_live_stopped_car_note">You last moved at <xliff:g id="time" example="18:40">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> there, so the drive isn\'t counted?</string>
-    <!-- The panel's note when the heart rate is back near resting. The time is "18:40" or "6:40 PM", the sport its name in lower case ("run", "outdoor cycling"). -->
+    <!-- The panel's note when the heart rate is back near resting. The time is "18:40" or "6:40 PM", the sport a short lower case noun ("run", "ride", "walk") or "workout" for any other sport. -->
     <string name="workout_live_stopped_note">Your heart rate has been back near resting since <xliff:g id="time" example="18:40">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> at <xliff:g id="time_again" example="18:40">%1$s</xliff:g>?</string>
     <!-- A button in the panel: end the workout at the time you stopped, "18:40" or "6:40 PM". Half the screen wide. -->
     <string name="workout_live_stopped_end_at">End at <xliff:g id="time" example="18:40">%1$s</xliff:g></string>

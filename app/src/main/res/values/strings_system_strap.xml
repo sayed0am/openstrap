@@ -35,6 +35,7 @@
     <string name="system_firmware_wait_for_sync">Wait for the sync to finish first</string>
     <!-- Fast-charge mode is a strap mode where it only charges. -->
     <string name="system_firmware_fast_charge">Turn off fast-charge mode on the strap first</string>
+    <!-- Why an update can't start, on the Firmware page and as the install's failure. -->
     <string name="system_firmware_no_service">This strap can\'t take firmware updates from OpenStrap.</string>
 
     <!-- Why a command to the strap failed: an alarm, a setting, a restart, find my strap, a workout. -->
@@ -61,10 +62,31 @@
 
     <!-- A sync's progress, on the Strap page and in the strap's notification. -->
     <string name="system_sync_preparing">Preparing…</string>
-    <!-- The kind of data is the strap's own name for it, in English: "heart rate", "spo2 osa". Then which of how many. -->
+    <!-- The kind of data is one of the system_sync_kind_* names below, lower case: "heart rate", "blood oxygen". Then which of how many. -->
     <string name="system_sync_step">Syncing <xliff:g id="kind" example="heart rate">%1$s</xliff:g> (<xliff:g id="index" example="3">%2$d</xliff:g>/<xliff:g id="count" example="12">%3$d</xliff:g>)</string>
-    <!-- A developer's dump of one kind of data, by its number. -->
-    <string name="system_sync_dumping">Dumping type <xliff:g id="code" example="18">%1$d</xliff:g></string>
+    <!-- The kinds of data a sync fetches, lower case, read after "Syncing" in system_sync_step. -->
+    <string name="system_sync_kind_activity">activity</string>
+    <string name="system_sync_kind_sleep">sleep</string>
+    <string name="system_sync_kind_hrv">HRV</string>
+    <string name="system_sync_kind_resting_hr">resting heart rate</string>
+    <string name="system_sync_kind_heart_rate">heart rate</string>
+    <!-- The highest heart rate of each day's exercise. -->
+    <string name="system_sync_kind_peak_hr">peak heart rate</string>
+    <!-- How fast the heart rate drops after a workout. -->
+    <string name="system_sync_kind_recovery_hr">heart rate recovery</string>
+    <string name="system_sync_kind_blood_oxygen">blood oxygen</string>
+    <!-- Pauses and dips in breathing during sleep. -->
+    <string name="system_sync_kind_sleep_breathing">breathing in sleep</string>
+    <string name="system_sync_kind_breathing_rate">breathing rate</string>
+    <string name="system_sync_kind_stress">stress</string>
+    <!-- The strap's weekly activity points, named Heart points in the app. -->
+    <string name="system_sync_kind_heart_points">heart points</string>
+    <string name="system_sync_kind_skin_temperature">skin temperature</string>
+    <string name="system_sync_kind_workouts">workouts</string>
+    <!-- Any other kind of data the strap keeps. -->
+    <string name="system_sync_kind_other">other data</string>
+    <!-- A developer's dump of one kind of data, by its number. Debug only, not translated. -->
+    <string name="system_sync_dumping" translatable="false">Dumping type <xliff:g id="code" example="18">%1$d</xliff:g></string>
     <!-- Why a sync failed. Fast-charge mode is a strap mode where it only charges. -->
     <string name="system_sync_fast_charge">The strap is in fast-charge mode. Sync again once it\'s off.</string>
     <string name="system_sync_link_dropped">The Bluetooth connection to the strap dropped.</string>

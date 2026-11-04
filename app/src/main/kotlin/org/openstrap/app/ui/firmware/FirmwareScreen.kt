@@ -32,7 +32,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
 import org.openstrap.app.data.settings.ZeppAccount
@@ -169,7 +168,7 @@ private fun StepPanel(step: FirmwareStep, vm: FirmwareViewModel, onInstall: (Rea
                 InfoLine(stringResource(R.string.you_firmware_image), image.title)
                 InfoLine(
                     stringResource(R.string.you_firmware_size),
-                    pluralStringResource(R.plurals.you_firmware_bytes, image.bytes.size, Units.count(image.bytes.size)),
+                    stringResource(R.string.you_firmware_megabytes, image.bytes.size / BYTES_PER_MB),
                 )
                 image.trailer?.let {
                     InfoLine(
@@ -392,3 +391,6 @@ private fun KeepScreenOn(on: Boolean) {
         onDispose { activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
 }
+
+/** Bytes in a megabyte, as the update panel counts them ([org.openstrap.app.update.UpdateCopy.megabytes]). */
+private const val BYTES_PER_MB = 1_000_000.0

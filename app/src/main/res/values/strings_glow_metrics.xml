@@ -74,14 +74,14 @@
     <string name="glow_metrics_live">Live</string>
     <!-- Under No reading on a night's week. -->
     <string name="glow_metrics_last_7_nights">In the last 7 nights</string>
-    <!-- In the chart's place. The name is the metric's, in lower case unless it's short like HRV ("heart rate", "HRV"). -->
-    <string name="glow_metrics_none_last_7_nights">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> in the last 7 nights yet.</string>
-    <!-- In the chart's place. The name is the metric's, in lower case unless it's short like HRV. -->
-    <string name="glow_metrics_none_in_range">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> in this range yet.</string>
-    <!-- In the chart's place on a night. The name is the metric's, in lower case unless it's short like HRV. -->
-    <string name="glow_metrics_none_asleep">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> readings while asleep.</string>
-    <!-- In the chart's place on a day. The name is the metric's, in lower case unless it's short like HRV. -->
-    <string name="glow_metrics_none_this_day">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> for this day yet.</string>
+    <!-- In the chart's place when the last 7 nights have no readings of this metric. The page title names the metric. -->
+    <string name="glow_metrics_none_last_7_nights">Nothing in the last 7 nights yet.</string>
+    <!-- In the chart's place when the chosen range has no readings of this metric. -->
+    <string name="glow_metrics_none_in_range">Nothing in this range yet.</string>
+    <!-- In the chart's place on a night with no readings of this metric while asleep. -->
+    <string name="glow_metrics_none_asleep">No readings while asleep.</string>
+    <!-- In the chart's place on a day with no readings of this metric. -->
+    <string name="glow_metrics_none_this_day">Nothing for this day yet.</string>
     <!-- In the chart's place on a day for breathing rate, which the strap reads only in sleep. -->
     <string name="glow_metrics_breathing_in_sleep">Breathing rate is measured during sleep.</string>
     <!-- Beside a held reading's number: its unit and the day. The unit is "bpm", "ms" or "%", the day "Wed 21". -->

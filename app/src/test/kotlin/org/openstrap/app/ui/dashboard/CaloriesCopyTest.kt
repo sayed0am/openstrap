@@ -159,23 +159,30 @@ class CaloriesCopyTest {
     @Test fun `a workout says its share of its day`() {
         assertEquals(
             "This run is 486 of today's 702 active kcal. Your day counts the same figure.",
-            CaloriesCopy.inYourDay("run", 486, 702, CaloriesCopy.dayWord(date, date), fromPhone = true, Locale.UK),
+            CaloriesCopy.inYourDay("run", 486, 702, date, date, fromPhone = true, Locale.UK),
         )
         assertEquals(
             "This walk is 86 of yesterday's 702 active kcal. The day counts it from the strap's own figure.",
-            CaloriesCopy.inYourDay("walk", 86, 702, CaloriesCopy.dayWord(date.minusDays(1), date), fromPhone = false, Locale.UK),
+            CaloriesCopy.inYourDay("walk", 86, 702, date.minusDays(1), date, fromPhone = false, Locale.UK),
         )
-        assertEquals("that day's", CaloriesCopy.dayWord(date.minusDays(3), date))
+        assertEquals(
+            "This run is 486 of that day's 702 active kcal. Your day counts the same figure.",
+            CaloriesCopy.inYourDay("run", 486, 702, date.minusDays(3), date, fromPhone = true, Locale.UK),
+        )
+        assertEquals(
+            "This walk is 86 of today's 702 active kcal. The day counts it from the strap's own figure.",
+            CaloriesCopy.inYourDay("walk", 86, 702, date, date, fromPhone = false, Locale.UK),
+        )
         // A day row behind its workout, or none yet: nothing to say.
-        assertNull(CaloriesCopy.inYourDay("run", 486, 300, "today's", true))
-        assertNull(CaloriesCopy.inYourDay("run", 486, null, "today's", true))
+        assertNull(CaloriesCopy.inYourDay("run", 486, 300, date, date, true))
+        assertNull(CaloriesCopy.inYourDay("run", 486, null, date, date, true))
     }
 
     @Test fun `no Calories string uses an interpunct, semicolon or em dash`() {
         val s = CaloriesCopy.summary(mapOf(d(26, 500f)), LocalDate.of(2026, 10, 21), LocalDate.of(2026, 10, 27), 450, null)
         val all = listOf(
             CaloriesCopy.rowLine(1, 2, 3), CaloriesCopy.toGoal(1, 2), CaloriesCopy.walkingLine(3), CaloriesCopy.goalDays(s)!!,
-            CaloriesCopy.rangeSentence(s)!!, CaloriesCopy.inYourDay("run", 1, 2, "today's", false)!!,
+            CaloriesCopy.rangeSentence(s)!!, CaloriesCopy.inYourDay("run", 1, 2, date.minusDays(2), date, false)!!,
         )
         all.forEach { t -> assertTrue(t, t.none { it in "·;—" }) }
     }

@@ -65,18 +65,19 @@
     <!-- A range's sentence without workouts: the busiest day ("Mon 26 Oct") and its active kcal. -->
     <string name="day_calories_range_busiest">Your busiest day was <xliff:g id="day" example="Mon 26 Oct">%1$s</xliff:g>, with <xliff:g id="kcal" example="500">%2$s</xliff:g> active kcal.</string>
 
-    <!-- The day in the workout page's In your day sentence (day_calories_in_your_day_phone): the workout's day is today. -->
-    <string name="day_calories_day_word_today">today\'s</string>
-    <!-- The same, the workout's day is yesterday. -->
-    <string name="day_calories_day_word_yesterday">yesterday\'s</string>
-    <!-- The same, an earlier day. -->
-    <string name="day_calories_day_word_that_day">that day\'s</string>
     <!--
-      The workout page's In your day card, for a workout recorded on the phone: the sport as it reads mid-sentence
-      ("run", "walk"), its active kcal, the day (day_calories_day_word_today: "today's", "yesterday's", "that day's"),
-      then the day's active kcal.
+      The workout page's In your day card, for a workout recorded on the phone on today's date: the sport as it reads
+      mid-sentence ("run", "walk"), its active kcal, then the day's active kcal.
     -->
-    <string name="day_calories_in_your_day_phone">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of <xliff:g id="day" example="today's">%3$s</xliff:g> <xliff:g id="day_kcal" example="702">%4$s</xliff:g> active kcal. Your day counts the same figure.</string>
-    <!-- The same for a workout the strap recorded: the day counts the strap's own kcal for it. -->
-    <string name="day_calories_in_your_day_strap">This <xliff:g id="sport" example="walk">%1$s</xliff:g> is <xliff:g id="kcal" example="86">%2$s</xliff:g> of <xliff:g id="day" example="yesterday's">%3$s</xliff:g> <xliff:g id="day_kcal" example="702">%4$s</xliff:g> active kcal. The day counts it from the strap\'s own figure.</string>
+    <string name="day_calories_in_your_day_phone_today">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of today\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. Your day counts the same figure.</string>
+    <!-- The same, for a phone workout recorded yesterday. -->
+    <string name="day_calories_in_your_day_phone_yesterday">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of yesterday\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. Your day counts the same figure.</string>
+    <!-- The same, for a phone workout recorded on an earlier day. -->
+    <string name="day_calories_in_your_day_phone_that_day">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of that day\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. Your day counts the same figure.</string>
+    <!-- The same for a workout the strap recorded today: the day counts the strap's own kcal for it. -->
+    <string name="day_calories_in_your_day_strap_today">This <xliff:g id="sport" example="walk">%1$s</xliff:g> is <xliff:g id="kcal" example="86">%2$s</xliff:g> of today\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. The day counts it from the strap\'s own figure.</string>
+    <!-- The same for a strap workout recorded yesterday. -->
+    <string name="day_calories_in_your_day_strap_yesterday">This <xliff:g id="sport" example="walk">%1$s</xliff:g> is <xliff:g id="kcal" example="86">%2$s</xliff:g> of yesterday\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. The day counts it from the strap\'s own figure.</string>
+    <!-- The same for a strap workout recorded on an earlier day. -->
+    <string name="day_calories_in_your_day_strap_that_day">This <xliff:g id="sport" example="walk">%1$s</xliff:g> is <xliff:g id="kcal" example="86">%2$s</xliff:g> of that day\'s <xliff:g id="day_kcal" example="702">%3$s</xliff:g> active kcal. The day counts it from the strap\'s own figure.</string>
 </resources>

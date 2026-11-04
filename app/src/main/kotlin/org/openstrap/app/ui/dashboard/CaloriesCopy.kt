@@ -209,27 +209,24 @@ internal object CaloriesCopy {
 
     /* ------------------------------------------- A workout's day ---------------------------------------- */
 
-    /** The day word in "of today's 702": "today's", "yesterday's", "that day's". */
-    fun dayWord(date: LocalDate, today: LocalDate, strings: Strings = Strings.app): String = strings.get(
-        when (date) {
-            today -> R.string.day_calories_day_word_today
-            today.minusDays(1) -> R.string.day_calories_day_word_yesterday
-            else -> R.string.day_calories_day_word_that_day
-        },
-    )
-
     /**
-     * The workout page's In your day card: "This run is 486 of today's 702 active kcal. The day counts it exactly as
-     * shown here." A strap workout's minutes come from the strap's own count, so it says that instead. [sport] is the
-     * sport as it reads mid-sentence ([org.openstrap.app.ui.workout.WorkoutDetailCopy.sport]). Null when the day's
-     * figure isn't there yet, or is behind the workout's (its row not yet written again).
+     * The workout page's In your day card: "This run is 486 of today's 702 active kcal. Your day counts the same
+     * figure." A strap workout's kcal come from the strap's own count, so it says "The day counts it from the strap's
+     * own figure." instead. The workout's [date] against [today] picks today's, yesterday's or that day's sentence.
+     * [sport] is the sport as it reads mid-sentence ([org.openstrap.app.ui.workout.WorkoutDetailCopy.sport]). Null when
+     * the day's figure isn't there yet, or is behind the workout's (its row not yet written again).
      */
     fun inYourDay(
-        sport: String, workout: Int, dayActive: Int?, dayWord: String, fromPhone: Boolean, locale: Locale = Locale.getDefault(),
-        strings: Strings = Strings.app,
+        sport: String, workout: Int, dayActive: Int?, date: LocalDate, today: LocalDate, fromPhone: Boolean,
+        locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
     ): String? {
         if (dayActive == null || dayActive < workout || workout <= 0) return null
-        val id = if (fromPhone) R.string.day_calories_in_your_day_phone else R.string.day_calories_in_your_day_strap
-        return strings.format(id, sport, Units.count(workout, locale), dayWord, Units.count(dayActive, locale))
+        val id = when (date) {
+            today -> if (fromPhone) R.string.day_calories_in_your_day_phone_today else R.string.day_calories_in_your_day_strap_today
+            today.minusDays(1) ->
+                if (fromPhone) R.string.day_calories_in_your_day_phone_yesterday else R.string.day_calories_in_your_day_strap_yesterday
+            else -> if (fromPhone) R.string.day_calories_in_your_day_phone_that_day else R.string.day_calories_in_your_day_strap_that_day
+        }
+        return strings.format(id, sport, Units.count(workout, locale), Units.count(dayActive, locale))
     }
 }

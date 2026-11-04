@@ -47,7 +47,10 @@
     <!-- The weekly goal row's note once the week's goal is met. -->
     <string name="core_rewards_goal_met_this_week">Goal met this week</string>
     <!-- The weekly goal row's note: workouts left to meet the goal this week. -->
-    <string name="core_rewards_goal_to_go"><xliff:g id="left" example="2">%1$d</xliff:g> more to go this week</string>
+    <plurals name="core_rewards_goal_to_go">
+        <item quantity="one"><xliff:g id="left" example="1">%1$d</xliff:g> more to go this week</item>
+        <item quantity="other"><xliff:g id="left" example="2">%1$d</xliff:g> more to go this week</item>
+    </plurals>
     <!-- The weekly goal row's title on the workout that met the goal. -->
     <string name="core_rewards_goal_met">Weekly goal met</string>
     <!-- The weekly goal row's title. -->
@@ -74,12 +77,11 @@
     <string name="core_rewards_when_night"><xliff:g id="date" example="Thursday, 30 October 2026">%1$s</xliff:g>, night <xliff:g id="sport" example="run">%2$s</xliff:g></string>
 
     <!-- A number of weeks, inside the Goals and bests page's run line below. -->
-    <plurals name="core_rewards_weeks">
-        <item quantity="one"><xliff:g id="weeks" example="1">%1$d</xliff:g> week</item>
-        <item quantity="other"><xliff:g id="weeks" example="6">%1$d</xliff:g> weeks</item>
+    <!-- Goals and bests page: the current run of weeks with the goal met, then the best run in weeks. The form follows the current run. -->
+    <plurals name="core_rewards_run_best_is">
+        <item quantity="one">Goal met <xliff:g id="weeks" example="1">%1$d</xliff:g> week in a row. Your best is <xliff:g id="best" example="9">%2$d</xliff:g>.</item>
+        <item quantity="other">Goal met <xliff:g id="weeks" example="6">%1$d</xliff:g> weeks in a row. Your best is <xliff:g id="best" example="9">%2$d</xliff:g>.</item>
     </plurals>
-    <!-- Goals and bests page: the current run of weeks with the goal met, then the best run. The weeks are like "6 weeks". -->
-    <string name="core_rewards_run_best_is">Goal met <xliff:g id="weeks" example="6 weeks">%1$s</xliff:g> in a row. Your best is <xliff:g id="best" example="9">%2$d</xliff:g>.</string>
     <!-- Goals and bests page: the current run, when it is the best run yet. -->
     <plurals name="core_rewards_run_best_yet">
         <item quantity="one">Goal met <xliff:g id="weeks" example="1">%1$d</xliff:g> week in a row, your best yet.</item>
@@ -102,10 +104,16 @@
     <!-- A locked weekly goal badge's progress: weeks with the goal met of the weeks it needs, 1 or more. -->
     <string name="core_rewards_progress_weeks"><xliff:g id="have" example="3">%1$s</xliff:g> of <xliff:g id="need" example="12">%2$s</xliff:g> weeks</string>
 
-    <!-- The weekly recap notification: the week's workouts against the goal, not met. -->
-    <string name="core_rewards_recap"><xliff:g id="count" example="2">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts.</string>
+    <!-- The weekly recap notification: the week's workouts against the goal, not met. The form follows the goal. -->
+    <plurals name="core_rewards_recap">
+        <item quantity="one"><xliff:g id="count" example="0">%2$d</xliff:g> of <xliff:g id="goal" example="1">%1$d</xliff:g> workout.</item>
+        <item quantity="other"><xliff:g id="count" example="2">%2$d</xliff:g> of <xliff:g id="goal" example="4">%1$d</xliff:g> workouts.</item>
+    </plurals>
     <!-- The weekly recap notification: the goal met. -->
     <string name="core_rewards_recap_met"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts, goal met.</string>
-    <!-- The weekly recap notification: the goal met, and the weeks in a row it has been. -->
-    <string name="core_rewards_recap_met_in_a_row"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts, goal met. <xliff:g id="weeks" example="6">%3$d</xliff:g> weeks in a row.</string>
+    <!-- The weekly recap notification: the goal met, and the weeks in a row it has been. The form follows the weeks. -->
+    <plurals name="core_rewards_recap_met_in_a_row">
+        <item quantity="one"><xliff:g id="count" example="4">%2$d</xliff:g> of <xliff:g id="goal" example="4">%3$d</xliff:g> workouts, goal met. <xliff:g id="weeks" example="1">%1$d</xliff:g> week in a row.</item>
+        <item quantity="other"><xliff:g id="count" example="4">%2$d</xliff:g> of <xliff:g id="goal" example="4">%3$d</xliff:g> workouts, goal met. <xliff:g id="weeks" example="6">%1$d</xliff:g> weeks in a row.</item>
+    </plurals>
 </resources>

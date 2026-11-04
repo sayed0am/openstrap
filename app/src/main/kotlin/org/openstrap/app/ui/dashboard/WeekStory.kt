@@ -7,7 +7,6 @@ import org.openstrap.app.R
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Ranges
-import org.openstrap.app.presentation.DetailCopy
 
 /*
  * The week story (spec 4.2), opened from Your week on Today: last week day by day, from what the app keeps.
@@ -61,34 +60,34 @@ internal object WeekStory {
         return strings.plural(R.plurals.day_week_busiest, steps, Units.count(steps, locale), day)
     }
 
-    /** Workouts against the week before: "Three workouts, one more than the week before." Null without a week before. */
+    /** Workouts against the week before: "3 workouts, 1 more than the week before." Null without a week before. */
     fun workoutsChange(now: Int, before: Int?, strings: Strings = Strings.app): String? {
         before ?: return null
-        val n = DetailCopy.count(now, WORKOUT).replaceFirstChar { it.uppercase() }
         return when {
             now == 0 && before == 0 -> strings.get(R.string.day_week_workouts_none)
-            now == before -> strings.format(R.string.day_week_workouts_same, n)
-            now > before -> strings.format(R.string.day_week_workouts_more, n, numberWord(now - before))
-            else -> strings.format(R.string.day_week_workouts_fewer, n, numberWord(before - now))
+            now == before -> strings.plural(R.plurals.day_week_workouts_same, now, now)
+            now > before -> strings.plural(R.plurals.day_week_workouts_more, now, now, now - before)
+            else -> strings.plural(R.plurals.day_week_workouts_fewer, now, now, before - now)
         }
     }
 
-    /** The unit [DetailCopy.count] spells the week's workouts with ("three workouts"). */
-    private const val WORKOUT = "workout"
-
-    /** [n] as [DetailCopy.count] writes it: "one", "two", up to nine, then the number. */
-    private fun numberWord(n: Int): String = DetailCopy.count(n, WORKOUT).substringBefore(' ')
+    /** The steps against the week before, from [TodayCopy.stepsPercent]: "Steps up 12% on the week before." */
+    fun stepsChange(percent: Int, strings: Strings = Strings.app): String = when {
+        percent == 0 -> strings.get(R.string.day_week_steps_steady)
+        percent > 0 -> strings.format(R.string.day_week_steps_up, percent)
+        else -> strings.format(R.string.day_week_steps_down, -percent)
+    }
 
     /**
      * The sentence under the chart: the busiest day, then the steps and the workouts against the week before where
-     * that week is kept. [stepsChange] is [TodayCopy.stepsChange]'s ("Steps up 12%").
+     * that week is kept. [stepsPercent] is [TodayCopy.stepsPercent]'s (12 for 12% up).
      */
     fun sentence(
-        days: List<Day>, stepsChange: String?, workoutsBefore: Int?, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+        days: List<Day>, stepsPercent: Int?, workoutsBefore: Int?, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
     ): String? {
         val parts = listOfNotNull(
             busiest(days, locale, strings),
-            stepsChange?.let { strings.format(R.string.day_week_steps_change, it) },
+            stepsPercent?.let { stepsChange(it, strings) },
             workoutsChange(days.sumOf { it.workouts.size }, workoutsBefore, strings),
         )
         return parts.joinToString(" ").ifEmpty { null }

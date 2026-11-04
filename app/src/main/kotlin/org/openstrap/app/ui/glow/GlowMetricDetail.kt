@@ -463,7 +463,7 @@ fun GlowMetricDetailScreen(
             val values = nightWeek.map { it.second }
             item {
                 if (values.all { it == null }) {
-                    DetailEmpty(stringResource(R.string.glow_metrics_none_last_7_nights, inSentence(metric.title)))
+                    DetailEmpty(stringResource(R.string.glow_metrics_none_last_7_nights))
                 }
                 else Column {
                     NormalTrend(
@@ -500,7 +500,7 @@ fun GlowMetricDetailScreen(
             item {
                 when {
                     inRange == null -> DetailEmpty(stringResource(R.string.glow_loading))
-                    summary == null -> DetailEmpty(stringResource(R.string.glow_metrics_none_in_range, inSentence(metric.title)))
+                    summary == null -> DetailEmpty(stringResource(R.string.glow_metrics_none_in_range))
                     else -> HistoryChart(metric, range, inRange, normal, start, end, color, nightly) { scrub = it }
                 }
             }
@@ -553,7 +553,7 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
             if (session == null) {
                 SleepCopy.noNight(state.date == LocalDate.now())
             } else {
-                stringResource(R.string.glow_metrics_none_asleep, inSentence(metric.title))
+                stringResource(R.string.glow_metrics_none_asleep)
             },
         )
         return
@@ -593,10 +593,6 @@ private fun hourSteps(hour: Int, steps: Float, strings: Strings = Strings.app): 
 
 private const val MINUTES_PER_HOUR = 60
 
-/** A name inside a sentence: lower case, unless it's an acronym like HRV. */
-internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
-
-
 /**
  * The selected day's own chart: steps by the hour, the week of resting heart rates, or the day's readings as a line
  * to scrub, which moves the headline ([onScrub], null on release). Heart rate's line has your resting range behind it.
@@ -618,7 +614,7 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
             if (metric == Metric.Breathing) {
                 stringResource(R.string.glow_metrics_breathing_in_sleep)
             } else {
-                stringResource(R.string.glow_metrics_none_this_day, inSentence(metric.title))
+                stringResource(R.string.glow_metrics_none_this_day)
             },
         )
         return

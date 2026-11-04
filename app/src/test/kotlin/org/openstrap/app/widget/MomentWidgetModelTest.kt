@@ -250,7 +250,7 @@ class MomentWidgetModelTest {
         assertEquals("Evening", m.name)
         assertEquals("62", m.number)
         assertEquals(listOf("Bedtime in 2 h 10"), m.figures)
-        assertEquals(TodayCopy.evening(listOf("run"), 8432, 10_000, LoadBand.SoFar), m.sentences.first())
+        assertEquals(TodayCopy.evening(listOf(1), 8432, 10_000, LoadBand.SoFar), m.sentences.first())
         assertEquals(GlowMood.Evening, m.mood)
         assertEquals(MomentLight(MetricColors.evening, LightAngle.LowerRight, bodyLightness = EVENING_BODY), m.light)
         assertEquals("the day's heart rate", MomentChartKind.Line, m.chart?.kind)

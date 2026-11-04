@@ -1,10 +1,8 @@
 package org.openstrap.app.data
 
-import org.openstrap.app.R
 import org.openstrap.app.data.db.HabitAgeWeekRow
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.UserProfile
-import org.openstrap.app.i18n.Strings
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.ZoneId
@@ -38,8 +36,8 @@ class HealthspanEngine(private val dao: HealthDao) {
         val d = daily(sunday, from, asOf, zone)
         val (result, withheld) = Healthspan.estimate(profile, age, d)
         val missing = listOfNotNull(
-            Strings.app.get(R.string.core_healthspan_missing_birth_year).takeIf { profile.birthYear == null },
-            Strings.app.get(R.string.core_healthspan_missing_sex).takeIf { profile.sex == null },
+            Healthspan.ProfileGap.BirthYear.takeIf { profile.birthYear == null },
+            Healthspan.ProfileGap.Sex.takeIf { profile.sex == null },
         )
         // This week's result is kept as shown, so next week can compare with it. A past week is never written again:
         // looking back at a day must not replace what that Sunday showed.

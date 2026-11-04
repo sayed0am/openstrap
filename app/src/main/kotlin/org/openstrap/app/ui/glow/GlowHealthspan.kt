@@ -109,10 +109,14 @@ private const val MINUTE_S = 60L
 /** "Sunday 22 Nov" for local midnight [day] (epoch seconds), with no-break spaces so it never wraps inside the date. */
 internal fun sundayText(day: Long): String = DayWords.weekdayDayMonth(dateOf(day)).replace(' ', '\u00A0')
 
-/** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
-internal fun profileReminder(missing: List<String>, strings: Strings = Strings.app): String =
-    if (missing.size == 1) strings.format(R.string.glow_healthspan_profile_one, missing[0])
-    else strings.format(R.string.glow_healthspan_profile_two, missing[0], missing[1])
+/** What to add to the profile: "Add your birth year and sex to your profile to see your Habit Age." */
+internal fun profileReminder(missing: List<Healthspan.ProfileGap>, strings: Strings = Strings.app): String = strings.get(
+    when {
+        missing.size > 1 -> R.string.glow_healthspan_profile_both
+        missing.firstOrNull() == Healthspan.ProfileGap.Sex -> R.string.glow_healthspan_profile_sex
+        else -> R.string.glow_healthspan_profile_birth_year
+    },
+)
 
 /** The local date of [epoch] (a local midnight). */
 private fun dateOf(epoch: Long) = java.time.Instant.ofEpochSecond(epoch).atZone(java.time.ZoneId.systemDefault()).toLocalDate()

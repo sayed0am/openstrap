@@ -61,7 +61,7 @@ data class SleepWidgetModel(
     /** The night's day, which a tap opens the Sleep score's detail on; null while waiting. */
     val date: LocalDate?,
     val title: String,
-    /** Bedtime to waking ("22:58 to 06:56"), or "Last synced night" while this morning's night isn't in. */
+    /** Bedtime to waking ("22:58 to 06:56"), or "Earlier night" while this morning's night isn't in. */
     val note: String?,
     /** Yesterday's night, shown while this morning's isn't synced. */
     val stale: Boolean,
@@ -103,7 +103,7 @@ data class SleepWidgetModel(
         val LAST_SYNCED: String get() = Strings.app.get(R.string.system_widget_sleep_last_synced)
 
         /**
-         * The widget for [today]'s night, or [yesterday]'s with "Last synced night" as the note while this morning's
+         * The widget for [today]'s night, or [yesterday]'s with "Earlier night" as the note while this morning's
          * isn't synced. Before any: the title and why, "After your first night" before the strap has seen one
          * ([firstNight]), else what the Sleep tab says for a day with no night ([napsToday] as it reads them).
          */
@@ -274,7 +274,7 @@ object SleepLayout {
     data class SmallLine(val text: String, val lines: Int = 1)
 
     /**
-     * What the Small keeps: its score [row], the Secondary [lines] under it ("Last synced night" while stale, then
+     * What the Small keeps: its score [row], the Secondary [lines] under it ("Earlier night" while stale, then
      * time asleep) and whether the stage [bar] shows.
      */
     data class Small(
@@ -287,8 +287,8 @@ object SleepLayout {
     /**
      * The Small in [width] by [height]: the title and the score with its word always (the dots smaller for a long
      * score, the word dropped before the dots get smaller than 2.4 dp), then while they fit time asleep, the stage bar
-     * and "Last synced night", dropped in that order. Time asleep only on one line;
-     * "Last synced night" on two when one can't hold it, since without it yesterday's night would pass for last
+     * and "Earlier night", dropped in that order. Time asleep only on one line;
+     * "Earlier night" on two when one can't hold it, since without it yesterday's night would pass for last
      * night's.
      */
     fun small(m: SleepWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Small {

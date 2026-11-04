@@ -48,6 +48,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.WorkoutWords
+import org.openstrap.app.presentation.sportNoun
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.pressClickable
@@ -539,7 +540,7 @@ internal fun FlatButton(container: Color, size: Dp, modifier: Modifier = Modifie
 internal fun StoppedPrompt(r: WorkoutState.Recording, at: Long, onEnd: () -> Unit, onKeep: () -> Unit) {
     QuietPanel {
         GlowHeader(stringResource(if (r.inCar) R.string.workout_live_stopped_car_title else R.string.workout_live_stopped_title))
-        val sport = Workouts.sportName(r.workout.sportType).lowercase()
+        val sport = sportNoun(r.workout.sportType) ?: stringResource(R.string.glow_today_workout_noun)
         PageNote(
             stringResource(if (r.inCar) R.string.workout_live_stopped_car_note else R.string.workout_live_stopped_note, clock(at), sport),
         )

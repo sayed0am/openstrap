@@ -55,8 +55,8 @@
     </plurals>
     <!-- Under the weekly recap's dots when the goal wasn't met: how many workouts were missing. -->
     <plurals name="glow_goals_short_of_goal">
-        <item quantity="one"><xliff:g id="missing" example="1">%d</xliff:g> short of your goal</item>
-        <item quantity="other"><xliff:g id="missing" example="2">%d</xliff:g> short of your goal</item>
+        <item quantity="one"><xliff:g id="missing" example="1">%d</xliff:g> workout short of your goal</item>
+        <item quantity="other"><xliff:g id="missing" example="2">%d</xliff:g> workouts short of your goal</item>
     </plurals>
     <!-- The recap's panel of bests set that week. -->
     <string name="glow_goals_highlights">Highlights</string>

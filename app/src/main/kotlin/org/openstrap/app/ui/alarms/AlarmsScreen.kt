@@ -289,7 +289,7 @@ private fun AlarmSheet(alarm: Alarm, isNew: Boolean, onSave: (Alarm) -> Unit, on
                 // Picking a day replaces the strap's own "workdays" calendar with a plain day set.
                 PageChip(stringResource(d), days != Alarm.WORKDAYS && days and bit != 0, {
                     days = (if (days == Alarm.WORKDAYS) 0 else days) xor bit
-                }, Modifier.widthIn(min = 40.dp))
+                }, Modifier.widthIn(min = 40.dp), description = stringResource(DAY_NAMES[i]))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

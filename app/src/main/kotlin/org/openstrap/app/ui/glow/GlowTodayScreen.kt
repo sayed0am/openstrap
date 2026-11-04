@@ -570,7 +570,7 @@ private fun WindowHero(ctx: TodayContext, lightAngle: Float?, onStart: (Int) -> 
             GlowHeader(
                 TodayCopy.windowTitle(ctx.score), trailing = ctx.score?.let { stringResource(R.string.glow_today_recovery_score, it) },
             )
-            HeroSentence(TodayCopy.window(noun, ctx.charge))
+            HeroSentence(TodayCopy.window(sport, ctx.charge))
             Spacer(Modifier.height(28.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PageButton(
@@ -637,7 +637,7 @@ private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Lon
 @Composable
 private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTime?, energyHidden: Boolean, onOpen: () -> Unit, modifier: Modifier) {
     val goals = LocalGoals.current
-    val nouns = ctx.dayWorkouts.map { sportNoun(it.workout.sportType) }
+    val sports = ctx.dayWorkouts.map { it.workout.sportType }
     val night = ctx.moment == Moment.Night
     val style = heroStyle(if (night) MetricColors.sleepDeep else MetricColors.evening, lightAngle)
     // The evening's violet is lit lighter so it reads as violet, not as a second night (spec 4.2).
@@ -648,7 +648,7 @@ private fun EveningHero(ctx: TodayContext, lightAngle: Float?, bedtime: LocalTim
                 marker = ctx.upTo(ctx.newest), tag = ctx.partial,
             )
             // The count is in dots below, so the sentence says the steps against the goal instead.
-            HeroSentence(TodayCopy.evening(nouns, ctx.state.steps, goals.steps, ctx.loadStatus, stepCount = false))
+            HeroSentence(TodayCopy.evening(sports, ctx.state.steps, goals.steps, ctx.loadStatus, stepCount = false))
             Spacer(Modifier.height(24.dp))
             HeroNumber(Units.count(ctx.state.steps, Units.DOT_LOCALE), listOf(stringResource(R.string.glow_today_steps)))
             // Load is said in the sentence, and Energy has its own card right under the hero. Only with that card

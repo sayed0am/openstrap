@@ -46,11 +46,8 @@
     <!-- Labels beside the image's details. -->
     <string name="you_firmware_image">Image</string>
     <string name="you_firmware_size">Size</string>
-    <!-- The image's size. The number is already formatted, "1,234,567". -->
-    <plurals name="you_firmware_bytes">
-        <item quantity="one"><xliff:g id="bytes" example="1,234,567">%1$s</xliff:g> byte</item>
-        <item quantity="other"><xliff:g id="bytes" example="1,234,567">%1$s</xliff:g> bytes</item>
-    </plurals>
+    <!-- The image's size in megabytes, one decimal. -->
+    <string name="you_firmware_megabytes"><xliff:g id="megabytes" example="1.2">%1$.1f</xliff:g> MB</string>
     <string name="you_firmware_signed_for">Signed for</string>
     <!-- The product the image is signed for, and its version, "product 157 v1". -->
     <string name="you_firmware_signed_for_value">product <xliff:g id="product" example="157">%1$d</xliff:g> v<xliff:g id="version" example="1">%2$d</xliff:g></string>
@@ -102,7 +99,6 @@
     <string name="you_firmware_block_connect">Connect the strap.</string>
     <string name="you_firmware_block_battery_unknown">Battery level unknown. Reconnect the strap.</string>
     <string name="you_firmware_block_battery">Charge the strap above <xliff:g id="min" example="30">%1$d</xliff:g>%% (now <xliff:g id="battery" example="20">%2$d</xliff:g>%%).</string>
-    <string name="you_firmware_block_no_service">This strap can\'t take firmware updates from OpenStrap.</string>
     <!-- Install steps, one line each. -->
     <string name="you_firmware_step_starting">Starting…</string>
     <string name="you_firmware_step_sending">Sending to strap…</string>

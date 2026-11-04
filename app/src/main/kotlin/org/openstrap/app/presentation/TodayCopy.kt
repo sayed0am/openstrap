@@ -163,9 +163,9 @@ object TodayCopy {
         },
     )
 
-    /** "You usually run around now. Energy is 58, plenty left." [sport] is a short noun that is also a verb. */
-    fun window(sport: String?, charge: Int?, strings: Strings = Strings.app): String {
-        val usual = strings.format(R.string.core_today_window_usually, sport ?: strings.get(R.string.core_today_window_work_out))
+    /** "You usually run around now. Energy is 58, plenty left." [sportType] is the usual sport, null for none. */
+    fun window(sportType: Int?, charge: Int?, strings: Strings = Strings.app): String {
+        val usual = sportUsually(sportType, strings)
         val left = charge?.let {
             val id = when {
                 it >= 50 -> R.string.core_today_window_energy_plenty
@@ -195,12 +195,12 @@ object TodayCopy {
     fun loadStatus(load: Float, usual: Float?, endOfDay: Boolean): LoadBand? = LoadBands.of(load, usual, endOfDay)
 
     /**
-     * The evening hero: what kind of day it was, then what made it. [workouts] are the day's workouts as short nouns
-     * (null where none reads well). Without [stepCount] the steps are said against the goal ([stepsAgainstGoal]), for
+     * The evening hero: what kind of day it was, then what made it. [workouts] are the sport types of the day's
+     * workouts. Without [stepCount] the steps are said against the goal ([stepsAgainstGoal]), for
      * the app's hero, which shows the count in dots under the sentence; the widget keeps the count.
      */
     fun evening(
-        workouts: List<String?>, steps: Int, stepGoal: Int, load: LoadBand?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
+        workouts: List<Int>, steps: Int, stepGoal: Int, load: LoadBand?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
         strings: Strings = Strings.app,
     ): String {
         val head = when {
@@ -211,8 +211,7 @@ object TodayCopy {
         val parts = listOfNotNull(
             when (workouts.size) {
                 0 -> null
-                1 -> workouts[0]?.let { strings.format(R.string.core_today_evening_one_sport, it) }
-                    ?: strings.get(R.string.core_today_evening_one_workout)
+                1 -> sportOne(workouts[0], strings)
                 else -> strings.plural(R.plurals.core_today_evening_workouts, workouts.size, workouts.size)
             },
             if (stepCount || stepGoal <= 0) {
@@ -324,14 +323,30 @@ object TodayCopy {
         return start..Weeks.end(start, firstDay)
     }
 
-    /** "Steps up 12%" and the like, comparing two weeks; null without both. */
-    fun stepsChange(now: Double?, before: Double?, strings: Strings = Strings.app): String? {
+    /** The week's steps against the week before, in whole percent (12 up, -3 down, 0 the same); null without both. */
+    fun stepsPercent(now: Double?, before: Double?): Int? {
         if (now == null || before == null || before <= 0) return null
         val pct = Math.round((now - before) / before * 100).toInt()
+        return pct
+    }
+
+    /** "Steps up 12%" and the like, comparing two weeks; null without both. */
+    fun stepsChange(now: Double?, before: Double?, strings: Strings = Strings.app): String? {
+        val pct = stepsPercent(now, before) ?: return null
         return when {
             pct == 0 -> strings.get(R.string.core_today_steps_steady)
             pct > 0 -> strings.format(R.string.core_today_steps_up, abs(pct))
             else -> strings.format(R.string.core_today_steps_down, abs(pct))
+        }
+    }
+
+    /** The Today week card's steps line: "12% more steps than the week before."; null without both weeks. */
+    fun weekStepsLine(now: Double?, before: Double?, strings: Strings = Strings.app): String? {
+        val pct = stepsPercent(now, before) ?: return null
+        return when {
+            pct == 0 -> strings.get(R.string.glow_today_week_steps_same)
+            pct > 0 -> strings.format(R.string.glow_today_week_steps_more, abs(pct))
+            else -> strings.format(R.string.glow_today_week_steps_fewer, abs(pct))
         }
     }
 

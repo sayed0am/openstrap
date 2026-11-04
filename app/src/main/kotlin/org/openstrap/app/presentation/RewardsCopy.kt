@@ -148,7 +148,7 @@ object RewardsCopy {
         val note = when {
             week.metByThis && inARow > 1 -> strings.plural(R.plurals.core_rewards_goal_weeks_in_a_row, inARow, inARow)
             week.count >= week.goal -> strings.get(R.string.core_rewards_goal_met_this_week)
-            else -> strings.format(R.string.core_rewards_goal_to_go, week.goal - week.count)
+            else -> (week.goal - week.count).let { strings.plural(R.plurals.core_rewards_goal_to_go, it, it) }
         }
         return EarnedLine(
             EarnedLine.Kind.Goal,
@@ -214,7 +214,7 @@ object RewardsCopy {
     /** "Goal met 6 weeks in a row. Best is 9.", or without a run, what the best was. */
     fun runLine(inARow: Int, best: Int, strings: Strings = Strings.app): String = when {
         inARow > 0 && best > inARow ->
-            strings.format(R.string.core_rewards_run_best_is, strings.plural(R.plurals.core_rewards_weeks, inARow, inARow), best)
+            strings.plural(R.plurals.core_rewards_run_best_is, inARow, inARow, best)
         inARow > 0 -> strings.plural(R.plurals.core_rewards_run_best_yet, inARow, inARow)
         best > 0 -> strings.plural(R.plurals.core_rewards_run_best_was, best, best)
         else -> strings.get(R.string.core_rewards_run_none)
@@ -245,8 +245,8 @@ object RewardsCopy {
 
     /** The recap notification: "4 of 4 workouts, goal met. 6 weeks in a row." */
     fun recapText(week: WeekResult, inARow: Int, strings: Strings = Strings.app): String = when {
-        !week.met -> strings.format(R.string.core_rewards_recap, week.count, week.goal)
-        inARow > 1 -> strings.format(R.string.core_rewards_recap_met_in_a_row, week.count, week.goal, inARow)
+        !week.met -> strings.plural(R.plurals.core_rewards_recap, week.goal, week.goal, week.count)
+        inARow > 1 -> strings.plural(R.plurals.core_rewards_recap_met_in_a_row, inARow, inARow, week.count, week.goal)
         else -> strings.format(R.string.core_rewards_recap_met, week.count, week.goal)
     }
 }

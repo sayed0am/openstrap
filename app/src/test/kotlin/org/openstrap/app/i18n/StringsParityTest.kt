@@ -42,7 +42,8 @@ class StringsParityTest {
             val id = double.pluralId(name)
             for (n in COUNTS) {
                 assertEquals("$name $n", double.plural(id, n), app.plural(id, n))
-                assertEquals("$name $n", double.plural(id, n, n, PI), app.plural(id, n, n, PI))
+                val args = pluralArgs(double.plurals.getValue(name), n)
+                assertEquals("$name $n", double.plural(id, n, *args), app.plural(id, n, *args))
             }
         }
     }
@@ -83,7 +84,7 @@ class StringsParityTest {
             val id = double.pluralId(name)
             for (n in COUNTS) {
                 assertEquals("$name $n", resources.getQuantityString(id, n), double.plural(id, n))
-                val args = arrayOf<Any>(n, PI)
+                val args = pluralArgs(double.plurals.getValue(name), n)
                 assertEquals("$name $n", resources.getQuantityString(id, n, *args), double.plural(id, n, *args))
             }
         }
@@ -94,6 +95,15 @@ class StringsParityTest {
         const val PI = 31_415.926
 
         private val specifier = Regex("""%(?:(\d+)\$)?[-#+ 0,(<]*\d*(?:\.\d+)?([a-zA-Z%])""")
+
+        /**
+         * Arguments for a plural's placeholders, the count [n] first, then as [args] fills the rest of its other form
+         * (a second count such as "3 workouts this week, 1 more for your goal." takes a whole number).
+         */
+        fun pluralArgs(items: Map<String, String>, n: Int): Array<Any> {
+            val rest = args(items["other"] ?: items.values.first())
+            return if (rest.isEmpty()) arrayOf(n, PI) else rest.also { it[0] = n }
+        }
 
         /** Arguments that fill [text]'s placeholders, by position and type, so every string is formatted for real. */
         fun args(text: String): Array<Any> {

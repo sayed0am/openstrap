@@ -18,14 +18,27 @@
     </plurals>
     <!-- Under the chart: no workouts this week or the week before. -->
     <string name="day_week_workouts_none">No workouts this week or the week before.</string>
-    <!-- Under the chart: the week's workouts ("Two workouts"), as many as the week before. -->
-    <string name="day_week_workouts_same"><xliff:g id="workouts" example="Two workouts">%1$s</xliff:g>, as many as the week before.</string>
-    <!-- Under the chart: the week's workouts ("Three workouts"), and how many more than the week before, a number word ("two"). -->
-    <string name="day_week_workouts_more"><xliff:g id="workouts" example="Three workouts">%1$s</xliff:g>, <xliff:g id="more" example="two">%2$s</xliff:g> more than the week before.</string>
-    <!-- Under the chart: the week's workouts ("One workout"), and how many fewer than the week before, a number word ("one"). -->
-    <string name="day_week_workouts_fewer"><xliff:g id="workouts" example="One workout">%1$s</xliff:g>, <xliff:g id="fewer" example="one">%2$s</xliff:g> fewer than the week before.</string>
-    <!-- Under the chart: the steps against the week before ("Steps up 12%"). -->
-    <string name="day_week_steps_change"><xliff:g id="change" example="Steps up 12%">%1$s</xliff:g> on the week before.</string>
+    <!-- Under the chart: the week's workouts, as many as the week before. -->
+    <plurals name="day_week_workouts_same">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, as many as the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="2">%1$d</xliff:g> workouts, as many as the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's workouts, and how many more than the week before. The form follows the week's workouts. -->
+    <plurals name="day_week_workouts_more">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, <xliff:g id="more" example="1">%2$d</xliff:g> more than the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="3">%1$d</xliff:g> workouts, <xliff:g id="more" example="2">%2$d</xliff:g> more than the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's workouts, and how many fewer than the week before. The form follows the week's workouts. -->
+    <plurals name="day_week_workouts_fewer">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, <xliff:g id="fewer" example="1">%2$d</xliff:g> fewer than the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="2">%1$d</xliff:g> workouts, <xliff:g id="fewer" example="3">%2$d</xliff:g> fewer than the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's steps a day up on the week before. The percent is a whole number. -->
+    <string name="day_week_steps_up">Steps up <xliff:g id="percent" example="12">%1$d</xliff:g>%% on the week before.</string>
+    <!-- Under the chart: the week's steps a day down on the week before. The percent is a whole number. -->
+    <string name="day_week_steps_down">Steps down <xliff:g id="percent" example="3">%1$d</xliff:g>%% on the week before.</string>
+    <!-- Under the chart: the week's steps a day about the same as the week before. -->
+    <string name="day_week_steps_steady">Steps held steady on the week before.</string>
     <!-- The label under the week's big number, its steps a day. Lower case, it reads on from the number. The dates are "12 to 18 Oct". -->
     <string name="day_week_label">steps a day, <xliff:g id="dates" example="12 to 18 Oct">%1$s</xliff:g></string>
     <!-- Day by day: a day, or a run of days ("Monday to Thursday"), with nothing recorded. -->

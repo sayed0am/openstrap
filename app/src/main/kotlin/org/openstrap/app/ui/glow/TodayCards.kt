@@ -542,9 +542,9 @@ internal fun WeekCard(
             if (night != null) stringResource(R.string.glow_today_week_line, night, workoutsDone) else workoutsDone,
             color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 8.dp),
         )
-        val change = TodayCopy.stepsChange(stepsNow, stepsAvg(start.minusDays(7), start.minusDays(1)))
+        val stepsBefore = stepsAvg(start.minusDays(7), start.minusDays(1))
         Text(
-            change?.let { stringResource(R.string.glow_today_week_change, it) } ?: TodayCopy.WEEK_FIRST,
+            TodayCopy.weekStepsLine(stepsNow, stepsBefore) ?: TodayCopy.WEEK_FIRST,
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
         )
     }

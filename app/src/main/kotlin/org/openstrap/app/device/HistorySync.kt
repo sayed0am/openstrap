@@ -173,7 +173,7 @@ class HistorySync internal constructor(
             ?.let { log("history: feature bits clear for advertised types $it; fetching them anyway") }
         val plan = HistoryTypeSpecs.plan(advertised, session.features).filter { it.parser != null && (only == null || it.code in only) }
         plan.forEachIndexed { i, spec ->
-            val step = Strings.app.format(R.string.system_sync_step, label(spec.type), i + 1, plan.size)
+            val step = Strings.app.format(R.string.system_sync_step, syncKindName(spec.type), i + 1, plan.size)
             state.value = SyncState.Running(step, i.toFloat() / plan.size)
             catching { if (spec.followedBy == HistoryDataType.SPORT_DETAIL) syncWorkouts(spec) else syncType(spec) }.onFailure { e ->
                 // A timeout is a CancellationException too, but catching gives back only a cancelled sync's (audit C2).
@@ -668,8 +668,6 @@ class HistorySync internal constructor(
     /** The day a record's moment falls on in the phone's zone, the day its row is stored under. */
     private fun dayOf(epoch: Long) = DayKey.dayOf(epoch, zone)
 
-    private fun label(t: HistoryDataType) = t.name.lowercase().replace('_', ' ')
-
     companion object {
         private val HISTORY_CONTROL = java.util.UUID.fromString("00000004-0000-3512-2118-0009af100700")
         private val HISTORY_DATA = java.util.UUID.fromString("00000005-0000-3512-2118-0009af100700")
@@ -856,3 +854,31 @@ internal fun workoutRow(r: WorkoutSummary): Workout = Workout(
     r.calories, r.averageHeartRate, r.maxHeartRate, r.minHeartRate, r.aerobicTrainingEffect,
     r.anaerobicTrainingEffect, r.trainingLoad, r.vo2max, r.steps, subtype = r.subtype,
 )
+
+/** The kind of data a sync step fetches, as "Syncing heart rate (3/12)" names it. Any other type is "other data". */
+internal fun syncKindName(t: HistoryDataType, strings: Strings = Strings.app): String =
+    strings.get(SYNC_KIND_NAMES[t] ?: R.string.system_sync_kind_other)
+
+/** Each named kind of data and the strap types it covers. */
+private val SYNC_KIND_NAMES: Map<HistoryDataType, Int> = listOf(
+    R.string.system_sync_kind_activity to listOf(HistoryDataType.ACTIVITY, HistoryDataType.TODAY_ACTIVITY_EXTENDED),
+    R.string.system_sync_kind_sleep to listOf(HistoryDataType.SLEEP_RESULT),
+    R.string.system_sync_kind_hrv to listOf(HistoryDataType.HRV_RMSSD, HistoryDataType.HRV_SDNN),
+    R.string.system_sync_kind_resting_hr to listOf(HistoryDataType.REST_HR, HistoryDataType.RESTING_HEART_RATE),
+    R.string.system_sync_kind_heart_rate to listOf(HistoryDataType.HEART_RATE_MANUAL, HistoryDataType.SEC_HR, HistoryDataType.SEC_HR_V2),
+    R.string.system_sync_kind_peak_hr to listOf(HistoryDataType.DAILY_MAX_EXERCISE_HR),
+    R.string.system_sync_kind_recovery_hr to listOf(HistoryDataType.RECOVERY_HEART_RATE),
+    R.string.system_sync_kind_blood_oxygen to listOf(HistoryDataType.SPO2_SINGLE, HistoryDataType.SPO2_OSA),
+    R.string.system_sync_kind_sleep_breathing to listOf(
+        HistoryDataType.SPO2_OSA_EVENT, HistoryDataType.SPO2_OSA_EVENT_ALT, HistoryDataType.OSA_RESULT,
+        HistoryDataType.SLEEP_RESPIRATORY_RATE_EVENT,
+    ),
+    R.string.system_sync_kind_breathing_rate to listOf(HistoryDataType.SLEEP_BREATH_RATE),
+    R.string.system_sync_kind_stress to listOf(HistoryDataType.STRESS_SINGLE, HistoryDataType.STRESS_ALL_DAY),
+    R.string.system_sync_kind_heart_points to listOf(HistoryDataType.PAI),
+    R.string.system_sync_kind_skin_temperature to listOf(
+        HistoryDataType.BODY_TEMPERATURE_ALL_DAY, HistoryDataType.BODY_TEMPERATURE_SINGLE, HistoryDataType.BODY_TEMPERATURE_80S,
+        HistoryDataType.TEMPERATURE_LEGACY,
+    ),
+    R.string.system_sync_kind_workouts to listOf(HistoryDataType.SPORT_SUMMARY, HistoryDataType.SPORT_DETAIL, HistoryDataType.SPORT_EFFECT),
+).flatMap { (id, types) -> types.map { it to id } }.toMap()

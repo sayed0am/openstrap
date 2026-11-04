@@ -573,7 +573,7 @@ object Glance {
             is WorkoutTarget.Time -> t.label
             is WorkoutTarget.Kcal -> t.label
             is WorkoutTarget.Zones ->
-                return strings.format(R.string.workout_glance_target, t.label.lowercase().replaceFirstChar { it.uppercase() }) to null
+                return strings.format(R.string.workout_glance_target, t.label.lowercase()) to null
         }
         val goal = strings.format(R.string.workout_glance_goal, label)
         if ((progress(i)?.fraction ?: 0f) >= 1f) return goal to strings.get(R.string.workout_glance_reached)

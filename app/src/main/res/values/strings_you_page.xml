@@ -34,7 +34,7 @@
     <string name="you_row_updates">Updates</string>
     <string name="you_row_diagnostics">Diagnostics</string>
     <!-- A debug build's row that fills the app with made up data. -->
-    <string name="you_row_sample_data">Load sample data</string>
+    <string name="you_row_sample_data">Add sample data</string>
     <!-- Under the sample data row. -->
     <string name="you_row_sample_data_note">Debug builds only</string>
     <!-- Section labels over the You page's panels, a few words in capitals' style. -->

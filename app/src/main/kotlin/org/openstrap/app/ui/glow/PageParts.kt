@@ -645,6 +645,7 @@ fun PageConfirm(
 /**
  * A chip (spec 2.4, fully round): a hairline and 72% text, or white with black text when [selected]. A [filled] chip
  * sits on the Control surface instead of the hairline, for a lone chip like Live. Secondary type, at least 36 dp tall.
+ * A [description] is what TalkBack reads in place of a [text] too short to say it, like a day's letter.
  */
 @Composable
 fun PageChip(
@@ -655,6 +656,7 @@ fun PageChip(
     enabled: Boolean = true,
     role: Role = Role.Checkbox,
     filled: Boolean = false,
+    description: String? = null,
 ) {
     Box(
         modifier.heightIn(min = 36.dp).clip(CircleShape)
@@ -662,13 +664,17 @@ fun PageChip(
             .let { if (selected || filled) it else it.border(1.dp, Color.White.copy(alpha = 0.16f), CircleShape) }
             .alpha(if (enabled) 1f else 0.4f)
             .clickable(enabled = enabled, role = role, onClick = onClick)
-            .semantics { this.selected = selected }
+            .semantics {
+                this.selected = selected
+                description?.let { contentDescription = it }
+            }
             .padding(horizontal = 14.dp),
         contentAlignment = Alignment.Center,
     ) {
         Text(
             text, color = if (selected) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             style = GlowType.secondary, maxLines = 1,
+            modifier = if (description != null) Modifier.clearAndSetSemantics {} else Modifier,
         )
     }
 }

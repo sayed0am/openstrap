@@ -157,8 +157,12 @@
     </plurals>
     <!-- The week card's line: the average time asleep and the workouts, "3 workouts". -->
     <string name="glow_today_week_line"><xliff:g id="duration" example="7 h 10">%1$s</xliff:g> asleep a night, <xliff:g id="workouts" example="3 workouts">%2$s</xliff:g></string>
-    <!-- The week card's steps against the week before. The change is "12% more steps" or "About the same steps". -->
-    <string name="glow_today_week_change"><xliff:g id="change" example="12% more steps">%1$s</xliff:g> on the week before.</string>
+    <!-- The week card: this week's steps a day against the week before, more. The percent is a whole number. -->
+    <string name="glow_today_week_steps_more"><xliff:g id="percent" example="12">%1$d</xliff:g>%% more steps than the week before.</string>
+    <!-- The week card: this week's steps a day against the week before, fewer. The percent is a whole number. -->
+    <string name="glow_today_week_steps_fewer"><xliff:g id="percent" example="12">%1$d</xliff:g>%% fewer steps than the week before.</string>
+    <!-- The week card: this week's steps a day about the same as the week before. -->
+    <string name="glow_today_week_steps_same">About the same steps as the week before.</string>
     <!-- The note on a body list's title row: each value is compared with your normal. -->
     <string name="glow_today_against_normal">Against your normal</string>
     <!-- A row in the Load list: the hours left until recovered. -->

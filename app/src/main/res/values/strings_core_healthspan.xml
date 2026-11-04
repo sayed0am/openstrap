@@ -35,9 +35,4 @@
     <string name="core_healthspan_withheld_regularity">Needs more weeks of sleep regularity.</string>
     <!-- Why there is no Habit Age yet: too few nights of sleep. -->
     <string name="core_healthspan_withheld_sleep">Needs sleep on about half of recent nights.</string>
-
-    <!-- What's missing from the profile, lower case, put into "Add your birth year and sex in your profile to see your Habit Age." -->
-    <string name="core_healthspan_missing_birth_year">birth year</string>
-    <!-- What's missing from the profile, lower case, as above. -->
-    <string name="core_healthspan_missing_sex">sex</string>
 </resources>

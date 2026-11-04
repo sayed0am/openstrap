@@ -145,7 +145,7 @@ fun GlowWorkoutDetailScreen(
             val today = LocalDate.now()
             val inDay = activeKcal?.let { k ->
                 val date = Instant.ofEpochSecond(shown.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()
-                CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, today), false)
+                CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), date, today, false)
             }
             if (inDay != null) item { InYourDayCard(inDay, onOpenDay) }
             val drop = WorkoutDetailCopy.dropLine(shown.recovery60, shown.recoveryIsMeaningful, usualDrop)
@@ -234,7 +234,8 @@ private fun PastSummary(
                     if (facts.isNotEmpty() || map) WorkoutFactsList(facts, summary.takeIf { map })
                     val inDay = Workouts.activeKcal(a, null)?.let { k ->
                         val date = Instant.ofEpochSecond(a.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()
-                        CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, LocalDate.now()), true)
+                        val sport = WorkoutDetailCopy.sport(w.sportType)
+                        CaloriesCopy.inYourDay(sport, k, dayActiveKcal?.roundToInt(), date, LocalDate.now(), true)
                     }
                     if (inDay != null) InYourDayCard(inDay, onOpenDay)
                     val drop = WorkoutDetailCopy.dropLine(a.recovery60, a.recoveryIsMeaningful, null)
