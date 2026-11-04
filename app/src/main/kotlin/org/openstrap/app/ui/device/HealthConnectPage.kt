@@ -4,8 +4,11 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.openstrap.app.data.settings.HealthConnectAuto
@@ -23,7 +27,6 @@ import org.openstrap.app.ui.glow.GlowSwitch
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageNote
-import org.openstrap.app.ui.glow.PagePanel
 import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
@@ -70,10 +73,13 @@ fun HealthConnectPage(
     }
 }
 
-/** Health Connect missing or out of date: why, and the button to its Play Store page. */
+/**
+ * Health Connect missing or out of date: why, and the button to its Play Store page. Straight on the page, not in a
+ * panel, so it doesn't stack on the auto sync panel as a second block of the same look.
+ */
 @Composable
 private fun InstallPanel(onInstall: () -> Unit) {
-    PagePanel {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
         PageNote(HC_INSTALL_NOTE)
         PageButton(HC_INSTALL, onInstall, Modifier.fillMaxWidth(), primary = true, icon = AppIcons.DownloadSimple)
     }
