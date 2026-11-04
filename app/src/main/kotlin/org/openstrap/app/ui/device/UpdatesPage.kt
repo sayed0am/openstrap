@@ -17,6 +17,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -24,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.PageSwitchRow
@@ -68,31 +70,41 @@ fun UpdatesPage(
     val newest = newer.firstOrNull()
     val busy = state.install is Install.Downloading || state.install is Install.Installing
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Updates", onBack) }
+        item { PageHeader(stringResource(R.string.you_updates_title), onBack) }
         item {
             PageRows {
                 if (newest != null) PageRow(
-                    "OpenStrap ${newest.versionName}", UpdateCopy.install(newest, state.install, recording),
+                    stringResource(R.string.you_updates_release, newest.versionName), UpdateCopy.install(newest, state.install, recording),
                     onClick = { onInstall(newest) }, below = true, divider = false, enabled = !busy && !(recording && newest.apk != null),
                     icon = AppIcons.DownloadSimple,
                 )
                 PageRow(
-                    "Check now", UpdateCopy.checkStatus(state, now), onClick = onCheck, below = true, divider = newest != null,
+                    stringResource(R.string.you_updates_check_now), UpdateCopy.checkStatus(state, now), onClick = onCheck, below = true,
+                    divider = newest != null,
                     enabled = !state.checking, icon = AppIcons.Refresh04,
                 )
-                PageSwitchRow("Check every day", "Notifies you of new versions", auto, onAuto, icon = AppIcons.CalendarBlank)
-                PageRow("All releases", "On GitHub", onClick = onGitHub, below = true, icon = AppIcons.Info)
+                PageSwitchRow(
+                    stringResource(R.string.you_updates_daily), stringResource(R.string.you_updates_daily_note), auto, onAuto,
+                    icon = AppIcons.CalendarBlank,
+                )
+                PageRow(
+                    stringResource(R.string.you_updates_all_releases), stringResource(R.string.you_updates_on_github), onClick = onGitHub,
+                    below = true,
+                    icon = AppIcons.Info,
+                )
             }
         }
         val current = Releases.current(state.releases, installed)
         // A build newer than any release (a developer's) shows the latest release's notes.
         val shown = newer.ifEmpty { listOfNotNull(current ?: state.releases.firstOrNull()) }
         if (shown.isNotEmpty()) item {
-            val title = when {
-                newer.isNotEmpty() -> "What's new"
-                current != null -> "In your version"
-                else -> "Latest release"
-            }
+            val title = stringResource(
+                when {
+                    newer.isNotEmpty() -> R.string.you_updates_whats_new
+                    current != null -> R.string.you_updates_in_your_version
+                    else -> R.string.you_updates_latest
+                },
+            )
             PagePanel(title = title) {
                 shown.forEachIndexed { i, release ->
                     if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.08f)))
@@ -102,7 +114,7 @@ fun UpdatesPage(
         }
         item {
             Text(
-                "You have OpenStrap $installed.",
+                stringResource(R.string.you_updates_installed, installed),
                 Modifier.fillMaxWidth().padding(top = 4.dp),
                 color = Color.White.copy(alpha = 0.45f), style = GlowType.secondary, textAlign = TextAlign.Center,
             )
@@ -121,7 +133,12 @@ private fun ReleaseNotesView(release: Release) {
                 Text(UpdateCopy.date(it), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             }
         }
-        if (blocks.isEmpty()) Text("No notes for this release.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        if (blocks.isEmpty()) {
+            Text(
+                stringResource(R.string.you_updates_no_notes), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                style = GlowType.secondary,
+            )
+        }
         blocks.forEachIndexed { i, block -> when (block) {
             is NoteBlock.Heading -> Text(
                 spans(block.spans), color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.padding(top = 6.dp),

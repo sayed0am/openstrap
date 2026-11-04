@@ -16,11 +16,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.health.HcAvailability
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.PageSwitchRow
@@ -55,21 +58,32 @@ fun HealthConnectPage(
 ) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Health Connect", onBack) }
+        item { PageHeader(stringResource(R.string.you_hc_title), onBack) }
         if (availability == HcAvailability.INSTALLABLE) item { InstallPanel(onInstall) }
         item {
             PageRows {
                 val now = System.currentTimeMillis() / 1000
                 val line = healthConnectLine(auto, now, java.time.ZoneId.systemDefault(), availability = availability)
-                PageSwitchRow("Auto sync to Health Connect", line, auto.on, onAuto, divider = false, icon = AppIcons.Refresh04)
+                PageSwitchRow(stringResource(R.string.you_hc_auto), line, auto.on, onAuto, divider = false, icon = AppIcons.Refresh04)
             }
         }
-        item { SectionLabel("Any time", Modifier.padding(top = 4.dp), PanelLabelInset) }
+        item { SectionLabel(stringResource(R.string.you_hc_any_time), Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
-                PageRow("Copy now", "The last 30 days, to Android Health Connect", onClick = onCopyNow, below = true, divider = false, icon = AppIcons.Heartbeat)
-                PageRow("Restore", "Bring back what OpenStrap saved there", onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)
-                PageRow("Open Health Connect", "Permissions and data", onClick = onOpen, below = true, icon = AppIcons.SlidersHorizontal)
+                PageRow(
+                    stringResource(R.string.you_hc_copy_now), stringResource(R.string.you_hc_copy_now_note), onClick = onCopyNow,
+                    below = true,
+                    divider = false, icon = AppIcons.Heartbeat,
+                )
+                PageRow(
+                    stringResource(R.string.you_action_restore), stringResource(R.string.you_hc_restore_note), onClick = onRestore,
+                    below = true,
+                    icon = AppIcons.ArrowCounterClockwise,
+                )
+                PageRow(
+                    stringResource(R.string.you_hc_open), stringResource(R.string.you_hc_open_note), onClick = onOpen, below = true,
+                    icon = AppIcons.SlidersHorizontal,
+                )
             }
         }
     }
@@ -82,8 +96,10 @@ fun HealthConnectPage(
 @Composable
 private fun InstallPanel(onInstall: () -> Unit) {
     Column(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        PageNote(HC_INSTALL_NOTE)
-        PageButton(HC_INSTALL, onInstall, Modifier.fillMaxWidth(), primary = true, icon = AppIcons.DownloadSimple)
+        PageNote(stringResource(R.string.you_hc_install_note))
+        PageButton(
+            stringResource(R.string.you_hc_install), onInstall, Modifier.fillMaxWidth(), primary = true, icon = AppIcons.DownloadSimple,
+        )
     }
 }
 
@@ -103,9 +119,11 @@ fun openHealthConnect(context: Context): Boolean {
     }
 }
 
-internal const val HC_INSTALL = "Install Health Connect"
-internal const val HC_INSTALL_NOTE = "On this phone Health Connect is an app from the Play Store. Install it to copy your data there."
-internal const val HC_STORE_FAILED = "Couldn't open the Play Store."
+/** Why the install button is there, the page's note. Named as the constant it was, which the tests read. */
+internal val HC_INSTALL_NOTE: String get() = Strings.app.get(R.string.you_hc_install_note)
+
+/** The toast when no app store opened Health Connect's page. A getter, so it reads the app's language when shown. */
+internal val HC_STORE_FAILED: String get() = Strings.app.get(R.string.you_hc_store_failed)
 
 /** Health Connect's app on Android 12 and 13, the one the Play Store installs. */
 private const val HC_PACKAGE = "com.google.android.apps.healthdata"

@@ -33,6 +33,9 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.CalorieGoal
 import org.openstrap.app.data.settings.Goals
 import org.openstrap.app.presentation.GoalCopy
@@ -68,23 +71,46 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
         ?.takeIf { it in Goals.SLEEP_MINUTES }
     val activeValue = active.toIntOrNull()?.takeIf { it in Goals.ACTIVE_HOURS }
 
-    PageSheet(onDismiss, "Your goals", note = "What you aim for each day and week. Change them whenever they stop fitting.") {
-        PageNumberField(steps, { steps = it }, "Steps", "steps", stepsValue == null)
+    PageSheet(onDismiss, stringResource(R.string.you_goals_title), note = stringResource(R.string.you_goals_note)) {
+        PageNumberField(
+            steps, { steps = it }, stringResource(R.string.you_goals_steps_label), stringResource(R.string.you_goals_steps_unit),
+            stepsValue == null,
+        )
         CalorieGoalField(calories, { calories = it }, suggestedCalories)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Sleep", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            Text(
+                stringResource(R.string.you_goals_sleep_label), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                style = GlowType.secondary,
+            )
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PageNumberField(sleepH, { sleepH = it.take(2) }, "", "h", sleepValue == null, Modifier.weight(1f))
-                PageNumberField(sleepM, { sleepM = it.take(2) }, "", "min", sleepValue == null, Modifier.weight(1f))
+                PageNumberField(
+                    sleepH, { sleepH = it.take(2) }, "", stringResource(R.string.you_unit_h), sleepValue == null, Modifier.weight(1f),
+                )
+                PageNumberField(
+                    sleepM, { sleepM = it.take(2) }, "", stringResource(R.string.you_unit_min), sleepValue == null, Modifier.weight(1f),
+                )
             }
         }
-        PageNumberField(active, { active = it.take(2) }, "Active hours", "of 24", activeValue == null)
-        PageNote("An active hour is one with at least 250 steps.")
+        PageNumberField(
+            active, { active = it.take(2) }, stringResource(R.string.you_goals_active_label),
+            stringResource(R.string.you_goals_active_unit),
+            activeValue == null,
+        )
+        PageNote(stringResource(R.string.you_goals_active_note))
         WorkoutGoalField(workouts) { workouts = it }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
+            PageButton(stringResource(R.string.you_action_cancel), onDismiss, Modifier.weight(1f))
             PageButton(
-                "Save", { onSave(goals.copy(steps = stepsValue!!, sleepMinutes = sleepValue!!, activeHours = activeValue!!, calories = calories, workoutsPerWeek = workouts)) }, Modifier.weight(1f),
+                stringResource(R.string.you_action_save),
+                {
+                    onSave(
+                        goals.copy(
+                            steps = stepsValue!!, sleepMinutes = sleepValue!!, activeHours = activeValue!!, calories = calories,
+                            workoutsPerWeek = workouts,
+                        ),
+                    )
+                },
+                Modifier.weight(1f),
                 enabled = stepsValue != null && sleepValue != null && activeValue != null, primary = true,
             )
         }
@@ -95,19 +121,27 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
 @Composable
 internal fun WorkoutGoalField(value: Int, onChange: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Text(
+            stringResource(R.string.you_goals_workouts_label), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            style = GlowType.secondary,
+        )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             RoundIconButton(
-                AppIcons.Minus, "Fewer workouts a week", { onChange((value - 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
+                AppIcons.Minus, stringResource(R.string.you_goals_workouts_fewer),
+                { onChange((value - 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
             )
             Box(Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface), contentAlignment = Alignment.Center) {
-                Text("$value a week", color = Color.White, style = GlowType.body, maxLines = 1)
+                Text(
+                    pluralStringResource(R.plurals.you_goals_workouts_value, value, value), color = Color.White, style = GlowType.body,
+                    maxLines = 1,
+                )
             }
             RoundIconButton(
-                AppIcons.Plus, "More workouts a week", { onChange((value + 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
+                AppIcons.Plus, stringResource(R.string.you_goals_workouts_more),
+                { onChange((value + 1).coerceIn(Goals.WORKOUTS_PER_WEEK)) }, size = 44.dp,
             )
         }
-        PageNote("Workouts of 10 minutes or more count, two a day at most.")
+        PageNote(stringResource(R.string.you_goals_workouts_note))
     }
 }
 
@@ -132,17 +166,26 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
         refused = typed == null
         if (typed != null) onChange(typed)
     }
+    val typeLabel = stringResource(R.string.you_goals_calories_type)
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text("Calories", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+        Text(
+            stringResource(R.string.you_goals_calories_label), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            style = GlowType.secondary,
+        )
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             RoundIconButton(
-                AppIcons.Minus, "Lower the calorie goal",
+                AppIcons.Minus, stringResource(R.string.you_goals_calories_lower),
                 { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) },
                 size = 44.dp,
             )
             Box(
                 Modifier.weight(1f).height(52.dp).clip(GlowLayout.TileShape).background(ControlSurface)
-                    .let { if (typing) it else it.clickable(onClickLabel = "Type the calorie goal", role = Role.Button) { text = value.toString(); refused = false; typing = true } },
+                    .let {
+                        if (typing) it
+                        else it.clickable(onClickLabel = typeLabel, role = Role.Button) {
+                            text = value.toString(); refused = false; typing = true
+                        }
+                    },
                 contentAlignment = Alignment.Center,
             ) {
                 if (typing) {
@@ -156,22 +199,25 @@ private fun CalorieGoalField(value: Int, onChange: (Int) -> Unit, suggested: Int
                     )
                     LaunchedEffect(Unit) { focus.requestFocus() }
                 } else {
-                    Text("${Units.count(value.toLong())} active kcal", color = Color.White, style = GlowType.body, maxLines = 1)
+                    Text(
+                        stringResource(R.string.you_goals_active_kcal, Units.count(value.toLong())), color = Color.White,
+                        style = GlowType.body, maxLines = 1,
+                    )
                 }
             }
             RoundIconButton(
-                AppIcons.Plus, "Raise the calorie goal",
+                AppIcons.Plus, stringResource(R.string.you_goals_calories_raise),
                 { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) },
                 size = 44.dp,
             )
         }
         if (refused) PageNote(GoalCopy.outOfRange(Goals.CALORIES), MetricColors.warn)
         if (suggested != null) {
-            val line = "Suggested ${Units.count(suggested.toLong())}, from your last 4 weeks"
-            if (suggested == value) PageNote("$line. Your strap's goal is set to match.")
+            val count = Units.count(suggested.toLong())
+            if (suggested == value) PageNote(stringResource(R.string.you_goals_suggested_matched, count))
             else Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Box(Modifier.weight(1f)) { PageNote(line) }
-                PageButton("Use", { typing = false; refused = false; onChange(suggested) })
+                Box(Modifier.weight(1f)) { PageNote(stringResource(R.string.you_goals_suggested, count)) }
+                PageButton(stringResource(R.string.you_goals_use), { typing = false; refused = false; onChange(suggested) })
             }
         }
     }

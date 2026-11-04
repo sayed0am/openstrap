@@ -14,6 +14,7 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.InputStream
+import org.openstrap.app.R
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.settings.ZeppAccount
@@ -27,6 +28,7 @@ import org.openstrap.app.firmware.FirmwarePart
 import org.openstrap.app.firmware.StrapIdentity
 import org.openstrap.app.firmware.StrapResources
 import org.openstrap.app.firmware.UpdateCheck
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.ui.device.ErrorCopy
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
@@ -70,6 +72,9 @@ class FirmwareViewModel(
 ) : ViewModel() {
     private val cloud = FirmwareCloud(cacheDir)
 
+    /** The words of its steps and failures, in res/values/strings_you_firmware.xml. Read on each use, so they follow the app's language. */
+    private val strings: Strings get() = Strings.app
+
     /** The strap's link, for what the page offers. */
     val connection: StateFlow<ConnectionState> get() = strap.connection
 
@@ -101,9 +106,9 @@ class FirmwareViewModel(
     private val busy get() = _step.value.let { it is FirmwareStep.Checking || it is FirmwareStep.Downloading || it is FirmwareStep.Installing }
 
     fun check() {
-        val acc = account.value ?: return fail("Add your Zepp app token first.")
+        val acc = account.value ?: return fail(strings.get(R.string.you_firmware_no_account))
         val info = strap.info.value
-        val firmware = info?.firmware ?: return fail("Connect the strap first so its firmware version is known.")
+        val firmware = info?.firmware ?: return fail(strings.get(R.string.you_firmware_no_version))
         _step.value = FirmwareStep.Checking
         viewModelScope.launch {
             _step.value = catching {
@@ -123,7 +128,7 @@ class FirmwareViewModel(
                     cloud.check(current.apiBase, current.appToken, current.userId, identity)
                 }
                 FirmwareStep.Checked(result)
-            }.getOrElse { failed("firmware check", it, "Update check failed") }
+            }.getOrElse { failed("firmware check", it, strings.get(R.string.you_firmware_check_failed)) }
         }
     }
 
@@ -142,7 +147,7 @@ class FirmwareViewModel(
 
     /** Downloads the first part in install order and stages it. Further parts follow after the strap restarts. */
     fun download(part: FirmwarePart) {
-        val type = part.type ?: return fail("Unknown part type ${part.prefix}")
+        val type = part.type ?: return fail(strings.format(R.string.you_firmware_unknown_part, part.prefix))
         _step.value = FirmwareStep.Downloading(part, 0f)
         viewModelScope.launch {
             _step.value = catching {
@@ -151,9 +156,13 @@ class FirmwareViewModel(
                 }
                 val trailer = HmfwTrailer.read(bytes)
                 FirmwareStep.Ready(
-                    ReadyImage(bytes, type, "${part.label} ${part.version}", part.version, fromCloud = true, trailer, trailerWarnings(bytes, trailer, type)),
+                    ReadyImage(
+                        bytes, type, strings.format(R.string.you_firmware_part_title, part.label, part.version), part.version,
+                        fromCloud = true,
+                        trailer, trailerWarnings(bytes, trailer, type),
+                    ),
                 )
-            }.getOrElse { failed("firmware download", it, "Download failed") }
+            }.getOrElse { failed("firmware download", it, strings.get(R.string.you_firmware_download_failed)) }
         }
     }
 
@@ -165,18 +174,22 @@ class FirmwareViewModel(
                 input.use { it.readBytes() }
             }
             if (bytes.size !in 1024..16 * 1024 * 1024) {
-                return@catching FirmwareStep.Failed("That file is ${bytes.size} bytes, which isn't a plausible firmware image.")
+                return@catching FirmwareStep.Failed(strings.plural(R.plurals.you_firmware_file_size, bytes.size, bytes.size))
             }
             val trailer = HmfwTrailer.read(bytes)
             val warnings = buildList {
-                add("This file didn't come from Zepp's update server for this strap. Only install files you trust.")
-                if (trailer == null) add("The file has no HMFW signature block. It's probably not a strap firmware image.")
+                add(strings.get(R.string.you_firmware_file_untrusted))
+                if (trailer == null) add(strings.get(R.string.you_firmware_file_unsigned))
                 addAll(trailerWarnings(bytes, trailer, FirmwareType.FIRMWARE))
             }
-            FirmwareStep.Ready(ReadyImage(bytes, FirmwareType.FIRMWARE, "Firmware from file", null, fromCloud = false, trailer, warnings))
+            FirmwareStep.Ready(
+                ReadyImage(
+                    bytes, FirmwareType.FIRMWARE, strings.get(R.string.you_firmware_file_title), null, fromCloud = false, trailer, warnings,
+                ),
+            )
         }.getOrElse {
             log("firmware: file not read: $it")
-            FirmwareStep.Failed("Couldn't read the file. Choose it again.")
+            FirmwareStep.Failed(strings.get(R.string.you_firmware_file_unread))
         }
     }
 
@@ -184,39 +197,41 @@ class FirmwareViewModel(
     private fun trailerWarnings(bytes: ByteArray, trailer: HmfwTrailer?, type: Int): List<String> = buildList {
         if (trailer == null || type != FirmwareType.FIRMWARE) return@buildList
         if (trailer.pnpId != StrapIdentity.PRODUCT_ID) {
-            add("The image says it's for product ${trailer.pnpId}, but this strap is product ${StrapIdentity.PRODUCT_ID}.")
+            add(strings.format(R.string.you_firmware_wrong_product, trailer.pnpId, StrapIdentity.PRODUCT_ID))
         }
-        if (trailer.fwSize > bytes.size) add("The image's size field (${trailer.fwSize}) is larger than the file.")
+        if (trailer.fwSize > bytes.size) add(strings.format(R.string.you_firmware_wrong_size, trailer.fwSize))
     }
 
     /** Problems that must be fixed before installing. */
     fun blockers(): List<String> = buildList {
         val c = strap.connection.value
-        if (c !is ConnectionState.Connected) add("Connect the strap.")
+        if (c !is ConnectionState.Connected) add(strings.get(R.string.you_firmware_block_connect))
         else {
             val battery = c.batteryPercent
-            if (battery == null) add("Battery level unknown. Reconnect the strap.")
-            else if (battery <= MIN_BATTERY) add("Charge the strap above $MIN_BATTERY% (now $battery%).")
+            if (battery == null) add(strings.get(R.string.you_firmware_block_battery_unknown))
+            else if (battery <= MIN_BATTERY) add(strings.format(R.string.you_firmware_block_battery, MIN_BATTERY, battery))
         }
-        if (strap.info.value?.dfuAvailable == false) add("This strap doesn't offer the firmware update service.")
+        if (strap.info.value?.dfuAvailable == false) add(strings.get(R.string.you_firmware_block_no_service))
     }
 
     fun install(image: ReadyImage) {
         val blocking = blockers()
         if (blocking.isNotEmpty()) return fail(blocking.joinToString(" "))
-        _step.value = FirmwareStep.Installing("Starting…", null)
+        _step.value = FirmwareStep.Installing(strings.get(R.string.you_firmware_step_starting), null)
         viewModelScope.launch {
             _step.value = catching {
                 strap.installFirmware(image.bytes, image.type) { p ->
                     _step.value = when (p) {
-                        is DfuProgress.Transferring -> FirmwareStep.Installing("Sending to strap", p.sent.toFloat() / p.total)
-                        DfuProgress.Validating -> FirmwareStep.Installing("Strap is checking the image", null)
-                        DfuProgress.Applying -> FirmwareStep.Installing("Strap is installing", null)
-                        DfuProgress.Done -> FirmwareStep.Installing("Restarting", 1f)
+                        is DfuProgress.Transferring -> FirmwareStep.Installing(
+                            strings.get(R.string.you_firmware_step_sending), p.sent.toFloat() / p.total,
+                        )
+                        DfuProgress.Validating -> FirmwareStep.Installing(strings.get(R.string.you_firmware_step_validating), null)
+                        DfuProgress.Applying -> FirmwareStep.Installing(strings.get(R.string.you_firmware_step_applying), null)
+                        DfuProgress.Done -> FirmwareStep.Installing(strings.get(R.string.you_firmware_step_restarting), 1f)
                     }
                 }
                 FirmwareStep.Installed
-            }.getOrElse { failed("firmware install", it, "Install failed") }
+            }.getOrElse { failed("firmware install", it, strings.get(R.string.you_firmware_install_failed)) }
         }
     }
 

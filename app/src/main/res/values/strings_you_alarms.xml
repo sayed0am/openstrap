@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The strap's alarms, its health alerts and the phone alerts it buzzes for, pages opened from the Strap page, and what
+  their rows say there (ui/alarms/). OpenStrap is the app's name and WhatsApp an example of a calling app. Keep both as
+  they are. bpm is beats a minute.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- An alarm's days: once, every day, Monday to Friday, Saturday and Sunday, or the strap's work calendar. -->
+    <string name="you_alarms_days_once">Once</string>
+    <string name="you_alarms_days_every_day">Every day</string>
+    <string name="you_alarms_days_weekdays">Weekdays</string>
+    <string name="you_alarms_days_weekends">Weekends</string>
+    <string name="you_alarms_days_workdays">Workdays</string>
+    <!-- Days of the week, short, listed for an alarm on chosen days: "Mon, Wed, Fri". -->
+    <string name="you_alarms_day_mon">Mon</string>
+    <string name="you_alarms_day_tue">Tue</string>
+    <string name="you_alarms_day_wed">Wed</string>
+    <string name="you_alarms_day_thu">Thu</string>
+    <string name="you_alarms_day_fri">Fri</string>
+    <string name="you_alarms_day_sat">Sat</string>
+    <string name="you_alarms_day_sun">Sun</string>
+    <!-- Days of the week as one letter, on round chips of 40 dp to pick an alarm's days, Monday first. -->
+    <string name="you_alarms_letter_mon">M</string>
+    <string name="you_alarms_letter_tue">T</string>
+    <string name="you_alarms_letter_wed">W</string>
+    <string name="you_alarms_letter_thu">T</string>
+    <string name="you_alarms_letter_fri">F</string>
+    <string name="you_alarms_letter_sat">S</string>
+    <string name="you_alarms_letter_sun">S</string>
+
+    <!-- How often the strap measures heart rate: all the time, or every few minutes. -->
+    <string name="you_alarms_interval_continuous">Continuous</string>
+    <string name="you_alarms_interval_every">Every <xliff:g id="minutes" example="10">%1$d</xliff:g> min</string>
+
+    <!-- The Strap page's Alarms row, at most about 22 characters. No alarms on the strap. -->
+    <string name="you_alarms_summary_none">None</string>
+    <!-- Every alarm is switched off. -->
+    <string name="you_alarms_summary_all_off">All off</string>
+    <!-- The first alarm that's on: its time, then its days in lower case, "06:40 weekdays". -->
+    <string name="you_alarms_summary_first"><xliff:g id="time" example="06:40">%1$s</xliff:g> <xliff:g id="days" example="weekdays">%2$s</xliff:g></string>
+    <!-- The same with how many more alarms are on, "06:40 weekdays and 1 more". -->
+    <plurals name="you_alarms_summary_more">
+        <item quantity="one"><xliff:g id="first" example="06:40 weekdays">%2$s</xliff:g> and <xliff:g id="count" example="1">%1$d</xliff:g> more</item>
+        <item quantity="other"><xliff:g id="first" example="06:40 weekdays">%2$s</xliff:g> and <xliff:g id="count" example="2">%1$d</xliff:g> more</item>
+    </plurals>
+
+    <!-- The Strap page's Health alerts row, at most 22 characters. Both heart rate and oxygen alerts are on. -->
+    <string name="you_health_summary_both">Heart rate and oxygen</string>
+    <!-- Heart rate alerts above and below, in beats a minute. -->
+    <string name="you_health_summary_over_under">Over <xliff:g id="high" example="150">%1$d</xliff:g>, under <xliff:g id="low" example="40">%2$d</xliff:g></string>
+    <string name="you_health_summary_over">Over <xliff:g id="high" example="150">%1$d</xliff:g> bpm</string>
+    <string name="you_health_summary_under">Under <xliff:g id="low" example="40">%1$d</xliff:g> bpm</string>
+    <!-- The blood oxygen alert, in percent. -->
+    <string name="you_health_summary_oxygen">Oxygen under <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
+
+    <!-- Asked before deleting every alarm. -->
+    <string name="you_alarms_delete_all_title">Delete all alarms?</string>
+    <string name="you_alarms_delete_all_text">This removes every alarm from the strap.</string>
+    <!-- The confirm button, and the text button under the alarms. -->
+    <string name="you_alarms_delete_all">Delete all</string>
+    <!-- The Alarms page's title. -->
+    <string name="you_alarms_title">Alarms</string>
+    <string name="you_alarms_reading">Reading from the strap</string>
+    <string name="you_alarms_try_again">Try again</string>
+    <!-- The alarms panel's title. -->
+    <string name="you_alarms_on_strap">On the strap</string>
+    <!-- Beside the panel's title: alarms set out of how many the strap holds, "3 of 10". -->
+    <string name="you_alarms_count"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="max" example="10">%2$d</xliff:g></string>
+    <string name="you_alarms_none">No alarms on the strap.</string>
+    <string name="you_alarms_add">Add alarm</string>
+    <string name="you_alarms_tip">The strap vibrates at the alarm time. To stop it, tap the front of the strap several times.</string>
+    <!-- The alarm sheet's title. -->
+    <string name="you_alarms_new">New alarm</string>
+    <string name="you_alarms_edit">Edit alarm</string>
+    <string name="you_alarms_delete">Delete alarm</string>
+    <!-- A message when an alert is changed before the strap's settings were read. -->
+    <string name="you_alarms_not_loaded">Settings haven\'t loaded yet</string>
+    <string name="you_alarms_read_failed">Couldn\'t read from the strap</string>
+
+    <!-- The Health alerts page's title, and its panel's. -->
+    <string name="you_health_title">Health alerts</string>
+    <string name="you_health_panel">Heart rate and blood oxygen</string>
+    <!-- Rows with a menu of values each. -->
+    <string name="you_health_measuring">Heart rate measuring</string>
+    <!-- Under Heart rate measuring when the alerts can't work at the interval chosen. Continuous is a value of that menu. -->
+    <string name="you_health_measuring_note">Heart rate alerts need Continuous or every minute.</string>
+    <string name="you_health_high">High heart rate alert</string>
+    <!-- A heart rate alert's value, in beats a minute. -->
+    <string name="you_health_above">Above <xliff:g id="bpm" example="150">%1$d</xliff:g></string>
+    <string name="you_health_low">Low heart rate alert</string>
+    <string name="you_health_below">Below <xliff:g id="bpm" example="40">%1$d</xliff:g></string>
+    <string name="you_health_oxygen">Low blood oxygen alert</string>
+    <!-- The blood oxygen alert's value, in percent. -->
+    <string name="you_health_below_percent">Below <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
+    <string name="you_health_note">The strap vibrates when an alert goes off. OpenStrap isn\'t a medical device.</string>
+
+    <!-- The Strap page's Phone alerts row. -->
+    <string name="you_phone_summary_both">Calls and notifications</string>
+    <string name="you_phone_summary_calls">Calls</string>
+    <string name="you_phone_summary_notifications">Notifications</string>
+    <!-- Under the Quiet hours switch. -->
+    <string name="you_phone_quiet_off">Pause the buzz at night or during set hours.</string>
+    <string name="you_phone_quiet_same">Pick different start and end times.</string>
+    <!-- The hours are a range, "22:00 to 07:00". -->
+    <string name="you_phone_quiet_with_calls">No buzz from <xliff:g id="hours" example="22:00 to 07:00">%1$s</xliff:g>, calls included.</string>
+    <string name="you_phone_quiet_notifications">No notification buzz from <xliff:g id="hours" example="22:00 to 07:00">%1$s</xliff:g>.</string>
+
+    <!-- The Phone alerts page's title. -->
+    <string name="you_phone_title">Phone alerts</string>
+    <string name="you_phone_calls">Incoming calls</string>
+    <string name="you_phone_calls_note">Buzzes while your phone rings. App calls like WhatsApp need notification access.</string>
+    <string name="you_phone_calls_blocked">Needs phone access. Android won\'t ask again, so turn it on under Permissions.</string>
+    <!-- A button that opens Android's settings for OpenStrap. -->
+    <string name="you_phone_open_settings">Open settings</string>
+    <string name="you_phone_call_buzz">Call buzz</string>
+    <!-- The notifications switch's title. -->
+    <string name="you_phone_notifications">Notifications</string>
+    <string name="you_phone_notifications_note">Buzzes for notifications that make a sound.</string>
+    <string name="you_phone_notifications_access">Needs notification access.</string>
+    <string name="you_phone_pattern">Buzz pattern</string>
+    <string name="you_phone_quiet">Quiet hours</string>
+    <!-- The start and end of quiet hours, rows with a time each. -->
+    <string name="you_phone_quiet_from">From</string>
+    <string name="you_phone_quiet_to">To</string>
+    <string name="you_phone_quiet_calls">Calls too</string>
+    <string name="you_phone_quiet_calls_note">Off lets a ringing phone still buzz.</string>
+    <string name="you_phone_note">Follows Do Not Disturb and silent apps. Never reads what a notification says.</string>
+    <!-- The time sheet's title for each end of quiet hours. -->
+    <string name="you_phone_quiet_from_title">Quiet from</string>
+    <string name="you_phone_quiet_until_title">Quiet until</string>
+</resources>

@@ -36,6 +36,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -44,7 +46,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.device.SyncState
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.graphics.Color
@@ -88,18 +92,27 @@ import org.openstrap.app.ui.zepp.ZeppSignInDialog
  * The line under the strap's name on the Strap page: what it's doing and when it was last heard from ("Connected.
  * Synced 2 min ago", "Last seen 18 min ago"). [lastSeen] and [now] are epoch seconds.
  */
-internal fun strapStateLine(connection: ConnectionState, sync: SyncState, lastSeen: Long?, now: Long): String = when (connection) {
+internal fun strapStateLine(
+    connection: ConnectionState,
+    sync: SyncState,
+    lastSeen: Long?,
+    now: Long,
+    strings: Strings = Strings.app,
+): String = when (connection) {
     is ConnectionState.Connected -> when {
-        connection.charging -> "Charging. Wear data pauses until it's back on."
-        sync is SyncState.Running -> "Connected. Syncing"
-        sync is SyncState.Done -> "Connected. Synced ${agoText(now - sync.atEpochSeconds).lowercase()}"
-        sync is SyncState.Failed -> "Connected. Not synced"
-        else -> "Connected"
+        connection.charging -> strings.get(R.string.you_strap_state_charging)
+        sync is SyncState.Running -> strings.get(R.string.you_strap_state_syncing)
+        sync is SyncState.Done -> strings.format(R.string.you_strap_state_synced, agoText(now - sync.atEpochSeconds).lowercase())
+        sync is SyncState.Failed -> strings.get(R.string.you_strap_state_not_synced)
+        else -> strings.get(R.string.you_strap_state_connected)
     }
-    ConnectionState.Connecting, ConnectionState.Authenticating -> "Connecting"
-    is ConnectionState.Failed -> if (connection.keyRejected) "The strap turned the key down" else "Can't connect"
-    ConnectionState.NotPaired -> "Not paired"
-    ConnectionState.Disconnected -> lastSeen?.let { "Last seen ${agoText(now - it).lowercase()}" } ?: "Not connected"
+    ConnectionState.Connecting, ConnectionState.Authenticating -> strings.get(R.string.you_strap_state_connecting)
+    is ConnectionState.Failed ->
+        strings.get(if (connection.keyRejected) R.string.you_strap_state_key_rejected else R.string.you_strap_state_cant_connect)
+    ConnectionState.NotPaired -> strings.get(R.string.you_strap_state_not_paired)
+    ConnectionState.Disconnected ->
+        lastSeen?.let { strings.format(R.string.you_strap_state_last_seen, agoText(now - it).lowercase()) }
+            ?: strings.get(R.string.you_strap_state_not_connected)
 }
 
 /**
@@ -125,7 +138,7 @@ fun DeviceScreen(
     onBack: () -> Unit,
     /** Debug: a previewed strap state, shown on the strap card only ([org.openstrap.app.ui.dashboard.StrapPreview]). */
     preview: StrapView? = null,
-    /** The row whose page is open beside the list on a wide screen, by its title ("Alarms"), or null. */
+    /** The row whose page is open beside the list on a wide screen, by its key in [PageRowKeys], or null. */
     selected: String? = null,
 ) {
     BackHandler(onBack = onBack)
@@ -150,34 +163,35 @@ fun DeviceScreen(
 
     if (confirmDisconnect) {
         PageConfirm(
-            "Disconnect the strap?",
-            (if (sync is SyncState.Running) "The sync in progress will stop. " else "") +
-                "The strap keeps recording on its own, but OpenStrap won't sync or show live heart rate until you connect again.",
-            confirm = "Disconnect", onConfirm = { confirmDisconnect = false; vm.disconnect() }, onDismiss = { confirmDisconnect = false },
+            stringResource(R.string.you_strap_disconnect_title),
+            stringResource(
+                if (sync is SyncState.Running) R.string.you_strap_disconnect_text_syncing else R.string.you_strap_disconnect_text,
+            ),
+            confirm = stringResource(R.string.you_strap_disconnect), onConfirm = { confirmDisconnect = false; vm.disconnect() },
+            onDismiss = { confirmDisconnect = false },
         )
     }
 
     if (confirmRestart) {
         PageConfirm(
-            "Restart the strap?",
-            (if (sync is SyncState.Running) "The sync in progress will stop. " else "") +
-                "The strap restarts and disconnects. OpenStrap reconnects on its own once it's back, which can take a minute.",
-            confirm = "Restart", onConfirm = { confirmRestart = false; vm.restartStrap() }, onDismiss = { confirmRestart = false },
+            stringResource(R.string.you_strap_restart_title),
+            stringResource(if (sync is SyncState.Running) R.string.you_strap_restart_text_syncing else R.string.you_strap_restart_text),
+            confirm = stringResource(R.string.you_strap_restart), onConfirm = { confirmRestart = false; vm.restartStrap() },
+            onDismiss = { confirmRestart = false },
         )
     }
 
     if (confirmForget) {
         PageConfirm(
-            "Forget this strap?",
-            "OpenStrap will disconnect and delete the strap's address and auth key from this phone. " +
-                "Your synced health data stays. To pair again you'll need the auth key.\n\n" +
-                "This doesn't unbind the strap from your Zepp account.",
-            confirm = "Forget", onConfirm = { confirmForget = false; vm.forget() }, onDismiss = { confirmForget = false },
+            stringResource(R.string.you_strap_forget_title),
+            stringResource(R.string.you_strap_forget_text),
+            confirm = stringResource(R.string.you_strap_forget), onConfirm = { confirmForget = false; vm.forget() },
+            onDismiss = { confirmForget = false },
         )
     }
 
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Your strap", onBack) }
+        item { PageHeader(stringResource(R.string.you_strap_title), onBack) }
 
         val device = paired
         if (device == null) {
@@ -192,15 +206,17 @@ fun DeviceScreen(
                 when (connection) {
                     is ConnectionState.Connected -> {
                         PageButton(
-                            "Sync now", vm::syncNow, Modifier.weight(1f).height(56.dp), enabled = sync !is SyncState.Running,
+                            stringResource(R.string.you_strap_sync_now), vm::syncNow, Modifier.weight(1f).height(56.dp),
+                            enabled = sync !is SyncState.Running,
                             icon = AppIcons.Refresh04,
                         )
                         if (info?.findDevice == true) FindStrapButton(vm, Modifier.weight(1f).height(56.dp))
                     }
                     ConnectionState.Connecting, ConnectionState.Authenticating ->
-                        PageButton("Cancel", vm::disconnect, Modifier.fillMaxWidth().height(56.dp))
+                        PageButton(stringResource(R.string.you_action_cancel), vm::disconnect, Modifier.fillMaxWidth().height(56.dp))
                     else -> PageButton(
-                        "Connect", { onRequestBluetooth { vm.connect() } }, Modifier.fillMaxWidth().height(56.dp), primary = true,
+                        stringResource(R.string.you_strap_connect), { onRequestBluetooth { vm.connect() } },
+                        Modifier.fillMaxWidth().height(56.dp), primary = true,
                     )
                 }
             }
@@ -208,30 +224,63 @@ fun DeviceScreen(
         item {
             val connected = connection is ConnectionState.Connected
             // What the strap holds is read from it; until then, or without it, the row just opens its page.
-            val waiting = if (connected) "Reading" else "On the strap"
+            val waiting = stringResource(if (connected) R.string.you_strap_reading else R.string.you_strap_on_strap)
             PageRows {
-                PageRow("Alarms", alarmsSummary(alarms) ?: waiting, onClick = onAlarms, divider = false, icon = AppIcons.Alarm, selected = selected == "Alarms")
-                PageRow("Phone alerts", phoneAlertsSummary(calls, notifications), onClick = onPhoneAlerts, icon = AppIcons.Vibrate, selected = selected == "Phone alerts")
-                PageRow("Health alerts", healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts, icon = AppIcons.Heartbeat, selected = selected == "Health alerts")
-                PageSwitchRow("Off-body reminder", null, wearReminder, vm::setWearReminder, icon = AppIcons.HandPalm)
-                PageSwitchRow("Auto-detect workouts", null, autoStart, vm::setAutoStartWorkouts, icon = AppIcons.PersonSimpleRun)
+                PageRow(
+                    stringResource(R.string.you_strap_row_alarms), alarmsSummary(alarms) ?: waiting, onClick = onAlarms, divider = false,
+                    icon = AppIcons.Alarm, selected = selected == PageRowKeys.ALARMS,
+                )
+                PageRow(
+                    stringResource(R.string.you_strap_row_phone_alerts), phoneAlertsSummary(calls, notifications), onClick = onPhoneAlerts,
+                    icon = AppIcons.Vibrate, selected = selected == PageRowKeys.PHONE_ALERTS,
+                )
+                PageRow(
+                    stringResource(R.string.you_strap_row_health_alerts), healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts,
+                    icon = AppIcons.Heartbeat, selected = selected == PageRowKeys.HEALTH_ALERTS,
+                )
+                PageSwitchRow(
+                    stringResource(R.string.you_strap_row_off_body), null, wearReminder, vm::setWearReminder, icon = AppIcons.HandPalm,
+                )
+                PageSwitchRow(
+                    stringResource(R.string.you_strap_row_auto_detect), null, autoStart, vm::setAutoStartWorkouts,
+                    icon = AppIcons.PersonSimpleRun,
+                )
                 KeepConnectedRow(vm, keepConnected, device.address)
-                PageRow("Firmware", info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware ?: "Check for updates", onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == "Firmware")
-                PageRow("Zepp account", if (zeppSignedIn) "Signed in" else "Not signed in", onClick = onZeppAccount, icon = AppIcons.Key, selected = selected == "Zepp account")
+                PageRow(
+                    stringResource(R.string.you_strap_row_firmware),
+                    info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware
+                        ?: stringResource(R.string.you_strap_check_for_updates),
+                    onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == PageRowKeys.FIRMWARE,
+                )
+                PageRow(
+                    stringResource(R.string.you_strap_row_zepp),
+                    stringResource(if (zeppSignedIn) R.string.you_strap_signed_in else R.string.you_strap_not_signed_in),
+                    onClick = onZeppAccount, icon = AppIcons.Key, selected = selected == PageRowKeys.ZEPP_ACCOUNT,
+                )
             }
         }
         item {
             PageRows {
                 var first = true
                 if (connection is ConnectionState.Connected) {
-                    PageRow("Disconnect", onClick = { confirmDisconnect = true }, divider = false, icon = AppIcons.LinkBreak)
+                    PageRow(
+                        stringResource(R.string.you_strap_disconnect), onClick = { confirmDisconnect = true }, divider = false,
+                        icon = AppIcons.LinkBreak,
+                    )
                     first = false
                 }
                 if (connection is ConnectionState.Connected && info?.canRestart == true) {
-                    PageRow("Restart strap", onClick = { confirmRestart = true }, divider = !first, icon = AppIcons.ShutDown)
+                    PageRow(
+                        stringResource(R.string.you_strap_row_restart), onClick = { confirmRestart = true }, divider = !first,
+                        icon = AppIcons.ShutDown,
+                    )
                     first = false
                 }
-                PageRow("Forget this strap", onClick = { confirmForget = true }, divider = !first, titleColor = DestructiveInk, icon = AppIcons.Trash)
+                PageRow(
+                    stringResource(R.string.you_strap_row_forget), onClick = { confirmForget = true }, divider = !first,
+                    titleColor = DestructiveInk,
+                    icon = AppIcons.Trash,
+                )
             }
         }
     }
@@ -242,7 +291,8 @@ fun DeviceScreen(
 private fun FindStrapButton(vm: DeviceViewModel, modifier: Modifier) {
     val finding by vm.findingStrap.collectAsStateWithLifecycle()
     PageButton(
-        if (finding) "Stop buzzing" else "Find strap", { if (finding) vm.stopFindingStrap() else vm.findStrap() }, modifier,
+        stringResource(if (finding) R.string.you_strap_find_stop else R.string.you_strap_find),
+        { if (finding) vm.stopFindingStrap() else vm.findStrap() }, modifier,
         icon = if (finding) AppIcons.StopFill else AppIcons.SearchArea,
     )
 }
@@ -281,20 +331,23 @@ private fun KeepConnectedRow(vm: DeviceViewModel, keepConnected: KeepConnected, 
     val associated by vm.companionAssociated.collectAsStateWithLifecycle()
     val ignoringBattery by vm.ignoringBatteryOptimizations.collectAsStateWithLifecycle()
     val declined by vm.companionDeclined.collectAsStateWithLifecycle()
-    val title = "Stay connected in background"
+    val title = stringResource(R.string.you_strap_row_background)
+    val on = stringResource(R.string.you_value_on)
+    val off = stringResource(R.string.you_value_off)
+    val failed = stringResource(R.string.you_strap_battery_settings_failed)
     val icon = AppIcons.Bluetooth
     when {
-        associated -> PageRow(title, "On", icon = icon)
-        vm.companionSupported && !declined -> PageRow(title, "Off", onClick = { keepConnected.associate(address) }, icon = icon)
-        !ignoringBattery -> PageRow(title, "Off", icon = icon, onClick = {
+        associated -> PageRow(title, on, icon = icon)
+        vm.companionSupported && !declined -> PageRow(title, off, onClick = { keepConnected.associate(address) }, icon = icon)
+        !ignoringBattery -> PageRow(title, off, icon = icon, onClick = {
             runCatching {
                 context.startActivity(
                     android.content.Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
                         .setData(android.net.Uri.parse("package:${context.packageName}")),
                 )
-            }.onFailure { vm.showMessage("Couldn't open battery settings on this phone.") }
+            }.onFailure { vm.showMessage(failed) }
         })
-        else -> PageRow(title, "On", icon = icon)
+        else -> PageRow(title, on, icon = icon)
     }
 }
 
@@ -326,7 +379,7 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
             // Clear of the strap on the right too, which sits centred and so lower as this grows.
             Column(Modifier.fillMaxWidth().padding(top = 128.dp, bottom = 5.dp, end = 112.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 // The card's one dotted number (spec 2.3); the word after it sits on the digits' baseline in Body at 72%.
-                if (battery != null) HeroValue("$battery", "% battery")
+                if (battery != null) HeroValue("$battery", stringResource(R.string.you_strap_battery_unit, "%"))
                 if (sync is SyncState.Running) {
                     PageProgress()
                     Text(sync.step, style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))
@@ -335,15 +388,17 @@ internal fun StrapHero(name: String, connection: ConnectionState, sync: SyncStat
                     connection is ConnectionState.Failed && !connection.keyRejected -> {
                         Text(connection.reason, color = MetricColors.warn, style = GlowType.secondary)
                         Text(
-                            "OpenStrap keeps retrying. Keep the strap on its charger near the phone, and make sure the Zepp app " +
-                                "isn't running. The strap talks to one app at a time.",
+                            stringResource(R.string.you_strap_retrying),
                             style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                         )
                     }
                     sync is SyncState.Failed -> {
-                        Text("Sync stopped. ${sync.reason}", color = MetricColors.warn, style = GlowType.secondary)
                         Text(
-                            "$DATA_ON_STRAP OpenStrap tries again by itself.",
+                            stringResource(R.string.you_strap_sync_stopped, sync.reason), color = MetricColors.warn,
+                            style = GlowType.secondary,
+                        )
+                        Text(
+                            stringResource(R.string.you_strap_sync_retry, DATA_ON_STRAP),
                             style = GlowType.secondary, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                         )
                     }
@@ -375,21 +430,25 @@ fun DiagnosticsScreen(lines: List<String>, contentPadding: PaddingValues, onBack
     val context = LocalContext.current
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item {
-            PageHeader("Diagnostics", onBack) {
-                PageButton("Copy", {
+            val label = stringResource(R.string.you_diagnostics_clip_label)
+            PageHeader(stringResource(R.string.you_diagnostics_title), onBack) {
+                PageButton(stringResource(R.string.you_diagnostics_copy), {
                     context.getSystemService(ClipboardManager::class.java)
-                        .setPrimaryClip(ClipData.newPlainText("OpenStrap log", lines.joinToString("\n")))
+                        .setPrimaryClip(ClipData.newPlainText(label, lines.joinToString("\n")))
                 }, Modifier.height(40.dp), icon = AppIcons.Copy)
             }
         }
         item {
-            PagePanel(title = "Strap log", note = "${lines.size} lines") {
+            PagePanel(
+                title = stringResource(R.string.you_diagnostics_log),
+                note = pluralStringResource(R.plurals.you_diagnostics_lines, lines.size, lines.size),
+            ) {
                 Box(
                     Modifier.fillMaxWidth().heightIn(max = 520.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black)
                         .verticalScroll(rememberScrollState()).horizontalScroll(rememberScrollState()).padding(12.dp),
                 ) {
                     Text(
-                        if (lines.isEmpty()) "No events yet." else lines.joinToString("\n"),
+                        if (lines.isEmpty()) stringResource(R.string.you_diagnostics_empty) else lines.joinToString("\n"),
                         style = GlowType.caption.copy(fontFamily = FontFamily.Monospace),
                         color = Color.White.copy(alpha = 0.7f), textAlign = TextAlign.Start,
                     )
@@ -407,7 +466,7 @@ private fun PairPanel(vm: DeviceViewModel, scan: ScanUiState, onRequestBluetooth
     if (signIn) {
         ZeppSignInDialog(
             preferredApiBase = null,
-            confirmLabel = "Pair this strap",
+            confirmLabel = stringResource(R.string.you_pair_confirm),
             requireKey = true,
             onDismiss = { signIn = false },
             onConfirm = { listing, strap ->
@@ -417,28 +476,24 @@ private fun PairPanel(vm: DeviceViewModel, scan: ScanUiState, onRequestBluetooth
         )
     }
 
-    PagePanel(title = "Pair your Helio Strap") {
-        StepText("OpenStrap needs the strap's auth key, which Zepp creates when you link the strap. You only do this once.")
-        PairStep(1, "Link the strap in the Zepp app") {
-            StepText("Install Zepp, sign in, and link your Helio Strap.")
-            StepText(
-                "OpenStrap signs in with email only. If you signed up with Google or Apple, add an email and password " +
-                    "to your account in the Zepp app's account settings.",
-                muted = true,
-            )
+    PagePanel(title = stringResource(R.string.you_pair_title)) {
+        StepText(stringResource(R.string.you_pair_intro))
+        PairStep(1, stringResource(R.string.you_pair_step_link)) {
+            StepText(stringResource(R.string.you_pair_step_link_text))
+            StepText(stringResource(R.string.you_pair_step_link_note), muted = true)
         }
-        PairStep(2, "Get the strap ready") {
-            StepText("Put the strap on its charger, close to this phone.")
-            StepText("Force-stop or uninstall Zepp so it lets go of the strap. Don't unlink the strap in Zepp: that wipes its key.", muted = true)
+        PairStep(2, stringResource(R.string.you_pair_step_ready)) {
+            StepText(stringResource(R.string.you_pair_step_ready_text))
+            StepText(stringResource(R.string.you_pair_step_ready_note), muted = true)
         }
-        PairStep(3, "Sign in and pair") {
-            StepText("Sign in with the same Zepp email. OpenStrap finds your strap and its key, then pairs.")
+        PairStep(3, stringResource(R.string.you_pair_step_sign_in)) {
+            StepText(stringResource(R.string.you_pair_step_sign_in_text))
         }
         // Full panel width, not indented under step 3, so they line up with the panel's edges.
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            PageButton("Sign in with Zepp", { signIn = true }, Modifier.fillMaxWidth(), primary = true)
+            PageButton(stringResource(R.string.you_pair_sign_in), { signIn = true }, Modifier.fillMaxWidth(), primary = true)
             ComputerGuideButton()
-            OptionButton("Have the key already?", "Enter it yourself", { manual = true })
+            OptionButton(stringResource(R.string.you_pair_have_key), stringResource(R.string.you_pair_enter_key), { manual = true })
         }
     }
 
@@ -481,41 +536,46 @@ private fun ManualPairSheet(
     var showKey by rememberSaveable { mutableStateOf(false) }
 
     PageSheet(
-        onDismiss, "Enter the key yourself",
-        note = "Scan with the strap on its charger and tap it to fill in the address, then paste the 32-character auth key. " +
-            "The dBm beside each strap is its signal, and nearer zero is closer.",
+        onDismiss, stringResource(R.string.you_pair_manual_title),
+        note = stringResource(R.string.you_pair_manual_note),
     ) {
         if (scan.scanning) {
-            PageButton("Stop scanning", vm::stopScan, Modifier.fillMaxWidth())
+            PageButton(stringResource(R.string.you_pair_scan_stop), vm::stopScan, Modifier.fillMaxWidth())
             PageProgress()
         } else {
-            PageButton("Scan for straps", { onRequestBluetooth { vm.startScan() } }, Modifier.fillMaxWidth(), icon = AppIcons.Bluetooth)
+            PageButton(
+                stringResource(R.string.you_pair_scan), { onRequestBluetooth { vm.startScan() } }, Modifier.fillMaxWidth(),
+                icon = AppIcons.Bluetooth,
+            )
         }
-        scan.error?.let { PageNote("Scanning stopped: $it. Check that Bluetooth is on and try again.", color = MetricColors.warn) }
-        if (scan.scanning && scan.found.isEmpty()) PageNote("Looking for straps nearby. Keep the strap on its charger.")
+        scan.error?.let { PageNote(stringResource(R.string.you_pair_scan_failed, it), color = MetricColors.warn) }
+        if (scan.scanning && scan.found.isEmpty()) PageNote(stringResource(R.string.you_pair_scan_looking))
         if (scan.found.isNotEmpty()) PageRows {
             scan.found.forEachIndexed { i, d ->
                 val selected = d.address == address
                 PageRow(
-                    d.name, if (selected) "Chosen" else "${d.rssi} dBm", onClick = { address = d.address; name = d.name },
+                    d.name, if (selected) stringResource(R.string.you_pair_chosen) else stringResource(R.string.you_pair_rssi, d.rssi),
+                    onClick = { address = d.address; name = d.name },
                     divider = i > 0, icon = AppIcons.Watch,
                 )
             }
         }
         PageField(
-            address, { address = it.uppercase() }, "Bluetooth address", placeholder = "C8:0F:10:00:00:00",
+            address, { address = it.uppercase() }, stringResource(R.string.you_pair_address), placeholder = "C8:0F:10:00:00:00",
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
         )
         PageField(
-            key, { key = it }, "Auth key",
+            key, { key = it }, stringResource(R.string.you_pair_key),
             visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            trailing = { PageTextButton(if (showKey) "Hide" else "Show", { showKey = !showKey }) },
+            trailing = {
+                PageTextButton(stringResource(if (showKey) R.string.you_action_hide else R.string.you_action_show), { showKey = !showKey })
+            },
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
+            PageButton(stringResource(R.string.you_action_cancel), onDismiss, Modifier.weight(1f))
             PageButton(
-                "Pair",
+                stringResource(R.string.you_pair_pair),
                 {
                     // A bad key or address only shows a message; a valid one saves the strap and the screen moves to its status.
                     if (DeviceViewModel.normalizeAuthKey(key) != null && DeviceViewModel.isAddress(address)) onDismiss()
@@ -530,9 +590,9 @@ private fun ManualPairSheet(
 /** Shown under the status when the strap turned the key down: retrying can't help, so offer to start pairing over. */
 @Composable
 private fun KeyRejectedPanel(reason: String, onPairAgain: () -> Unit) {
-    PagePanel(title = "Pairing didn't work") {
+    PagePanel(title = stringResource(R.string.you_pair_key_rejected_title)) {
         StepText(reason)
-        PageButton("Start pairing again", onPairAgain, Modifier.fillMaxWidth(), primary = true)
+        PageButton(stringResource(R.string.you_pair_again), onPairAgain, Modifier.fillMaxWidth(), primary = true)
         ComputerGuideButton()
     }
 }
