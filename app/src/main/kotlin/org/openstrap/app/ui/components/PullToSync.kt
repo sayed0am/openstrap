@@ -22,7 +22,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.Color
+import org.openstrap.app.ui.glow.GlowType
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -144,7 +145,7 @@ fun PullSyncReveal() {
             Icon(
                 AppIcons.Refresh04, null,
                 Modifier.size(18.dp).graphicsLayer { rotationZ = if (syncing) turn else pull.fraction() * 180f },
-                tint = if (ready || syncing) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                tint = if (ready || syncing) Color.White else HintInk,
             )
             Spacer(Modifier.width(8.dp))
             val label = when {
@@ -158,13 +159,15 @@ fun PullSyncReveal() {
                 label, transitionSpec = { fadeIn(tween(LABEL_FADE_MS, delayMillis = LABEL_FADE_MS)) togetherWith fadeOut(tween(LABEL_FADE_MS)) },
                 label = "pull label",
             ) {
-                Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                Text(it, style = GlowType.secondary, color = HintInk, maxLines = 1)
             }
         }
     }
 }
 
 private val REVEAL = 48.dp
+/** The arrows and the line until a pull is far enough to sync: quiet, then white once letting go syncs. */
+private val HintInk = Color.White.copy(alpha = 0.6f)
 /** Each half of the label's crossfade: out, then in. */
 internal const val LABEL_FADE_MS = 120
 private const val START_GRACE_MS = 3_000L

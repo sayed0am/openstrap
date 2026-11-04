@@ -59,7 +59,7 @@ import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.GlowSwitch
+import org.openstrap.app.ui.glow.PageSwitchRow
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.PageButton
@@ -81,7 +81,7 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.dashboard.DATA_ON_STRAP
 import org.openstrap.app.ui.dashboard.StrapView
 import org.openstrap.app.ui.zepp.ComputerGuideButton
-import org.openstrap.app.ui.zepp.OptionButton
+import org.openstrap.app.ui.glow.OptionButton
 import org.openstrap.app.ui.zepp.ZeppSignInDialog
 
 /**
@@ -213,12 +213,8 @@ fun DeviceScreen(
                 PageRow("Alarms", alarmsSummary(alarms) ?: waiting, onClick = onAlarms, divider = false, icon = AppIcons.Alarm, selected = selected == "Alarms")
                 PageRow("Phone alerts", phoneAlertsSummary(calls, notifications), onClick = onPhoneAlerts, icon = AppIcons.Vibrate, selected = selected == "Phone alerts")
                 PageRow("Health alerts", healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts, icon = AppIcons.Heartbeat, selected = selected == "Health alerts")
-                PageRow("Off-body reminder", onClick = { vm.setWearReminder(!wearReminder) }, icon = AppIcons.HandPalm) {
-                    GlowSwitch(wearReminder, vm::setWearReminder)
-                }
-                PageRow("Auto-detect workouts", onClick = { vm.setAutoStartWorkouts(!autoStart) }, icon = AppIcons.PersonSimpleRun) {
-                    GlowSwitch(autoStart, vm::setAutoStartWorkouts)
-                }
+                PageSwitchRow("Off-body reminder", null, wearReminder, vm::setWearReminder, icon = AppIcons.HandPalm)
+                PageSwitchRow("Auto-detect workouts", null, autoStart, vm::setAutoStartWorkouts, icon = AppIcons.PersonSimpleRun)
                 KeepConnectedRow(vm, keepConnected, device.address)
                 PageRow("Firmware", info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware ?: "Check for updates", onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == "Firmware")
                 PageRow("Zepp account", if (zeppSignedIn) "Signed in" else "Not signed in", onClick = onZeppAccount, icon = AppIcons.Key, selected = selected == "Zepp account")
@@ -445,7 +441,7 @@ private fun PairPanel(vm: DeviceViewModel, scan: ScanUiState, onRequestBluetooth
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             PageButton("Sign in with Zepp", { signIn = true }, Modifier.fillMaxWidth(), primary = true)
             ComputerGuideButton()
-            OptionButton("Have the key already?", "Enter it yourself") { manual = true }
+            OptionButton("Have the key already?", "Enter it yourself", { manual = true })
         }
     }
 

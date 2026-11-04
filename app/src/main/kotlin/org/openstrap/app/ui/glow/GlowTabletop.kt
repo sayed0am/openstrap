@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -47,7 +46,7 @@ fun GlowTabletopHeart(
                     trailingContent = liveEnabled?.let { on ->
                         {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Live", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+                                Text("Live", color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary)
                                 Spacer(Modifier.width(8.dp))
                                 GlowSwitch(on, onLiveToggle, accent = style.color)
                             }
@@ -57,10 +56,10 @@ fun GlowTabletopHeart(
                 Row(verticalAlignment = Alignment.Bottom) {
                     DotMatrixText(now?.toString() ?: "-", dot = DotSize.Live)
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text("bpm", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.titleMedium)
+                        Text("bpm", color = Color.White.copy(alpha = 0.7f), style = GlowType.cardTitle, maxLines = 1)
                     }
                     state.restingHeartRate?.let {
-                        Text("Resting $it", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                        Text("Resting $it", color = Color.White.copy(alpha = 0.85f), style = GlowType.body)
                     }
                 }
                 if (state.heartRate.isNotEmpty()) {

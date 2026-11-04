@@ -313,7 +313,7 @@ fun GlowAddWorkoutScreen(
             return@WorkoutPage
         }
         QuietPanel {
-            PanelTitle("When was it?", trailing = Ranges.times(from, to))
+            GlowHeader("When was it?", trailing = Ranges.times(from, to))
             RangeChart(series, first, last, from, to, maxHr) { f, t -> from = f; to = t }
             Row(Modifier.fillMaxWidth()) {
                 PageNote(clock(first))
@@ -474,7 +474,7 @@ internal fun TrimPanel(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onCa
         org.openstrap.app.data.Summaries.bucketMeans(summary.recorded, n, { ((it.timestamp - first) / step).toInt() }, { it.bpm.toFloat() })
     }
     QuietPanel {
-        PanelTitle("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
+        GlowHeader("Trim", trailing = SummaryCopy.trimHeader(clock(from), clock(to), to - from))
         // Recorded is all it can reach for now: the core and the reach are one, so the bar only trims.
         TrimBar(
             points, core = first..last, reach = first..last, from = from, to = to,

@@ -1,20 +1,8 @@
 package org.openstrap.app.ui.glow
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import java.time.LocalDate
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.chargeShown
@@ -175,22 +163,11 @@ fun AllMetricsSheet(
     onDismiss: () -> Unit,
     onOpen: (IndexTarget) -> Unit,
 ) {
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.9f).dp
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(
-            Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Column(Modifier.fillMaxWidth().padding(start = 4.dp, top = 4.dp, bottom = 4.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("All metrics", color = Color.White, style = GlowType.cardTitle.copy(fontSize = 20.sp, lineHeight = 26.sp), maxLines = 1)
-                Text(dayName(date), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-            }
-            groups.forEach { group ->
-                ListPanel(title = group.title) {
-                    group.rows.forEachIndexed { i, r ->
-                        ListRow(r.name, r.color, r.value, r.status, onClick = { onOpen(r.target) }, divider = i > 0, icon = r.target.rowIcon())
-                    }
+    PageSheet(onDismiss, "All metrics", dayName(date), side = 16.dp) {
+        groups.forEach { group ->
+            ListPanel(title = group.title) {
+                group.rows.forEachIndexed { i, r ->
+                    ListRow(r.name, r.color, r.value, r.status, onClick = { onOpen(r.target) }, divider = i > 0, icon = r.target.rowIcon())
                 }
             }
         }

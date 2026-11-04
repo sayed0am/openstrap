@@ -23,11 +23,13 @@ import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.health.HcAvailability
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowSwitch
+import org.openstrap.app.ui.glow.PageSwitchRow
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PageRow
+import org.openstrap.app.ui.glow.PanelLabelInset
+import org.openstrap.app.ui.glow.SectionLabel
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -37,6 +39,8 @@ import org.openstrap.app.ui.theme.AppIcons
  * Connect is a Play Store app that's missing or out of date (Android 12 and 13), an install button comes first: the
  * rows' toasts can't hold one.
  */
+// A whole page, placed by the page host like the Strap page's others, so there's nothing for a caller to modify.
+@Suppress("ModifierMissing")
 @Composable
 fun HealthConnectPage(
     auto: HealthConnectAuto,
@@ -57,12 +61,10 @@ fun HealthConnectPage(
             PageRows {
                 val now = System.currentTimeMillis() / 1000
                 val line = healthConnectLine(auto, now, java.time.ZoneId.systemDefault(), availability = availability)
-                PageRow("Auto sync to Health Connect", line, onClick = { onAuto(!auto.on) }, below = true, divider = false, icon = AppIcons.Refresh04) {
-                    GlowSwitch(auto.on, onAuto)
-                }
+                PageSwitchRow("Auto sync to Health Connect", line, auto.on, onAuto, divider = false, icon = AppIcons.Refresh04)
             }
         }
-        item { PanelHeading("Any time") }
+        item { SectionLabel("Any time", Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
                 PageRow("Copy now", "The last 30 days, to Android Health Connect", onClick = onCopyNow, below = true, divider = false, icon = AppIcons.Heartbeat)

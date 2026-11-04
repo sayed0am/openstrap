@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -166,19 +164,9 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
             if (feeling != null) Text(CheckIn.label(feeling), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (CheckIn.MIN..CheckIn.MAX).forEach { v ->
-                val selected = feeling == v
-                val shape = RoundedCornerShape(50)
-                Box(
-                    Modifier.weight(1f)
-                        .let { if (selected) it.background(Color.White.copy(alpha = 0.85f), shape) else it }
-                        .glass(shape, { onCheckIn(if (selected) null else v) })
-                        .padding(vertical = 7.dp),
-                    contentAlignment = Alignment.Center,
-                ) { Text("$v", color = if (selected) Color.Black else Color.White, style = MaterialTheme.typography.labelLarge) }
-            }
-        }
+        // Tapping the chosen one again takes the answer back.
+        val values = (CheckIn.MIN..CheckIn.MAX).toList()
+        GlowSegments(values.map { "$it" }, feeling?.let(values::indexOf) ?: -1, { onCheckIn(values[it].takeIf { v -> v != feeling }) })
     }
 
 /**

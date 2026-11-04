@@ -227,7 +227,24 @@ class DesignTokenTest {
         assertTrue("type allowlist is higher than the code, lower it: $stale (now ${stale.keys.associateWith { counts[it] ?: 0 }})", stale.isEmpty())
     }
 
+    @Test fun `the glow screens and the app's frame take no type or colour from Material`() {
+        // Material's roles are another product's type (spec 2.3). The theme glue in components/Glass.kt and the
+        // colorScheme.background blacks behind whole screens stay, as does PageMenuRow's DropdownMenu.
+        val frame = setOf("dashboard/DayCalendar.kt", "components/PullToSync.kt", "components/Insights.kt")
+        val found = find(
+            Regex("""MaterialTheme\.(typography|colorScheme)|\b(IconButton|TextButton|Surface)\(|material3\.Surface\b"""),
+            except = sources.keys.filterNot { (it.startsWith("glow/") || it in frame) && it !in materialNotMigrated }.toSet(),
+        )
+        if (found.isNotEmpty()) fail("Text takes a GlowType role, controls come from PageParts (spec 2.3, 2.4):\n" + found.joinToString("\n"))
+    }
+
     private companion object {
+        /**
+         * Glow files still on Material type until the chart batch moves them (ScaleLabel onto ScaleLabels). Only
+         * shrinks.
+         */
+        val materialNotMigrated = setOf("glow/GlowHealthspan.kt")
+
         /** From this radius up a corner is a card's. Tiles, chips, bars and pills stay under it. */
         const val CARD_SIZED = 20f
 
@@ -246,8 +263,7 @@ class DesignTokenTest {
          */
         val typeNotMigrated = mapOf(
             "dashboard/SleepPanels.kt" to 1,
-            "glow/AllMetricsScreen.kt" to 1,
-            "glow/GlowActivityScreen.kt" to 2,
+            "glow/GlowActivityScreen.kt" to 1,
             "glow/GlowCharts.kt" to 4,
             "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,

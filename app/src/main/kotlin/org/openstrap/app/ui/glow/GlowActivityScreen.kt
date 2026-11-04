@@ -464,7 +464,7 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
                     )
                     if (!a.startedByYou) {
                         Spacer(Modifier.width(6.dp))
-                        FoundTag()
+                        OutlineTag(TabCopy.AUTO_DETECTED)
                     }
                 }
                 Text(
@@ -508,16 +508,6 @@ private fun EffortLight(icon: androidx.compose.ui.graphics.vector.ImageVector, e
     ) {
         Icon(icon, null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(RowIcon))
     }
-}
-
-/** "Auto-detected": a quiet outlined label beside the sport's name. */
-@Composable
-internal fun FoundTag() {
-    Text(
-        TabCopy.AUTO_DETECTED, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary.copy(fontSize = 11.sp, lineHeight = 14.sp),
-        maxLines = 1,
-        modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.19f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
-    )
 }
 
 /** A stretch nobody started, as a row with Save: when it was and how hard. */

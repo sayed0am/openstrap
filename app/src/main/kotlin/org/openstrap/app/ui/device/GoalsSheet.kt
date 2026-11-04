@@ -42,6 +42,7 @@ import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageNote
+import org.openstrap.app.ui.glow.PageNumberField
 import org.openstrap.app.ui.glow.PageSheet
 import org.openstrap.app.ui.glow.RoundIconButton
 import org.openstrap.app.ui.theme.AppIcons
@@ -68,16 +69,16 @@ fun GoalsSheet(goals: Goals, onSave: (Goals) -> Unit, onDismiss: () -> Unit, sug
     val activeValue = active.toIntOrNull()?.takeIf { it in Goals.ACTIVE_HOURS }
 
     PageSheet(onDismiss, "Your goals", note = "What you aim for each day and week. Change them whenever they stop fitting.") {
-        NumberField(steps, { steps = it }, "Steps", "steps", stepsValue == null)
+        PageNumberField(steps, { steps = it }, "Steps", "steps", stepsValue == null)
         CalorieGoalField(calories, { calories = it }, suggestedCalories)
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text("Sleep", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                NumberField(sleepH, { sleepH = it.take(2) }, "", "h", sleepValue == null, Modifier.weight(1f))
-                NumberField(sleepM, { sleepM = it.take(2) }, "", "min", sleepValue == null, Modifier.weight(1f))
+                PageNumberField(sleepH, { sleepH = it.take(2) }, "", "h", sleepValue == null, Modifier.weight(1f))
+                PageNumberField(sleepM, { sleepM = it.take(2) }, "", "min", sleepValue == null, Modifier.weight(1f))
             }
         }
-        NumberField(active, { active = it.take(2) }, "Active hours", "of 24", activeValue == null)
+        PageNumberField(active, { active = it.take(2) }, "Active hours", "of 24", activeValue == null)
         PageNote("An active hour is one with at least 250 steps.")
         WorkoutGoalField(workouts) { workouts = it }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

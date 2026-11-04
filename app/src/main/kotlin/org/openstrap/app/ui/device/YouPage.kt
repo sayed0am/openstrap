@@ -26,6 +26,8 @@ import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.update.UpdateCopy
 import org.openstrap.app.ui.glow.PageRow
+import org.openstrap.app.ui.glow.PanelLabelInset
+import org.openstrap.app.ui.glow.SectionLabel
 import org.openstrap.app.ui.glow.PageRows
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -78,12 +80,6 @@ fun healthConnectSummary(
             if (availability == HcAvailability.INSTALLABLE) "Stopped. Install Health Connect" else "Stopped. Not available on this phone"
         else -> "Off"
     }
-
-/** A small heading over a panel of rows, so two panels never sit back to back. */
-@Composable
-internal fun PanelHeading(text: String) {
-    Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, modifier = Modifier.padding(start = 18.dp, top = 4.dp))
-}
 
 /**
  * The You page (spec 3.4), from the avatar on any tab: who you are and what happens to your data, things visited
@@ -146,7 +142,7 @@ fun YouPage(
                 )
             }
         }
-        item { PanelHeading("Your data") }
+        item { SectionLabel("Your data", Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
                 // Read again whenever either changes, so "today" and "yesterday" follow the last one.
@@ -163,7 +159,7 @@ fun YouPage(
                 )
             }
         }
-        item { PanelHeading("Help") }
+        item { SectionLabel("Help", Modifier.padding(top = 4.dp), PanelLabelInset) }
         item {
             PageRows {
                 val now = remember(updates) { System.currentTimeMillis() / 1000 }

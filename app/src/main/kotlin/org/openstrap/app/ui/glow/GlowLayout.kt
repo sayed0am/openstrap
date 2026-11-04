@@ -483,15 +483,21 @@ data class TitleTag(val text: String, val onClick: (() -> Unit)? = null)
 @Composable
 internal fun TitleMark(marker: String?, tag: TitleTag?, modifier: Modifier = Modifier) {
     if (marker != null) StateMarker(marker, modifier)
-    else if (tag != null) {
-        val shape = RoundedCornerShape(50)
-        val onClick = tag.onClick
-        Text(
-            tag.text,
-            modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
-                .let { if (onClick != null) it.clickable(onClickLabel = "About ${tag.text.lowercase()}", onClick = onClick) else it }
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
-        )
-    }
+    else if (tag != null) OutlineTag(tag.text, modifier, tag.onClick)
+}
+
+/**
+ * A quiet outlined label in Caption, fully round: a card title's [TitleTag], "Auto-detected" beside a workout's sport.
+ * With [onClick], tapping it explains it.
+ */
+@Composable
+internal fun OutlineTag(text: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val shape = RoundedCornerShape(50)
+    Text(
+        text,
+        modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
+            .let { if (onClick != null) it.clickable(onClickLabel = "About ${text.lowercase()}", onClick = onClick) else it }
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
+    )
 }

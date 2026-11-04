@@ -39,6 +39,7 @@ import androidx.compose.ui.layout.FirstBaseline
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -54,6 +55,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -63,6 +65,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.ui.components.GlassSheet
 import org.openstrap.app.ui.components.pressClickable
@@ -178,12 +182,12 @@ fun PageHeader(
 
 /**
  * A grouped panel for free content (text, fields, buttons): a [QuietPanel] with an optional [title] row and [note]
- * on its right ([PanelTitle]).
+ * on its right ([GlowHeader]).
  */
 @Composable
 fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String? = null, content: @Composable ColumnScope.() -> Unit) =
     QuietPanel(modifier) {
-        if (title != null) PanelTitle(title, note)
+        if (title != null) GlowHeader(title, note)
         content()
     }
 
@@ -236,12 +240,7 @@ fun PageRow(
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (icon != null) {
-            Box(Modifier.width(20.dp), contentAlignment = Alignment.Center) {
-                Icon(icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
-            }
-            Spacer(Modifier.width(14.dp))
-        }
+        if (icon != null) RowIcon(icon)
         if (below) Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             if (dot) Row(verticalAlignment = Alignment.CenterVertically) {
                 RowName(title, titleColor)
@@ -257,6 +256,14 @@ fun PageRow(
             Spacer(Modifier.width(RowCaretGap))
             TapCaret(ROW_CARET_ALPHA)
         }
+    }
+}
+
+/** A settings row's [icon], quiet on the left and centred on the row, with the gap to its title after it. */
+@Composable
+private fun RowIcon(icon: ImageVector) {
+    Box(Modifier.padding(end = 14.dp).width(20.dp), contentAlignment = Alignment.Center) {
+        Icon(icon, null, Modifier.size(20.dp), tint = Color.White.copy(alpha = 0.7f))
     }
 }
 
@@ -397,21 +404,35 @@ fun <T> PageMenuRow(
 private val MenuShape = RoundedCornerShape(18.dp)
 private val MenuSurface = Color(0xFF232326)
 
-/** A row with a switch: the [title], an optional [subtitle] under it, and the switch on the right. */
+/**
+ * A row with a switch: the [title], an optional [subtitle] under it, and the switch on the right. A tap anywhere on
+ * the row flips it, so a long name is as easy to hit as the switch. [icon] sits on the left as on a [PageRow].
+ */
 @Composable
-fun PageSwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit, divider: Boolean = true, enabled: Boolean = true) {
+fun PageSwitchRow(
+    title: String,
+    subtitle: String?,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    divider: Boolean = true,
+    enabled: Boolean = true,
+    icon: ImageVector? = null,
+) {
     Row(
         Modifier.fillMaxWidth()
+            .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
             .topHairline(divider, Hairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (icon != null) RowIcon(icon)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             RowName(title)
             if (subtitle != null) Text(subtitle, color = RowValueColor, style = GlowType.secondary)
         }
         Spacer(Modifier.width(12.dp))
-        GlowSwitch(checked, onChange, enabled = enabled)
+        // The row is the switch to a screen reader, so the knob isn't read a second time.
+        GlowSwitch(checked, onChange, Modifier.clearAndSetSemantics {}, enabled = enabled)
     }
 }
 
@@ -563,18 +584,26 @@ fun PageProgress(fraction: Float? = null, modifier: Modifier = Modifier.fillMaxW
 
 /**
  * A sheet over the page (spec 2.5, sheets): the glass sheet with its handle, the [title] as a card title, an
- * optional [note] under it, then [content], 20 dp from the edges. It scrolls when taller than most of the screen.
+ * optional [note] under it, then [content], [side] from the edges (narrower for a sheet of grouped lists, which
+ * bring their own inset). It scrolls when taller than most of the screen. Without a [title] the content starts at
+ * the top, for a sheet that heads itself (the calendar's month, the info sheet's name).
  */
 @Composable
-fun PageSheet(onDismiss: () -> Unit, title: String, note: String? = null, content: @Composable ColumnScope.() -> Unit) {
+fun PageSheet(
+    onDismiss: () -> Unit,
+    title: String? = null,
+    note: String? = null,
+    side: Dp = 20.dp,
+    content: @Composable ColumnScope.() -> Unit,
+) {
     val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.88f).dp
     GlassSheet(onDismiss) {
         Column(
             Modifier.fillMaxWidth().heightIn(max = maxHeight).verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp).navigationBarsPadding().padding(top = 4.dp, bottom = 20.dp),
+                .padding(horizontal = side).navigationBarsPadding().padding(top = 4.dp, bottom = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            if (title != null) Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 if (note != null) Text(note, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
             }
@@ -640,9 +669,11 @@ fun PageChip(
 }
 
 /**
- * A pill that names a choice: an [icon] in [tint] or a [dot], the [label] in Body, and a [caret] when tapping opens a
- * list. [height] tall on [surface] (the Control surface), with a [hairline] on a quiet card. Without [onClick] it's
- * only a label, like the live screen's sport. A long label ends in an ellipsis and leaves the caret its room.
+ * A pill that names a choice or does one thing: an [icon] in [tint] or a [dot], the [label] in [style] (Body), and a
+ * [caret] when tapping opens a list. [height] tall on [surface] (the Control surface), with a [hairline] on a quiet
+ * card. Without [onClick] it's only a label, like the live screen's sport or a summary's earned best. A long label
+ * ends in an ellipsis and leaves the caret its room. Small pills (Done over a summary, the earned chips) take
+ * Secondary.
  */
 @Composable
 internal fun IconPill(
@@ -657,6 +688,7 @@ internal fun IconPill(
     surface: Color = ControlSurface,
     hairline: Boolean = false,
     description: String? = null,
+    style: TextStyle = GlowType.body,
 ) {
     Row(
         modifier.height(height).clip(CircleShape).background(surface)
@@ -674,12 +706,117 @@ internal fun IconPill(
         if (dot != null) Box(Modifier.size(8.dp).background(dot, CircleShape))
         // Weighted only beside a caret, so a squeezed label gives way to it; a weight in a scrolling row would be zero wide.
         Text(
-            label, if (caret) Modifier.weight(1f, fill = false) else Modifier, color = Color.White, style = GlowType.body, maxLines = 1,
+            label, if (caret) Modifier.weight(1f, fill = false) else Modifier, color = Color.White, style = style, maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         if (caret) Icon(AppIcons.CaretDown, null, Modifier.size(14.dp), tint = Color.White)
     }
 }
+
+/**
+ * A row of choices on a faint pill, the chosen one on a soft white pill: Female or Male, Day to Year, a route on or
+ * off, how you feel. [selected] -1 leaves none chosen. [role] is what each choice is to a screen reader (a tab for
+ * the ranges that switch a detail's chart).
+ */
+// Every caller builds its labels in place, so a stable list type wouldn't let this skip any more often.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+internal fun GlowSegments(
+    options: List<String>,
+    selected: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    role: Role = Role.RadioButton,
+) {
+    Row(modifier.fillMaxWidth().clip(CircleShape).background(Color.White.copy(alpha = 0.06f)).padding(4.dp)) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.weight(1f).clip(CircleShape)
+                    .background(if (on) Color.White.copy(alpha = 0.16f) else Color.Transparent)
+                    .pressClickable({ onSelect(i) }, CircleShape, scale = 0.97f)
+                    .semantics { this.role = role; this.selected = on }
+                    .padding(vertical = 9.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(label, color = if (on) Color.White else Color.White.copy(alpha = 0.6f), style = GlowType.body, maxLines = 1)
+            }
+        }
+    }
+}
+
+/**
+ * A small heading in Secondary over what it names: a panel of rows (so two panels never sit back to back), a row of
+ * chips, what a workout earned. [inset] lines it up with what's under it: a panel's rows sit [PanelLabelInset] in.
+ */
+@Composable
+fun SectionLabel(text: String, modifier: Modifier = Modifier, inset: Dp = 4.dp) {
+    Text(
+        text, modifier.padding(start = inset), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+        maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
+}
+
+/** How far a [SectionLabel] over a panel of rows sits in, near the rows' own inset. */
+val PanelLabelInset = 18.dp
+
+/**
+ * A status in a few words with a coloured dot (spec 2.1, the strap's state): "Strap ready, 72 bpm", "GPS good". The
+ * dot leads, or follows the words where the line is set flush right ([dotAfter], the live screen's corner).
+ */
+@Composable
+internal fun StatusDot(text: String, dot: Color, modifier: Modifier = Modifier, dotAfter: Boolean = false) {
+    Row(modifier, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (!dotAfter) Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
+        Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+        if (dotAfter) Canvas(Modifier.size(6.dp)) { drawCircle(dot) }
+    }
+}
+
+/**
+ * A secondary choice: a tile on the Control surface (spec 2.4) with a [caption] in Secondary over the [label] in Body,
+ * and the tap caret at its end, so it reads as something that opens. As wide as it's given.
+ */
+@Composable
+fun OptionButton(caption: String, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier.fillMaxWidth().clip(GlowLayout.TileShape).background(ControlSurface).pressClickable(onClick, GlowLayout.TileShape)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(caption, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+            Text(label, color = Color.White, style = GlowType.body)
+        }
+        Spacer(Modifier.width(RowCaretGap))
+        TapCaret(ROW_CARET_ALPHA)
+    }
+}
+
+/**
+ * A [PageField] for a whole number, or a [decimal] one: only digits (and a point) get in, at most five, and the
+ * keyboard is the number pad. As wide as it's given. An empty [label] leaves the field unlabelled, for a pair like
+ * hours and minutes.
+ */
+@Composable
+internal fun PageNumberField(
+    value: String,
+    onChange: (String) -> Unit,
+    label: String,
+    unit: String,
+    error: Boolean,
+    modifier: Modifier = Modifier,
+    decimal: Boolean = false,
+) {
+    PageField(
+        value, { v -> onChange(v.filter { it.isDigit() || (decimal && (it == '.' || it == ',')) }.take(NUMBER_FIELD_LENGTH)) },
+        label.ifEmpty { null }, modifier.fillMaxWidth(), unit = unit, error = error,
+        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
+    )
+}
+
+/** The most characters a [PageNumberField] takes: a weight like 158.7, or five digits. */
+private const val NUMBER_FIELD_LENGTH = 5
 
 /** A secondary line of explanation on a page. */
 @Composable

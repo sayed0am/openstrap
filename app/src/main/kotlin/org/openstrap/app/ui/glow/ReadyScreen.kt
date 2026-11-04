@@ -3,20 +3,16 @@ package org.openstrap.app.ui.glow
 import android.content.Intent
 import android.provider.Settings
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -340,14 +336,9 @@ internal fun MinusPlus(
 /** The strap in one line with its dot, on Choose: "Strap ready, 72 bpm". */
 @Composable
 internal fun StrapLine(connection: ConnectionState, liveHeartRate: Int?) {
-    Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-        Canvas(Modifier.size(6.dp)) { drawCircle(if (connection is ConnectionState.Connected) TrendGood else TrendBad) }
-        Spacer(Modifier.width(8.dp))
-        Text(StartCopy.strapLine(connection, liveHeartRate), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
-    }
+    StatusDot(
+        StartCopy.strapLine(connection, liveHeartRate), if (connection is ConnectionState.Connected) TrendGood else TrendBad,
+        Modifier.padding(horizontal = 4.dp),
+    )
 }
 
-/** The label over a row of chips, in Caption. */
-@Composable
-internal fun ChipLabel(text: String) =
-    Text(text, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, modifier = Modifier.padding(start = 4.dp))
