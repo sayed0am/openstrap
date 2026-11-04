@@ -48,7 +48,7 @@
     <string name="you_firmware_size">Size</string>
     <!-- The image's size. The number is already formatted, "1,234,567". -->
     <plurals name="you_firmware_bytes">
-        <item quantity="one"><xliff:g id="bytes" example="1,234,567">%1$s</xliff:g> bytes</item>
+        <item quantity="one"><xliff:g id="bytes" example="1,234,567">%1$s</xliff:g> byte</item>
         <item quantity="other"><xliff:g id="bytes" example="1,234,567">%1$s</xliff:g> bytes</item>
     </plurals>
     <string name="you_firmware_signed_for">Signed for</string>
@@ -87,7 +87,7 @@
     <string name="you_firmware_download_failed">Download failed</string>
     <string name="you_firmware_install_failed">Install failed</string>
     <plurals name="you_firmware_file_size">
-        <item quantity="one">That file is <xliff:g id="bytes" example="512">%1$d</xliff:g> bytes, which isn\'t a plausible firmware image.</item>
+        <item quantity="one">That file is <xliff:g id="bytes" example="512">%1$d</xliff:g> byte, which isn\'t a plausible firmware image.</item>
         <item quantity="other">That file is <xliff:g id="bytes" example="512">%1$d</xliff:g> bytes, which isn\'t a plausible firmware image.</item>
     </plurals>
     <!-- Warnings to read before installing a file. -->
@@ -156,8 +156,8 @@
     <string name="you_zepp_not_found">No Helio Strap on this account</string>
     <string name="you_zepp_account_empty">This account has no devices. Link the strap in the Zepp app first. If you did, it\'s on another account: sign in with the email added to the account you use in the Zepp app.</string>
     <plurals name="you_zepp_account_other_devices">
-        <item quantity="one">This account has <xliff:g id="count" example="2">%1$d</xliff:g> device(s), but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
-        <item quantity="other">This account has <xliff:g id="count" example="2">%1$d</xliff:g> device(s), but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
+        <item quantity="one">This account has <xliff:g id="count" example="2">%1$d</xliff:g> device, but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
+        <item quantity="other">This account has <xliff:g id="count" example="2">%1$d</xliff:g> devices, but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
     </plurals>
     <string name="you_zepp_key_missing">Not on the account</string>
     <!-- Labels beside the found strap's details. -->

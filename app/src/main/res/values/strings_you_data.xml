@@ -29,19 +29,19 @@
 
     <!-- A message after a restore: how many records came back, and the settings. The number is already formatted, "1,234". -->
     <plurals name="you_backup_restored_records_settings">
-        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records and your settings.</item>
+        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> record and your settings.</item>
         <item quantity="other">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records and your settings.</item>
     </plurals>
     <!-- A message after a restore: how many records came back. The number is already formatted, "1,234". -->
     <plurals name="you_backup_restored_records">
-        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records.</item>
+        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> record.</item>
         <item quantity="other">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records.</item>
     </plurals>
     <string name="you_backup_restored_settings">Restored your settings. Your records were already here.</string>
     <string name="you_backup_restored_nothing">Nothing to restore. It\'s all already here.</string>
     <!-- Added after the restore message when some rows of the zip were damaged. The number is already formatted, "3". -->
     <plurals name="you_backup_restored_skipped">
-        <item quantity="one"><xliff:g id="count" example="3">%1$s</xliff:g> rows couldn\'t be read.</item>
+        <item quantity="one"><xliff:g id="count" example="3">%1$s</xliff:g> row couldn\'t be read.</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$s</xliff:g> rows couldn\'t be read.</item>
     </plurals>
     <!-- The restore message, then the damaged rows. Both are whole sentences, "Restored 12 records. 3 rows couldn't be read." -->
@@ -109,16 +109,16 @@
     <string name="you_hc_restored_none">Health Connect has no OpenStrap data to restore.</string>
     <!-- The number is already formatted, "1,234". -->
     <plurals name="you_hc_restored">
-        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records from Health Connect.</item>
+        <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> record from Health Connect.</item>
         <item quantity="other">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records from Health Connect.</item>
     </plurals>
     <plurals name="you_hc_wrote">
-        <item quantity="one">Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
+        <item quantity="one">Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
         <item quantity="other">Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
     </plurals>
     <!-- After the auto sync switch is turned on, which copies the last 30 days at once. -->
     <plurals name="you_hc_auto_wrote">
-        <item quantity="one">Auto sync is on. Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
+        <item quantity="one">Auto sync is on. Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
         <item quantity="other">Auto sync is on. Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
     </plurals>
     <!-- What failed, before the reason (you_error_hc). -->

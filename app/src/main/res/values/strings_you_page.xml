@@ -42,12 +42,12 @@
     <string name="you_section_help">Help</string>
     <!-- Under the Goals and bests row: the weekly workout goal, then what else the page holds. -->
     <plurals name="you_goals_and_bests_line">
-        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> workouts a week, personal bests and badges</item>
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> workout a week, personal bests and badges</item>
         <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> workouts a week, personal bests and badges</item>
     </plurals>
     <!-- Under the Diagnostics row: how many lines the log holds. -->
     <plurals name="you_diagnostics_line">
-        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> lines, for bug reports</item>
+        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> line, for bug reports</item>
         <item quantity="other"><xliff:g id="count" example="250">%1$d</xliff:g> lines, for bug reports</item>
     </plurals>
     <!-- Centred at the foot of the You page: the version running. -->
@@ -57,14 +57,14 @@
     <string name="you_goals_line"><xliff:g id="steps" example="8,000 steps">%1$s</xliff:g>, <xliff:g id="calories" example="450 active kcal">%2$s</xliff:g>, <xliff:g id="hours" example="8 active hours">%3$s</xliff:g></string>
     <!-- The steps goal in the Goals row. The number is already formatted, "8,000". -->
     <plurals name="you_goals_steps">
-        <item quantity="one"><xliff:g id="steps" example="8,000">%1$s</xliff:g> steps</item>
+        <item quantity="one"><xliff:g id="steps" example="8,000">%1$s</xliff:g> step</item>
         <item quantity="other"><xliff:g id="steps" example="8,000">%1$s</xliff:g> steps</item>
     </plurals>
     <!-- The calorie goal, in the Goals row and the goals sheet. The number is already formatted, "450". -->
     <string name="you_goals_active_kcal"><xliff:g id="calories" example="450">%1$s</xliff:g> active kcal</string>
     <!-- The active hours goal in the Goals row. -->
     <plurals name="you_goals_active_hours">
-        <item quantity="one"><xliff:g id="hours" example="8">%1$d</xliff:g> active hours</item>
+        <item quantity="one"><xliff:g id="hours" example="8">%1$d</xliff:g> active hour</item>
         <item quantity="other"><xliff:g id="hours" example="8">%1$d</xliff:g> active hours</item>
     </plurals>
     <!-- The Sleep goal row: the goal, then the sleep need Recovery uses. Both are lengths of time, "7 h 30" and "8 h". -->
@@ -74,7 +74,7 @@
     <string name="you_profile_empty">Add age and sex for accurate effort and recovery</string>
     <!-- The age in the Profile row, "34 years, male, 72 kg, 178 cm". -->
     <plurals name="you_profile_age">
-        <item quantity="one"><xliff:g id="age" example="34">%1$d</xliff:g> years</item>
+        <item quantity="one"><xliff:g id="age" example="34">%1$d</xliff:g> year</item>
         <item quantity="other"><xliff:g id="age" example="34">%1$d</xliff:g> years</item>
     </plurals>
     <!-- The sex in the Profile row, in the middle of the line, so lower case in English. -->
@@ -188,7 +188,7 @@
     <string name="you_diagnostics_log">Strap log</string>
     <!-- Beside the log's title. -->
     <plurals name="you_diagnostics_lines">
-        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> lines</item>
+        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> line</item>
         <item quantity="other"><xliff:g id="count" example="250">%1$d</xliff:g> lines</item>
     </plurals>
     <string name="you_diagnostics_empty">No events yet.</string>
