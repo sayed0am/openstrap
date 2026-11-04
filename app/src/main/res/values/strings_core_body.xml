@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Body signals and the morning check-in: the body-signal alert's notification and card (data/BodySignalsCopy.kt), the
+  signals named under Recovery (data/BodySignals.kt) and the check-in's words (data/CheckIn.kt). The alert's wording
+  follows wellness guidance: never name a disease, never call a value abnormal, never urge a clinical step beyond
+  saying a professional "may be helpful". Keep that in every language.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The body-signal notification's title. One line. -->
+    <string name="core_body_title">Some body signals are off your normal</string>
+    <!-- The same, shorter, where room is tight. -->
+    <string name="core_body_short">Some signals are off your normal</string>
+    <!-- Likely everyday causes, a sentence that follows the alert's first sentence. -->
+    <string name="core_body_causes">This can happen with heavy training, alcohol, travel, poor sleep, or when your body is fighting something off.</string>
+    <!-- A gentle suggestion after the causes. -->
+    <string name="core_body_advice">An easier day may help. If you feel unwell, checking in with a healthcare professional may be helpful.</string>
+    <!-- The wellness disclaimer, closing the alert and some info sheets. -->
+    <string name="core_body_disclaimer">This is a wellness estimate, not a medical assessment.</string>
+
+    <!-- The alert's first sentence when two or more signals are off, for two nights or more. The signals are a list of the names below, "resting heart rate, skin temperature". -->
+    <string name="core_body_push_several_again">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) are outside your usual range for the second night.</string>
+    <!-- The alert's first sentence when two or more signals are off, last night only. -->
+    <string name="core_body_push_several_once">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) are outside your usual range last night.</string>
+    <!-- The alert's first sentence when one signal is off, for two nights or more. The signal is one of the names below. -->
+    <string name="core_body_push_one_again">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> is outside your usual range for the second night.</string>
+    <!-- The alert's first sentence when one signal is off, last night only. -->
+    <string name="core_body_push_one_once">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> is outside your usual range last night.</string>
+
+    <!-- A signal family's name, lower case, inside the alert's sentence. -->
+    <string name="core_body_family_cardiac">resting heart rate</string>
+    <!-- A signal family's name, lower case, inside the alert's sentence. -->
+    <string name="core_body_family_thermal">skin temperature</string>
+    <!-- A signal family's name, lower case, inside the alert's sentence. -->
+    <string name="core_body_family_respiratory">breathing rate</string>
+
+    <!-- A signal that is off, in plain words, lower case, listed under Recovery. -->
+    <string name="core_body_signal_rhr">resting heart rate up <xliff:g id="bpm" example="6">%1$d</xliff:g> bpm</string>
+    <!-- A signal that is off, in plain words, lower case. -->
+    <string name="core_body_signal_temperature">skin temperature up from your usual</string>
+    <!-- A signal that is off, in plain words, lower case. The number is breaths a minute, "1.4". -->
+    <string name="core_body_signal_breathing">breathing rate up <xliff:g id="breaths" example="1.4">%1$s</xliff:g>/min</string>
+    <!-- A signal that is off, in plain words. HRV is heart rate variability. -->
+    <string name="core_body_signal_hrv">HRV well below your normal</string>
+
+    <!-- The morning check-in scale, 1 of 5, beside how you said you feel. One or two words. -->
+    <string name="core_checkin_poor">Poor</string>
+    <!-- The check-in scale, 2 of 5. -->
+    <string name="core_checkin_low">Low</string>
+    <!-- The check-in scale, 3 of 5. -->
+    <string name="core_checkin_ok">OK</string>
+    <!-- The check-in scale, 4 of 5. -->
+    <string name="core_checkin_good">Good</string>
+    <!-- The check-in scale, 5 of 5. -->
+    <string name="core_checkin_great">Great</string>
+</resources>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Strength and fitness: the built in lifts offered when logging a strength set (data/Strength.kt), and the usual
+  activity levels the VO2 max estimate asks about in the profile (data/Vo2max.kt). A lift picked from the list is
+  saved with the set in the language it was picked in.
+-->
+<resources>
+    <!-- A built in lift in the exercise list while logging a set. A short name. -->
+    <string name="core_strength_bench_press">Bench press</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_squat">Squat</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_deadlift">Deadlift</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_overhead_press">Overhead press</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_barbell_row">Barbell row</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_pull_up">Pull up</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_lat_pulldown">Lat pulldown</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_romanian_deadlift">Romanian deadlift</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_hip_thrust">Hip thrust</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_leg_press">Leg press</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_lunge">Lunge</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_dumbbell_curl">Dumbbell curl</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_triceps_extension">Triceps extension</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_push_up">Push up</string>
+    <!-- A built in lift. -->
+    <string name="core_strength_dips">Dips</string>
+    <!-- A built in lift, held rather than lifted. -->
+    <string name="core_strength_plank">Plank</string>
+
+    <!-- The profile's usual activity level, 1 of 5, under the level picker. One or two lines. -->
+    <string name="core_vo2_activity_inactive">Inactive, or little activity beyond usual daily activities</string>
+    <!-- The usual activity level, 2 of 5. -->
+    <string name="core_vo2_activity_light">Light activity, at least 10 minutes at a time, 5 or more days a week</string>
+    <!-- The usual activity level, 3 of 5. -->
+    <string name="core_vo2_activity_aerobic_low">Aerobic exercise 20 to 60 minutes a week</string>
+    <!-- The usual activity level, 4 of 5. -->
+    <string name="core_vo2_activity_aerobic_mid">Aerobic exercise 1 to 3 hours a week</string>
+    <!-- The usual activity level, 5 of 5. -->
+    <string name="core_vo2_activity_aerobic_high">Aerobic exercise over 3 hours a week</string>
+</resources>

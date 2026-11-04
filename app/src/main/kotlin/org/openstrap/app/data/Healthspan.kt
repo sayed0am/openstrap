@@ -1,6 +1,9 @@
 package org.openstrap.app.data
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.i18n.Strings
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.ln
@@ -211,13 +214,16 @@ object Healthspan {
     // Combining them (§1, §3.7, §5)
     // ------------------------------------------------------------------------------------------------
 
-    enum class Habit(val label: String, val fitness: Boolean) {
-        Strength("Strength training", false),
-        Vo2max("Fitness (VO2 max)", true),
-        Steps("Steps", true),
-        Regularity("Sleep regularity", false),
-        RestingHr("Resting heart rate", true),
-        TimeAsleep("Time asleep", false),
+    enum class Habit(@StringRes private val labelId: Int, val fitness: Boolean) {
+        Strength(R.string.core_healthspan_habit_strength, false),
+        Vo2max(R.string.core_healthspan_habit_vo2max, true),
+        Steps(R.string.core_healthspan_habit_steps, true),
+        Regularity(R.string.core_healthspan_habit_regularity, false),
+        RestingHr(R.string.core_healthspan_habit_resting_hr, true),
+        TimeAsleep(R.string.core_healthspan_habit_time_asleep, false),
+        ;
+
+        val label: String get() = Strings.app.get(labelId)
     }
 
     /** One window's averaged inputs; null where there isn't enough data for that habit, which scores as typical. */
@@ -319,16 +325,19 @@ object Healthspan {
      * Why there is no estimate, in the order checked. [profile]: the user can fix it in their profile. [learning]: there
      * isn't enough data yet, so the card starts at the user's own age.
      */
-    enum class Withheld(val reason: String, val profile: Boolean = false, val learning: Boolean = false) {
-        NoAge("Add your birth year in your profile to start your estimate.", profile = true),
-        Age("Habit Age is for ages 20 to 79."),
-        Sex("Add your sex in your profile: the typical values differ for women and men.", profile = true),
-        Medication("Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn't reflect fitness then."),
-        Learning("Needs 30 days of wear before a first estimate.", learning = true),
-        RestingHr("Needs more nights of resting heart rate: about half the nights.", learning = true),
-        Steps("Needs more days worn for 10 hours or more: about half the days.", learning = true),
-        Regularity("Needs more weeks of sleep regularity.", learning = true),
-        Sleep("Needs more nights of sleep: about half the nights.", learning = true),
+    enum class Withheld(@StringRes private val reasonId: Int, val profile: Boolean = false, val learning: Boolean = false) {
+        NoAge(R.string.core_healthspan_withheld_no_age, profile = true),
+        Age(R.string.core_healthspan_withheld_age),
+        Sex(R.string.core_healthspan_withheld_sex, profile = true),
+        Medication(R.string.core_healthspan_withheld_medication),
+        Learning(R.string.core_healthspan_withheld_learning, learning = true),
+        RestingHr(R.string.core_healthspan_withheld_resting_hr, learning = true),
+        Steps(R.string.core_healthspan_withheld_steps, learning = true),
+        Regularity(R.string.core_healthspan_withheld_regularity, learning = true),
+        Sleep(R.string.core_healthspan_withheld_sleep, learning = true),
+        ;
+
+        val reason: String get() = Strings.app.get(reasonId)
     }
 
     /**

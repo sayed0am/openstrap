@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+
 /**
  * Strength training as sets and rest rather than distance, worked out in pure Kotlin like [Recovery]. Rest ends at
  * the chosen time or earlier once heart rate drops below a chosen level, whichever comes first (Hevy's rest timer is
@@ -28,9 +31,15 @@ object Strength {
     val SETS = 1..10
 
     /** The exercise list's built in lifts (workouts spec 11: a short list plus typed names), after your own. */
-    val COMMON_LIFTS = listOf(
-        "Bench press", "Squat", "Deadlift", "Overhead press", "Barbell row", "Pull up", "Lat pulldown", "Romanian deadlift",
-        "Hip thrust", "Leg press", "Lunge", "Dumbbell curl", "Triceps extension", "Push up", "Dips", "Plank",
+    val COMMON_LIFTS: List<String> get() = LIFT_IDS.map(Strings.app::get)
+
+    private val LIFT_IDS = listOf(
+        R.string.core_strength_bench_press, R.string.core_strength_squat, R.string.core_strength_deadlift,
+        R.string.core_strength_overhead_press, R.string.core_strength_barbell_row, R.string.core_strength_pull_up,
+        R.string.core_strength_lat_pulldown, R.string.core_strength_romanian_deadlift, R.string.core_strength_hip_thrust,
+        R.string.core_strength_leg_press, R.string.core_strength_lunge, R.string.core_strength_dumbbell_curl,
+        R.string.core_strength_triceps_extension, R.string.core_strength_push_up, R.string.core_strength_dips,
+        R.string.core_strength_plank,
     )
 
     /** The exercise list: yours, last used first ([used]), then the built in lifts you haven't used. */

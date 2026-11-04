@@ -1,8 +1,10 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.R
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Workouts
+import org.openstrap.app.i18n.Strings
 import java.util.Locale
 
 /*
@@ -42,59 +44,83 @@ object WorkoutCopy {
     data class ReadyHero(val title: String, val line: String, val live: Boolean)
 
     /** The GPS row while the phone's location is off or not allowed. Start still works, without GPS. */
-    const val LOCATION_OFF = "Location is off"
-    const val LOCATION_OFF_NOTE = "Turn it on for distance and the map, or start without it."
+    val LOCATION_OFF: String get() = Strings.app.get(R.string.core_workout_location_off)
+    val LOCATION_OFF_NOTE: String get() = Strings.app.get(R.string.core_workout_location_off_note)
 
     /** Under Save a map of my run. */
-    fun routeNote(on: Boolean): String = if (on) "On. Saved on this phone for the map." else "Off. Only the totals are kept."
+    fun routeNote(on: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (on) R.string.core_workout_route_on else R.string.core_workout_route_off)
 
     /** Start, naming the sport: "Start run", "Start HIIT", and "Start workout" for Other. */
-    fun startLabel(sportType: Int): String = when (val name = Workouts.shortName(sportType)) {
-        "Other" -> "Start workout"
-        else -> "Start " + if (name.any { it.isLowerCase() }) name.lowercase() else name
+    fun startLabel(sportType: Int, strings: Strings = Strings.app): String =
+        sportWord(sportType, strings)?.let { strings.format(R.string.core_workout_start_sport, it) }
+            ?: strings.get(R.string.core_workout_start_workout)
+
+    /**
+     * The sport as Start and Open name it, null for Other: lower case unless the name is all capitals ("run", "HIIT").
+     * The lower casing is English's: a language whose names keep their capital can write them so in its short names.
+     */
+    private fun sportWord(sportType: Int, strings: Strings): String? {
+        val name = Workouts.shortName(sportType, strings)
+        if (name == strings.get(R.string.core_workouts_short_other)) return null
+        return if (name.any { it.isLowerCase() }) name.lowercase() else name
     }
 
     /** "Set 3 of 5", or "Set 3" with no plan. */
-    fun setOf(number: Int, target: Int?): String = "Set $number" + (target?.let { " of $it" } ?: "")
+    fun setOf(number: Int, target: Int?, strings: Strings = Strings.app): String =
+        target?.let { strings.format(R.string.core_workout_set_of, number, it) } ?: strings.format(R.string.core_workout_set, number)
 
     /** What ends strength's rest, under its countdown. */
-    fun restRule(belowBpm: Int?): String =
-        if (belowBpm == null) "Rest ends when the time is up." else "Rest ends when the time is up, or sooner once you stay under $belowBpm."
+    fun restRule(belowBpm: Int?, strings: Strings = Strings.app): String =
+        if (belowBpm == null) {
+            strings.get(R.string.core_workout_rest_rule)
+        } else {
+            strings.format(R.string.core_workout_rest_rule_below, belowBpm)
+        }
 
     /** A set done, as the live screen lists it: "10 × 60 kg, 0:51, peak 148", or without the log "0:51, peak 148". */
-    fun setLine(s: org.openstrap.app.data.db.AppWorkoutSet, peak: Int?): String = listOfNotNull(
-        s.reps?.let { r -> s.weightKg?.let { "$r × ${org.openstrap.app.data.Strength.kgText(it)} kg" } ?: "$r reps" },
+    fun setLine(s: org.openstrap.app.data.db.AppWorkoutSet, peak: Int?, strings: Strings = Strings.app): String = listOfNotNull(
+        s.reps?.let { r ->
+            s.weightKg?.let { strings.format(R.string.core_workout_set_weight, r, org.openstrap.app.data.Strength.kgText(it)) }
+                ?: strings.plural(R.plurals.core_workout_set_reps, r, r)
+        },
         s.end?.let { Units.workoutClock(it - s.start) },
-        peak?.let { "peak $it" },
-    ).joinToString(", ")
+        peak?.let { strings.format(R.string.core_workout_set_peak, it) },
+    ).reduceOrNull { a, b -> strings.format(R.string.core_workout_list, a, b) }.orEmpty()
 
     /** The Today hero's way back to the live screen, naming the sport: "Open run", "Open workout" for Other. */
-    fun openLabel(sportType: Int): String = "Open" + startLabel(sportType).removePrefix("Start")
+    fun openLabel(sportType: Int, strings: Strings = Strings.app): String =
+        sportWord(sportType, strings)?.let { strings.format(R.string.core_workout_open_sport, it) }
+            ?: strings.get(R.string.core_workout_open_workout)
 
     /** "Zone 3, aerobic" as its two parts ([WorkoutWords.zoneTitle]). */
-    fun zoneTitle(zone: Int): Pair<String, String> = WorkoutWords.zoneTitle(zone)
+    fun zoneTitle(zone: Int, strings: Strings = Strings.app): Pair<String, String> = WorkoutWords.zoneTitle(zone, strings)
 
     /** [zoneTitle] as one line: "Zone 3, aerobic" ([WorkoutWords.zoneLine]). */
-    fun zoneLine(zone: Int): String = WorkoutWords.zoneLine(zone)
+    fun zoneLine(zone: Int, strings: Strings = Strings.app): String = WorkoutWords.zoneLine(zone, strings)
 
     /** What a live screen says where the heart rate goes and there's none, the same words on every screen and the notification. */
-    fun noHeartRate(paused: Boolean, connected: Boolean = true): String = WorkoutWords.noHeartRate(paused, connected)
+    fun noHeartRate(paused: Boolean, connected: Boolean = true, strings: Strings = Strings.app): String =
+        WorkoutWords.noHeartRate(paused, connected, strings)
 
     /** Where the live zone goes and there's none: none while paused, or none read yet. */
-    fun noZone(paused: Boolean): String = if (paused) "No zone while paused" else "No zone yet"
+    fun noZone(paused: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (paused) R.string.core_workout_no_zone_paused else R.string.core_workout_no_zone)
 
     /** The live screen's note while the strap is away ([WorkoutWords.STRAP_GONE_NOTE]). */
-    const val STRAP_GONE_NOTE = WorkoutWords.STRAP_GONE_NOTE
+    val STRAP_GONE_NOTE: String get() = WorkoutWords.STRAP_GONE_NOTE
 
     /** "9 min in this zone" ([WorkoutWords.zoneTime]). */
-    fun zoneTime(seconds: Int): String = WorkoutWords.zoneTime(seconds)
+    fun zoneTime(seconds: Int, strings: Strings = Strings.app): String = WorkoutWords.zoneTime(seconds, strings)
 
     /**
      * The line for the latest whole kilometre in [splits], for [SPLIT_LINE_S] after it ended, else null: "Km 3 in 5:42,
      * avg 152". The average is the readings in [history] (time, bpm) over that kilometre, which starts where the one
      * before ended, or at [firstT] for the first; without readings the line leaves it out.
      */
-    fun splitLine(splits: List<Route.Split>, history: List<Pair<Long, Int>>, firstT: Long?, now: Long): SplitLine? {
+    fun splitLine(
+        splits: List<Route.Split>, history: List<Pair<Long, Int>>, firstT: Long?, now: Long, strings: Strings = Strings.app,
+    ): SplitLine? {
         val i = splits.indexOfLast { it.meters >= KM }
         if (i < 0) return null
         val sp = splits[i]
@@ -102,21 +128,30 @@ object WorkoutCopy {
         if (now - sp.endT >= SPLIT_LINE_S || sp.endT - now > SPLIT_LINE_S) return null
         val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
         val avg = averageOver(history, from, sp.endT)
-        return SplitLine(i, sp.endT, WorkoutWords.split(i, sp.seconds) + (avg?.let { ", avg $it" } ?: ""))
+        return SplitLine(i, sp.endT, splitText(i, sp.seconds, avg, strings))
     }
 
     /**
      * The map page's line for the latest whole kilometre, kept until the next: "Km 4 in 5:55, avg 146" and how long
      * ago it ended, "just now" or "3 min ago". Null before the first.
      */
-    fun lastSplit(splits: List<Route.Split>, history: List<Pair<Long, Int>>, firstT: Long?, now: Long): Pair<String, String>? {
+    fun lastSplit(
+        splits: List<Route.Split>, history: List<Pair<Long, Int>>, firstT: Long?, now: Long, strings: Strings = Strings.app,
+    ): Pair<String, String>? {
         val i = splits.indexOfLast { it.meters >= KM }
         if (i < 0) return null
         val sp = splits[i]
         val from = splits.getOrNull(i - 1)?.endT ?: firstT ?: sp.endT
         val avg = averageOver(history, from, sp.endT)
         val ago = (now - sp.endT).coerceAtLeast(0) / 60
-        return WorkoutWords.split(i, sp.seconds) + (avg?.let { ", avg $it" } ?: "") to if (ago < 1) "just now" else "$ago min ago"
+        val agoText = if (ago < 1) strings.get(R.string.core_workout_just_now) else strings.format(R.string.core_workout_min_ago, ago)
+        return splitText(i, sp.seconds, avg, strings) to agoText
+    }
+
+    /** "Km 3 in 5:42", with ", avg 152" when the kilometre had readings. */
+    private fun splitText(index: Int, seconds: Long, avg: Int?, strings: Strings): String {
+        val split = WorkoutWords.split(index, seconds, strings = strings)
+        return avg?.let { strings.format(R.string.core_workout_split_avg, split, it) } ?: split
     }
 
     /** The average of the [readings] (time, bpm) from [from] to [to], whole bpm; null without any. */
@@ -142,20 +177,28 @@ object WorkoutCopy {
     fun zoneTick(previous: Int?, current: Int?): Boolean = previous != null && current != null && previous != current
 
     /** The live heart card's progress toward a kcal target: "212 of 300 kcal". */
-    fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal): String = "${activeKcal?.toInt() ?: 0} of ${target.label}"
+    fun kcalProgress(activeKcal: Float?, target: WorkoutTarget.Kcal, strings: Strings = Strings.app): String =
+        strings.format(R.string.core_workout_progress, (activeKcal?.toInt() ?: 0).toString(), target.label)
 
     /** GPS on the live screen's top line: "GPS ±4 m", or "Finding GPS" before a fix worth naming. */
-    fun gpsPill(accuracy: Float?): String = if (accuracy == null || accuracy > 1000) "Finding GPS" else "GPS ±${accuracy.toInt()} m"
+    fun gpsPill(accuracy: Float?, strings: Strings = Strings.app): String =
+        if (accuracy == null || accuracy > 1000) {
+            strings.get(R.string.core_workout_gps_finding)
+        } else {
+            strings.format(R.string.core_workout_gps, accuracy.toInt())
+        }
 
     /** The same toward a distance goal, in the goal's unit: "2.15 of 5 km", "640 of 800 m". */
-    fun distanceProgress(meters: Float?, target: WorkoutTarget.Distance, locale: Locale = Locale.getDefault()): String {
+    fun distanceProgress(
+        meters: Float?, target: WorkoutTarget.Distance, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+    ): String {
         val m = meters ?: 0f
-        return if (target.meters < 1000) String.format(locale, "%d of %s", m.toInt(), target.label)
-        else "${Units.km(m, Units.Precision.Workout, locale)} of ${target.label}"
+        val done = if (target.meters < 1000) String.format(locale, "%d", m.toInt()) else Units.km(m, Units.Precision.Workout, locale)
+        return strings.format(R.string.core_workout_progress, done, target.label)
     }
 
     /** "312 kcal" for the notification and the capsule ([WorkoutWords.kcalText]); null before there's a figure. */
-    fun kcalText(activeKcal: Float?): String? = WorkoutWords.kcalText(activeKcal)
+    fun kcalText(activeKcal: Float?, strings: Strings = Strings.app): String? = WorkoutWords.kcalText(activeKcal, strings)
 
     /**
      * How high the live heart card's light reaches for [zone] (spec 2.5): about a third of the card in zone 1, all of it

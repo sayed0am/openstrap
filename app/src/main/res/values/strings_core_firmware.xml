@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The parts of a strap update, listed on the firmware page (firmware/FirmwareCloud.kt). GPS stays as it is. -->
+<resources>
+    <!-- The strap's own software. -->
+    <string name="core_firmware_part_firmware">Firmware</string>
+    <!-- The strap's pictures and texts. -->
+    <string name="core_firmware_part_resources">Resources</string>
+    <string name="core_firmware_part_base_resources">Base resources</string>
+    <string name="core_firmware_part_extra_resources">Extra resources</string>
+    <!-- The strap's font. -->
+    <string name="core_firmware_part_font">Font</string>
+    <!-- The GPS chip's data. -->
+    <string name="core_firmware_part_gps">GPS</string>
+</resources>

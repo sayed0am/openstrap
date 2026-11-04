@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+
 /**
  * What a workout aims for, chosen on the ready screen: a zone or a range of zones (0..4, inclusive), a time, active
  * kcal or a distance. Stored on the workout as [code] ("z:1-2", "t:2700", "k:300", "d:5000").
@@ -9,18 +12,22 @@ sealed interface WorkoutTarget {
 
     data class Zones(val low: Int, val high: Int) : WorkoutTarget {
         override val code get() = "z:$low-$high"
-        val label: String get() = if (low == high) "Zone ${low + 1}" else "Zone ${low + 1} to ${high + 1}"
+        val label: String get() = if (low == high) {
+            Strings.app.format(R.string.core_coach_zone, low + 1)
+        } else {
+            Strings.app.format(R.string.core_coach_zones, low + 1, high + 1)
+        }
     }
 
     data class Time(val seconds: Long) : WorkoutTarget {
         override val code get() = "t:$seconds"
-        val label: String get() = "${seconds / 60} min"
+        val label: String get() = Strings.app.format(R.string.core_coach_minutes, seconds / 60)
     }
 
     /** Active kcal ([org.openstrap.app.data.WorkoutRecorder.Kcal.active]), so only offered with a profile to work it out. */
     data class Kcal(val kcal: Int) : WorkoutTarget {
         override val code get() = "k:$kcal"
-        val label: String get() = "$kcal kcal"
+        val label: String get() = Strings.app.format(R.string.core_coach_kcal, kcal)
     }
 
     /** Metres: from GPS, or the strap's steps without it, as the workout counts its distance. */
@@ -28,9 +35,9 @@ sealed interface WorkoutTarget {
         override val code get() = "d:$meters"
         /** "5 km", "21.1 km", "800 m". */
         val label: String get() = when {
-            meters < 1000 -> "$meters m"
-            meters % 1000 == 0 -> "${meters / 1000} km"
-            else -> String.format(java.util.Locale.ROOT, "%.1f km", meters / 1000f)
+            meters < 1000 -> Strings.app.format(R.string.core_coach_meters, meters)
+            meters % 1000 == 0 -> Strings.app.format(R.string.core_coach_km, (meters / 1000).toString())
+            else -> Strings.app.format(R.string.core_coach_km, String.format(java.util.Locale.ROOT, "%.1f", meters / 1000f))
         }
     }
 

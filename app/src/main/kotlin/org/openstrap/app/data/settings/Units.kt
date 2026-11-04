@@ -1,7 +1,9 @@
 package org.openstrap.app.data.settings
 
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.UserProfile.Companion.CM_PER_INCH
 import org.openstrap.app.data.settings.UserProfile.Companion.KG_PER_LB
+import org.openstrap.app.i18n.Strings
 import kotlin.math.roundToInt
 
 /** Body measurement conversions. The profile is stored metric; imperial is only for entry and display. */
@@ -17,9 +19,17 @@ object Units {
 
     fun feetInchesToCm(feet: Int, inches: Int): Int = ((feet * 12 + inches) * CM_PER_INCH).roundToInt()
 
-    fun formatWeight(kg: Float, imperial: Boolean): String =
-        if (imperial) "${kgToLb(kg).roundToInt()} lb" else "${kg.roundToInt()} kg"
+    fun formatWeight(kg: Float, imperial: Boolean, strings: Strings = Strings.app): String =
+        if (imperial) {
+            strings.format(R.string.core_unit_lb, kgToLb(kg).roundToInt())
+        } else {
+            strings.format(R.string.core_unit_kg, kg.roundToInt())
+        }
 
-    fun formatHeight(cm: Int, imperial: Boolean): String =
-        if (imperial) cmToFeetInches(cm).let { (ft, inch) -> "$ft′$inch″" } else "$cm cm"
+    fun formatHeight(cm: Int, imperial: Boolean, strings: Strings = Strings.app): String =
+        if (imperial) {
+            cmToFeetInches(cm).let { (ft, inch) -> strings.format(R.string.core_unit_feet_inches, ft, inch) }
+        } else {
+            strings.format(R.string.core_unit_cm, cm)
+        }
 }

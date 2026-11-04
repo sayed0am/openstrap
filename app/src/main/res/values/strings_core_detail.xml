@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Metric details: the words of a metric's detail screen, heart rate, HRV, steps and the rest (presentation/DetailCopy.kt).
+  The status word beside the value, the label under it, and the sentence about the day, week, month or year. "Your
+  normal" is the band of values usual for you, learned over the first 7 days or nights.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The status word beside a value against your normal. Short, one line. -->
+    <string name="core_detail_status_above">Above your normal</string>
+    <string name="core_detail_status_below">Below your normal</string>
+    <string name="core_detail_status_usual">Usual</string>
+
+    <!-- The label of the band on the chart that marks your normal. The values are already written with their decimals. -->
+    <string name="core_detail_band_label">Your normal, <xliff:g id="low" example="44">%1$s</xliff:g> to <xliff:g id="high" example="58">%2$s</xliff:g></string>
+    <!-- Under the value before your normal is known: how many of the 7 nights it needs have data. -->
+    <string name="core_detail_learning_nights">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</string>
+    <!-- Under the value before your normal is known: how many of the 7 days it needs have data. -->
+    <string name="core_detail_learning_days">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days</string>
+    <!-- The same as a sentence, under a chart. -->
+    <string name="core_detail_learning_nights_sentence">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights.</string>
+    <string name="core_detail_learning_days_sentence">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days.</string>
+
+    <!-- Small numbers in words, inside a sentence: "no", "one" to "nine". Used for counts of nights, days, naps and workouts. -->
+    <string name="core_detail_number_0">no</string>
+    <string name="core_detail_number_1">one</string>
+    <string name="core_detail_number_2">two</string>
+    <string name="core_detail_number_3">three</string>
+    <string name="core_detail_number_4">four</string>
+    <string name="core_detail_number_5">five</string>
+    <string name="core_detail_number_6">six</string>
+    <string name="core_detail_number_7">seven</string>
+    <string name="core_detail_number_8">eight</string>
+    <string name="core_detail_number_9">nine</string>
+    <!-- A count of nights in a sentence. The number is a word up to nine ("three") and digits from 10 ("12"). -->
+    <plurals name="core_detail_nights">
+        <item quantity="one"><xliff:g id="count" example="one">%1$s</xliff:g> night</item>
+        <item quantity="other"><xliff:g id="count" example="three">%1$s</xliff:g> nights</item>
+    </plurals>
+    <!-- A count of days in a sentence. The number is a word up to nine ("three") and digits from 10 ("12"). -->
+    <plurals name="core_detail_days">
+        <item quantity="one"><xliff:g id="count" example="one">%1$s</xliff:g> day</item>
+        <item quantity="other"><xliff:g id="count" example="three">%1$s</xliff:g> days</item>
+    </plurals>
+
+    <!-- The label under a metric's value on the Day view. bpm is beats a minute. Short, one line. -->
+    <string name="core_detail_label_bpm_now">bpm now</string>
+    <string name="core_detail_label_bpm_latest">bpm, latest</string>
+    <string name="core_detail_label_bpm_resting">bpm resting</string>
+    <string name="core_detail_label_steps_today">steps so far today</string>
+    <string name="core_detail_label_steps">steps</string>
+    <!-- br/min is breaths a minute. -->
+    <string name="core_detail_label_breathing">br/min during sleep</string>
+    <!-- The label under a value with no unit (Stress) on the Day view. -->
+    <string name="core_detail_label_day_average">Day average</string>
+    <!-- The label under a value on the Day view, after its unit ("ms", "%", "°C"). -->
+    <string name="core_detail_label_unit_day_average"><xliff:g id="unit" example="ms">%1$s</xliff:g>, day average</string>
+    <!-- The label under the steps for a week, month or year: the daily average. -->
+    <string name="core_detail_label_steps_week">steps a day, last 7 days</string>
+    <string name="core_detail_label_steps_month">steps a day, last 30 days</string>
+    <string name="core_detail_label_steps_year">steps a day, last 12 months</string>
+    <!-- The label under a value with no unit (Stress) for a week, month or year. -->
+    <string name="core_detail_label_average_week">Average of the last 7 days</string>
+    <string name="core_detail_label_average_month">Average of the last 30 days</string>
+    <string name="core_detail_label_average_year">Average of the last 12 months</string>
+    <!-- The label under a value for a week, month or year, after its unit ("bpm", "ms", "%", "°C"). -->
+    <string name="core_detail_label_unit_average_week"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average of the last 7 days</string>
+    <string name="core_detail_label_unit_average_month"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average of the last 30 days</string>
+    <string name="core_detail_label_unit_average_year"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average of the last 12 months</string>
+
+    <!-- The day's sentence under a chart: the value against your normal, said by where the value comes from. -->
+    <string name="core_detail_day_night_today_above">Last night, above your normal.</string>
+    <string name="core_detail_day_night_today_below">Last night, below your normal.</string>
+    <string name="core_detail_day_night_today_within">Last night, within your normal.</string>
+    <string name="core_detail_day_night_past_above">That night, above your normal.</string>
+    <string name="core_detail_day_night_past_below">That night, below your normal.</string>
+    <string name="core_detail_day_night_past_within">That night, within your normal.</string>
+    <string name="core_detail_day_average_today_above">Today\'s average so far, above your normal.</string>
+    <string name="core_detail_day_average_today_below">Today\'s average so far, below your normal.</string>
+    <string name="core_detail_day_average_today_within">Today\'s average so far, within your normal.</string>
+    <string name="core_detail_day_average_past_above">That day\'s average, above your normal.</string>
+    <string name="core_detail_day_average_past_below">That day\'s average, below your normal.</string>
+    <string name="core_detail_day_average_past_within">That day\'s average, within your normal.</string>
+    <string name="core_detail_day_so_far_today_above">So far today, above your normal.</string>
+    <string name="core_detail_day_so_far_today_below">So far today, below your normal.</string>
+    <string name="core_detail_day_so_far_today_within">So far today, within your normal.</string>
+    <string name="core_detail_day_so_far_past_above">That day, above your normal.</string>
+    <string name="core_detail_day_so_far_past_below">That day, below your normal.</string>
+    <string name="core_detail_day_so_far_past_within">That day, within your normal.</string>
+
+    <!-- Under the state word when a metric has no value: why. Short, one line. -->
+    <string name="core_detail_none_during_sleep">Measured during sleep</string>
+    <string name="core_detail_none_last_night">For last night</string>
+    <string name="core_detail_none_that_night">For that night</string>
+    <string name="core_detail_none_so_far_today">So far today</string>
+    <string name="core_detail_none_that_day">For that day</string>
+    <string name="core_detail_none_week">In the last 7 days</string>
+    <string name="core_detail_none_month">In the last 30 days</string>
+    <string name="core_detail_none_year">In the last 12 months</string>
+
+    <!-- Heart rate's day sentence: the lowest and highest readings. -->
+    <string name="core_detail_heart_day_today">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm so far today.</string>
+    <string name="core_detail_heart_day_past">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm that day.</string>
+
+    <!-- A week's or month's sentence: the latest values in a row above your normal. The count is "three nights" or "12 days". -->
+    <string name="core_detail_run_above">Above your normal for <xliff:g id="count" example="three nights">%1$s</xliff:g>.</string>
+    <!-- The same, below your normal. -->
+    <string name="core_detail_run_below">Below your normal for <xliff:g id="count" example="three nights">%1$s</xliff:g>.</string>
+    <!-- A week's or month's sentence when every value was within your normal. "with data" when some days had none. -->
+    <string name="core_detail_every_night">Within your normal on every night.</string>
+    <string name="core_detail_every_night_with_data">Within your normal on every night with data.</string>
+    <string name="core_detail_every_night_month">Within your normal on every night in the last 30 days.</string>
+    <string name="core_detail_every_night_with_data_month">Within your normal on every night with data in the last 30 days.</string>
+    <string name="core_detail_every_day">Within your normal on every day.</string>
+    <string name="core_detail_every_day_with_data">Within your normal on every day with data.</string>
+    <string name="core_detail_every_day_month">Within your normal on every day in the last 30 days.</string>
+    <string name="core_detail_every_day_with_data_month">Within your normal on every day with data in the last 30 days.</string>
+    <!-- A week's or month's sentence: on how many of the nights or days with data the value was within your normal. -->
+    <string name="core_detail_inside_nights">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> nights.</string>
+    <string name="core_detail_inside_nights_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> nights in the last 30 days.</string>
+    <string name="core_detail_inside_days">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> days.</string>
+    <string name="core_detail_inside_days_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> days in the last 30 days.</string>
+
+    <!-- The year's sentence from weekly averages, after which comes the unit ("ms", "bpm"). The values are already written with their decimals. -->
+    <string name="core_detail_year_unit">Over the last 12 months, weeks averaged from <xliff:g id="lowest" example="48">%1$s</xliff:g> to <xliff:g id="highest" example="61">%2$s</xliff:g> <xliff:g id="unit" example="ms">%3$s</xliff:g>.</string>
+    <!-- The year's sentence for a value with no unit (Stress). -->
+    <string name="core_detail_year">Over the last 12 months, weeks averaged from <xliff:g id="lowest" example="20">%1$s</xliff:g> to <xliff:g id="highest" example="41">%2$s</xliff:g>.</string>
+
+    <!-- A score's week sentence with a single score so far. -->
+    <string name="core_detail_score_week_one">One score in the last 7 days so far.</string>
+    <!-- A score's week sentence: its average, lowest and highest. -->
+    <string name="core_detail_score_week">Averaged <xliff:g id="average" example="74">%1$d</xliff:g> over the last 7 days, from <xliff:g id="lowest" example="61">%2$d</xliff:g> to <xliff:g id="highest" example="84">%3$d</xliff:g>.</string>
+
+    <!-- Charge detail, a past day: the charge it started and ended at. -->
+    <string name="core_detail_charge_started">Started the day at <xliff:g id="start" example="84">%1$d</xliff:g> and ended it at <xliff:g id="end" example="30">%2$d</xliff:g>.</string>
+    <!-- Charge detail, a past day whose start is unknown: the charge it ended at. -->
+    <string name="core_detail_charge_ended">Ended the day at <xliff:g id="end" example="30">%1$d</xliff:g>.</string>
+
+    <!-- Recovery's hero word with no score yet for the night. One short word. -->
+    <string name="core_detail_recovery_waiting">Waiting</string>
+    <!-- Under it, today. -->
+    <string name="core_detail_recovery_for_last_night">For last night\'s sleep</string>
+    <!-- Under it, a past day. -->
+    <string name="core_detail_recovery_no_sleep">No sleep recorded that night</string>
+    <!-- Recovery's hero word while it learns your normal. One short word. -->
+    <string name="core_detail_recovery_learning">Learning</string>
+    <!-- Under it: nights with data of the nights a score needs. -->
+    <string name="core_detail_recovery_nights"><xliff:g id="have" example="6">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</string>
+    <!-- Recovery's hero word for a night without a score. Short. -->
+    <string name="core_detail_recovery_no_score">No score</string>
+    <!-- Under it, when the night had too little heart data. -->
+    <string name="core_detail_recovery_no_heart_data">Not enough heart data that night</string>
+    <!-- Under it, otherwise. -->
+    <string name="core_detail_recovery_scored_mornings">Scored each morning from the night</string>
+</resources>

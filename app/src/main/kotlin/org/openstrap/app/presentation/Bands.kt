@@ -1,6 +1,9 @@
 package org.openstrap.app.presentation
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.Recovery
+import org.openstrap.app.i18n.Strings
 
 /*
  * Where a score or reading falls, defined once (decisions 8 and 10 in Units). The values and words are the ones the
@@ -14,7 +17,11 @@ object RecoveryBands {
     const val MODERATE_FROM = Recovery.FAIR_FROM
 
     /** The words low to high, one per bar of the scale. */
-    val WORDS = listOf("Take it easy", "Moderate", "Ready", "Ready for more")
+    val WORDS: List<String>
+        get() = listOf(
+            R.string.core_band_recovery_easy, R.string.core_band_recovery_moderate, R.string.core_band_recovery_ready,
+            R.string.core_band_recovery_more,
+        ).map(Strings.app::get)
 
     /** Which band [score] is in, 0 (lowest) to 3. */
     fun bar(score: Int): Int = FROM.count { score >= it }
@@ -22,7 +29,7 @@ object RecoveryBands {
     private val FROM = listOf(MODERATE_FROM, READY_FROM, READY_FOR_MORE_FROM)
 
     /** The status word beside the score. An [alert] (signals off your normal) always reads "Take it easy". */
-    fun word(score: Int, alert: Boolean = false): String = if (alert) WORDS[0] else WORDS[bar(score)]
+    fun word(score: Int, alert: Boolean = false): String = WORDS[if (alert) 0 else bar(score)]
 }
 
 /** The sleep score's bands, the ones the strap's score is built for: 90 "Great", 80 "Good", 60 "Fair", else "Poor". */
@@ -32,7 +39,10 @@ object SleepBands {
     const val FAIR_FROM = 60
 
     /** The words low to high, one per bar of the scale. */
-    val WORDS = listOf("Poor", "Fair", "Good", "Great")
+    val WORDS: List<String>
+        get() = listOf(
+            R.string.core_band_sleep_poor, R.string.core_band_sleep_fair, R.string.core_band_sleep_good, R.string.core_band_sleep_great,
+        ).map(Strings.app::get)
 
     /** Which band [score] is in, 0 (lowest) to 3. */
     fun bar(score: Int): Int = FROM.count { score >= it }
@@ -43,13 +53,16 @@ object SleepBands {
 }
 
 /** How a day's Load compares with your usual. */
-enum class LoadBand(val text: String) {
-    Above("Above your usual"),
-    Usual("Usual"),
-    Below("Below your usual"),
+enum class LoadBand(@StringRes private val textId: Int) {
+    Above(R.string.core_band_load_above),
+    Usual(R.string.core_band_load_usual),
+    Below(R.string.core_band_load_below),
 
     /** Before the evening, a Load not above your usual is only so far: against a whole usual day it would always look low. */
-    SoFar("So far today"),
+    SoFar(R.string.core_band_load_so_far),
+    ;
+
+    val text: String get() = Strings.app.get(textId)
 }
 
 /** Today's Load rule: within [BAND] of your usual either way is usual. */

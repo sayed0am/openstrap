@@ -1,6 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.i18n.Strings
 
 /**
  * A non-exercise VO2max estimate (docs/algorithms/evidence-review.md, "VO2max and fitness age"): Jurca et al. 2005
@@ -27,13 +29,11 @@ object Vo2max {
     const val ML_PER_MET = 3.5f
 
     /** The worksheet's question, Jurca 2005 Figure 1 (shortened): the user's usual pattern of physical activity. */
-    val ACTIVITY_LEVELS = listOf(
-        "Inactive, or little activity beyond usual daily activities",
-        "Light activity, at least 10 minutes at a time, 5 or more days a week",
-        "Aerobic exercise 20 to 60 minutes a week",
-        "Aerobic exercise 1 to 3 hours a week",
-        "Aerobic exercise over 3 hours a week",
-    )
+    val ACTIVITY_LEVELS: List<String>
+        get() = listOf(
+            R.string.core_vo2_activity_inactive, R.string.core_vo2_activity_light, R.string.core_vo2_activity_aerobic_low,
+            R.string.core_vo2_activity_aerobic_mid, R.string.core_vo2_activity_aerobic_high,
+        ).map(Strings.app::get)
 
     /** Withholding rules. */
     const val MIN_RHR_NIGHTS = 5

@@ -1,6 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.i18n.Strings
 import java.time.LocalDate
 import kotlin.math.abs
 import kotlin.math.ln
@@ -195,18 +197,18 @@ object Recovery {
      * Readiness contributors and their weights (a design choice, evidence-review.md): autonomic 52 %, sleep 28 %, other
      * body signals 13 %, load 4 %, renormalised over the contributors present. Breathing disturbances (a stable trait,
      * so only a fixed offset inside Readiness) moved to the Breathing card ([breathingDisturbances]); training load
-     * balance (ACWR) moved to the Load screen ([acwr]).
+     * balance (ACWR) moved to the Load screen ([acwr]). Their names on screen are presentation's (`TabCopy.factorName`).
      */
-    enum class Factor(val label: String, val weight: Float, val physiological: Boolean = false) {
-        HrvBalance("HRV balance", 0.30f, physiological = true),
-        RestingHr("Resting heart rate", 0.22f, physiological = true),
-        Sleep("Last night's sleep", 0.16f),
-        SleepBalance("Sleep balance", 0.12f),
-        Temperature("Body temperature", 0.06f, physiological = true),
-        Breathing("Breathing rate", 0.04f, physiological = true),
-        PreviousDayLoad("Previous day's load", 0.04f),
-        BloodOxygen("Blood oxygen", 0.03f, physiological = true),
-        RecoveryIndex("Recovery index", 0.03f),
+    enum class Factor(val weight: Float, val physiological: Boolean = false) {
+        HrvBalance(0.30f, physiological = true),
+        RestingHr(0.22f, physiological = true),
+        Sleep(0.16f),
+        SleepBalance(0.12f),
+        Temperature(0.06f, physiological = true),
+        Breathing(0.04f, physiological = true),
+        PreviousDayLoad(0.04f),
+        BloodOxygen(0.03f, physiological = true),
+        RecoveryIndex(0.03f),
     }
 
     data class Contributor(val factor: Factor, val score: Int, val detail: Detail)
@@ -311,10 +313,12 @@ object Recovery {
         val own = tonight.hrv?.takeIf { tonight.valid }
         val strap = tonight.strapHrv
         if (own != null && strap != null && strap > 0 && abs(own - strap) / strap > HRV_QA_FRACTION) {
-            add("HRV: ours ${own.toInt()} ms, the strap's ${strap.toInt()} ms")
+            add(Strings.app.format(R.string.core_recovery_quality_hrv, own.toInt(), strap.toInt()))
         }
         val strapRhr = tonight.strapRestingHr
-        if (rhr != null && strapRhr != null && abs(rhr - strapRhr) > RHR_QA_BPM) add("Resting HR: ours ${rhr.toInt()} bpm, the strap's ${strapRhr.toInt()} bpm")
+        if (rhr != null && strapRhr != null && abs(rhr - strapRhr) > RHR_QA_BPM) {
+            add(Strings.app.format(R.string.core_recovery_quality_rhr, rhr.toInt(), strapRhr.toInt()))
+        }
     }
     /** Default sleep need: 480 min for ages 18-64, [SLEEP_NEED_65_MINUTES] from 65 (NSF 7-9 h and 7-8 h; AASM ≥ 7 h). */
     const val SLEEP_NEED_MINUTES = 8 * 60

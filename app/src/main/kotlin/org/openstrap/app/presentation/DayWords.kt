@@ -1,5 +1,7 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -10,11 +12,11 @@ import java.util.Locale
 /**
  * When a day was, in words (decision 6 in [Units]): "Today", "Yesterday", the weekday for the rest of the last 7 days
  * ("Tuesday"), then the date ("Tue 21 Oct"), with the year when it's from an earlier one ("Tue 21 Oct 2025"). The
- * words are the app's English, the weekday and month names the phone's language.
+ * words follow the app's language (res/values/strings_core_days.xml), the weekday and month names the phone's.
  */
 object DayWords {
-    const val TODAY = "Today"
-    const val YESTERDAY = "Yesterday"
+    val TODAY: String get() = Strings.app.get(R.string.core_day_today)
+    val YESTERDAY: String get() = Strings.app.get(R.string.core_day_yesterday)
 
     /** A day this many days back or fewer, past yesterday, goes by its weekday. A week back would repeat today's. */
     private const val WEEKDAY_WITHIN_DAYS = 6L
@@ -26,11 +28,11 @@ object DayWords {
      * [date] seen from [today], for a heading: "Today", "Yesterday", "Tuesday", "Tue 21 Oct", "Tue 21 Oct 2025". A
      * day after [today] has no word for it, so it takes its date.
      */
-    fun relative(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String {
+    fun relative(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String {
         val days = ChronoUnit.DAYS.between(date, today)
         return when {
-            days == 0L -> TODAY
-            days == 1L -> YESTERDAY
+            days == 0L -> strings.get(R.string.core_day_today)
+            days == 1L -> strings.get(R.string.core_day_yesterday)
             days in 2..WEEKDAY_WITHIN_DAYS -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
             date.year == today.year -> date.format(Formatters.of(SHORT, locale))
             else -> date.format(Formatters.of(SHORT_WITH_YEAR, locale))
@@ -38,10 +40,11 @@ object DayWords {
     }
 
     /** [relative] after other words: "today" and "yesterday" in lowercase, a weekday or date as it is. */
-    fun inSentence(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String =
-        when (val word = relative(date, today, locale)) {
-            TODAY, YESTERDAY -> word.lowercase(Locale.ROOT)
-            else -> word
+    fun inSentence(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        when (ChronoUnit.DAYS.between(date, today)) {
+            0L -> strings.get(R.string.core_day_today_in_sentence)
+            1L -> strings.get(R.string.core_day_yesterday_in_sentence)
+            else -> relative(date, today, locale, strings)
         }
 
     /**
@@ -50,11 +53,12 @@ object DayWords {
      */
     fun at(
         epoch: Long, now: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
     ): String {
         val clock = TimeOfDay.format(epoch, zone, use24Hour, locale)
         val date = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate()
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        return if (date == today) clock else "${inSentence(date, today, locale)} $clock"
+        return if (date == today) clock else strings.format(R.string.core_day_at, inSentence(date, today, locale, strings), clock)
     }
 
     /**
@@ -63,14 +67,15 @@ object DayWords {
      */
     fun whenDone(
         epoch: Long, now: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
     ): String {
         val date = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate()
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
         val clock = TimeOfDay.format(epoch, zone, use24Hour, locale)
         return when (date) {
-            today -> "today at $clock"
-            today.minusDays(1) -> "yesterday at $clock"
-            else -> "on ${short(date, locale)}"
+            today -> strings.format(R.string.core_day_done_today, clock)
+            today.minusDays(1) -> strings.format(R.string.core_day_done_yesterday, clock)
+            else -> strings.format(R.string.core_day_done_on, short(date, locale))
         }
     }
 

@@ -7,30 +7,37 @@ import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.abs
+import org.openstrap.app.R
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.Weeks
+import org.openstrap.app.i18n.Strings
 
 /*
  * The words on Today's hero and its small facts (spec 4.2 and 7). Built only from numbers the app already has: where
- * a number is missing the sentence says what it waits for, and nothing is guessed.
+ * a number is missing the sentence says what it waits for, and nothing is guessed. The text is in
+ * res/values/strings_core_today.xml.
  */
 object TodayCopy {
     /** A value against your normal, from [org.openstrap.app.data.History.status]: null is no normal yet. */
-    fun normalWord(direction: Int?): String = when {
-        direction == null -> "Learning your normal"
-        direction > 0 -> "Above your normal"
-        direction < 0 -> "Below your normal"
-        else -> "Usual"
-    }
+    fun normalWord(direction: Int?, strings: Strings = Strings.app): String = strings.get(
+        when {
+            direction == null -> R.string.core_today_normal_learning
+            direction > 0 -> R.string.core_today_normal_above
+            direction < 0 -> R.string.core_today_normal_below
+            else -> R.string.core_today_normal_usual
+        },
+    )
 
     /** What a Recovery score means for the day, in a sentence. */
-    fun recoveryMeaning(score: Int, alert: Boolean): String = when {
-        alert -> "Some overnight signals are off your normal. An easy day suits."
-        score >= RecoveryBands.READY_FOR_MORE_FROM -> "Well recovered. A good day for a hard session."
-        score >= RecoveryBands.READY_FROM -> "Recovered enough for your usual training."
-        score >= RecoveryBands.MODERATE_FROM -> "Not fully recovered. Keep the effort moderate."
-        else -> "Still catching up. An easy day helps."
-    }
+    fun recoveryMeaning(score: Int, alert: Boolean, strings: Strings = Strings.app): String = strings.get(
+        when {
+            alert -> R.string.core_today_meaning_alert
+            score >= RecoveryBands.READY_FOR_MORE_FROM -> R.string.core_today_meaning_ready_for_more
+            score >= RecoveryBands.READY_FROM -> R.string.core_today_meaning_ready
+            score >= RecoveryBands.MODERATE_FROM -> R.string.core_today_meaning_moderate
+            else -> R.string.core_today_meaning_low
+        },
+    )
 
     /** The status word beside the score. */
     fun recoveryWord(score: Int, alert: Boolean): String = RecoveryBands.word(score, alert)
@@ -45,9 +52,9 @@ object TodayCopy {
     }
 
     /** "OpenStrap is still learning your nights, 5 of 7." and the like. */
-    fun noScoreLine(why: NoScore): String = when (why) {
-        is NoScore.Learning -> "OpenStrap is still learning your nights, ${why.nights} of ${why.of}."
-        NoScore.NoHeartData -> "Not enough heart data last night for a Recovery score."
+    fun noScoreLine(why: NoScore, strings: Strings = Strings.app): String = when (why) {
+        is NoScore.Learning -> strings.format(R.string.core_today_no_score_learning, why.nights, why.of)
+        NoScore.NoHeartData -> strings.get(R.string.core_today_no_score_heart)
     }
 
     /**
@@ -55,27 +62,33 @@ object TodayCopy {
      * strap's own [estimate] when there is one. [firstNights] is before the strap has seen any sleep. [deleted] is a
      * night the user deleted, which never asks whether the strap was on.
      */
-    fun waking(asleepSeconds: Long?, score: Int?, alert: Boolean, noScore: NoScore?, firstNights: Boolean, isToday: Boolean, deleted: Boolean = false): String {
-        if (firstNights) return RECOVERY_FIRST_NIGHT
-        if (asleepSeconds == null && deleted) return deletedNight(isToday)
-        if (asleepSeconds == null) return if (isToday) NO_SLEEP else "No sleep recorded that night."
-        val slept = "Slept ${Units.duration(asleepSeconds)}."
+    fun waking(
+        asleepSeconds: Long?, score: Int?, alert: Boolean, noScore: NoScore?, firstNights: Boolean, isToday: Boolean,
+        deleted: Boolean = false, strings: Strings = Strings.app,
+    ): String {
+        if (firstNights) return strings.get(R.string.core_today_recovery_first_night)
+        if (asleepSeconds == null && deleted) return deletedNight(isToday, strings)
+        if (asleepSeconds == null) {
+            return strings.get(if (isToday) R.string.core_today_no_sleep else R.string.core_today_no_sleep_that_night)
+        }
+        val slept = strings.format(R.string.core_today_slept, Units.duration(asleepSeconds))
         return when {
-            score != null -> "$slept ${recoveryMeaning(score, alert)}"
+            score != null -> "$slept ${recoveryMeaning(score, alert, strings)}"
             // The strap's estimate stands under the sentence with its label, so the sentence doesn't repeat it.
-            noScore != null -> "$slept ${noScoreLine(noScore)}"
+            noScore != null -> "$slept ${noScoreLine(noScore, strings)}"
             else -> slept
         }
     }
 
     /** The Recovery heroes before the strap has seen a night (spec 4.3). */
-    const val RECOVERY_FIRST_NIGHT = "Recovery starts after your first night with the strap."
+    val RECOVERY_FIRST_NIGHT: String get() = Strings.app.get(R.string.core_today_recovery_first_night)
 
     /** Today's waking hero with no sleep recorded last night, and the Sleep tab's night (spec 4.3). */
-    const val NO_SLEEP = "No sleep recorded last night. Was the strap on?"
+    val NO_SLEEP: String get() = Strings.app.get(R.string.core_today_no_sleep)
 
     /** In [NO_SLEEP]'s place when the user deleted the night themselves (sleep edit spec 4.3). */
-    fun deletedNight(isToday: Boolean): String = if (isToday) "You deleted last night's sleep." else "You deleted that night's sleep."
+    fun deletedNight(isToday: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (isToday) R.string.core_today_deleted_last_night else R.string.core_today_deleted_that_night)
 
     /** What a Recovery card shows: the number (null for a dash), the word beside it and the line under it. */
     data class RecoveryShown(val value: Int?, val word: String?, val line: String, val estimate: Boolean = false)
@@ -84,10 +97,17 @@ object TodayCopy {
      * Recovery as Today shows it everywhere (spec 4.3): OpenStrap's score, else the strap's [estimate] labelled as its
      * own, else why there's none, else [waiting].
      */
-    fun recoveryShown(score: Int?, alert: Boolean, noScore: NoScore?, estimate: Int?, waiting: String): RecoveryShown = when {
-        score != null -> RecoveryShown(score, recoveryWord(score, alert), recoveryMeaning(score, alert))
-        estimate != null -> RecoveryShown(estimate, "Strap's estimate", noScore?.let(::noScoreLine) ?: "OpenStrap's own score isn't ready yet.", estimate = true)
-        noScore != null -> RecoveryShown(null, null, noScoreLine(noScore))
+    fun recoveryShown(
+        score: Int?, alert: Boolean, noScore: NoScore?, estimate: Int?, waiting: String, strings: Strings = Strings.app,
+    ): RecoveryShown = when {
+        score != null -> RecoveryShown(score, recoveryWord(score, alert), recoveryMeaning(score, alert, strings))
+        estimate != null -> RecoveryShown(
+            estimate,
+            strings.get(R.string.core_today_strap_estimate),
+            noScore?.let { noScoreLine(it, strings) } ?: strings.get(R.string.core_today_own_score_not_ready),
+            estimate = true,
+        )
+        noScore != null -> RecoveryShown(null, null, noScoreLine(noScore, strings))
         else -> RecoveryShown(null, null, waiting)
     }
 
@@ -103,9 +123,9 @@ object TodayCopy {
      * [recoveryShown] from the day's [r], so Today, the Recovery tab and All metrics show the same value: the strap's
      * [strapScore] stands in, as its estimate, while OpenStrap's own score is withheld.
      */
-    fun recoveryShown(r: Recovery.Readiness?, strapScore: Int?, waiting: String): RecoveryShown {
+    fun recoveryShown(r: Recovery.Readiness?, strapScore: Int?, waiting: String, strings: Strings = Strings.app): RecoveryShown {
         val estimate = r?.takeIf { it.score == null && it.showStrapEstimate }?.let { strapScore }
-        return recoveryShown(r?.score, r?.strainAlert == true, noScore(r), estimate, waiting)
+        return recoveryShown(r?.score, r?.strainAlert == true, noScore(r), estimate, waiting, strings)
     }
 
     /**
@@ -113,49 +133,56 @@ object TodayCopy {
      * the Recovery tab, not just the drop since waking) and what's left for the evening. [hour] is the clock's hour,
      * so the morning is called the morning.
      */
-    fun charge(now: Int?, drained: Int?, anchored: Boolean, hour: Int): String {
-        if (now == null || !anchored) return "Energy starts after your first night. Sleep is what fills it."
-        val part = if (hour < 12) "The morning" else "The day so far"
+    fun charge(now: Int?, drained: Int?, anchored: Boolean, hour: Int, strings: Strings = Strings.app): String {
+        if (now == null || !anchored) return strings.get(R.string.core_today_energy_first_night)
         val first = when {
             drained == null -> null
-            drained >= 1 -> "$part drained $drained."
-            else -> "Nothing drained since waking."
+            drained >= 1 -> strings.format(
+                if (hour < 12) R.string.core_today_energy_morning_drained else R.string.core_today_energy_day_drained,
+                drained,
+            )
+            else -> strings.get(R.string.core_today_energy_nothing_drained)
         }
-        val left = when {
-            now >= 50 -> "Plenty left for this evening."
-            now >= 25 -> "Enough left for an easy evening."
-            else -> "Running low. An early night helps."
-        }
+        val left = strings.get(
+            when {
+                now >= 50 -> R.string.core_today_energy_plenty
+                now >= 25 -> R.string.core_today_energy_enough
+                else -> R.string.core_today_energy_low
+            },
+        )
         return listOfNotNull(first, left).joinToString(" ")
     }
 
     /** The workout window hero's title: what Recovery says about effort now. */
-    fun windowTitle(score: Int?): String = when {
-        score == null -> "Your usual workout time"
-        score >= RecoveryBands.READY_FROM -> "Ready for effort"
-        score >= RecoveryBands.MODERATE_FROM -> "Fine for a steady session"
-        else -> "An easy session suits today"
-    }
+    fun windowTitle(score: Int?, strings: Strings = Strings.app): String = strings.get(
+        when {
+            score == null -> R.string.core_today_window_title_usual
+            score >= RecoveryBands.READY_FROM -> R.string.core_today_window_title_ready
+            score >= RecoveryBands.MODERATE_FROM -> R.string.core_today_window_title_steady
+            else -> R.string.core_today_window_title_easy
+        },
+    )
 
     /** "You usually run around now. Energy is 58, plenty left." [sport] is a short noun that is also a verb. */
-    fun window(sport: String?, charge: Int?): String {
-        val usual = "You usually ${sport ?: "work out"} around now."
+    fun window(sport: String?, charge: Int?, strings: Strings = Strings.app): String {
+        val usual = strings.format(R.string.core_today_window_usually, sport ?: strings.get(R.string.core_today_window_work_out))
         val left = charge?.let {
-            " Energy is $it, " + when {
-                it >= 50 -> "plenty left."
-                it >= 25 -> "enough for something easy."
-                else -> "running low."
+            val id = when {
+                it >= 50 -> R.string.core_today_window_energy_plenty
+                it >= 25 -> R.string.core_today_window_energy_enough
+                else -> R.string.core_today_window_energy_low
             }
+            " " + strings.format(id, it)
         }
         return usual + left.orEmpty()
     }
 
     /** After a workout: how the heart is coming down, from the latest reading against resting. */
-    fun after(nowHr: Int?, resting: Int?): String = when {
-        nowHr == null -> "Heart rate since the end shows once the strap sends it."
-        resting == null -> "Heart rate $nowHr now."
-        nowHr <= resting + SETTLED_BPM -> "Heart rate back near resting."
-        else -> "Heart rate settling."
+    fun after(nowHr: Int?, resting: Int?, strings: Strings = Strings.app): String = when {
+        nowHr == null -> strings.get(R.string.core_today_after_waiting)
+        resting == null -> strings.format(R.string.core_today_after_now, nowHr)
+        nowHr <= resting + SETTLED_BPM -> strings.get(R.string.core_today_after_settled)
+        else -> strings.get(R.string.core_today_after_settling)
     }
 
     /** Within this many bpm of resting, the heart has settled. */
@@ -174,43 +201,56 @@ object TodayCopy {
      */
     fun evening(
         workouts: List<String?>, steps: Int, stepGoal: Int, load: LoadBand?, locale: Locale = Locale.getDefault(), stepCount: Boolean = true,
+        strings: Strings = Strings.app,
     ): String {
         val head = when {
-            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadBand.Above) -> "A full day."
-            workouts.isEmpty() && steps < stepGoal / 2 -> "A quiet day."
-            else -> "A steady day."
+            workouts.isNotEmpty() && (steps >= stepGoal || load == LoadBand.Above) -> R.string.core_today_evening_full
+            workouts.isEmpty() && steps < stepGoal / 2 -> R.string.core_today_evening_quiet
+            else -> R.string.core_today_evening_steady
         }
         val parts = listOfNotNull(
             when (workouts.size) {
                 0 -> null
-                1 -> "a ${workouts[0] ?: "workout"}"
-                else -> "${workouts.size} workouts"
+                1 -> workouts[0]?.let { strings.format(R.string.core_today_evening_one_sport, it) }
+                    ?: strings.get(R.string.core_today_evening_one_workout)
+                else -> strings.plural(R.plurals.core_today_evening_workouts, workouts.size, workouts.size)
             },
-            if (stepCount || stepGoal <= 0) "${Units.count(steps.toLong(), locale)} steps" else stepsAgainstGoal(steps, stepGoal),
+            if (stepCount || stepGoal <= 0) {
+                strings.plural(R.plurals.core_today_evening_steps, steps, Units.count(steps.toLong(), locale))
+            } else {
+                stepsAgainstGoal(steps, stepGoal, strings)
+            },
             when (load) {
-                LoadBand.Above -> "a Load above your usual"
-                LoadBand.Below -> "a Load below your usual"
-                LoadBand.Usual -> "a usual Load"
+                LoadBand.Above -> strings.get(R.string.core_today_evening_load_above)
+                LoadBand.Below -> strings.get(R.string.core_today_evening_load_below)
+                LoadBand.Usual -> strings.get(R.string.core_today_evening_load_usual)
                 LoadBand.SoFar, null -> null
             },
         )
-        val list = if (parts.size == 1) parts[0] else parts.dropLast(1).joinToString(", ") + " and " + parts.last()
-        return "$head ${list.replaceFirstChar { it.uppercase() }}."
+        val list = if (parts.size == 1) {
+            parts[0]
+        } else {
+            val lead = parts.dropLast(1).reduce { a, b -> strings.format(R.string.core_today_list_comma, a, b) }
+            strings.format(R.string.core_today_list_and, lead, parts.last())
+        }
+        return strings.format(head, list.replaceFirstChar { it.uppercase() })
     }
 
     /** The day's [steps] against the [goal] in words: under half is well short, from 80% close, the goal itself past. */
-    fun stepsAgainstGoal(steps: Int, goal: Int): String = when {
-        steps >= goal -> "past your step goal"
-        steps >= goal * 0.8 -> "close to your step goal"
-        steps >= goal / 2 -> "short of your step goal"
-        else -> "well short of your step goal"
-    }
+    fun stepsAgainstGoal(steps: Int, goal: Int, strings: Strings = Strings.app): String = strings.get(
+        when {
+            steps >= goal -> R.string.core_today_goal_past
+            steps >= goal * 0.8 -> R.string.core_today_goal_close
+            steps >= goal / 2 -> R.string.core_today_goal_short
+            else -> R.string.core_today_goal_well_short
+        },
+    )
 
     /** "Bedtime in 1 h 10" until your usual [bedtime], read on a clock that starts at noon; null once it's passed. */
-    fun bedtimeIn(now: LocalTime, bedtime: LocalTime?): String? {
+    fun bedtimeIn(now: LocalTime, bedtime: LocalTime?, strings: Strings = Strings.app): String? {
         bedtime ?: return null
         val minutes = afterNoon(bedtime) - afterNoon(now)
-        return if (minutes <= 0) null else "Bedtime in ${Units.duration(minutes * 60L)}"
+        return if (minutes <= 0) null else strings.format(R.string.core_today_bedtime_in, Units.duration(minutes * 60L))
     }
 
     private fun afterNoon(t: LocalTime): Int = Math.floorMod(t.toSecondOfDay() / 60 - 720, 1440)
@@ -222,35 +262,61 @@ object TodayCopy {
      * Time to recover as a value and a status: "14" and "Hours left, ready tomorrow", "2" and "Hours left, ready by
      * 20:30". Recovered has no number, only the word (null value).
      */
-    fun recoverText(left: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): Pair<String?, String> {
-        if (left <= 0) return null to "Recovered"
+    fun recoverText(
+        left: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+    ): Pair<String?, String> = recover(left, now, zone, locale, short = false, strings)
+
+    /**
+     * When you're ready, written whole either way, so each language words both forms: with the hours left as the
+     * status of [recoverText] ("Hours left, ready by 20:30"), or alone as [recoverShort] says it ("Ready by 20:30").
+     */
+    private fun recover(left: Long, now: Long, zone: ZoneId, locale: Locale, short: Boolean, strings: Strings): Pair<String?, String> {
+        if (left <= 0) return null to strings.get(R.string.core_today_recovered)
         val hours = (left + 3599) / 3600
         val ready = Instant.ofEpochSecond(now + left).atZone(zone)
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        val unit = if (hours == 1L) "Hour left" else "Hours left"
+        val n = hours.toInt()
         val status = when (ready.toLocalDate()) {
-            today -> "ready by ${TimeOfDay.format(now + left, zone, locale = locale)}"
-            today.plusDays(1) -> "ready tomorrow"
-            else -> "ready ${ready.dayOfWeek.getDisplayName(TextStyle.FULL, locale)}"
+            today -> TimeOfDay.format(now + left, zone, locale = locale).let {
+                if (short) {
+                    strings.format(R.string.core_today_recover_short_by, it)
+                } else {
+                    strings.plural(R.plurals.core_today_recover_by, n, it)
+                }
+            }
+            today.plusDays(1) -> if (short) {
+                strings.get(R.string.core_today_recover_short_tomorrow)
+            } else {
+                strings.plural(R.plurals.core_today_recover_tomorrow, n)
+            }
+            else -> ready.dayOfWeek.getDisplayName(TextStyle.FULL, locale).let {
+                if (short) {
+                    strings.format(R.string.core_today_recover_short_day, it)
+                } else {
+                    strings.plural(R.plurals.core_today_recover_day, n, it)
+                }
+            }
         }
-        return "$hours" to "$unit, $status"
+        return "$hours" to status
     }
 
     /** The line under Load today's number, which says it's a Load and how it compares. */
-    fun loadLine(status: LoadBand?): String = when (status) {
-        null -> "Load, learning your usual"
-        LoadBand.Above -> "Load above your usual"
-        LoadBand.Usual -> "Your usual Load"
-        LoadBand.Below -> "Load below your usual"
-        LoadBand.SoFar -> "Load so far today"
-    }
+    fun loadLine(status: LoadBand?, strings: Strings = Strings.app): String = strings.get(
+        when (status) {
+            null -> R.string.core_today_load_line_learning
+            LoadBand.Above -> R.string.core_today_load_line_above
+            LoadBand.Usual -> R.string.core_today_load_line_usual
+            LoadBand.Below -> R.string.core_today_load_line_below
+            LoadBand.SoFar -> R.string.core_today_load_line_so_far
+        },
+    )
 
     /** Under Your week before there's a week before it to compare with: the week starts on the locale's first day. */
     val WEEK_FIRST: String get() = weekFirst()
 
     /** [WEEK_FIRST] in [locale]: "Week on week comparisons start next Monday." */
-    fun weekFirst(locale: Locale = Locale.getDefault()): String =
-        "Week on week comparisons start next ${Weeks.firstDay(locale).getDisplayName(TextStyle.FULL, locale)}."
+    fun weekFirst(locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        strings.format(R.string.core_today_week_first, Weeks.firstDay(locale).getDisplayName(TextStyle.FULL, locale))
 
     /** The week Your week tells (spec 4.2): the last full week before [date], from the locale's first day ([Weeks]). */
     fun lastWeek(date: LocalDate, firstDay: java.time.DayOfWeek = Weeks.firstDay()): ClosedRange<LocalDate> {
@@ -259,38 +325,41 @@ object TodayCopy {
     }
 
     /** "Steps up 12%" and the like, comparing two weeks; null without both. */
-    fun stepsChange(now: Double?, before: Double?): String? {
+    fun stepsChange(now: Double?, before: Double?, strings: Strings = Strings.app): String? {
         if (now == null || before == null || before <= 0) return null
         val pct = Math.round((now - before) / before * 100).toInt()
-        return if (pct == 0) "Steps held steady" else "Steps ${if (pct > 0) "up" else "down"} ${abs(pct)}%"
+        return when {
+            pct == 0 -> strings.get(R.string.core_today_steps_steady)
+            pct > 0 -> strings.format(R.string.core_today_steps_up, abs(pct))
+            else -> strings.format(R.string.core_today_steps_down, abs(pct))
+        }
     }
 
     /** The Last night strip: "7 h 40, score 83". */
-    fun lastNight(asleepSeconds: Long?, score: Int?): String? = asleepSeconds?.let {
-        Units.duration(it) + (score?.let { s -> ", score $s" } ?: "")
+    fun lastNight(asleepSeconds: Long?, score: Int?, strings: Strings = Strings.app): String? = asleepSeconds?.let {
+        val d = Units.duration(it)
+        score?.let { s -> strings.format(R.string.core_today_last_night_score, d, s) } ?: d
     }
 
     /** A Small's word for Load against your usual: the [LoadBand]'s, or that the usual is still being learned. */
-    fun loadWord(status: LoadBand?): String = status?.text ?: "Learning your usual"
+    fun loadWord(status: LoadBand?, strings: Strings = Strings.app): String =
+        status?.text ?: strings.get(R.string.core_today_load_word_learning)
 
     /**
      * Time to recover as a Small says it: the hours as the value and when you're ready as the word. "14" and "Ready
      * tomorrow", "2" and "Ready by 20:30". Recovered has no number, only the word.
      */
-    fun recoverShort(left: Long, now: Long, zone: ZoneId): Pair<String?, String> {
-        val (value, status) = recoverText(left, now, zone)
-        if (value == null) return null to status
-        return value to status.substringAfter(", ").replaceFirstChar { it.uppercase() }
-    }
+    fun recoverShort(left: Long, now: Long, zone: ZoneId, strings: Strings = Strings.app): Pair<String?, String> =
+        recover(left, now, zone, Locale.getDefault(), short = true, strings)
 
     /** How to read the heart rate line, with [band] when your resting range is drawn behind it. */
-    fun heartLineNote(band: Boolean): String =
-        if (band) "Hold to scrub, the number follows. The band is your resting range." else "Hold to scrub, the number follows."
+    fun heartLineNote(band: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (band) R.string.core_today_heart_note_band else R.string.core_today_heart_note)
 
     /** The heart rate card's line under its number: live, or when the reading shown was taken. */
-    fun heartAt(live: Boolean, at: String?): String = when {
-        live -> "Live now"
-        at != null -> "At $at"
-        else -> "Waiting for the strap"
+    fun heartAt(live: Boolean, at: String?, strings: Strings = Strings.app): String = when {
+        live -> strings.get(R.string.core_today_heart_live)
+        at != null -> strings.format(R.string.core_today_heart_at, at)
+        else -> strings.get(R.string.core_today_heart_waiting)
     }
 }

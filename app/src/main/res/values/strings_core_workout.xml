@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The words of a workout on the Ready and live screens, the summary and the workout notification
+  (presentation/WorkoutWords.kt, presentation/WorkoutCopy.kt). The live screens are glanced at mid workout, so keep
+  every line as short as the English.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Heart rate zone 1 of 5, as a name on its own. -->
+    <string name="core_workout_zone_easy">Easy</string>
+    <!-- Heart rate zone 2 of 5. -->
+    <string name="core_workout_zone_aerobic">Aerobic</string>
+    <!-- Heart rate zone 3 of 5. -->
+    <string name="core_workout_zone_tempo">Tempo</string>
+    <!-- Heart rate zone 4 of 5. -->
+    <string name="core_workout_zone_threshold">Threshold</string>
+    <!-- Heart rate zone 5 of 5. -->
+    <string name="core_workout_zone_max">Max</string>
+    <!-- Zone 1's name after its number, as in "Zone 1, easy". Lower case in English. -->
+    <string name="core_workout_zone_easy_in_sentence">easy</string>
+    <!-- Zone 2's name after its number. -->
+    <string name="core_workout_zone_aerobic_in_sentence">aerobic</string>
+    <!-- Zone 3's name after its number. -->
+    <string name="core_workout_zone_tempo_in_sentence">tempo</string>
+    <!-- Zone 4's name after its number. -->
+    <string name="core_workout_zone_threshold_in_sentence">threshold</string>
+    <!-- Zone 5's name after its number. -->
+    <string name="core_workout_zone_max_in_sentence">max</string>
+    <!-- The first part of the live zone's title, drawn apart from the zone's name: "Zone 3," then "aerobic". -->
+    <string name="core_workout_zone_number">Zone <xliff:g id="zone" example="3">%1$d</xliff:g>,</string>
+    <!-- The live zone's title as one line. The name is the zone's lower case name above. -->
+    <string name="core_workout_zone_line">Zone <xliff:g id="zone" example="3">%1$d</xliff:g>, <xliff:g id="name" example="aerobic">%2$s</xliff:g></string>
+    <!-- How long the workout has spent in the current zone, under a minute so far. -->
+    <string name="core_workout_zone_time_under">Under a minute in this zone</string>
+    <!-- How long the workout has spent in the current zone. -->
+    <string name="core_workout_zone_time"><xliff:g id="minutes" example="9">%1$d</xliff:g> min in this zone</string>
+
+    <!-- Where the heart rate shows, while the workout is paused. -->
+    <string name="core_workout_paused">Paused</string>
+    <!-- Where the heart rate shows, while the strap isn't connected. -->
+    <string name="core_workout_strap_gone">Waiting for the strap</string>
+    <!-- Where the heart rate shows, before the first reading. -->
+    <string name="core_workout_waiting_hr">Waiting for heart rate</string>
+    <!-- The live screen's note while the strap isn't connected. -->
+    <string name="core_workout_strap_gone_note">The strap isn\'t connected. Recording carries on, and the minutes missed are filled from its own history after it syncs.</string>
+    <!-- A kilometre just finished and its time, on the live screens and the summary. -->
+    <string name="core_workout_split">Km <xliff:g id="km" example="3">%1$d</xliff:g> in <xliff:g id="time" example="5:42">%2$s</xliff:g></string>
+    <!-- A finished kilometre with its average heart rate in bpm. The split is the line above, "Km 3 in 5:42". -->
+    <string name="core_workout_split_avg"><xliff:g id="split" example="Km 3 in 5:42">%1$s</xliff:g>, avg <xliff:g id="bpm" example="152">%2$d</xliff:g></string>
+    <!-- How long ago the last kilometre ended, under a minute. On the map page. -->
+    <string name="core_workout_just_now">just now</string>
+    <!-- How long ago the last kilometre ended. On the map page. -->
+    <string name="core_workout_min_ago"><xliff:g id="minutes" example="3">%1$d</xliff:g> min ago</string>
+
+    <!-- Ready's GPS row while the phone's location is off or not allowed. -->
+    <string name="core_workout_location_off">Location is off</string>
+    <!-- Under it. Starting still works, without GPS. -->
+    <string name="core_workout_location_off_note">Turn it on for distance and the map, or start without it.</string>
+    <!-- Under the Save a map of my run switch, when on. -->
+    <string name="core_workout_route_on">On. Saved on this phone for the map.</string>
+    <!-- Under the Save a map of my run switch, when off. -->
+    <string name="core_workout_route_off">Off. Only the totals are kept.</string>
+    <!-- The Start button, naming the sport by its short name, lower case unless all capitals ("run", "HIIT"). -->
+    <string name="core_workout_start_sport">Start <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- The Start button for the Other sport. -->
+    <string name="core_workout_start_workout">Start workout</string>
+    <!-- Today's way back to the live screen, naming the sport as the Start button does. -->
+    <string name="core_workout_open_sport">Open <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- Today's way back to the live screen for the Other sport. -->
+    <string name="core_workout_open_workout">Open workout</string>
+
+    <!-- Strength: the set under way, with a planned number of sets. -->
+    <string name="core_workout_set_of">Set <xliff:g id="set" example="3">%1$d</xliff:g> of <xliff:g id="sets" example="5">%2$d</xliff:g></string>
+    <!-- Strength: the set under way, with no plan. -->
+    <string name="core_workout_set">Set <xliff:g id="set" example="3">%1$d</xliff:g></string>
+    <!-- Strength: what ends the rest, under its countdown. -->
+    <string name="core_workout_rest_rule">Rest ends when the time is up.</string>
+    <!-- Strength: what ends the rest when a heart rate ends it early. The number is in bpm. -->
+    <string name="core_workout_rest_rule_below">Rest ends when the time is up, or sooner once you stay under <xliff:g id="bpm" example="110">%1$d</xliff:g>.</string>
+    <!-- A set done, in the live screen's list: reps times the weight in kilograms. -->
+    <string name="core_workout_set_weight"><xliff:g id="reps" example="10">%1$d</xliff:g> × <xliff:g id="kilograms" example="60">%2$s</xliff:g> kg</string>
+    <!-- A set done with no weight logged: its reps. -->
+    <plurals name="core_workout_set_reps">
+        <item quantity="one"><xliff:g id="reps" example="1">%1$d</xliff:g> rep</item>
+        <item quantity="other"><xliff:g id="reps" example="10">%1$d</xliff:g> reps</item>
+    </plurals>
+    <!-- A set done: the highest heart rate in it, in bpm. -->
+    <string name="core_workout_set_peak">peak <xliff:g id="bpm" example="148">%1$d</xliff:g></string>
+    <!-- Two parts of a set's line joined, then a third joined on: "10 × 60 kg, 0:51", "10 × 60 kg, 0:51, peak 148". -->
+    <string name="core_workout_list"><xliff:g id="first" example="10 × 60 kg">%1$s</xliff:g>, <xliff:g id="next" example="0:51">%2$s</xliff:g></string>
+    <!-- Where the live zone shows while the workout is paused. -->
+    <string name="core_workout_no_zone_paused">No zone while paused</string>
+    <!-- Where the live zone shows before a reading. -->
+    <string name="core_workout_no_zone">No zone yet</string>
+
+    <!-- Progress toward a goal on the live screen. The goal has its unit: "212 of 300 kcal", "2.15 of 5 km". -->
+    <string name="core_workout_progress"><xliff:g id="done" example="212">%1$s</xliff:g> of <xliff:g id="goal" example="300 kcal">%2$s</xliff:g></string>
+    <!-- The live screen's top line before a GPS fix worth naming. -->
+    <string name="core_workout_gps_finding">Finding GPS</string>
+    <!-- The live screen's top line: the GPS fix's accuracy in metres. -->
+    <string name="core_workout_gps">GPS ±<xliff:g id="meters" example="4">%1$d</xliff:g> m</string>
+</resources>

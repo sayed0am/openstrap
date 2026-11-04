@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The metrics with their own detail page and the ranges it looks back over (presentation/MetricCopy.kt). The titles
+  head the page and its rows. HRV stays an abbreviation unless your language has a usual one.
+-->
+<resources>
+    <string name="core_metric_heart_rate">Heart rate</string>
+    <string name="core_metric_resting_hr">Resting heart rate</string>
+    <!-- Heart rate variability. -->
+    <string name="core_metric_hrv">HRV</string>
+    <string name="core_metric_spo2">Blood oxygen</string>
+    <string name="core_metric_stress">Stress</string>
+    <string name="core_metric_skin_temperature">Skin temperature</string>
+    <string name="core_metric_breathing">Breathing rate</string>
+    <string name="core_metric_steps">Steps</string>
+
+    <!-- A metric page's range picker, one short word each: the chosen day. -->
+    <string name="core_metric_range_day">Day</string>
+    <!-- The range picker: the last 7 days. -->
+    <string name="core_metric_range_week">Week</string>
+    <!-- The range picker: the last 30 days. -->
+    <string name="core_metric_range_month">Month</string>
+    <!-- The range picker: the last year, one value a week. -->
+    <string name="core_metric_range_year">Year</string>
+</resources>

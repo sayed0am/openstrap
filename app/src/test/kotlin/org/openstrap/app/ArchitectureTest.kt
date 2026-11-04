@@ -182,7 +182,10 @@ internal object Architecture {
     /** Packages with no Compose at all, in imports or in code. */
     val NO_COMPOSE = setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update")
 
-    /** The entry points a lower layer may name: to reach the container's owner, build an intent, read the build. */
+    /**
+     * The entry points a lower layer may name: to reach the container's owner, build an intent, read the build. `R`
+     * (the resource ids) any layer may name, since copy in every layer reads its text through `Strings`.
+     */
     val ROOT_NAMES = setOf("OpenStrapApp", "MainActivity", "BuildConfig", "R")
 
     /** Breaks the check lets through for now, each with the wave that removes it. One that matches nothing fails. */
@@ -252,6 +255,7 @@ internal object Architecture {
         if (r.to == ROOT) return when {
             wiresRoot(r.from) -> null
             r.name == "AppContainer" -> Finding(r.src.path, r.line, "container", r.target, "AppContainer named in ${r.from}")
+            r.name == "R" -> null
             r.name in ROOT_NAMES && ROOT in ALLOWED[top(r.from)].orEmpty() -> null
             else -> Finding(r.src.path, r.line, "edge", r.target, "${r.from} names root ${r.name}")
         }

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Where a score falls, as one short status word beside it and under each bar of its scale (presentation/Bands.kt).
+  Recovery's words run low to high, as do sleep's. Load is the training load, a name the app keeps capitalised.
+-->
+<resources>
+    <!-- Recovery under 55, or any score while body signals are off your normal. -->
+    <string name="core_band_recovery_easy">Take it easy</string>
+    <!-- Recovery 55 to 69. -->
+    <string name="core_band_recovery_moderate">Moderate</string>
+    <!-- Recovery 70 to 84. -->
+    <string name="core_band_recovery_ready">Ready</string>
+    <!-- Recovery 85 and up. -->
+    <string name="core_band_recovery_more">Ready for more</string>
+
+    <!-- Sleep score under 60. -->
+    <string name="core_band_sleep_poor">Poor</string>
+    <!-- Sleep score 60 to 79. -->
+    <string name="core_band_sleep_fair">Fair</string>
+    <!-- Sleep score 80 to 89. -->
+    <string name="core_band_sleep_good">Good</string>
+    <!-- Sleep score 90 and up. -->
+    <string name="core_band_sleep_great">Great</string>
+
+    <!-- A day's Load well above your usual. -->
+    <string name="core_band_load_above">Above your usual</string>
+    <!-- A day's Load near your usual. -->
+    <string name="core_band_load_usual">Usual</string>
+    <!-- A day's Load well below your usual. -->
+    <string name="core_band_load_below">Below your usual</string>
+    <!-- Before the evening, a Load not above your usual: only part of the day has counted. -->
+    <string name="core_band_load_so_far">So far today</string>
+</resources>

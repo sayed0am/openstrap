@@ -1,8 +1,11 @@
 package org.openstrap.app.presentation
 
+import androidx.annotation.StringRes
 import java.time.LocalDate
 import java.util.Locale
+import org.openstrap.app.R
 import org.openstrap.app.data.Moment
+import org.openstrap.app.i18n.Strings
 
 /**
  * The header's title for [date] on Today, by [DayWords]: "Today", "Yesterday", the weekday within the week ("Tuesday"),
@@ -18,37 +21,44 @@ fun dayTitle(date: LocalDate, today: LocalDate = LocalDate.now(), locale: Locale
  */
 fun todayTitle(
     moment: Moment, date: LocalDate, sportType: Int? = null, today: LocalDate = LocalDate.now(), locale: Locale = Locale.getDefault(),
+    strings: Strings = Strings.app,
 ): String =
     if (date < today) dayTitle(date, today, locale) else when (moment) {
-        Moment.During -> sportType?.let(::sportDoing) ?: "Workout"
-        Moment.After -> "After your ${sportType?.let(::sportNoun) ?: "workout"}"
-        Moment.WorkoutWindow -> "Workout time"
-        Moment.Waking -> "Waking up"
-        Moment.Night -> "Night"
-        Moment.Evening -> "Evening"
-        Moment.Midday -> "Midday"
+        Moment.During -> sportType?.let { sportDoing(it, strings) } ?: strings.get(R.string.core_header_during_workout)
+        Moment.After -> sportType?.let { sportNoun(it, strings) }?.let { strings.format(R.string.core_header_after_sport, it) }
+            ?: strings.get(R.string.core_header_after_workout)
+        Moment.WorkoutWindow -> strings.get(R.string.core_header_workout_window)
+        Moment.Waking -> strings.get(R.string.core_header_waking)
+        Moment.Night -> strings.get(R.string.core_header_night)
+        Moment.Evening -> strings.get(R.string.core_header_evening)
+        Moment.Midday -> strings.get(R.string.core_header_midday)
     }
 
-/** A sport as a short noun ("run", "ride"), for "After your run"; null where none reads well, so it says "workout". */
+/** The sports with a short noun, each with its noun ("run") and what you're doing in it ("Running"). */
+private enum class ShortSport(@StringRes val noun: Int, @StringRes val doing: Int) {
+    Run(R.string.core_header_sport_run, R.string.core_header_doing_run),
+    Walk(R.string.core_header_sport_walk, R.string.core_header_doing_walk),
+    Ride(R.string.core_header_sport_ride, R.string.core_header_doing_ride),
+    Swim(R.string.core_header_sport_swim, R.string.core_header_doing_swim),
+    Hike(R.string.core_header_sport_hike, R.string.core_header_doing_hike),
+    Row(R.string.core_header_sport_row, R.string.core_header_doing_row),
+}
+
 // Sport ids as the strap numbers them, read here only, so naming each would add nothing.
 @Suppress("MagicNumber")
-internal fun sportNoun(sportType: Int): String? = when (sportType) {
-    1, 2, 11 -> "run"
-    3, 40, 215 -> "walk"
-    4, 8, 143 -> "ride"
-    6, 7 -> "swim"
-    15, 224 -> "hike"
-    23 -> "row"
+private fun shortSport(sportType: Int): ShortSport? = when (sportType) {
+    1, 2, 11 -> ShortSport.Run
+    3, 40, 215 -> ShortSport.Walk
+    4, 8, 143 -> ShortSport.Ride
+    6, 7 -> ShortSport.Swim
+    15, 224 -> ShortSport.Hike
+    23 -> ShortSport.Row
     else -> null
 }
 
+/** A sport as a short noun ("run", "ride"), for "After your run", or null where none reads well, so it says "workout". */
+internal fun sportNoun(sportType: Int, strings: Strings = Strings.app): String? = shortSport(sportType)?.let { strings.get(it.noun) }
+
 /** A sport as what you're doing ("Running"), for the header during it; its name where no verb reads well. */
-internal fun sportDoing(sportType: Int): String = when (sportNoun(sportType)) {
-    "run" -> "Running"
-    "walk" -> "Walking"
-    "ride" -> "Cycling"
-    "swim" -> "Swimming"
-    "hike" -> "Hiking"
-    "row" -> "Rowing"
-    else -> org.openstrap.app.data.Workouts.sportName(sportType)
-}
+internal fun sportDoing(sportType: Int, strings: Strings = Strings.app): String =
+    shortSport(sportType)?.let { strings.get(it.doing) } ?: org.openstrap.app.data.Workouts.sportName(sportType)

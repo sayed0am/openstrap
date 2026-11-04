@@ -1,6 +1,7 @@
 package org.openstrap.app.data.settings
 
 import android.content.Context
+import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
@@ -11,7 +12,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.openstrap.app.R
 import org.openstrap.app.data.DayKey
+import org.openstrap.app.i18n.Strings
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -110,15 +113,24 @@ data class HealthConnectAuto(val on: Boolean = false, val lastSynced: Long? = nu
 }
 
 /** Notification buzz patterns: alternating vibrate and pause milliseconds for the strap's motor. */
-enum class BuzzPattern(val label: String, val millis: List<Int>) {
-    ONE_SHORT("Single", listOf(200)),
-    TWO_SHORT("Double", listOf(150, 150, 150)),
-    THREE_SHORT("Triple", listOf(120, 120, 120, 120, 120)),
-    ONE_LONG("Long", listOf(600)),
+enum class BuzzPattern(@StringRes private val labelId: Int, val millis: List<Int>) {
+    ONE_SHORT(R.string.core_settings_buzz_single, listOf(200)),
+    TWO_SHORT(R.string.core_settings_buzz_double, listOf(150, 150, 150)),
+    THREE_SHORT(R.string.core_settings_buzz_triple, listOf(120, 120, 120, 120, 120)),
+    ONE_LONG(R.string.core_settings_buzz_long, listOf(600)),
+    ;
+
+    val label: String get() = Strings.app.get(labelId)
 }
 
 /** How the strap buzzes while a call rings: the find-device buzz without a break, or 600 ms motor pulses once a second. */
-enum class CallBuzz(val label: String) { STEADY("Steady"), PULSED("Pulsed") }
+enum class CallBuzz(@StringRes private val labelId: Int) {
+    STEADY(R.string.core_settings_call_steady),
+    PULSED(R.string.core_settings_call_pulsed),
+    ;
+
+    val label: String get() = Strings.app.get(labelId)
+}
 
 /**
  * Hours the strap stays still for notifications, such as the night: from [from] to [to] in minutes after midnight,

@@ -1,5 +1,6 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
 import org.openstrap.app.data.db.DailyMaxHr
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepSession
@@ -7,6 +8,7 @@ import org.openstrap.app.data.db.dailyMaxHrIn
 import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.db.strapReadinessIn
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.i18n.Strings
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -350,7 +352,8 @@ class RecoveryEngine(private val dao: HealthDao) {
         }.map { loadDays[it].first }
         val causes = { morning: Long ->
             val before = morning - 86_400 + 3600
-            listOfNotNull("a hard training day".takeIf { hardDays.any { d -> d in before - 7200..before + 7200 } })
+            val hard = hardDays.any { d -> d in before - 7200..before + 7200 }
+            listOfNotNull(Strings.app.get(R.string.core_recovery_cause_hard_day).takeIf { hard })
         }
         return Basis(
             hr, mains, nights, nights.lastOrNull { it.day == span.midnight }, restingHr, maxHr, age, female,

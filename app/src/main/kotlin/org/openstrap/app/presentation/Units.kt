@@ -1,5 +1,7 @@
 package org.openstrap.app.presentation
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -66,9 +68,16 @@ object Units {
      * [meters] with its unit: "5.21 km" or "5.2 km" by [precision], "820 m" under a kilometre, with "≈ " in front
      * when [fromSteps]. Null under [SHOWN_FROM_METERS].
      */
-    fun distance(meters: Float, precision: Precision, fromSteps: Boolean = false, locale: Locale = Locale.getDefault()): String? {
+    fun distance(
+        meters: Float, precision: Precision, fromSteps: Boolean = false, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String? {
         if (meters < SHOWN_FROM_METERS) return null
-        val text = if (meters < METERS_PER_KM) "${metres(meters, locale)} m" else "${km(meters, precision, locale)} km"
+        val text = if (meters < METERS_PER_KM) {
+            strings.format(R.string.core_unit_meters, metres(meters, locale))
+        } else {
+            strings.format(R.string.core_unit_km, km(meters, precision, locale))
+        }
         return if (fromSteps) FROM_STEPS + text else text
     }
 
@@ -89,14 +98,15 @@ object Units {
     fun decimal(v: Number, places: Int, locale: Locale = Locale.getDefault()): String = String.format(locale, "%.${places}f", v)
 
     /** A length of time: "40 min", "7 h", "7 h 40", "7 h 05". Under a minute is "0 min". */
-    fun duration(seconds: Long, locale: Locale = Locale.getDefault()): String {
+    fun duration(seconds: Long, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String {
         val minutes = seconds.coerceAtLeast(0) / MINUTE
         val h = minutes / MINUTES_PER_HOUR
         val m = minutes % MINUTES_PER_HOUR
+        // The numbers are written in [locale] here, so a caller's locale wins over the app's language for digits.
         return when {
-            h == 0L -> String.format(locale, "%d min", m)
-            m == 0L -> String.format(locale, "%d h", h)
-            else -> String.format(locale, "%d h %02d", h, m)
+            h == 0L -> strings.format(R.string.core_unit_minutes, String.format(locale, "%d", m))
+            m == 0L -> strings.format(R.string.core_unit_hours, String.format(locale, "%d", h))
+            else -> strings.format(R.string.core_unit_hours_minutes, String.format(locale, "%d", h), String.format(locale, "%02d", m))
         }
     }
 
@@ -110,8 +120,12 @@ object Units {
         else String.format(locale, "%d:%02d", seconds / MINUTE, seconds % MINUTE)
 
     /** A finished workout's length, or a gap between two: "45 s" under a minute, else [workoutClock]. */
-    fun secondsOrClock(seconds: Long, locale: Locale = Locale.getDefault()): String =
-        if (seconds < MINUTE) String.format(locale, "%d s", seconds) else workoutClock(seconds, locale)
+    fun secondsOrClock(seconds: Long, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        if (seconds < MINUTE) {
+            strings.format(R.string.core_unit_seconds, String.format(locale, "%d", seconds))
+        } else {
+            workoutClock(seconds, locale)
+        }
 }
 
 /** A change against your usual, with its sign: "+3", "−3", or "±0" when it rounds to nothing, never "-0". */
@@ -160,7 +174,8 @@ object Pace {
     }
 
     /** A pace with its unit, "5:24 /km", null as for [clock]. */
-    fun text(secondsPerKm: Double?, locale: Locale = Locale.getDefault()): String? = clock(secondsPerKm, locale)?.let { "$it /km" }
+    fun text(secondsPerKm: Double?, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String? =
+        clock(secondsPerKm, locale)?.let { strings.format(R.string.core_unit_pace, it) }
 }
 
 /** A time of day, decision 4 in [Units]: every clock in the app follows the phone's 12 or 24 hour setting through here. */
