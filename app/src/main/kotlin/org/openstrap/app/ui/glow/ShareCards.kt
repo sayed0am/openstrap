@@ -1,6 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
+import androidx.compose.ui.res.stringResource
 import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -130,7 +133,10 @@ internal class StoryStat(val value: String, val unit: String?, val label: String
  * The card for [summary]'s workout of [family], from the [hero] its summary shows, what it [earned] and your
  * [usualLoad] for a game's Load. [now] names the day.
  */
-internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, usualLoad: Float?, now: Long, zone: ZoneId = ZoneId.systemDefault()): StoryCard {
+internal fun storyCard(
+    family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, usualLoad: Float?, now: Long,
+    zone: ZoneId = ZoneId.systemDefault(), strings: Strings = Strings.app,
+): StoryCard {
     val a = summary.analysis
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
@@ -138,52 +144,47 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
     val date = DayWords.monthDay(Instant.ofEpochSecond(a.shownStart).atZone(zone).toLocalDate())
     val avg = a.workout.averageHeartRate
     val kcal = kcalFigure(a)
-    val (minutes, minUnit) = minutesFigure(active)
+    val (minutes, minUnit) = minutesFigure(active, strings)
+    fun join(parts: List<String>) = joinParts(parts, strings)
     val chip = earned.firstOrNull { it.kind == EarnedLine.Kind.Best }?.let { StoryChip(it.text, best = true, met = false) }
-        ?: earned.firstOrNull { it.kind == EarnedLine.Kind.Goal }?.let { StoryChip(listOfNotNull(it.text, it.value).joinToString(", "), best = false, met = it.met) }
+        ?: earned.firstOrNull { it.kind == EarnedLine.Kind.Goal }?.let {
+            StoryChip(join(listOfNotNull(it.text, it.value)) ?: it.text, best = false, met = it.met)
+        }
+    val timeLabel = strings.get(R.string.glow_share_stat_time)
+    val avgBpm = strings.get(R.string.glow_share_stat_avg_bpm)
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters?.takeIf { it > 0f }
             val pace = hero.pace
             val stats = if (m != null) listOfNotNull(
-                StoryStat(hero.value, hero.unit, "Distance"),
-                StoryStat(workoutClock(active), null, "Time"),
-                pace?.let { StoryStat(it, "/km", "Pace") } ?: avg?.let { StoryStat("$it", null, "Avg bpm") },
+                StoryStat(hero.value, hero.unit, strings.get(R.string.glow_share_stat_distance)),
+                StoryStat(workoutClock(active), null, timeLabel),
+                pace?.let { StoryStat(it, strings.get(R.string.glow_share_unit_per_km), strings.get(R.string.glow_share_stat_pace)) }
+                    ?: avg?.let { StoryStat("$it", null, avgBpm) },
             ) else listOfNotNull(
-                StoryStat(workoutClock(active), null, "Time"),
-                avg?.let { StoryStat("$it", null, "Avg bpm") },
-                kcal?.let { StoryStat(it, null, "Active kcal") },
+                StoryStat(workoutClock(active), null, timeLabel),
+                avg?.let { StoryStat("$it", null, avgBpm) },
+                kcal?.let { StoryStat(it, null, strings.get(R.string.glow_share_stat_active_kcal)) },
             )
-            StoryCard.Run(stats, chip, "${a.sportName}, $date")
+            StoryCard.Run(stats, chip, strings.format(R.string.glow_share_footer, a.sportName, date))
         }
         Workouts.Family.Strength -> {
             val lifted = Strength.kgLifted(summary.sets)
             val done = FamilySummary.setsDone(summary.sets)
-            val total = listOf("$minutes $minUnit") + if (done > 0) listOf("$done ${if (done == 1) "set" else "sets"}") else emptyList()
+            val length = strings.format(if (active >= 60) R.string.glow_share_total_minutes else R.string.glow_share_total_seconds, minutes)
+            val total = join(listOfNotNull(length, strings.plural(R.plurals.glow_share_sets, done, done).takeIf { done > 0 })) ?: length
             StoryCard.Lift(
-                whenLine, a.sportName, hero.value, if (lifted != null) "kg" else hero.unit,
-                exerciseRows(summary.sets).take(MAX_EXERCISES) + ("Total" to total.joinToString(", ")), chip,
+                whenLine, a.sportName, hero.value, if (lifted != null) strings.get(R.string.glow_share_unit_kg) else hero.unit,
+                exerciseRows(summary.sets, strings).take(MAX_EXERCISES) + (strings.get(R.string.glow_share_total) to total), chip,
             )
         }
-        Workouts.Family.IndoorCardio -> StoryCard.Indoor(
-            date, a.sportName, dotClock(active), a.zoneSeconds,
-            listOfNotNull(avg?.let { "$it avg bpm" }, kcal?.let { "$it kcal" }).joinToString(", ").ifEmpty { null }, chip,
-        )
-        Workouts.Family.Intervals -> {
-            val done = Phases.roundsDone(summary.rounds)
-            val reps = summary.structure is Structure.Reps
-            val planned = (summary.structure as? Structure.Timed)?.rounds ?: (summary.structure as? Structure.Reps)?.rounds
-            val word = if (reps) "reps" else "rounds"
-            val lines = FamilySummary.rounds(summary.rounds, readings)
-            val peak = lines.mapNotNull { it.peak }.maxOrNull() ?: readings.maxOfOrNull { it.second }
-            val work = FamilySummary.workSeconds(summary.rounds)
-            val workText = if (work >= 60) "${work / 60} min of work" else "$work s of work"
-            if (done == 0) StoryCard.Rounds(whenLine, a.sportName, minutes, minUnit, emptyList(), a.maxHeartRate, peak?.let { "Peak $it bpm" })
-            else StoryCard.Rounds(
-                whenLine, a.sportName, "$done", if (planned != null && planned >= done) "of $planned $word" else word,
-                lines.map { it.peak }, a.maxHeartRate, listOfNotNull(peak?.let { "Peak $it bpm" }, workText).joinToString(", "),
+        Workouts.Family.IndoorCardio -> {
+            val line = listOfNotNull(
+                avg?.let { strings.format(R.string.glow_share_avg_bpm, it) }, kcal?.let { strings.format(R.string.glow_share_kcal, it) },
             )
+            StoryCard.Indoor(date, a.sportName, dotClock(active), a.zoneSeconds, join(line), chip)
         }
+        Workouts.Family.Intervals -> roundsCard(summary, readings, whenLine, minutes to minUnit, strings)
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             StoryCard.Calm(
@@ -196,10 +197,43 @@ internal fun storyCard(family: Workouts.Family, summary: PhoneSummary, hero: Sum
             StoryCard.Game(
                 a.sportName, minutes, minUnit,
                 load?.let { FamilySummary.loadLine(it, usualLoad) },
-                readings.maxOfOrNull { it.second }?.let { "Peak $it" },
+                readings.maxOfOrNull { it.second }?.let { strings.format(R.string.glow_share_peak, it) },
             )
         }
     }
+}
+
+/** Two or more parts of a card's line as one, "141 avg bpm, 320 kcal", null when there are none. */
+private fun joinParts(parts: List<String>, strings: Strings): String? =
+    parts.reduceOrNull { x, y -> strings.format(R.string.glow_share_join, x, y) }
+
+/** An intervals card: the reps or rounds done of those planned, each one's peak, and the peak and the work under them. */
+private fun roundsCard(
+    summary: PhoneSummary, readings: List<Pair<Long, Int>>, whenLine: String, minutes: Pair<String, String>, strings: Strings,
+): StoryCard.Rounds {
+    val a = summary.analysis
+    val done = Phases.roundsDone(summary.rounds)
+    val reps = summary.structure is Structure.Reps
+    val planned = (summary.structure as? Structure.Timed)?.rounds ?: (summary.structure as? Structure.Reps)?.rounds
+    val lines = FamilySummary.rounds(summary.rounds, readings)
+    val peak = lines.mapNotNull { it.peak }.maxOrNull() ?: readings.maxOfOrNull { it.second }
+    val work = FamilySummary.workSeconds(summary.rounds)
+    val workText = if (work >= 60) {
+        strings.format(R.string.glow_share_work_minutes, work / 60)
+    } else {
+        strings.format(R.string.glow_share_work_seconds, work)
+    }
+    val peakText = peak?.let { strings.format(R.string.glow_share_peak_bpm, it) }
+    if (done == 0) return StoryCard.Rounds(whenLine, a.sportName, minutes.first, minutes.second, emptyList(), a.maxHeartRate, peakText)
+    val unit = when {
+        planned != null && planned >= done ->
+            strings.format(if (reps) R.string.glow_share_unit_of_reps else R.string.glow_share_unit_of_rounds, planned)
+        else -> strings.get(if (reps) R.string.glow_share_unit_reps else R.string.glow_share_unit_rounds)
+    }
+    return StoryCard.Rounds(
+        whenLine, a.sportName, "$done", unit,
+        lines.map { it.peak }, a.maxHeartRate, joinParts(listOfNotNull(peakText, workText), strings),
+    )
 }
 
 /** Exercises a strength card names; the total follows them. */
@@ -209,14 +243,18 @@ private const val MAX_EXERCISES = 4
  * Each named exercise in the order first done: "5 × 10, top 65 kg" when every set had the same reps, else "4 sets,
  * top 65 kg", without the top when nothing was weighed. Sets without a name aren't listed.
  */
-internal fun exerciseRows(sets: List<org.openstrap.app.data.db.AppWorkoutSet>): List<Pair<String, String>> {
+internal fun exerciseRows(sets: List<org.openstrap.app.data.db.AppWorkoutSet>, strings: Strings = Strings.app): List<Pair<String, String>> {
     val done = sets.filter { it.end != null && !it.exercise.isNullOrBlank() }
     return done.groupBy { it.exercise!!.trim().lowercase() }.values.map { mine ->
         val n = mine.size
         val reps = mine.map { it.reps }.distinct().singleOrNull()
         val top = mine.mapNotNull { it.weightKg }.maxOrNull()
-        val count = if (reps != null) "$n × $reps" else "$n ${if (n == 1) "set" else "sets"}"
-        mine.first().exercise!!.trim() to (count + (top?.let { ", top ${Strength.kgText(it)} kg" } ?: ""))
+        val count = if (reps != null) {
+            strings.format(R.string.glow_share_row_reps, n, reps)
+        } else {
+            strings.plural(R.plurals.glow_share_sets, n, n)
+        }
+        mine.first().exercise!!.trim() to (top?.let { strings.format(R.string.glow_share_row_top, count, Strength.kgText(it)) } ?: count)
     }
 }
 
@@ -476,7 +514,10 @@ private fun IndoorStory(card: StoryCard.Indoor) {
         Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
             DotMatrixText(card.time, dot = DotSize.Detail, scale = dotFitScale(card.time, DotSize.Detail, 310.dp))
         }
-        Text("Workout time", color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text(
+            stringResource(R.string.glow_share_workout_time), color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary,
+            maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.weight(1f))
         // Time in each zone as one strip, its ends rounded.
         ZoneBar(card.zones, ZONE_COLORS, height = 10.dp, gap = 3.dp, corner = 2.dp, ends = 5.dp)
@@ -497,7 +538,10 @@ private fun WeekStory(card: StoryCard.Week) {
             Text(card.range, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
         }
         Spacer(Modifier.weight(1f))
-        Text("My week", color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+        Text(
+            stringResource(R.string.glow_share_my_week), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
+            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
+        )
         Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
             DotMatrixText(card.count, dot = DotSize.Live, scale = dotFitScale(card.count, DotSize.Live, 310.dp))
         }

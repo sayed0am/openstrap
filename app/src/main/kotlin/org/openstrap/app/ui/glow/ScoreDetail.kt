@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.RecoveryCopy
 import org.openstrap.app.presentation.Units
@@ -123,10 +126,14 @@ private fun RecoveryDetail(
 
     val known = week.mapNotNull { it.second }
     val headline = when {
-        range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 days", null)
-        range == Range.Week -> DetailHeadline.none("No scores", "In the last 7 days")
-        score != null -> DetailHeadline(score.toString(), if (isToday) "this morning" else "that morning", TodayCopy.recoveryWord(score, alert))
-        estimate != null -> DetailHeadline(estimate.toString(), "Strap's estimate", null)
+        range == Range.Week && known.isNotEmpty() ->
+            DetailHeadline(Math.round(known.average()).toString(), stringResource(R.string.glow_recovery_week_average), null)
+        range == Range.Week ->
+            DetailHeadline.none(stringResource(R.string.glow_recovery_no_scores), stringResource(R.string.glow_recovery_in_last_7_days))
+        score != null -> DetailHeadline(
+            score.toString(), stringResource(if (isToday) R.string.glow_recovery_this_morning else R.string.glow_recovery_that_morning),
+            TodayCopy.recoveryWord(score, alert))
+        estimate != null -> DetailHeadline(estimate.toString(), stringResource(R.string.glow_recovery_strap_estimate), null)
         else -> DetailCopy.recoveryState(ready, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
     }
 
@@ -149,7 +156,7 @@ private fun RecoveryDetail(
                             score != null -> TabCopy.recovery(score, alert, ready.contributors)
                             ready.phase == Recovery.Phase.Withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.Learning(ready.baselineNights, Recovery.SCORED_NIGHTS))
                             ready.withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.NoHeartData)
-                            else -> "Recovery is scored each morning from the night's sleep."
+                            else -> stringResource(R.string.glow_recovery_scored_each_morning)
                         },
                     )
                     if (score != null && ready != null) TabCopy.learning(ready.phase, ready.baselineNights)?.let { CaveatLine(it, color) }
@@ -157,7 +164,7 @@ private fun RecoveryDetail(
             }
             val all = ready?.contributors.orEmpty().sortedByDescending { it.factor.weight }
             if (all.isNotEmpty()) item {
-                ListPanel(Modifier.padding(top = 8.dp), title = "What drove it") {
+                ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_recovery_what_drove)) {
                     all.forEachIndexed { i, c ->
                         ContributorRow(
                             TabCopy.factorName(c.factor), MetricColors.readiness, TabCopy.contributorWord(c.score), c.score / 100f,
@@ -168,7 +175,7 @@ private fun RecoveryDetail(
             }
         } else {
             item {
-                if (known.isEmpty()) DetailEmpty("No Recovery in the last 7 days yet.")
+                if (known.isEmpty()) DetailEmpty(stringResource(R.string.glow_recovery_none_week))
                 else {
                     val values = week.map { it.second?.toFloat() }
                     // TODO(step 6): your normal as a band, once the app keeps a normal of the score; every day stays dim until then.
@@ -226,14 +233,16 @@ private fun ChargeDetail(
     val lastAt = c?.points?.lastOrNull { it.state != Recovery.State.NoData }?.t
     val stale = isToday && lastAt != null && System.currentTimeMillis() / 1000 - lastAt > 30 * 60
     val headline = when {
-        c == null || !c.anchored -> DetailHeadline.none("Waiting", "After your first night")
-        now == null -> DetailHeadline.none("No reading", "Needs a few hours of heart rate")
+        c == null || !c.anchored ->
+            DetailHeadline.none(stringResource(R.string.glow_recovery_waiting), stringResource(R.string.glow_recovery_after_first_night))
+        now == null ->
+            DetailHeadline.none(stringResource(R.string.glow_no_reading), stringResource(R.string.glow_recovery_needs_heart_rate))
         else -> DetailHeadline(
             now.toString(),
             when {
-                stale -> "at ${clock(lastAt)}"
-                isToday -> "now"
-                else -> "at the end of the day"
+                stale -> stringResource(R.string.glow_recovery_at_time, clock(lastAt))
+                isToday -> stringResource(R.string.glow_recovery_now_lower)
+                else -> stringResource(R.string.glow_recovery_end_of_day)
             },
             Narrative.chargeHeadline(now),
         )
@@ -241,6 +250,7 @@ private fun ChargeDetail(
     val day = state.dayStart..state.dayEnd
     val step = 15 * 60L
     val values = remember(c?.points, day) { c?.points?.let { bucket(it, day, step) }.orEmpty() }
+    val resources = LocalResources.current
 
     // TODO(step 6): Week and longer wait for a stored Charge history; the app works out only the day shown, so there are no pills.
     DetailTemplate(
@@ -262,15 +272,18 @@ private fun ChargeDetail(
                     onScrub = { i ->
                         scrub = i?.let { values[it] }?.let { v ->
                             val shown = chargeShown(v)
-                            DetailHeadline(shown.toString(), "at ${clock(day.first + i * step)}", Narrative.chargeHeadline(shown))
+                            val at = resources.getString(R.string.glow_recovery_at_time, clock(day.first + i * step))
+                            DetailHeadline(shown.toString(), at, Narrative.chargeHeadline(shown))
                         }
                     },
                 )
                 // A figure the day doesn't have (no waking without a night's sleep) is left out, the others share the row.
                 val figures = listOf(
-                    atWake?.toString() to if (c.strapOffOvernight) "At start" else "At waking",
-                    c.highest?.let(::chargeShown)?.toString() to "Highest",
-                    c.lowest?.let(::chargeShown)?.toString() to "Lowest",
+                    atWake?.toString() to stringResource(
+                        if (c.strapOffOvernight) R.string.glow_recovery_at_start else R.string.glow_recovery_at_waking,
+                    ),
+                    c.highest?.let(::chargeShown)?.toString() to stringResource(R.string.glow_recovery_highest),
+                    c.lowest?.let(::chargeShown)?.toString() to stringResource(R.string.glow_recovery_lowest),
                 ).filter { it.first != null }
                 if (figures.isNotEmpty()) DetailFigures(figures, Modifier.padding(top = 18.dp))
             }
@@ -284,7 +297,7 @@ private fun ChargeDetail(
             }
         }
         if (c != null && c.anchored && now != null) item {
-            ListPanel(Modifier.padding(top = 8.dp), title = "Where it went") {
+            ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_recovery_where_it_went)) {
                 TabCopy.chargeRows(c.recharged, c.drainedExercise, c.drainedStress, c.drainedLiving).forEachIndexed { i, row ->
                     ListRow(row.name, color, row.value, row.status, divider = i > 0)
                 }
@@ -318,7 +331,8 @@ private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, hi
             ScoreRow(Score.Energy, MetricColors.charge, charge?.toString(), word, divider = false, onOpen)
         } else RecoveryScoreRow(r?.readiness, divider = false, onOpen)
         ListRow(
-            "Last night", MetricColors.sleepDeep, asleep?.let { Units.duration(it) }, if (asleep == null) "No sleep recorded" else "Asleep",
+            stringResource(R.string.glow_recovery_last_night), MetricColors.sleepDeep, asleep?.let { Units.duration(it) },
+            stringResource(if (asleep == null) R.string.glow_recovery_no_sleep else R.string.glow_recovery_asleep),
             onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, icon = Score.Sleep.rowIcon(),
         )
         metrics.forEach { m -> RelatedMetricRow(m, state, history, divider = true, onOpen) }

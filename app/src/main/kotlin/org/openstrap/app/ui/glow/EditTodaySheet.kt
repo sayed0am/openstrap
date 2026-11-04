@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,7 +27,7 @@ import org.openstrap.app.ui.dashboard.TodayEdits
 @Composable
 internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onDismiss: () -> Unit) {
     var e by rememberSaveable(stateSaver = TodayEditsSaver) { mutableStateOf(edits) }
-    PageSheet(onDismiss, "Edit Today", note = "Pin up to two cards under the top card, or hide the ones you don't need.") {
+    PageSheet(onDismiss, stringResource(R.string.glow_today_edit), note = stringResource(R.string.glow_today_edit_note)) {
         PageRows {
             TodayCard.entries.filter { it.editable }.forEachIndexed { i, card ->
                 val shown = card !in e.hidden
@@ -33,7 +35,8 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         if (card.pinnable) {
                             val pinned = card in e.pinned
-                            PageChip(if (pinned) "Pinned" else "Pin", pinned, { e = e.togglePin(card) }, enabled = e.canPin(card))
+                            val pin = stringResource(if (pinned) R.string.glow_today_edit_pinned else R.string.glow_today_edit_pin)
+                            PageChip(pin, pinned, { e = e.togglePin(card) }, enabled = e.canPin(card))
                         }
                         GlowSwitch(shown, { e = e.toggleHidden(card) })
                     }
@@ -41,8 +44,8 @@ internal fun EditTodaySheet(edits: TodayEdits, onSave: (TodayEdits) -> Unit, onD
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Done", { onSave(e) }, Modifier.weight(1f), primary = true)
+            PageButton(stringResource(R.string.glow_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(stringResource(R.string.glow_done), { onSave(e) }, Modifier.weight(1f), primary = true)
         }
     }
 }

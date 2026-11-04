@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -46,6 +47,7 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import org.openstrap.app.R
 import org.openstrap.app.ui.components.rememberScrubHaptics
 import org.openstrap.app.ui.components.scrub
 import org.openstrap.app.ui.theme.FunnelSans
@@ -178,6 +180,8 @@ fun GlowLineChart(
     describe: ((index: Int, value: Float) -> String)? = null,
 ) {
     val m = rememberTextMeasurer()
+    // Read while drawing: the average is only known there.
+    val resources = LocalResources.current
     var touchX by remember { mutableStateOf<Float?>(null) }
     var width by remember { mutableStateOf(0f) }
     val inset = with(androidx.compose.ui.platform.LocalDensity.current) { 7.dp.toPx() }
@@ -200,7 +204,11 @@ fun GlowLineChart(
                     values, size.width, size.height, density, inset, axis = labels.isNotEmpty(), yRange = yRange, band = band,
                 ) ?: return@drawWithCache nothing()
                 val paths = lineChartPaths(g, color, density)
-                val average = if (showAverage) m.measure("avg ${format(g.average)}", averageText) else null
+                val average = if (showAverage) {
+                    m.measure(resources.getString(R.string.glow_metrics_chart_average, format(g.average)), averageText)
+                } else {
+                    null
+                }
                 val axisLabels = m.measureAll(labels)
                 val h = g.plotBottom
                 onDrawBehind {

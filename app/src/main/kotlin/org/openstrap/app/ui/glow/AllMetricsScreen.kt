@@ -1,10 +1,14 @@
 package org.openstrap.app.ui.glow
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import kotlin.math.roundToInt
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.RecoveryResult
@@ -53,13 +57,13 @@ data class IndexGroup(val title: String, val rows: List<IndexRow>)
  * What the Recovery row says under its name: the learning state while the baselines fill, as on the Recovery card
  * ("Learning, 5 of 7 nights"); otherwise that it's the day's score, or null when there's nothing to say.
  */
-internal fun recoveryStatus(r: org.openstrap.app.data.Recovery.Readiness?): String? = when {
+internal fun recoveryStatus(r: org.openstrap.app.data.Recovery.Readiness?, strings: Strings = Strings.app): String? = when {
     r == null -> null
     r.score != null && r.phase == org.openstrap.app.data.Recovery.Phase.Learning ->
-        "Learning, ${r.baselineNights} of ${org.openstrap.app.data.Recovery.SETTLED_NIGHTS} nights"
-    r.score != null -> "Score for the day"
+        strings.format(R.string.glow_metrics_learning_nights, r.baselineNights, org.openstrap.app.data.Recovery.SETTLED_NIGHTS)
+    r.score != null -> strings.get(R.string.glow_metrics_score_for_day)
     r.withheld && r.phase == org.openstrap.app.data.Recovery.Phase.Withheld ->
-        "Learning, ${r.baselineNights} of ${org.openstrap.app.data.Recovery.SCORED_NIGHTS} nights"
+        strings.format(R.string.glow_metrics_learning_nights, r.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS)
     else -> null
 }
 
@@ -67,13 +71,13 @@ internal fun recoveryStatus(r: org.openstrap.app.data.Recovery.Readiness?): Stri
  * The Habit Age row's value and status, the same as its page shows: the estimate once there is one, your age as
  * the starting point while it learns, otherwise no value and why.
  */
-internal fun habitAgeRow(outcome: Healthspan.Outcome?): Pair<String?, String> {
+internal fun habitAgeRow(outcome: Healthspan.Outcome?, strings: Strings = Strings.app): Pair<String?, String> {
     val r = outcome?.result
     return when {
-        r != null -> "${r.estimate.roundToInt()}" to "Updated weekly"
-        outcome?.withheld?.learning == true && outcome.age != null -> "${outcome.age}" to "Starting point"
-        outcome?.withheld?.profile == true -> null to "Needs your profile"
-        else -> null to "Not worked out yet"
+        r != null -> "${r.estimate.roundToInt()}" to strings.get(R.string.glow_metrics_updated_weekly)
+        outcome?.withheld?.learning == true && outcome.age != null -> "${outcome.age}" to strings.get(R.string.glow_metrics_starting_point)
+        outcome?.withheld?.profile == true -> null to strings.get(R.string.glow_metrics_needs_profile)
+        else -> null to strings.get(R.string.glow_metrics_not_worked_out)
     }
 }
 
@@ -86,14 +90,10 @@ fun metricIndex(
     today: LocalDate = LocalDate.now(),
     /** The strap's own Recovery for the day, shown as its estimate while OpenStrap's score is withheld, as on Today. */
     strapScore: Int? = null,
+    strings: Strings = Strings.app,
 ): List<IndexGroup> {
     val rec = recovery?.takeIf { it.date == state.date }
-    // A row without a value says why when it knows ([waiting]), otherwise that the day has none.
-    fun row(name: String, color: Color, value: String?, status: String, target: IndexTarget, waiting: String? = null) =
-        IndexRow(name, color, value, if (value == null) waiting ?: NO_VALUE else status, target)
-    fun metric(m: Metric, name: String, color: Color, value: Float?, status: String, suffix: String = "") =
-        row(name, color, value?.let { m.format(it) + suffix }, status, IndexTarget.Open(Detail.OfMetric(m)))
-    val (habitValue, habitStatus) = habitAgeRow(healthspan)
+    val (habitValue, habitStatus) = habitAgeRow(healthspan, strings)
     val weekFrom = state.date.minusDays(6)
     // The 7 days up to the day shown, not Your week's Monday to Sunday, so the row says so. The strap's own
     // "Activity" records aren't workouts, as on Today and Your week.
@@ -103,54 +103,102 @@ fun metricIndex(
     }
     return listOf(
         IndexGroup(
-            "Recovery",
+            strings.get(R.string.glow_metrics_recovery),
             listOf(
-                recoveryStatus(rec?.readiness).let { status ->
+                recoveryStatus(rec?.readiness, strings).let { status ->
                     val shown = org.openstrap.app.presentation.TodayCopy.recoveryShown(rec?.readiness, strapScore, NO_VALUE)
                     row(
-                        "Recovery", MetricColors.readiness, shown.value?.toString(),
-                        shown.word.takeIf { shown.estimate } ?: status ?: "Score for the day", IndexTarget.Home(HomeTab.Recovery), waiting = status,
+                        strings.get(R.string.glow_metrics_recovery), MetricColors.readiness, shown.value?.toString(),
+                        shown.word.takeIf { shown.estimate } ?: status ?: strings.get(R.string.glow_metrics_score_for_day),
+                        IndexTarget.Home(HomeTab.Recovery), waiting = status,
                     )
                 },
                 // Before the first night Charge is only the simulation's starting guess: a dash, as on the Recovery tab's battery.
                 row(
-                    "Energy", MetricColors.charge, rec?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)?.toString(),
-                    if (state.date == today) "Latest" else "End of day", IndexTarget.Home(HomeTab.Recovery, charge = true),
+                    strings.get(R.string.glow_metrics_energy), MetricColors.charge,
+                    rec?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)?.toString(),
+                    strings.get(if (state.date == today) R.string.glow_metrics_latest else R.string.glow_metrics_end_of_day),
+                    IndexTarget.Home(HomeTab.Recovery, charge = true),
                     waiting = org.openstrap.app.presentation.AFTER_FIRST_NIGHT.takeIf { rec?.charge?.anchored == false },
                 ),
-                row("Habit Age", MetricColors.habitAge, habitValue, habitStatus, IndexTarget.Open(Detail.Healthspan), waiting = habitStatus),
+                row(
+                    strings.get(R.string.glow_metrics_habit_age), MetricColors.habitAge, habitValue, habitStatus,
+                    IndexTarget.Open(Detail.Healthspan), waiting = habitStatus,
+                ),
             ),
         ),
         IndexGroup(
-            "Sleep",
-            listOf(row("Sleep", MetricColors.sleepDeep, state.sleep?.score?.toString(), "Score for the night", IndexTarget.Home(HomeTab.Sleep))),
-        ),
-        IndexGroup(
-            "Heart",
+            strings.get(R.string.glow_metrics_sleep),
             listOf(
-                metric(Metric.HeartRate, "Heart rate", MetricColors.heart, state.latestHeartRate?.toFloat(), "Latest reading"),
-                metric(Metric.RestingHr, "Resting heart rate", MetricColors.heart, state.restingHeartRate?.toFloat(), "For the day"),
-                metric(Metric.Hrv, "HRV", MetricColors.hrv, state.hrv.avg()?.toFloat(), "Day average"),
+                row(
+                    strings.get(R.string.glow_metrics_sleep), MetricColors.sleepDeep, state.sleep?.score?.toString(),
+                    strings.get(R.string.glow_metrics_score_for_night), IndexTarget.Home(HomeTab.Sleep),
+                ),
             ),
         ),
+    ) + signalGroups(state, strings) + listOf(
         IndexGroup(
-            "Body signals",
+            strings.get(R.string.glow_metrics_group_activity),
             listOf(
-                metric(Metric.Spo2, "Blood oxygen", MetricColors.spo2, state.spo2.avg()?.toFloat(), "Day average", suffix = "%"),
-                metric(Metric.SkinTemperature, "Skin temperature", MetricColors.temperature, state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), "Day average"),
-                metric(Metric.Breathing, "Breathing rate", MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), "Day average"),
-                metric(Metric.Stress, "Stress", MetricColors.stress, state.stress.avg()?.toFloat(), "Day average"),
-            ),
-        ),
-        IndexGroup(
-            "Activity",
-            listOf(
-                metric(Metric.Steps, "Steps", MetricColors.steps, state.steps.toFloat(), "For the day"),
-                row("Workouts", MetricColors.heart, week.toString(), "Last 7 days", IndexTarget.Open(Detail.AllWorkouts)),
+                metric(
+                    strings, Metric.Steps, R.string.glow_metrics_steps, MetricColors.steps, state.steps.toFloat(),
+                    R.string.glow_metrics_for_the_day,
+                ),
+                row(
+                    strings.get(R.string.glow_metrics_workouts), MetricColors.heart, week.toString(),
+                    strings.get(R.string.glow_metrics_last_7_days), IndexTarget.Open(Detail.AllWorkouts),
+                ),
             ),
         ),
     )
 }
+
+// A row without a value says why when it knows ([waiting]), otherwise that the day has none.
+private fun row(name: String, color: Color, value: String?, status: String, target: IndexTarget, waiting: String? = null) =
+    IndexRow(name, color, value, if (value == null) waiting ?: NO_VALUE else status, target)
+
+/** A metric's row by the ids of its name and status words. */
+private fun metric(
+    strings: Strings,
+    m: Metric,
+    @StringRes name: Int,
+    color: Color,
+    value: Float?,
+    @StringRes status: Int = R.string.glow_metrics_day_average,
+    suffix: String = "",
+) = row(strings.get(name), color, value?.let { m.format(it) + suffix }, strings.get(status), IndexTarget.Open(Detail.OfMetric(m)))
+
+/** The index's Heart and Body signals groups, a row for each of their metrics. */
+private fun signalGroups(state: DayUiState, strings: Strings): List<IndexGroup> = listOf(
+    IndexGroup(
+        strings.get(R.string.glow_metrics_group_heart),
+        listOf(
+            metric(
+                strings, Metric.HeartRate, R.string.glow_metrics_heart_rate, MetricColors.heart, state.latestHeartRate?.toFloat(),
+                R.string.glow_metrics_latest_reading,
+            ),
+            metric(
+                strings, Metric.RestingHr, R.string.glow_metrics_resting_heart_rate, MetricColors.heart,
+                state.restingHeartRate?.toFloat(), R.string.glow_metrics_for_the_day,
+            ),
+            metric(strings, Metric.Hrv, R.string.glow_metrics_hrv, MetricColors.hrv, state.hrv.avg()?.toFloat()),
+        ),
+    ),
+    IndexGroup(
+        strings.get(R.string.glow_metrics_group_body),
+        listOf(
+            metric(strings, Metric.Spo2, R.string.glow_metrics_blood_oxygen, MetricColors.spo2, state.spo2.avg()?.toFloat(), suffix = "%"),
+            metric(
+                strings, Metric.SkinTemperature, R.string.glow_metrics_skin_temperature, MetricColors.temperature,
+                state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(),
+            ),
+            metric(
+                strings, Metric.Breathing, R.string.glow_metrics_breathing_rate, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(),
+            ),
+            metric(strings, Metric.Stress, R.string.glow_metrics_stress, MetricColors.stress, state.stress.avg()?.toFloat()),
+        ),
+    ),
+)
 
 /**
  * The index as a sheet over the tab (spec 3.2), from the grid button in the header: one grouped list per section.
@@ -163,7 +211,7 @@ fun AllMetricsSheet(
     onDismiss: () -> Unit,
     onOpen: (IndexTarget) -> Unit,
 ) {
-    PageSheet(onDismiss, "All metrics", dayName(date), side = 16.dp) {
+    PageSheet(onDismiss, stringResource(R.string.glow_metrics_all_metrics), dayName(date), side = 16.dp) {
         groups.forEach { group ->
             ListPanel(title = group.title) {
                 group.rows.forEachIndexed { i, r ->

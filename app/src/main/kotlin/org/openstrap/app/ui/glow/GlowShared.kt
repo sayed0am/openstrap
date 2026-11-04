@@ -1,29 +1,32 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.WorkoutAnalysis
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.ChartPoint
 
 /*
  * Words and small helpers the glow screens share, each written once. Date labels and numbers are in presentation's
- * DayWords and Units.
+ * DayWords and Units. The words are in res/values/strings_glow_common.xml, read through getters named as the constants
+ * they were, so the tests that read them stay the same.
  */
 
 /** Shown under a row's name when the day has no value for it. */
-internal const val NO_VALUE = "Nothing for this day"
+internal val NO_VALUE: String get() = Strings.app.get(R.string.glow_no_value)
 
 /** [NO_VALUE] for a night's row. */
-internal const val NO_NIGHT_VALUE = "Nothing for this night"
+internal val NO_NIGHT_VALUE: String get() = Strings.app.get(R.string.glow_no_night_value)
 
 /** A card or row whose number hasn't come in yet today. */
-internal const val NO_READING = "No reading yet"
+internal val NO_READING: String get() = Strings.app.get(R.string.glow_no_reading_yet)
 
 /** Heart points and the like, which come with the strap's daily records. */
-internal const val AFTER_NEXT_SYNC = "After the strap's next sync"
+internal val AFTER_NEXT_SYNC: String get() = Strings.app.get(R.string.glow_after_next_sync)
 
 /** What Calories needs from the profile before it can be worked out. */
-internal const val ADD_PROFILE = "Add age, weight and height"
+internal val ADD_PROFILE: String get() = Strings.app.get(R.string.glow_add_profile)
 
 /**
  * The latest workout the strap gave a time to recover, the one Time to recover counts down from on Today, Activity and

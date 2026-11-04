@@ -1,5 +1,6 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,6 +67,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutSetup
@@ -112,7 +114,7 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
         lightCenter = { Offset(it.width / 2, it.height * HEART_LIGHT_BELOW) },
         reach = { Size(it.width * HEART_LIGHT_WIDTH, it.height * HEART_LIGHT_HEIGHT) },
     ) {
-        if (bpm != null) HeroValue(bpm.toString(), "bpm, live from your strap", gap = 14.dp)
+        if (bpm != null) HeroValue(bpm.toString(), stringResource(R.string.glow_ready_bpm_live), gap = 14.dp)
         else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(hero.title, color = Color.White, style = GlowType.sentence)
             Text(hero.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
@@ -305,7 +307,7 @@ private fun ReadyPlanCard(
         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             IconPill(
                 shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = TypingLime, caret = true, height = 40.dp,
-                description = "${shown.name}. ${StartCopy.planHint(family)}",
+                description = stringResource(R.string.glow_ready_plan_description, shown.name, StartCopy.planHint(family)),
             )
         }
         if (choosing) PageSheet({ choosing = false }, StartCopy.planSheet(family)) {
@@ -483,9 +485,13 @@ private fun DistanceGoal(meters: Int, onMeters: (Int) -> Unit, typing: Boolean, 
     var typed by rememberSaveable { mutableStateOf<String?>(null) }
     // A step or preset while typing drops what was typed.
     fun stop() { onTyping(false); focusManager.clearFocus() }
-    ValueStepper("Shorter", "Longer", { stop(); onMeters(StartCopy.stepDistance(meters, up = false)) }, { stop(); onMeters(StartCopy.stepDistance(meters, up = true)) }) {
+    ValueStepper(
+        stringResource(R.string.glow_ready_shorter), stringResource(R.string.glow_ready_longer),
+        { stop(); onMeters(StartCopy.stepDistance(meters, up = false)) }, { stop(); onMeters(StartCopy.stepDistance(meters, up = true)) },
+    ) {
         TypedValue(
-            listOf(NumberField(StartCopy.distanceValue(meters), "km", length = 6, decimal = true)), typing, onTyping,
+            listOf(NumberField(StartCopy.distanceValue(meters), stringResource(R.string.glow_unit_km), length = 6, decimal = true)),
+            typing, onTyping,
             onDone = { t -> StartCopy.parseDistance(t[0])?.let(onMeters) }, hint = StartCopy.TAP_TO_TYPE,
             onTexts = { typed = it.firstOrNull() },
         ) {
@@ -528,7 +534,10 @@ internal fun TimeGoal(
     }
     fun stop() { onTyping(false); focusManager.clearFocus() }
     EndTyping(typing, focused, everFocused) { finish() }
-    ValueStepper("Shorter", "Longer", { stop(); onSeconds(StartCopy.stepTime(seconds, up = false)) }, { stop(); onSeconds(StartCopy.stepTime(seconds, up = true)) }) {
+    ValueStepper(
+        stringResource(R.string.glow_ready_shorter), stringResource(R.string.glow_ready_longer),
+        { stop(); onSeconds(StartCopy.stepTime(seconds, up = false)) }, { stop(); onSeconds(StartCopy.stepTime(seconds, up = true)) },
+    ) {
         if (typing) {
             LaunchedEffect(Unit) { hoursFocus.requestFocus() }
             fun Modifier.tracked(i: Int) = onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null }
@@ -540,11 +549,14 @@ internal fun TimeGoal(
                     hours = v.copy(text = v.text.filter { it.isDigit() }.takeLast(1), selection = TextRange(1).takeIf { v.text.length > 1 } ?: v.selection)
                     // One figure of hours, then on to the minutes.
                     if (hours.text.length == 1 && v.text != selectedText(v)) { hoursDone = true; minutesFocus.requestFocus() }
-                }, "h", focused == 0, Modifier.focusRequester(hoursFocus).tracked(0), KeyboardType.Number, ImeAction.Next, { minutesFocus.requestFocus() },
+                },
+                stringResource(R.string.glow_unit_h), focused == 0, Modifier.focusRequester(hoursFocus).tracked(0), KeyboardType.Number,
+                ImeAction.Next, { minutesFocus.requestFocus() },
             )
             Spacer(Modifier.width(10.dp))
             TypedNumber(
-                minutes, { v -> minutes = v.copy(text = v.text.filter { it.isDigit() }.take(3)) }, "min", focused == 1,
+                minutes, { v -> minutes = v.copy(text = v.text.filter { it.isDigit() }.take(3)) },
+                stringResource(R.string.glow_unit_min), focused == 1,
                 Modifier.focusRequester(minutesFocus).tracked(1).onFocusChanged { if (!it.isFocused) hoursDone = false }, KeyboardType.Number, ImeAction.Done, { focusManager.clearFocus() },
             )
         } else TapValue(StartCopy.timeParts(seconds), StartCopy.TAP_TO_TYPE) {
@@ -626,7 +638,9 @@ private fun IntervalsGoal(
         listOf(
             NumberField("${reps.rounds}", null, length = 2),
             NumberField(n, u, editUnit = unit.label, length = 5, decimal = true),
-            NumberField(restN, restU, edit = "${reps.rest}", editUnit = "s", style = GlowType.goalValueMinor),
+            NumberField(
+                restN, restU, edit = "${reps.rest}", editUnit = stringResource(R.string.glow_unit_s), style = GlowType.goalValueMinor,
+            ),
         ),
         typing, onTyping, onDone = { onReps(typed(it)) }, onStart = { unit = StartCopy.repUnit(reps) },
     ) {
@@ -636,9 +650,9 @@ private fun IntervalsGoal(
             Number(1)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            ValueWords("with")
+            ValueWords(stringResource(R.string.glow_ready_with))
             Number(2)
-            ValueWords("rest between")
+            ValueWords(stringResource(R.string.glow_ready_rest_between))
         }
         if (focused == 1) Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             Text(StartCopy.EACH_REP_IN, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
@@ -781,7 +795,8 @@ internal fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onCl
 @Composable
 private fun SaveIntervalsSheet(reps: Structure.Reps, onSave: (String) -> Unit, onDismiss: () -> Unit) {
     var name by rememberSaveable { mutableStateOf("") }
-    PageSheet(onDismiss, "${StartCopy.SAVE_INTERVALS} ${StartCopy.structureName(reps)}", note = StartCopy.SAVE_NOTE) {
+    val title = stringResource(R.string.glow_ready_save_title, StartCopy.SAVE_INTERVALS, StartCopy.structureName(reps))
+    PageSheet(onDismiss, title, note = StartCopy.SAVE_NOTE) {
         PageField(name, { name = it.take(40) }, null, placeholder = StartCopy.NAME_HINT)
         PageButton(StartCopy.SAVE_INTERVALS, { onSave(name.trim()) }, Modifier.fillMaxWidth(), enabled = name.isNotBlank(), primary = true, icon = AppIcons.Plus)
     }

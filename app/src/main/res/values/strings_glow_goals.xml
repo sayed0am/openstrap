@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Goals and bests: the Goals and bests page from You, All badges, the weekly goal sheet, the weekly recap the Monday
+  notification opens and its share card (ui/glow/GoalsAndBests.kt). OpenStrap is the app's name. Keep it as it is.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The Goals and bests page's title. -->
+    <string name="glow_goals_title">Goals and bests</string>
+    <!-- The Goals and bests page while its data loads. -->
+    <string name="glow_goals_loading">Loading…</string>
+    <!-- The title of the card with this week's workouts against the weekly goal. -->
+    <string name="glow_goals_this_week">This week</string>
+    <!-- A small button on the This week card that opens the goal sheet. The number is the weekly goal in workouts. -->
+    <string name="glow_goals_goal_button">Goal <xliff:g id="goal" example="4">%1$d</xliff:g></string>
+    <!-- Beside a big count of the week's workouts, as its unit: "3 of 4 workouts". The number is the weekly goal. English keeps "workouts" for any goal. -->
+    <plurals name="glow_goals_of_workouts">
+        <item quantity="one">of <xliff:g id="goal" example="1">%d</xliff:g> workouts</item>
+        <item quantity="other">of <xliff:g id="goal" example="4">%d</xliff:g> workouts</item>
+    </plurals>
+    <!-- Read out by screen readers for the week's bar: the workouts done and the weekly goal. -->
+    <string name="glow_goals_count_of_goal"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts</string>
+    <!-- The personal bests panel's title. -->
+    <string name="glow_goals_personal_bests">Personal bests</string>
+    <!-- The personal bests panel before there are any. -->
+    <string name="glow_goals_no_bests">Your bests show here after your first workouts.</string>
+    <!-- Above the row of badges: how many are earned out of all of them. -->
+    <string name="glow_goals_badges_count">Badges, <xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g></string>
+    <!-- A button that opens every badge, and that page's title. -->
+    <string name="glow_goals_all_badges">All badges</string>
+    <!-- A button that opens last week's recap. -->
+    <string name="glow_goals_last_week">Last week</string>
+    <!-- A button that opens the settings for which moments get a celebration. -->
+    <string name="glow_goals_celebrations">Celebrations</string>
+    <!-- Under the All badges title: how many are earned out of all of them. -->
+    <string name="glow_goals_earned_count"><xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g> earned</string>
+    <!-- A group of badges on All badges: the first time doing something. -->
+    <string name="glow_goals_group_firsts">Firsts</string>
+    <!-- A group of badges on All badges: totals reached. -->
+    <string name="glow_goals_group_milestones">Milestones</string>
+    <!-- A group of badges on All badges: trying a new kind of workout. -->
+    <string name="glow_goals_group_kinds">Something new</string>
+    <!-- The weekly goal sheet's title, the recap card's title when the goal wasn't met, and a group of badges. -->
+    <string name="glow_goals_weekly_goal">Weekly goal</string>
+    <!-- Under the weekly goal sheet's title. -->
+    <string name="glow_goals_sheet_note">A change applies to this week. Past weeks keep the goal they had.</string>
+
+    <!-- The weekly recap's title. -->
+    <string name="glow_goals_your_week">Your week</string>
+    <!-- The weekly recap card's title when the week's goal was met. -->
+    <string name="glow_goals_goal_met">Goal met</string>
+    <!-- Under the weekly recap's dots: how many weeks in a row met the goal. -->
+    <plurals name="glow_goals_weekly_streak">
+        <item quantity="one">Weekly streak: <xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
+        <item quantity="other">Weekly streak: <xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
+    </plurals>
+    <!-- Under the weekly recap's dots when the goal wasn't met: how many workouts were missing. -->
+    <plurals name="glow_goals_short_of_goal">
+        <item quantity="one"><xliff:g id="missing" example="1">%d</xliff:g> short of your goal</item>
+        <item quantity="other"><xliff:g id="missing" example="2">%d</xliff:g> short of your goal</item>
+    </plurals>
+    <!-- The recap's panel of bests set that week. -->
+    <string name="glow_goals_highlights">Highlights</string>
+    <!-- A best in the recap and on the week's share card: the best's name, then its value. -->
+    <string name="glow_goals_best"><xliff:g id="best" example="Fastest 5 km">%1$s</xliff:g>, <xliff:g id="value" example="24:10">%2$s</xliff:g></string>
+    <!-- The title of the recap's totals card. -->
+    <string name="glow_goals_in_all">In all</string>
+    <!-- Beside In all: the week's workouts. -->
+    <plurals name="glow_goals_workouts_count">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout</item>
+        <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> workouts</item>
+    </plurals>
+    <!-- Under a total time in the recap and on the share card. -->
+    <string name="glow_goals_hours">Hours</string>
+    <!-- Under a total distance on the share card. -->
+    <string name="glow_goals_distance">Distance</string>
+    <!-- Under the total calories burned in workouts. -->
+    <string name="glow_goals_active_kcal">Active kcal</string>
+    <!-- A button that opens the goal sheet for next week. The number is the goal in workouts. -->
+    <string name="glow_goals_next_week">Next week: <xliff:g id="goal" example="4">%1$d</xliff:g></string>
+    <!-- A button that opens the share screen for the week. -->
+    <string name="glow_goals_share_week">Share week</string>
+
+    <!-- On the week's share card, beside the big count: the word for the workouts counted, before the goal. -->
+    <plurals name="glow_goals_workouts_word">
+        <item quantity="one">workout</item>
+        <item quantity="other">workouts</item>
+    </plurals>
+    <!-- On the week's share card, beside the big count. The word is "workout" or "workouts", the number the goal. -->
+    <string name="glow_goals_story_goal"><xliff:g id="workouts" example="workouts">%1$s</xliff:g>, goal <xliff:g id="goal" example="4">%2$d</xliff:g></string>
+    <!-- A chip on the week's share card: the weeks in a row the goal was met. -->
+    <plurals name="glow_goals_weeks_in_a_row">
+        <item quantity="one"><xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
+        <item quantity="other"><xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
+    </plurals>
+</resources>

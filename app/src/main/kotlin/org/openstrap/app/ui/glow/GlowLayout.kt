@@ -24,10 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -493,10 +495,11 @@ internal fun TitleMark(marker: String?, tag: TitleTag?, modifier: Modifier = Mod
 @Composable
 internal fun OutlineTag(text: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
     val shape = RoundedCornerShape(50)
+    val about = stringResource(R.string.glow_tag_about, text.lowercase())
     Text(
         text,
         modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
-            .let { if (onClick != null) it.clickable(onClickLabel = "About ${text.lowercase()}", onClick = onClick) else it }
+            .let { if (onClick != null) it.clickable(onClickLabel = about, onClick = onClick) else it }
             .padding(horizontal = 8.dp, vertical = 2.dp),
         color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
     )

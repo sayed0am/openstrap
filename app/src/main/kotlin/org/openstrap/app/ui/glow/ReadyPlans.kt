@@ -13,9 +13,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
@@ -50,19 +52,21 @@ internal fun StrengthPlanCard(
     )
     PlanChoice(Workouts.Family.Strength, choices, { it == (sets != null) }, { onSets(if (it) planSets else null) }, typing, onTyping) {
         val (restN, restU) = StartCopy.restParts(restSeconds)
-        val rest = NumberField(restN, restU, edit = "$restSeconds", editUnit = "s", style = GlowType.goalValueMinor)
+        val rest = NumberField(
+            restN, restU, edit = "$restSeconds", editUnit = stringResource(R.string.glow_unit_s), style = GlowType.goalValueMinor,
+        )
         if (sets == null) {
             TypedValue(listOf(rest), typing, onTyping, onDone = { t -> StartCopy.parseSetRest(t[0])?.let(onRest) }) {
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                     Number(0)
-                    ValueWords("rest after each set")
+                    ValueWords(stringResource(R.string.glow_ready_rest_after_set))
                 }
             }
             GoalNote(if (typing) StartCopy.STRENGTH_TYPING else StartCopy.OPEN_SETS_NOTE)
             return@PlanChoice
         }
         TypedValue(
-            listOf(NumberField("$sets", "sets", length = 2), rest), typing, onTyping,
+            listOf(NumberField("$sets", stringResource(R.string.glow_ready_unit_sets), length = 2), rest), typing, onTyping,
             onDone = { t ->
                 StartCopy.parseSets(t[0])?.let(onSets)
                 StartCopy.parseSetRest(t[1])?.let(onRest)
@@ -70,9 +74,9 @@ internal fun StrengthPlanCard(
         ) {
             Row { Number(0) }
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                ValueWords("with")
+                ValueWords(stringResource(R.string.glow_ready_with))
                 Number(1)
-                ValueWords("rest between")
+                ValueWords(stringResource(R.string.glow_ready_rest_between))
             }
         }
         if (!typing) Presets(StartCopy.SET_PRESETS, sets) { onSets(it) }
@@ -96,8 +100,12 @@ internal fun HiitPlanCard(type: Int, rounds: Structure?, onChange: (Structure?) 
             is Structure.Timed -> {
                 TypedValue(
                     listOf(
-                        NumberField("${rounds.work}", "s on"), NumberField("${rounds.rest}", "s off"),
-                        NumberField("${rounds.rounds}", "rounds", length = 2, style = GlowType.goalValueMinor),
+                        NumberField("${rounds.work}", stringResource(R.string.glow_ready_unit_s_on)),
+                        NumberField("${rounds.rest}", stringResource(R.string.glow_ready_unit_s_off)),
+                        NumberField(
+                            "${rounds.rounds}", stringResource(R.string.glow_ready_unit_rounds),
+                            length = 2, style = GlowType.goalValueMinor,
+                        ),
                     ),
                     typing, onTyping, onDone = { onChange(StartCopy.typedTimed(rounds, it)) },
                 ) {
@@ -116,7 +124,13 @@ internal fun HiitPlanCard(type: Int, rounds: Structure?, onChange: (Structure?) 
             }
             is Structure.EveryMinute -> {
                 TypedValue(
-                    listOf(NumberField("${rounds.period}", "s a round"), NumberField("${rounds.rounds}", "rounds", length = 2, style = GlowType.goalValueMinor)),
+                    listOf(
+                        NumberField("${rounds.period}", stringResource(R.string.glow_ready_unit_s_a_round)),
+                        NumberField(
+                            "${rounds.rounds}", stringResource(R.string.glow_ready_unit_rounds),
+                            length = 2, style = GlowType.goalValueMinor,
+                        ),
+                    ),
                     typing, onTyping, onDone = { onChange(StartCopy.typedEveryMinute(rounds, it)) },
                 ) {
                     val now = typed?.let { StartCopy.typedEveryMinute(rounds, it) } ?: rounds
@@ -165,8 +179,11 @@ internal fun GamePlanCard(type: Int, periods: Structure.Periods?, onChange: (Str
         if (periods != null) {
             TypedValue(
                 listOf(
-                    NumberField("${periods.rounds}", null, length = 1), NumberField("${periods.length / 60}", "min", length = 2),
-                    NumberField("${periods.rest / 60}", "min", length = 2, style = GlowType.goalValueMinor),
+                    NumberField("${periods.rounds}", null, length = 1),
+                    NumberField("${periods.length / 60}", stringResource(R.string.glow_unit_min), length = 2),
+                    NumberField(
+                        "${periods.rest / 60}", stringResource(R.string.glow_unit_min), length = 2, style = GlowType.goalValueMinor,
+                    ),
                 ),
                 typing, onTyping, onDone = { onChange(StartCopy.typedPeriods(periods, it)) },
             ) {
@@ -176,9 +193,9 @@ internal fun GamePlanCard(type: Int, periods: Structure.Periods?, onChange: (Str
                     Number(1)
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    ValueWords("with a")
+                    ValueWords(stringResource(R.string.glow_ready_with_a))
                     Number(2)
-                    ValueWords("break")
+                    ValueWords(stringResource(R.string.glow_ready_break))
                 }
             }
         }
@@ -195,8 +212,9 @@ internal fun ReadyRows(content: @Composable ColumnScope.() -> Unit) {
 /** Work and rest along the rounds, each as wide as its time: work in heart red, rest in sleep blue. */
 @Composable
 private fun RoundsStrip(s: Structure.Timed) {
+    val described = stringResource(R.string.glow_ready_rounds_description, s.rounds, s.work, s.rest)
     Row(
-        Modifier.fillMaxWidth().height(10.dp).semantics { contentDescription = "${s.rounds} rounds of ${s.work} seconds work and ${s.rest} seconds rest" },
+        Modifier.fillMaxWidth().height(10.dp).semantics { contentDescription = described },
         horizontalArrangement = Arrangement.spacedBy(2.dp),
     ) {
         repeat(s.rounds) { i ->

@@ -32,8 +32,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import org.openstrap.app.R
 import org.openstrap.app.data.SportSettings
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutPlan
@@ -221,7 +223,7 @@ fun GlowWorkoutReadyScreen(
         pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
     ) {
         Box(Modifier.fillMaxWidth()) {
-            RoundIcon(AppIcons.X, "Close", onBack, Modifier.align(Alignment.CenterStart))
+            RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack, Modifier.align(Alignment.CenterStart))
             Box(Modifier.align(Alignment.Center)) { IconPill(Workouts.shortName(type), { picking = true }, caret = true) }
         }
         if (cardio) {

@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import org.openstrap.app.presentation.TimeOfDay
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -106,7 +108,8 @@ val PageHeaderHeight = 64.dp
 @Composable
 fun BackButton(onBack: () -> Unit, enabled: Boolean = true) =
     RoundIconButton(
-        AppIcons.ArrowLeft, "Back", onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp, enabled = enabled,
+        AppIcons.ArrowLeft, stringResource(R.string.glow_back), onBack, size = BackButtonSize, surface = ControlSurface, iconSize = 20.dp,
+        enabled = enabled,
     )
 
 /** How much of a [RoundIconButton] its icon takes by default. */
@@ -156,13 +159,14 @@ fun PageHeader(
     onTitle: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
 ) {
+    val switchLabel = stringResource(R.string.glow_page_switch)
     Row(Modifier.fillMaxWidth().height(PageHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
         BackButton(onBack, backEnabled)
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Row(
                 Modifier.clip(RoundedCornerShape(8.dp))
-                    .let { if (onTitle != null) it.clickable(onClickLabel = "Switch", role = Role.Button, onClick = onTitle) else it },
+                    .let { if (onTitle != null) it.clickable(onClickLabel = switchLabel, role = Role.Button, onClick = onTitle) else it },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(title, color = Color.White, style = GlowType.pageTitle, maxLines = 1, modifier = Modifier.weight(1f, fill = false))
@@ -355,6 +359,7 @@ fun <T> PageMenuRow(
     quiet: (T) -> Boolean = { false },
 ) {
     var open by remember { mutableStateOf(false) }
+    val changeLabel = stringResource(R.string.glow_page_change)
     Column(
         Modifier.fillMaxWidth()
             .topHairline(divider, Hairline),
@@ -362,7 +367,7 @@ fun <T> PageMenuRow(
         Box(Modifier.fillMaxWidth()) {
             Row(
                 Modifier.fillMaxWidth()
-                    .clickable(enabled = enabled, onClickLabel = "Change", role = Role.DropdownList) { open = true }
+                    .clickable(enabled = enabled, onClickLabel = changeLabel, role = Role.DropdownList) { open = true }
                     .alpha(if (enabled) 1f else 0.45f)
                     .padding(vertical = GlowLayout.RowPadding),
                 verticalAlignment = Alignment.CenterVertically,
@@ -623,7 +628,7 @@ fun PageConfirm(
     confirm: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    dismiss: String = "Cancel",
+    dismiss: String = stringResource(R.string.glow_cancel),
     confirmEnabled: Boolean = true,
     content: (@Composable ColumnScope.() -> Unit)? = null,
 ) {

@@ -44,6 +44,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
@@ -54,6 +56,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.RecentChip
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
@@ -102,18 +105,18 @@ fun GlowChooseScreen(
     }
     val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            RoundIcon(AppIcons.X, "Close", onBack)
+            RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack)
             Spacer(Modifier.width(12.dp))
-            Text("Start a workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+            Text(stringResource(R.string.glow_choose_title), color = Color.White, style = GlowType.pageTitle, maxLines = 1)
         }
     }
     val choose: @Composable ColumnScope.() -> Unit = {
         StrapLine(connection, liveHeartRate)
         if (usual != null) UsualRow(usual, { onStartUsual(usual.type) }, { onReady(usual.type) })
         // The search opens a page of its own (board ActivitySearchTyping).
-        SearchEntry("Search all sports") { searching = true }
+        SearchEntry(stringResource(R.string.glow_choose_search_all)) { searching = true }
         if (recent.isNotEmpty()) {
-            SectionLabel("Recent")
+            SectionLabel(stringResource(R.string.glow_choose_recent))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { chip ->
                     when (chip) {
@@ -123,7 +126,7 @@ fun GlowChooseScreen(
                 }
             }
         }
-        SportTiles("All sports", Workouts.EVERYDAY, Workouts::shortName, { false }, onReady)
+        SportTiles(stringResource(R.string.glow_choose_all_sports), Workouts.EVERYDAY, Workouts::shortName, { false }, onReady)
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         // Unfolded (spec 2.4): the rest of the sports, A to Z, in a column of their own beside the tiles, each side
@@ -134,7 +137,7 @@ fun GlowChooseScreen(
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap * 2)) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SectionLabel("More sports")
+                        SectionLabel(stringResource(R.string.glow_choose_more_sports))
                         MoreSportsList(onReady)
                     }
                 }
@@ -159,7 +162,10 @@ private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
         EdgeCard(color, Modifier.fillMaxWidth(), onClick = onOpen, contentPadding = PaddingValues(start = 18.dp, top = 14.dp, end = 14.dp, bottom = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("Your usual", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                    Text(
+                        stringResource(R.string.glow_choose_your_usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        style = GlowType.secondary,
+                    )
                     Text(
                         Workouts.sportName(s.type), color = Color.White, style = GlowType.headerDate, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(top = 2.dp),
@@ -171,7 +177,7 @@ private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
                 }
                 Spacer(Modifier.width(12.dp))
                 PageButton(
-                    "Start",
+                    stringResource(R.string.glow_choose_start),
                     { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
                     primary = true, icon = AppIcons.PlayFill,
                 )
@@ -217,7 +223,7 @@ internal fun SportTile(
             val ink = if (selected) Color.Black else Color.White
             Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
             if (outdoor) Icon(
-                SportIcons.Location, "Outdoors", tint = ink.copy(alpha = 0.7f),
+                SportIcons.Location, stringResource(R.string.glow_choose_outdoors), tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
             )
         }
@@ -258,14 +264,18 @@ internal fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddi
     var query by rememberSaveable { mutableStateOf("") }
     val chosen = Workouts.tileType(selected)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Choose a sport", onBack) }
-        item { SearchField(query, "Search") { query = it } }
+        item { PageHeader(stringResource(R.string.glow_choose_pick_title), onBack) }
+        item { SearchField(query, stringResource(R.string.glow_choose_search)) { query = it } }
         if (query.isNotBlank()) {
             item(key = "found") { SearchResults(query, selected, onPick) }
             return@ScreenList
         }
-        if (recent.isNotEmpty()) item(key = "recent") { SportTiles("Recent", recent, Workouts::shortName, { it == chosen }, onPick) }
-        item(key = "sports") { SportTiles("Sports", Workouts.EVERYDAY, Workouts::shortName, { it == chosen }, onPick) }
+        if (recent.isNotEmpty()) item(key = "recent") {
+            SportTiles(stringResource(R.string.glow_choose_recent), recent, Workouts::shortName, { it == chosen }, onPick)
+        }
+        item(key = "sports") {
+            SportTiles(stringResource(R.string.glow_choose_sports), Workouts.EVERYDAY, Workouts::shortName, { it == chosen }, onPick)
+        }
         item(key = "more") { MoreSportsRow { more = true } }
     }
 }
@@ -274,7 +284,7 @@ internal fun SportPicker(selected: Int, recent: List<Int>, contentPadding: Paddi
 @Composable
 private fun MoreSports(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit) {
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("More sports", onBack) }
+        item { PageHeader(stringResource(R.string.glow_choose_more_sports), onBack) }
         item { MoreSportsList(onPick) }
     }
 }
@@ -290,7 +300,10 @@ private fun MoreSportsList(onPick: (Int) -> Unit) = ListPanel {
 /** The row that opens [MoreSports]. */
 @Composable
 private fun MoreSportsRow(onClick: () -> Unit) = ListPanel {
-    PageRow("More sports", "Tennis, padel, dance and the rest", below = true, divider = false, onClick = onClick)
+    PageRow(
+        stringResource(R.string.glow_choose_more_sports), stringResource(R.string.glow_choose_more_sports_detail),
+        below = true, divider = false, onClick = onClick,
+    )
 }
 
 /** What the search finds, as tiles, or that nothing matches [query]. Picking one puts the keyboard away. */
@@ -301,7 +314,7 @@ private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
     val focus = LocalFocusManager.current
     val pick: (Int) -> Unit = { keyboard?.hide(); focus.clearFocus(); onPick(it) }
     if (found.isEmpty()) Text(
-        "No sport matches \"${query.trim()}\".", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+        stringResource(R.string.glow_choose_no_match, query.trim()), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
         style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp, top = 8.dp),
     )
     else SportTiles(null, found, { if (it in Workouts.EVERYDAY) Workouts.shortName(it) else Workouts.sportName(it) }, { it == selected }, pick)
@@ -349,16 +362,17 @@ private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BackButton(onBack)
                 Spacer(Modifier.width(12.dp))
-                Box(Modifier.weight(1f)) { SearchField(query, "Search all sports", Modifier.focusRequester(focus)) { query = it } }
+                Box(Modifier.weight(1f)) {
+                    SearchField(query, stringResource(R.string.glow_choose_search_all), Modifier.focusRequester(focus)) { query = it }
+                }
             }
         }
         item {
             Text(
                 when {
-                    query.isBlank() -> "All sports"
-                    found.isEmpty() -> "No sport matches \"${query.trim()}\"."
-                    found.size == 1 -> "1 sport"
-                    else -> "${found.size} sports"
+                    query.isBlank() -> stringResource(R.string.glow_choose_all_sports)
+                    found.isEmpty() -> stringResource(R.string.glow_choose_no_match, query.trim())
+                    else -> pluralStringResource(R.plurals.glow_choose_sports_count, found.size, found.size)
                 },
                 color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp),
             )
@@ -412,7 +426,7 @@ private fun SearchField(query: String, hint: String, modifier: Modifier = Modifi
                     field()
                 }
                 if (query.isNotEmpty()) Icon(
-                    AppIcons.X, "Clear", tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    AppIcons.X, stringResource(R.string.glow_choose_clear), tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                     modifier = Modifier.size(28.dp).clip(CircleShape).clickable { onChange("") }.padding(6.dp),
                 )
             }
