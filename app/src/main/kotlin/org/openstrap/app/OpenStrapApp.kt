@@ -17,9 +17,14 @@ import org.openstrap.app.device.StrapController
 import org.openstrap.app.device.StrapManager
 import org.openstrap.app.export.CsvExporter
 import org.openstrap.app.health.HealthConnectExporter
+import org.openstrap.app.i18n.ResourceStrings
+import org.openstrap.app.i18n.Strings
 
 /** Hand-wired dependencies; small enough not to need a DI framework. */
 class AppContainer(val app: Application) {
+    /** The app's text, first so it is there before anything below writes a notification or a widget. */
+    val strings: Strings = ResourceStrings(app).also { Strings.install(it) }
+
     /**
      * The one scope for work that lives as long as the app. With a [SupervisorJob], an exception nobody caught goes to
      * the thread's default handler, which kills the process, so this handler logs it instead (audit C3). Classes get it

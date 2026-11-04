@@ -11,8 +11,8 @@ import org.junit.rules.RuleChain
 import org.robolectric.Shadows.shadowOf
 
 /**
- * Compose UI tests under Robolectric. The unit tests run without the merged manifest, so the activity the compose rule
- * hosts its content in is registered with Robolectric's package manager first. Use it as
+ * Compose UI tests under Robolectric. The merged manifest the unit tests get doesn't declare the activity the compose
+ * rule hosts its content in, so it is registered with Robolectric's package manager first. Use it as
  * `@get:Rule val rules = ComposeRules()` and drive `rules.compose`.
  */
 class ComposeRules(val compose: ComposeContentTestRule = createComposeRule()) : org.junit.rules.TestRule {
