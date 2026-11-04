@@ -51,7 +51,24 @@ import org.openstrap.app.presentation.Metric
 import org.openstrap.app.presentation.SLEEP_NAMES
 import org.openstrap.app.ui.dashboard.SleepCard
 import org.openstrap.app.ui.dashboard.SleepFacts
-import org.openstrap.app.ui.dashboard.SleepWindows
+import org.openstrap.app.ui.dashboard.NewsTag
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.bedWakeWeek
+import org.openstrap.app.ui.dashboard.bedtimeOffStatus
+import org.openstrap.app.ui.dashboard.breathingOffStatus
+import org.openstrap.app.ui.dashboard.napDaySpan
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.components.cardNumber
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.pictures.BedWakeBars
+import org.openstrap.app.ui.glow.pictures.Nap
+import org.openstrap.app.ui.glow.pictures.NapDay
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.WeekOfDots
+import org.openstrap.app.ui.glow.pictures.bedWakeRim
+import org.openstrap.app.ui.glow.pictures.weekOfDotsRim
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.presentation.TabCopy
 import org.openstrap.app.ui.dashboard.nightVitals
 import org.openstrap.app.ui.dashboard.sleepCards
@@ -102,21 +119,13 @@ fun GlowSleepScreen(
                     SleepCard.Hero -> NightHero(state, firstNights, onRestore) { onOpen(Detail.OfScore(Score.Sleep)) }
                     SleepCard.Vitals -> VitalsList(state, firstNights) { onOpen(Detail.OfMetric(it, night = true)) }
                     SleepCard.Regularity -> RegularityCard(state, rec?.regularity, firstNights) { onOpen(Detail.OfScore(Score.Regularity)) }
-                    SleepCard.Breathing -> when {
-                        breathing != null -> if (pair) BreathingSmall(breathing, m) { breathingInfo = true } else BreathingCard(breathing) { breathingInfo = true }
-                        // Waiting for the first night: the same card, a dim dash and when it fills.
-                        pair -> SmallCard(
-                            MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), null, null, AFTER_FIRST_NIGHT, m,
-                            waiting = true,
-                        )
-                        else -> PictureCard(MetricColors.sleepLight, Modifier.fillMaxWidth()) {
-                            EdgeTitle(
-                                stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate),
-                            )
-                            EdgeValue(null, null, AFTER_FIRST_NIGHT)
-                        }
-                    }
-                    SleepCard.Naps -> NapsCard(state, if (pair) m else Modifier.fillMaxWidth().height(GlowGrid.UnitHeight)) { onOpen(Detail.OfScore(Score.Naps)) }
+                    SleepCard.Breathing -> BreathingCard(
+                        rec, if (pair) PictureSize.Small else PictureSize.Wide, if (pair) m else Modifier.fillMaxWidth().height(GlowGrid.UnitHeight),
+                        onInfo = if (breathing != null) ({ breathingInfo = true }) else null,
+                    )
+                    SleepCard.Naps -> NapsCard(
+                        state, if (pair) PictureSize.Small else PictureSize.Wide, if (pair) m else Modifier.fillMaxWidth().height(GlowGrid.UnitHeight),
+                    ) { onOpen(Detail.OfScore(Score.Naps)) }
                 }
             }
         }
@@ -260,76 +269,124 @@ private fun VitalsList(state: DayUiState, firstNights: Boolean, onOpen: (Metric)
     }
 }
 
+
 /**
- * Sleep regularity: how alike the week's sleep and wake times were, the usual times, and each night's bed and wake as
- * bars. Lit from the top like a night sky. Tapping opens its detail ([onOpen]), where a night can be picked and the
- * method is in the info sheet.
+ * Sleep regularity (spec 5.2): the Sleep Regularity Index in dots, Later or Earlier when last night's bedtime was off
+ * your usual (else the band's word), your usual bedtime and wake, then the week's bed and wake bars against dim bands
+ * at those times. Off, the rim lights beside the nights that are off. Tapping opens its detail ([onOpen]), where a
+ * night can be picked and the method is in the info sheet.
  */
 @Composable
 private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepRegularity.Result?, firstNights: Boolean, onOpen: () -> Unit) {
     val zone = ZoneId.systemDefault()
     val w = sleepWeek(state, LocalGoals.current.sleepSeconds, reg, zone)
-    PictureCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
+    val week = w?.let { bedWakeWeek(it, zone) }
+    val tag = if (w == null) null else offTag(OffWords.Timing, bedtimeOffStatus(state, zone))
+    val rim = if (tag != null && week != null) bedWakeRim(week.first, week.second, PictureSize.Wide) else null
+    PictureCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), rim = rim, onClick = onOpen) {
         EdgeTitle(stringResource(R.string.glow_sleep_regularity_title), stringResource(R.string.glow_sleep_last_7_nights))
-        EdgeValue(
-            reg?.sri?.roundToInt()?.toString(), null,
-            when {
-                w != null -> TabCopy.regularity(reg)
-                firstNights -> AFTER_FIRST_NIGHT
-                else -> stringResource(R.string.glow_sleep_regularity_none)
-            },
-            // Waiting for the first night it keeps its shape with the dim dash (spec 4.3).
-            waiting = firstNights && w == null,
-        )
-        if (w != null) {
-            w.usual?.let { u ->
-                Text(
-                    TabCopy.usualTimes(SleepHistory.clockMinutes(u.bedtime), SleepHistory.clockMinutes(u.wake)),
-                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp),
-                )
-            }
+        // Waiting for the first night it keeps its shape with the dim dash (spec 4.3).
+        SleepNumber(reg?.sri?.roundToInt()?.toString(), null, tag, waiting = firstNights && w == null, Modifier.padding(top = 14.dp))
+        val status = when {
+            w == null -> if (firstNights) AFTER_FIRST_NIGHT else stringResource(R.string.glow_sleep_regularity_none)
+            tag != null -> null
+            else -> TabCopy.regularity(reg)
+        }
+        status?.let { SleepStatus(it, Modifier.padding(top = 6.dp)) }
+        w?.usual?.let { u ->
+            SleepStatus(TabCopy.usualTimes(SleepHistory.clockMinutes(u.bedtime), SleepHistory.clockMinutes(u.wake)), Modifier.padding(top = 4.dp))
+        }
+        if (week != null) {
             Spacer(Modifier.height(12.dp))
-            SleepWindows(w.nights, w.usual, zone)
+            BedWakeBars(week.first, week.second, MetricColors.sleepDeep, PictureSize.Wide, Modifier.fillMaxWidth().height(RegularityBarsHeight))
         }
     }
 }
 
+/** How tall regularity's bed and wake bars stand. */
+private val RegularityBarsHeight = 64.dp
+
 /**
- * Breathing disturbances: the strap's count of dips in blood oxygen per hour asleep, against your own nights. No
- * severity words: those are apnea bands, and this is a wellness estimate, marked early until checked on hardware.
- * A value against your usual, so lit from below. The app has only the night's count and your usual, no history of
- * nights, so tapping opens its info sheet ([onInfo]) rather than a detail.
+ * Breathing disturbances (spec 5.2): the strap's dips in blood oxygen an hour asleep, a week of dots through the band
+ * of your usual, the night's count in dots and "Usual 2.1, early estimate". No severity words: those are apnea bands,
+ * and this is a wellness estimate, marked early until checked on hardware. Only more than usual is news, so only that
+ * tags and lights the rim beside the latest dot. A Small beside the naps, else a Wide. The app keeps the count and your
+ * usual, no detail, so tapping opens its info sheet ([onInfo]). Before the first night it waits with the dim dash.
  */
 @Composable
-private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbances, onInfo: () -> Unit) {
-    // As high as its content: a number and a line, so a unit high would leave an empty band under them (spec 2.4).
-    PictureCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), onClick = onInfo) {
-        EdgeTitle(stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate))
-        EdgeValue(dotFormat("%.1f", b.perHour), stringResource(R.string.glow_sleep_an_hour), TabCopy.breathing(b))
+private fun BreathingCard(rec: org.openstrap.app.data.RecoveryResult?, size: PictureSize, modifier: Modifier, onInfo: (() -> Unit)?) {
+    val b = rec?.breathingDisturbances
+    val values = rec?.disturbancesWeek?.map { it.second }.orEmpty()
+    val usual = rec?.disturbancesUsual?.let { it.low..it.high }
+    val tag = if (b == null) null else offTag(OffWords.MoreOnly, breathingOffStatus(rec))
+    val rim = if (tag != null) weekOfDotsRim(values, usual, size) else null
+    SleepPictureCard(
+        MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), modifier, rim, onInfo,
+        value = b?.let { dotFormat("%.1f", it.perHour) }, unit = stringResource(R.string.glow_sleep_an_hour), tag = tag,
+        status = if (b == null) AFTER_FIRST_NIGHT else TabCopy.breathingShort(b),
+        picture = if (values.none { it != null }) null else ({ m -> WeekOfDots(values, usual, MetricColors.sleepLight, size, m) }),
+    )
+}
+
+/**
+ * The day's naps (spec 5.2): the day as a hairline with each nap as its stage strip at its time, the time napped in dots
+ * and when ("At 14:10"). Naps have no usual: no tag, no rim. A Small beside breathing disturbances, else a Wide.
+ * Tapping opens the naps' detail ([onOpen]), with each nap's heart rate.
+ */
+@Composable
+private fun NapsCard(state: DayUiState, size: PictureSize, modifier: Modifier, onOpen: () -> Unit) {
+    val naps = state.naps.sortedBy { it.start }
+    if (naps.isEmpty()) return
+    val span = napDaySpan(state.date, naps, ZoneId.systemDefault())
+    val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
+    SleepPictureCard(
+        MetricColors.sleepDeep, TabCopy.napsTitle(naps.size), modifier, null, onOpen,
+        value = clockDuration(naps.sumOf { it.end - it.start }), unit = null, tag = null,
+        status = TabCopy.naps(naps.size, clock(naps.first().start)),
+        picture = { m -> NapDay(pictured, span.first, span.last, MetricColors.sleepDeep, size, m) },
+    )
+}
+
+/**
+ * A Sleep picture card at the size its row gives it (spec 2.5, Picture card): the title, the [picture] in the ink
+ * filling what's left, the number in white dots with its [tag], then the [status] in Secondary. With no [value] the
+ * dim dash waits in its place.
+ */
+@Composable
+private fun SleepPictureCard(
+    ink: Color, title: String, modifier: Modifier, rim: Rim?, onClick: (() -> Unit)?,
+    value: String?, unit: String?, tag: NewsTag?, status: String?,
+    picture: (@Composable (Modifier) -> Unit)?,
+) {
+    PictureCard(ink, modifier, rim = rim, onClick = onClick) {
+        CardTitle(title)
+        if (picture != null) {
+            Spacer(Modifier.height(10.dp))
+            picture(Modifier.fillMaxWidth().weight(1f))
+            Spacer(Modifier.height(8.dp))
+        } else Spacer(Modifier.weight(1f))
+        SleepNumber(value, unit, tag)
+        status?.let { SleepStatus(it, Modifier.padding(top = 4.dp)) }
     }
 }
 
-/** Breathing disturbances as a Small beside the naps: the count an hour and your usual. Lit from below, a value. */
+/** A Sleep card's number in white dots with its unit and news tag ([NumberWithTag]); the dim dash while [waiting]. */
 @Composable
-private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) =
-    SmallCard(
-        MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), dotFormat("%.1f", b.perHour),
-        stringResource(R.string.glow_sleep_an_hour), TabCopy.breathingShort(b), modifier,
-        onClick = onInfo,
-    )
-
-/**
- * The day's naps as a Small (a Wide when alone): the time napped, a strip of the latest nap's stages and when it was.
- * Earlier in the day, so lit from the left. Tapping opens the naps' detail ([onOpen]), with each nap's heart rate.
- */
-@Composable
-private fun NapsCard(state: DayUiState, modifier: Modifier, onOpen: () -> Unit) {
-    val naps = state.naps.sortedBy { it.start }
-    if (naps.isEmpty()) return
-    val stages = state.napStages[naps.last().start].orEmpty()
-    SmallCard(
-        MetricColors.sleepDeep, TabCopy.napsTitle(naps.size), clockDuration(naps.sumOf { it.end - it.start }), null,
-        TabCopy.naps(naps.size, clock(naps.first().start)), modifier, onClick = onOpen,
-        extra = if (stages.isEmpty()) null else ({ StageStrip(stages, Modifier.padding(top = 8.dp)) }),
-    )
+private fun SleepNumber(value: String?, unit: String?, tag: NewsTag?, waiting: Boolean = true, modifier: Modifier = Modifier) {
+    if (value == null && !waiting) return
+    NumberWithTag(if (value == null) null else tag, modifier) {
+        Row(verticalAlignment = Alignment.Bottom) {
+            if (value != null) DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge) else WaitingDash(Modifier.padding(vertical = 8.dp))
+            if (unit != null && value != null) {
+                Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))
+            }
+        }
+    }
 }
+
+/** A Sleep card's status line, always Secondary (spec 2.2): colour never says how it's going. */
+@Composable
+private fun SleepStatus(text: String, modifier: Modifier = Modifier) = Text(
+    text, modifier, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+    maxLines = 1, overflow = TextOverflow.Ellipsis,
+)
