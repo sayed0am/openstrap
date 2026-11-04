@@ -66,7 +66,7 @@ import org.openstrap.app.ui.glow.TrendGood
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.glow.draw.dotLayout
+import org.openstrap.app.ui.glow.dotFitScale
 import org.openstrap.app.presentation.LiveView
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.glow.WaitingDash
@@ -334,7 +334,7 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
 
 /**
  * The Pace card: "Pace" with the average beside it, the pace now in the card's one dotted number, and a bar per
- * kilometre under it ([SplitBars]). Lit in the distance lime from its edge, so it never looks like the heart strip
+ * kilometre under it ([KmSplitBars]). Lit in the distance lime from its edge, so it never looks like the heart strip
  * under it.
  */
 @Composable
@@ -347,12 +347,12 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
         // The pace sits in the middle of whatever height the card is given, the splits on its floor.
         Spacer(Modifier.height(12.dp).weight(1f))
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val room = maxWidth.value
+            val room = maxWidth - UnitRoom
             // Centred, as the board has it: the one number the card is for.
             Row(Modifier.align(Alignment.Center), verticalAlignment = Alignment.Bottom) {
                 val now = if (speed) speedText(pace, Units.DOT_LOCALE) else Pace.clock(pace, Units.DOT_LOCALE)
                 // The live size, shrunk only as far as a walk's 12:30 needs to fit beside its unit.
-                val fit = now?.let { ((room - UNIT_ROOM) / dotLayout(it, DotSize.Live, 1f).width).coerceIn(0.5f, 1f) } ?: 1f
+                val fit = now?.let { dotFitScale(it, DotSize.Live, room).coerceAtLeast(0.5f) } ?: 1f
                 if (now != null) DotMatrixText(now, dot = DotSize.Live, scale = fit) else WaitingDash(Modifier.padding(vertical = 18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(if (speed) "km/h" else "/km", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
@@ -360,7 +360,7 @@ private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Rou
         }
         Spacer(Modifier.height(16.dp).weight(1f))
         if (splits.isNotEmpty()) {
-            SplitBars(splits)
+            KmSplitBars(splits)
         }
     }
 }
@@ -379,7 +379,7 @@ private fun AveragePace(averagePace: () -> Double?, speed: Boolean) {
  * by its kilometre.
  */
 @Composable
-private fun SplitBars(splits: List<Route.Split>) {
+private fun KmSplitBars(splits: List<Route.Split>) {
     val shown = splits.takeLast(SPLIT_SLOTS)
     val done = splits.filter { it.meters >= 1000 }
     val fastest = done.minByOrNull { it.pace }
@@ -428,5 +428,5 @@ private fun SplitBars(splits: List<Route.Split>) {
 
 private const val SPLIT_SLOTS = 5
 
-/** Room left beside the pace for "km/h" and its gap, in dp. */
-private const val UNIT_ROOM = 56f
+/** Room left beside the pace for "km/h" and its gap. */
+private val UnitRoom = 56.dp

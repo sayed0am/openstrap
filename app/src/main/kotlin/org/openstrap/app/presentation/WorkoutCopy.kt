@@ -80,6 +80,9 @@ object WorkoutCopy {
     /** What a live screen says where the heart rate goes and there's none, the same words on every screen and the notification. */
     fun noHeartRate(paused: Boolean, connected: Boolean = true): String = WorkoutWords.noHeartRate(paused, connected)
 
+    /** Where the live zone goes and there's none: none while paused, or none read yet. */
+    fun noZone(paused: Boolean): String = if (paused) "No zone while paused" else "No zone yet"
+
     /** The live screen's note while the strap is away ([WorkoutWords.STRAP_GONE_NOTE]). */
     const val STRAP_GONE_NOTE = WorkoutWords.STRAP_GONE_NOTE
 

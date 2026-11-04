@@ -23,7 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.border
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,6 +58,7 @@ import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.EdgeCard
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
+import org.openstrap.app.ui.glow.OutlineCard
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.draw.LightAngle
@@ -243,10 +243,7 @@ private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onNa
 private fun RestCard(r: WorkoutState.Recording, left: () -> Long, done: Int, bpm: Int?, drop: Int?, history: List<Pair<Long, Int>>) {
     val rule = Strength.Rest.parse(r.workout.rest) ?: Strength.Rest.DEFAULT
     // Outlined, not lit: the set's card glows, the rest's counts down in its ring.
-    Column(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowLayout.CardShape).padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
+    OutlineCard(horizontalAlignment = Alignment.CenterHorizontally) {
         Row {
             Text("Rest", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
             Text("after " + WorkoutCopy.setOf(done, r.workout.setsTarget).lowercase(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
@@ -271,7 +268,7 @@ private fun RestCard(r: WorkoutState.Recording, left: () -> Long, done: Int, bpm
 
 /** The rest left in dots inside a ring in rest green that empties as it runs down. [left] is read in draw and its text. */
 @Composable
-private fun RestRing(left: () -> Long, total: Long) {
+internal fun RestRing(left: () -> Long, total: Long) {
     Box(Modifier.size(220.dp), contentAlignment = Alignment.Center) {
         ProgressRing({ left().toFloat() / total }, RestGreen, Modifier.fillMaxSize().padding(4.dp))
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
