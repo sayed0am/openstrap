@@ -112,8 +112,10 @@ class HealthConnectExporter(private val context: Context, private val dao: Healt
     private fun historyAvailable() = client.features.getFeatureStatus(HealthConnectFeatures.FEATURE_READ_HEALTH_DATA_HISTORY) ==
         HealthConnectFeatures.FEATURE_STATUS_AVAILABLE
 
-    fun isAvailable(): Boolean =
-        HealthConnectClient.getSdkStatus(context) == HealthConnectClient.SDK_AVAILABLE
+    fun isAvailable(): Boolean = availability() == HcAvailability.AVAILABLE
+
+    /** Usable, installable from the Play Store, or not on this phone at all. */
+    fun availability(): HcAvailability = HcAvailability.of(context)
 
     private val client by lazy { HealthConnectClient.getOrCreate(context) }
 

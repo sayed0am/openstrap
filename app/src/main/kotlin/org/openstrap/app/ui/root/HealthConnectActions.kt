@@ -18,6 +18,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.health.connect.client.PermissionController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import org.openstrap.app.health.HcAvailability
 import org.openstrap.app.ui.device.BackupCopy
 import org.openstrap.app.ui.device.DeviceViewModel
 import org.openstrap.app.ui.device.PickBackup
@@ -47,7 +48,15 @@ internal class HealthConnectActions(
 )
 
 internal const val HC_UNAVAILABLE = "Health Connect isn't available on this phone."
+internal const val HC_INSTALL_FIRST = "Install Health Connect first."
 private const val HC_NOT_GRANTED = "Health Connect permissions were not granted."
+
+/**
+ * What a Health Connect action says when Health Connect isn't there: install it first where the Play Store has it
+ * (the Health Connect page shows the button), else that it isn't available.
+ */
+internal fun hcMissingMessage(availability: HcAvailability): String =
+    if (availability == HcAvailability.INSTALLABLE) HC_INSTALL_FIRST else HC_UNAVAILABLE
 
 /**
  * The Health Connect decisions are the root view model's, the launchers stay here because they need the activity.
@@ -79,6 +88,7 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
         scope.launch {
             when (val hc = rootVm.healthConnectRead()) {
                 HcState.Unavailable -> Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
+                HcState.Installable -> Toast.makeText(context, HC_INSTALL_FIRST, Toast.LENGTH_LONG).show()
                 HcState.Granted -> deviceVm.importHealthConnect()
                 is HcState.Needs -> hcReadLauncher.launch(hc.permissions)
             }
@@ -91,6 +101,7 @@ internal fun rememberHealthConnectActions(rootVm: AppRootViewModel, deviceVm: De
             // ones it needs.
             when (val hc = rootVm.healthConnectWrite()) {
                 HcState.Unavailable -> Toast.makeText(context, HC_UNAVAILABLE, Toast.LENGTH_LONG).show()
+                HcState.Installable -> Toast.makeText(context, HC_INSTALL_FIRST, Toast.LENGTH_LONG).show()
                 HcState.Granted -> if (forAuto) deviceVm.setAutoHealthConnect(true) else deviceVm.exportHealthConnect()
                 is HcState.Needs -> {
                     hcForAuto = forAuto

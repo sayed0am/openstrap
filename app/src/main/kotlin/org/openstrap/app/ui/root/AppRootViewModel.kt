@@ -41,6 +41,7 @@ import org.openstrap.app.device.SyncRecord
 import org.openstrap.app.device.SyncState
 import org.openstrap.app.device.WorkoutSession
 import org.openstrap.app.device.WorkoutState
+import org.openstrap.app.health.HcAvailability
 import org.openstrap.app.health.HealthConnectExporter
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.presentation.SummaryRewards
@@ -85,9 +86,21 @@ data class CelebrationSettings(val goalMoment: Boolean = true, val weeklyRecap: 
 sealed interface HcState {
     data object Unavailable : HcState
 
+    /** Missing or out of date, and the Play Store has it: the Health Connect page offers to install it. */
+    data object Installable : HcState
+
     data object Granted : HcState
 
     data class Needs(val permissions: Set<String>) : HcState
+
+    companion object {
+        /** What stops an action before its permissions are asked for, or null when Health Connect is there. */
+        fun blocked(availability: HcAvailability): HcState? = when (availability) {
+            HcAvailability.AVAILABLE -> null
+            HcAvailability.INSTALLABLE -> Installable
+            HcAvailability.UNAVAILABLE -> Unavailable
+        }
+    }
 }
 
 /**
@@ -243,14 +256,12 @@ class AppRootViewModel(
         catching { rewards.summary(start, workouts.value, goals.value.workoutsPerWeek) }.getOrNull()
 
     /** The manual copy and auto sync write with these. The calorie ones are optional but asked for until granted. */
-    suspend fun healthConnectWrite(): HcState = when {
-        !healthConnect.isAvailable() -> HcState.Unavailable
+    suspend fun healthConnectWrite(): HcState = HcState.blocked(healthConnect.availability()) ?: when {
         healthConnect.hasRequestedPermissions() -> HcState.Granted
         else -> HcState.Needs(healthConnect.requestedPermissions)
     }
 
-    suspend fun healthConnectRead(): HcState = when {
-        !healthConnect.isAvailable() -> HcState.Unavailable
+    suspend fun healthConnectRead(): HcState = HcState.blocked(healthConnect.availability()) ?: when {
         healthConnect.hasReadPermissions() -> HcState.Granted
         else -> HcState.Needs(healthConnect.readPermissions)
     }
