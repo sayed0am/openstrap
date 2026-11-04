@@ -41,7 +41,6 @@ import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import java.time.Instant
 import java.time.ZoneId
@@ -52,7 +51,6 @@ import org.openstrap.app.data.Strength
 import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.glow.draw.DotFont
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.EarnedLine
@@ -376,22 +374,6 @@ private fun RouteLine(route: List<Route.Point>, modifier: Modifier) {
     }
 }
 
-/** A card's number in dots at [size], shrunk to fit [maxWidth] when it's long. */
-@Composable
-private fun StoryNumber(text: String, size: DotSize, maxWidth: Dp) {
-    val needed = (size.dot + size.gap) * DotFont.columns(text) - size.gap
-    DotMatrixText(text, dot = size, scale = if (needed > maxWidth) maxWidth / needed else 1f)
-}
-
-/** The dotted number with its word after it, on the baseline. */
-@Composable
-private fun NumberAndUnit(value: String, unit: String, size: DotSize, maxWidth: Dp = 250.dp) {
-    Row(verticalAlignment = Alignment.Bottom) {
-        StoryNumber(value, size, maxWidth)
-        Text(unit, color = Color.White.copy(alpha = 0.8f), style = GlowType.body, maxLines = 1, modifier = Modifier.padding(start = 10.dp))
-    }
-}
-
 /** "OpenStrap", with the ring before it on the calm and game cards. */
 @Composable
 private fun Brand(ring: Boolean = false) {
@@ -457,7 +439,7 @@ private fun StoryHeading(whenLine: String, sport: String) {
 private fun LiftStory(card: StoryCard.Lift) {
     Column(Modifier.fillMaxSize()) {
         StoryHeading(card.whenLine, card.sport)
-        Box(Modifier.padding(top = 30.dp)) { NumberAndUnit(card.value, card.unit, DotSize.Detail) }
+        Box(Modifier.padding(top = 30.dp)) { HeroValue(card.value, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 250.dp) }
         Column(Modifier.padding(top = 26.dp)) {
             card.rows.forEachIndexed { i, (name, text) ->
                 if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
@@ -491,7 +473,9 @@ private fun IndoorStory(card: StoryCard.Indoor) {
         }
         Spacer(Modifier.weight(1f))
         Text(card.sport, color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.time, DotSize.Detail, 310.dp) }
+        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
+            DotMatrixText(card.time, dot = DotSize.Detail, scale = dotFitScale(card.time, DotSize.Detail, 310.dp))
+        }
         Text("Workout time", color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.weight(1f))
         // Time in each zone as one strip, its ends rounded.
@@ -514,7 +498,9 @@ private fun WeekStory(card: StoryCard.Week) {
         }
         Spacer(Modifier.weight(1f))
         Text("My week", color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.count, DotSize.Live, 310.dp) }
+        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
+            DotMatrixText(card.count, dot = DotSize.Live, scale = dotFitScale(card.count, DotSize.Live, 310.dp))
+        }
         Text(card.goalLine, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         WeekDots(card.days, Color.White, Modifier.padding(top = 28.dp), dot = 34.dp)
         Spacer(Modifier.weight(1f))
@@ -551,7 +537,7 @@ private fun WeekFigures(figures: List<WeekFigure>) {
 private fun RoundsStory(card: StoryCard.Rounds) {
     Column(Modifier.fillMaxSize()) {
         StoryHeading(card.whenLine, card.sport)
-        Box(Modifier.padding(top = 30.dp)) { NumberAndUnit(card.done, card.unit, DotSize.Detail, maxWidth = 200.dp) }
+        Box(Modifier.padding(top = 30.dp)) { HeroValue(card.done, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 200.dp) }
         if (card.peaks.isNotEmpty()) {
             val heartZones = LocalHeartZones.current
             // Each round's peak in its zone's colour, white once it reached the top zone.
@@ -571,7 +557,7 @@ private fun CalmStory(card: StoryCard.Calm) {
         Text(card.sport, color = Color.White.copy(alpha = 0.85f), style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
         Text(card.whenLine, color = Color.White.copy(alpha = 0.55f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
         Spacer(Modifier.weight(1f))
-        NumberAndUnit(card.minutes, card.unit, DotSize.Detail)
+        HeroValue(card.minutes, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 250.dp)
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 16.dp)) }
         // The heart rate through the session as one soft white line.
         PlainLine(card.heart, Color.White.copy(alpha = 0.55f), 40.dp, Modifier.padding(top = 16.dp), smooth = false, stroke = 2.dp)
@@ -585,7 +571,7 @@ private fun CalmStory(card: StoryCard.Calm) {
 private fun GameStory(card: StoryCard.Game) {
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Text(card.sport, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
-        Box(Modifier.padding(top = 12.dp)) { NumberAndUnit(card.minutes, card.unit, DotSize.Hero) }
+        Box(Modifier.padding(top = 12.dp)) { HeroValue(card.minutes, card.unit, gap = 10.dp, maxWidth = 250.dp) }
         card.load?.let { GameLine(it, Modifier.padding(top = 14.dp)) }
         card.peak?.let { GameLine(it, Modifier.padding(top = 2.dp)) }
         Box(Modifier.padding(top = 16.dp)) { Brand(ring = true) }

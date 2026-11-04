@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.components.pressClickable
@@ -41,6 +43,27 @@ fun QuietPanel(
 }
 
 /**
+ * A card that is only its outline, 1.5 dp of white at 20% on black, for something on hold or gone with nothing lit:
+ * the rest between sets, a deleted night. Not [GlowCard]'s outline, which draws the card's colour at 70%, louder
+ * than these want.
+ */
+@Composable
+internal fun OutlineCard(
+    modifier: Modifier = Modifier,
+    horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier.fillMaxWidth().clip(GlowLayout.CardShape)
+            .border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowLayout.CardShape).padding(20.dp),
+        verticalArrangement = verticalArrangement,
+        horizontalAlignment = horizontalAlignment,
+        content = content,
+    )
+}
+
+/**
  * The glass surface every control inside a quiet panel wears (rows, pills, buttons): a faint white fill
  * and hairline, so it reads as something to press against the panel. With [onClick] it
  * presses like the rest of the glow controls.
@@ -49,9 +72,6 @@ fun Modifier.glass(shape: Shape, onClick: (() -> Unit)? = null, scale: Float = 0
     background(Color.White.copy(alpha = 0.08f), shape)
         .border(1.dp, Color.White.copy(alpha = 0.12f), shape)
         .let { if (onClick != null) it.pressClickable(onClick, shape, scale) else it }
-
-/** The shape of a glass row inside a quiet panel. */
-val GlassRowShape = GlowLayout.TileShape
 
 /** A change for the better, or a GPS fix good enough: the app's good green. */
 internal val TrendGood = MetricColors.good

@@ -39,7 +39,6 @@ import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.level
 import org.openstrap.app.ui.glow.draw.Edge
 
@@ -79,10 +78,7 @@ private fun GoalWeekCard(
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
                 trailing?.invoke()
             }
-            Row(Modifier.padding(top = GlowLayout.TitleGap), verticalAlignment = Alignment.Bottom) {
-                DotMatrixText("$count", dot = DotSize.Hero)
-                Text("of $goal workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
-            }
+            HeroValue("$count", "of $goal workouts", Modifier.padding(top = GlowLayout.TitleGap))
             // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
             if (bar) SegmentBar(
                 List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
@@ -304,13 +300,13 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
             EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
                 EdgeTitle("In all", "${mine.size} ${if (mine.size == 1) "workout" else "workouts"}")
-                SummaryFigures(
+                DetailFigures(
                     listOf(
                         Units.clockDuration(seconds) to "Hours",
                         Units.km(meters, Units.Precision.Day) to "km",
                         Units.count(Math.round(kcal)) to "Active kcal",
                     ),
-                    Modifier.padding(top = 12.dp),
+                    Modifier.padding(top = 12.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp,
                 )
             }
         }
