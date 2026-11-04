@@ -15,10 +15,10 @@ class LinePicturesTest {
     private val eps = 1e-4f
 
     @Test fun cardFractionsKeepInsideThePictureArea() {
-        assertEquals(SMALL_INSET_X, cardX(0f, PictureSize.Small), eps)
-        assertEquals(1f - SMALL_INSET_X, cardX(1f, PictureSize.Small), eps)
-        assertEquals(1f - WIDE_INSET_X, cardX(2f, PictureSize.Wide), eps)
-        assertEquals(PICTURE_TOP_Y, cardY(0f), eps)
+        assertEquals(SMALL_INSET_X, lineCardX(0f, PictureSize.Small), eps)
+        assertEquals(1f - SMALL_INSET_X, lineCardX(1f, PictureSize.Small), eps)
+        assertEquals(1f - WIDE_INSET_X, lineCardX(2f, PictureSize.Wide), eps)
+        assertEquals(PICTURE_TOP_Y, lineCardY(0f), eps)
     }
 
     @Test fun lineScaleTakesInTheBandAndPads() {
@@ -39,10 +39,10 @@ class LinePicturesTest {
         val values = listOf(60f, 62f, null, 80f, null, null)
         assertEquals(3, lastReading(values))
         val high = dayLineRim(values, high = true, PictureSize.Small)!!
-        assertEquals(cardX(3 / 5f, PictureSize.Small), high.x, eps)
+        assertEquals(lineCardX(3 / 5f, PictureSize.Small), high.x, eps)
         assertEquals(0f, high.y, eps)
         assertEquals(1f, dayLineRim(values, high = false, PictureSize.Wide)!!.y, eps)
-        assertEquals(cardX(1f, PictureSize.Small), dayLineRim(listOf(1f, 2f), true, PictureSize.Small)!!.x, eps)
+        assertEquals(lineCardX(1f, PictureSize.Small), dayLineRim(listOf(1f, 2f), true, PictureSize.Small)!!.x, eps)
         assertNull(dayLineRim(listOf(null, null), true, PictureSize.Small))
     }
 
@@ -58,7 +58,7 @@ class LinePicturesTest {
         assertEquals(2 / 6f, s[1].x0, eps)
         assertEquals(3 / 6f, s[1].x1, eps)
         val rim = dayStripRim(listOf(0.2f, null, 0.8f), PictureSize.Wide, slots = 6)!!
-        assertEquals(cardX(0.5f, PictureSize.Wide), rim.x, eps)
+        assertEquals(lineCardX(0.5f, PictureSize.Wide), rim.x, eps)
         assertNull(dayStripRim(listOf(null), PictureSize.Small))
     }
 
@@ -122,7 +122,7 @@ class LinePicturesTest {
     @Test fun bedWakeRimSitsByTheLateNights() {
         val week = listOf(night(23, 0, 7, 0), night(23, 0, 7, 0), night(23, 0, 7, 0), night(23, 0, 7, 0), night(23, 0, 7, 0), night(1, 0, 8, 30), night(1, 30, 9, 0))
         val rim = bedWakeRim(week, usual, PictureSize.Wide)!!
-        assertEquals(cardX((nightX(5, 7) + nightX(6, 7)) / 2, PictureSize.Wide), rim.x, eps)
+        assertEquals(lineCardX((nightX(5, 7) + nightX(6, 7)) / 2, PictureSize.Wide), rim.x, eps)
         assertEquals(1f, rim.y, eps)
         val early = bedWakeRim(listOf(night(21, 30, 5, 30), night(23, 0, 7, 0)), usual, PictureSize.Small)!!
         assertEquals(0f, early.y, eps)

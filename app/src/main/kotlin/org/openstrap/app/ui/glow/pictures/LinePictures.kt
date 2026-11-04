@@ -51,13 +51,13 @@ internal const val PICTURE_TOP_Y = 0.33f
 internal const val PICTURE_BOTTOM_Y = 0.62f
 
 /** Where [f], a fraction across the picture, lands across the card at [size]. */
-internal fun cardX(f: Float, size: PictureSize): Float {
+internal fun lineCardX(f: Float, size: PictureSize): Float {
     val inset = if (size == PictureSize.Small) SMALL_INSET_X else WIDE_INSET_X
     return inset + f.coerceIn(0f, 1f) * (1f - 2 * inset)
 }
 
 /** Where [f], a fraction down the picture, lands down the card. */
-internal fun cardY(f: Float): Float = PICTURE_TOP_Y + f.coerceIn(0f, 1f) * (PICTURE_BOTTOM_Y - PICTURE_TOP_Y)
+internal fun lineCardY(f: Float): Float = PICTURE_TOP_Y + f.coerceIn(0f, 1f) * (PICTURE_BOTTOM_Y - PICTURE_TOP_Y)
 
 /** The least room a picture takes when its modifier gives it none. */
 private fun Modifier.pictureArea(size: PictureSize): Modifier =
@@ -145,7 +145,7 @@ fun DayLine(
  */
 fun dayLineRim(values: List<Float?>, high: Boolean, size: PictureSize, slots: Int = values.size): Rim? {
     val last = lastReading(values) ?: return null
-    return Rim(cardX(slotX(last, slots), size), if (high) 0f else 1f, reachX = 0.7f, reachY = 0.85f)
+    return Rim(lineCardX(slotX(last, slots), size), if (high) 0f else 1f, reachX = 0.7f, reachY = 0.85f)
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -191,7 +191,7 @@ fun DayStrip(levels: List<Float?>, ink: Color, size: PictureSize, modifier: Modi
 /** Where Stress's card lights when above usual (spec 2.5): at the strip's end, the latest stretch. Null with none. */
 fun dayStripRim(levels: List<Float?>, size: PictureSize, slots: Int = levels.size): Rim? {
     val last = stripStretches(levels, slots).lastOrNull() ?: return null
-    return Rim(cardX(last.x1, size), cardY(0.5f), reachX = 0.6f, reachY = 1.1f)
+    return Rim(lineCardX(last.x1, size), lineCardY(0.5f), reachX = 0.6f, reachY = 1.1f)
 }
 
 /* ------------------------------------------------------------------------------------------------ */
@@ -368,7 +368,7 @@ fun bedWakeRim(nights: List<BedWake?>, usual: BedWake?, size: PictureSize, band:
     val x = idx.map { nightX(it, nights.size) }.average().toFloat()
     val ub = sinceNoon(usual).first
     val late = idx.sumOf { sinceNoon(nights[it]!!).first - ub } >= 0
-    return Rim(cardX(x, size), if (late) 1f else 0f, reachX = 0.5f, reachY = 0.8f)
+    return Rim(lineCardX(x, size), if (late) 1f else 0f, reachX = 0.5f, reachY = 0.8f)
 }
 
 /* ------------------------------------------------------------------------------------------------ */
