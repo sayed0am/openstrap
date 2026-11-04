@@ -8,14 +8,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -27,6 +25,7 @@ import org.junit.runner.RunWith
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.StrapController
+import org.openstrap.app.testing.endMain
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
@@ -49,9 +48,7 @@ class FirmwareViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After fun tearDown() {
-        vms.forEach { it.viewModelScope.coroutineContext[Job]?.cancel() }
-        scope.cancel()
-        Dispatchers.resetMain()
+        endMain(vms.map { it.viewModelScope.coroutineContext[Job] } + scope.coroutineContext[Job])
     }
 
     private fun vm(openFile: (Uri) -> InputStream?) =

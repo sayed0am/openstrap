@@ -10,7 +10,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,6 +38,7 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.export.AutoBackup
 import org.openstrap.app.health.HealthConnectAutoSync
 import org.openstrap.app.health.HealthConnectExporter
+import org.openstrap.app.testing.endMain
 import org.openstrap.app.testing.inMemoryDb
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -77,10 +76,8 @@ class DeviceViewModelTest {
     }
 
     @After fun tearDown() {
-        vm.viewModelScope.coroutineContext[Job]?.cancel()
-        scope.cancel()
+        endMain(vm.viewModelScope.coroutineContext[Job], scope.coroutineContext[Job])
         db.close()
-        Dispatchers.resetMain()
     }
 
     @Test fun `the strap's buttons reach the strap through the view model`() {

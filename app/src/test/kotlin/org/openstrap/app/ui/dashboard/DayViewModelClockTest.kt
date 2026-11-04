@@ -11,7 +11,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import kotlinx.coroutines.withTimeout
 import org.junit.After
@@ -27,6 +26,7 @@ import org.openstrap.app.data.RoomDayRepository
 import org.openstrap.app.data.db.OpenStrapDatabase
 import org.openstrap.app.testing.FixedClock
 import org.openstrap.app.testing.ZoneRule
+import org.openstrap.app.testing.endMain
 import org.openstrap.app.testing.inMemoryDb
 import org.openstrap.protocol.services.StepTotals
 import org.robolectric.RobolectricTestRunner
@@ -55,9 +55,8 @@ class DayViewModelClockTest {
     }
 
     @After fun close() {
-        collectors.forEach { it.cancel() }
+        endMain(collectors)
         db.close()
-        Dispatchers.resetMain()
     }
 
     private fun DayViewModel.watched(): DayViewModel = also { vm ->

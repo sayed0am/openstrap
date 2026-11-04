@@ -9,7 +9,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -19,6 +18,7 @@ import org.junit.Test
 import org.openstrap.app.ble.GattTimeoutException
 import org.openstrap.app.device.StrapCommandException
 import org.openstrap.app.device.StrapController
+import org.openstrap.app.testing.endMain
 import java.lang.reflect.Proxy
 import kotlin.coroutines.Continuation
 import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
@@ -31,8 +31,7 @@ class AlarmsViewModelTest {
     @Before fun setUp() = Dispatchers.setMain(UnconfinedTestDispatcher())
 
     @After fun tearDown() {
-        models.forEach { it.viewModelScope.coroutineContext[Job]?.cancel() }
-        Dispatchers.resetMain()
+        endMain(models.map { it.viewModelScope.coroutineContext[Job] })
     }
 
     @Test fun `an unexpected failure says it couldn't read, not its own text`() {
