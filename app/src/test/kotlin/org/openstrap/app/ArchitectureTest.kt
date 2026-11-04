@@ -157,26 +157,30 @@ internal object Architecture {
     private const val APP = "org.openstrap.app"
     private const val ROOT = "root"
 
-    /** What each top-level package may name in `org.openstrap.app`. `root` means only [ROOT_NAMES]. */
+    /**
+     * What each top-level package may name in `org.openstrap.app`. `root` means only [ROOT_NAMES]. `i18n` (the app's
+     * text for plain Kotlin) names nothing and every layer may read it.
+     */
     val ALLOWED: Map<String, Set<String>> = mapOf(
-        "ble" to setOf(),
-        "firmware" to setOf(),
-        "zepp" to setOf("firmware", "data"),
-        "data" to setOf("ble", "firmware", "zepp", "data"),
-        "presentation" to setOf("data"),
-        "device" to setOf("ble", "firmware", "zepp", "data", "presentation", ROOT),
-        "health" to setOf("ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
-        "export" to setOf("ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
-        "update" to setOf("ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
+        "i18n" to setOf(),
+        "ble" to setOf("i18n"),
+        "firmware" to setOf("i18n"),
+        "zepp" to setOf("i18n", "firmware", "data"),
+        "data" to setOf("i18n", "ble", "firmware", "zepp", "data"),
+        "presentation" to setOf("i18n", "data"),
+        "device" to setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", ROOT),
+        "health" to setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
+        "export" to setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
+        "update" to setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", ROOT),
         "widget" to setOf(
-            "ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update", ROOT,
+            "i18n", "ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update", ROOT,
             "ui.glow.draw", "ui.theme",
         ),
-        "ui" to setOf("ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update", ROOT, "ui"),
+        "ui" to setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update", ROOT, "ui"),
     )
 
     /** Packages with no Compose at all, in imports or in code. */
-    val NO_COMPOSE = setOf("ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update")
+    val NO_COMPOSE = setOf("i18n", "ble", "firmware", "zepp", "data", "presentation", "device", "health", "export", "update")
 
     /** The entry points a lower layer may name: to reach the container's owner, build an intent, read the build. */
     val ROOT_NAMES = setOf("OpenStrapApp", "MainActivity", "BuildConfig", "R")

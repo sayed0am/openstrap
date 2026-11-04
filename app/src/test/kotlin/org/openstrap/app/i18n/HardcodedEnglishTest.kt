@@ -1,0 +1,213 @@
+package org.openstrap.app.i18n
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Test
+import org.openstrap.app.testing.KotlinLiterals
+import org.openstrap.app.testing.Literal
+import org.openstrap.app.testing.SourceTree
+
+/**
+ * No new English in Kotlin: user-facing text lives in res/values/strings_<area>.xml, so it can be translated
+ * (docs/audits/2026-11-04-i18n-plan.md). Scans every string literal under app/src/main/kotlin with the lexer the
+ * punctuation test uses, and fails on one that reads as English in a file that isn't on [ALLOWED]. It also fails on a
+ * listed file that has none left, so each wave takes off the files it moved and the list only shrinks.
+ *
+ * What counts as English is [EnglishText]. Literals that read like it but are never shown go in [IGNORED], by file and
+ * call, each with why.
+ */
+class HardcodedEnglishTest {
+    @Test fun `user-facing English stays in the files that still have it`() {
+        val files = SourceTree.kotlin.walkTopDown().filter { it.isFile && it.extension == "kt" }.sortedBy { it.path }.toList()
+        assertTrue("found only ${files.size} sources under ${SourceTree.kotlin}", files.size > 100)
+        val found = mutableListOf<String>()
+        val withEnglish = mutableSetOf<String>()
+        val used = mutableSetOf<Pair<String, String>>()
+        for (f in files) {
+            val path = f.relativeTo(SourceTree.kotlin).invariantSeparatorsPath
+            for (lit in KotlinLiterals(f.readText()).scan()) {
+                if (lit.hidden || !EnglishText.isText(lit)) continue
+                val key = path to lit.call.substringAfterLast('.')
+                if (key in IGNORED) {
+                    used += key
+                    continue
+                }
+                withEnglish += path
+                if (path !in ALLOWED) found += "$path:${lit.line}  \"${lit.text}\""
+            }
+        }
+        println("HardcodedEnglishTest: ${withEnglish.size} files still have English, ${ALLOWED.size} allowed")
+        if (found.isNotEmpty()) {
+            fail(
+                "${found.size} English strings in Kotlin. Move them to res/values/strings_<area>.xml " +
+                    "(docs/audits/2026-11-04-i18n-plan.md, How to move a file):\n" + found.joinToString("\n"),
+            )
+        }
+        val clean = ALLOWED - withEnglish
+        assertTrue("these files have no English left, take them off ALLOWED: $clean", clean.isEmpty())
+        val stale = IGNORED.keys - used
+        assertTrue("IGNORED entries that no longer match: $stale", stale.isEmpty())
+    }
+
+    @Test fun `text with spaces, units and placeholders counts, keys, patterns, SQL and labels don't`() {
+        val src = """
+            Text("Check now")
+            Text("Updates")
+            Text("${'$'}steps steps")
+            val a = "Goal ${'$'}{goal}"
+            val b = "%d min"
+            val c = "Synced "
+            Icon(contentDescription = "Open You")
+            val d = "${'$'}{x} bpm"
+            val key = "start_epoch"
+            val route = "workout/{id}"
+            val camel = "workoutStart"
+            val single = "bpm"
+            val caps = "HRV"
+            val pattern = "d MMM yyyy"
+            val sql = "SELECT * FROM night WHERE day BETWEEN ? AND ?"
+            val json = "{\"type\":\"Feature\"}"
+            val url = "https://example.com/a b"
+            val ident = "BoundDevice(deviceId=${'$'}id, mac=${'$'}mac)"
+            @Suppress("LongParameterList")
+            Modifier.testTag("save button")
+            animateFloatAsState(1f, label = "nav pill")
+            log("sync started")
+            Log.w(TAG, "sync failed")
+            throw IllegalStateException("No reply from the strap")
+            // A comment with words in it
+            /** KDoc with "quoted words" */
+        """.trimIndent()
+        val text = KotlinLiterals(src).scan().filter { !it.hidden && EnglishText.isText(it) }
+        assertEquals(listOf(1, 2, 3, 4, 5, 6, 7, 8), text.map { it.line })
+    }
+
+    @Test fun `the English check reads the template holes and the call each literal is in`() {
+        val lit = KotlinLiterals("Text(label = \"Goal ${'$'}goal\")").scan().single()
+        assertEquals("Goal ", lit.text)
+        assertEquals("Goal ${Literal.HOLE}", lit.shape)
+        assertEquals("Text", lit.call)
+        assertTrue(lit.before.endsWith("label = "))
+    }
+
+    private companion object {
+        /**
+         * Literals the check reads as English that no user sees, by file and the call they are an argument of ("" for
+         * none), each with why. Prefer a narrower entry to a broad one.
+         */
+        val IGNORED = mapOf(
+            ("ble/BleScanner.kt" to "listOf") to "The names the official app accepts for the strap, matched in scans",
+            ("data/DetailRoutes.kt" to "") to "Health Connect detail route ids, read back by the app, never shown",
+            ("data/db/DayKeyMigration.kt" to "") to "The migration's notes for the diagnostics log",
+            ("device/StrapManager.kt" to "step") to "Connection steps named in the diagnostics log",
+            ("device/StrapPresenceService.kt" to "appeared") to "Presence events named in the diagnostics log",
+            ("device/WorkoutGapFill.kt" to "") to "Its result line for the diagnostics log",
+            ("device/WorkoutSession.kt" to "buzz") to "Buzz reasons named in the diagnostics log",
+            ("export/BackupFiles.kt" to "if") to "Matches the system's own No space error message",
+            ("export/CsvBackups.kt" to "warn") to "Backup warnings for the diagnostics log",
+            ("health/AutoHealthConnect.kt" to "guarded") to "Write names for the diagnostics log",
+            ("ui/glow/draw/GlowStyle.kt" to "listOf") to "Names of the glow presets, kept for tuning and never shown",
+            ("ui/root/AppRootViewModel.kt" to "write") to "Setting names for the log line when a write fails",
+            ("ui/theme/AppIcons.kt" to "line") to "Icon names, the ImageVector's own name",
+            ("update/ReleaseNotes.kt" to "startsWith") to "GitHub's generated release notes line it leaves out",
+            ("widget/WidgetSnapshot.kt" to "logUnread") to "What a widget couldn't read, for the log",
+            ("widget/WidgetSnapshot.kt" to "read") to "What a widget couldn't read, for the log",
+        )
+
+        /**
+         * Every file that still has English in Kotlin, which wave 0 found. Each wave moves its files' text to
+         * strings_<area>.xml and takes them off. Wave 6 empties it.
+         */
+        val ALLOWED = setOf(
+            "ble/GattClient.kt",
+            "data/BodySignals.kt", "data/BodySignalsCopy.kt", "data/CheckIn.kt", "data/Coaching.kt", "data/Healthspan.kt",
+            "data/HealthspanEngine.kt", "data/Recovery.kt", "data/RecoveryEngine.kt", "data/Rewards.kt",
+            "data/SleepRegularity.kt", "data/Strength.kt", "data/Vo2max.kt", "data/Workouts.kt",
+            "data/settings/SettingsStore.kt", "data/settings/Units.kt",
+            "device/AutoDetectNotifier.kt", "device/ConnectErrors.kt", "device/HealthAlertNotifier.kt",
+            "device/HistorySync.kt", "device/KeepRecordingNotice.kt", "device/LeftRecording.kt", "device/PairingErrors.kt",
+            "device/StrapCommands.kt", "device/StrapService.kt", "device/WearReminder.kt", "device/WeeklyRecap.kt",
+            "device/WorkoutNotification.kt", "device/WorkoutSession.kt", "device/WorkoutTileService.kt",
+            "firmware/FirmwareCloud.kt",
+            "health/HealthConnectExporter.kt",
+            "presentation/ActivityCopy.kt", "presentation/Bands.kt", "presentation/DataCopy.kt", "presentation/DayWords.kt",
+            "presentation/DetailCopy.kt", "presentation/FirstNightCopy.kt", "presentation/HeaderCopy.kt",
+            "presentation/MetricCopy.kt", "presentation/NotificationCopy.kt", "presentation/Ranges.kt",
+            "presentation/RewardsCopy.kt", "presentation/TabCopy.kt", "presentation/TodayCopy.kt", "presentation/Units.kt",
+            "presentation/WorkoutCopy.kt", "presentation/WorkoutWords.kt",
+            "ui/alarms/AlarmsScreen.kt", "ui/alarms/AlarmsViewModel.kt", "ui/alarms/PhoneAlertsScreen.kt",
+            "ui/alarms/PhoneAlertsViewModel.kt",
+            "ui/components/PullToSync.kt",
+            "ui/dashboard/CaloriesCopy.kt", "ui/dashboard/DataStates.kt", "ui/dashboard/DayCalendar.kt",
+            "ui/dashboard/Frame.kt", "ui/dashboard/InfoCopy.kt", "ui/dashboard/MomentHeader.kt",
+            "ui/dashboard/Narrative.kt", "ui/dashboard/Routes.kt", "ui/dashboard/SleepCopy.kt",
+            "ui/dashboard/SleepPanels.kt", "ui/dashboard/SyncStates.kt", "ui/dashboard/TodayPlan.kt",
+            "ui/dashboard/WeekStory.kt",
+            "ui/device/BackupCopy.kt", "ui/device/BackupPage.kt", "ui/device/DeletedSleepPage.kt",
+            "ui/device/DeviceScreen.kt", "ui/device/DeviceViewModel.kt", "ui/device/ErrorCopy.kt",
+            "ui/device/GoalsSheet.kt", "ui/device/HealthConnectPage.kt", "ui/device/ProfileScreen.kt",
+            "ui/device/UpdatesPage.kt", "ui/device/YouPage.kt",
+            "ui/firmware/FirmwareScreen.kt", "ui/firmware/FirmwareViewModel.kt",
+            "ui/glow/ActivityDetail.kt", "ui/glow/AllMetricsScreen.kt", "ui/glow/Celebrations.kt",
+            "ui/glow/ChooseScreen.kt", "ui/glow/EditTodaySheet.kt", "ui/glow/GlowActivityScreen.kt",
+            "ui/glow/GlowCharts.kt", "ui/glow/GlowHealthspan.kt", "ui/glow/GlowHealthspanScreen.kt",
+            "ui/glow/GlowLayout.kt", "ui/glow/GlowList.kt", "ui/glow/GlowMetricDetail.kt", "ui/glow/GlowRecoveryScreen.kt",
+            "ui/glow/GlowShared.kt", "ui/glow/GlowSleepScreen.kt", "ui/glow/GlowTabletop.kt", "ui/glow/GlowTodayScreen.kt",
+            "ui/glow/GlowWorkoutMode.kt", "ui/glow/GlowWorkoutScreen.kt", "ui/glow/GlowWorkoutSummary.kt",
+            "ui/glow/GoalsAndBests.kt", "ui/glow/HeartZonesScreen.kt", "ui/glow/InfoSheet.kt", "ui/glow/PageParts.kt",
+            "ui/glow/ReadyCardio.kt", "ui/glow/ReadyPlans.kt", "ui/glow/ReadyScreen.kt", "ui/glow/ScoreDetail.kt",
+            "ui/glow/ShareCards.kt", "ui/glow/ShareScreen.kt", "ui/glow/SleepDetail.kt", "ui/glow/SummarySections.kt",
+            "ui/glow/TodayCards.kt", "ui/glow/WorkoutCapsule.kt", "ui/glow/live/LiveDistance.kt",
+            "ui/glow/live/LiveFrame.kt", "ui/glow/live/LiveGame.kt", "ui/glow/live/LiveHeart.kt",
+            "ui/glow/live/LiveIndoor.kt", "ui/glow/live/LiveIntervals.kt", "ui/glow/live/LiveMap.kt",
+            "ui/glow/live/LiveMind.kt", "ui/glow/live/LivePaused.kt", "ui/glow/live/LiveSets.kt",
+            "ui/root/AppNavState.kt", "ui/root/DetailHost.kt", "ui/root/HealthConnectActions.kt",
+            "ui/root/PermissionGates.kt",
+            "ui/workout/FamilySummary.kt", "ui/workout/HeartZonesCopy.kt", "ui/workout/LiveGlance.kt",
+            "ui/workout/ReadyHero.kt", "ui/workout/StartCopy.kt", "ui/workout/SummaryCopy.kt",
+            "ui/workout/WorkoutDetailCopy.kt",
+            "ui/zepp/ZeppSignIn.kt",
+            "widget/MomentWidgetModel.kt", "widget/RecoveryWidget.kt", "widget/RecoveryWidgetModel.kt",
+            "widget/SleepWidgetModel.kt", "widget/StartWidgetModel.kt", "widget/StepsWidget.kt",
+            "widget/StepsWidgetModel.kt", "widget/StrapStatus.kt", "widget/WidgetStatusLine.kt",
+        )
+    }
+}
+
+/**
+ * Whether a literal reads as user-facing English: two words (`"Check now"`), one word beside a value
+ * (`"$steps steps"`, `"Goal $goal"`, `"%d min"`), or one capitalised word (`"Updates"`). A word has at least two
+ * letters, all lower case after the first, so keys (`start_epoch`, `workoutStart`), routes, abbreviations (`HRV`),
+ * date patterns and identifiers don't count, and neither does SQL (an upper case keyword) or a URL.
+ *
+ * It deliberately leaves out a lone lower case word (`"bpm"`, `"days"`, `"km"`), which can't be told from a key by
+ * its look, and words with digits (`"VO2 max"`). Both are found with the rest of their file's text when a wave moves
+ * it. It also skips the arguments of calls that are never shown ([QUIET]) and Compose animation labels (`label =`).
+ */
+internal object EnglishText {
+    /** Calls whose string arguments no user reads: annotations, SQL, patterns, keys, HTTP headers and the logs. */
+    private val QUIET = setOf(
+        "Suppress", "SuppressLint", "Preview", "Deprecated", "Query", "RawQuery", "ColumnInfo", "execSQL", "rawQuery",
+        "testTag", "Regex", "toRegex", "ofPattern", "of", "log", "setRequestProperty", "launchForBroadcast",
+    )
+
+    private val label = Regex("""\blabel\s*=\s*$""")
+    private val sql = Regex("""^(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|PRAGMA|WITH)\b|\b(FROM|WHERE|BETWEEN)\b""")
+    private val single = Regex("""[A-Z][a-z'’]+(?:-[a-z]+)*[.!?:…]?""")
+    private val word = Regex("""[("'“‘]*[A-Za-z][a-z'’]*(?:-[A-Za-z]?[a-z'’]+)*[)"'”’.,!?:…%]*""")
+    private val hole = Regex(
+        """[(\u0001\d%.,:+\-−/×]*\u0001[\u0001\d%.,:+\-−/)]*|%[-#+ 0,(]*\d*\$?\d*(?:\.\d+)?[a-zA-Z][,.]?""",
+    )
+
+    fun isText(lit: Literal): Boolean {
+        val call = lit.call.substringAfterLast('.')
+        if (call in QUIET || call.endsWith("PreferencesKey") || label.containsMatchIn(lit.before)) return false
+        val s = lit.shape.trim()
+        if (s.isEmpty() || "://" in s || sql.containsMatchIn(s)) return false
+        if (s.none(Char::isWhitespace)) return single.matches(s)
+        val chunks = s.split(' ', '\t', '\n', '\u00A0', '\u2007', '\u2009', '\u202F').filter { it.isNotEmpty() }
+        val words = chunks.count { word.matches(it) && it.count(Char::isLetter) >= 2 }
+        return words >= 2 || (words == 1 && chunks.any { hole.matches(it) })
+    }
+}

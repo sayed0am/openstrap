@@ -51,6 +51,9 @@ android {
         // `-PdevApp` builds a debug app that also installs beside it (org.openstrap.app.dev), named with its version,
         // to try a branch on a phone with its own data while the release stays as it is.
         debug {
+            // en-XA (accented and longer, so text still in Kotlin or text that clips stands out) and ar-XB (right to
+            // left) can be picked as the phone's language on a debug build (docs/audits/2026-11-04-i18n-plan.md).
+            isPseudoLocalesEnabled = true
             if (providers.gradleProperty("demoApp").isPresent) applicationIdSuffix = ".demo"
             if (providers.gradleProperty("devApp").isPresent) {
                 applicationIdSuffix = ".dev"
@@ -74,6 +77,20 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // The languages under res/ become the app's locale config, so Android 13 and up list OpenStrap under App languages
+    // in system settings. res/resources.properties says the unqualified values/ folder is English.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+    // The unit tests get the merged resources and manifest, so a Robolectric test reads real strings
+    // (i18n/StringsParityTest). robolectric.properties keeps a plain Application, not OpenStrapApp and its container.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
     }
 
     // Android lint. Old findings live in the baseline (refresh with ./gradlew :app:updateLintBaseline), new ones fail
