@@ -41,7 +41,8 @@ class PictureSample(
     val draw: @Composable (size: PictureSize, off: Boolean, modifier: Modifier) -> Unit,
 )
 
-/** Every picture kind at a Small and a Wide, usual then off (`--es section pictures`). */
+/** Every picture kind at a Small and a Wide, usual then off (`--es section pictures`). Laid into the gallery's column. */
+@Suppress("MultipleEmitters", "ComposeMultipleContentEmitters")
 @Composable
 internal fun PictureGallery() {
     val samples = LinePictureSamples + LevelPictureSamples
@@ -98,6 +99,6 @@ private fun Number(value: String, unit: String?, tag: String?) {
 
 /** A stand-in until a picture is drawn: a dim box. */
 @Composable
-internal fun PictureStub(modifier: Modifier) {
+internal fun PictureStub(modifier: Modifier = Modifier) {
     Spacer(modifier.background(Color.White.copy(alpha = 0.06f)))
 }

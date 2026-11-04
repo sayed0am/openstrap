@@ -144,6 +144,8 @@ private fun aspectOf(size: PictureSize) = if (size == PictureSize.Small) 136f / 
  * still being learnt. Dots inside the band are dimmer, outside it in full ink, today's larger. The Recovery Small
  * (scores) and Breathing disturbances (per hour).
  */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun WeekOfDots(values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
@@ -295,6 +297,8 @@ internal fun dayBarsGeometry(values: List<Float?>, target: Float?): DayBarsGeome
  * oldest first, the last today's, drawn as rounded bars from the foot. Today's in full ink, the others dimmer. [target]
  * a solid hairline in white at 40%. Never off, so no rim.
  */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun DayBars(values: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier, target: Float? = null) {
     Canvas(modifier) {
@@ -381,6 +385,8 @@ internal fun splitBarParts(parts: List<Float>, width: Float, gap: Float): List<S
  * One bar split by what took the energy (PictureKind.SplitBar): Drained, [parts] such as exercise, stress and living,
  * in that order, with gaps. The biggest in full ink, the others fainter by size. No rim ever.
  */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun SplitBar(parts: List<Float>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {
@@ -410,6 +416,8 @@ internal fun weekRingsGeometry(width: Float, height: Float, stroke: Float, count
  * in that order, null for a day to come, which shows its faint track alone. A full ring in full ink at goal, a part
  * ring dimmer. Steps' lime ([org.openstrap.app.ui.theme.MetricColors.steps]). No rim.
  */
+// The lists arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
 @Composable
 fun WeekRings(shares: List<Float?>, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
     Canvas(modifier) {

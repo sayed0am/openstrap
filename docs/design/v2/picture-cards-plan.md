@@ -2,6 +2,10 @@
 
 Build step 12 of [spec.md](spec.md) (8.1), the decisions of 2026-11-04 (2.10). Written 2026-11-04.
 
+**Status, 2026-11-04 evening:** all four waves built and merged on `design/picture-cards`. The open decisions went with
+the recommended answers, and the gates were waived by the user. Checked on the emulator with the Fold's data, folded
+and unfolded: Today (evening), Recovery, Sleep, Activity and the picture gallery.
+
 The work runs in four waves. Wave 0 and wave 3 are done by the coordinating session alone. Waves 1 and 2 split into
 subagents that run side by side, each in its own git worktree on its own branch, each owning a fixed set of files that
 no other agent in the same wave touches. That is what keeps merges free of conflicts, as in the fix waves of

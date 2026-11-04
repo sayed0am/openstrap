@@ -286,7 +286,7 @@ private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepR
     PictureCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), rim = rim, onClick = onOpen) {
         EdgeTitle(stringResource(R.string.glow_sleep_regularity_title), stringResource(R.string.glow_sleep_last_7_nights))
         // Waiting for the first night it keeps its shape with the dim dash (spec 4.3).
-        SleepNumber(reg?.sri?.roundToInt()?.toString(), null, tag, waiting = firstNights && w == null, Modifier.padding(top = 14.dp))
+        SleepNumber(reg?.sri?.roundToInt()?.toString(), null, tag, Modifier.padding(top = 14.dp), waiting = firstNights && w == null)
         val status = when {
             w == null -> if (firstNights) AFTER_FIRST_NIGHT else stringResource(R.string.glow_sleep_regularity_none)
             tag != null -> null
@@ -321,7 +321,7 @@ private fun BreathingCard(rec: org.openstrap.app.data.RecoveryResult?, size: Pic
     val tag = if (b == null) null else offTag(OffWords.MoreOnly, breathingOffStatus(rec))
     val rim = if (tag != null) weekOfDotsRim(values, usual, size) else null
     SleepPictureCard(
-        MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), modifier, rim, onInfo,
+        MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), rim, onInfo, modifier = modifier,
         value = b?.let { dotFormat("%.1f", it.perHour) }, unit = stringResource(R.string.glow_sleep_an_hour), tag = tag,
         status = if (b == null) AFTER_FIRST_NIGHT else TabCopy.breathingShort(b),
         picture = if (values.none { it != null }) null else ({ m -> WeekOfDots(values, usual, MetricColors.sleepLight, size, m) }),
@@ -340,7 +340,7 @@ private fun NapsCard(state: DayUiState, size: PictureSize, modifier: Modifier, o
     val span = napDaySpan(state.date, naps, ZoneId.systemDefault())
     val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
     SleepPictureCard(
-        MetricColors.sleepDeep, TabCopy.napsTitle(naps.size), modifier, null, onOpen,
+        MetricColors.sleepDeep, TabCopy.napsTitle(naps.size), null, onOpen, modifier = modifier,
         value = clockDuration(naps.sumOf { it.end - it.start }), unit = null, tag = null,
         status = TabCopy.naps(naps.size, clock(naps.first().start)),
         picture = { m -> NapDay(pictured, span.first, span.last, MetricColors.sleepDeep, size, m) },
@@ -354,9 +354,10 @@ private fun NapsCard(state: DayUiState, size: PictureSize, modifier: Modifier, o
  */
 @Composable
 private fun SleepPictureCard(
-    ink: Color, title: String, modifier: Modifier, rim: Rim?, onClick: (() -> Unit)?,
+    ink: Color, title: String, rim: Rim?, onClick: (() -> Unit)?,
     value: String?, unit: String?, tag: NewsTag?, status: String?,
     picture: (@Composable (Modifier) -> Unit)?,
+    modifier: Modifier = Modifier,
 ) {
     PictureCard(ink, modifier, rim = rim, onClick = onClick) {
         CardTitle(title)
@@ -372,7 +373,7 @@ private fun SleepPictureCard(
 
 /** A Sleep card's number in white dots with its unit and news tag ([NumberWithTag]); the dim dash while [waiting]. */
 @Composable
-private fun SleepNumber(value: String?, unit: String?, tag: NewsTag?, waiting: Boolean = true, modifier: Modifier = Modifier) {
+private fun SleepNumber(value: String?, unit: String?, tag: NewsTag?, modifier: Modifier = Modifier, waiting: Boolean = true) {
     if (value == null && !waiting) return
     NumberWithTag(if (value == null) null else tag, modifier) {
         Row(verticalAlignment = Alignment.Bottom) {

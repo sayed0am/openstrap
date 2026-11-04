@@ -13,6 +13,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.roundToInt
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.components.cardNumber
+import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.NewsTag
 import org.openstrap.app.ui.dashboard.OffStatus
 import org.openstrap.app.ui.dashboard.OffWords
@@ -84,7 +85,7 @@ import org.openstrap.app.ui.glow.draw.DotSize
  */
 
 // A whole tab, filling the pane like the other tab screens: nothing outside places it.
-@Suppress("ModifierMissing")
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun GlowRecoveryScreen(
     state: DayUiState,
@@ -152,7 +153,7 @@ fun GlowRecoveryScreen(
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
                     RecoveryCard.SkinTemp -> SkinTempCard(
-                        signals.skin, signals.skinNormal, waiting, m, onOpen = { onOpenMetric(Metric.SkinTemperature) },
+                        signals.skin, signals.skinNormal, waiting, onOpen = { onOpenMetric(Metric.SkinTemperature) }, modifier = m,
                     )
                     RecoveryCard.BodySignals -> SignalsList(signals.rows, waiting, onOpenMetric)
                     RecoveryCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
@@ -429,7 +430,7 @@ private const val DIAL_SHARE = 0.44f
  * foot when below. Before there's a normal it waits for one. Opens the skin temperature detail.
  */
 @Composable
-private fun SkinTempCard(today: Float?, normal: History.Normal?, waiting: String, modifier: Modifier, onOpen: () -> Unit) {
+private fun SkinTempCard(today: Float?, normal: History.Normal?, waiting: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
     val deviation = if (today != null && normal != null) today - normal.mean else null
     val band = normal?.let { (it.low - it.mean)..(it.high - it.mean) }
     val status = bodyOffStatus(today, normal)
@@ -501,6 +502,7 @@ private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
             return BodySignal(metric, name, accent, today?.let { metric.format(it) + unit }, direction, bodyTag(metric, direction))
         }
         val stressToday = stressMean(state.stress)
+        val night = SleepCopy.nightValue(state, Metric.SkinTemperature)
         Signals(
             listOf(
                 body(Metric.Breathing, breathName, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), breath),
@@ -510,8 +512,11 @@ private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
                     History.status(stressToday, stress), offTag(OffWords.Usual, stressOffStatus(state.stress, stress)),
                 ),
             ),
-            skin = state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(),
-            skinNormal = skin,
+            // Tonight's against the nights before (spec 2.7, Dial): the day's mean counts hours off the wrist, which
+            // read several degrees low. The day's figures only stand in when the night has none.
+            skin = night ?: state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(),
+            // A night's value against the nights' normal only, never the day's: the two sit degrees apart.
+            skinNormal = if (night != null) SleepCopy.nightNormal(state, Metric.SkinTemperature) else skin,
         )
     }
 }

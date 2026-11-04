@@ -321,12 +321,11 @@ private val WidePictureHeight = 52.dp
  */
 @Composable
 internal fun PictureNumber(value: String?, unit: String?, tag: NewsTag?, modifier: Modifier = Modifier) {
-    if (value == null) return WaitingDash(modifier.padding(vertical = 8.dp))
-    NumberWithTag(tag, modifier) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge)
-            if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))
-        }
+    if (value == null) WaitingDash(modifier.padding(vertical = 8.dp))
+    else NumberWithTag(tag, modifier) {
+        DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge)
+        // Its own item, so on a Small too narrow for both the unit drops under the number whole, never split.
+        if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, maxLines = 1, softWrap = false)
     }
 }
 
@@ -769,6 +768,7 @@ internal fun WeekCard(
     onClick: (() -> Unit)? = null,
 ) {
     val goal = org.openstrap.app.ui.dashboard.LocalGoals.current.steps
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val start = org.openstrap.app.data.Weeks.start(state.date, java.time.DayOfWeek.MONDAY)
     val end = start.plusDays(org.openstrap.app.data.Weeks.DAYS - 1L)
     val stored by remember(start, history) {
@@ -792,7 +792,7 @@ internal fun WeekCard(
         Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             week.days.forEach { (day, _) ->
                 Text(
-                    day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, java.util.Locale.getDefault()),
+                    day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, locale),
                     Modifier.weight(1f), color = Color.White.copy(alpha = if (day == state.date) 1f else GlowType.CAPTION_ALPHA),
                     style = GlowType.caption, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1,
                 )
