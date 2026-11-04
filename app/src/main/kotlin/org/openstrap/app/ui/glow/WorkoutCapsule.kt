@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
 import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -113,7 +115,12 @@ fun WorkoutCapsule(glance: LiveGlance, onClick: () -> Unit, onAction: (GlanceAct
                 Box(
                     Modifier.size(44.dp).clip(CircleShape).background(color).pressClickable({ onAction(GlanceAction.Pause) }, CircleShape),
                     contentAlignment = Alignment.Center,
-                ) { Icon(AppIcons.PauseFill, "Pause", tint = Color.Black, modifier = Modifier.size(18.dp)) }
+                ) {
+                    Icon(
+                        AppIcons.PauseFill, stringResource(R.string.glow_workout_capsule_pause), tint = Color.Black,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             } else {
                 glance.second?.let { second ->
                     BarPill(glance.secondLabel ?: "", false, endDot = second == GlanceAction.End) { onAction(second) }
@@ -183,7 +190,8 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
             }
             if (glance.line1.isNotEmpty() && glance.tint in setOf(GlanceTint.Paused, GlanceTint.Asking)) {
                 Spacer(Modifier.height(8.dp))
-                Text(glance.line1 + (glance.line2?.let { ". $it" } ?: ""), color = Color.White, style = GlowType.body)
+                val lines = glance.line2?.let { stringResource(R.string.glow_workout_capsule_lines, glance.line1, it) } ?: glance.line1
+                Text(lines, color = Color.White, style = GlowType.body)
             }
             glance.progress?.let { p ->
                 Spacer(Modifier.height(16.dp))
@@ -213,7 +221,10 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
             glance.next?.let { next ->
                 Spacer(Modifier.height(16.dp))
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color.Black.copy(alpha = 0.4f)).padding(14.dp)) {
-                    Text("Next", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                    Text(
+                        stringResource(R.string.glow_workout_capsule_next), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        style = GlowType.secondary,
+                    )
                     Text(next, color = Color.White, style = GlowType.body)
                 }
             }
@@ -230,7 +241,10 @@ internal fun LiveHero(glance: LiveGlance, sportType: Int, clock: String, onOpen:
                         contentAlignment = Alignment.Center,
                     ) {
                         if (label != null) Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
-                        else Icon(actionIcon(a), "Pause", tint = Color.White, modifier = Modifier.size(18.dp))
+                        else Icon(
+                            actionIcon(a), stringResource(R.string.glow_workout_capsule_pause), tint = Color.White,
+                            modifier = Modifier.size(18.dp),
+                        )
                     }
                     Spacer(Modifier.width(12.dp))
                 }

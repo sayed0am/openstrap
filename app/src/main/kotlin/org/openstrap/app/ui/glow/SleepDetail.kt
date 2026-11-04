@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.SleepEditCopy
@@ -105,7 +108,10 @@ private fun ChartTitle(title: String, note: String?, modifier: Modifier = Modifi
     Row(modifier.fillMaxWidth().padding(top = 18.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
         // While the line is scrubbed, its reading takes the note's place, in white so it reads as the live value.
-        if (scrubbed != null) Text("${scrubbed.value} ${scrubbed.label}", color = Color.White, style = GlowType.secondary, maxLines = 1)
+        if (scrubbed != null) Text(
+            stringResource(R.string.glow_sleep_scrubbed, scrubbed.value.toString(), scrubbed.label), color = Color.White,
+            style = GlowType.secondary, maxLines = 1,
+        )
         else if (note != null) Text(note, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
     }
 }
@@ -147,10 +153,13 @@ internal fun SleepScoreDetail(
     val known = week.mapNotNull { it.second }
 
     val headline = when {
-        range == Range.Week && known.isNotEmpty() -> DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 nights", null)
-        range == Range.Week -> DetailHeadline.none("No scores", "In the last 7 nights")
+        range == Range.Week && known.isNotEmpty() ->
+            DetailHeadline(Math.round(known.average()).toString(), stringResource(R.string.glow_sleep_week_average), null)
+        range == Range.Week ->
+            DetailHeadline.none(stringResource(R.string.glow_sleep_no_scores), stringResource(R.string.glow_sleep_in_last_7_nights))
         score != null -> DetailHeadline(score.toString(), SleepCopy.scoreLabel(isToday), TabCopy.sleepScoreWord(score))
-        session == null && state.deletedSleep != null -> DetailHeadline.none("No score", SleepCopy.noScoreDeleted(isToday))
+        session == null && state.deletedSleep != null ->
+            DetailHeadline.none(stringResource(R.string.glow_sleep_no_score), SleepCopy.noScoreDeleted(isToday))
         else -> SleepCopy.noScore(session != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
     }
 
@@ -214,7 +223,7 @@ internal fun SleepScoreDetail(
                     val waso = Recovery.wasoMinutes(state.sleepStages.map { Triple(it.start, it.end, it.stage) })
                     val factors = SleepCopy.factors(Narrative.sleepContributors(session, asleep, need, waso), asleep, need, waso)
                     if (factors.isNotEmpty()) item {
-                        ListPanel(Modifier.padding(top = 8.dp), title = "What shaped the score") {
+                        ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_sleep_what_shaped)) {
                             factors.forEachIndexed { i, f ->
                                 ContributorRow(f.name, color, f.word, f.fraction, offNormal = f.off, divider = i > 0, detail = f.detail, onClick = { info = true })
                             }
@@ -224,7 +233,7 @@ internal fun SleepScoreDetail(
                 }
             } else {
                 item {
-                    if (known.isEmpty()) DetailEmpty("No sleep scores in the last 7 nights yet.")
+                    if (known.isEmpty()) DetailEmpty(stringResource(R.string.glow_sleep_no_scores_week))
                     else Column {
                         val values = week.map { it.second }
                         NormalTrend(
@@ -289,8 +298,10 @@ private fun SleepEditActions(note: String?, onAdjust: () -> Unit, onDelete: () -
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (note != null) EditedNote(note)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            PageButton("Adjust times", onAdjust, Modifier.weight(1f), icon = AppIcons.PencilEdit)
-            PageButton("Delete", onDelete, Modifier.weight(1f), color = MetricColors.warn, icon = AppIcons.Trash)
+            PageButton(stringResource(R.string.glow_sleep_adjust_times), onAdjust, Modifier.weight(1f), icon = AppIcons.PencilEdit)
+            PageButton(
+                stringResource(R.string.glow_delete), onDelete, Modifier.weight(1f), color = MetricColors.warn, icon = AppIcons.Trash,
+            )
         }
     }
 }
@@ -302,11 +313,16 @@ private fun SleepEditActions(note: String?, onAdjust: () -> Unit, onDelete: () -
 @Composable
 private fun DeleteSleepSheet(title: String, times: String, onDelete: () -> Unit, onDismiss: () -> Unit) {
     PageSheet(onDismiss, title) {
-        Text("$times. ${SleepCopy.DELETE_WHAT}", color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
+        Text(
+            stringResource(R.string.glow_sleep_delete_text, times, SleepCopy.DELETE_WHAT), color = Color.White.copy(alpha = 0.8f),
+            style = GlowType.body,
+        )
         PageNote(SleepCopy.DELETE_RESTORE)
         Row(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Delete", onDelete, Modifier.weight(1f), color = MetricColors.warn, icon = AppIcons.Trash)
+            PageButton(stringResource(R.string.glow_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(
+                stringResource(R.string.glow_delete), onDelete, Modifier.weight(1f), color = MetricColors.warn, icon = AppIcons.Trash,
+            )
         }
     }
 }
@@ -317,7 +333,9 @@ private fun DeletedNight(text: String, onRestore: () -> Unit) {
     OutlineCard(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(SleepCopy.NO_SLEEP_TITLE, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
         Text(text, color = Color.White.copy(alpha = 0.75f), style = GlowType.body)
-        PageButton("Restore", onRestore, Modifier.padding(top = 4.dp), icon = AppIcons.ArrowCounterClockwise)
+        PageButton(
+            stringResource(R.string.glow_sleep_restore), onRestore, Modifier.padding(top = 4.dp), icon = AppIcons.ArrowCounterClockwise,
+        )
     }
 }
 
@@ -346,7 +364,10 @@ private fun UndoHost(message: String?, contentPadding: PaddingValues, onUndo: ()
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     androidx.compose.material3.Icon(AppIcons.ArrowCounterClockwise, null, Modifier.size(16.dp), tint = Color.White)
-                    Text("Undo", color = Color.White, style = GlowType.body, modifier = Modifier.padding(start = 6.dp))
+                    Text(
+                        stringResource(R.string.glow_sleep_undo), color = Color.White, style = GlowType.body,
+                        modifier = Modifier.padding(start = 6.dp),
+                    )
                 }
             }
         }
@@ -412,13 +433,19 @@ private fun NightLines(state: DayUiState, window: LongRange, onScrub: (DetailHea
     var breathAt by remember(window) { mutableStateOf<DetailHeadline?>(null) }
     Column {
         if (hr.isNotEmpty()) {
-            ChartTitle("Heart rate", "Lowest ${hr.minOf { it.y }.toInt()}, average ${hr.map { it.y }.average().toInt()} bpm", scrubbed = hrAt)
-            ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, "bpm") { hrAt = it; onScrub(it) }
+            ChartTitle(
+                stringResource(R.string.glow_sleep_heart_rate),
+                stringResource(R.string.glow_sleep_heart_note, hr.minOf { it.y }.toInt(), hr.map { it.y }.average().toInt()),
+                scrubbed = hrAt,
+            )
+            ScrubLine(hr, window, 130.dp, labels, MetricColors.heart, stringResource(R.string.glow_unit_bpm)) { hrAt = it; onScrub(it) }
         }
         if (breath.isNotEmpty()) {
-            val average = "Average ${Units.decimal(breath.map { it.y }.average(), 1)} br/min"
-            ChartTitle("Breathing rate", average, scrubbed = breathAt)
-            ScrubLine(breath, window, 100.dp, labels, MetricColors.sleepLight, "br/min", decimals = 1) { breathAt = it; onScrub(it) }
+            val average = stringResource(R.string.glow_sleep_breathing_note, Units.decimal(breath.map { it.y }.average(), 1))
+            ChartTitle(stringResource(R.string.glow_sleep_breathing_rate), average, scrubbed = breathAt)
+            ScrubLine(
+                breath, window, 100.dp, labels, MetricColors.sleepLight, stringResource(R.string.glow_sleep_unit_breaths), decimals = 1,
+            ) { breathAt = it; onScrub(it) }
         }
     }
 }
@@ -431,11 +458,13 @@ private fun ScrubLine(
 ) {
     val step = 5 * 60L
     val values = remember(points, window) { bucket(points, window, step) }
+    val resources = LocalResources.current
     GlowLineChart(
         values, height = height, labels = labels, color = color, showAverage = false,
         onScrub = { i ->
             val headline = i?.let { values[it] }?.let { v ->
-                DetailHeadline(dotFormat("%.${decimals}f", v), "$unit at ${clock(window.first + i * step)}", null)
+                val at = resources.getString(R.string.glow_sleep_scrub_at, unit, clock(window.first + i * step))
+                DetailHeadline(dotFormat("%.${decimals}f", v), at, null)
             }
             onScrub(headline)
         },
@@ -464,7 +493,7 @@ internal fun RegularityDetail(
     val w = sleepWeek(state, LocalGoals.current.sleepSeconds, reg, zone)
     val headline = when {
         sri != null && band != null -> DetailHeadline(Math.round(sri).toString(), SleepCopy.REGULARITY_LABEL, band.label)
-        w == null -> DetailHeadline.none("No sleep", "In the last 7 nights")
+        w == null -> DetailHeadline.none(stringResource(R.string.glow_sleep_no_sleep), stringResource(R.string.glow_sleep_in_last_7_nights))
         else -> SleepCopy.regularityState(reg).let { (word, why) -> DetailHeadline.none(word, why) }
     }
 
@@ -476,7 +505,7 @@ internal fun RegularityDetail(
         ranges = listOf(Range.Week), range = Range.Week, onRange = {},
     ) {
         item {
-            if (w == null) DetailEmpty("No sleep recorded in the last 7 nights.")
+            if (w == null) DetailEmpty(stringResource(R.string.glow_sleep_none_week))
             else Column(Modifier.padding(top = 8.dp)) {
                 SleepWindows(w.nights, w.usual, zone, selected = state.date, onNight = onSelectDay, height = 200.dp)
                 val night = state.sleep
@@ -488,8 +517,8 @@ internal fun RegularityDetail(
                 )
                 if (u != null) DetailFigures(
                     listOf(
-                        TimeOfDay.minutes(u.bedtime) to "Usually asleep by",
-                        TimeOfDay.minutes(u.wake) to "Usually up at",
+                        TimeOfDay.minutes(u.bedtime) to stringResource(R.string.glow_sleep_usually_asleep),
+                        TimeOfDay.minutes(u.wake) to stringResource(R.string.glow_sleep_usually_up),
                     ),
                     Modifier.padding(top = 18.dp),
                 )
@@ -542,7 +571,9 @@ internal fun NapsDetail(
             strip = DetailCopy.strip(state.date, today, if (naps.isEmpty()) emptySet() else setOf(state.date)), onDay = onSelectDay,
             ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
         ) {
-            if (naps.isEmpty()) item { DetailEmpty(if (isToday) "No naps recorded today." else "No naps recorded that day.") }
+            if (naps.isEmpty()) item {
+                DetailEmpty(stringResource(if (isToday) R.string.glow_sleep_no_naps_today else R.string.glow_sleep_no_naps_that_day))
+            }
             else {
                 item { DetailSentence(SleepCopy.naps(naps.size, total)) }
                 naps.forEachIndexed { i, nap ->
@@ -586,7 +617,10 @@ internal fun NapsDetail(
                             val hr = remember(state.heartRate, window) { state.heartRate.filter { it.x in window } }
                             if (hr.isNotEmpty()) {
                                 Box(Modifier.padding(top = 16.dp)) {
-                                    ScrubLine(hr, window, 100.dp, listOf(clock(nap.start), clock(nap.end)), MetricColors.heart, "bpm") { scrub = it }
+                                    ScrubLine(
+                                        hr, window, 100.dp, listOf(clock(nap.start), clock(nap.end)), MetricColors.heart,
+                                        stringResource(R.string.glow_unit_bpm),
+                                    ) { scrub = it }
                                 }
                                 Caption(SleepCopy.napHeart(hr.minOf { it.y }.toInt(), hr.map { it.y }.average().toInt()), Modifier.padding(top = 6.dp, bottom = 8.dp))
                             }
@@ -673,12 +707,15 @@ internal fun SleepTrim(
         if (problem != null) PageNote(problem, color = MetricColors.warn)
         else Text(SleepCopy.TIMES_HINT, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onCancel, Modifier.weight(1f))
-            PageButton("Save", { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null && changed, primary = true)
+            PageButton(stringResource(R.string.glow_cancel), onCancel, Modifier.weight(1f))
+            PageButton(
+                stringResource(R.string.glow_save), { onSave(start, end) }, Modifier.weight(1f), enabled = problem == null && changed,
+                primary = true,
+            )
         }
         if (shown.start != detected.start || shown.end != detected.end) {
             PageButton(
-                "Use the strap's times", { onSave(detected.start, detected.end) }, Modifier.fillMaxWidth(),
+                stringResource(R.string.glow_sleep_use_strap_times), { onSave(detected.start, detected.end) }, Modifier.fillMaxWidth(),
                 icon = AppIcons.ArrowCounterClockwise,
             )
         }
@@ -703,7 +740,11 @@ private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, 
         }
         if (current != Score.Naps) add { divider ->
             val total = naps.takeIf { it.isNotEmpty() }?.let { n -> Units.duration(n.sumOf { it.end - it.start }) }
-            val word = if (naps.isEmpty()) "None that day" else TabCopy.naps(naps.size, clock(naps.minOf { it.start }))
+            val word = if (naps.isEmpty()) {
+                stringResource(R.string.glow_sleep_naps_none)
+            } else {
+                TabCopy.naps(naps.size, clock(naps.minOf { it.start }))
+            }
             ScoreRow(Score.Naps, MetricColors.sleepDeep, total, word, divider, onOpen)
         }
         add { divider -> RecoveryScoreRow(r?.readiness, divider, onOpen) }

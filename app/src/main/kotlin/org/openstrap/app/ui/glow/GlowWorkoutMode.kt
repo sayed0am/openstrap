@@ -1,6 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.Units
+import androidx.compose.ui.res.stringResource
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.WorkoutColors
 import androidx.compose.runtime.LaunchedEffect
@@ -116,8 +119,9 @@ internal fun dotClock(seconds: Long): String = Units.workoutClock(seconds, Units
 @ReadOnlyComposable
 internal fun zoneRange(zone: Int, maxHr: Int): String {
     val zones = LocalHeartZones.current
-    if (zone == 0) return "under ${zones.startBpm(1, maxHr)} bpm"
-    return Ranges.of("${zones.startBpm(zone, maxHr)}", "${zones.endBpm(zone, maxHr) ?: maxHr}") + " bpm"
+    if (zone == 0) return stringResource(R.string.glow_workout_zone_under, zones.startBpm(1, maxHr))
+    val range = Ranges.of("${zones.startBpm(zone, maxHr)}", "${zones.endBpm(zone, maxHr) ?: maxHr}")
+    return stringResource(R.string.glow_workout_zone_range, range)
 }
 
 /** Active time of the workout, ticking once a second while it records. */
@@ -233,17 +237,17 @@ internal fun SuggestionPanel(
             Icon(AppIcons.Heartbeat, null, tint = ZONE_COLORS[s.zone], modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("Looks like you worked out", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Text(stringResource(R.string.glow_workout_suggestion_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 val day = dayName(Instant.ofEpochSecond(s.start).atZone(ZoneId.systemDefault()).toLocalDate())
-                PageNote(
-                    "$day ${Ranges.times(s.start, s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average. " +
-                        "Nobody pressed Start.",
-                )
+                val times = Ranges.times(s.start, s.end)
+                PageNote(stringResource(R.string.glow_workout_suggestion_text, day, times, s.zone + 1, s.averageHeartRate))
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Save as workout", Color.White, Color.Black, onSave, height = 48.dp) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Not a workout", Raised, Color.White, onDismiss, height = 48.dp) }
+            val save = stringResource(R.string.glow_workout_suggestion_save)
+            val dismiss = stringResource(R.string.glow_workout_suggestion_dismiss)
+            Box(Modifier.weight(1f)) { WorkoutButton(save, Color.White, Color.Black, onSave, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(dismiss, Raised, Color.White, onDismiss, height = 48.dp) }
         }
     }
 }
@@ -259,16 +263,19 @@ internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () 
             Icon(SportIcons.of(o.sportType), null, tint = MetricColors.heart, modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))
             Column {
-                Text("Looks like a workout", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Text(stringResource(R.string.glow_workout_offer_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
                 PageNote(
-                    "Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. " +
-                        "Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?",
+                    stringResource(
+                        R.string.glow_workout_offer_text, clock(o.start), o.averageHeartRate, Workouts.sportName(o.sportType).lowercase(),
+                    ),
                 )
             }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.weight(1f)) { WorkoutButton("Record", MetricColors.heart, Color.Black, onRecord, height = 48.dp) }
-            Box(Modifier.weight(1f)) { WorkoutButton("Not now", Raised, Color.White, onDecline, height = 48.dp) }
+            val record = stringResource(R.string.glow_workout_offer_record)
+            val decline = stringResource(R.string.glow_workout_offer_decline)
+            Box(Modifier.weight(1f)) { WorkoutButton(record, MetricColors.heart, Color.Black, onRecord, height = 48.dp) }
+            Box(Modifier.weight(1f)) { WorkoutButton(decline, Raised, Color.White, onDecline, height = 48.dp) }
         }
     }
 }
@@ -301,25 +308,26 @@ fun GlowAddWorkoutScreen(
         return
     }
     BackHandler(onBack = onBack)
-    WorkoutPage(Color.Transparent, contentPadding, pinned = { WorkoutButton("Choose the sport", Color.White, Color.Black, { picking = true }) }) {
-        PageHeader("Add a workout", onBack, subtitle = dayName(date))
+    val choose = stringResource(R.string.glow_workout_add_choose_sport)
+    WorkoutPage(Color.Transparent, contentPadding, pinned = { WorkoutButton(choose, Color.White, Color.Black, { picking = true }) }) {
+        PageHeader(stringResource(R.string.glow_workout_add_title), onBack, subtitle = dayName(date))
         if (minuteHr == null) {
-            QuietPanel { PageNote("Loading…") }
+            QuietPanel { PageNote(stringResource(R.string.glow_workout_loading)) }
             return@WorkoutPage
         }
         if (series.size < 2) {
-            QuietPanel { PageNote("The strap hasn't sent heart rate for this day yet. Sync, then try again.") }
+            QuietPanel { PageNote(stringResource(R.string.glow_workout_add_no_heart)) }
             return@WorkoutPage
         }
         QuietPanel {
-            GlowHeader("When was it?", trailing = Ranges.times(from, to))
+            GlowHeader(stringResource(R.string.glow_workout_add_when), trailing = Ranges.times(from, to))
             RangeChart(series, first, last, from, to, maxHr) { f, t -> from = f; to = t }
             Row(Modifier.fillMaxWidth()) {
                 PageNote(clock(first))
                 Spacer(Modifier.weight(1f))
                 PageNote(clock(last))
             }
-            PageNote("Drag the handles to where the workout began and ended. Its heart rate comes from the strap's minute records.")
+            PageNote(stringResource(R.string.glow_workout_add_hint))
         }
     }
 }
@@ -389,20 +397,23 @@ private fun RangeChart(series: List<Pair<Long, Int>>, first: Long, last: Long, f
 /** Done right after the end, and Delete workout behind a question. */
 @Composable
 internal fun ColumnScope.SummaryActions(justEnded: Boolean, onDone: () -> Unit, onDelete: () -> Unit) {
-    if (justEnded) WorkoutButton("Done", Color.White, Color.Black, onDone)
-    DeleteWorkout(PHONE_DELETE, onDelete, Modifier.align(Alignment.CenterHorizontally))
+    if (justEnded) WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone)
+    DeleteWorkout(stringResource(R.string.glow_workout_delete_phone), onDelete, Modifier.align(Alignment.CenterHorizontally))
 }
-
-/** What deleting a phone workout does. */
-internal const val PHONE_DELETE = "Its heart rate and times are removed from OpenStrap. The strap's own history is kept."
 
 /** "Delete this workout" as a warn coloured button with a trash icon, asking first; [what] says what deleting it does. */
 @Composable
 internal fun DeleteWorkout(what: String, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    PageButton("Delete this workout", { confirmDelete = true }, modifier.fillMaxWidth(), color = MetricColors.warn, icon = AppIcons.Trash)
+    PageButton(
+        stringResource(R.string.glow_workout_delete), { confirmDelete = true }, modifier.fillMaxWidth(),
+        color = MetricColors.warn, icon = AppIcons.Trash,
+    )
     if (confirmDelete) {
-        PageConfirm("Delete this workout?", what, "Delete", { confirmDelete = false; onDelete() }, { confirmDelete = false })
+        PageConfirm(
+            stringResource(R.string.glow_workout_delete_confirm), what, stringResource(R.string.glow_delete),
+            { confirmDelete = false; onDelete() }, { confirmDelete = false },
+        )
     }
 }
 
@@ -446,7 +457,8 @@ internal fun TrimSheet(trim: WorkoutTrim) {
 
 /** "Trim" in a heart rate card's title row: a small button on the card's glass, scissors before the word. */
 @Composable
-internal fun TrimButton(onClick: () -> Unit) = PageButton("Trim", onClick, size = ButtonSize.Row, icon = AppIcons.Scissors, onCard = true)
+internal fun TrimButton(onClick: () -> Unit) =
+    PageButton(stringResource(R.string.glow_trim), onClick, size = ButtonSize.Row, icon = AppIcons.Scissors, onCard = true)
 
 /**
  * What the app did to the workout's times, with Undo as a button: an early end it proposed (in a car, or when you'd
@@ -457,22 +469,28 @@ internal fun TrimNote(summary: PhoneSummary, onUndo: () -> Unit, modifier: Modif
     val text = trimNote(summary) ?: return
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.weight(1f))
-        PageButton("Undo", onUndo, size = ButtonSize.Row, icon = AppIcons.ArrowCounterClockwise, onCard = onCard)
+        PageButton(
+            stringResource(R.string.glow_workout_undo), onUndo, size = ButtonSize.Row, icon = AppIcons.ArrowCounterClockwise,
+            onCard = onCard,
+        )
     }
 }
 
 /** The words of [TrimNote], null while the workout's times are as recorded. */
-internal fun trimNote(summary: PhoneSummary): String? {
+internal fun trimNote(summary: PhoneSummary, strings: Strings = Strings.app): String? {
     val a = summary.analysis
     val untouched = a.shownStart == a.workout.start
-    val recorded = a.recordedEnd ?: return if (untouched) null else "Trimmed to start at ${clock(a.shownStart)}. The rest is kept."
+    val recorded = a.recordedEnd ?: return if (untouched) null else strings.format(R.string.glow_workout_trim_start, clock(a.shownStart))
     val cut = recorded - a.end
-    val left = if (cut < 60) "$cut s" else "${cut / 60} min"
+    val left = if (cut < 60) {
+        strings.format(R.string.glow_workout_trim_seconds, cut)
+    } else {
+        strings.format(R.string.glow_workout_trim_minutes, cut / 60)
+    }
     return when {
-        summary.endReason == AppWorkout.END_CAR && untouched -> "Ended at ${clock(a.end)}. $left of driving were left out."
-        summary.endReason == AppWorkout.END_AUTO && untouched ->
-            "Ended at ${clock(a.end)}, when you'd stopped. $left after that were left out."
-        else -> "Trimmed, now from ${Ranges.times(a.shownStart, a.end)}. The rest is kept."
+        summary.endReason == AppWorkout.END_CAR && untouched -> strings.format(R.string.glow_workout_trim_car, clock(a.end), left)
+        summary.endReason == AppWorkout.END_AUTO && untouched -> strings.format(R.string.glow_workout_trim_auto, clock(a.end), left)
+        else -> strings.format(R.string.glow_workout_trim_range, Ranges.times(a.shownStart, a.end))
     }
 }
 
@@ -482,7 +500,8 @@ internal fun trimNote(summary: PhoneSummary): String? {
  */
 @Composable
 internal fun TrimSheet(summary: PhoneSummary, onSave: (Long, Long) -> Unit, onDismiss: () -> Unit) {
-    PageSheet(onDismiss, "Trim start and end", note = SummaryCopy.trimRecorded(clock(summary.recordedStart), clock(summary.recordedEnd))) {
+    val note = SummaryCopy.trimRecorded(clock(summary.recordedStart), clock(summary.recordedEnd))
+    PageSheet(onDismiss, stringResource(R.string.glow_workout_trim_title), note = note) {
         WorkoutTrimBar(summary, onSave, onDismiss)
     }
 }
@@ -516,8 +535,8 @@ internal fun WorkoutTrimBar(summary: PhoneSummary, onSave: (Long, Long) -> Unit,
         )
         Text(SummaryCopy.TRIM_HINT, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onCancel, Modifier.weight(1f))
-            PageButton("Save", { onSave(from, to) }, Modifier.weight(1f), primary = true)
+            PageButton(stringResource(R.string.glow_cancel), onCancel, Modifier.weight(1f))
+            PageButton(stringResource(R.string.glow_save), { onSave(from, to) }, Modifier.weight(1f), primary = true)
         }
     }
 }

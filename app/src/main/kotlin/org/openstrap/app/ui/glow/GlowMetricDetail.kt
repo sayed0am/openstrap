@@ -47,11 +47,14 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.DayStat
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.ChartPoint
@@ -169,7 +172,10 @@ internal fun DetailTemplate(
                             when {
                                 // No number: the state in words, large in the value's place, as a Small does.
                                 shown.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(shown.word ?: "No reading", color = Color.White, style = GlowType.pageTitle)
+                                    Text(
+                                        shown.word ?: stringResource(R.string.glow_no_reading), color = Color.White,
+                                        style = GlowType.pageTitle,
+                                    )
                                     Text(
                                         shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
                                     )
@@ -238,7 +244,9 @@ private fun DetailHero(color: Color, gutter: Dp, content: @Composable () -> Unit
  */
 @Composable
 private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, onInfo: () -> Unit, onSwitch: () -> Unit) {
-    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton("About $title", onInfo) }
+    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) {
+        InfoButton(stringResource(R.string.glow_metrics_about, title), onInfo)
+    }
 }
 
 /** The status word under the value, in the metric's colour with a soft glow of it. */
@@ -255,10 +263,11 @@ private fun StatusWord(word: String, color: Color, modifier: Modifier = Modifier
 private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         days.forEach { d ->
+            val show = stringResource(R.string.glow_metrics_show_day, d.label)
             Column(
                 Modifier.width(40.dp).clip(RoundedCornerShape(14.dp))
                     .background(if (d.selected) Color.White.copy(alpha = 0.10f) else Color.Transparent)
-                    .clickable(onClickLabel = "Show ${d.label}", role = Role.Button) { onDay(d.date) }
+                    .clickable(onClickLabel = show, role = Role.Button) { onDay(d.date) }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -277,7 +286,8 @@ private fun SwitcherSheet(siblings: List<DetailSibling>, color: Color, onDismiss
         ListPanel {
             siblings.forEachIndexed { i, s ->
                 ListRow(
-                    s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
+                    s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null,
+                    if (s.current) stringResource(R.string.glow_metrics_showing) else null,
                     onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
                 )
             }
@@ -302,7 +312,7 @@ internal fun DetailFigures(
     figures: List<Pair<String?, String>>,
     modifier: Modifier = Modifier,
     valueStyle: TextStyle = GlowType.body.copy(fontFeatureSettings = "tnum"),
-    missing: String? = "No reading",
+    missing: String? = stringResource(R.string.glow_no_reading),
     gap: Dp = 4.dp,
 ) {
     Row(modifier.fillMaxWidth()) {
@@ -415,9 +425,11 @@ fun GlowMetricDetailScreen(
     val headline = when {
         value != null -> DetailHeadline(metric.format(value, Units.DOT_LOCALE), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
-        night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
-        range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
-        else -> DetailHeadline.none("No reading", DetailCopy.noValue(metric, range, isToday))
+        night && range == Range.Week ->
+            DetailHeadline.none(stringResource(R.string.glow_no_reading), stringResource(R.string.glow_metrics_last_7_nights))
+        range != Range.Day && stats == null ->
+            DetailHeadline.none(stringResource(R.string.glow_loading), DetailCopy.noValue(metric, range, isToday))
+        else -> DetailHeadline.none(stringResource(R.string.glow_no_reading), DetailCopy.noValue(metric, range, isToday))
     }
     val withData = remember(stats, nightWeek) {
         stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
@@ -430,7 +442,10 @@ fun GlowMetricDetailScreen(
         ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
         heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
             {
-                PageChip("Live", liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch, filled = true)
+                PageChip(
+                    stringResource(R.string.glow_metrics_live), liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch,
+                    filled = true,
+                )
             }
         } else null,
     ) {
@@ -447,7 +462,9 @@ fun GlowMetricDetailScreen(
         } else if (night && range == Range.Week) {
             val values = nightWeek.map { it.second }
             item {
-                if (values.all { it == null }) DetailEmpty("No ${inSentence(metric.title)} in the last 7 nights yet.")
+                if (values.all { it == null }) {
+                    DetailEmpty(stringResource(R.string.glow_metrics_none_last_7_nights, inSentence(metric.title)))
+                }
                 else Column {
                     NormalTrend(
                         values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { DayWords.weekdayShort(it.first) },
@@ -456,7 +473,8 @@ fun GlowMetricDetailScreen(
                             scrub = i?.let { nightWeek[it] }?.let { (d, v) ->
                                 v?.let {
                                     val word = DetailCopy.statusWord(History.status(it, nightNormal))
-                                    DetailHeadline(metric.format(it, Units.DOT_LOCALE), "${metric.unit}, ${DayWords.short(d)}", word)
+                                    val unitAndDay = Strings.app.format(R.string.glow_metrics_unit_day, metric.unit, DayWords.short(d))
+                                    DetailHeadline(metric.format(it, Units.DOT_LOCALE), unitAndDay, word)
                                 }
                             }
                         },
@@ -481,8 +499,8 @@ fun GlowMetricDetailScreen(
             val inRange = stats
             item {
                 when {
-                    inRange == null -> DetailEmpty("Loading")
-                    summary == null -> DetailEmpty("No ${inSentence(metric.title)} in this range yet.")
+                    inRange == null -> DetailEmpty(stringResource(R.string.glow_loading))
+                    summary == null -> DetailEmpty(stringResource(R.string.glow_metrics_none_in_range, inSentence(metric.title)))
                     else -> HistoryChart(metric, range, inRange, normal, start, end, color, nightly) { scrub = it }
                 }
             }
@@ -531,7 +549,13 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
     val session = state.sleep
     val series = SleepCopy.nightSeries(state, metric)
     if (session == null || series.isEmpty()) {
-        DetailEmpty(if (session == null) SleepCopy.noNight(state.date == LocalDate.now()) else "No ${inSentence(metric.title)} readings while asleep.")
+        DetailEmpty(
+            if (session == null) {
+                SleepCopy.noNight(state.date == LocalDate.now())
+            } else {
+                stringResource(R.string.glow_metrics_none_asleep, inSentence(metric.title))
+            },
+        )
         return
     }
     val window = session.start..session.end
@@ -549,12 +573,22 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
 }
 
 /** A scrubbed reading of [metric] in the headline: its value and the time it was taken, "bpm at 22:30". */
-private fun scrubAt(metric: Metric, v: Float, at: Long) = DetailHeadline(metric.format(v, Units.DOT_LOCALE), "${metric.unit} at ${clock(at)}".trim(), null)
+private fun scrubAt(metric: Metric, v: Float, at: Long, strings: Strings = Strings.app) = DetailHeadline(
+    metric.format(v, Units.DOT_LOCALE),
+    if (metric.unit.isBlank()) {
+        strings.format(R.string.glow_metrics_at_time, clock(at))
+    } else {
+        strings.format(R.string.glow_metrics_unit_at_time, metric.unit, clock(at))
+    },
+    null,
+)
 
 /** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
-private fun hourSteps(hour: Int, steps: Float): DetailHeadline {
+private fun hourSteps(hour: Int, steps: Float, strings: Strings = Strings.app): DetailHeadline {
     val (from, to) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR) to TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR)
-    return DetailHeadline(Units.count(Math.round(steps), Units.DOT_LOCALE), "steps, ${Ranges.of(from, to)}", null)
+    return DetailHeadline(
+        Units.count(Math.round(steps), Units.DOT_LOCALE), strings.format(R.string.glow_metrics_steps_hours, Ranges.of(from, to)), null,
+    )
 }
 
 private const val MINUTES_PER_HOUR = 60
@@ -580,7 +614,13 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
         else -> emptyList<ChartPoint>() to day
     }
     if (!hasValue) {
-        DetailEmpty(if (metric == Metric.Breathing) "Breathing rate is measured during sleep." else "No ${inSentence(metric.title)} for this day yet.")
+        DetailEmpty(
+            if (metric == Metric.Breathing) {
+                stringResource(R.string.glow_metrics_breathing_in_sleep)
+            } else {
+                stringResource(R.string.glow_metrics_none_this_day, inSentence(metric.title))
+            },
+        )
         return
     }
     Column(Modifier.padding(top = 8.dp)) {
@@ -627,8 +667,16 @@ private fun HistoryChart(
         onScrub = { i ->
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
-                val label = if (range == Range.Year) "week of ${DayWords.dayMonth(d)}" else DayWords.short(d)
-                val unitAndDay = listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", ")
+                val label = if (range == Range.Year) {
+                    Strings.app.format(R.string.glow_metrics_week_of, DayWords.dayMonth(d))
+                } else {
+                    DayWords.short(d)
+                }
+                val unitAndDay = if (metric.unit.isEmpty()) {
+                    label
+                } else {
+                    Strings.app.format(R.string.glow_metrics_unit_day, metric.unit, label)
+                }
                 DetailHeadline(metric.format(v, Units.DOT_LOCALE), unitAndDay, DetailCopy.statusWord(History.status(v, normal)))
             })
         },
@@ -678,7 +726,7 @@ private fun RelatedList(related: List<Metric>, state: DayUiState, history: Daily
 /** The "Related" list at the foot of a detail: the details next to this one, each a row opening it. */
 @Composable
 internal fun RelatedPanel(content: @Composable ColumnScope.() -> Unit) =
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related", content = content)
+    ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_metrics_related), content = content)
 
 /** A score as a related row: its [value] and [word] beside its name and icon, opening its detail. */
 @Composable

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Recovery: the Recovery tab's cards and the Recovery and Energy details (ui/glow/GlowRecoveryScreen.kt,
+  ui/glow/ScoreDetail.kt). Recovery and Energy are the names of the app's scores.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Title of the Recovery tab's hero: the Recovery score's name. -->
+    <string name="glow_recovery_title">Recovery</string>
+    <!-- What the info button beside the Recovery title does, for screen readers. -->
+    <string name="glow_recovery_about">About Recovery</string>
+    <!-- The Recovery sentence when there's no score yet and no other reason to give. -->
+    <string name="glow_recovery_scored_each_morning">Recovery is scored each morning from the night\'s sleep.</string>
+    <!-- Under yesterday's score, dimmed, when today's couldn't be worked out. One word. -->
+    <string name="glow_recovery_yesterday">Yesterday</string>
+    <!-- Title of the list of what raised or lowered Recovery. -->
+    <string name="glow_recovery_what_drove">What drove it</string>
+    <!-- A link on the drivers list's title row that opens all of them. The number is how many there are. -->
+    <string name="glow_recovery_drivers_all">All <xliff:g id="count" example="7">%1$d</xliff:g></string>
+    <!-- The drivers list's only row before the first night. -->
+    <string name="glow_recovery_waiting_night">Waiting for a night</string>
+    <!-- Beside Waiting for a night: when the list fills. -->
+    <string name="glow_recovery_drivers_waiting">What drove Recovery shows here each morning</string>
+    <!-- Title of the Energy battery card: the Energy score's name. -->
+    <string name="glow_recovery_energy">Energy</string>
+    <!-- Under the Energy battery's number while its curve is scrubbed: the time picked. -->
+    <string name="glow_recovery_charge_at">At <xliff:g id="time" example="14:30">%1$s</xliff:g></string>
+    <!-- Under the Energy battery's number before the day has a start: the value is Energy now. One word. -->
+    <string name="glow_recovery_now">Now</string>
+    <!-- Under the Energy battery's number: Energy when the day began, estimated because the strap was off overnight. -->
+    <string name="glow_recovery_charge_at_start"><xliff:g id="energy" example="82">%1$d</xliff:g> at start</string>
+    <!-- Under the Energy battery's number: Energy when you woke. -->
+    <string name="glow_recovery_charge_at_waking"><xliff:g id="energy" example="82">%1$d</xliff:g> at waking</string>
+    <!-- Title of the small card with what sleep and rest added to Energy today. One word. -->
+    <string name="glow_recovery_recharged">Recharged</string>
+    <!-- Title of the small card with what the day took from Energy. One word. -->
+    <string name="glow_recovery_drained">Drained</string>
+    <!-- A row in the body signals list. -->
+    <string name="glow_recovery_resting_hr">Resting heart rate</string>
+    <!-- A row in the body signals list: heart rate variability, as an abbreviation. -->
+    <string name="glow_recovery_hrv">HRV</string>
+    <!-- A row in the body signals list. -->
+    <string name="glow_recovery_skin_temperature">Skin temperature</string>
+    <!-- A row in the body signals list. -->
+    <string name="glow_recovery_breathing_rate">Breathing rate</string>
+    <!-- A row in the body signals list. -->
+    <string name="glow_recovery_blood_oxygen">Blood oxygen</string>
+    <!-- A row in the body signals list. -->
+    <string name="glow_recovery_stress">Stress</string>
+    <!-- Title of the body signals list. -->
+    <string name="glow_recovery_body_signals">Body signals</string>
+    <!-- The note on the body signals' title row: each is compared with your usual. -->
+    <string name="glow_recovery_against_normal">Against your normal</string>
+
+    <!-- Under the Recovery score in the week view. -->
+    <string name="glow_recovery_week_average">Average of the last 7 days</string>
+    <!-- Stands large in the score's place when no day in the week has a score. -->
+    <string name="glow_recovery_no_scores">No scores</string>
+    <!-- Under a missing week figure: the week it looked at. -->
+    <string name="glow_recovery_in_last_7_days">In the last 7 days</string>
+    <!-- Under today's Recovery score, lower case: when it was scored. -->
+    <string name="glow_recovery_this_morning">this morning</string>
+    <!-- Under an earlier day's Recovery score, lower case: when it was scored. -->
+    <string name="glow_recovery_that_morning">that morning</string>
+    <!-- Under the strap's own score, shown while OpenStrap's is held back. -->
+    <string name="glow_recovery_strap_estimate">Strap\'s estimate</string>
+    <!-- The Recovery detail's week view when no day has a score. -->
+    <string name="glow_recovery_none_week">No Recovery in the last 7 days yet.</string>
+    <!-- Stands large in Energy's place before the first night. -->
+    <string name="glow_recovery_waiting">Waiting</string>
+    <!-- Under Waiting: when Energy starts. -->
+    <string name="glow_recovery_after_first_night">After your first night</string>
+    <!-- Under No reading in the Energy detail: why there's none. -->
+    <string name="glow_recovery_needs_heart_rate">Needs a few hours of heart rate</string>
+    <!-- Under Energy's number, lower case: the time of the reading. -->
+    <string name="glow_recovery_at_time">at <xliff:g id="time" example="14:30">%1$s</xliff:g></string>
+    <!-- Under today's Energy number, lower case: the reading is now. -->
+    <string name="glow_recovery_now_lower">now</string>
+    <!-- Under an earlier day's Energy number, lower case. -->
+    <string name="glow_recovery_end_of_day">at the end of the day</string>
+    <!-- Under a figure in the Energy detail: Energy when the day began, estimated because the strap was off overnight. -->
+    <string name="glow_recovery_at_start">At start</string>
+    <!-- Under a figure in the Energy detail: Energy when you woke. -->
+    <string name="glow_recovery_at_waking">At waking</string>
+    <!-- Under a figure in the Energy detail: the day's highest Energy. -->
+    <string name="glow_recovery_highest">Highest</string>
+    <!-- Under a figure in the Energy detail: the day's lowest Energy. -->
+    <string name="glow_recovery_lowest">Lowest</string>
+    <!-- Title of the list of what filled and drained Energy. -->
+    <string name="glow_recovery_where_it_went">Where it went</string>
+    <!-- A row under a score's detail that opens last night's sleep. -->
+    <string name="glow_recovery_last_night">Last night</string>
+    <!-- The Last night row when the strap recorded no sleep. -->
+    <string name="glow_recovery_no_sleep">No sleep recorded</string>
+    <!-- The Last night row's word beside the time asleep. One word. -->
+    <string name="glow_recovery_asleep">Asleep</string>
+</resources>

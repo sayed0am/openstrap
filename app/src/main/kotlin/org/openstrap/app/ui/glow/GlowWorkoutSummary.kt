@@ -1,6 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
 import org.openstrap.app.presentation.Units
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import org.openstrap.app.presentation.LoadBand
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
@@ -154,13 +157,14 @@ fun GlowWorkoutSummaryScreen(
         Color.Transparent, contentPadding,
         pinned = {
             if (a != null && hero != null) SummaryButtons(onShare = { sharing = true }, onDone = done)
-            else WorkoutButton("Done", Color.White, Color.Black, onDone)
+            else WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone)
         },
     ) {
         // The sport, then when, with Done beside them (board SummaryRun).
         Row(Modifier.padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text(a?.sportName ?: "Workout", color = Color.White, style = GlowType.pageTitle, maxLines = 1)
+                val title = a?.sportName ?: stringResource(R.string.glow_workout_untitled)
+                Text(title, color = Color.White, style = GlowType.pageTitle, maxLines = 1)
                 if (a != null) Text(
                     FamilySummary.whenLine(a.shownStart, System.currentTimeMillis() / 1000), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                     style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp),
@@ -168,13 +172,13 @@ fun GlowWorkoutSummaryScreen(
             }
             // Trim beside Done: the summary has no heart rate card of its own to carry it, as a past workout's page has.
             if (trim != null) {
-                IconPill("Trim", trim.open, icon = AppIcons.Scissors, height = 40.dp, style = TopPillText)
+                IconPill(stringResource(R.string.glow_trim), trim.open, icon = AppIcons.Scissors, height = 40.dp, style = TopPillText)
                 Spacer(Modifier.width(8.dp))
             }
             TopDone(done)
         }
         if (summary == null || a == null || trim == null) {
-            PageNote("Loading…")
+            PageNote(stringResource(R.string.glow_workout_loading))
             return@WorkoutPage
         }
         val w = a.workout
@@ -213,10 +217,11 @@ fun GlowWorkoutSummaryScreen(
         CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = if (sectionOnEdge && !dropShown) Edge.Bottom else Edge.Left)) {
             WorkoutLoadCard(a, usualLoad)
         }
-        DeleteWorkout(PHONE_DELETE, onDelete)
+        DeleteWorkout(stringResource(R.string.glow_workout_delete_phone), onDelete)
     }
     if (info) InfoSheet(
-        Info("Heart rate drop", SummaryCopy.DROP_MEANING, emptyList(), "", "", ""), MetricColors.heart, null, null,
+        Info(stringResource(R.string.glow_summary_drop_title), SummaryCopy.DROP_MEANING, emptyList(), "", "", ""),
+        MetricColors.heart, null, null,
         onDismiss = { info = false },
     )
     trim?.let { TrimSheet(it) }
@@ -268,11 +273,13 @@ private fun CalmDownHero(summary: PhoneSummary, live: CalmDown?, usualDrop: Int?
     GlowCard(effortGlow(MetricColors.heart, effort + SwellLevel * swell), Modifier.fillMaxWidth()) {
         Column {
             GlowHeader(
-                "Heart rate drop", trailing = "Since ${clock(a.end)}",
-                trailingContent = { Spacer(Modifier.width(10.dp)); InfoButton("About the heart rate drop", onInfo) },
+                stringResource(R.string.glow_summary_drop_title), trailing = stringResource(R.string.glow_summary_drop_since, clock(a.end)),
+                trailingContent = { Spacer(Modifier.width(10.dp)); InfoButton(stringResource(R.string.glow_summary_drop_about), onInfo) },
             )
             HeroSentence(line.text)
-            if (bpmNow != null) HeroValue(bpmNow.toString(), "bpm now", Modifier.padding(top = 16.dp))
+            if (bpmNow != null) {
+                HeroValue(bpmNow.toString(), stringResource(R.string.glow_summary_unit_bpm_now), Modifier.padding(top = 16.dp))
+            }
             val shown = readings.filter { it.first in (a.end - BeforeS)..(a.end + WorkoutSession.CALM_S) }
             if (shown.size >= 2) DropLine(shown, a.end, Modifier.padding(top = 16.dp))
         }
@@ -308,11 +315,11 @@ private fun DropLine(readings: List<Pair<Long, Int>>, end: Long, modifier: Modif
         }
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth()) {
-            Box(Modifier.weight(1f)) { PageNote("Last minute") }
-            Box(Modifier.weight(1f)) { PageNote("End") }
+            Box(Modifier.weight(1f)) { PageNote(stringResource(R.string.glow_summary_drop_last_minute)) }
+            Box(Modifier.weight(1f)) { PageNote(stringResource(R.string.glow_summary_drop_end)) }
             Box(Modifier.weight(1f)) {
-                PageNote("1 min")
-                Box(Modifier.align(Alignment.CenterEnd)) { PageNote("2 min") }
+                PageNote(stringResource(R.string.glow_summary_minutes, 1))
+                Box(Modifier.align(Alignment.CenterEnd)) { PageNote(stringResource(R.string.glow_summary_minutes, 2)) }
             }
         }
     }
@@ -347,16 +354,17 @@ internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = 
     }
     EdgeCard(MetricColors.load, Modifier.fillMaxWidth(), status = edge) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { EdgeTitle("Load", SummaryCopy.loadTitle(a.workout.sportType)) }
+            val title = stringResource(R.string.glow_summary_load_title)
+            Box(Modifier.weight(1f)) { EdgeTitle(title, SummaryCopy.loadTitle(a.workout.sportType)) }
             if (onInfo != null) {
                 Spacer(Modifier.width(10.dp))
-                InfoButton("About Load and training effect", onInfo)
+                InfoButton(stringResource(R.string.glow_summary_load_about), onInfo)
             }
         }
         if (load != null) EdgeValue(
             load.toString(), null, SummaryCopy.loadLine(load, usual),
             if (edge != EdgeStatus.Usual) MetricColors.load else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-        ) else EdgeValue(null, null, "Not enough heart rate to work out Load.", waiting = false)
+        ) else EdgeValue(null, null, stringResource(R.string.glow_summary_load_none), waiting = false)
         SummaryCopy.timeToRecover(a.recoveryMinutes, a.ownRecoveryMinutes, a.workout.sportType)?.let {
             Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
         }
@@ -366,15 +374,16 @@ internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = 
 
 /** Time in zones: the zone bar, then each zone with time in it, hardest first. */
 @Composable
-internal fun ZonesList(zones: ZoneSeconds, maxHr: Int, note: String = "Max $maxHr bpm") {
-    ListPanel(title = "Time in zones", note = note) {
+internal fun ZonesList(zones: ZoneSeconds, maxHr: Int, note: String = stringResource(R.string.glow_summary_zones_max, maxHr)) {
+    ListPanel(title = stringResource(R.string.glow_summary_time_in_zones), note = note) {
         ZoneBar(zones.toList(), ZONE_COLORS, Modifier.padding(top = 2.dp, bottom = 6.dp))
         var first = true
         for (z in Workouts.ZONES - 1 downTo 0) {
             if (zones[z] <= 0) continue
             // The heart in its zone's colour, so the rows key the bar above.
             ListRow(
-                "Zone ${z + 1}", ZONE_COLORS[z], workoutClock(zones[z].toLong()), "${ZONE_NAMES[z]}, ${zoneRange(z, maxHr)}", divider = !first,
+                stringResource(R.string.glow_summary_zone, z + 1), ZONE_COLORS[z], workoutClock(zones[z].toLong()),
+                stringResource(R.string.glow_summary_join, ZONE_NAMES[z], zoneRange(z, maxHr)), divider = !first,
                 icon = AppIcons.Heart,
             )
             first = false
@@ -403,31 +412,40 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
     val fastest = if (markFastest) FamilySummary.fastestSplit(rows) else null
     when {
         rows.isNotEmpty() || laps.isNotEmpty() -> ListPanel(
-            title = if (rows.isNotEmpty()) "Splits" else "Laps",
+            title = stringResource(if (rows.isNotEmpty()) R.string.glow_summary_splits else R.string.glow_summary_laps),
             note = if (rows.isNotEmpty()) {
-                fastest?.let { "Fastest: ${rows[it].name.lowercase()}" }
+                fastest?.let { stringResource(R.string.glow_summary_fastest_split, rows[it].name.lowercase()) }
                     ?: summary.distanceMeters?.let { Units.distance(it, Units.Precision.Workout) }
             } else "${laps.size}",
         ) {
             if (markFastest) SplitTimeBars(rows, fastest) else rows.forEachIndexed { i, r ->
                 ListRow(
-                    r.name, dot(r.averageBpm), r.time, if (i == fastest) "Fastest" + (r.averageBpm?.let { ", average $it bpm" } ?: "") else r.averageBpm?.let { "Average $it bpm" },
+                    r.name, dot(r.averageBpm), r.time,
+                    if (i == fastest) {
+                        r.averageBpm?.let { stringResource(R.string.glow_summary_split_fastest_bpm, it) }
+                            ?: stringResource(R.string.glow_summary_split_fastest)
+                    } else r.averageBpm?.let { stringResource(R.string.glow_summary_split_average, it) },
                     divider = i > 0, icon = AppIcons.Heart, offNormal = i == fastest,
                 )
             }
-            if (rows.isNotEmpty() && laps.isNotEmpty()) WorkoutDayHeader("Laps")
+            if (rows.isNotEmpty() && laps.isNotEmpty()) WorkoutDayHeader(stringResource(R.string.glow_summary_laps))
             laps.forEachIndexed { i, lap ->
                 ListRow(
-                    "Lap ${lap.index + 1}", dot(lap.averageHeartRate), workoutClock(lap.end - lap.start), SummaryCopy.lapLine(lap.meters, lap.averageHeartRate),
+                    stringResource(R.string.glow_summary_lap, lap.index + 1), dot(lap.averageHeartRate), workoutClock(lap.end - lap.start),
+                    SummaryCopy.lapLine(lap.meters, lap.averageHeartRate),
                     divider = i > 0, icon = AppIcons.Heart,
                 )
             }
         }
-        sets.isNotEmpty() -> ListPanel(title = "Sets", note = "${sets.size} done") {
+        sets.isNotEmpty() -> ListPanel(
+            title = stringResource(R.string.glow_summary_sets_title),
+            note = pluralStringResource(R.plurals.glow_summary_sets_done, sets.size, sets.size),
+        ) {
             sets.forEachIndexed { i, set ->
                 ListRow(
-                    "Set ${set.index + 1}", MetricColors.heart, workoutClock(set.end!! - set.start),
-                    set.restEnd?.let { "Rest ${workoutClock(it - set.end)}" }, divider = i > 0, icon = Score.Load.rowIcon(),
+                    stringResource(R.string.glow_summary_set, set.index + 1), MetricColors.heart, workoutClock(set.end!! - set.start),
+                    set.restEnd?.let { stringResource(R.string.glow_summary_set_rest, workoutClock(it - set.end)) },
+                    divider = i > 0, icon = Score.Load.rowIcon(),
                 )
             }
         }
@@ -452,7 +470,7 @@ private fun SplitTimeBars(rows: List<SplitRow>, fastest: Int?) {
         Row(Modifier.fillMaxWidth().padding(vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
             Text(r.name, color = text, style = style, maxLines = 1, modifier = Modifier.widthIn(min = 56.dp).padding(end = 8.dp))
             Box(Modifier.weight(1f).height(10.dp)) {
-                if (best != null && r.name.startsWith("Km ") && seconds[i] > 0) Box(
+                if (best != null && r.kind == SplitRow.Kind.Whole && seconds[i] > 0) Box(
                     Modifier.fillMaxWidth(best.toFloat() / seconds[i]).fillMaxHeight().clip(CircleShape).background(if (lit) Color.White else bar),
                 )
             }
@@ -465,14 +483,14 @@ private fun SplitTimeBars(rows: List<SplitRow>, fastest: Int?) {
 @Composable
 internal fun SummaryButtons(onShare: () -> Unit, onDone: () -> Unit) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        WorkoutButton("Share", Raised, Color.White, onShare, Modifier.weight(1f), icon = AppIcons.UploadSimple)
-        WorkoutButton("Done", Color.White, Color.Black, onDone, Modifier.weight(1f), icon = AppIcons.Tick02)
+        WorkoutButton(stringResource(R.string.glow_share), Raised, Color.White, onShare, Modifier.weight(1f), icon = AppIcons.UploadSimple)
+        WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone, Modifier.weight(1f), icon = AppIcons.Tick02)
     }
 }
 
 /** Done as a small pill beside the title, to leave without scrolling to the bottom. */
 @Composable
-internal fun TopDone(onDone: () -> Unit) = IconPill("Done", onDone, height = 40.dp, style = TopPillText)
+internal fun TopDone(onDone: () -> Unit) = IconPill(stringResource(R.string.glow_done), onDone, height = 40.dp, style = TopPillText)
 
 /** The small pills beside the summary's title, Trim and Done. */
 private val TopPillText = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold)

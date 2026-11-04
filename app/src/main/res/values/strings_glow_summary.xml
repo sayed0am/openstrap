@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  A workout's summary: the page right after a workout ends and a phone workout's own page later (ui/glow/GlowWorkoutSummary.kt,
+  ui/glow/SummarySections.kt). The hero's one number and three figures, each kind of workout's own cards, the heart rate drop,
+  Load, time in zones, the splits and what the workout earned.
+  Load is the name of a figure in the app. Keep it as one word.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Two parts of one line joined, as "Average 141 bpm, 320 active kcal" or "Weekly goal, 3 of 4". -->
+    <string name="glow_summary_join"><xliff:g id="first" example="Average 141 bpm">%1$s</xliff:g>, <xliff:g id="second" example="320 active kcal">%2$s</xliff:g></string>
+    <!-- A number of minutes, as a figure ("12 min"), under the zone strip and under the heart rate drop's line. Short. -->
+    <string name="glow_summary_minutes"><xliff:g id="minutes" example="12">%1$d</xliff:g> min</string>
+
+    <!-- Unit beside a workout's length in the hero's dots when it was under a minute: seconds. Very short. -->
+    <string name="glow_summary_unit_s">s</string>
+    <!-- Unit beside a distance under a kilometre in the hero's dots: metres. Very short. -->
+    <string name="glow_summary_unit_m">m</string>
+    <!-- Unit beside an indoor workout's average heart rate in the hero's dots. Short. -->
+    <string name="glow_summary_unit_avg_bpm">avg bpm</string>
+    <!-- Unit beside the kilograms a strength workout lifted in all, in the hero's dots. Short. -->
+    <string name="glow_summary_unit_kg_lifted">kg lifted</string>
+    <!-- Unit beside the number of sets in the hero's dots, without the number. Short. -->
+    <plurals name="glow_summary_unit_sets">
+        <item quantity="one">set</item>
+        <item quantity="other">sets</item>
+    </plurals>
+    <!-- Unit beside the number of reps done in the hero's dots. Short. -->
+    <string name="glow_summary_unit_reps_done">reps done</string>
+    <!-- Unit beside the number of rounds done in the hero's dots. Short. -->
+    <string name="glow_summary_unit_rounds_done">rounds done</string>
+    <!-- Unit beside a game's minutes in the hero's dots. Short. -->
+    <string name="glow_summary_unit_min_played">min played</string>
+    <!-- Unit beside a game's seconds in the hero's dots, when it was under a minute. Short. -->
+    <string name="glow_summary_unit_s_played">s played</string>
+
+    <!-- A figure's label under the hero: the workout's active time. One or two words. -->
+    <string name="glow_summary_figure_time">Time</string>
+    <!-- A figure's label under the hero: average heart rate. One or two words. -->
+    <string name="glow_summary_figure_avg_bpm">Avg bpm</string>
+    <!-- A figure's label under the hero: kcal burned above resting. One or two words. -->
+    <string name="glow_summary_figure_active_kcal">Active kcal</string>
+    <!-- A figure's label under the hero: average pace, minutes a kilometre. One or two words. -->
+    <string name="glow_summary_figure_avg_pace">Avg pace</string>
+    <!-- A figure's label under the hero: the highest heart rate. One word. -->
+    <string name="glow_summary_figure_peak">Peak</string>
+    <!-- A figure's label under the hero: the highest heart rate in a game. One or two words. -->
+    <string name="glow_summary_figure_peak_bpm">Peak bpm</string>
+    <!-- A figure's label under the hero: the number of sets. One word. -->
+    <string name="glow_summary_figure_sets">Sets</string>
+    <!-- A figure's label under the hero: the average rest between sets. One or two words. -->
+    <string name="glow_summary_figure_avg_rest">Avg rest</string>
+    <!-- A figure's label under the hero: the time spent in the reps of a run. One or two words. -->
+    <string name="glow_summary_figure_rep_time">Rep time</string>
+    <!-- A figure's label under the hero: the time spent working in the rounds. One or two words. -->
+    <string name="glow_summary_figure_work_time">Work time</string>
+    <!-- A figure's label under the hero: minutes in the two hardest heart rate zones. A few words. -->
+    <string name="glow_summary_figure_zone_4_5">In zone 4 to 5</string>
+    <!-- A figure's label under the hero: a game's Load, when there is no word for how it compares. One word. -->
+    <string name="glow_summary_figure_load">Load</string>
+
+    <!-- The hero's line under a calm session's sentence: the average heart rate. -->
+    <string name="glow_summary_line_average_bpm">Average <xliff:g id="bpm" example="72">%1$d</xliff:g> bpm</string>
+    <!-- The hero's line under a calm session's sentence: kcal burned above resting. -->
+    <string name="glow_summary_line_active_kcal"><xliff:g id="kcal" example="80">%1$d</xliff:g> active kcal</string>
+
+    <!-- Title of the quiet card that says how the heart rate came down between sets. One word. -->
+    <string name="glow_summary_rest_title">Rest</string>
+    <!-- Title of the quiet card that says how the heart rate came down between rounds. One word. -->
+    <string name="glow_summary_recovery_title">Recovery</string>
+    <!-- Title of the card with a column for each rep of a run. Short. -->
+    <string name="glow_summary_each_rep">Each rep</string>
+    <!-- Title of the card with a column for each round. Short. -->
+    <string name="glow_summary_each_round">Each round</string>
+    <!-- Title of the card with a game's halves. Short. -->
+    <string name="glow_summary_each_half">Each half</string>
+    <!-- Title of the card with a game's quarters. Short. -->
+    <string name="glow_summary_each_quarter">Each quarter</string>
+    <!-- Title of the card with a game's periods. Short. -->
+    <string name="glow_summary_each_period">Each period</string>
+    <!-- Beside the rep columns' title: each column is the rep's time. One word. -->
+    <string name="glow_summary_rep_times_time">Time</string>
+    <!-- Beside the round columns' title: each column is the round's peak, and under it the rest. Short. -->
+    <string name="glow_summary_peak_then_rest">Peak, then rest</string>
+    <!-- Over the number a round's heart rate came down in the rest after it. One short word in a narrow column. -->
+    <string name="glow_summary_round_down">down</string>
+    <!-- How many hard efforts a game's half or period had, on the right of its row. -->
+    <plurals name="glow_summary_hard_efforts">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> hard effort</item>
+        <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> hard efforts</item>
+    </plurals>
+    <!-- After a game period's average heart rate, which stands before it in larger type. Keep the space before the word. -->
+    <string name="glow_summary_period_avg">" avg"</string>
+
+    <!-- Title of the card with the workout's route on a map. One word. -->
+    <string name="glow_summary_route">Route</string>
+    <!-- Beside the route's title: how far it climbed, in metres. -->
+    <string name="glow_summary_climb">Climb <xliff:g id="meters" example="42">%1$d</xliff:g> m</string>
+    <!-- Title of the card and the list with each set of a strength workout. One word. -->
+    <string name="glow_summary_sets_title">Sets</string>
+    <!-- Beside the sets card's title: each bar is the set's peak heart rate. Short. -->
+    <string name="glow_summary_peak_heart_rate">Peak heart rate</string>
+    <!-- A set's peak heart rate on its row, in a narrow column. -->
+    <string name="glow_summary_set_peak">peak <xliff:g id="bpm" example="152">%1$d</xliff:g></string>
+
+    <!-- Title of the cards with the time in each heart rate zone. -->
+    <string name="glow_summary_time_in_zones">Time in zones</string>
+    <!-- A zone's row: its number and its name in lower case, as "Zone 3, tempo". -->
+    <string name="glow_summary_zone_name">Zone <xliff:g id="zone" example="3">%1$d</xliff:g>, <xliff:g id="name" example="tempo">%2$s</xliff:g></string>
+    <!-- A zone's row on the Time in zones list: its number. Short. -->
+    <string name="glow_summary_zone">Zone <xliff:g id="zone" example="3">%1$d</xliff:g></string>
+    <!-- Beside the Time in zones list's title: the highest heart rate the zones are worked out from. -->
+    <string name="glow_summary_zones_max">Max <xliff:g id="bpm" example="190">%1$d</xliff:g> bpm</string>
+
+    <!-- Title of the heart rate cards. -->
+    <string name="glow_summary_heart_rate">Heart rate</string>
+    <!-- Beside a calm session's heart rate title: how many bpm it came down. Short. -->
+    <string name="glow_summary_heart_down">down <xliff:g id="bpm" example="30">%1$d</xliff:g></string>
+    <!-- Under the heart rate at the start of a calm session. Short. -->
+    <string name="glow_summary_at_start">At the start</string>
+    <!-- Under the heart rate at the end of a calm session. Short. -->
+    <string name="glow_summary_at_end">At the end</string>
+    <!-- Dimmed, before how this workout compares with the last one like it ("3 min longer"). Keep the space after the colon. -->
+    <string name="glow_summary_vs_last">"vs last time: "</string>
+
+    <!-- Title of the card with the days of the current week as dots. -->
+    <string name="glow_summary_this_week">This week</string>
+    <!-- Title of the card with the days of a past week as dots. -->
+    <string name="glow_summary_that_week">That week</string>
+    <!-- Under the current week's dots: how many days had a workout. -->
+    <plurals name="glow_summary_week_days_this">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> day with a workout this week.</item>
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> days with a workout this week.</item>
+    </plurals>
+    <!-- Under a past week's dots: how many days had a workout. -->
+    <plurals name="glow_summary_week_days_that">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> day with a workout that week.</item>
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> days with a workout that week.</item>
+    </plurals>
+    <!-- Small label over the chips for the bests, badges and weekly goal a workout earned. One word. -->
+    <string name="glow_summary_earned">Earned</string>
+
+    <!-- Title of the card with the heart rate coming down after the workout, and of its explanation. -->
+    <string name="glow_summary_drop_title">Heart rate drop</string>
+    <!-- Beside the heart rate drop's title: since when it is drawn, the end of the workout. The time is "18:40". -->
+    <string name="glow_summary_drop_since">Since <xliff:g id="time" example="18:40">%1$s</xliff:g></string>
+    <!-- Spoken name of the (i) button beside the heart rate drop, for screen readers. -->
+    <string name="glow_summary_drop_about">About the heart rate drop</string>
+    <!-- Unit beside the live heart rate in dots, right after a workout. Short. -->
+    <string name="glow_summary_unit_bpm_now">bpm now</string>
+    <!-- Under the drop's line, over its first part: the workout's last minute. Short. -->
+    <string name="glow_summary_drop_last_minute">Last minute</string>
+    <!-- Under the drop's line, at the workout's end. One word. -->
+    <string name="glow_summary_drop_end">End</string>
+
+    <!-- Title of the Load card. One word. -->
+    <string name="glow_summary_load_title">Load</string>
+    <!-- Spoken name of the (i) button on the Load card, for screen readers. -->
+    <string name="glow_summary_load_about">About Load and training effect</string>
+    <!-- On the Load card when the workout had too little heart rate for a Load. -->
+    <string name="glow_summary_load_none">Not enough heart rate to work out Load.</string>
+
+    <!-- Title of the list of each kilometre's time. One word. -->
+    <string name="glow_summary_splits">Splits</string>
+    <!-- Title of the list of laps marked during the workout. One word. -->
+    <string name="glow_summary_laps">Laps</string>
+    <!-- Beside the Splits title: the fastest kilometre, in lower case, as "Fastest: km 3". -->
+    <string name="glow_summary_fastest_split">Fastest: <xliff:g id="split" example="km 3">%1$s</xliff:g></string>
+    <!-- Under the fastest kilometre's row without heart rate. One word. -->
+    <string name="glow_summary_split_fastest">Fastest</string>
+    <!-- Under the fastest kilometre's row, with its average heart rate. -->
+    <string name="glow_summary_split_fastest_bpm">Fastest, average <xliff:g id="bpm" example="152">%1$d</xliff:g> bpm</string>
+    <!-- Under a kilometre's row: its average heart rate. -->
+    <string name="glow_summary_split_average">Average <xliff:g id="bpm" example="148">%1$d</xliff:g> bpm</string>
+    <!-- A lap's row. Short. -->
+    <string name="glow_summary_lap">Lap <xliff:g id="number" example="2">%1$d</xliff:g></string>
+    <!-- Beside the Sets list's title: how many sets were done. -->
+    <plurals name="glow_summary_sets_done">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> done</item>
+        <item quantity="other"><xliff:g id="count" example="12">%d</xliff:g> done</item>
+    </plurals>
+    <!-- A set's row on the Sets list. Short. -->
+    <string name="glow_summary_set">Set <xliff:g id="number" example="2">%1$d</xliff:g></string>
+    <!-- Under a set's row: the rest after it. The time is "1:30". -->
+    <string name="glow_summary_set_rest">Rest <xliff:g id="time" example="1:30">%1$s</xliff:g></string>
+</resources>

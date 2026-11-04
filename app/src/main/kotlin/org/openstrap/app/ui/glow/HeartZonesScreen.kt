@@ -27,8 +27,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.MaxHeartRate
 import org.openstrap.app.data.Workouts
@@ -86,7 +88,10 @@ private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(HeartZonesCopy.MAX_TITLE, color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
-        HeroValue(max?.bpm?.toString() ?: "0", "bpm", color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f))
+        HeroValue(
+            max?.bpm?.toString() ?: "0", stringResource(R.string.glow_unit_bpm),
+            color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f),
+        )
         if (max != null) Text(HeartZonesCopy.source(max), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         PageButton(HeartZonesCopy.SET_IT, onSet, enabled = max != null, icon = AppIcons.PencilEdit)
     }
@@ -122,7 +127,8 @@ private fun ZoneRow(zone: Int, bpm: String, divider: Boolean, onClick: () -> Uni
 /** Moving a zone's edges: where it starts and where it ends, a bpm at a time. The zone beside each edge moves too. */
 @Composable
 private fun ZoneSheet(zone: Int, zones: HeartZones, maxHr: Int, onZones: (HeartZones) -> Unit, onDismiss: () -> Unit) {
-    PageSheet(onDismiss, "${HeartZonesCopy.zoneName(zone)}, ${ZONE_NAMES[zone]}", note = HeartZonesCopy.edgesNote(zone)) {
+    val title = stringResource(R.string.glow_metrics_zone_title, HeartZonesCopy.zoneName(zone), ZONE_NAMES[zone])
+    PageSheet(onDismiss, title, note = HeartZonesCopy.edgesNote(zone)) {
         val start = zones.startBpm(zone, maxHr)
         BpmStepper(HeartZonesCopy.STARTS_AT, start, { onZones(zones.withStart(zone, start - 1, maxHr)) }, { onZones(zones.withStart(zone, start + 1, maxHr)) })
         zones.endBpm(zone, maxHr)?.let { end ->
@@ -136,9 +142,13 @@ private fun ZoneSheet(zone: Int, zones: HeartZones, maxHr: Int, onZones: (HeartZ
 private fun BpmStepper(label: String, bpm: Int, onLess: () -> Unit, onMore: () -> Unit) {
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Text(label, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-        RoundIcon(AppIcons.Minus, "$label lower", onLess)
-        Text("$bpm bpm", color = Color.White, style = GlowType.sentence, modifier = Modifier.width(110.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
-        RoundIcon(AppIcons.Plus, "$label higher", onMore)
+        RoundIcon(AppIcons.Minus, stringResource(R.string.glow_metrics_zone_lower, label), onLess)
+        Text(
+            stringResource(R.string.glow_metrics_zone_bpm, bpm), color = Color.White, style = GlowType.sentence,
+            modifier = Modifier.width(110.dp),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        RoundIcon(AppIcons.Plus, stringResource(R.string.glow_metrics_zone_higher, label), onMore)
     }
 }
 
@@ -149,7 +159,9 @@ private fun MaxSheet(max: MaxHeartRate, onMax: (Int?) -> Unit, onDismiss: () -> 
     val value = HeartZonesCopy.parseMax(text)
     PageSheet(onDismiss, HeartZonesCopy.SET_TITLE, note = HeartZonesCopy.SET_NOTE) {
         PageField(
-            text, { v -> text = v.filter { it.isDigit() }.take(3) }, HeartZonesCopy.SET_FIELD, unit = "bpm", error = text.isNotBlank() && value == null,
+            text, { v -> text = v.filter { it.isDigit() }.take(3) }, HeartZonesCopy.SET_FIELD,
+            unit = stringResource(R.string.glow_unit_bpm),
+            error = text.isNotBlank() && value == null,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Starting a workout: Choose (the sports, search and your usual) and Ready (the goal and plan cards), in
+  ui/glow/ChooseScreen.kt, ReadyScreen.kt, ReadyCardio.kt and ReadyPlans.kt. The sport names and the rest of Ready's
+  words come from the workout copy.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Choose's page title, beside the close button. One line. -->
+    <string name="glow_choose_title">Start a workout</string>
+    <!-- Choose's search field before it's tapped, and the search page's field hint. -->
+    <string name="glow_choose_search_all">Search all sports</string>
+    <!-- A section label over the sports used lately, as chips or tiles. -->
+    <string name="glow_choose_recent">Recent</string>
+    <!-- A section label over the everyday sports' tiles on Choose, and the search page's line before anything is typed. -->
+    <string name="glow_choose_all_sports">All sports</string>
+    <!-- The row, page title and section label for the sports that aren't on a tile. -->
+    <string name="glow_choose_more_sports">More sports</string>
+    <!-- Under More sports in its row: some of what's behind it. -->
+    <string name="glow_choose_more_sports_detail">Tennis, padel, dance and the rest</string>
+    <!-- Over the sport most often started, in a slim row on Choose. -->
+    <string name="glow_choose_your_usual">Your usual</string>
+    <!-- The button at the end of Your usual that starts that sport straight away. One short word. -->
+    <string name="glow_choose_start">Start</string>
+    <!-- Spoken for the small location mark on a sport's tile that is only done outdoors, for screen readers. -->
+    <string name="glow_choose_outdoors">Outdoors</string>
+    <!-- The sport picker's page title, opened from Ready. -->
+    <string name="glow_choose_pick_title">Choose a sport</string>
+    <!-- The sport picker's search field hint. One short word. -->
+    <string name="glow_choose_search">Search</string>
+    <!-- A section label over the everyday sports' tiles in the sport picker. -->
+    <string name="glow_choose_sports">Sports</string>
+    <!-- When the search finds nothing. The query is what was typed, in quotes. -->
+    <string name="glow_choose_no_match">No sport matches \"<xliff:g id="query" example="curling">%1$s</xliff:g>\".</string>
+    <!-- Spoken for the X at the end of the search field that clears it, for screen readers. -->
+    <string name="glow_choose_clear">Clear</string>
+    <!-- Over the search results: how many sports match what's typed. -->
+    <plurals name="glow_choose_sports_count">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> sport</item>
+        <item quantity="other"><xliff:g id="count" example="12">%d</xliff:g> sports</item>
+    </plurals>
+
+    <!-- Ready's heart card beside the live heart rate drawn large. -->
+    <string name="glow_ready_bpm_live">bpm, live from your strap</string>
+    <!-- Spoken for the plan pill on Ready, for screen readers: the plan's name, then what tapping it does. -->
+    <string name="glow_ready_plan_description"><xliff:g id="plan" example="Distance">%1$s</xliff:g>. <xliff:g id="hint" example="Tap to choose another goal">%2$s</xliff:g></string>
+    <!-- Spoken for the minus button beside a distance or time goal, for screen readers. -->
+    <string name="glow_ready_shorter">Shorter</string>
+    <!-- Spoken for the plus button beside a distance or time goal, for screen readers. -->
+    <string name="glow_ready_longer">Longer</string>
+    <!-- The sheet's title when saving intervals by name: the button's words ("Save intervals") and the intervals ("5 × 400 m"). -->
+    <string name="glow_ready_save_title"><xliff:g id="save" example="Save intervals">%1$s</xliff:g> <xliff:g id="intervals" example="5 × 400 m">%2$s</xliff:g></string>
+
+    <!--
+      The plan cards lay a typed number out among words, a number drawn large then words beside it: "5 × 400 m" over
+      "with [90 s] rest between". Each piece stands on its own beside a number, so keep them short.
+    -->
+    <!-- Before the rest time, under the repeats. -->
+    <string name="glow_ready_with">with</string>
+    <!-- After the rest time, under the repeats or the sets. -->
+    <string name="glow_ready_rest_between">rest between</string>
+    <!-- After the rest time when strength has no planned sets. -->
+    <string name="glow_ready_rest_after_set">rest after each set</string>
+    <!-- Before a game's break length, under its periods. -->
+    <string name="glow_ready_with_a">with a</string>
+    <!-- After a game's break length. -->
+    <string name="glow_ready_break">break</string>
+    <!-- Beside the number of planned strength sets. Always this form, whatever the number. -->
+    <string name="glow_ready_unit_sets">sets</string>
+    <!-- Beside the number of HIIT rounds. Always this form, whatever the number. -->
+    <string name="glow_ready_unit_rounds">rounds</string>
+    <!-- Beside a HIIT round's work time in seconds, "20 s on". Very short. -->
+    <string name="glow_ready_unit_s_on">s on</string>
+    <!-- Beside a HIIT round's rest time in seconds, "10 s off". Very short. -->
+    <string name="glow_ready_unit_s_off">s off</string>
+    <!-- Beside an every minute round's length in seconds, "60 s a round". Very short. -->
+    <string name="glow_ready_unit_s_a_round">s a round</string>
+    <!-- Spoken for the strip of HIIT work and rest under the plan, for screen readers. -->
+    <string name="glow_ready_rounds_description"><xliff:g id="rounds" example="8">%1$d</xliff:g> rounds of <xliff:g id="work" example="20">%2$d</xliff:g> seconds work and <xliff:g id="rest" example="10">%3$d</xliff:g> seconds rest</string>
+</resources>

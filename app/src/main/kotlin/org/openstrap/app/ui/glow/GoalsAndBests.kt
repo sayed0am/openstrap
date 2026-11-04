@@ -22,6 +22,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.remember
 import androidx.compose.foundation.layout.height
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.Color
@@ -31,7 +33,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.TextStyle
 import java.util.Locale
+import org.openstrap.app.R
 import org.openstrap.app.data.Rewards
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -78,11 +82,14 @@ private fun GoalWeekCard(
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
                 trailing?.invoke()
             }
-            HeroValue("$count", "of $goal workouts", Modifier.padding(top = GlowLayout.TitleGap))
+            HeroValue(
+                "$count", pluralStringResource(R.plurals.glow_goals_of_workouts, goal, goal), Modifier.padding(top = GlowLayout.TitleGap),
+            )
             // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
+            val described = stringResource(R.string.glow_goals_count_of_goal, count, goal)
             if (bar) SegmentBar(
                 List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
-                Modifier.padding(top = 18.dp).semantics { contentDescription = "$count of $goal workouts" }, height = 8.dp, gap = 6.dp,
+                Modifier.padding(top = 18.dp).semantics { contentDescription = described }, height = 8.dp, gap = 6.dp,
             ) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
             Text(line, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 14.dp))
         }
@@ -99,7 +106,7 @@ private const val MIN_WEEK_METERS = 100f
  * The share card for the week from [first]: the count against the goal, its days, the hours, km and active kcal, and
  * chips for the weeks in a row and the week's first best.
  */
-private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
+private fun weekStory(view: RewardsView, first: LocalDate, strings: Strings = Strings.app): StoryCard.Week {
     val week = view.week(first)
     val count = week?.count ?: 0
     val goal = week?.goal ?: view.goal
@@ -111,19 +118,32 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
     val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
     val kcal = Math.round(mine.mapNotNull { it.activeKcal }.sum())
     val totals = if (mine.isEmpty()) emptyList() else listOfNotNull(
-        WeekFigure(AppIcons.Timer, Units.clockDuration(seconds), null, "Hours"),
-        meters.takeIf { it >= MIN_WEEK_METERS }?.let { WeekFigure(AppIcons.Route01, Units.km(it, Units.Precision.Day), "km", "Distance") },
-        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, Units.count(it), null, "Active kcal") },
+        WeekFigure(AppIcons.Timer, Units.clockDuration(seconds), null, strings.get(R.string.glow_goals_hours)),
+        meters.takeIf { it >= MIN_WEEK_METERS }?.let {
+            WeekFigure(
+                AppIcons.Route01, Units.km(it, Units.Precision.Day), strings.get(R.string.glow_unit_km),
+                strings.get(R.string.glow_goals_distance),
+            )
+        },
+        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, Units.count(it), null, strings.get(R.string.glow_goals_active_kcal)) },
     )
     val run = Rewards.inARow(view.weeks, first)
     val best = view.bests.firstOrNull { it.date in from until to }
     val chips = listOfNotNull(
-        if (week?.met == true && run > 0) StoryChip("$run ${if (run == 1) "week" else "weeks"} in a row", best = false, met = true) else null,
-        best?.let { StoryChip("${RewardsCopy.bestTitle(it.kind)}, ${RewardsCopy.bestValue(it.kind, it.value)}", best = true, met = false) },
+        if (week?.met == true && run > 0) {
+            StoryChip(strings.plural(R.plurals.glow_goals_weeks_in_a_row, run, run), best = false, met = true)
+        } else {
+            null
+        },
+        best?.let {
+            val text = strings.format(R.string.glow_goals_best, RewardsCopy.bestTitle(it.kind), RewardsCopy.bestValue(it.kind, it.value))
+            StoryChip(text, best = true, met = false)
+        },
     )
     return StoryCard.Week(
         Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), "$count",
-        "${if (count == 1) "workout" else "workouts"}, goal $goal", weekDots(view, first), totals, chips,
+        strings.format(R.string.glow_goals_story_goal, strings.plural(R.plurals.glow_goals_workouts_word, count), goal),
+        weekDots(view, first), totals, chips,
     )
 }
 
@@ -131,11 +151,11 @@ private fun weekStory(view: RewardsView, first: LocalDate): StoryCard.Week {
 @Composable
 fun WeeklyGoalSheet(goal: Int, onSave: (Int) -> Unit, onDismiss: () -> Unit) {
     var value by rememberSaveable { mutableIntStateOf(goal) }
-    PageSheet(onDismiss, "Weekly goal", note = "A change applies to this week. Past weeks keep the goal they had.") {
+    PageSheet(onDismiss, stringResource(R.string.glow_goals_weekly_goal), note = stringResource(R.string.glow_goals_sheet_note)) {
         org.openstrap.app.ui.device.WorkoutGoalField(value) { value = it }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            PageButton("Cancel", onDismiss, Modifier.weight(1f))
-            PageButton("Save", { onSave(value) }, Modifier.weight(1f), primary = true)
+            PageButton(stringResource(R.string.glow_cancel), onDismiss, Modifier.weight(1f))
+            PageButton(stringResource(R.string.glow_save), { onSave(value) }, Modifier.weight(1f), primary = true)
         }
     }
 }
@@ -156,23 +176,27 @@ fun GoalsAndBestsPage(
 ) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Goals and bests", onBack) }
+        item { PageHeader(stringResource(R.string.glow_goals_title), onBack) }
         if (view == null) {
-            item { PageNote("Loading…") }
+            item { PageNote(stringResource(R.string.glow_goals_loading)) }
             return@ScreenList
         }
         item {
             val week = view.week(view.thisWeek)
             GoalWeekCard(
-                "This week", week?.count ?: 0, view.goal, weekDots(view, view.thisWeek), RewardsCopy.runLine(view.inARow, view.bestRun), bar = true,
-            ) { PageButton("Goal ${view.goal}", onGoal, icon = AppIcons.PencilEdit) }
+                stringResource(R.string.glow_goals_this_week), week?.count ?: 0, view.goal, weekDots(view, view.thisWeek),
+                RewardsCopy.runLine(view.inARow, view.bestRun), bar = true,
+            ) { PageButton(stringResource(R.string.glow_goals_goal_button, view.goal), onGoal, icon = AppIcons.PencilEdit) }
         }
         item {
             // Lit from the left in gold, so it doesn't sit as a list right under the badges' panel's look.
             CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left, color = BestColor)) {
-                ListPanel(title = "Personal bests") {
+                ListPanel(title = stringResource(R.string.glow_goals_personal_bests)) {
                     val shown = view.bests.sortedBy { order(it.kind) }
-                    if (shown.isEmpty()) Text("Your bests show here after your first workouts.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp))
+                    if (shown.isEmpty()) Text(
+                        stringResource(R.string.glow_goals_no_bests), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp),
+                    )
                     shown.forEachIndexed { i, b ->
                         ListRow(
                             RewardsCopy.bestTitle(b.kind), BestColor, RewardsCopy.bestValue(b.kind, b.value), shortDate(b.date), divider = i > 0,
@@ -187,7 +211,8 @@ fun GoalsAndBestsPage(
             val next = view.next?.let { b -> view.progress[b.id]?.let { (have, need) -> b to RewardsCopy.progressLine(have, need, b.unit) } }
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
-                    "Badges, ${view.earned.size} of ${Rewards.BADGES.size}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                    stringResource(R.string.glow_goals_badges_count, view.earned.size, Rewards.BADGES.size),
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
                     modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                 )
                 // The last three earned and the next one, so the row is always four.
@@ -196,9 +221,14 @@ fun GoalsAndBestsPage(
         }
         item {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                PageButton("All badges", onAllBadges, Modifier.fillMaxWidth(), icon = AppIcons.CheckCircle)
-                PageButton("Last week", onRecap, Modifier.fillMaxWidth(), icon = AppIcons.CalendarBlank)
-                PageButton("Celebrations", onCelebrations, Modifier.fillMaxWidth(), icon = AppIcons.SlidersHorizontal)
+                PageButton(
+                    stringResource(R.string.glow_goals_all_badges), onAllBadges, Modifier.fillMaxWidth(), icon = AppIcons.CheckCircle,
+                )
+                PageButton(stringResource(R.string.glow_goals_last_week), onRecap, Modifier.fillMaxWidth(), icon = AppIcons.CalendarBlank)
+                PageButton(
+                    stringResource(R.string.glow_goals_celebrations), onCelebrations, Modifier.fillMaxWidth(),
+                    icon = AppIcons.SlidersHorizontal,
+                )
             }
         }
     }
@@ -224,19 +254,24 @@ private fun shortDate(epoch: Long): String {
 fun AllBadgesPage(view: RewardsView?, contentPadding: PaddingValues, onBack: () -> Unit) {
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("All badges", onBack, subtitle = view?.let { "${it.earned.size} of ${Rewards.BADGES.size} earned" }) }
+        item {
+            val subtitle = view?.let { stringResource(R.string.glow_goals_earned_count, it.earned.size, Rewards.BADGES.size) }
+            PageHeader(stringResource(R.string.glow_goals_all_badges), onBack, subtitle = subtitle)
+        }
         if (view == null) return@ScreenList
         val earned = view.earned.associateBy { it.id }
         Rewards.Group.entries.forEach { group ->
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        when (group) {
-                            Rewards.Group.Firsts -> "Firsts"
-                            Rewards.Group.Milestones -> "Milestones"
-                            Rewards.Group.Weekly -> "Weekly goal"
-                            Rewards.Group.Kinds -> "Something new"
-                        },
+                        stringResource(
+                            when (group) {
+                                Rewards.Group.Firsts -> R.string.glow_goals_group_firsts
+                                Rewards.Group.Milestones -> R.string.glow_goals_group_milestones
+                                Rewards.Group.Weekly -> R.string.glow_goals_weekly_goal
+                                Rewards.Group.Kinds -> R.string.glow_goals_group_kinds
+                            },
+                        ),
                         color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp, top = 6.dp),
                     )
                     BadgeGrid(
@@ -266,7 +301,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
     }
     BackHandler(onBack = onBack)
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Your week", onBack, subtitle = RewardsCopy.weekRange(first)) }
+        item { PageHeader(stringResource(R.string.glow_goals_your_week), onBack, subtitle = RewardsCopy.weekRange(first)) }
         if (view == null) return@ScreenList
         val week = view.week(first)
         val count = week?.count ?: 0
@@ -274,8 +309,13 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         item {
             val run = Rewards.inARow(view.weeks, first)
             GoalWeekCard(
-                if (week?.met == true) "Goal met" else "Weekly goal", count, goal, weekDots(view, first),
-                if (run > 0) "Weekly streak: $run ${if (run == 1) "week" else "weeks"} in a row" else "${(goal - count).coerceAtLeast(0)} short of your goal",
+                stringResource(if (week?.met == true) R.string.glow_goals_goal_met else R.string.glow_goals_weekly_goal),
+                count, goal, weekDots(view, first),
+                if (run > 0) {
+                    pluralStringResource(R.plurals.glow_goals_weekly_streak, run, run)
+                } else {
+                    (goal - count).coerceAtLeast(0).let { pluralStringResource(R.plurals.glow_goals_short_of_goal, it, it) }
+                },
             )
         }
         val zone = ZoneId.systemDefault()
@@ -283,10 +323,11 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         val to = first.plusDays(7).atStartOfDay(zone).toEpochSecond()
         val highlights = view.bests.filter { it.date in from until to }
         if (highlights.isNotEmpty()) item {
-            ListPanel(title = "Highlights") {
+            ListPanel(title = stringResource(R.string.glow_goals_highlights)) {
                 highlights.forEachIndexed { i, b ->
                     ListRow(
-                        "${RewardsCopy.bestTitle(b.kind)}, ${RewardsCopy.bestValue(b.kind, b.value)}", BestColor,
+                        stringResource(R.string.glow_goals_best, RewardsCopy.bestTitle(b.kind), RewardsCopy.bestValue(b.kind, b.value)),
+                        BestColor,
                         DayWords.weekdayShort(Instant.ofEpochSecond(b.date).atZone(zone).toLocalDate()), null,
                         divider = i > 0, icon = AppIcons.FlagCheckered,
                     )
@@ -299,12 +340,15 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
             EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-                EdgeTitle("In all", "${mine.size} ${if (mine.size == 1) "workout" else "workouts"}")
+                EdgeTitle(
+                    stringResource(R.string.glow_goals_in_all),
+                    pluralStringResource(R.plurals.glow_goals_workouts_count, mine.size, mine.size),
+                )
                 DetailFigures(
                     listOf(
-                        Units.clockDuration(seconds) to "Hours",
-                        Units.km(meters, Units.Precision.Day) to "km",
-                        Units.count(Math.round(kcal)) to "Active kcal",
+                        Units.clockDuration(seconds) to stringResource(R.string.glow_goals_hours),
+                        Units.km(meters, Units.Precision.Day) to stringResource(R.string.glow_unit_km),
+                        Units.count(Math.round(kcal)) to stringResource(R.string.glow_goals_active_kcal),
                     ),
                     Modifier.padding(top = 12.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp,
                 )
@@ -313,8 +357,13 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
         item {
             // Board WeeklyRecap: next week's goal and Share week side by side, Share the bright one.
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PageButton("Next week: ${view.goal}", onGoal, Modifier.weight(1f), icon = AppIcons.PencilEdit)
-                PageButton("Share week", { sharing = true }, Modifier.weight(1f), primary = true, icon = AppIcons.UploadSimple)
+                PageButton(
+                    stringResource(R.string.glow_goals_next_week, view.goal), onGoal, Modifier.weight(1f), icon = AppIcons.PencilEdit,
+                )
+                PageButton(
+                    stringResource(R.string.glow_goals_share_week), { sharing = true }, Modifier.weight(1f), primary = true,
+                    icon = AppIcons.UploadSimple,
+                )
             }
         }
     }

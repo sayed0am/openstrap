@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalResources
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
 import androidx.compose.animation.core.animateFloatAsState
@@ -103,9 +106,14 @@ fun GlowSleepScreen(
                     SleepCard.Breathing -> when {
                         breathing != null -> if (pair) BreathingSmall(breathing, m) { breathingInfo = true } else BreathingCard(breathing) { breathingInfo = true }
                         // Waiting for the first night: the same card, a dim dash and when it fills.
-                        pair -> SmallCard(MetricColors.sleepLight, "Breathing disturbances", null, null, AFTER_FIRST_NIGHT, m, waiting = true)
+                        pair -> SmallCard(
+                            MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), null, null, AFTER_FIRST_NIGHT, m,
+                            waiting = true,
+                        )
                         else -> EdgeCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), kind = EdgeKind.Value) {
-                            EdgeTitle("Breathing disturbances", "Early estimate")
+                            EdgeTitle(
+                                stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate),
+                            )
                             EdgeValue(null, null, AFTER_FIRST_NIGHT)
                         }
                     }
@@ -141,7 +149,7 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.o
     val isToday = state.date == LocalDate.now()
     GlowCard(SleepGlow, Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
         Column {
-            GlowHeader("Last night", trailing = session?.let { TabCopy.nightTimes(it.start, it.end) })
+            GlowHeader(stringResource(R.string.glow_sleep_last_night), trailing = session?.let { TabCopy.nightTimes(it.start, it.end) })
             if (session == null) {
                 // Nothing said until the night has loaded, so a cold start doesn't open on "No sleep recorded".
                 val deleted = state.deletedSleep
@@ -150,7 +158,10 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.o
                 )
                 if (state.loaded && deleted != null) {
                     Spacer(Modifier.height(20.dp))
-                    PageButton("Restore", { onRestore(deleted.strap) }, icon = org.openstrap.app.ui.theme.AppIcons.ArrowCounterClockwise)
+                    PageButton(
+                        stringResource(R.string.glow_sleep_restore), { onRestore(deleted.strap) },
+                        icon = org.openstrap.app.ui.theme.AppIcons.ArrowCounterClockwise,
+                    )
                 }
                 return@Column
             }
@@ -205,6 +216,7 @@ internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolea
     val byRow = rows.entries.associate { it.value to (SLEEP_NAMES[it.key] ?: "") }
     val names = (0 until rows.size).map { byRow[it] ?: "" }
     val stages = remember(spans) { sleepHypnogramStages(spans) }
+    val resources = LocalResources.current
     fun at(f: Float) = clock(start + ((end - start) * f).toLong())
     // Compact, as on Today's Last night card, the rows are too close for their names and the card's title has the times.
     val colors = SleepRowColors
@@ -214,7 +226,7 @@ internal fun GlowSleepStages(spans: List<StageSpan>, height: Dp, compact: Boolea
         kept = kept?.let { (it.first - start).toFloat() / (end - start)..(it.last - start).toFloat() / (end - start) },
     ) { st ->
         val mins = (((end - start) * (st.to - st.from)) / 60).toInt().coerceAtLeast(1)
-        "${names[st.row]}, ${Ranges.of(at(st.from), at(st.to))}, $mins min"
+        resources.getString(R.string.glow_sleep_stage_span, names[st.row], Ranges.of(at(st.from), at(st.to)), mins)
     }
 }
 
@@ -238,7 +250,7 @@ internal val SleepRowColors: List<Color> = DayViewModel.SLEEP_STAGE_ROWS.let { r
 /** The vitals while asleep against your previous nights, each opening its metric scoped to the night. */
 @Composable
 private fun VitalsList(state: DayUiState, firstNights: Boolean, onOpen: (Metric) -> Unit) {
-    ListPanel(title = "Night vitals", note = "Against your nights") {
+    ListPanel(title = stringResource(R.string.glow_sleep_vitals_title), note = stringResource(R.string.glow_sleep_vitals_note)) {
         nightVitals(state, firstNights).forEachIndexed { i, v ->
             ListRow(
                 v.label, v.color, v.value, v.status,
@@ -259,13 +271,13 @@ private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepR
     val zone = ZoneId.systemDefault()
     val w = sleepWeek(state, LocalGoals.current.sleepSeconds, reg, zone)
     EdgeCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onOpen) {
-        EdgeTitle("Sleep regularity", "Last 7 nights")
+        EdgeTitle(stringResource(R.string.glow_sleep_regularity_title), stringResource(R.string.glow_sleep_last_7_nights))
         EdgeValue(
             reg?.sri?.roundToInt()?.toString(), null,
             when {
                 w != null -> TabCopy.regularity(reg)
                 firstNights -> AFTER_FIRST_NIGHT
-                else -> "No sleep recorded in the last 7 nights"
+                else -> stringResource(R.string.glow_sleep_regularity_none)
             },
             // Waiting for the first night it keeps its shape with the dim dash (spec 4.3).
             waiting = firstNights && w == null,
@@ -293,8 +305,8 @@ private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepR
 private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbances, onInfo: () -> Unit) {
     // As high as its content: a number and a line, so a unit high would leave an empty band under them (spec 2.4).
     EdgeCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), kind = EdgeKind.Value, onClick = onInfo) {
-        EdgeTitle("Breathing disturbances", "Early estimate")
-        EdgeValue(dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathing(b))
+        EdgeTitle(stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate))
+        EdgeValue(dotFormat("%.1f", b.perHour), stringResource(R.string.glow_sleep_an_hour), TabCopy.breathing(b))
     }
 }
 
@@ -302,7 +314,8 @@ private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbanc
 @Composable
 private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) =
     SmallCard(
-        MetricColors.sleepLight, "Breathing disturbances", dotFormat("%.1f", b.perHour), "an hour", TabCopy.breathingShort(b), modifier,
+        MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), dotFormat("%.1f", b.perHour),
+        stringResource(R.string.glow_sleep_an_hour), TabCopy.breathingShort(b), modifier,
         onClick = onInfo,
     )
 

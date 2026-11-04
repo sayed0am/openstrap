@@ -1,5 +1,8 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -86,7 +89,7 @@ internal fun BadgeArt(
 private fun CloseRow(title: String?, onClose: () -> Unit) {
     Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         SectionLabel(title.orEmpty(), Modifier.weight(1f))
-        RoundIconButton(AppIcons.X, "Close", onClose, size = 40.dp)
+        RoundIconButton(AppIcons.X, stringResource(R.string.glow_close), onClose, size = 40.dp)
     }
 }
 
@@ -98,8 +101,11 @@ private fun CloseRow(title: String?, onClose: () -> Unit) {
 fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: PaddingValues, onContinue: () -> Unit) {
     BackHandler(onBack = onContinue)
     val now = System.currentTimeMillis() / 1000
-    WorkoutPage(BestColor, contentPadding, pinned = { WorkoutButton("Continue", Color.White, Color.Black, onContinue) }) {
-        CloseRow("Personal best", onContinue)
+    WorkoutPage(
+        BestColor, contentPadding,
+        pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
+    ) {
+        CloseRow(stringResource(R.string.glow_celebrate_personal_best), onContinue)
         Spacer(Modifier.height(24.dp))
         BadgeArt(
             RewardsCopy.bestShort(best.best.kind), BestColor, 200.dp, Modifier.align(Alignment.CenterHorizontally), dots = true,
@@ -125,8 +131,8 @@ fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>,
     WorkoutPage(
         MetricColors.good, contentPadding,
         pinned = {
-            WorkoutButton("Continue", Color.White, Color.Black, onContinue)
-            PageTextButton("Celebrations settings", onSettings, Modifier.align(Alignment.CenterHorizontally))
+            WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue)
+            PageTextButton(stringResource(R.string.glow_celebrate_settings), onSettings, Modifier.align(Alignment.CenterHorizontally))
         },
     ) {
         CloseRow(null, onContinue)
@@ -134,10 +140,13 @@ fun GoalMomentScreen(count: Int, goal: Int, inARow: Int, weekStarts: List<Long>,
         DotMatrixText(
             dotFormat("%d/%d", count, goal), Modifier.align(Alignment.CenterHorizontally), dot = DotSize.Hero, color = MetricColors.good,
         )
-        Text("Weekly goal met", color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))
+        Text(
+            stringResource(R.string.glow_celebrate_goal_met), color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
         Text(RewardsCopy.momentLine(inARow), color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        WeekDaysPanel(weekStarts, note = "Shown once a week, when you reach your goal.")
+        WeekDaysPanel(weekStarts, note = stringResource(R.string.glow_celebrate_goal_note))
     }
 }
 
@@ -158,12 +167,18 @@ class Celebrations(
 /** The two celebration switches (workouts spec 3.4), in a sheet. */
 @Composable
 fun CelebrationsSheet(goalMoment: Boolean, weeklyRecap: Boolean, onGoalMoment: (Boolean) -> Unit, onWeeklyRecap: (Boolean) -> Unit, onDismiss: () -> Unit) {
-    PageSheet(onDismiss, "Celebrations", note = "No streaks to keep and no nudges. Just these two.") {
+    PageSheet(onDismiss, stringResource(R.string.glow_celebrate_title), note = stringResource(R.string.glow_celebrate_sheet_note)) {
         PageRows {
-            PageSwitchRow("Weekly goal moment", "A full screen once a week, when you reach your goal", goalMoment, onGoalMoment, divider = false)
-            PageSwitchRow("Weekly recap", "One notification on Monday morning about your week", weeklyRecap, onWeeklyRecap)
+            PageSwitchRow(
+                stringResource(R.string.glow_celebrate_goal_moment), stringResource(R.string.glow_celebrate_goal_moment_line), goalMoment,
+                onGoalMoment, divider = false,
+            )
+            PageSwitchRow(
+                stringResource(R.string.glow_celebrate_recap), stringResource(R.string.glow_celebrate_recap_line), weeklyRecap,
+                onWeeklyRecap,
+            )
         }
-        PageButton("Done", onDismiss, Modifier.fillMaxWidth(), primary = true)
+        PageButton(stringResource(R.string.glow_done), onDismiss, Modifier.fillMaxWidth(), primary = true)
     }
 }
 
@@ -174,11 +189,17 @@ fun CelebrationsSheet(goalMoment: Boolean, weeklyRecap: Boolean, onGoalMoment: (
 @Composable
 fun HistoryBadgesScreen(badges: List<Rewards.Badge>, contentPadding: PaddingValues, onContinue: () -> Unit, face: (Rewards.Badge) -> String = { it.short }) {
     BackHandler(onBack = onContinue)
-    WorkoutPage(MetricColors.good, contentPadding, pinned = { WorkoutButton("Continue", Color.White, Color.Black, onContinue) }) {
+    WorkoutPage(
+        MetricColors.good, contentPadding,
+        pinned = { WorkoutButton(stringResource(R.string.glow_continue), Color.White, Color.Black, onContinue) },
+    ) {
         CloseRow(null, onContinue)
-        Text("From your workouts so far", color = Color.White, style = GlowType.pageTitle, modifier = Modifier.padding(start = 4.dp, top = 8.dp))
         Text(
-            "${badges.size} ${if (badges.size == 1) "badge" else "badges"} already earned. New ones show on the summary after a workout.",
+            stringResource(R.string.glow_celebrate_history_title), color = Color.White, style = GlowType.pageTitle,
+            modifier = Modifier.padding(start = 4.dp, top = 8.dp),
+        )
+        Text(
+            pluralStringResource(R.plurals.glow_celebrate_history_badges, badges.size, badges.size),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 4.dp),
         )
         BadgeGrid(badges.map { it to null }, face = face)

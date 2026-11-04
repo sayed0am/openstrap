@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sleep: the Sleep tab's cards and the sleep, regularity and naps details (ui/glow/GlowSleepScreen.kt,
+  ui/glow/SleepDetail.kt). Recovery is the name of the app's score.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Title of the breathing disturbances card: the strap's count of dips in blood oxygen while asleep. -->
+    <string name="glow_sleep_breathing_title">Breathing disturbances</string>
+    <!-- The breathing disturbances card's note on its title row: the figure isn't checked yet. -->
+    <string name="glow_sleep_early_estimate">Early estimate</string>
+    <!-- Title of the Sleep tab's hero. -->
+    <string name="glow_sleep_last_night">Last night</string>
+    <!-- A button that brings back a deleted night. -->
+    <string name="glow_sleep_restore">Restore</string>
+    <!-- What a screen reader says for one stage of the night's chart: the stage, its times and its length. -->
+    <string name="glow_sleep_stage_span"><xliff:g id="stage" example="Deep">%1$s</xliff:g>, <xliff:g id="times" example="01:10 to 01:55">%2$s</xliff:g>, <xliff:g id="minutes" example="45">%3$d</xliff:g> min</string>
+    <!-- Title of the list of heart rate, HRV and breathing while asleep. -->
+    <string name="glow_sleep_vitals_title">Night vitals</string>
+    <!-- The note on the night vitals' title row: each is compared with your earlier nights. -->
+    <string name="glow_sleep_vitals_note">Against your nights</string>
+    <!-- Title of the sleep regularity card. -->
+    <string name="glow_sleep_regularity_title">Sleep regularity</string>
+    <!-- The regularity card's note on its title row. -->
+    <string name="glow_sleep_last_7_nights">Last 7 nights</string>
+    <!-- The regularity card when no night in the week has sleep. -->
+    <string name="glow_sleep_regularity_none">No sleep recorded in the last 7 nights</string>
+    <!-- Beside the count of breathing disturbances: the count is per hour asleep. Short. -->
+    <string name="glow_sleep_an_hour">an hour</string>
+
+    <!-- A chart's title row while it is scrubbed: the reading and its label, "62" and "bpm at 03:10". -->
+    <string name="glow_sleep_scrubbed"><xliff:g id="value" example="62">%1$s</xliff:g> <xliff:g id="label" example="bpm at 03:10">%2$s</xliff:g></string>
+    <!-- Under the sleep score in the week view. -->
+    <string name="glow_sleep_week_average">Average of the last 7 nights</string>
+    <!-- Stands large in the score's place when no night in the week has a score. -->
+    <string name="glow_sleep_no_scores">No scores</string>
+    <!-- Under a missing week figure: the week it looked at. -->
+    <string name="glow_sleep_in_last_7_nights">In the last 7 nights</string>
+    <!-- Stands large in the score's place when a night was deleted. -->
+    <string name="glow_sleep_no_score">No score</string>
+    <!-- Title of the list of what raised or lowered the sleep score. -->
+    <string name="glow_sleep_what_shaped">What shaped the score</string>
+    <!-- The sleep detail's week view when no night has a score. -->
+    <string name="glow_sleep_no_scores_week">No sleep scores in the last 7 nights yet.</string>
+    <!-- A button that opens the sleep or nap trimmer. -->
+    <string name="glow_sleep_adjust_times">Adjust times</string>
+    <!-- The delete sheet's text: the night's times, then what deleting does. The second part is a sentence of its own. -->
+    <string name="glow_sleep_delete_text"><xliff:g id="times" example="23:10 to 07:05">%1$s</xliff:g>. <xliff:g id="what" example="Its scores and stages go from every page.">%2$s</xliff:g></string>
+    <!-- The button on the snackbar after a delete that brings it back. One short word. -->
+    <string name="glow_sleep_undo">Undo</string>
+    <!-- Title of the night's heart rate chart. -->
+    <string name="glow_sleep_heart_rate">Heart rate</string>
+    <!-- The note on the night's heart rate chart: its lowest and average. -->
+    <string name="glow_sleep_heart_note">Lowest <xliff:g id="lowest" example="48">%1$d</xliff:g>, average <xliff:g id="average" example="55">%2$d</xliff:g> bpm</string>
+    <!-- The note on the night's breathing chart: its average, breaths a minute. -->
+    <string name="glow_sleep_breathing_note">Average <xliff:g id="rate" example="14.2">%1$s</xliff:g> br/min</string>
+    <!-- Title of the night's breathing chart. -->
+    <string name="glow_sleep_breathing_rate">Breathing rate</string>
+    <!-- Unit beside a breathing rate, breaths a minute. Very short. -->
+    <string name="glow_sleep_unit_breaths">br/min</string>
+    <!-- Under a scrubbed reading: its unit and time, "bpm" and "03:10". -->
+    <string name="glow_sleep_scrub_at"><xliff:g id="unit" example="bpm">%1$s</xliff:g> at <xliff:g id="time" example="03:10">%2$s</xliff:g></string>
+    <!-- Stands large in the regularity's place when the week has no sleep. -->
+    <string name="glow_sleep_no_sleep">No sleep</string>
+    <!-- The regularity detail when the week has no sleep. -->
+    <string name="glow_sleep_none_week">No sleep recorded in the last 7 nights.</string>
+    <!-- Under your usual bedtime in the regularity detail. -->
+    <string name="glow_sleep_usually_asleep">Usually asleep by</string>
+    <!-- Under your usual wake time in the regularity detail. -->
+    <string name="glow_sleep_usually_up">Usually up at</string>
+    <!-- The naps detail on today with no naps. -->
+    <string name="glow_sleep_no_naps_today">No naps recorded today.</string>
+    <!-- The naps detail on an earlier day with no naps. -->
+    <string name="glow_sleep_no_naps_that_day">No naps recorded that day.</string>
+    <!-- A button in the trimmer that puts back the times the strap detected. -->
+    <string name="glow_sleep_use_strap_times">Use the strap\'s times</string>
+    <!-- The naps row in a sleep detail's related list when the day had none. -->
+    <string name="glow_sleep_naps_none">None that day</string>
+</resources>

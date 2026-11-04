@@ -1,6 +1,10 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
 import org.openstrap.app.data.Weeks
+import org.openstrap.app.i18n.Strings
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Pace
@@ -78,13 +82,14 @@ internal class SummaryHero(val value: String, val unit: String, val figures: Lis
 internal fun kcalFigure(a: WorkoutAnalysis): String? = a.activeKcal?.let { Units.count(Math.round(it)) }
 
 /** A workout's length in whole minutes, or seconds under one, with its unit: "42" to "min". */
-internal fun minutesFigure(active: Long): Pair<String, String> = if (active >= 60) "${active / 60}" to "min" else "$active" to "s"
+internal fun minutesFigure(active: Long, strings: Strings = Strings.app): Pair<String, String> =
+    if (active >= 60) "${active / 60}" to strings.get(R.string.glow_unit_min) else "$active" to strings.get(R.string.glow_summary_unit_s)
 
 /**
  * What the hero shows for [summary]'s [family]; [usualLoad] names a game's Load. When the kind's own number is missing
  * (no heart rate for an indoor workout, no sets or rounds), the hero falls back to the minutes, for every kind.
  */
-internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLoad: Float?): SummaryHero {
+internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLoad: Float?, strings: Strings = Strings.app): SummaryHero {
     val a = summary.analysis
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
@@ -92,26 +97,27 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
     val avg = a.workout.averageHeartRate?.toString()
     val kcal = kcalFigure(a)
     val time = workoutClock(active)
-    val (minutes, minUnit) = minutesFigure(active)
-    fun byTime(figures: List<Pair<String?, String>>) = SummaryHero(minutes, minUnit, listOf(time to "Time") + figures)
+    val (minutes, minUnit) = minutesFigure(active, strings)
+    val w = HeroWords(strings)
+    fun byTime(figures: List<Pair<String?, String>>) = SummaryHero(minutes, minUnit, listOf(time to w.time) + figures)
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters
             val gps = FamilySummary.gpsDistance(m, summary.distanceFromSteps)
             val pace = Pace.clock(Pace.of(gps, active))
             when {
-                m == null || m <= 0f -> byTime(listOf(avg to "Avg bpm", kcal to "Active kcal"))
+                m == null || m <= 0f -> byTime(listOf(avg to w.avgBpm, kcal to w.activeKcal))
                 else -> SummaryHero(
                     if (m < Units.METERS_PER_KM) m.toInt().toString() else Units.km(m, Units.Precision.Workout, Units.DOT_LOCALE),
-                    if (m < Units.METERS_PER_KM) "m" else "km",
-                    listOf(time to "Time", if (pace != null) pace to "Avg pace" else kcal to "Active kcal", avg to "Avg bpm"),
+                    strings.get(if (m < Units.METERS_PER_KM) R.string.glow_summary_unit_m else R.string.glow_unit_km),
+                    listOf(time to w.time, if (pace != null) pace to w.avgPace else kcal to w.activeKcal, avg to w.avgBpm),
                     pace = pace,
                 )
             }
         }
         Workouts.Family.IndoorCardio ->
-            if (avg != null) SummaryHero(avg, "avg bpm", listOf(time to "Time", kcal to "Active kcal", peak to "Peak"))
-            else byTime(listOf(kcal to "Active kcal", peak to "Peak"))
+            if (avg != null) SummaryHero(avg, w.avgBpmUnit, listOf(time to w.time, kcal to w.activeKcal, peak to w.peak))
+            else byTime(listOf(kcal to w.activeKcal, peak to w.peak))
         Workouts.Family.Strength -> {
             val lifted = org.openstrap.app.data.Strength.kgLifted(summary.sets)
             val sets = FamilySummary.setsDone(summary.sets)
@@ -119,42 +125,65 @@ internal fun summaryHero(family: Workouts.Family, summary: PhoneSummary, usualLo
             // Without a log the hero is the sets, and kg lifted isn't shown (spec 2.8); without sets, the minutes.
             when {
                 lifted != null -> SummaryHero(
-                    Units.count(Math.round(lifted), Units.DOT_LOCALE), "kg lifted",
-                    listOf(time to "Time", "$sets" to "Sets", rest to "Avg rest"),
+                    Units.count(Math.round(lifted), Units.DOT_LOCALE), strings.get(R.string.glow_summary_unit_kg_lifted),
+                    listOf(time to w.time, "$sets" to strings.get(R.string.glow_summary_figure_sets), rest to w.rest),
                 )
-                sets > 0 -> SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))
-                else -> byTime(listOf(avg to "Avg bpm", peak to "Peak"))
+                sets > 0 -> SummaryHero(
+                    "$sets", strings.plural(R.plurals.glow_summary_unit_sets, sets), listOf(time to w.time, rest to w.rest, peak to w.peak),
+                )
+                else -> byTime(listOf(avg to w.avgBpm, peak to w.peak))
             }
         }
         Workouts.Family.Intervals -> {
             val done = org.openstrap.app.data.Phases.roundsDone(summary.rounds)
             val reps = summary.structure is Structure.Reps
             val hard = a.zoneSeconds.drop(3).sum()
-            if (done == 0) byTime(listOf(avg to "Avg bpm", peak to "Peak"))
+            val hardText = if (readings.isEmpty()) null else strings.format(R.string.glow_summary_minutes, hard / 60)
+            if (done == 0) byTime(listOf(avg to w.avgBpm, peak to w.peak))
             else SummaryHero(
-                "$done", if (reps) "reps done" else "rounds done",
+                "$done", strings.get(if (reps) R.string.glow_summary_unit_reps_done else R.string.glow_summary_unit_rounds_done),
                 listOf(
-                    workoutClock(FamilySummary.workSeconds(summary.rounds)) to (if (reps) "Rep time" else "Work time"), peak to "Peak",
-                    (if (readings.isEmpty()) null else "${hard / 60} min") to "In zone 4 to 5",
+                    workoutClock(FamilySummary.workSeconds(summary.rounds)) to (if (reps) w.repTime else w.workTime), peak to w.peak,
+                    hardText to strings.get(R.string.glow_summary_figure_zone_4_5),
                 ),
             )
         }
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
+            val average = a.workout.averageHeartRate?.let { strings.format(R.string.glow_summary_line_average_bpm, it) }
+            val burned = a.activeKcal?.let { strings.format(R.string.glow_summary_line_active_kcal, Math.round(it)) }
             SummaryHero(
                 minutes, minUnit, sentence = settled?.let { (f, t) -> FamilySummary.settledLine(f, t) },
-                line = listOfNotNull(a.workout.averageHeartRate?.let { "Average $it bpm" }, a.activeKcal?.let { "${Math.round(it)} active kcal" }).joinToString(", ").ifEmpty { null },
+                line = joined(listOfNotNull(average, burned), strings),
             )
         }
         Workouts.Family.Games -> {
             val load = a.workout.trainingLoad
+            val loadLabel = load?.let { FamilySummary.loadLabel(it, usualLoad) } ?: strings.get(R.string.glow_summary_figure_load)
             SummaryHero(
-                minutes, if (minUnit == "min") "min played" else "s played",
-                listOf(load?.toString() to (load?.let { FamilySummary.loadLabel(it, usualLoad) } ?: "Load"), kcal to "Active kcal", peak to "Peak bpm"),
+                minutes, strings.get(if (active >= 60) R.string.glow_summary_unit_min_played else R.string.glow_summary_unit_s_played),
+                listOf(load?.toString() to loadLabel, kcal to w.activeKcal, peak to strings.get(R.string.glow_summary_figure_peak_bpm)),
             )
         }
     }
 }
+
+/** The labels the hero's figures share across the kinds of workout, read once a hero. */
+private class HeroWords(strings: Strings) {
+    val time = strings.get(R.string.glow_summary_figure_time)
+    val avgBpm = strings.get(R.string.glow_summary_figure_avg_bpm)
+    val avgBpmUnit = strings.get(R.string.glow_summary_unit_avg_bpm)
+    val activeKcal = strings.get(R.string.glow_summary_figure_active_kcal)
+    val avgPace = strings.get(R.string.glow_summary_figure_avg_pace)
+    val peak = strings.get(R.string.glow_summary_figure_peak)
+    val rest = strings.get(R.string.glow_summary_figure_avg_rest)
+    val repTime = strings.get(R.string.glow_summary_figure_rep_time)
+    val workTime = strings.get(R.string.glow_summary_figure_work_time)
+}
+
+/** [parts] as one line, each pair joined as "Average 141 bpm, 320 active kcal", null when there are none. */
+internal fun joined(parts: List<String>, strings: Strings = Strings.app): String? =
+    parts.reduceOrNull { a, b -> strings.format(R.string.glow_summary_join, a, b) }
 
 /**
  * The section for [family] (boards SummaryRun to SummaryGame): an edge card in the kind's colour, then a quiet card.
@@ -197,7 +226,9 @@ internal fun FamilySection(
             val below = summary.restBelow
             val rest = remember(summary) { FamilySummary.restRecovery(summary.sets, readings, below) }
             val restShown = below != null && rest != null
-            if (restShown) SentenceCard("Rest", FamilySummary.restLine(rest, below, summary.restBefore))
+            if (restShown) {
+                SentenceCard(stringResource(R.string.glow_summary_rest_title), FamilySummary.restLine(rest, below, summary.restBefore))
+            }
             return groups.isNotEmpty() && !restShown
         }
         Workouts.Family.Intervals -> {
@@ -206,11 +237,12 @@ internal fun FamilySection(
             // Without a heart rate the peaks are empty: a run's reps show their times instead, timed rounds nothing.
             val peaks = lines.any { it.peak != null }
             val times = summary.rounds.mapNotNull { r -> r.workEnd?.let { it - r.workStart } }
-            if (peaks) RoundsCard(lines, if (reps) "Each rep" else "Each round", a.maxHeartRate)
+            val roundsTitle = stringResource(if (reps) R.string.glow_summary_each_rep else R.string.glow_summary_each_round)
+            if (peaks) RoundsCard(lines, roundsTitle, a.maxHeartRate)
             else if (reps && times.isNotEmpty()) RepTimesCard(times)
             val rest = (summary.structure as? Structure.Timed)?.rest ?: (summary.structure as? Structure.Reps)?.rest
             val line = FamilySummary.roundsLine(lines, rest)
-            if (line != null) SentenceCard("Recovery", line)
+            if (line != null) SentenceCard(stringResource(R.string.glow_summary_recovery_title), line)
             return (peaks || (reps && times.isNotEmpty())) && line == null
         }
         Workouts.Family.MindBody -> {
@@ -238,7 +270,8 @@ internal fun FamilySection(
 private fun RouteCard(summary: PhoneSummary) {
     if (!Route.mappable(summary.route)) return
     EdgeCard(MetricColors.steps, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle("Route", Route.climb(summary.route)?.let { "Climb ${Math.round(it)} m" })
+        val climb = Route.climb(summary.route)?.let { stringResource(R.string.glow_summary_climb, Math.round(it)) }
+        EdgeTitle(stringResource(R.string.glow_summary_route), climb)
         RouteMap(summary, Modifier.padding(top = 12.dp))
     }
 }
@@ -263,7 +296,7 @@ private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
     val heartZones = LocalHeartZones.current
     val shares = remember(groups) { FamilySummary.peakShares(groups.flatMap { g -> g.sets.map { it.peak } }) }
     EdgeCard(familyColor(Workouts.Family.Strength), Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle("Sets", "Peak heart rate")
+        EdgeTitle(stringResource(R.string.glow_summary_sets_title), stringResource(R.string.glow_summary_peak_heart_rate))
         var i = 0
         groups.forEachIndexed { gi, g ->
             if (g.name != null) Text(
@@ -279,7 +312,8 @@ private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
                     )
                     Text(s.text, color = Color.White, style = GlowType.secondary, maxLines = 1, modifier = Modifier.width(100.dp))
                     Text(
-                        s.peak?.let { "peak $it" }.orEmpty(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
+                        s.peak?.let { stringResource(R.string.glow_summary_set_peak, it) }.orEmpty(),
+                        color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
                         modifier = Modifier.width(72.dp),
                     )
                     Box(Modifier.weight(1f).height(6.dp)) {
@@ -313,7 +347,7 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
     val gap = if (labelled) 6.dp else 3.dp
     val shape = RoundedCornerShape(5.dp)
     EdgeCard(familyColor(Workouts.Family.Intervals), Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle(title, "Peak, then rest")
+        EdgeTitle(title, stringResource(R.string.glow_summary_peak_then_rest))
         Row(Modifier.fillMaxWidth().height(84.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
             lines.forEachIndexed { i, r ->
                 Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -337,7 +371,10 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
                 lines.forEach { r ->
                     Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                         if (r.drop != null) {
-                            Text("down", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, maxLines = 1)
+                            Text(
+                                stringResource(R.string.glow_summary_round_down),
+                                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, maxLines = 1,
+                            )
                             Text("${r.drop}", color = Color.White, style = GlowType.body, maxLines = 1)
                         }
                     }
@@ -360,7 +397,7 @@ private fun RepTimesCard(times: List<Long>) {
     val shape = RoundedCornerShape(5.dp)
     val color = familyColor(Workouts.Family.Intervals)
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle("Each rep", "Time")
+        EdgeTitle(stringResource(R.string.glow_summary_each_rep), stringResource(R.string.glow_summary_rep_times_time))
         Row(Modifier.fillMaxWidth().height(RoundColumnHeight + 14.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
             times.forEachIndexed { i, t ->
                 val share = if (t > 0) (fastest.toFloat() / t).coerceIn(0.3f, 1f) else 0.3f
@@ -395,13 +432,23 @@ private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
     val color = familyColor(Workouts.Family.Games)
     val shares = remember(periods) { FamilySummary.peakShares(periods.map { it.averageBpm }) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle(when (of) { 2 -> "Each half"; 4 -> "Each quarter"; else -> "Each period" }, null)
+        EdgeTitle(
+            stringResource(
+                when (of) {
+                    2 -> R.string.glow_summary_each_half
+                    4 -> R.string.glow_summary_each_quarter
+                    else -> R.string.glow_summary_each_period
+                },
+            ),
+            null,
+        )
         periods.forEachIndexed { i, p ->
             Column(Modifier.fillMaxWidth().padding(top = if (i == 0) 14.dp else 12.dp)) {
                 Row(Modifier.fillMaxWidth()) {
                     Text(p.name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1, modifier = Modifier.weight(1f))
                     Text(
-                        "${p.hardEfforts} hard ${if (p.hardEfforts == 1) "effort" else "efforts"}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                        pluralStringResource(R.plurals.glow_summary_hard_efforts, p.hardEfforts, p.hardEfforts),
+                        color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                         style = GlowType.secondary, maxLines = 1,
                     )
                 }
@@ -413,7 +460,10 @@ private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
                     }
                     p.averageBpm?.let {
                         Text("$it", color = Color.White, style = GlowType.rowValue, maxLines = 1, modifier = Modifier.padding(start = 12.dp))
-                        Text(" avg", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                        Text(
+                            stringResource(R.string.glow_summary_period_avg), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                            style = GlowType.secondary, maxLines = 1,
+                        )
                     }
                 }
             }
@@ -430,13 +480,15 @@ private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
 internal fun ZoneStripPanel(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     QuietPanel {
-        GlowHeader("Time in zones", FamilySummary.mostlyZone(zones))
+        GlowHeader(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             // Time in zones as one strip (boards SummaryGame, SummaryIndoor): each zone a rounded part as long as its time.
             ZoneBar(zones, ZONE_COLORS, height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp)
             // Each zone's minutes under the strip, the first with its unit.
-            val keys = zones.indices.filter { zones[it] > 0 }.mapIndexed { k, z ->
-                (if (k == 0) "${minutes[z]} min" else "${minutes[z]}") to ZONE_COLORS[z]
+            val shown = zones.indices.filter { zones[it] > 0 }
+            val first = stringResource(R.string.glow_summary_minutes, shown.firstOrNull()?.let { minutes[it] } ?: 0)
+            val keys = shown.mapIndexed { k, z ->
+                (if (k == 0) first else "${minutes[z]}") to ZONE_COLORS[z]
             }
             Legend(keys, layout = LegendLayout.Spread)
         }
@@ -453,7 +505,7 @@ private fun ZonesEdgeCard(zones: ZoneSeconds) {
     val most = zones.indices.maxByOrNull { zones[it] } ?: 0
     CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Right)) {
         EdgeCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
-            EdgeTitle("Time in zones", FamilySummary.mostlyZone(zones))
+            EdgeTitle(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
             ZoneBar(
                 zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
             )
@@ -461,8 +513,14 @@ private fun ZonesEdgeCard(zones: ZoneSeconds) {
                 val style = if (z == most) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary
                 Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(8.dp).background(ZONE_COLORS[z], CircleShape))
-                    Text("Zone ${z + 1}, ${ZONE_NAMES[z].lowercase()}", color = Color.White, style = style, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 10.dp))
-                    Text("${minutes[z]} min", color = Color.White, style = style.copy(fontFeatureSettings = "tnum"), maxLines = 1)
+                    Text(
+                        stringResource(R.string.glow_summary_zone_name, z + 1, ZONE_NAMES[z].lowercase()),
+                        color = Color.White, style = style, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 10.dp),
+                    )
+                    Text(
+                        stringResource(R.string.glow_summary_minutes, minutes[z]), color = Color.White,
+                        style = style.copy(fontFeatureSettings = "tnum"), maxLines = 1,
+                    )
                 }
             }
         }
@@ -481,7 +539,8 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 3) }
     QuietPanel {
         if (line) Column {
-            GlowHeader("Heart rate", Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
+            val range = Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}")
+            GlowHeader(stringResource(R.string.glow_summary_heart_rate), range)
             PlainLine(values, MetricColors.heart, 64.dp, Modifier.padding(top = 8.dp), dots = LineDots.Highest)
         }
         target?.let { (text, reached) ->
@@ -500,9 +559,10 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
 /** "vs last time:" and how this one compares, as a line of its own under the cards (board SummaryIndoor). */
 @Composable
 private fun VersusLast(line: String) {
+    val versus = stringResource(R.string.glow_summary_vs_last)
     Text(
         buildAnnotatedString {
-            withStyle(SpanStyle(color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))) { append("vs last time: ") }
+            withStyle(SpanStyle(color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA))) { append(versus) }
             append(line)
         },
         color = Color.White, style = GlowType.secondary, modifier = Modifier.padding(horizontal = 4.dp),
@@ -523,16 +583,24 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 9) }
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
-        EdgeTitle("Heart rate", drop?.let { "down $it" } ?: Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
+        val range = Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}")
+        val down = drop?.let { stringResource(R.string.glow_summary_heart_down, it) }
+        EdgeTitle(stringResource(R.string.glow_summary_heart_rate), down ?: range)
         if (chart) PlainLine(values, color, 74.dp, Modifier.padding(top = 14.dp), dots = LineDots.Ends)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("${settled.first}", color = Color.White, style = GlowType.rowValue)
-                Text("At the start", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                Text(
+                    stringResource(R.string.glow_summary_at_start),
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text("${settled.second}", color = Color.White, style = GlowType.rowValue)
-                Text("At the end", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                Text(
+                    stringResource(R.string.glow_summary_at_end),
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                )
             }
         }
     }
@@ -557,12 +625,14 @@ internal fun WeekDaysPanel(weekStarts: List<Long>, note: String? = null, day: Lo
     val today = LocalDate.now()
     val thisWeek = days.any { it.first == today }
     QuietPanel {
-        GlowHeader(if (thisWeek) "This week" else "That week")
+        GlowHeader(stringResource(if (thisWeek) R.string.glow_summary_this_week else R.string.glow_summary_that_week))
         WeekDots(
             days.map { (d, on) -> d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) to on }, color,
             today = days.indexOfFirst { it.first == today }.takeIf { it >= 0 }, ticks = false, dot = 24.dp,
         )
-        val text = note ?: days.count { it.second }.let { n -> "$n ${if (n == 1) "day" else "days"} with a workout ${if (thisWeek) "this" else "that"} week." }
+        val n = days.count { it.second }
+        val daysLine = if (thisWeek) R.plurals.glow_summary_week_days_this else R.plurals.glow_summary_week_days_that
+        val text = note ?: pluralStringResource(daysLine, n, n)
         Text(text, color = Color.White, style = GlowType.body)
     }
 }
@@ -603,7 +673,7 @@ internal fun WeekDots(
 internal fun EarnedChips(lines: List<EarnedLine>) {
     if (lines.isEmpty()) return
     Column(Modifier.fillMaxWidth().padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionLabel("Earned")
+        SectionLabel(stringResource(R.string.glow_summary_earned))
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             lines.forEach { l ->
                 val (icon, color) = when (l.kind) {
@@ -611,7 +681,7 @@ internal fun EarnedChips(lines: List<EarnedLine>) {
                     EarnedLine.Kind.Badge -> AppIcons.CheckCircle to MetricColors.good
                     EarnedLine.Kind.Goal -> AppIcons.Target to if (l.met) MetricColors.good else Color.White
                 }
-                val text = listOfNotNull(l.text, l.value).joinToString(", ")
+                val text = l.value?.let { stringResource(R.string.glow_summary_join, l.text, it) } ?: l.text
                 IconPill(text, null, icon = icon, tint = color, height = 36.dp, style = GlowType.secondary)
             }
         }

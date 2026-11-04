@@ -25,10 +25,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
@@ -255,10 +257,11 @@ internal fun Detail.rowIcon(): ImageVector? = when (this) {
 /** The empty value: a short dim bar drawn by the UI, never a dash character. */
 @Composable
 fun WaitingDash(modifier: Modifier = Modifier) {
+    val described = stringResource(R.string.glow_no_value_yet)
     Box(
         modifier
             .size(14.dp, 3.dp)
             .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
-            .semantics { contentDescription = "No value yet" },
+            .semantics { contentDescription = described },
     )
 }

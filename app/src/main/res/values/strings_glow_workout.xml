@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Workouts on the glow screens (ui/glow/GlowWorkoutMode.kt, GlowWorkoutScreen.kt, WorkoutCapsule.kt): a past workout's page,
+  the list of every workout, the offers to save or record a workout nobody started, adding one after the fact, trimming
+  and deleting, and the capsule of a workout under way.
+  OpenStrap is the app's name. Keep it as it is.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A workout's name while its sport isn't known yet, as a page title. One word. -->
+    <string name="glow_workout_untitled">Workout</string>
+    <!-- A short note while a workout or a day's heart rate is read from the database. -->
+    <string name="glow_workout_loading">Loading…</string>
+    <!-- A page's subtitle: the day and the times, as "Yesterday, 18:02 to 18:44". -->
+    <string name="glow_workout_day_times"><xliff:g id="day" example="Yesterday">%1$s</xliff:g>, <xliff:g id="times" example="18:02 to 18:44">%2$s</xliff:g></string>
+
+    <!-- A heart rate zone's range for zone 1, which counts anything slower. -->
+    <string name="glow_workout_zone_under">under <xliff:g id="bpm" example="115">%1$d</xliff:g> bpm</string>
+    <!-- A heart rate zone's range. The range is "134 to 152". -->
+    <string name="glow_workout_zone_range"><xliff:g id="range" example="134 to 152">%1$s</xliff:g> bpm</string>
+
+    <!-- Title of the offer to save a stretch of high heart rate nobody started as a workout. One line. -->
+    <string name="glow_workout_suggestion_title">Looks like you worked out</string>
+    <!-- The offer's text. The day is "Today" or "Yesterday" or a weekday, the times "18:02 to 18:44". -->
+    <string name="glow_workout_suggestion_text"><xliff:g id="day" example="Today">%1$s</xliff:g> <xliff:g id="times" example="18:02 to 18:44">%2$s</xliff:g>, mostly zone <xliff:g id="zone" example="3">%3$d</xliff:g>, <xliff:g id="bpm" example="141">%4$d</xliff:g> bpm on average. Nobody pressed Start.</string>
+    <!-- Button that saves the stretch as a workout. Half the width. -->
+    <string name="glow_workout_suggestion_save">Save as workout</string>
+    <!-- Button that dismisses the offer. Half the width. -->
+    <string name="glow_workout_suggestion_dismiss">Not a workout</string>
+    <!-- Title of the offer to record an effort still under way that nobody started. One line. -->
+    <string name="glow_workout_offer_title">Looks like a workout</string>
+    <!-- The offer's text. The time is "18:02", the same both times, and the sport is in lower case, as "run". -->
+    <string name="glow_workout_offer_text">Your heart rate has been up since <xliff:g id="time" example="18:02">%1$s</xliff:g>, <xliff:g id="bpm" example="141">%2$d</xliff:g> bpm on average. Record a <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time_again" example="18:02">%1$s</xliff:g>?</string>
+    <!-- Button that starts recording from when the effort began. Half the width. -->
+    <string name="glow_workout_offer_record">Record</string>
+    <!-- Button that declines the offer. Half the width. -->
+    <string name="glow_workout_offer_decline">Not now</string>
+
+    <!-- Title of the page that adds a workout after the fact. -->
+    <string name="glow_workout_add_title">Add a workout</string>
+    <!-- The button at the foot of that page, which opens the sports. -->
+    <string name="glow_workout_add_choose_sport">Choose the sport</string>
+    <!-- On that page when the day has no heart rate yet. -->
+    <string name="glow_workout_add_no_heart">The strap hasn\'t sent heart rate for this day yet. Sync, then try again.</string>
+    <!-- Title over the day's heart rate with its two handles. The times beside it are "18:02 to 18:44". -->
+    <string name="glow_workout_add_when">When was it?</string>
+    <!-- Under the day's heart rate: how to use the handles. -->
+    <string name="glow_workout_add_hint">Drag the handles to where the workout began and ended. Its heart rate comes from the strap\'s minute records.</string>
+
+    <!-- The red button at the end of a workout's page. -->
+    <string name="glow_workout_delete">Delete this workout</string>
+    <!-- The question before a workout is deleted. -->
+    <string name="glow_workout_delete_confirm">Delete this workout?</string>
+    <!-- Under the question, for a workout recorded on the phone: what deleting it does. -->
+    <string name="glow_workout_delete_phone">Its heart rate and times are removed from OpenStrap. The strap\'s own history is kept.</string>
+    <!-- Under the question, for a workout the strap recorded: what deleting it does. -->
+    <string name="glow_workout_delete_strap">Its heart rate and times are removed from OpenStrap, and the next sync won\'t bring it back. The strap\'s own history is kept.</string>
+
+    <!-- Title of the sheet that moves a workout's start and end. -->
+    <string name="glow_workout_trim_title">Trim start and end</string>
+    <!-- Small button beside a note on what was done to a workout's times, which puts them back. One word. -->
+    <string name="glow_workout_undo">Undo</string>
+    <!-- Note after a workout's start was moved. The time is "18:05". -->
+    <string name="glow_workout_trim_start">Trimmed to start at <xliff:g id="time" example="18:05">%1$s</xliff:g>. The rest is kept.</string>
+    <!-- How much was left out at a workout's end, under a minute. Goes into the notes below. -->
+    <string name="glow_workout_trim_seconds"><xliff:g id="seconds" example="40">%1$d</xliff:g> s</string>
+    <!-- How much was left out at a workout's end, in minutes. Goes into the notes below. -->
+    <string name="glow_workout_trim_minutes"><xliff:g id="minutes" example="6">%1$d</xliff:g> min</string>
+    <!-- Note after the app ended a workout when you got in a car. The time is "18:44", the length "6 min" or "40 s". -->
+    <string name="glow_workout_trim_car">Ended at <xliff:g id="time" example="18:44">%1$s</xliff:g>. <xliff:g id="length" example="6 min">%2$s</xliff:g> of driving were left out.</string>
+    <!-- Note after the app ended a workout when you had stopped moving. The time is "18:44", the length "6 min" or "40 s". -->
+    <string name="glow_workout_trim_auto">Ended at <xliff:g id="time" example="18:44">%1$s</xliff:g>, when you\'d stopped. <xliff:g id="length" example="6 min">%2$s</xliff:g> after that were left out.</string>
+    <!-- Note after a workout's start and end were moved. The times are "18:05 to 18:40". -->
+    <string name="glow_workout_trim_range">Trimmed, now from <xliff:g id="times" example="18:05 to 18:40">%1$s</xliff:g>. The rest is kept.</string>
+
+    <!-- Beside the heart rate card's title: the line is in each zone's colour. Short. -->
+    <string name="glow_workout_heart_by_zone">Coloured by zone</string>
+    <!-- Under the heart rate while a finger is on the line. The time is "18:20". -->
+    <string name="glow_workout_heart_at">At <xliff:g id="time" example="18:20">%1$s</xliff:g></string>
+    <!-- Under the heart rate while a finger is on the line, past the workout's end. The time is "18:46". -->
+    <string name="glow_workout_heart_at_after">At <xliff:g id="time" example="18:46">%1$s</xliff:g>, after the end</string>
+    <!-- Unit beside the workout's average heart rate. Short. -->
+    <string name="glow_workout_unit_bpm_average">bpm average</string>
+    <!-- Under the average heart rate: the highest and the lowest. -->
+    <string name="glow_workout_heart_max_lowest">Max <xliff:g id="max" example="172">%1$d</xliff:g>, lowest <xliff:g id="min" example="98">%2$d</xliff:g> bpm</string>
+    <!-- Under the average heart rate: the highest, when the lowest isn't known. -->
+    <string name="glow_workout_heart_max">Max <xliff:g id="max" example="172">%1$d</xliff:g> bpm</string>
+    <!-- Under the average heart rate: the lowest, when the highest isn't known. Starts in lower case as it was written. -->
+    <string name="glow_workout_heart_lowest">lowest <xliff:g id="min" example="98">%1$d</xliff:g> bpm</string>
+    <!-- On the heart rate card before the strap has sent it. -->
+    <string name="glow_workout_heart_none">The strap hasn\'t sent this workout\'s heart rate yet.</string>
+    <!-- Under the line's right end, when it runs on past the workout's end. The time is "18:44". -->
+    <string name="glow_workout_heart_drop_after">Drop after <xliff:g id="time" example="18:44">%1$s</xliff:g></string>
+    <!-- Under the line: which parts are dimmed because they came from the strap's minute history. The times are "18:02 to 18:10, 18:30 to 18:31". -->
+    <string name="glow_workout_heart_dimmed">Dimmed: <xliff:g id="times" example="18:02 to 18:10">%1$s</xliff:g> came from the strap\'s history.</string>
+
+    <!-- Title of the card with the workout's share of its day's active kcal. -->
+    <string name="glow_workout_in_your_day">In your day</string>
+    <!-- Title of the list with the workout's distance, steps, kcal and pauses. -->
+    <string name="glow_workout_facts_title">The workout</string>
+
+    <!-- Title of the page with every workout. -->
+    <string name="glow_workout_list_title">Workouts</string>
+    <!-- Under that title: how many workouts there are. -->
+    <plurals name="glow_workout_list_recorded">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> recorded</item>
+        <item quantity="other"><xliff:g id="count" example="24">%d</xliff:g> recorded</item>
+    </plurals>
+    <!-- The row when there are no workouts. -->
+    <string name="glow_workout_list_empty">No workouts yet</string>
+    <!-- Under that row. -->
+    <string name="glow_workout_list_empty_text">Workouts you start in OpenStrap show up here, and the strap\'s own after a sync.</string>
+
+    <!-- Spoken name of the round pause button on a workout under way, for screen readers. -->
+    <string name="glow_workout_capsule_pause">Pause</string>
+    <!-- Small label over what comes next in a planned workout. One word. -->
+    <string name="glow_workout_capsule_next">Next</string>
+    <!-- A paused or asking workout's two lines as one, as "Paused. Tap to go on". -->
+    <string name="glow_workout_capsule_lines"><xliff:g id="first" example="Paused">%1$s</xliff:g>. <xliff:g id="second" example="Tap to go on">%2$s</xliff:g></string>
+</resources>

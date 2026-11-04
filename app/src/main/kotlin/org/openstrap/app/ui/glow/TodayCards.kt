@@ -1,5 +1,10 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.runtime.ReadOnlyComposable
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
@@ -143,11 +148,11 @@ internal fun StripLine(title: String, detail: String?) {
 internal fun LastNightStrip(state: DayUiState, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false, firstNights: Boolean = false) =
     TodayStrip(MetricColors.sleepDeep, EdgeKind.Sleep, modifier, onClick = onClick) {
         StripLine(
-            "Last night",
+            stringResource(R.string.glow_today_last_night),
             TodayCopy.lastNight(state.asleepSeconds, state.sleep?.score) ?: when {
                 firstNights -> AFTER_FIRST_NIGHT
                 stuck -> WAITING_LAST_NIGHT
-                else -> "No sleep recorded"
+                else -> stringResource(R.string.glow_today_no_sleep)
             },
         )
     }
@@ -160,7 +165,10 @@ internal fun LastNightStrip(state: DayUiState, onClick: () -> Unit, modifier: Mo
 internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Modifier = Modifier) =
     TodayStrip(EdgeNeutral, EdgeKind.Value, modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("How do you feel?", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(R.string.glow_today_check_in_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
+                modifier = Modifier.weight(1f),
+            )
             if (feeling != null) Text(CheckIn.label(feeling), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         Spacer(Modifier.height(10.dp))
@@ -181,8 +189,11 @@ internal fun StartWorkoutStrip(sport: Int, onStart: (Int) -> Unit, modifier: Mod
     TodayStrip(MetricColors.heart, EdgeKind.Value, modifier.movingBorder(MetricColors.heart), onClick = { onStart(sport) }) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text("Start a workout", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
-                Text("$name, your usual", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+                Text(stringResource(R.string.glow_today_start_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                Text(
+                    stringResource(R.string.glow_today_start_usual, name), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.secondary, maxLines = 1,
+                )
             }
             Spacer(Modifier.width(12.dp))
             Box(Modifier.size(44.dp).clip(CircleShape).background(Color.White), contentAlignment = Alignment.Center) {
@@ -193,13 +204,13 @@ internal fun StartWorkoutStrip(sport: Int, onStart: (Int) -> Unit, modifier: Mod
 }
 
 /** What the strap warned about, in the words of its notification. Codes as in HealthAlert.Type. */
-internal fun alertText(a: HealthAlertRow): String = when (a.type) {
-    1 -> "High heart rate, ${a.value} bpm"
-    2 -> "Low heart rate, ${a.value} bpm"
-    3 -> "High stress, ${a.value}"
-    4 -> "Low blood oxygen, ${a.value}%"
-    5 -> "Irregular heart rhythm"
-    else -> "A reading the strap flagged"
+internal fun alertText(a: HealthAlertRow, strings: Strings = Strings.app): String = when (a.type) {
+    1 -> strings.format(R.string.glow_today_alert_high_hr, a.value)
+    2 -> strings.format(R.string.glow_today_alert_low_hr, a.value)
+    3 -> strings.format(R.string.glow_today_alert_high_stress, a.value)
+    4 -> strings.format(R.string.glow_today_alert_low_spo2, a.value)
+    5 -> strings.get(R.string.glow_today_alert_irregular)
+    else -> strings.get(R.string.glow_today_alert_other)
 }
 
 private fun alertMetric(a: HealthAlertRow) = when (a.type) { 3 -> Metric.Stress; 4 -> Metric.Spo2; else -> Metric.HeartRate }
@@ -209,9 +220,20 @@ private fun alertMetric(a: HealthAlertRow) = when (a.type) { 3 -> Metric.Stress;
 internal fun AlertsStrip(alerts: List<HealthAlertRow>, onOpenMetric: (Metric) -> Unit, modifier: Modifier = Modifier) {
     val newest = alerts.maxByOrNull { it.timestamp } ?: return
     TodayStrip(MetricColors.heart, EdgeKind.Value, modifier, status = EdgeStatus.Above, onClick = { onOpenMetric(alertMetric(newest)) }) {
-        StripLine("From your strap", if (alerts.size > 1) "${alerts.size - 1} more today" else clock(newest.timestamp))
+        StripLine(
+            stringResource(R.string.glow_today_alerts_title),
+            if (alerts.size > 1) {
+                pluralStringResource(R.plurals.glow_today_alerts_more, alerts.size - 1, alerts.size - 1)
+            } else {
+                clock(newest.timestamp)
+            },
+        )
         Text(
-            alertText(newest) + if (alerts.size > 1) " at ${clock(newest.timestamp)}." else ".",
+            if (alerts.size > 1) {
+                stringResource(R.string.glow_today_alert_at, alertText(newest), clock(newest.timestamp))
+            } else {
+                stringResource(R.string.glow_today_alert_line, alertText(newest))
+            },
             color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary,
         )
         Text(
@@ -278,16 +300,20 @@ internal fun clockDuration(seconds: Long): String = Units.clockDuration(seconds,
 internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false) {
     val s = state.sleep
     EdgeCard(MetricColors.sleepDeep, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onClick) {
-        EdgeTitle("Last night", s?.let { Ranges.times(it.start, it.end) })
+        EdgeTitle(stringResource(R.string.glow_today_last_night), s?.let { Ranges.times(it.start, it.end) })
         val asleep = state.asleepSeconds
         val score = s?.score
         // A night the strap gave no score says so in words, with no dash where the score would be.
         EdgeValue(
-            score?.toString(), "score",
+            score?.toString(), stringResource(R.string.glow_today_score_unit),
             when {
-                asleep == null -> if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else "No sleep recorded"
-                score != null -> "${org.openstrap.app.presentation.TabCopy.sleepScoreWord(score)}, ${Units.duration(asleep)} asleep"
-                else -> "${Units.duration(asleep)} asleep, no score from the strap"
+                asleep == null ->
+                    if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else stringResource(R.string.glow_today_no_sleep)
+                score != null -> stringResource(
+                    R.string.glow_today_last_night_scored,
+                    org.openstrap.app.presentation.TabCopy.sleepScoreWord(score), Units.duration(asleep),
+                )
+                else -> stringResource(R.string.glow_today_last_night_unscored, Units.duration(asleep))
             },
             waiting = asleep == null,
         )
@@ -321,9 +347,14 @@ internal fun HeartCard(
         MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide),
         kind = if (live != null) EdgeKind.Live else EdgeKind.Value, onClick = onClick,
     ) {
-        EdgeTitle("Heart rate", state.restingHeartRate?.let { "Resting $it" }, marker = upTo)
+        EdgeTitle(
+            stringResource(R.string.glow_today_heart_rate), state.restingHeartRate?.let { stringResource(R.string.glow_today_resting, it) },
+            marker = upTo,
+        )
         val at = scrubbed?.second ?: state.heartRate.lastOrNull()?.x
-        EdgeValue(now?.toString(), "bpm", TodayCopy.heartAt(live != null && scrubbed == null, at?.let(::clock)))
+        EdgeValue(
+            now?.toString(), stringResource(R.string.glow_unit_bpm), TodayCopy.heartAt(live != null && scrubbed == null, at?.let(::clock)),
+        )
         if (state.heartRate.size >= 2) {
             Spacer(Modifier.height(10.dp))
             GlowLineChart(
@@ -366,9 +397,12 @@ internal fun ActivityCard(
         // already climbs toward the goal, and the sentence gives the share.
         progress = if (chart || goal <= 0) null else state.steps / goal.toFloat(), onClick = onClick,
     ) {
-        EdgeTitle("Steps", "Goal ${Units.count(goal)}", marker = upTo, tag = tag)
+        EdgeTitle(
+            stringResource(R.string.glow_today_steps_title), stringResource(R.string.glow_today_steps_goal, Units.count(goal)),
+            marker = upTo, tag = tag,
+        )
         val sentence = org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
-        if (count) EdgeValue(Units.count(state.steps, Units.DOT_LOCALE), "steps", sentence)
+        if (count) EdgeValue(Units.count(state.steps, Units.DOT_LOCALE), stringResource(R.string.glow_today_steps), sentence)
         else Text(sentence, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 10.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
         if (chart) {
             Spacer(Modifier.height(10.dp))
@@ -391,7 +425,7 @@ internal fun RecoveryEarlierCard(
     failure: RecoveryFailure? = null, onRetry: () -> Unit = {},
 ) {
     EdgeCard(MetricColors.readiness, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Earlier, onClick = onClick) {
-        EdgeTitle("Recovery", "This morning")
+        EdgeTitle(stringResource(R.string.glow_today_recovery_title), stringResource(R.string.glow_today_this_morning))
         if (failure != null) RecoveryFailed(failure, onRetry)
         else EdgeValue(shown.value?.toString(), shown.word, shown.line)
     }
@@ -400,7 +434,9 @@ internal fun RecoveryEarlierCard(
 /** In place of a Recovery that failed: yesterday's score dimmed, the line, and Try again. */
 @Composable
 internal fun RecoveryFailed(failure: RecoveryFailure, onRetry: () -> Unit) {
-    failure.yesterday?.let { y -> Column(Modifier.alpha(FAILED_ALPHA)) { EdgeValue(y.toString(), "yesterday", null) } }
+    failure.yesterday?.let { y ->
+        Column(Modifier.alpha(FAILED_ALPHA)) { EdgeValue(y.toString(), stringResource(R.string.glow_today_yesterday), null) }
+    }
     Text(RECOVERY_FAILED, color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
     PageButton(TRY_AGAIN, onRetry, Modifier.padding(top = 12.dp), size = ButtonSize.Hero, onCard = true)
 }
@@ -426,7 +462,7 @@ internal fun ChargeWideCard(
     if (secondGlow) {
         GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, lightAngle = LightAngle.Left, second = true), m, onClick = onClick) {
             Column {
-                GlowHeader("Energy", marker = upTo, tag = tag)
+                GlowHeader(stringResource(R.string.glow_today_energy_title), marker = upTo, tag = tag)
                 if (soFar == null || soFar.count { it != null } < 2) EdgeValue(now?.toString(), null, status, Color.White.copy(alpha = 0.8f), dot = DotSize.Second)
                 else Row(verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) { EdgeValue(now?.toString(), null, status, Color.White.copy(alpha = 0.8f), dot = DotSize.Second) }
@@ -436,7 +472,7 @@ internal fun ChargeWideCard(
             }
         }
     } else EdgeCard(MetricColors.charge, modifier.fillMaxWidth(), kind = EdgeKind.Level, progress = (now ?: 0) / 100f, onClick = onClick) {
-        EdgeTitle("Energy", null, marker = upTo, tag = tag)
+        EdgeTitle(stringResource(R.string.glow_today_energy_title), null, marker = upTo, tag = tag)
         if (soFar == null || soFar.count { it != null } < 2) EdgeValue(now?.toString(), null, status)
         else Row(verticalAlignment = Alignment.Bottom) {
             Column(Modifier.weight(1f)) { EdgeValue(now?.toString(), null, status) }
@@ -453,13 +489,22 @@ internal fun WorkoutCard(w: org.openstrap.app.data.WorkoutAnalysis, onClick: () 
         EdgeTitle(Workouts.sportName(w.workout.sportType), Ranges.times(w.shownStart, w.end))
         val mostly = w.zoneSeconds.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.index
         EdgeValue(
-            dotClock(w.activeSeconds.coerceAtLeast(0)), "long",
-            listOfNotNull(w.workout.averageHeartRate?.let { "Average $it bpm" }, mostly?.let { "mostly zone ${it + 1}" })
-                .joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { null },
+            dotClock(w.activeSeconds.coerceAtLeast(0)), stringResource(R.string.glow_today_workout_long),
+            workoutLine(w.workout.averageHeartRate, mostly?.let { it + 1 }),
         )
         // Zone bar (chart kit): how the time was spent.
         ZoneBar(w.zoneSeconds, org.openstrap.app.ui.workout.ZONE_COLORS, Modifier.padding(top = 8.dp))
     }
+}
+
+/** The workout card's line: its average heart rate and the zone it mostly sat in, either alone, or null with neither. */
+@Composable
+@ReadOnlyComposable
+private fun workoutLine(average: Int?, zone: Int?): String? = when {
+    average != null && zone != null -> stringResource(R.string.glow_today_workout_average_zone, average, zone)
+    average != null -> stringResource(R.string.glow_today_workout_average, average)
+    zone != null -> stringResource(R.string.glow_today_workout_zone, zone)
+    else -> null
 }
 
 /**
@@ -487,17 +532,19 @@ internal fun WeekCard(
     val zone = ZoneId.systemDefault()
     val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
     EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
-        EdgeTitle("Your week", Ranges.of(DayWords.dayMonth(start), DayWords.dayMonth(end)))
-        EdgeValue(stepsNow?.let { Units.count(it.roundToInt(), Units.DOT_LOCALE) }, "steps a day", null)
-        val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { Units.duration(it) + " asleep a night" }
-        val workoutsDone = if (done == 1) "1 workout" else "$done workouts"
+        EdgeTitle(stringResource(R.string.glow_today_week_title), Ranges.of(DayWords.dayMonth(start), DayWords.dayMonth(end)))
+        EdgeValue(
+            stepsNow?.let { Units.count(it.roundToInt(), Units.DOT_LOCALE) }, stringResource(R.string.glow_today_week_steps_unit), null,
+        )
+        val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { Units.duration(it) }
+        val workoutsDone = pluralStringResource(R.plurals.glow_today_week_workouts, done, done)
         Text(
-            listOfNotNull(night, workoutsDone).joinToString(", ").replaceFirstChar { it.uppercase() },
+            if (night != null) stringResource(R.string.glow_today_week_line, night, workoutsDone) else workoutsDone,
             color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 8.dp),
         )
         val change = TodayCopy.stepsChange(stepsNow, stepsAvg(start.minusDays(7), start.minusDays(1)))
         Text(
-            change?.let { "$it on the week before." } ?: TodayCopy.WEEK_FIRST,
+            change?.let { stringResource(R.string.glow_today_week_change, it) } ?: TodayCopy.WEEK_FIRST,
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
         )
     }
@@ -557,7 +604,7 @@ internal class BodyRow(
 internal fun BodyList(
     title: String, rows: List<BodyRow>, waiting: String, onOpenMetric: (Metric) -> Unit, modifier: Modifier = Modifier, upTo: String? = null,
 ) {
-    ListPanel(modifier, title = title, note = "Against your normal", marker = upTo) {
+    ListPanel(modifier, title = title, note = stringResource(R.string.glow_today_against_normal), marker = upTo) {
         rows.forEachIndexed { i, r ->
             val direction = org.openstrap.app.data.History.status(r.value, r.normal)
             ListRow(
@@ -577,10 +624,14 @@ internal fun LoadList(
     onLoad: (() -> Unit)? = null, onRecover: (() -> Unit)? = null,
 ) {
     ListPanel(modifier, title = title) {
-        ListRow("Load today", MetricColors.load, load?.roundToInt()?.toString(), loadLine, divider = false, onClick = onLoad, icon = Score.Load.rowIcon())
+        ListRow(
+            stringResource(R.string.glow_today_load_today), MetricColors.load, load?.roundToInt()?.toString(), loadLine, divider = false,
+            onClick = onLoad, icon = Score.Load.rowIcon(),
+        )
         // Recovered is the whole answer: no number, no dash.
         if (recover != null) ListRow(
-            "Time to recover", MetricColors.load, recover.first, recover.second, dash = recover.first != null, onClick = onRecover,
+            stringResource(R.string.glow_today_time_to_recover), MetricColors.load, recover.first, recover.second,
+            dash = recover.first != null, onClick = onRecover,
             icon = Score.Recover.rowIcon(),
         )
     }
@@ -598,7 +649,7 @@ internal fun EditTodayButton(onClick: () -> Unit, modifier: Modifier = Modifier)
         ) {
             Icon(AppIcons.SlidersHorizontal, null, tint = Color.White, modifier = Modifier.size(14.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Edit Today", color = Color.White, style = GlowType.body)
+            Text(stringResource(R.string.glow_today_edit), color = Color.White, style = GlowType.body)
         }
     }
 }

@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Metrics: the All metrics sheet (ui/glow/AllMetricsScreen.kt), a metric's detail page (ui/glow/GlowMetricDetail.kt),
+  the line chart's average label (ui/glow/GlowCharts.kt) and the Heart rate zones page (ui/glow/HeartZonesScreen.kt).
+  A detail's headline is a big dotted number with a short label beside it, so those labels stay short.
+  Habit Age is the app's name for its estimate of your age from your habits.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- All metrics -->
+
+    <!-- The All metrics sheet's title: every number the app has, grouped. -->
+    <string name="glow_metrics_all_metrics">All metrics</string>
+    <!-- A group's title in All metrics, and a row's name: the Recovery score. -->
+    <string name="glow_metrics_recovery">Recovery</string>
+    <!-- A group's title in All metrics, and a row's name: the Sleep score. -->
+    <string name="glow_metrics_sleep">Sleep</string>
+    <!-- A group's title in All metrics: heart rate, resting heart rate and HRV. -->
+    <string name="glow_metrics_group_heart">Heart</string>
+    <!-- A group's title in All metrics: blood oxygen, skin temperature, breathing and stress. -->
+    <string name="glow_metrics_group_body">Body signals</string>
+    <!-- A group's title in All metrics: steps and workouts. -->
+    <string name="glow_metrics_group_activity">Activity</string>
+    <!-- A row's name in All metrics: the body's energy through the day, like a battery. -->
+    <string name="glow_metrics_energy">Energy</string>
+    <!-- A row's name in All metrics: the app's estimate of your age from your habits. A name, keep it short. -->
+    <string name="glow_metrics_habit_age">Habit Age</string>
+    <!-- Row names in All metrics. -->
+    <string name="glow_metrics_heart_rate">Heart rate</string>
+    <string name="glow_metrics_resting_heart_rate">Resting heart rate</string>
+    <!-- Heart rate variability. Keep the short form. -->
+    <string name="glow_metrics_hrv">HRV</string>
+    <string name="glow_metrics_blood_oxygen">Blood oxygen</string>
+    <string name="glow_metrics_skin_temperature">Skin temperature</string>
+    <string name="glow_metrics_breathing_rate">Breathing rate</string>
+    <string name="glow_metrics_stress">Stress</string>
+    <string name="glow_metrics_steps">Steps</string>
+    <string name="glow_metrics_workouts">Workouts</string>
+    <!-- Under Recovery while the app learns your baselines: nights so far out of the nights it needs. -->
+    <string name="glow_metrics_learning_nights">Learning, <xliff:g id="nights" example="2">%1$d</xliff:g> of <xliff:g id="needed" example="4">%2$d</xliff:g> nights</string>
+    <!-- Under Recovery: the number is the day's score. -->
+    <string name="glow_metrics_score_for_day">Score for the day</string>
+    <!-- Under Sleep: the number is the night's score. -->
+    <string name="glow_metrics_score_for_night">Score for the night</string>
+    <!-- Under Energy on today: the number is the latest. -->
+    <string name="glow_metrics_latest">Latest</string>
+    <!-- Under Energy on a past day: the number is the one the day ended on. -->
+    <string name="glow_metrics_end_of_day">End of day</string>
+    <!-- Under Heart rate: the number is the latest reading. -->
+    <string name="glow_metrics_latest_reading">Latest reading</string>
+    <!-- Under Resting heart rate and Steps: the number is the day's. -->
+    <string name="glow_metrics_for_the_day">For the day</string>
+    <!-- Under HRV, blood oxygen, skin temperature, breathing and stress: the number is the day's average. -->
+    <string name="glow_metrics_day_average">Day average</string>
+    <!-- Under Workouts: the number counts the last week. -->
+    <string name="glow_metrics_last_7_days">Last 7 days</string>
+    <!-- Under Habit Age once there's an estimate. -->
+    <string name="glow_metrics_updated_weekly">Updated weekly</string>
+    <!-- Under Habit Age while it learns: the number is your age, where it starts. -->
+    <string name="glow_metrics_starting_point">Starting point</string>
+    <!-- Under Habit Age when the profile misses your age. -->
+    <string name="glow_metrics_needs_profile">Needs your profile</string>
+    <!-- Under Habit Age before there's a workout to work from. -->
+    <string name="glow_metrics_not_worked_out">Not worked out yet</string>
+
+    <!-- A metric's detail -->
+
+    <!-- Read out by screen readers for the (i) button beside a detail's title. The title is "Heart rate", "Steps" and the like. -->
+    <string name="glow_metrics_about">About <xliff:g id="title" example="Heart rate">%1$s</xliff:g></string>
+    <!-- Read out by screen readers for a day in the week strip, what tapping it does. The day is "Wed" or "Today". -->
+    <string name="glow_metrics_show_day">Show <xliff:g id="day" example="Wed">%1$s</xliff:g></string>
+    <!-- Beside the detail showing now, in the switcher's list. -->
+    <string name="glow_metrics_showing">Showing</string>
+    <!-- A chip beside the heart rate that turns the live reading on and off. One short word. -->
+    <string name="glow_metrics_live">Live</string>
+    <!-- Under No reading on a night's week. -->
+    <string name="glow_metrics_last_7_nights">In the last 7 nights</string>
+    <!-- In the chart's place. The name is the metric's, in lower case unless it's short like HRV ("heart rate", "HRV"). -->
+    <string name="glow_metrics_none_last_7_nights">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> in the last 7 nights yet.</string>
+    <!-- In the chart's place. The name is the metric's, in lower case unless it's short like HRV. -->
+    <string name="glow_metrics_none_in_range">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> in this range yet.</string>
+    <!-- In the chart's place on a night. The name is the metric's, in lower case unless it's short like HRV. -->
+    <string name="glow_metrics_none_asleep">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> readings while asleep.</string>
+    <!-- In the chart's place on a day. The name is the metric's, in lower case unless it's short like HRV. -->
+    <string name="glow_metrics_none_this_day">No <xliff:g id="metric" example="heart rate">%1$s</xliff:g> for this day yet.</string>
+    <!-- In the chart's place on a day for breathing rate, which the strap reads only in sleep. -->
+    <string name="glow_metrics_breathing_in_sleep">Breathing rate is measured during sleep.</string>
+    <!-- Beside a held reading's number: its unit and the day. The unit is "bpm", "ms" or "%", the day "Wed 21". -->
+    <string name="glow_metrics_unit_day"><xliff:g id="unit" example="bpm">%1$s</xliff:g>, <xliff:g id="day" example="Wed 21">%2$s</xliff:g></string>
+    <!-- Beside a held reading's number: its unit and the time it was taken. -->
+    <string name="glow_metrics_unit_at_time"><xliff:g id="unit" example="bpm">%1$s</xliff:g> at <xliff:g id="time" example="22:30">%2$s</xliff:g></string>
+    <!-- Beside a held reading's number that has no unit: the time it was taken. -->
+    <string name="glow_metrics_at_time">at <xliff:g id="time" example="22:30">%1$s</xliff:g></string>
+    <!-- Beside a held hour's steps: the hour. -->
+    <string name="glow_metrics_steps_hours">steps, <xliff:g id="hours" example="09:00 to 10:00">%1$s</xliff:g></string>
+    <!-- The held point on a year's chart is a week: when it starts. The date is "21 Oct". -->
+    <string name="glow_metrics_week_of">week of <xliff:g id="date" example="21 Oct">%1$s</xliff:g></string>
+    <!-- The title of the list of related details at a detail's foot. -->
+    <string name="glow_metrics_related">Related</string>
+
+    <!-- Charts -->
+
+    <!-- On a line chart, beside its average line. Very short. The value is a number like "62". -->
+    <string name="glow_metrics_chart_average">avg <xliff:g id="value" example="62">%1$s</xliff:g></string>
+
+    <!-- Heart rate zones -->
+
+    <!-- A zone sheet's title: the zone's number and its name. -->
+    <string name="glow_metrics_zone_title"><xliff:g id="zone" example="Zone 2">%1$s</xliff:g>, <xliff:g id="name" example="Aerobic">%2$s</xliff:g></string>
+    <!-- Read out by screen readers for the minus button. The label is "Starts at" or "Ends at". -->
+    <string name="glow_metrics_zone_lower"><xliff:g id="label" example="Starts at">%1$s</xliff:g> lower</string>
+    <!-- Read out by screen readers for the plus button. The label is "Starts at" or "Ends at". -->
+    <string name="glow_metrics_zone_higher"><xliff:g id="label" example="Starts at">%1$s</xliff:g> higher</string>
+    <!-- A zone edge's heart rate between the minus and plus buttons. -->
+    <string name="glow_metrics_zone_bpm"><xliff:g id="bpm" example="132">%1$d</xliff:g> bpm</string>
+</resources>

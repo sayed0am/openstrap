@@ -1,5 +1,9 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.runtime.ReadOnlyComposable
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
@@ -28,13 +32,15 @@ import org.openstrap.app.ui.theme.MetricColors
 private const val BAR_FULL_YEARS = 1.5f
 
 /** "Updated Sunday, next in 5 days", from the Sunday the estimate was made. */
+@Composable
+@ReadOnlyComposable
 private fun updatedText(asOf: Long): String {
     val made = java.time.Instant.ofEpochSecond(asOf).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
     val next = 7 - java.time.temporal.ChronoUnit.DAYS.between(made, java.time.LocalDate.now()).toInt().coerceIn(0, 7)
     return when (next) {
-        7 -> "Updated today, next on Sunday"
-        1 -> "Updated Sunday, next tomorrow"
-        else -> "Updated Sunday, next in $next days"
+        7 -> stringResource(R.string.glow_healthspan_updated_today)
+        1 -> stringResource(R.string.glow_healthspan_updated_tomorrow)
+        else -> pluralStringResource(R.plurals.glow_healthspan_updated_next, next, next)
     }
 }
 
@@ -47,7 +53,10 @@ fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValu
     BackHandler(onBack = onBack)
     val r = state?.result
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Habit Age", onBack, subtitle = r?.let { updatedText(it.asOf) } ?: "Updated weekly, on Sunday") }
+        item { PageHeader(
+                stringResource(R.string.glow_healthspan_title), onBack,
+                subtitle = r?.let { updatedText(it.asOf) } ?: stringResource(R.string.glow_healthspan_updated_weekly),
+            ) }
         // The page is what the card opens, so here it opens nothing: no caret.
         item { HabitAgeEdgeCard(state, onClick = null, onOpenProfile = null) }
         if (r != null) {
@@ -63,15 +72,20 @@ fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValu
  */
 @Composable
 private fun PacePanel(pace: Float?) {
-    ListPanel(title = "Pace of aging", note = pace?.let { "${paceLabel(it)}, ${paceText(it)}" } ?: paceLabel(null)) {
+    ListPanel(
+        title = stringResource(R.string.glow_healthspan_pace_title),
+        note = pace?.let { stringResource(R.string.glow_healthspan_pace_note, paceLabel(it), paceText(it)) } ?: paceLabel(null),
+    ) {
         ListRow(
-            "Last 30 days", MetricColors.habitAge, null,
-            when {
-                pace == null -> "Needs 30 days with enough data, and 3 months before them to tell a real change from day-to-day noise."
-                pace < 1f -> "Your last 30 days beat your 6-month habits. Kept up, the estimate will come down."
-                pace > 1f -> "Your last 30 days fall behind your 6-month habits. Kept up, the estimate will go up."
-                else -> "Your last 30 days match your 6-month habits, so the estimate is moving in step with the calendar."
-            },
+            stringResource(R.string.glow_healthspan_last_30_days), MetricColors.habitAge, null,
+            stringResource(
+                when {
+                    pace == null -> R.string.glow_healthspan_pace_needs
+                    pace < 1f -> R.string.glow_healthspan_pace_beat
+                    pace > 1f -> R.string.glow_healthspan_pace_behind
+                    else -> R.string.glow_healthspan_pace_match
+                },
+            ),
             divider = false, dash = false, icon = org.openstrap.app.ui.dashboard.Detail.Healthspan.rowIcon(),
         )
         if (pace != null) PaceScale(marker = (pace + 1f) / 4f, color = MetricColors.habitAge, Modifier.padding(start = RowIcon + RowIconGap, bottom = GlowLayout.RowPadding))
@@ -83,7 +97,10 @@ private fun PacePanel(pace: Float?) {
 private fun PaceScale(marker: Float, color: Color, modifier: Modifier = Modifier) {
     Column(modifier) {
         ScaleTrack { x0, x1, y -> glowDot(Offset(x0 + (x1 - x0) * marker.coerceIn(0f, 1f), y), color) }
-        ScaleLabels("−1x slower", "1x", "3x faster")
+        ScaleLabels(
+            stringResource(R.string.glow_healthspan_scale_slower), stringResource(R.string.glow_healthspan_scale_steady),
+            stringResource(R.string.glow_healthspan_scale_faster),
+        )
     }
 }
 
@@ -114,9 +131,12 @@ private fun DrawScope.glowDot(at: Offset, color: Color) {
  */
 @Composable
 private fun TermsPanel(r: Healthspan.Result) {
-    ListPanel(title = "What moves it", note = "Over 6 months") {
+    ListPanel(title = stringResource(R.string.glow_healthspan_terms_title), note = stringResource(R.string.glow_healthspan_terms_note)) {
         // One scale for every bar below: a habit at either end takes off, or adds, BAR_FULL_YEARS or more.
-        ScaleLabels("−1½ y younger", "0", "older +1½ y", Modifier.padding(start = RowIcon + RowIconGap, top = 4.dp, bottom = 2.dp))
+        ScaleLabels(
+            stringResource(R.string.glow_healthspan_scale_younger), "0", stringResource(R.string.glow_healthspan_scale_older),
+            Modifier.padding(start = RowIcon + RowIconGap, top = 4.dp, bottom = 2.dp),
+        )
         r.terms.forEachIndexed { i, t ->
             val (icon, ink) = habitIcon(t.habit)
             ListRow(
@@ -126,7 +146,7 @@ private fun TermsPanel(r: Healthspan.Result) {
             EffectBar(t.years, Modifier.padding(start = RowIcon + RowIconGap, bottom = GlowLayout.RowPadding))
         }
         if (r.fitnessCapped) Text(
-            "Fitness terms capped: resting heart rate, steps and VO2 max together count for at most 3 years either way.",
+            stringResource(R.string.glow_healthspan_fitness_capped),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
             modifier = Modifier.padding(bottom = GlowLayout.RowPadding),
         )

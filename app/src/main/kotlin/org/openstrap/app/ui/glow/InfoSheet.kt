@@ -31,11 +31,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Info
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -74,9 +76,9 @@ fun InfoSheet(
                 Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowLayout.CardShape).padding(horizontal = 18.dp),
             ) {
                 val folds = rows ?: listOf(
-                    "How it's worked out" to info.how,
-                    "What moves it" to info.moves,
-                    "Why it might be off" to (listOf(info.off) + notes).joinToString("\n\n"),
+                    stringResource(R.string.glow_info_how) to info.how,
+                    stringResource(R.string.glow_info_moves) to info.moves,
+                    stringResource(R.string.glow_info_off) to (listOf(info.off) + notes).joinToString("\n\n"),
                 )
                 folds.forEachIndexed { i, (title, text) -> Fold(title, text, divider = i > 0) }
             }
@@ -131,12 +133,13 @@ private fun fitWords(labels: List<String>, roles: List<TextStyle>, width: Int, m
 private fun Fold(title: String, text: String, divider: Boolean = true) {
     var open by rememberSaveable(title) { mutableStateOf(false) }
     val turn by animateFloatAsState(if (open) 180f else 0f, label = "fold caret")
+    val clickLabel = stringResource(if (open) R.string.glow_info_fold else R.string.glow_info_open)
     Column(
         Modifier.fillMaxWidth()
             .topHairline(divider, RowHairline),
     ) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClickLabel = if (open) "Fold" else "Open") { open = !open }.padding(vertical = 16.dp),
+            Modifier.fillMaxWidth().clickable(onClickLabel = clickLabel) { open = !open }.padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))

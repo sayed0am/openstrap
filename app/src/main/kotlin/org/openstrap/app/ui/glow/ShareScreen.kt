@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
 import android.content.ClipData
 import android.content.ContentValues
 import android.content.Context
@@ -180,16 +182,26 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
         Color.Transparent, contentPadding, scroll = false,
         pinned = {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                val saveLabel = when (saved) { true -> "Saved"; false -> "Not saved"; null -> "Save" }
+                val saveLabel = stringResource(
+                    when (saved) {
+                        true -> R.string.glow_share_saved
+                        false -> R.string.glow_share_not_saved
+                        null -> R.string.glow_save
+                    },
+                )
                 WorkoutButton(saveLabel, Raised, Color.White, { if (export == null) save() }, Modifier.weight(1f), icon = if (saved == true) AppIcons.Tick02 else AppIcons.DownloadSimple)
-                WorkoutButton("Share", Color.White, Color.Black, { if (export == null) export = Export.Share }, Modifier.weight(1f), icon = AppIcons.UploadSimple)
+                WorkoutButton(
+                    stringResource(R.string.glow_share), Color.White, Color.Black, { if (export == null) export = Export.Share },
+                    Modifier.weight(1f), icon = AppIcons.UploadSimple,
+                )
             }
         },
     ) {
         // Close on the left, the title in the middle (board ShareRun).
         Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.align(Alignment.CenterStart)) { RoundIconButton(AppIcons.X, "Close", onClose, size = 44.dp) }
-            Text("Share", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+            val close = stringResource(R.string.glow_close)
+            Box(Modifier.align(Alignment.CenterStart)) { RoundIconButton(AppIcons.X, close, onClose, size = 44.dp) }
+            Text(stringResource(R.string.glow_share), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
             // The picture for Save and Share: the same card at 1080 by 1920, recorded but never drawn on screen.
             if (export != null) Box(
                 Modifier.layout { measurable, _ ->
@@ -214,23 +226,36 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
                         StoryCardView(card, photo, shown)
                     }
                     if (photo != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
-                        RoundIconButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
+                        RoundIconButton(AppIcons.X, stringResource(R.string.glow_share_remove_photo), { photoUri = null }, size = 32.dp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
                 IconPill(
-                    if (photo != null) "Change photo" else "Add a photo",
+                    stringResource(if (photo != null) R.string.glow_share_change_photo else R.string.glow_share_add_photo),
                     { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, icon = AppIcons.Image,
                 )
             }
         }
         if (hasRoute) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Route", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.width(84.dp))
+                Text(
+                    stringResource(R.string.glow_share_route), color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
+                    maxLines = 1, modifier = Modifier.width(84.dp),
+                )
                 val routes = StoryRoute.entries
-                GlowSegments(routes.map { it.name }, routeMode.ordinal, { routeMode = routes[it] }, Modifier.weight(1f))
+                val routeNames = routes.map {
+                    stringResource(
+                        when (it) {
+                            StoryRoute.Off -> R.string.glow_share_route_off
+                            StoryRoute.Line -> R.string.glow_share_route_line
+                        },
+                    )
+                }
+                GlowSegments(routeNames, routeMode.ordinal, { routeMode = routes[it] }, Modifier.weight(1f))
             }
-            if (routeMode == StoryRoute.Line) PageSwitchRow("Hide start and end", null, hideEnds, { hideEnds = it }, divider = false)
+            if (routeMode == StoryRoute.Line) {
+                PageSwitchRow(stringResource(R.string.glow_share_hide_ends), null, hideEnds, { hideEnds = it }, divider = false)
+            }
         }
     }
 }

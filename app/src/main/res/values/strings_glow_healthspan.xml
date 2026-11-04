@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Habit Age: its card (on Recovery and Today) and its page, the pace of aging and the habits that move it
+  (ui/glow/GlowHealthspan.kt, ui/glow/GlowHealthspanScreen.kt). Habit Age is the name of the app's estimate.
+  VO2 max is a fitness measure, keep its name as it is commonly written in your language.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The pace of aging before there's enough history. One word. -->
+    <string name="glow_healthspan_pace_learning">Learning</string>
+    <!-- The pace of aging below the calendar's. One word. -->
+    <string name="glow_healthspan_pace_slower">Slower</string>
+    <!-- The pace of aging above the calendar's. One word. -->
+    <string name="glow_healthspan_pace_faster">Faster</string>
+    <!-- The pace of aging in step with the calendar. One word. -->
+    <string name="glow_healthspan_pace_steady">Steady</string>
+    <!-- The pace of aging as a multiple of the calendar's: "1x", "0.5x", "-1x". -->
+    <string name="glow_healthspan_pace_times"><xliff:g id="pace" example="0.5">%1$s</xliff:g>x</string>
+    <!-- What a habit does to Habit Age when it makes no difference. Lower case, it starts a line after capitalising. -->
+    <string name="glow_healthspan_effect_none">no change</string>
+    <!-- What a good habit does to Habit Age. Lower case, it starts a line after capitalising. -->
+    <string name="glow_healthspan_effect_off_months">takes off a few months</string>
+    <!-- What a poor habit does to Habit Age. Lower case, it starts a line after capitalising. -->
+    <string name="glow_healthspan_effect_adds_months">adds a few months</string>
+    <!-- What a good habit does to Habit Age. Lower case, it starts a line after capitalising. -->
+    <string name="glow_healthspan_effect_off_half">takes off about ½ year</string>
+    <!-- What a poor habit does to Habit Age. Lower case, it starts a line after capitalising. -->
+    <string name="glow_healthspan_effect_adds_half">adds about ½ year</string>
+    <!-- What a good habit does to Habit Age, in whole years. Lower case, it starts a line after capitalising. -->
+    <plurals name="glow_healthspan_effect_off_years">
+        <item quantity="one">takes off about <xliff:g id="years" example="1">%d</xliff:g> year</item>
+        <item quantity="other">takes off about <xliff:g id="years" example="2">%d</xliff:g> years</item>
+    </plurals>
+    <!-- What a poor habit does to Habit Age, in whole years. Lower case, it starts a line after capitalising. -->
+    <plurals name="glow_healthspan_effect_adds_years">
+        <item quantity="one">adds about <xliff:g id="years" example="1">%d</xliff:g> year</item>
+        <item quantity="other">adds about <xliff:g id="years" example="2">%d</xliff:g> years</item>
+    </plurals>
+    <!-- A habit's line when workouts have given no VO2 max yet. -->
+    <string name="glow_healthspan_no_vo2max">No VO2 max from workouts yet, counted as typical</string>
+    <!-- A habit's line when there's too little data. -->
+    <string name="glow_healthspan_no_data">Not enough data yet, counted as typical</string>
+    <!-- The strength habit's line with no strength workouts, and the minutes a week to aim for. -->
+    <string name="glow_healthspan_strength_none_aim">None recorded, most people your age do none, aim for <xliff:g id="minutes" example="40">%1$d</xliff:g></string>
+    <!-- The strength habit's line with no strength workouts. -->
+    <string name="glow_healthspan_strength_none">None recorded, most people your age do none</string>
+    <!-- The strength habit's line: your minutes a week, and the minutes to aim for. -->
+    <string name="glow_healthspan_strength_minutes_aim"><xliff:g id="minutes" example="25">%1$d</xliff:g> min a week, most people your age do none, aim for <xliff:g id="target" example="40">%2$d</xliff:g></string>
+    <!-- The strength habit's line: your minutes a week. -->
+    <string name="glow_healthspan_strength_minutes"><xliff:g id="minutes" example="45">%1$d</xliff:g> min a week, most people your age do none</string>
+    <!-- The VO2 max habit's line: yours, your age and the typical value at that age. -->
+    <string name="glow_healthspan_vo2max"><xliff:g id="vo2max" example="42">%1$d</xliff:g> ml/kg/min, typical at <xliff:g id="age" example="40">%2$d</xliff:g>: <xliff:g id="typical" example="38">%3$s</xliff:g></string>
+    <!-- The steps habit's line: your steps a day, the typical, and the range to aim for. -->
+    <string name="glow_healthspan_steps_aim"><xliff:g id="steps" example="6,543">%1$s</xliff:g> a day, typical: <xliff:g id="typical" example="9,000">%2$s</xliff:g>, aim for <xliff:g id="range" example="8,000 to 10,000">%3$s</xliff:g></string>
+    <!-- The steps habit's line: your steps a day and the typical. -->
+    <string name="glow_healthspan_steps"><xliff:g id="steps" example="10,543">%1$s</xliff:g> a day, typical: <xliff:g id="typical" example="9,000">%2$s</xliff:g></string>
+    <!-- The sleep regularity habit's line: your score and the typical. -->
+    <string name="glow_healthspan_regularity"><xliff:g id="score" example="78">%1$d</xliff:g>, typical: <xliff:g id="typical" example="72">%2$s</xliff:g></string>
+    <!-- The resting heart rate habit's line: yours while asleep and the typical. -->
+    <string name="glow_healthspan_resting_hr"><xliff:g id="bpm" example="54">%1$d</xliff:g> bpm asleep, typical: about <xliff:g id="typical" example="60">%2$s</xliff:g></string>
+    <!-- The time asleep habit's line: yours, and the length below which it counts. -->
+    <string name="glow_healthspan_time_asleep"><xliff:g id="duration" example="5 h 40">%1$s</xliff:g>, counts only below <xliff:g id="limit" example="6 h 30">%2$s</xliff:g></string>
+    <!-- The Habit Age card when one thing is missing from the profile, "birth year" or "sex". -->
+    <string name="glow_healthspan_profile_one">Add your <xliff:g id="missing" example="birth year">%1$s</xliff:g> in your profile to see your Habit Age.</string>
+    <!-- The Habit Age card when two things are missing from the profile, "birth year" and "sex". -->
+    <string name="glow_healthspan_profile_two">Add your <xliff:g id="first" example="birth year">%1$s</xliff:g> and <xliff:g id="second" example="sex">%2$s</xliff:g> in your profile to see your Habit Age.</string>
+    <!-- Title of the Habit Age card and page. -->
+    <string name="glow_healthspan_title">Habit Age</string>
+    <!-- What the info button beside the Habit Age title does, for screen readers. -->
+    <string name="glow_healthspan_about">About Habit Age</string>
+    <!-- Beside the Habit Age in dots. Very short. -->
+    <string name="glow_healthspan_years">years</string>
+
+    <!-- Under the Habit Age page's title, on the Sunday the estimate was made. -->
+    <string name="glow_healthspan_updated_today">Updated today, next on Sunday</string>
+    <!-- Under the Habit Age page's title, on Saturday. -->
+    <string name="glow_healthspan_updated_tomorrow">Updated Sunday, next tomorrow</string>
+    <!-- Under the Habit Age page's title: the days until the next estimate. -->
+    <plurals name="glow_healthspan_updated_next">
+        <item quantity="one">Updated Sunday, next in <xliff:g id="days" example="1">%d</xliff:g> day</item>
+        <item quantity="other">Updated Sunday, next in <xliff:g id="days" example="5">%d</xliff:g> days</item>
+    </plurals>
+    <!-- Under the Habit Age page's title before the first estimate. -->
+    <string name="glow_healthspan_updated_weekly">Updated weekly, on Sunday</string>
+    <!-- Title of the list with the pace of aging. -->
+    <string name="glow_healthspan_pace_title">Pace of aging</string>
+    <!-- The pace list's note: its word and its multiple, "Slower" and "0.5x". -->
+    <string name="glow_healthspan_pace_note"><xliff:g id="word" example="Slower">%1$s</xliff:g>, <xliff:g id="pace" example="0.5x">%2$s</xliff:g></string>
+    <!-- The pace list's row. -->
+    <string name="glow_healthspan_last_30_days">Last 30 days</string>
+    <!-- The pace row before there's enough history. -->
+    <string name="glow_healthspan_pace_needs">Needs 30 days with enough data, and 3 months before them to tell a real change from day-to-day noise.</string>
+    <!-- The pace row when the last 30 days were better than usual. -->
+    <string name="glow_healthspan_pace_beat">Your last 30 days beat your 6-month habits. Kept up, the estimate will come down.</string>
+    <!-- The pace row when the last 30 days were worse than usual. -->
+    <string name="glow_healthspan_pace_behind">Your last 30 days fall behind your 6-month habits. Kept up, the estimate will go up.</string>
+    <!-- The pace row when the last 30 days were as usual. -->
+    <string name="glow_healthspan_pace_match">Your last 30 days match your 6-month habits, so the estimate is moving in step with the calendar.</string>
+    <!-- The left end of the pace scale. Very short. -->
+    <string name="glow_healthspan_scale_slower">−1x slower</string>
+    <!-- The middle of the pace scale, the calendar's pace. Very short. -->
+    <string name="glow_healthspan_scale_steady">1x</string>
+    <!-- The right end of the pace scale. Very short. -->
+    <string name="glow_healthspan_scale_faster">3x faster</string>
+    <!-- Title of the list of habits that move Habit Age. -->
+    <string name="glow_healthspan_terms_title">What moves it</string>
+    <!-- The habits list's note: the time the habits are measured over. -->
+    <string name="glow_healthspan_terms_note">Over 6 months</string>
+    <!-- The left end of the habits' scale, years younger. Very short. -->
+    <string name="glow_healthspan_scale_younger">−1½ y younger</string>
+    <!-- The right end of the habits' scale, years older. Very short. -->
+    <string name="glow_healthspan_scale_older">older +1½ y</string>
+    <!-- Under the habits list when the fitness habits hit their cap. -->
+    <string name="glow_healthspan_fitness_capped">Fitness terms capped: resting heart rate, steps and VO2 max together count for at most 3 years either way.</string>
+</resources>
