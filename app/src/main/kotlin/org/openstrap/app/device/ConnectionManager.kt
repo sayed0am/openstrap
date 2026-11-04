@@ -251,10 +251,14 @@ internal class ConnectionManager(
     }
 
     init {
-        androidx.core.content.ContextCompat.registerReceiver(
-            context, bluetoothChanged, android.content.IntentFilter(android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED),
-            androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            androidx.core.content.ContextCompat.registerReceiver(
+                context, bluetoothChanged, android.content.IntentFilter(android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED),
+                androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+            )
+        } else {
+            context.registerReceiver(bluetoothChanged, android.content.IntentFilter(android.bluetooth.BluetoothAdapter.ACTION_STATE_CHANGED))
+        }
     }
 
     private fun watchDisconnect(client: GattClient) = onLane {

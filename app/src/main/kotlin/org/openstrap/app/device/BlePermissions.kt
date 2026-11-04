@@ -13,8 +13,17 @@ import android.provider.Settings
  * The one place that says which permissions the strap needs, so every check and request asks for the same ones.
  */
 object BlePermissions {
-    /** What scanning for and talking to the strap needs. Scanning never derives location (neverForLocation). */
-    val bluetooth: List<String> = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    /** 
+     * What scanning for and talking to the strap needs, split by Android version.
+     * - Android 12+ (API 31+): BLUETOOTH_SCAN, BLUETOOTH_CONNECT
+     * - Android 11 and lower (API <= 30): ACCESS_FINE_LOCATION (und optional BLUETOOTH)
+     */
+    val bluetooth: List<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            listOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
 
     /**
      * What the app asks for before it pairs, connects or starts a workout: [bluetooth], plus notifications for the

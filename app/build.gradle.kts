@@ -25,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "org.openstrap.app"
-        minSdk = 31
+        minSdk = 30 // Android 11
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
