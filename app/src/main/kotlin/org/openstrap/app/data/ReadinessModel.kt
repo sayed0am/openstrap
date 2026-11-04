@@ -151,7 +151,8 @@ private fun Recovery.restingHeartRate(tonight: Night, base: Baseline?): Contribu
 /** Sleep balance: debt built over the last 14 nights, against need (naps count). */
 private fun Recovery.sleepBalance(nights: List<Night>, tonight: Night, sleepNeed: Int): Contributor? =
     sleepDebtMinutes(nights, tonight.day, sleepNeed)?.let { debt ->
-        val score = (100 - SLEEP_DEBT_POINTS_PER_HOUR * debt / 60f).toInt().coerceIn(0, 100)
+        val scored = (debt - SLEEP_DEBT_FREE_MINUTES) / (SLEEP_DEBT_ZERO_MINUTES - SLEEP_DEBT_FREE_MINUTES)
+        val score = (100 * (1 - scored)).toInt().coerceIn(0, 100)
         Contributor(Factor.SleepBalance, score, Detail.SleepDebt(if (debt < SLEEP_DEBT_NAMED_FROM) 0 else debt.toInt()))
     }
 
@@ -250,7 +251,7 @@ fun Recovery.softMinimum(parts: List<Pair<Float, Int>>): Double {
 /**
  * Sleep debt in minutes at the morning [day], from the last [SLEEP_DEBT_NIGHTS] nights of [nights] (oldest to
  * newest; missing nights skipped; naps count toward total sleep). Each night d = need − TST: a short night adds d
- * on top of the decayed debt, a long one repays min(½·surplus, 60 min). Null with fewer than [SLEEP_DEBT_MIN_NIGHTS].
+ * on top of the decayed debt, a long one repays its surplus, at most 2 h. Null with fewer than [SLEEP_DEBT_MIN_NIGHTS].
  * Deficits build near-linearly over 14 days without people noticing (Van Dongen 2003); about 1 h of debt took 4
  * nights to clear (Kitamura 2016).
  */

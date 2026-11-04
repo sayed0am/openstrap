@@ -32,7 +32,8 @@ fun Recovery.workoutRanges(
 
 /**
  * Acute:chronic workload ratio for the Load screen only, labelled contested: it is out of Readiness because the
- * evidence is against scoring with it (evidence-review.md, "Load screen"). Null before 14 days of load.
+ * evidence is against scoring with it (evidence-review.md, "Load screen"). Null before 21 days of load: the 7-day
+ * acute week plus [ACWR_MIN_CHRONIC_DAYS] of chronic load before it.
  */
 fun Recovery.acwr(daily: List<Float>): Float? {
     // Uncoupled: the chronic EWMA stops where the acute week begins, so this week's load isn't in both.

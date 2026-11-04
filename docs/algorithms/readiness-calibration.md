@@ -17,7 +17,7 @@ The strap computes its own Readiness (channel module `0x0049`). OpenStrap comput
 
 A single day can't support a fit, so we collect first. Possible changes once there's data:
 
-* Scale OpenStrap's HRV and resting-HR parts to match the strap's (HRV 25 % and RHR 15 % of our weight).
+* Scale OpenStrap's HRV and resting-HR parts to match the strap's (HRV 30 % and RHR 22 % of our weight).
 * Use the strap's parts while OpenStrap's own baselines are still learning.
 * Keep OpenStrap's sleep parts either way. The strap leaves sleep out, so its score reads high after a short night.
 

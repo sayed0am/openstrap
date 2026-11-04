@@ -107,13 +107,16 @@ class HealthspanEngineComputeTest {
     }
 
     private companion object {
-        /** As worked out before the nights' heart rate and stages were read in batches, with SQLite's days in UTC. */
+        /**
+         * As worked out before the nights' heart rate and stages were read in batches, with SQLite's days in UTC; resting HR
+         * and the time-asleep reference moved with Aune 2017 and Saint-Maurice 2024.
+         */
         const val SNAPSHOT =
-            "Outcome(result=Result(age=39, estimate=38.072422, low=34, high=42, pace=null, terms=[Term(habit=RestingHr, yea" +
-            "rs=-0.3779975, value=51.85, reference=58.550003), Term(habit=Regularity, years=-0.342, value=98.50427, referen" +
+            "Outcome(result=Result(age=39, estimate=37.76176, low=34, high=42, pace=null, terms=[Term(habit=RestingHr, yea" +
+            "rs=-0.68865836, value=51.85, reference=58.550003), Term(habit=Regularity, years=-0.342, value=98.50427, referen" +
             "ce=81.0), Term(habit=Steps, years=-0.2075821, value=8081.3955, reference=7803.0), Term(habit=Strength, years=" +
             "0.0, value=0.0, reference=0.0), Term(habit=Vo2max, years=0.0, value=null, reference=37.94), Term(habit=TimeAsl" +
-            "eep, years=0.0, value=480.0, reference=390.0)], fitnessCapped=false, early=true, asOf=1764460800, sex=Male), w" +
+            "eep, years=0.0, value=480.0, reference=420.0)], fitnessCapped=false, early=true, asOf=1764460800, sex=Male), w" +
             "ithheld=null, age=39, missing=[], firstEstimate=null, lastWeek=null)"
     }
 }

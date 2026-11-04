@@ -148,8 +148,8 @@ object SleepRegularity {
     )
 
     /**
-     * The count for one night: [asleepMinutes] (TST), [wasoMinutes] and the sleep period ([onset] to [finalWake], epoch
-     * seconds) for efficiency, [regularity] from [result], and the midpoint as local minutes after midnight.
+     * The count for one night: [asleepMinutes] (TST), [wasoMinutes] and [sleepPeriodMinutes] (onset to final wake) for
+     * efficiency, [regularity] from [result], and the midpoint as local minutes after midnight.
      */
     fun health(asleepMinutes: Int, wasoMinutes: Int?, sleepPeriodMinutes: Int?, regularity: Result?, age: Int?, midpointMinutes: Int): Health {
         val max = if (age != null && age >= 65) DURATION_GOOD_MAX_65 else DURATION_GOOD_MAX
