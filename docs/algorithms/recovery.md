@@ -131,7 +131,7 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 ### Combining contributors
 
 * **Weighting:** weights are renormalised over the contributors that have data. Without HRV or resting HR there is no score (see "Withheld").
-* **Red-flag cap:** if any physiological contributor (HRV, resting HR, temperature, breathing, blood oxygen) is below `RED_FLAG` = 40, readiness can't exceed that contributor + 30. One collapsed body signal shouldn't be averaged away by a good sleep score.
+* **Red-flag cap:** if any physiological contributor (HRV, resting HR, temperature, breathing) is below `RED_FLAG` = 40, readiness can't exceed that contributor + 30. One collapsed body signal shouldn't be averaged away by a good sleep score. Blood oxygen is left out: a wrist reading is off by 2 to 4 points and drops with a cold hand or a loose band, so a low night is more often the sensor.
 * **Soft minimum (comparison only):** `Recovery.softMinimum` combines the same contributors Zepp's way, w = weight · e^(−(s/100)²) and Σ w·s / Σ w, in place of the weighted mean and the red-flag cap (the Alert cap still applies). It is returned as `softMinScore` and written by the backtest; the app doesn't show it while `SOFT_MIN_FUSION` is off. See [readiness-calibration.md](readiness-calibration.md).
 * **Body signals off baseline:** in the Alert state (below) readiness is capped at `ALERT_CAP` = 54 and `strainAlert` is set. The cap is `FAIR_FROM` − 1, one below where the "Moderate" band starts at 55, so a capped Alert day always rates in the lowest band ("Take it easy"). A cap of 55 would put a capped Alert day in Moderate, on a day their body signals say otherwise. Nights in Watch or Alert stay out of every Readiness baseline.
 * **Wording** (FDA General Wellness guidance, revised 6 January 2026): the feature is called "Body signals off baseline" and never names illness, infection, fever or COVID. Copy lives in `BodySignalsCopy`; the push text is the evidence review's: "Several of your overnight signals (…) are outside your usual range for the second night. This can happen with heavy training, alcohol, travel, poor sleep, or when your body is fighting something off. Consider an easier day. If you feel unwell, checking in with a healthcare professional may be helpful. This is a wellness estimate, not a medical assessment." No screen shows a temperature threshold.
@@ -149,7 +149,7 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 
 `BodySignals.kt`, a night-by-night state machine (evidence-review.md, "Body-signal alerts"). Resting HR is the best-validated early-warning signal (NightSignal, Alavi et al. 2022: +3 bpm a warning, ≥ +4 bpm on 2 consecutive nights an alert). Persistence is what controls false alarms (≥ 3 anomalous nights in 7 cut breathing rate's healthy-period hit rate from 13.4 % to 0.88 %, Natarajan et al. 2021). Only different signal families vote: cardiac, thermal and respiratory; HRV + resting HR is closer to one signal counted twice. That conjunction part is reasoning, not a measured result.
 
-**Baseline per signal:** the last `ALERT_BASELINE_NIGHTS` = 28 nights, excluding the `RECENT_EXCLUDED` = 2 most recent and any Watch or Alert nights; median + 1.4826·MAD with the Readiness floors. Resting HR and HRV count valid nights only. Temperature and breathing count any night with a value. No alerts before `MIN_ALERT_NIGHTS` = 14 valid nights. Resting HR here is the overnight mean sleep HR (NightSignal's metric); Readiness keeps the lowest 30-minute window. On a night whose own values fail the validity rule, the strap's values stand in.
+**Baseline per signal:** the last `ALERT_BASELINE_NIGHTS` = 28 nights, excluding the `RECENT_EXCLUDED` = 5 most recent and any Watch or Alert nights; median + 1.4826·MAD with the Readiness floors. Every signal counts valid nights only, so a short or patchy night's temperature or breathing rate can't move the baseline. No alerts before `MIN_ALERT_NIGHTS` = 14 valid nights. Resting HR here is the overnight mean sleep HR (NightSignal's metric); Readiness keeps the lowest 30-minute window. On a night whose own values fail the validity rule, the strap's values stand in.
 
 | Flag | Condition | Role |
 |---|---|---|
@@ -162,7 +162,7 @@ The strap's method is unknown and may change with firmware, and a baseline that 
 * **Watch** (in the app, no push): any single core flag, or `RhrWatch` + `HrvSupport`.
 * **Alert** (one push per morning after a sync; Readiness capped at 54), any of: `RhrFlag` on 2 consecutive nights; ≥ 2 different core families on the same night; a core flag tonight and on ≥ 3 of the last 7 nights; rr − c ≥ `RR_ALERT_PER_MIN` = 3.0 /min and ≥ 2 spreads, on its own.
 * One missing night is bridged; two or more reset persistence. An alert clears after `CLEAR_NIGHTS` = 2 consecutive nights with no core flag.
-* A likely cause is annotated, never used to suppress: a previous day with TRIMP > `HARD_DAY_RATIO` = 1.5× the 28-day EWMA load (not CTL, which Readiness's previous-day load uses). (Day tags were removed from the app; old `day_tag` rows are still exported and imported.)
+* A likely cause is annotated, never used to suppress: a previous day with TRIMP > `HARD_DAY_RATIO` = 1.5× fitness (CTL to the day before), the same chronic load and ratio Readiness's previous-day contributor uses. (Day tags were removed from the app; old `day_tag` rows are still exported and imported.)
 * SpO2 and desaturations never vote; they stay in Readiness and the Breathing card. +0.5 °C is the lowest temperature line that won't fire every menstrual cycle (the luteal rise is about +0.3 °C), and it is never shown on screen.
 
 ## Energy (0–100, minute by minute)
@@ -213,6 +213,8 @@ Future: learn the user's own no-wear drift from their quiet, awake, worn minutes
 ### Stress exclusion around workouts
 
 The strap's stress score is HRV-based, and exercise suppresses HRV whatever the mind is doing, so a reading during or just after a workout isn't stress. The strap logged none inside the workouts we have, but nothing guarantees that. `stressExcluded` covers every stored workout's active time (phone workouts less their pauses, via `activeRanges`; strap workouts start to end) plus `STRESS_AFTER_WORKOUT_SECONDS` = 20 min after each active part ends. 20 min is the ≈20-min half-life of the post-exercise debt (`EPOC_DECAY` = 0.966 a minute), so a pause is excluded for its first 20 min as well. Membership uses `inWorkout`, the same per-minute test daily load uses.
+
+After a hard workout HRV stays suppressed for longer than heart rate: about an hour after moderate-to-vigorous work and 90 minutes or more after intervals (Stanley 2013, Michael 2017). `stressTails` adds `STRESS_AFTER_HARD_WORKOUT_SECONDS` = 60 min from a finished workout's end when its aerobic training effect is ≥ `HARD_WORKOUT_TE` = 3, and `STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS` = 90 min from ≥ `VERY_HARD_WORKOUT_TE` = 4. Only stress readings are dropped in that tail (Charge, the calm level, the day's stress figures). The minutes keep no workout phase, so heart rate there is effort only while moving, and daily load keeps its 20 min.
 
 * **Energy:** inside the window a minute never becomes Stress or Relax, and a reading taken there isn't held into later minutes. Low-intensity workout minutes (strength between sets, yoga) that the intensity states don't claim become Activity, since they are part of a recorded workout and daily load counts them too; in the 20 min after they become Exercise recovery, the same base drain as the debt-driven recovery. In either, a minute under 10 % of reserve is plain Rest: the heart is back at sitting level.
 * **Calm level:** readings in the window are left out (`calmStress`).
@@ -284,7 +286,7 @@ Code: `LoadModel.kt`.
 
 `Activity.kt`. The cadence thresholds are established; a chest- or arm-worn strap's step counting is not validated at all.
 
-* **MVPA** (`mvpa`): moderate at cadence ≥ `MODERATE_CADENCE` = 100 at every age, vigorous at ≥ `VIGOROUS_CADENCE` = 130 (Tudor-Locke). A minute counts only inside a run of ≥ `CADENCE_RUN_MINUTES` = 2 consecutive qualifying minutes (design choice). Then heart rate, for effort without steps: awake, ≥ 10 consecutive minutes at ≥ 40 % of reserve (vigorous ≥ 60 %), with < 100 steps or inside a workout, labelled "HR-assisted". No minute counts twice.
+* **MVPA** (`mvpa`): moderate at cadence ≥ `MODERATE_CADENCE` = 100 at every age, vigorous at ≥ `VIGOROUS_CADENCE` = 130 (Tudor-Locke). A minute counts only inside a run of ≥ `CADENCE_RUN_MINUTES` = 2 consecutive qualifying minutes (design choice). Then heart rate, for effort without steps: awake, ≥ `HR_RUN_MINUTES` = 5 consecutive minutes at ≥ 40 % of reserve (vigorous ≥ 60 %), with < 100 steps or inside a workout, labelled "HR-assisted". WHO 2020 dropped the 10-minute bout rule. No minute counts twice.
 * MVPA-equivalent = moderate + 2·vigorous over the last 7 days, against 150 min a week (WHO 2020). Raw minutes are shown too.
 * **Steps:** the strap's daily counter, else the summed minutes; a divergence over 5 % is flagged.
 * **Step goal framing:** "most of the benefit is reached" by about 7,000 steps from 60, 8,000 below (Paluch et al. 2022: mortality plateaus at 6,000–8,000 and 8,000–10,000). The user's own goal is unchanged.
@@ -305,8 +307,8 @@ Code: `LoadModel.kt`.
 | Some steps, or a neighbouring minute stepped | `LIGHT_FACTOR` 1.3·b |
 | Awake, sedentary | `SEDENTARY_FACTOR` 1.15·b |
 
-* Cadence MET (`cadenceMet`, CADENCE-Adults, Tudor-Locke et al. 2019): up to 60 y, 60 → 2.0, 100 → 3, 130 → 6, linear between, held at 6 above. From 61: 100 → 3, 110 → 4, 120 → 5, then (our extrapolation) 6 at 130. Sustained ≥ 145 spm (this and a neighbouring minute) uses ACSM running, VO2 = 3.5 + 0.2·v with v from the step length.
-* HR branch, "HR-assisted": awake, outside a workout, < 20 steps, ≥ 10 consecutive minutes with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max/3.5 − 1)))). VO2max is the user's estimate when there is one, else `DEFAULT_VO2MAX` = 35 ml/kg/min (an unverified placeholder).
+* Cadence MET (`cadenceMet`, Moore et al. 2021): VO2 = −0.4367 + 0.001430·c² − 0.001455·age·c − 0.000009012·BMI·c² + 0.0008086·age·height (ml/kg/min, c in steps/min, height in cm), MET = VO2 ÷ 3.5, at least 1, age held to `MOORE_MIN_AGE`..`MOORE_MAX_AGE` = 21..84. About 1.6 / 3.3 / 5.4 at 60 / 100 / 130 spm for a 30-year-old, 175 cm, BMI 22.9. Sustained ≥ 145 spm (this and a neighbouring minute) uses ACSM running, VO2 = 3.5 + 0.2·v with v from the step length.
+* HR branch, "HR-assisted": awake, outside a workout, < 20 steps, ≥ 5 consecutive minutes (`HR_BRANCH_RUN_MINUTES`, the same as active minutes) with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max/3.5 − 1)))). VO2max is the user's estimate when there is one, else `DEFAULT_VO2MAX` = 35 ml/kg/min (an unverified placeholder).
 * The daily total is "partial" below 20 h of data; PAL = TEE/BMR outside 1.2–2.5 is flagged. No thermic effect of food.
 * 0.95, 1.15 and 1.3 are conventions, not 2024 Compendium values (sleeping and sitting quietly are both 1.0 there).
 

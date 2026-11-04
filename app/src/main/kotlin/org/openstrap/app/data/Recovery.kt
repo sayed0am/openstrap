@@ -151,6 +151,17 @@ object Recovery {
      * to where it settles.
      */
     const val STRESS_AFTER_WORKOUT_SECONDS = 20 * 60L
+    /**
+     * After a hard workout HRV stays down for longer than its heart rate: about an hour after moderate-to-vigorous
+     * work and 90 minutes or more after intervals (Stanley 2013, Michael 2017). A workout with aerobic training effect
+     * from [HARD_WORKOUT_TE] keeps its stress readings out for [STRESS_AFTER_HARD_WORKOUT_SECONDS], from
+     * [VERY_HARD_WORKOUT_TE] for [STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS] ([stressTails]). Only stress readings are
+     * dropped there: Charge's workout phase and daily load keep the 20 minutes, as they read heart rate, not HRV.
+     */
+    const val HARD_WORKOUT_TE = 3f
+    const val VERY_HARD_WORKOUT_TE = 4f
+    const val STRESS_AFTER_HARD_WORKOUT_SECONDS = 60 * 60L
+    const val STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS = 90 * 60L
 
     const val STRESS_BASELINE_DAYS = 14
     const val MIN_STRESS_DAYS = 3
@@ -198,6 +209,9 @@ object Recovery {
      * body signals 13 %, load 4 %, renormalised over the contributors present. Breathing disturbances (a stable trait,
      * so only a fixed offset inside Readiness) moved to the Breathing card ([breathingDisturbances]); training load
      * balance (ACWR) moved to the Load screen ([acwr]). Their names on screen are presentation's (`TabCopy.factorName`).
+     * [physiological] contributors can trigger the red-flag cap. Blood oxygen can't: a wrist SpO2 reading is off by 2 to
+     * 4 points and drops with a cold hand or a loose band, so one low night is more often the sensor than the body
+     * (evidence-review.md, "Readiness").
      */
     enum class Factor(val weight: Float, val physiological: Boolean = false) {
         HrvBalance(0.30f, physiological = true),
@@ -207,7 +221,7 @@ object Recovery {
         Temperature(0.06f, physiological = true),
         Breathing(0.04f, physiological = true),
         PreviousDayLoad(0.04f),
-        BloodOxygen(0.03f, physiological = true),
+        BloodOxygen(0.03f),
         RecoveryIndex(0.03f),
     }
 

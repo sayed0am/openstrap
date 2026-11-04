@@ -58,11 +58,12 @@ fun Recovery.calmStress(
  * whatever the mind is doing, so a reading during a workout or while the heart is still settling after one says
  * nothing about stress. The window is each of [workouts]' active parts (phone and strap, as
  * [workoutRanges] gives them) plus [STRESS_AFTER_WORKOUT_SECONDS] after each part ends. A pause therefore stays
- * excluded for its first 20 minutes too, being the same settling-down. Readings in it are kept and exported, but
+ * excluded for its first 20 minutes too, being the same settling-down. After a hard workout [tails] (from
+ * [stressTails]) carry it on for an hour or more. Readings in it are kept and exported, but
  * Charge, the calm level and the day's stress figures and charts leave them out (see [stressCounts]).
  */
-fun Recovery.stressExcluded(workouts: List<LongRange>): List<LongRange> =
-    workouts.flatMap { listOf(it, it.last + 1..it.last + STRESS_AFTER_WORKOUT_SECONDS) }
+fun Recovery.stressExcluded(workouts: List<LongRange>, tails: List<LongRange> = emptyList()): List<LongRange> =
+    workouts.flatMap { listOf(it, it.last + 1..it.last + STRESS_AFTER_WORKOUT_SECONDS) } + tails
 
 /** Whether a stress reading at [t] counts as daily stress: not inside [excluded] (from [stressExcluded]). */
 fun Recovery.stressCounts(t: Long, excluded: List<LongRange>): Boolean = !inWorkout(t / 60 * 60, excluded)
@@ -403,10 +404,15 @@ fun Recovery.minutes(
     offWrist: Set<Long> = emptySet(),
     /** Recorded wear changes (time, worn or null for unknown), each holding until the next ([Minute.worn]). */
     wear: List<Pair<Long, Boolean?>> = emptyList(),
+    /**
+     * Hard workouts' longer stress exclusion ([stressTails]). Only the stress readings in it are dropped: the minutes
+     * keep no [WorkoutPhase], so heart rate there is effort only while moving, as anywhere outside a workout.
+     */
+    stressTails: List<LongRange> = emptyList(),
 ): List<Minute> {
-    val excluded = stressExcluded(workouts)
+    val excluded = stressExcluded(workouts, stressTails)
     val active = MinuteRanges(workouts)
-    val after = MinuteRanges(excluded)
+    val after = MinuteRanges(stressExcluded(workouts))
     val hrByMinute = hr.associate { (it.first / 60 * 60) to it.second }
     // A reading taken in the exclusion must not be held into the minutes after it either.
     val stressSorted = stress.filter { stressCounts(it.first, excluded) }.sortedBy { it.first }

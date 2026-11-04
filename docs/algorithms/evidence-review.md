@@ -95,7 +95,7 @@ New weights (design choice), renormalised over the contributors present:
 * Autonomic 52 %, sleep 28 %, other body signals 13 %. Polar's only hint is that HR has "the biggest influence".
 * **Withhold Readiness** unless an HRV or resting HR contributor is present. On 2026-10-16, sleep alone gave 52 against the strap's 91. Under this rule that day shows a Sleep score and the strap's placeholder instead.
 * Breathing disturbances move out: they're a stable trait, so inside Readiness they only add a fixed offset.
-* Keep the red-flag cap (`RED_FLAG` = 40, readiness ≤ contributor + 30) and the alert cap of 54 (one below the Fair band). Neither has a source; both are reasonable guards.
+* Keep the red-flag cap (`RED_FLAG` = 40, readiness ≤ contributor + 30) and the alert cap of 54 (one below the Fair band). Neither has a source; both are reasonable guards. Blood oxygen doesn't trigger the red-flag cap: wrist SpO2 is off by 2 to 4 points, so one low night is more often the sensor than the body.
 * Sleep was the main driver of a reconstructed Oura Readiness (R² 0.71 from Oura's own inputs; questionnaires R² 0.29, [De Bot et al. 2025](https://www.scitepress.org/PublishedPapers/2025/137331)). Limiting sleep's share stops one short night from carrying the score. The weights are the first thing to backtest.
 
 ### The strap's own nightly HRV and resting HR (Probable)
@@ -166,7 +166,7 @@ Today's rule fires on one night with two or more conditions. It has the right co
 
 ### Rule (Probable)
 
-Baseline per signal: the last 28 nights (valid nights only for resting HR and HRV), leaving out the 2 most recent and any Watch or Alert nights; median + 1.4826·MAD; floors as for Readiness. No alerts before 14 valid nights. A 28-night window covers a whole menstrual cycle.
+Baseline per signal: the last 28 valid nights, leaving out the 5 most recent and any Watch or Alert nights (resting HR and temperature start rising 3 to 5 days before symptoms, [Mishra 2020](https://www.nature.com/articles/s41551-020-00640-6)); median + 1.4826·MAD; floors as for Readiness. No alerts before 14 valid nights. A 28-night window covers a whole menstrual cycle.
 
 RHR here is the overnight mean sleep HR (the NightSignal metric). Readiness keeps the lowest-30-minute definition.
 
@@ -187,7 +187,7 @@ SpO2 and desaturations are left out; they stay in Readiness and the Breathing ca
   * a core flag tonight and on ≥ 3 of the last 7 nights;
   * rr − c ≥ 3.0 /min and ≥ 2 spreads, on its own.
 * One missing night is bridged; two or more reset persistence. The alert clears after 2 nights in a row with no core flag.
-* Likely causes are noted, not suppressed: a previous day with TRIMP > 1.5× the 28-day EWMA load. Day tags were removed from the app.
+* Likely causes are noted, not suppressed: a previous day with TRIMP > 1.5× fitness (CTL to the day before), the chronic load Readiness's previous-day contributor uses. Day tags were removed from the app.
 
 ### Wording
 
@@ -261,19 +261,19 @@ Mifflin-St Jeor came within 10 % of measured resting metabolic rate in more peop
 | Some steps, or a neighbouring minute had steps | 1.3·b |
 | Awake, sedentary | 1.15·b |
 
-* Cadence MET (CADENCE-Adults, [Tudor-Locke et al. 2019](https://ijbnpa.biomedcentral.com/track/pdf/10.1186/s12966-019-0769-6)): up to 60 y, 60 → 2.0, 100 → 3, 130 → 6, linear between; sustained ≥ ~145 uses ACSM running. Age ≥ 61: 100 → 3, 110 → 4, 120 → 5. A fixed-stride ACSM walking equation gives about 3.7 METs at 130 spm, far below the measured 6.
-* HR branch, labelled "HR-assisted": awake, not in a workout, < 20 steps, ≥ 10 minutes in a row with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max_est/3.5 − 1)))).
+* Cadence MET (Moore et al. 2021, Med Sci Sports Exerc 53(1)): VO2 = −0.4367 + 0.001430·c² − 0.001455·age·c − 0.000009012·BMI·c² + 0.0008086·age·height (ml/kg/min, c in steps/min, height in cm), MET = VO2 ÷ 3.5, at least 1, age held to 21 to 84; sustained ≥ ~145 uses ACSM running. It replaces CADENCE-Adults' cut points ([Tudor-Locke et al. 2019](https://ijbnpa.biomedcentral.com/track/pdf/10.1186/s12966-019-0769-6)), which were set to classify intensity, not to cost a minute: 130 spm read as 6 METs where the measured cost for a typical adult is nearer 5.4. Moore's equation also takes age, BMI and height into account.
+* HR branch, labelled "HR-assisted": awake, not in a workout, < 20 steps, ≥ 5 minutes in a row with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max_est/3.5 − 1)))).
 * The daily total is "partial" below 20 h of wear. Flag PAL = TEE/BMR outside 1.2–2.5. No thermic effect of food unless stated.
 * 0.95, 1.15 and 1.3 are conventions, not 2024 Compendium values (sleeping and sitting quietly are both 1.0 there, [pacompendium.com](https://pacompendium.com/inactivity)).
 * *Active kcal* = Σ max(0, EE − b) over the minutes with data: what you burned above resting, the same definition as Apple's and Zepp's "active". Sleep minutes (0.95·b) are held at zero, so sleeping never subtracts. The day also keeps it per local hour, split by source: workout minutes, walking minutes (≥ 60 steps outside a workout, cadence or running MET) and everyday (the rest, HR-assisted minutes included).
-* *Phone workouts (design choice):* each active minute (minute start inside the shown range, pauses left out) takes max(motion, HR). Motion is the table above without the sleep row. HR is b + net(1 + x·(VO2max_est/3.5 − 1)) per heart rate sample, capped at 0.9·VO2max_est/3.5 METs rather than 6, and averaged over the minute; history minutes filled after a disconnect count the same way, spread over their minute. No 10-minute rule inside a workout. Every minute is then at least 1.15·b, so the workout's active kcal is its total less b per minute. Saved on the workout when it ends and again after a trim or a gap fill. The day uses these minutes with their active part scaled to the saved total, so a day and its workout always agree, even after a sync moves the steps or resting HR they were worked out with. While recording, a running total counts the minutes ended and the share gone of the one under way, and never goes down.
+* *Phone workouts (design choice):* each active minute (minute start inside the shown range, pauses left out) takes max(motion, HR). Motion is the table above without the sleep row. HR is b + net(1 + x·(VO2max_est/3.5 − 1)) per heart rate sample, capped at 0.9·VO2max_est/3.5 METs rather than 6, and averaged over the minute; history minutes filled after a disconnect count the same way, spread over their minute. No 5-minute rule inside a workout. Every minute is then at least 1.15·b, so the workout's active kcal is its total less b per minute. Saved on the workout when it ends and again after a trim or a gap fill. The day uses these minutes with their active part scaled to the saved total, so a day and its workout always agree, even after a sync moves the steps or resting HR they were worked out with. While recording, a running total counts the minutes ended and the share gone of the one under way, and never goes down.
 * *Daily history:* each day's totals, active, BMR, minutes with data, partial, workout and walking active kcal, and 24 hourly active values are kept in `daily_energy`. The day shown in the app rewrites its row; after each sync the last 7 days, any day without a row, and every day after a profile change are worked out again, on the strap's daily resting HR, today's max HR and that week's VO2max (these only move HR-assisted minutes).
 
 ### MVPA (Established thresholds)
 
 * Moderate at cadence ≥ 100 (optionally ≥ 105 for age ≥ 61, [McAvoy 2023](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10688086/)), vigorous at ≥ 130 ([Tudor-Locke](https://pmc.ncbi.nlm.nih.gov/articles/PMC6029645)).
 * A minute counts only inside a run of ≥ 2 qualifying minutes in a row (design choice).
-* HR-MVPA: awake, ≥ 10 minutes in a row with x ≥ 0.40 (vigorous ≥ 0.60), and < 100 steps or in a workout. Never counted twice.
+* HR-MVPA: awake, ≥ 5 minutes in a row with x ≥ 0.40 (vigorous ≥ 0.60), and < 100 steps or in a workout. Never counted twice. WHO 2020 dropped the 10-minute bout, and [Jakicic 2019](https://pubmed.ncbi.nlm.nih.gov/31095078/) found shorter bouts carry the same benefit.
 * MVPA-equivalent = moderate + 2·vigorous, against 150 min/week (WHO 2020). Raw minutes are shown too.
 
 ### Steps and distance (Contested)

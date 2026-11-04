@@ -199,7 +199,7 @@ private fun Recovery.previousDayLoad(dailyLoad: List<Float>): Contributor? {
     val chronic = fitnessFatigue(dailyLoad.dropLast(1)).last().ctl
     val yesterday = dailyLoad.last()
     val ratio = yesterday / max(chronic, MIN_CHRONIC_LOAD)
-    val score = if (ratio <= 1.5f) 100 else (100 - 25 * (ratio - 1.5f)).toInt().coerceIn(30, 100)
+    val score = if (ratio <= HARD_DAY_RATIO) 100 else (100 - 25 * (ratio - HARD_DAY_RATIO)).toInt().coerceIn(30, 100)
     return Contributor(Factor.PreviousDayLoad, score, Detail.Load(yesterday.toInt(), chronic.toInt()))
 }
 

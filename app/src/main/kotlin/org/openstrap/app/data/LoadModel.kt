@@ -31,6 +31,25 @@ fun Recovery.workoutRanges(
 ): List<LongRange> = (phone.flatMap { activeRanges(it, now) } + strap.map { it.start until it.end }).filter { !it.isEmpty() }
 
 /**
+ * The longer stress exclusion after hard workouts: from each finished phone or strap workout's end, the time its
+ * aerobic training effect asks for ([STRESS_AFTER_HARD_WORKOUT_SECONDS] from TE [HARD_WORKOUT_TE],
+ * [STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS] from [VERY_HARD_WORKOUT_TE]). Lighter workouts and ones without a training
+ * effect add nothing; [stressExcluded] already covers their 20 minutes.
+ */
+fun Recovery.stressTails(
+    phone: List<org.openstrap.app.data.db.AppWorkout>,
+    strap: List<org.openstrap.app.data.db.Workout>,
+): List<LongRange> {
+    fun tail(end: Long, te: Float?): LongRange? = when {
+        te == null || te < HARD_WORKOUT_TE -> null
+        te < VERY_HARD_WORKOUT_TE -> end..end + STRESS_AFTER_HARD_WORKOUT_SECONDS
+        else -> end..end + STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS
+    }
+    return phone.mapNotNull { w -> w.end?.let { tail(it, w.aerobicTrainingEffect) } } +
+        strap.mapNotNull { w -> tail(w.end, w.aerobicTrainingEffect) }
+}
+
+/**
  * Acute:chronic workload ratio for the Load screen only, labelled contested: it is out of Readiness because the
  * evidence is against scoring with it (evidence-review.md, "Load screen"). Null before 21 days of load: the 7-day
  * acute week plus [ACWR_MIN_CHRONIC_DAYS] of chronic load before it.
@@ -233,7 +252,10 @@ fun Recovery.daytimeRestingHr(daily: Map<Long, Float>, nightly: Map<Long, Float>
     return lowest + (percentile(pairs, 0.5f) ?: RHR_OFFSET_BPM)
 }
 
-/** A day whose TRIMP is more than [HARD_DAY_RATIO]× the chronic load: annotated as a likely cause of an alert. */
+/**
+ * A day whose TRIMP is more than [HARD_DAY_RATIO]× the chronic load (CTL to the day before, [fitnessFatigue]): annotated
+ * as a likely cause of an alert. Readiness's previous-day contributor starts taking points off at the same ratio.
+ */
 fun Recovery.hardDay(load: Float, chronic: Float): Boolean = load > HARD_DAY_RATIO * max(chronic, MIN_CHRONIC_LOAD)
 
 /**
@@ -262,15 +284,3 @@ fun Recovery.strain(trimp: Float): Float = STRAIN_MAX * (1 - exp(-trimp.coerceAt
 fun Recovery.loadPercentile(today: Float, history: List<Float>): Int? =
     if (history.size < 7) null else Math.round(100f * history.count { it <= today } / history.size)
 
-/** Acute (7-day) and chronic (28-day) exponentially weighted load, λ = 2/(N+1) (Williams et al. 2017). */
-fun Recovery.ewmaLoads(daily: List<Float>): Pair<Float, Float> {
-    val la = 2f / (7 + 1)
-    val lc = 2f / (28 + 1)
-    var a = daily.first()
-    var c = daily.first()
-    for (x in daily.drop(1)) {
-        a = la * x + (1 - la) * a
-        c = lc * x + (1 - lc) * c
-    }
-    return a to c
-}
