@@ -7,8 +7,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.SoftGlow
-import org.openstrap.app.ui.glow.StrongGlow
+import org.openstrap.app.ui.glow.draw.SoftGlow
+import org.openstrap.app.ui.glow.draw.StrongGlow
 import org.openstrap.app.ui.theme.MetricColors
 
 /** The glow and edge light's shared spec (widgets spec 6.2): what the cards and a widget's background are drawn with. */

@@ -69,7 +69,6 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
-import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
@@ -347,12 +346,8 @@ internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
 internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = null, onInfo: (() -> Unit)? = null) {
     val load = a.workout.trainingLoad
     val status = load?.let { TodayCopy.loadStatus(it.toFloat(), usual, endOfDay = true) }
-    val edge = when (status) {
-        LoadBand.Above -> EdgeStatus.Above
-        LoadBand.Below -> EdgeStatus.Below
-        else -> EdgeStatus.Usual
-    }
-    EdgeCard(MetricColors.load, Modifier.fillMaxWidth(), status = edge) {
+    val off = status == LoadBand.Above || status == LoadBand.Below
+    PictureCard(MetricColors.load, Modifier.fillMaxWidth(), rim = Rim.End.takeIf { off }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val title = stringResource(R.string.glow_summary_load_title)
             Box(Modifier.weight(1f)) { EdgeTitle(title, SummaryCopy.loadTitle(a.workout.sportType)) }
@@ -363,7 +358,7 @@ internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = 
         }
         if (load != null) EdgeValue(
             load.toString(), null, SummaryCopy.loadLine(load, usual),
-            if (edge != EdgeStatus.Usual) MetricColors.load else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
         ) else EdgeValue(null, null, stringResource(R.string.glow_summary_load_none), waiting = false)
         SummaryCopy.timeToRecover(a.recoveryMinutes, a.ownRecoveryMinutes, a.workout.sportType)?.let {
             Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
@@ -425,7 +420,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
                         r.averageBpm?.let { stringResource(R.string.glow_summary_split_fastest_bpm, it) }
                             ?: stringResource(R.string.glow_summary_split_fastest)
                     } else r.averageBpm?.let { stringResource(R.string.glow_summary_split_average, it) },
-                    divider = i > 0, icon = AppIcons.Heart, offNormal = i == fastest,
+                    divider = i > 0, icon = AppIcons.Heart,
                 )
             }
             if (rows.isNotEmpty() && laps.isNotEmpty()) WorkoutDayHeader(stringResource(R.string.glow_summary_laps))

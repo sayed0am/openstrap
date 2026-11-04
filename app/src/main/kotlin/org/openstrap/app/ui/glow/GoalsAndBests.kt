@@ -42,7 +42,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.level
 import org.openstrap.app.ui.glow.draw.Edge
 
@@ -339,7 +338,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val seconds = mine.sumOf { it.activeSeconds }
             val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
-            EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+            PictureCard(GoalColor, Modifier.fillMaxWidth()) {
                 EdgeTitle(
                     stringResource(R.string.glow_goals_in_all),
                     pluralStringResource(R.plurals.glow_goals_workouts_count, mine.size, mine.size),

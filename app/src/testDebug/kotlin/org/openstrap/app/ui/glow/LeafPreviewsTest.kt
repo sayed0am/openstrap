@@ -29,7 +29,7 @@ class LeafPreviewsTest {
 
     private val previews: List<@Composable () -> Unit> = listOf(
         { ListRowPreview() },
-        { EdgeCardPreview() },
+        { PictureCardPreview() },
         { GlowCardPreview() },
         { GlowBarsPreview() },
         { NormalTrendPreview() },

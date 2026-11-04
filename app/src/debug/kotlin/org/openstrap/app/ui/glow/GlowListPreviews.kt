@@ -20,7 +20,7 @@ internal fun ListRowPreview() {
                 color = MetricColors.temperature,
                 value = "34.6",
                 status = say("Above your normal", "أعلى من معدلك"),
-                offNormal = true,
+                tag = org.openstrap.app.ui.dashboard.NewsTag("Below normal", goal = false),
             )
             ListRow(say("Breathing rate", "معدل التنفس"), MetricColors.sleepLight, null, say("After your first night", "بعد ليلتك الأولى"))
             val steps = WidgetSamples.steps(PreviewDay, previewLocale())

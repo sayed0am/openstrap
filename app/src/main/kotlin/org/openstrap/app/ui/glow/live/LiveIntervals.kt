@@ -43,7 +43,7 @@ import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
+import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PeakBars
 import org.openstrap.app.ui.glow.Segment
@@ -311,7 +311,7 @@ private fun RoundPeaks(rounds: List<AppWorkoutRound>, total: Int) {
     if (peaks.all { it == null }) return
     val shown = peaks.filterNotNull().joinToString(", ")
     val described = stringResource(R.string.workout_live_peaks_description, shown)
-    EdgeCard(WorkRed, Modifier.fillMaxWidth()) {
+    PictureCard(WorkRed, Modifier.fillMaxWidth()) {
         Text(stringResource(R.string.workout_live_peaks_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
         Spacer(Modifier.height(12.dp))
         PeakBars(
@@ -336,7 +336,7 @@ internal fun RepCard(r: WorkoutState.Recording, route: List<Route.Point>, readin
     val now = nowTicking()
     val m = intervalMoment(r, now, bpm, readings, route) ?: return
     val resting = m.phase is Phase.Rest
-    EdgeCard(if (resting) RestGreen else MetricColors.steps, Modifier.fillMaxWidth()) {
+    PictureCard(if (resting) RestGreen else MetricColors.steps, Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(
                 when (m.phase) {

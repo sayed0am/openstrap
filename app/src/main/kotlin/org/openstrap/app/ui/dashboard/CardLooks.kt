@@ -46,8 +46,60 @@ enum class Shape {
  * tell two cards apart, so two glows in a row, or two edge cards lit from one side, look the same whatever their
  * colours. Two Smalls side by side are neighbours too, so they need different edges.
  */
-data class CardLook(val tier: Tier, val hue: Hue, val edge: Edge? = null, val shape: Shape = Shape.Card) {
-    fun sameDesign(other: CardLook?): Boolean = other != null && tier == other.tier && edge == other.edge && shape == other.shape
+data class CardLook(val tier: Tier, val hue: Hue, val edge: Edge? = null, val shape: Shape = Shape.Card, val picture: PictureKind? = null) {
+    /**
+     * Same tier and shape, and the same picture (spec 2.5): two cards drawing one kind of picture look alike whatever
+     * their colours. A look with no picture yet still compares by [edge], until every screen gives its pictures.
+     */
+    fun sameDesign(other: CardLook?): Boolean = other != null && tier == other.tier && shape == other.shape &&
+        if (picture != null || other.picture != null) picture == other.picture else edge == other.edge
+}
+
+/**
+ * Every picture a card draws (spec 2.7). Each metric draws its own, and two neighbours never draw the same kind
+ * ([CardLook.sameDesign]). [None] is a card with words alone: a strip, Start a workout.
+ */
+enum class PictureKind {
+    /** Heart rate: the day's line through your resting range. */
+    Line,
+    /** Steps: the day's hourly bars. */
+    HourlyBars,
+    /** Recovery's Small and breathing disturbances: a dot a night through the band of your usual. */
+    WeekDots,
+    /** Last night: one bar split by stage. */
+    StageBar,
+    /** Last night on the Sleep tab: the hypnogram. */
+    Hypnogram,
+    /** Sleep regularity: the week's bed and wake bars against your usual times. */
+    BedWakeBars,
+    /** Habit Age: the range as a band on a scale of ages, your age a hairline. */
+    AgeScale,
+    /** Stress: the day as one strip, calm to high. */
+    DayStrip,
+    /** Skin temperature: a half dial centred on your normal. */
+    Dial,
+    /** Load: a level filling over the band of your usual. */
+    LevelFill,
+    /** Time to recover: a ring filling toward Ready. */
+    CountdownRing,
+    /** Active minutes: a block per stretch toward the week's target. */
+    Blocks,
+    /** Heart points: the last 7 days as bars (the zone split isn't stored). */
+    DayBars,
+    /** Naps: the day as a hairline, the nap as its stage strip at its time. */
+    NapDay,
+    /** Recharged: a fill from where the night began to where it ended. */
+    FillBar,
+    /** Drained: one bar split by what took it. */
+    SplitBar,
+    /** Your week: a ring a day. */
+    WeekRings,
+    /** A workout: its zone bar. */
+    ZoneBar,
+    /** Energy, as a glow: its curve so far. */
+    Curve,
+    /** Words alone. */
+    None,
 }
 
 /**

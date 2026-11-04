@@ -85,8 +85,6 @@ import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
 import androidx.compose.foundation.layout.BoxWithConstraints
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeStatus
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.level
 import org.openstrap.app.ui.theme.ControlSurface
@@ -204,7 +202,7 @@ fun GlowActivityScreen(
 @Composable
 private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
     // Unlit (its look), with the heart-red light travelling round its border, as on Today.
-    EdgeCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart), kind = EdgeKind.Value) {
+    PictureCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart)) {
         EdgeTitle(stringResource(R.string.glow_activity_start_workout), null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
         BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -321,10 +319,9 @@ private val HourPillsHeight = 56.dp
 private fun DayLoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
-    EdgeCard(
+    PictureCard(
         MetricColors.load, Modifier.fillMaxWidth(),
-        status = if (status == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
-        kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
+        rim = Rim.End.takeIf { status == LoadBand.Above }, onClick = onClick,
     ) {
         EdgeTitle(stringResource(R.string.glow_activity_load), TabCopy.loadBalance(r?.loadTrend))
         EdgeValue(

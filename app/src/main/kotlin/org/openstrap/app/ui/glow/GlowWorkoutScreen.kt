@@ -58,7 +58,6 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
@@ -276,7 +275,7 @@ private fun HeartRateCard(a: WorkoutAnalysis, trim: WorkoutTrim? = null) {
     }
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val at = scrubbed?.let { i -> values.getOrNull(i)?.let { v -> first + i * HeartStep to v.roundToInt() } }
-    EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(MetricColors.heart, Modifier.fillMaxWidth()) {
         val byZone = if (a.heartRate.isNotEmpty()) stringResource(R.string.glow_workout_heart_by_zone) else null
         EdgeTitle(
             stringResource(R.string.glow_summary_heart_rate), byZone,
@@ -374,7 +373,7 @@ private fun ZoneHeartLine(
  */
 @Composable
 private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
-    EdgeCard(MetricColors.calories, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier, onClick = onOpen) {
+    PictureCard(MetricColors.calories, Modifier.fillMaxWidth(), onClick = onOpen) {
         EdgeTitle(stringResource(R.string.glow_workout_in_your_day), null)
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
     }

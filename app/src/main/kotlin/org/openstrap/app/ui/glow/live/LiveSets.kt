@@ -55,7 +55,7 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
+import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.OutlineCard
@@ -230,7 +230,7 @@ private fun CompactCard(
             stringResource(title) to null
         }
     }
-    EdgeCard(color, Modifier.fillMaxWidth()) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
@@ -244,7 +244,7 @@ private fun CompactCard(
 /** Before the first set, or once rest is over: which set is next and its exercise. */
 @Composable
 private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onName: () -> Unit) {
-    EdgeCard(color, Modifier.fillMaxWidth()) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(if (number == 1) R.string.workout_live_sets_ready_first else R.string.workout_live_sets_rest_over),

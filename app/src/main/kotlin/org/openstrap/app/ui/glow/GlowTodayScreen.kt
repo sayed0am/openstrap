@@ -104,8 +104,6 @@ import org.openstrap.app.ui.glow.draw.heroStyle
 import org.openstrap.app.ui.glow.draw.WINDOW_RIM
 import org.openstrap.app.ui.glow.draw.AFTER_RIM
 import org.openstrap.app.ui.glow.draw.EVENING_BODY
-import org.openstrap.app.ui.glow.draw.EdgeStatus
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.presentation.topSports
 import org.openstrap.app.presentation.TabCopy
 
@@ -776,8 +774,8 @@ private fun TodayRow(
     // Last night opens the Sleep score's detail, as the Sleep tab's hero does (spec 3.3).
     val onOpenSleep = { openScore(org.openstrap.app.ui.dashboard.Score.Sleep) }
     when (slot.card) {
-        TodayCard.Offer -> offer?.let { OfferPanel(it, onRecordOffer, onDeclineOffer, edge = EdgeKind.Live) }
-        TodayCard.Suggestion -> suggestion?.let { SuggestionPanel(it, onSaveSuggestion, onDismissSuggestion, edge = EdgeKind.Earlier) }
+        TodayCard.Offer -> offer?.let { OfferPanel(it, onRecordOffer, onDeclineOffer, strip = true) }
+        TodayCard.Suggestion -> suggestion?.let { SuggestionPanel(it, onSaveSuggestion, onDismissSuggestion, strip = true) }
         TodayCard.Alerts -> AlertsStrip(s.alerts, onOpenMetric)
         TodayCard.CheckIn -> CheckInStrip(checkIn, onCheckIn)
         TodayCard.BodyMorning -> BodyList(
@@ -851,8 +849,7 @@ private fun TodayRow(
         TodayCard.LoadToday -> if (slot.size == CardSize.Small) SmallCard(
             MetricColors.load, stringResource(R.string.glow_today_load), ctx.rec?.load?.let { Math.round(it).toString() }, null,
             when { ctx.recoveryFailure != null -> FAILED_SHORT; ctx.rec == null -> ctx.waiting; else -> TodayCopy.loadWord(ctx.loadStatus) },
-            modifier, kind = EdgeKind.Progress, progress = ctx.loadShare,
-            edgeStatus = if (ctx.loadStatus == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
+            modifier, rim = Rim.End.takeIf { ctx.loadStatus == LoadBand.Above },
             onClick = { openScore(org.openstrap.app.ui.dashboard.Score.Load) },
         ) else LoadList(
             when (ctx.moment) {

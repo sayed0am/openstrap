@@ -757,7 +757,7 @@ internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistor
     ListRow(
         m.title, colorOf(m), v?.let { m.format(it) },
         if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-        offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        tag = org.openstrap.app.ui.dashboard.bodyTag(m, status), onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
         icon = m.rowIcon(),
     )
 }

@@ -49,8 +49,7 @@ internal val RowHairline = Color.White.copy(alpha = GlowLayout.DividerAlpha)
 
 /**
  * A grouped list: a dark panel with a title row ([title] left, an optional [note] right) over its rows, usually
- * [ListRow]s. Without a title the rows start at the top. With [onNote] the note is a way on ("All 9"), with a caret. When the screen asks for an edge ([LocalEdgeOverride]), as
- * Today does for a list right under another, the rows sit on an edge card in the neutral light instead.
+ * [ListRow]s. Without a title the rows start at the top. With [onNote] the note is a way on ("All 9"), with a caret.
  */
 @Composable
 fun ListPanel(
@@ -86,10 +85,6 @@ fun ListPanel(
     // Rows reach out over the side padding, so a tap lights the whole row, edge to edge. The card clips them to its
     // corners.
     val rows: @Composable ColumnScope.() -> Unit = { CompositionLocalProvider(LocalRowBleed provides GlowLayout.CardInset) { inner() } }
-    if (LocalEdgeOverride.current.edge != null) {
-        EdgeCard(EdgeNeutral, modifier.fillMaxWidth().clip(GlowLayout.CardShape), contentPadding = GlowLayout.ListPadding, content = rows)
-        return
-    }
     Column(
         modifier
             .fillMaxWidth()
@@ -133,8 +128,8 @@ private fun ListNote(note: String, onNote: (() -> Unit)?) {
 /**
  * A row in a [ListPanel]: the metric's [icon] in its ink [color] (or in [iconTint], as a workout's sport in white), the
  * [name] with its [status] under it, the [value] in dot-matrix digits in its own column on the right, and the tap caret
- * when [onClick] opens something (spec 2.5, Grouped list). Value and status take the metric colour only when
- * [offNormal]. A null [value] is a waiting row: a dim dash, the icon at 30%, and [status] says what it waits for ("After
+ * when [onClick] opens something (spec 2.5, Grouped list). Name and value stay white, the status Secondary. Off your
+ * normal, [tag] takes the status's place as a news tag ([NewsPill]), and a row has no rim. A null [value] is a waiting row: a dim dash, the icon at 30%, and [status] says what it waits for ("After
  * your first night"). A row that isn't a metric passes no icon. [divider] draws the hairline above the row.
  */
 @Composable
@@ -144,7 +139,8 @@ fun ListRow(
     value: String?,
     status: String?,
     modifier: Modifier = Modifier,
-    offNormal: Boolean = false,
+    /** Off your normal: the off tag in place of [status] (spec 2.5, Tags). */
+    tag: org.openstrap.app.ui.dashboard.NewsTag? = null,
     onClick: (() -> Unit)? = null,
     divider: Boolean = true,
     /** A null value draws the dim dash; false leaves the value column empty, for a row whose [status] is the answer. */
@@ -155,7 +151,7 @@ fun ListRow(
     ring: Float? = null,
 ) {
     val waiting = value == null && dash
-    val accent = if (offNormal && !waiting) color else Color.White
+    val accent = Color.White
     // Tapped, the row grows into what it opens (spec 3.5).
     val opening = cardOpening(onClick)
     val bleed = LocalRowBleed.current
@@ -180,13 +176,10 @@ fun ListRow(
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
             RowName(name)
-            if (status != null) Text(
+            if (tag != null && !waiting) NewsPill(tag)
+            else if (status != null) Text(
                 status,
-                color = when {
-                    waiting -> Color.White.copy(alpha = 0.45f)
-                    offNormal -> color
-                    else -> Color.White.copy(alpha = 0.6f)
-                },
+                color = if (waiting) Color.White.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.6f),
                 style = GlowType.secondary,
             )
         }

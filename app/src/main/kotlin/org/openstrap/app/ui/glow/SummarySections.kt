@@ -62,7 +62,6 @@ import org.openstrap.app.ui.workout.RoundLine
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
 import org.openstrap.app.ui.workout.familyColor
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
@@ -269,7 +268,7 @@ internal fun FamilySection(
 @Composable
 private fun RouteCard(summary: PhoneSummary) {
     if (!Route.mappable(summary.route)) return
-    EdgeCard(MetricColors.steps, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(MetricColors.steps, Modifier.fillMaxWidth()) {
         val climb = Route.climb(summary.route)?.let { stringResource(R.string.glow_summary_climb, Math.round(it)) }
         EdgeTitle(stringResource(R.string.glow_summary_route), climb)
         RouteMap(summary, Modifier.padding(top = 12.dp))
@@ -295,7 +294,7 @@ private fun SentenceCard(title: String, sentence: String) {
 private fun SetsCard(groups: List<ExerciseSets>, maxHr: Int) {
     val heartZones = LocalHeartZones.current
     val shares = remember(groups) { FamilySummary.peakShares(groups.flatMap { g -> g.sets.map { it.peak } }) }
-    EdgeCard(familyColor(Workouts.Family.Strength), Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(familyColor(Workouts.Family.Strength), Modifier.fillMaxWidth()) {
         EdgeTitle(stringResource(R.string.glow_summary_sets_title), stringResource(R.string.glow_summary_peak_heart_rate))
         var i = 0
         groups.forEachIndexed { gi, g ->
@@ -346,7 +345,7 @@ private fun RoundsCard(lines: List<RoundLine>, title: String, maxHr: Int) {
     val labelled = lines.size <= LabelledRounds
     val gap = if (labelled) 6.dp else 3.dp
     val shape = RoundedCornerShape(5.dp)
-    EdgeCard(familyColor(Workouts.Family.Intervals), Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(familyColor(Workouts.Family.Intervals), Modifier.fillMaxWidth()) {
         EdgeTitle(title, stringResource(R.string.glow_summary_peak_then_rest))
         Row(Modifier.fillMaxWidth().height(84.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
             lines.forEachIndexed { i, r ->
@@ -396,7 +395,7 @@ private fun RepTimesCard(times: List<Long>) {
     val gap = if (labelled) 6.dp else 3.dp
     val shape = RoundedCornerShape(5.dp)
     val color = familyColor(Workouts.Family.Intervals)
-    EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         EdgeTitle(stringResource(R.string.glow_summary_each_rep), stringResource(R.string.glow_summary_rep_times_time))
         Row(Modifier.fillMaxWidth().height(RoundColumnHeight + 14.dp).padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(gap), verticalAlignment = Alignment.Bottom) {
             times.forEachIndexed { i, t ->
@@ -431,7 +430,7 @@ private val RoundColumnHeight = 52.dp
 private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
     val color = familyColor(Workouts.Family.Games)
     val shares = remember(periods) { FamilySummary.peakShares(periods.map { it.averageBpm }) }
-    EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         EdgeTitle(
             stringResource(
                 when (of) {
@@ -504,7 +503,7 @@ private fun ZonesEdgeCard(zones: ZoneSeconds) {
     val minutes = remember(zones) { FamilySummary.zoneMinutes(zones) }
     val most = zones.indices.maxByOrNull { zones[it] } ?: 0
     CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Right)) {
-        EdgeCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
+        PictureCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
             EdgeTitle(stringResource(R.string.glow_summary_time_in_zones), FamilySummary.mostlyZone(zones))
             ZoneBar(
                 zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
@@ -581,7 +580,7 @@ private const val HeartPoints = 60
 private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled: Pair<Int, Int>? = null, chart: Boolean = true) {
     if (readings.size < 10 || (!chart && settled == null)) return
     val values = remember(readings) { FamilySummary.heartLine(readings, HeartPoints, window = 9) }
-    EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
         val range = Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}")
         val down = drop?.let { stringResource(R.string.glow_summary_heart_down, it) }

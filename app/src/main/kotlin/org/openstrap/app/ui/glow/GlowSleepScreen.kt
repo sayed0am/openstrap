@@ -62,7 +62,6 @@ import org.openstrap.app.ui.glow.draw.StageBarLook
 import org.openstrap.app.ui.glow.draw.stageTotals
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.stageColor
 
 /*
@@ -110,7 +109,7 @@ fun GlowSleepScreen(
                             MetricColors.sleepLight, stringResource(R.string.glow_sleep_breathing_title), null, null, AFTER_FIRST_NIGHT, m,
                             waiting = true,
                         )
-                        else -> EdgeCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), kind = EdgeKind.Value) {
+                        else -> PictureCard(MetricColors.sleepLight, Modifier.fillMaxWidth()) {
                             EdgeTitle(
                                 stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate),
                             )
@@ -254,7 +253,7 @@ private fun VitalsList(state: DayUiState, firstNights: Boolean, onOpen: (Metric)
         nightVitals(state, firstNights).forEachIndexed { i, v ->
             ListRow(
                 v.label, v.color, v.value, v.status,
-                offNormal = v.direction != null && v.direction != 0, onClick = { onOpen(v.metric) }, divider = i > 0,
+                tag = org.openstrap.app.ui.dashboard.bodyTag(v.metric, v.direction), onClick = { onOpen(v.metric) }, divider = i > 0,
                 icon = v.metric.rowIcon(),
             )
         }
@@ -270,7 +269,7 @@ private fun VitalsList(state: DayUiState, firstNights: Boolean, onOpen: (Metric)
 private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepRegularity.Result?, firstNights: Boolean, onOpen: () -> Unit) {
     val zone = ZoneId.systemDefault()
     val w = sleepWeek(state, LocalGoals.current.sleepSeconds, reg, zone)
-    EdgeCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onOpen) {
+    PictureCard(MetricColors.sleepDeep, Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
         EdgeTitle(stringResource(R.string.glow_sleep_regularity_title), stringResource(R.string.glow_sleep_last_7_nights))
         EdgeValue(
             reg?.sri?.roundToInt()?.toString(), null,
@@ -304,7 +303,7 @@ private fun RegularityCard(state: DayUiState, reg: org.openstrap.app.data.SleepR
 @Composable
 private fun BreathingCard(b: org.openstrap.app.data.Recovery.BreathingDisturbances, onInfo: () -> Unit) {
     // As high as its content: a number and a line, so a unit high would leave an empty band under them (spec 2.4).
-    EdgeCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), kind = EdgeKind.Value, onClick = onInfo) {
+    PictureCard(MetricColors.sleepLight, Modifier.fillMaxWidth(), onClick = onInfo) {
         EdgeTitle(stringResource(R.string.glow_sleep_breathing_title), stringResource(R.string.glow_sleep_early_estimate))
         EdgeValue(dotFormat("%.1f", b.perHour), stringResource(R.string.glow_sleep_an_hour), TabCopy.breathing(b))
     }
@@ -330,7 +329,7 @@ private fun NapsCard(state: DayUiState, modifier: Modifier, onOpen: () -> Unit) 
     val stages = state.napStages[naps.last().start].orEmpty()
     SmallCard(
         MetricColors.sleepDeep, TabCopy.napsTitle(naps.size), clockDuration(naps.sumOf { it.end - it.start }), null,
-        TabCopy.naps(naps.size, clock(naps.first().start)), modifier, kind = EdgeKind.Earlier, onClick = onOpen,
+        TabCopy.naps(naps.size, clock(naps.first().start)), modifier, onClick = onOpen,
         extra = if (stages.isEmpty()) null else ({ StageStrip(stages, Modifier.padding(top = 8.dp)) }),
     )
 }

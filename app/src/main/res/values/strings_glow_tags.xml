@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  News tags (spec 2.5, Tags): a small filled pill next to a card's number, or under a list row's name. One per number.
+  Goal tags cheer a goal met or passed. Off tags say a value is off your normal, either way: they are neutral words,
+  never praise or alarm. Keep every tag short, it sits beside a number on a small card.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Goal tag: today beats the best day you have ever had for this goal. -->
+    <string name="glow_tag_personal_best">Personal best</string>
+    <!-- Goal tag: today beats every day of the last 30. -->
+    <string name="glow_tag_best_month">Best this month</string>
+    <!-- Goal tag: twice the goal or more. -->
+    <string name="glow_tag_double_goal">Double goal</string>
+    <!-- Goal tag: how far past the goal, at 125% of it or more. The amount is in the metric's own unit, "+2,140 past goal". -->
+    <string name="glow_tag_past_goal">+<xliff:g id="amount" example="2,140">%1$s</xliff:g> past goal</string>
+    <!-- Goal tag: the goal met on this many days running, three or more. -->
+    <plurals name="glow_tag_in_a_row">
+        <item quantity="one"><xliff:g id="days" example="1">%d</xliff:g> day in a row</item>
+        <item quantity="other"><xliff:g id="days" example="3">%d</xliff:g> days in a row</item>
+    </plurals>
+    <!-- Goal tag: the goal met. -->
+    <string name="glow_tag_goal_met">Goal met</string>
+    <!-- Off tag for a body signal (resting heart rate, HRV, heart rate, breathing rate, skin temperature, blood oxygen). -->
+    <string name="glow_tag_above_normal">Above normal</string>
+    <!-- Off tag for a body signal. -->
+    <string name="glow_tag_below_normal">Below normal</string>
+    <!-- Off tag for Recovery, Stress or Load against your usual. -->
+    <string name="glow_tag_above_usual">Above usual</string>
+    <!-- Off tag for Recovery, Stress or Load against your usual. -->
+    <string name="glow_tag_below_usual">Below usual</string>
+    <!-- Off tag: last night was shorter than your usual. -->
+    <string name="glow_tag_short">Short</string>
+    <!-- Off tag: last night was longer than your usual. -->
+    <string name="glow_tag_long">Long</string>
+    <!-- Off tag for sleep regularity: bedtimes later than your usual. -->
+    <string name="glow_tag_later">Later</string>
+    <!-- Off tag for sleep regularity: bedtimes earlier than your usual. -->
+    <string name="glow_tag_earlier">Earlier</string>
+    <!-- Off tag for Habit Age: the estimate is older than your own age. -->
+    <string name="glow_tag_older">Older</string>
+    <!-- Off tag for Habit Age: the estimate is younger than your own age. -->
+    <string name="glow_tag_younger">Younger</string>
+    <!-- Off tag for breathing disturbances above your usual. -->
+    <string name="glow_tag_more_than_usual">More than usual</string>
+    <!-- Off tag for VO2 max trending up. -->
+    <string name="glow_tag_up">Up</string>
+    <!-- Off tag for VO2 max trending down. -->
+    <string name="glow_tag_down">Down</string>
+</resources>

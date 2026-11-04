@@ -706,7 +706,7 @@ private val EverydayKcal = Color.White.copy(alpha = 0.4f)
 private fun HourlyKcal(e: org.openstrap.app.data.EnergyExpenditure.Day, color: Color, onPick: (Int?) -> Unit) {
     val h = e.hourly
     val stacks = remember(h) { List(24) { listOf(h.workout[it], h.walking[it], h.everyday[it].coerceAtLeast(0f)) } }
-    EdgeCard(color, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    PictureCard(color, Modifier.fillMaxWidth().padding(top = 8.dp)) {
         EdgeTitle(stringResource(R.string.glow_activity_by_the_hour), CaloriesCopy.peak(h.total))
         val colors = listOf(color, WalkingKcal, EverydayKcal)
         StackedBars(

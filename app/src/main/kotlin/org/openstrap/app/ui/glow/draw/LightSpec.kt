@@ -6,10 +6,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import kotlin.math.abs
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import kotlin.math.exp
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.LevelFade
-import org.openstrap.app.ui.glow.SoftGlow
-import org.openstrap.app.ui.glow.StrongGlow
 /*
  * The light of the glow and edge cards as plain numbers: where each gradient runs, its colours and stops, the rim
  * shadows, the core and the hairline. Nothing here draws. A card in the app and a widget's bitmap both read these, so
@@ -315,3 +315,39 @@ fun edgePaint(light: EdgeLight, tint: Color, level: Float?, mood: GlowMood, w: F
         hairlineWidth = 1f * density,
     )
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* The widgets' edge glow. The app's cards dropped it on 2026-11-04 (spec 2.10); the home screen     */
+/* widgets keep it until they're redrawn as a step of their own.                                     */
+/* ------------------------------------------------------------------------------------------------ */
+
+/** How far past its level a level widget's light fades out. */
+internal val LevelFade = 40.dp
+
+/**
+ * An edge glow, after the CSS `box-shadow: inset` it was designed with: [alpha] of the colour, its hard edge [shift]
+ * in from the card's edge, blurred with a standard deviation of [sigma].
+ */
+internal class EdgeGlow(val alpha: Float, val shift: Dp, val sigma: Dp) {
+    /** How far in the glow reaches before it's gone. */
+    val depth: Dp get() = shift + sigma * 2.5f
+
+    /** Colour stops along [depth] (position 0..1 to alpha), scaled by the mood's [strength]. */
+    fun stops(strength: Float): List<Pair<Float, Float>> = List(STEPS + 1) { i ->
+        val at = i / STEPS.toFloat()
+        val x = depth.value * at
+        at to (alpha * strength * cover(x) / cover(0f) * (1f - at)).coerceIn(0f, 1f)
+    }
+
+    private fun cover(x: Float) = 1f / (1f + exp(-1.702f * (shift.value - x) / sigma.value))
+
+    private companion object {
+        const val STEPS = 8
+    }
+}
+
+/** A usual widget: the ink at 70% at the edge, reaching 48 dp in. */
+internal val SoftGlow = EdgeGlow(alpha = 0.70f, shift = 10.5.dp, sigma = 15.dp)
+
+/** Off your normal: the ink at 90% at the edge, reaching 72 dp in. */
+internal val StrongGlow = EdgeGlow(alpha = 0.90f, shift = 19.5.dp, sigma = 21.dp)
