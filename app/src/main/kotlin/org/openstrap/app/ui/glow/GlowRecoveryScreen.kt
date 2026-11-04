@@ -128,6 +128,7 @@ fun GlowRecoveryScreen(
                     )
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
+                    RecoveryCard.SkinTemp -> Unit
                     RecoveryCard.BodySignals -> SignalsList(signals, waiting, onOpenMetric)
                     RecoveryCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
                 }

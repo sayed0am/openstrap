@@ -4,7 +4,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.GridRow
 import org.openstrap.app.ui.glow.packGrid
 import org.openstrap.app.ui.glow.Pane
@@ -16,10 +15,22 @@ import org.openstrap.app.ui.glow.Pane
 class TabPlansTest {
     private val bools = listOf(false, true)
 
-    /** Fails, naming the pair, when any neighbours in [slots] look the same. */
+    /** Fails, naming the pair, when any neighbours in [slots] look the same, on a phone or on two columns. */
     private fun assertVaried(slots: List<TabSlot<*>>, wide: Boolean, what: String) {
-        val clash = tabClashes(slots, wide).firstOrNull() ?: return
-        throw AssertionError("$what: ${slots[clash.first].card} and ${slots[clash.second].card} look the same, ${slots[clash.first].look}")
+        for (across in if (wide) bools else listOf(false)) {
+            val clash = tabClashes(slots, wide, across).firstOrNull() ?: continue
+            throw AssertionError("$what across=$across: ${slots[clash.first].card} and ${slots[clash.second].card} look the same, ${slots[clash.first].look}")
+        }
+        // No picture kind twice on a tab, so no two neighbours can share one.
+        val pics = slots.mapNotNull { it.look.picture }.filter { it != PictureKind.None }
+        assertEquals(what, pics.distinct(), pics)
+    }
+
+    /** Fails when two Wides follow each other on a phone with no list between them (spec 2.5). */
+    private fun assertNoWidesInARow(slots: List<TabSlot<*>>, what: String) {
+        slots.zipWithNext { a, b ->
+            assertTrue("$what: ${a.card} and ${b.card} are two Wides in a row", !(a.size == CardSize.Wide && b.size == CardSize.Wide))
+        }
     }
 
     @Test fun `recovery is varied in every state`() {
@@ -28,6 +39,7 @@ class TabPlansTest {
             val f = RecoveryFacts(habitAge = habit, learning = learning, hasRecovery = has)
             val slots = recoveryCards(f)
             assertVaried(slots, wide, "$f wide=$wide")
+            assertNoWidesInARow(slots, "$f")
             // The same cards whether learning or not, and with or without a Recovery yet: only Habit Age comes and goes.
             assertEquals(recoveryCards(RecoveryFacts(habitAge = habit)).map { it.card }, slots.map { it.card })
             checked++
@@ -40,6 +52,8 @@ class TabPlansTest {
         for (breathing in bools) for (naps in bools) for (night in bools) for (wide in bools) {
             val f = SleepFacts(breathing = breathing, naps = naps, hasNight = night)
             assertVaried(sleepCards(f), wide, "$f wide=$wide")
+            // Spec 5.2 puts a lone breathing or naps Wide right under regularity: an open question against 2.5.
+            if (breathing == naps) assertNoWidesInARow(sleepCards(f), "$f")
             checked++
         }
         assertEquals(16, checked)
@@ -50,6 +64,7 @@ class TabPlansTest {
         for (today in bools) for (suggestion in bools) for (live in bools) for (wide in bools) {
             val f = ActivityFacts(isToday = today, suggestion = suggestion, live = live)
             assertVaried(activityCards(f), wide, "$f wide=$wide")
+            assertNoWidesInARow(activityCards(f), "$f")
             checked++
         }
         assertEquals(16, checked)
@@ -68,52 +83,77 @@ class TabPlansTest {
         }
     }
 
-    @Test fun `edges follow what each card means`() {
-        fun <C> look(slots: List<TabSlot<C>>, card: C) = slots.first { it.card == card }.look
+    @Test fun `each card draws its own picture`() {
+        fun <C> pictures(slots: List<TabSlot<C>>) = slots.associate { it.card to it.look.picture }
+        assertEquals(
+            mapOf(
+                RecoveryCard.Hero to PictureKind.WeekDots, RecoveryCard.Drivers to null, RecoveryCard.Charge to PictureKind.Curve,
+                RecoveryCard.Recharged to PictureKind.FillBar, RecoveryCard.Drained to PictureKind.SplitBar, RecoveryCard.SkinTemp to PictureKind.Dial,
+                RecoveryCard.BodySignals to null, RecoveryCard.HabitAge to PictureKind.AgeScale,
+            ),
+            pictures(recoveryCards()),
+        )
+        assertEquals(
+            mapOf(
+                SleepCard.Hero to PictureKind.Hypnogram, SleepCard.Vitals to null, SleepCard.Regularity to PictureKind.BedWakeBars,
+                SleepCard.Breathing to PictureKind.WeekDots, SleepCard.Naps to PictureKind.NapDay,
+            ),
+            pictures(sleepCards(SleepFacts(naps = true))),
+        )
+        assertEquals(
+            mapOf(
+                ActivityCard.Start to PictureKind.None, ActivityCard.Steps to PictureKind.HourlyBars, ActivityCard.ActiveMinutes to PictureKind.Blocks,
+                ActivityCard.HeartPoints to PictureKind.DayBars, ActivityCard.Load to PictureKind.LevelFill, ActivityCard.Facts to null,
+                ActivityCard.HeartRate to PictureKind.Line, ActivityCard.Workouts to null,
+            ),
+            pictures(activityCards()),
+        )
         val rec = recoveryCards()
-        assertEquals(CardLook(Tier.Edge, Hue.HabitAge, Edge.Left), look(rec, RecoveryCard.HabitAge))
         assertEquals(RecoveryCard.HabitAge, rec.last().card)
-        assertEquals(CardLook(Tier.List, Hue.Neutral), look(rec, RecoveryCard.BodySignals))
-        assertEquals(CardLook(Tier.Glow, Hue.Charge, shape = Shape.Tall), look(rec, RecoveryCard.Charge))
-        assertEquals(Edge.Bottom, look(rec, RecoveryCard.Recharged).edge)
-        assertEquals(Edge.Top, look(rec, RecoveryCard.Drained).edge)
-        val sleep = sleepCards(SleepFacts(naps = true))
-        assertEquals(Edge.Top, look(sleep, SleepCard.Regularity).edge)
-        assertEquals(Edge.Bottom, look(sleep, SleepCard.Breathing).edge)
-        assertEquals(Edge.Left, look(sleep, SleepCard.Naps).edge)
-        val act = activityCards()
-        assertEquals(CardLook(Tier.Level, Hue.Load, Edge.Left), look(act, ActivityCard.Load))
-        assertEquals(CardLook(Tier.List, Hue.Neutral), look(act, ActivityCard.Workouts))
-        assertEquals(Edge.Bottom, look(act, ActivityCard.HeartRate).edge)
-        assertEquals(Edge.Right, look(activityCards(ActivityFacts(live = true)), ActivityCard.HeartRate).edge)
+        assertEquals(Tier.Glow, rec.first { it.card == RecoveryCard.Charge }.look.tier)
+        assertEquals(Tier.Glow, activityCards().first { it.card == ActivityCard.Steps }.look.tier)
+        // Recharged and Drained are plain picture cards; lists are lists.
+        assertEquals(Tier.Picture, rec.first { it.card == RecoveryCard.Recharged }.look.tier)
+        assertEquals(CardLook(Tier.List, Hue.Neutral), rec.first { it.card == RecoveryCard.BodySignals }.look)
     }
 
-    @Test fun `sizes are back where the mock tags them`() {
+    @Test fun `sizes follow the ranking`() {
         fun <C> sizes(slots: List<TabSlot<C>>) = slots.associate { it.card to it.size }
         val rec = recoveryCards()
-        assertEquals(listOf(RecoveryCard.Charge, RecoveryCard.Recharged, RecoveryCard.Drained), rec.subList(2, 5).map { it.card })
-        assertEquals(listOf(CardSize.Tall, CardSize.Small, CardSize.Small), rec.subList(2, 5).map { it.size })
-        // The Tall and its Smalls share a column on two columns.
-        assertEquals(1, rec.subList(2, 5).map { it.pane }.distinct().size)
+        assertEquals(
+            listOf(RecoveryCard.Hero, RecoveryCard.Drivers, RecoveryCard.Charge, RecoveryCard.Recharged, RecoveryCard.Drained, RecoveryCard.SkinTemp,
+                RecoveryCard.BodySignals, RecoveryCard.HabitAge),
+            rec.map { it.card },
+        )
+        assertEquals(listOf(CardSize.Tall, CardSize.Small, CardSize.Small, CardSize.Wide), rec.subList(2, 6).map { it.size })
+        // The Tall and its Smalls share a column on two columns, Skin temperature under them, What drove it and Habit
+        // Age on the left.
+        assertEquals(listOf(Pane.Right), rec.subList(2, 7).map { it.pane }.distinct())
+        assertEquals(listOf(Pane.Left, Pane.Left), rec.filter { it.card == RecoveryCard.Drivers || it.card == RecoveryCard.HabitAge }.map { it.pane })
         assertTrue(packGrid(rec.map { it.size to it.card }).any { it is GridRow.TallPair })
         // Breathing disturbances and naps pair up only together; alone, either is a Wide.
         assertEquals(CardSize.Small, sizes(sleepCards(SleepFacts(breathing = true, naps = true)))[SleepCard.Breathing])
         assertEquals(CardSize.Small, sizes(sleepCards(SleepFacts(breathing = true, naps = true)))[SleepCard.Naps])
         assertEquals(CardSize.Wide, sizes(sleepCards(SleepFacts(breathing = true, naps = false)))[SleepCard.Breathing])
         assertEquals(CardSize.Wide, sizes(sleepCards(SleepFacts(breathing = false, naps = true)))[SleepCard.Naps])
+        assertEquals(CardSize.Wide, sizes(sleepCards())[SleepCard.Regularity])
         val act = sizes(activityCards())
+        assertEquals(CardSize.Large, act[ActivityCard.Steps])
         assertEquals(CardSize.Small, act[ActivityCard.ActiveMinutes])
         assertEquals(CardSize.Small, act[ActivityCard.HeartPoints])
+        assertEquals(CardSize.Wide, act[ActivityCard.Load])
+        assertEquals(CardSize.Wide, act[ActivityCard.HeartRate])
+        // The Today list sits between Load and Heart rate, and Heart rate between the two lists.
         assertEquals(
-            listOf(ActivityCard.Load, ActivityCard.Facts, ActivityCard.HeartRate),
-            activityCards().map { it.card }.dropWhile { it != ActivityCard.Load }.take(3),
+            listOf(ActivityCard.Load, ActivityCard.Facts, ActivityCard.HeartRate, ActivityCard.Workouts),
+            activityCards().map { it.card }.dropWhile { it != ActivityCard.Load },
         )
     }
 
-    @Test fun `the spec's two night sky cards in a row would clash`() {
-        // Spec 5.2 as first written: regularity and breathing disturbances both lit from the top, one after the other.
-        val night = CardLook(Tier.Edge, Hue.Sleep, Edge.Top)
-        val slots = sleepCards().map { if (it.card == SleepCard.Breathing) it.copy(look = night) else it }
+    @Test fun `two cards drawing one picture in a row would clash`() {
+        // Breathing disturbances drawn as regularity's bars, right under it.
+        val bars = sleepCards().first { it.card == SleepCard.Regularity }.look
+        val slots = sleepCards().map { if (it.card == SleepCard.Breathing) it.copy(look = bars) else it }
         assertEquals(listOf(2 to 3), tabClashes(slots, wide = false))
     }
 
@@ -129,7 +169,7 @@ class TabPlansTest {
     }
 
     @Test fun `on two columns a full card touches the top of both columns`() {
-        val glow = CardLook(Tier.Glow, Hue.Recovery)
+        val glow = CardLook(Tier.Glow, Hue.Recovery, picture = PictureKind.WeekDots)
         val list = CardLook(Tier.List, Hue.Neutral)
         // A hero over a run whose right column starts with a glow: not next in reading order, but right under it.
         val slots = listOf(

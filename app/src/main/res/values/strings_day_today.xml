@@ -31,6 +31,8 @@
     <string name="day_card_right_now">Right now</string>
     <string name="day_card_last_night">Last night</string>
     <string name="day_card_heart_rate">Heart rate</string>
+    <!-- The card with the day's stress as a strip, calm to high. -->
+    <string name="day_card_stress">Stress</string>
     <string name="day_card_activity">Steps</string>
     <string name="day_card_recovery">Recovery</string>
     <string name="day_card_charge">Energy</string>
