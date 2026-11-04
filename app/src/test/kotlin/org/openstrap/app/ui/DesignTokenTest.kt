@@ -248,7 +248,7 @@ class DesignTokenTest {
             "dashboard/SleepPanels.kt" to 1,
             "glow/AllMetricsScreen.kt" to 1,
             "glow/GlowActivityScreen.kt" to 2,
-            "glow/GlowCharts.kt" to 4,
+            "glow/GlowCharts.kt" to 3,
             "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,
         )

@@ -3,14 +3,7 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.presentation.dotFormat
 import org.openstrap.app.presentation.Ranges
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -31,7 +24,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
@@ -183,41 +175,18 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.o
                 val totals = stageTotals(b.byStage)
                 if (totals.isNotEmpty()) {
                     Spacer(Modifier.height(16.dp))
-                    StageBar(totals)
+                    // The stage bar: sized by [StageBarLook] as a widget's bar is ([stageBarSegments] lays that one out in
+                    // whole pixels the way this bar's Row does), its legend the stage's total by a square mark, "Deep 2 h 51".
+                    SegmentBar(
+                        totals.map { (stage, seconds) -> Segment(seconds.toFloat(), stageColor(stage)) },
+                        height = StageBarLook.HEIGHT_DP.dp, gap = StageBarLook.GAP_DP.dp, corner = StageBarLook.CORNER_DP.dp,
+                    )
                     Spacer(Modifier.height(10.dp))
-                    StageLegend(totals)
+                    Legend(
+                        totals.map { (stage, seconds) -> TabCopy.stageTotal(stage, seconds) to stageColor(stage) },
+                        swatch = RoundedCornerShape(2.dp), layout = LegendLayout.Flow,
+                    )
                 }
-            }
-        }
-    }
-}
-
-/**
- * The stage bar (chart kit): one 8 dp bar split by stage, deepest first, with 2 dp gaps, sized by [StageBarLook] as a
- * widget's bar is ([stageBarSegments] lays that one out in whole pixels the way this Row does).
- */
-@Composable
-private fun StageBar(totals: List<Pair<Int, Long>>) {
-    Row(Modifier.fillMaxWidth().height(StageBarLook.HEIGHT_DP.dp), horizontalArrangement = Arrangement.spacedBy(StageBarLook.GAP_DP.dp)) {
-        totals.forEach { (stage, seconds) ->
-            Box(Modifier.weight(seconds.toFloat()).fillMaxHeight().background(stageColor(stage), RoundedCornerShape(StageBarLook.CORNER_DP.dp)))
-        }
-    }
-}
-
-/** The stage bar's legend: an 8 dp colour mark and the stage's total in Secondary, "Deep 2 h 51". */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun StageLegend(totals: List<Pair<Int, Long>>) {
-    FlowRow(horizontalArrangement = Arrangement.spacedBy(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        totals.forEach { (stage, seconds) ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(Modifier.size(8.dp).background(stageColor(stage), RoundedCornerShape(2.dp)))
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    TabCopy.stageTotal(stage, seconds), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                    style = GlowType.secondary, maxLines = 1,
-                )
             }
         }
     }

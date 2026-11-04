@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,7 +82,6 @@ private val Grid = ChartInk.Grid
 private val Target = ChartInk.Target
 
 private val axisText = TextStyle(color = Muted, fontSize = 10.sp, fontFamily = FunnelSans)
-private val valueText = TextStyle(color = Ink, fontSize = 11.sp, fontFamily = FunnelSans)
 private val readoutText = TextStyle(color = Ink, fontSize = 12.sp, fontFamily = FunnelSans)
 
 /** A solid horizontal hairline across the chart: a grid row by default, or a target in [color]. */
@@ -109,10 +109,6 @@ private fun DrawScope.text(r: TextLayoutResult, x: Float, y: Float, align: Float
 
 /** The average's label: the axis text a touch brighter. */
 private val averageText = axisText.copy(color = Ink.copy(alpha = 0.8f))
-/** Today's day name and value on a [GlowTrend], and the other days' values. */
-private val todayAxisText = axisText.copy(color = Ink)
-private val todayValueText = valueText.copy(color = Ink)
-private val pastValueText = valueText.copy(color = Ink.copy(alpha = 0.75f))
 /** A [NormalTrend]'s band label and day labels. */
 private val trendLabelText = axisText.copy(fontSize = 12.sp)
 
@@ -297,63 +293,6 @@ fun GlowBars(
                 }
                 axis(axisLabels, h + 4.dp.toPx())
                 if (picked != null && describe != null) readout(m, describe(picked, values[picked]), pitchX * picked + pitchX / 2, 0f)
-            }
-        },
-    )
-}
-
-/* ------------------------------------------------------------------------------------------------ */
-
-/** A day on a [GlowTrend]. */
-data class GlowDay(val label: String, val value: Float?)
-
-/**
- * A week as solid stems rising to each day's value, the value printed above. Today (the last day) gets a glowing
- * ring. A day with no value is left empty. [average] draws a solid line across.
- */
-@Composable
-fun GlowTrend(
-    days: List<GlowDay>,
-    modifier: Modifier = Modifier,
-    height: Dp = 130.dp,
-    average: Float? = null,
-) {
-    val m = rememberTextMeasurer()
-    Spacer(
-        modifier.fillMaxWidth().height(height).drawWithCache {
-            if (days.isEmpty()) return@drawWithCache nothing()
-            val axisH = 18.dp.toPx()
-            val top = 22.dp.toPx()
-            val h = size.height - axisH
-            val slot = size.width / days.size
-            val known = days.mapNotNull { it.value } + listOfNotNull(average)
-            val lo = (known.minOrNull() ?: 0f) * 0.85f
-            val hi = (known.maxOrNull() ?: 1f).coerceAtLeast(lo + 1f)
-            fun yOf(v: Float) = top + (h - top - 6.dp.toPx()) * (1f - (v - lo) / (hi - lo))
-            val names = days.mapIndexed { i, d -> m.measure(d.label, if (i == days.lastIndex) todayAxisText else axisText) }
-            val figures = days.mapIndexed { i, d ->
-                d.value?.let { m.measure(it.roundToInt().toString(), if (i == days.lastIndex) todayValueText else pastValueText) }
-            }
-            onDrawBehind {
-                average?.let { gridLine(yOf(it), Target) }
-                days.forEachIndexed { i, d ->
-                    val cx = slot * i + slot / 2
-                    val today = i == days.lastIndex
-                    text(names[i], cx, h + 4.dp.toPx(), align = 0.5f)
-                    val v = d.value ?: return@forEachIndexed
-                    val y = yOf(v)
-                    drawLine(
-                        Ink.copy(alpha = if (today) 0.9f else 0.45f), Offset(cx, h - 3.dp.toPx()), Offset(cx, y),
-                        strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round,
-                    )
-                    if (today) {
-                        drawCircle(Ink.copy(alpha = 0.18f), 11.dp.toPx(), Offset(cx, y))
-                        drawCircle(Ink, 6.dp.toPx(), Offset(cx, y))
-                    } else {
-                        drawCircle(Ink, 4.dp.toPx(), Offset(cx, y))
-                    }
-                    figures[i]?.let { text(it, cx, y - 20.dp.toPx(), align = 0.5f) }
-                }
             }
         },
     )
@@ -774,19 +713,245 @@ internal fun NormalTrend(
 /* ------------------------------------------------------------------------------------------------ */
 
 /**
- * The zone bar (chart kit): how a workout's time was spent, a thin bar split by the seconds in each heart rate zone,
- * easy to max, in the zone colours. Zones with no time are left out; nothing draws without any.
+ * One part of a [SegmentBar]: as long as its [weight] against the others, in [color]. A part under way is [filled]
+ * that share of its length from the start in [fill], over its own colour.
+ */
+@androidx.compose.runtime.Immutable
+data class Segment(val weight: Float, val color: Color, val filled: Float = 0f, val fill: Color = Color.Unspecified)
+
+/**
+ * The segment bar (chart kit): one bar split into parts side by side, [gap] apart, each rounded by [corner] and the
+ * bar's two ends by [ends]. Zones, stages, effort steps, rounds and the goal's workouts are all drawn with it, so
+ * they read as one kind of bar. A part with no weight is left out, and nothing draws without any.
  */
 @Composable
-fun ZoneBar(zoneSeconds: List<Int>, colors: List<Color>, modifier: Modifier = Modifier, height: Dp = 6.dp) {
-    if (zoneSeconds.sum() <= 0) return
+// The parts arrive whole with each reading and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun SegmentBar(
+    segments: List<Segment>,
+    modifier: Modifier = Modifier,
+    height: Dp = 6.dp,
+    gap: Dp = 2.dp,
+    corner: Dp = height / 2,
+    ends: Dp = corner,
+) {
+    if (segments.none { it.weight > 0f }) return
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(corner)
     androidx.compose.foundation.layout.Row(
-        modifier.fillMaxWidth().height(height).clip(androidx.compose.foundation.shape.RoundedCornerShape(height / 2)),
-        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp),
+        modifier.fillMaxWidth().height(height).clip(androidx.compose.foundation.shape.RoundedCornerShape(ends)),
+        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(gap),
     ) {
-        zoneSeconds.forEachIndexed { z, secs ->
-            if (secs > 0) Box(Modifier.weight(secs.toFloat()).fillMaxHeight().background(colors[z % colors.size]))
+        segments.forEach { s ->
+            if (s.weight <= 0f) return@forEach
+            Box(Modifier.weight(s.weight).fillMaxHeight().clip(shape).background(s.color)) {
+                if (s.filled > 0f) Box(Modifier.fillMaxWidth(s.filled.coerceAtMost(1f)).fillMaxHeight().clip(shape).background(s.fill))
+            }
         }
+    }
+}
+
+/**
+ * The zone bar (chart kit): how a workout's time was spent, a thin bar split by the seconds in each heart rate zone,
+ * easy to max, in the zone colours. Zones with no time are left out, and nothing draws without any. Square parts in
+ * a bar with round ends by default, as the cards draw it. The summary and share boards round each part ([corner]).
+ */
+@Composable
+fun ZoneBar(
+    zoneSeconds: List<Int>,
+    colors: List<Color>,
+    modifier: Modifier = Modifier,
+    height: Dp = 6.dp,
+    gap: Dp = 2.dp,
+    corner: Dp = 0.dp,
+    ends: Dp = height / 2,
+) {
+    val segments = remember(zoneSeconds, colors) { zoneSeconds.mapIndexed { z, secs -> Segment(secs.toFloat(), colors[z % colors.size]) } }
+    SegmentBar(segments, modifier, height, gap, corner, ends)
+}
+
+/** How a [Legend] lays its keys out: in a row, wrapping onto more rows, or spread across the width. */
+enum class LegendLayout { Row, Flow, Spread }
+
+/**
+ * A chart's legend (chart kit): each colour as an 8 dp [swatch], round or square, and its name in Secondary. Keys sit
+ * 16 dp apart in a row by default ([layout]).
+ */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+// The keys arrive whole with each chart and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun Legend(
+    items: List<Pair<String, Color>>,
+    modifier: Modifier = Modifier,
+    swatch: androidx.compose.ui.graphics.Shape = androidx.compose.foundation.shape.CircleShape,
+    layout: LegendLayout = LegendLayout.Row,
+) {
+    val keys: @Composable () -> Unit = {
+        items.forEach { (name, color) ->
+            androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.size(8.dp).background(color, swatch))
+                Spacer(Modifier.width(6.dp))
+                androidx.compose.material3.Text(
+                    name, color = Ink.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1,
+                )
+            }
+        }
+    }
+    val apart = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)
+    when (layout) {
+        LegendLayout.Row -> androidx.compose.foundation.layout.Row(modifier, horizontalArrangement = apart) { keys() }
+        LegendLayout.Spread -> androidx.compose.foundation.layout.Row(
+            modifier.fillMaxWidth(), horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
+        ) { keys() }
+        LegendLayout.Flow -> androidx.compose.foundation.layout.FlowRow(
+            modifier, horizontalArrangement = apart, verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        ) { keys() }
+    }
+}
+
+/**
+ * The fill bar (chart kit): a pill [height] tall, a faint white track the whole way and [color] from the start to
+ * [share] of it. A day toward its goal, an edge card's progress, a stage's share of the night.
+ */
+@Composable
+fun FillBar(share: Float, color: Color, modifier: Modifier = Modifier, height: Dp = 4.dp) {
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(height / 2)
+    Box(modifier.fillMaxWidth().height(height).background(Ink.copy(alpha = FILL_TRACK_ALPHA), shape)) {
+        Box(Modifier.fillMaxWidth(share.coerceIn(0f, 1f)).fillMaxHeight().background(color, shape))
+    }
+}
+
+/** A [FillBar]'s track: white at 8%. */
+private const val FILL_TRACK_ALPHA = 0.08f
+
+/**
+ * The progress ring (chart kit): a circle of white at [track] the whole way round and, from the top clockwise, the
+ * [share] of it in [color] with round caps, [stroke] thick, inside the box it's given. [share] is read in draw, so a
+ * ring that runs with a clock redraws without composing again.
+ */
+@Composable
+fun ProgressRing(share: () -> Float, color: Color, modifier: Modifier = Modifier, stroke: Dp = 8.dp, track: Float = RING_TRACK_ALPHA) {
+    Canvas(modifier) {
+        val w = stroke.toPx()
+        val at = Offset(w / 2, w / 2)
+        val box = Size(size.width - w, size.height - w)
+        drawArc(Ink.copy(alpha = track), 0f, FULL_TURN, false, at, box, style = Stroke(w))
+        val sweep = FULL_TURN * share().coerceIn(0f, 1f)
+        if (sweep > 0f) drawArc(color, RING_START, sweep, false, at, box, style = Stroke(w, cap = StrokeCap.Round))
+    }
+}
+
+/** A ring's track: white at 10%. */
+private const val RING_TRACK_ALPHA = 0.1f
+
+/** A whole turn, and the ring's start at the top, in degrees. */
+private const val FULL_TURN = 360f
+private const val RING_START = -90f
+
+/** Which readings a [PlainLine] marks with a dot. The highest also gets a hairline along the foot. */
+enum class LineDots { None, Last, Ends, Highest }
+
+/**
+ * A plain line (chart kit): readings edge to edge in [color], no grid and no numbers, the low and high 4 dp in from the
+ * foot and the top. Gaps are bridged. [smooth] bends it through the midpoints, each reading the control point, so it
+ * never overshoots, else it runs straight from reading to reading. [dots] marks readings in the colour at full strength.
+ */
+@Composable
+// The readings arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun PlainLine(
+    values: List<Float?>,
+    color: Color,
+    height: Dp,
+    modifier: Modifier = Modifier,
+    smooth: Boolean = true,
+    dots: LineDots = LineDots.None,
+    stroke: Dp = 2.5.dp,
+) {
+    val points = values.withIndex().mapNotNull { (i, v) -> v?.let { i to it } }
+    if (points.size < 2) return
+    Spacer(
+        modifier.fillMaxWidth().height(height).drawWithCache {
+            // Built once per size and readings, not on every draw.
+            val inset = 4.dp.toPx()
+            val lo = points.minOf { it.second }
+            val hi = points.maxOf { it.second }.let { if (it - lo < 1f) lo + 1f else it }
+            val p = points.map { (i, v) ->
+                Offset(inset + i / (values.size - 1f) * (size.width - 2 * inset), inset + (hi - v) / (hi - lo) * (size.height - 2 * inset))
+            }
+            val path = Path().apply {
+                moveTo(p[0].x, p[0].y)
+                for (k in 1 until p.size) {
+                    if (smooth) quadraticTo(p[k - 1].x, p[k - 1].y, (p[k - 1].x + p[k].x) / 2, (p[k - 1].y + p[k].y) / 2)
+                    else lineTo(p[k].x, p[k].y)
+                }
+                if (smooth) lineTo(p.last().x, p.last().y)
+            }
+            val line = Stroke(stroke.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
+            val dot = color.copy(alpha = 1f)
+            val marked = when (dots) {
+                LineDots.None -> emptyList()
+                LineDots.Last -> listOf(p.last())
+                LineDots.Ends -> listOf(p.first(), p.last())
+                LineDots.Highest -> listOf(p[points.indices.maxBy { points[it].second }])
+            }
+            val r = (if (dots == LineDots.Highest) 3.5.dp else 4.dp).toPx()
+            onDrawBehind {
+                if (dots == LineDots.Highest) gridLine(size.height - ChartInk.HAIRLINE_DP * density / 2, Ink.copy(alpha = 0.12f))
+                drawPath(path, color, style = line)
+                marked.forEach { drawCircle(dot, r, it) }
+            }
+        },
+    )
+}
+
+/**
+ * Peak bars (chart kit): each round's peak heart rate as a column [gap] apart, as tall as it sits between a little
+ * under the lowest and the highest, never under a third of the [height], in the colour [colorOf] gives its peak. A
+ * round without a peak, or still to come up to [rounds], is a faint stub.
+ */
+@Composable
+// The peaks arrive whole with each round and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+fun PeakBars(
+    peaks: List<Int?>,
+    colorOf: (Int) -> Color,
+    modifier: Modifier = Modifier,
+    height: Dp = 72.dp,
+    rounds: Int = peaks.size,
+    corner: Dp = 5.dp,
+) {
+    val known = peaks.filterNotNull()
+    val lo = (known.minOrNull() ?: 0) - PEAK_FLOOR_BPM
+    val hi = known.maxOrNull() ?: 1
+    Canvas(modifier.fillMaxWidth().height(height)) {
+        val n = rounds.coerceAtLeast(peaks.size).coerceAtLeast(1)
+        val gap = 6.dp.toPx()
+        val w = (size.width - gap * (n - 1)) / n
+        for (i in 0 until n) {
+            val p = peaks.getOrNull(i)
+            val h = if (p == null || hi <= lo) 4.dp.toPx() else (PEAK_LEAST + (1f - PEAK_LEAST) * (p - lo) / (hi - lo)) * size.height
+            val c = if (p == null) Ink.copy(alpha = 0.12f) else colorOf(p)
+            drawRoundRect(c, Offset(i * (w + gap), size.height - h), Size(w, h), CornerRadius(corner.toPx()))
+        }
+    }
+}
+
+/** How far under the lowest peak a [PeakBars] column starts, in bpm, and the shortest a column with a peak is. */
+private const val PEAK_FLOOR_BPM = 8
+private const val PEAK_LEAST = 0.35f
+
+/**
+ * A heart rate line drawn step by step (the workout's zone line, the day's range chart): the line from reading `i` to
+ * `i + 1` of [count] in the colour [colorOf] gives step `i`, [stroke] wide with round caps. [at] places a reading, and
+ * a null from either leaves that step out, so a missing reading or a gap breaks the line.
+ */
+internal inline fun DrawScope.drawZoneLine(count: Int, stroke: Float, at: (Int) -> Offset?, colorOf: (Int) -> Color?) {
+    for (i in 0 until count - 1) {
+        val a = at(i)
+        val b = at(i + 1)
+        if (a == null || b == null) continue
+        colorOf(i)?.let { drawLine(it, a, b, strokeWidth = stroke, cap = StrokeCap.Round) }
     }
 }
 

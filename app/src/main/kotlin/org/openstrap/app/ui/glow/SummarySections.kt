@@ -4,7 +4,6 @@ import org.openstrap.app.data.Weeks
 import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Pace
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -31,12 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -444,18 +438,6 @@ private fun PeriodsCard(periods: List<PeriodLine>, of: Int, read: String?) {
 }
 
 /**
- * Time in zones as one strip (boards SummaryGame, SummaryIndoor): a rounded segment for each zone with time in it, as
- * long as the time.
- */
-@Composable
-private fun ZoneStrip(zones: ZoneSeconds, modifier: Modifier = Modifier) {
-    val shape = RoundedCornerShape(4.dp)
-    Row(modifier.fillMaxWidth().height(12.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        zones.forEachIndexed { z, s -> if (s > 0) Box(Modifier.weight(s.toFloat()).fillMaxHeight().clip(shape).background(ZONE_COLORS[z])) }
-    }
-}
-
-/**
  * Time in zones on a quiet card (board SummaryGame): the zone with the most time in the title row, the strip, then
  * each zone's dot and minutes under it, the first with its unit.
  */
@@ -465,20 +447,13 @@ internal fun ZoneStripPanel(zones: ZoneSeconds) {
     QuietPanel {
         PanelTitle("Time in zones", FamilySummary.mostlyZone(zones))
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            ZoneStrip(zones)
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                var first = true
-                zones.indices.filter { zones[it] > 0 }.forEach { z ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(Modifier.size(8.dp).background(ZONE_COLORS[z], CircleShape))
-                        Text(
-                            if (first) "${minutes[z]} min" else "${minutes[z]}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                            style = GlowType.caption, maxLines = 1, modifier = Modifier.padding(start = 5.dp),
-                        )
-                    }
-                    first = false
-                }
+            // Time in zones as one strip (boards SummaryGame, SummaryIndoor): each zone a rounded part as long as its time.
+            ZoneBar(zones, ZONE_COLORS, height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp)
+            // Each zone's minutes under the strip, the first with its unit.
+            val keys = zones.indices.filter { zones[it] > 0 }.mapIndexed { k, z ->
+                (if (k == 0) "${minutes[z]} min" else "${minutes[z]}") to ZONE_COLORS[z]
             }
+            Legend(keys, layout = LegendLayout.Spread)
         }
     }
 }
@@ -494,7 +469,9 @@ private fun ZonesEdgeCard(zones: ZoneSeconds) {
     CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Right)) {
         EdgeCard(ZONE_COLORS[most], Modifier.fillMaxWidth()) {
             EdgeTitle("Time in zones", FamilySummary.mostlyZone(zones))
-            ZoneStrip(zones, Modifier.padding(top = 10.dp, bottom = 6.dp))
+            ZoneBar(
+                zones, ZONE_COLORS, Modifier.padding(top = 10.dp, bottom = 6.dp), height = 12.dp, gap = 3.dp, corner = 4.dp, ends = 4.dp,
+            )
             zones.indices.filter { zones[it] > 0 }.forEach { z ->
                 val style = if (z == most) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary
                 Row(Modifier.fillMaxWidth().height(24.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -520,7 +497,7 @@ private fun IndoorHeartCard(readings: List<Pair<Long, Int>>, target: Pair<String
     QuietPanel {
         if (line) Column {
             PanelTitle("Heart rate", Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
-            SmoothLine(values, MetricColors.heart, Modifier.padding(top = 8.dp), height = 64.dp, peak = true)
+            PlainLine(values, MetricColors.heart, 64.dp, Modifier.padding(top = 8.dp), dots = LineDots.Highest)
         }
         target?.let { (text, reached) ->
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -551,40 +528,6 @@ private fun VersusLast(line: String) {
 private const val HeartPoints = 60
 
 /**
- * The heart rate as a smooth line in [color], no grid: a dot at each end with [ends], or at the highest point with
- * [peak], and a hairline along the foot with [peak] (boards SummaryMind, SummaryIndoor). Gaps are bridged.
- */
-@Composable
-private fun SmoothLine(values: List<Float?>, color: Color, modifier: Modifier = Modifier, height: Dp, ends: Boolean = false, peak: Boolean = false) {
-    val points = values.withIndex().filter { it.value != null }.map { it.index to it.value!! }
-    if (points.size < 2) return
-    Canvas(modifier.fillMaxWidth().height(height)) {
-        val inset = 4.dp.toPx()
-        val lo = points.minOf { it.second }
-        val hi = points.maxOf { it.second }.let { if (it - lo < 1f) lo + 1f else it }
-        fun at(i: Int, v: Float) = Offset(inset + i / (values.size - 1f) * (size.width - 2 * inset), inset + (hi - v) / (hi - lo) * (size.height - 2 * inset))
-        val p = points.map { (i, v) -> at(i, v) }
-        if (peak) drawLine(Color.White.copy(alpha = 0.12f), Offset(0f, size.height - 0.5f), Offset(size.width, size.height - 0.5f), 1.dp.toPx())
-        // Through the midpoints, each reading the control point, so the line bends without overshooting.
-        val path = Path().apply {
-            moveTo(p[0].x, p[0].y)
-            for (k in 1 until p.size) {
-                val m = Offset((p[k - 1].x + p[k].x) / 2, (p[k - 1].y + p[k].y) / 2)
-                quadraticTo(p[k - 1].x, p[k - 1].y, m.x, m.y)
-            }
-            lineTo(p.last().x, p.last().y)
-        }
-        drawPath(path, color, style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
-        val dot = 4.dp.toPx()
-        if (ends) {
-            drawCircle(color, dot, p.first())
-            drawCircle(color, dot, p.last())
-        }
-        if (peak) drawCircle(color, 3.5.dp.toPx(), p[points.indices.maxBy { points[it].second }])
-    }
-}
-
-/**
  * The heart rate over a calm session on an edge card lit from the left (board SummaryMind): how far it came down in
  * the title row, a smooth line with its two ends marked, then the start and end figures ([settled]). Without them the
  * range in the title row and the line alone; with [chart] off, the figures alone.
@@ -596,7 +539,7 @@ private fun HeartLineCard(readings: List<Pair<Long, Int>>, color: Color, settled
     EdgeCard(color, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
         val drop = settled?.let { FamilySummary.settledDrop(it.first, it.second) }
         EdgeTitle("Heart rate", drop?.let { "down $it" } ?: Ranges.of("${readings.minOf { it.second }}", "${readings.maxOf { it.second }}"))
-        if (chart) SmoothLine(values, color, Modifier.padding(top = 14.dp), height = 74.dp, ends = true)
+        if (chart) PlainLine(values, color, 74.dp, Modifier.padding(top = 14.dp), dots = LineDots.Ends)
         if (settled != null) Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("${settled.first}", color = Color.White, style = GlowType.rowValue)

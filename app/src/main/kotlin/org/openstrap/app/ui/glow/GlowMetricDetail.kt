@@ -620,7 +620,9 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
                 onScrub = { h -> onScrub(h?.let { hourSteps(it, state.hourlySteps[it]) }) },
             )
             Metric.RestingHr -> if (state.restingTrend.any { it.value != null }) {
-                GlowTrend(state.restingTrend.map { GlowDay(it.label, it.value) }, height = 200.dp)
+                NormalTrend(
+                    state.restingTrend.map { it.value }, emptyList(), color, height = 200.dp, labels = state.restingTrend.map { it.label },
+                )
             }
             else -> if (series.isNotEmpty()) {
                 // Readings come every minute for heart rate, sparser for the rest.
