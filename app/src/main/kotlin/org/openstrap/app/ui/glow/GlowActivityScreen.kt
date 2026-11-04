@@ -305,13 +305,14 @@ private val HourPillsHeight = 56.dp
  * of your usual Load by this time needs past days' Load hour by hour. The engine keeps each past day's Load only as a
  * total ([org.openstrap.app.data.Recovery.dailyLoad]); hours would mean re-running it 24 times for each of 30 days in
  * every recompute, with nothing to cache them in.
+ * As high as its title and number, not the grid's Wide height, which left a band of empty light under them (user, 2026-11-04).
  */
 @Composable
 private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
     EdgeCard(
-        MetricColors.load, Modifier.fillMaxWidth().gridSize(CardSize.Wide),
+        MetricColors.load, Modifier.fillMaxWidth(),
         status = if (status == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
         kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
     ) {
