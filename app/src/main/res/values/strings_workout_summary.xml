@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The summary right after a workout and its trim sheet (ui/workout/SummaryCopy.kt), and the summary sections each kind
+  of workout has (ui/workout/FamilySummary.kt). Load is the app's name for how much a workout asked of your body. A
+  sport in these lines is its short noun in lower case: "run", "walk", "ride", "swim", "hike", "row".
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Two whole sentences, one after the other, where a line has both. A language that writes no space between sentences drops it. -->
+    <string name="workout_sentences"><xliff:g id="first" example="5.21 km, average 142 bpm.">%1$s</xliff:g> <xliff:g id="second" example="Paused 4 min.">%2$s</xliff:g></string>
+
+    <!-- The (i) on the summary's heart rate drop hero. -->
+    <string name="workout_summary_drop_meaning">How far your heart rate falls in the first minute after you stop. A bigger drop usually means a fitter heart, and under 12 bpm is on the low side. It only says something after a hard effort.</string>
+    <!-- The hero's line in the first minute after the end, while the heart rate still comes in. -->
+    <string name="workout_summary_watching">Watching your heart rate come down.</string>
+    <!-- The hero's line when the strap sent no heart rate after the end. -->
+    <string name="workout_summary_no_drop_data">No heart rate after the end, so no drop this time.</string>
+    <!-- The hero's line when the heart rate didn't come down. -->
+    <string name="workout_summary_no_drop">No drop in the first minute.</string>
+    <!-- The hero's line: how many bpm the heart rate fell in the minute after the end. -->
+    <string name="workout_summary_drop">Down <xliff:g id="bpm" example="34">%1$d</xliff:g> in the first minute.</string>
+    <!-- The hero's line after an easy end, which says little about fitness. -->
+    <string name="workout_summary_drop_easy_finish">Down <xliff:g id="bpm" example="12">%1$d</xliff:g> in the first minute, from an easy finish.</string>
+    <!-- The hero's line when the drop is bigger than your usual one. -->
+    <string name="workout_summary_drop_quick">Down <xliff:g id="bpm" example="34">%1$d</xliff:g> in the first minute. A quick drop for you.</string>
+    <!-- The hero's line when the drop is smaller than your usual one. -->
+    <string name="workout_summary_drop_slow">Down <xliff:g id="bpm" example="16">%1$d</xliff:g> in the first minute. A slow drop for you.</string>
+    <!-- The hero's line when the drop is near your usual one. -->
+    <string name="workout_summary_drop_usual">Down <xliff:g id="bpm" example="28">%1$d</xliff:g> in the first minute. About usual for you.</string>
+
+    <!-- The Load card's line when this workout's Load is above your usual workout's. One line. -->
+    <string name="workout_summary_load_above">Above your usual of <xliff:g id="load" example="80">%1$d</xliff:g></string>
+    <!-- The Load card's line when it's below your usual. One line. -->
+    <string name="workout_summary_load_below">Below your usual of <xliff:g id="load" example="80">%1$d</xliff:g></string>
+    <!-- The Load card's line when it's near your usual. One line. -->
+    <string name="workout_summary_load_usual">About your usual</string>
+    <!-- The Load card's line before there are enough workouts to know your usual. One line. -->
+    <string name="workout_summary_load_learning">Learning your usual</string>
+    <!-- The Load card's note, naming the sport: "From this run". -->
+    <string name="workout_summary_load_title">From this <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- The Load card's note for a sport with no short noun. -->
+    <string name="workout_summary_load_title_workout">From this workout</string>
+    <!-- The Load card's recovery line. The time is "14 h", "40 min", or both parts of the line that follows. -->
+    <string name="workout_summary_time_to_recover">Time to recover <xliff:g id="time" example="14 h">%1$s</xliff:g></string>
+    <!-- What this workout left to recover from, and all of it with what earlier workouts left. Follows "Time to recover". -->
+    <string name="workout_summary_carried_over"><xliff:g id="own" example="40 min">%1$s</xliff:g> from this <xliff:g id="sport" example="walk">%2$s</xliff:g>, <xliff:g id="total" example="16 h">%3$s</xliff:g> in all with what\'s left from earlier</string>
+    <!-- As above, for a sport with no short noun. -->
+    <string name="workout_summary_carried_over_workout"><xliff:g id="own" example="40 min">%1$s</xliff:g> from this workout, <xliff:g id="total" example="16 h">%2$s</xliff:g> in all with what\'s left from earlier</string>
+    <!-- When this workout left nothing to recover from, but earlier ones did. Follows "Time to recover", so it starts in lower case. -->
+    <string name="workout_summary_carried_over_nothing">nothing from this <xliff:g id="sport" example="walk">%1$s</xliff:g>, <xliff:g id="total" example="16 h">%2$s</xliff:g> left from earlier</string>
+    <!-- As above, for a sport with no short noun. -->
+    <string name="workout_summary_carried_over_nothing_workout">nothing from this workout, <xliff:g id="total" example="16 h">%1$s</xliff:g> left from earlier</string>
+    <!-- A time to recover in minutes. -->
+    <string name="workout_summary_minutes"><xliff:g id="minutes" example="40">%1$d</xliff:g> min</string>
+    <!-- A time to recover in hours. -->
+    <string name="workout_summary_hours"><xliff:g id="hours" example="14">%1$d</xliff:g> h</string>
+
+    <!-- The workout card's line: the distance and the average heart rate. The distance is "5.21 km" or "≈ 820 m" (from steps). -->
+    <string name="workout_summary_line_distance_average"><xliff:g id="distance" example="5.21 km">%1$s</xliff:g>, average <xliff:g id="bpm" example="142">%2$d</xliff:g> bpm.</string>
+    <!-- The workout card's line with only a distance. -->
+    <string name="workout_summary_line_distance"><xliff:g id="distance" example="5.21 km">%1$s</xliff:g>.</string>
+    <!-- The workout card's line with only the average heart rate. -->
+    <string name="workout_summary_line_average">Average <xliff:g id="bpm" example="142">%1$d</xliff:g> bpm.</string>
+    <!-- The workout card's line: how long it was paused, in minutes. -->
+    <string name="workout_summary_line_paused">Paused <xliff:g id="minutes" example="4">%1$d</xliff:g> min.</string>
+    <!-- The workout card's calorie target, reached at a time into the workout. -->
+    <string name="workout_summary_target_reached_at">Target <xliff:g id="kcal" example="400">%1$s</xliff:g> kcal, reached at <xliff:g id="time" example="38:10">%2$s</xliff:g></string>
+    <!-- The workout card's calorie target, reached. -->
+    <string name="workout_summary_target_reached">Target <xliff:g id="kcal" example="300">%1$s</xliff:g> kcal, reached</string>
+    <!-- The workout card's calorie target, not reached: how many of them were burned. -->
+    <string name="workout_summary_target_short">Target not reached, <xliff:g id="burned" example="212">%1$s</xliff:g> of <xliff:g id="kcal" example="300">%2$s</xliff:g> kcal</string>
+    <!-- The workout card's calorie target, not reached, with no figure to show. -->
+    <string name="workout_summary_target_not_reached">Target <xliff:g id="kcal" example="300">%1$s</xliff:g> kcal, not reached</string>
+    <!-- A lap's line on the laps list: its distance and average heart rate. One line. -->
+    <string name="workout_summary_lap_distance_average"><xliff:g id="distance" example="1.02 km">%1$s</xliff:g>, average <xliff:g id="bpm" example="150">%2$d</xliff:g> bpm</string>
+    <!-- A lap's line with only its average heart rate. One line. -->
+    <string name="workout_summary_lap_average">Average <xliff:g id="bpm" example="150">%1$d</xliff:g> bpm</string>
+    <!-- Under the trim sheet's title. The times are "18:02 to 18:40". -->
+    <string name="workout_summary_trim_recorded">Recorded <xliff:g id="range" example="18:02 to 18:40">%1$s</xliff:g>.</string>
+    <!-- Under the trim sheet's bar. -->
+    <string name="workout_summary_trim_hint">Drag the handles to where the workout really started and ended. Nothing recorded is deleted.</string>
+    <!-- A whole kilometre on the splits list, by its number. Short, about 8 characters. -->
+    <string name="workout_summary_split_km">Km <xliff:g id="number" example="3">%1$d</xliff:g></string>
+    <!-- The part kilometre at the end of the splits list. The distance is "430 m". -->
+    <string name="workout_summary_split_last">Last <xliff:g id="distance" example="430 m">%1$s</xliff:g></string>
+    <!-- A short distance in metres. -->
+    <string name="workout_summary_meters"><xliff:g id="meters" example="0">%1$d</xliff:g> m</string>
+
+    <!-- When the workout was, at the top of its summary: this morning (4 to 12). The time follows the phone's 12 or 24 hour clock. -->
+    <string name="workout_summary_when_morning">This morning, <xliff:g id="time" example="07:12">%1$s</xliff:g></string>
+    <!-- When the workout was: this evening (17 to midnight). -->
+    <string name="workout_summary_when_evening">This evening, <xliff:g id="time" example="19:05">%1$s</xliff:g></string>
+    <!-- When the workout was: earlier today, in the afternoon or the night. -->
+    <string name="workout_summary_when_today">Today, <xliff:g id="time" example="14:00">%1$s</xliff:g></string>
+    <!-- When the workout was: yesterday. -->
+    <string name="workout_summary_when_yesterday">Yesterday, <xliff:g id="time" example="10:00">%1$s</xliff:g></string>
+    <!-- When the workout was, another day: the day ("Tuesday", "Mon 19 Oct"), then the time. -->
+    <string name="workout_summary_when_day"><xliff:g id="day" example="Tuesday">%1$s</xliff:g> <xliff:g id="time" example="10:00">%2$s</xliff:g></string>
+
+    <!-- A strength set on the summary: reps and the weight in kilograms. Short, about 12 characters. -->
+    <string name="workout_summary_set_reps_kg"><xliff:g id="reps" example="10">%1$d</xliff:g> × <xliff:g id="kg" example="60">%2$s</xliff:g> kg</string>
+    <!-- A strength set with reps and no weight. Short. -->
+    <string name="workout_summary_set_reps"><xliff:g id="reps" example="12">%1$d</xliff:g> reps</string>
+    <!-- Strength's rest line: how long the heart rate took to fall under a level after each set. The time is "41 s" or "1:05". -->
+    <string name="workout_summary_rest">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average.</string>
+    <!-- As above, and how much faster than the last strength workout. -->
+    <string name="workout_summary_rest_faster">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average, <xliff:g id="diff" example="9 s">%3$s</xliff:g> faster than last time.</string>
+    <!-- As above, and how much slower than the last strength workout. -->
+    <string name="workout_summary_rest_slower">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average, <xliff:g id="diff" example="9 s">%3$s</xliff:g> slower than last time.</string>
+    <!-- As above, about as fast as the last strength workout. -->
+    <string name="workout_summary_rest_same">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average, about the same as last time.</string>
+    <!-- Under an interval workout's rounds: how far the heart rate came down in each rest. The time is the rest, "10 s" or "1:30". -->
+    <string name="workout_summary_rounds_recovered">You recovered <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm in <xliff:g id="time" example="10 s">%2$s</xliff:g> on average.</string>
+    <!-- As above, when the rests had no set length. -->
+    <string name="workout_summary_rounds_recovered_each">You recovered <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm in each rest on average.</string>
+    <!-- Under an interval workout's rounds: the one with the highest heart rate. -->
+    <string name="workout_summary_rounds_hardest">Round <xliff:g id="number" example="6">%1$d</xliff:g> was your hardest.</string>
+    <!-- After a calm session (yoga and the like): the heart rate at the start and at the end, in bpm. -->
+    <string name="workout_summary_settled">Your heart settled from <xliff:g id="from" example="96">%1$d</xliff:g> to <xliff:g id="to" example="66">%2$d</xliff:g>.</string>
+    <!-- After a calm session when the heart rate stayed about the same, in bpm. -->
+    <string name="workout_summary_held">Your heart held near <xliff:g id="bpm" example="72">%1$d</xliff:g>.</string>
+    <!-- The share card's short form of the line above. One line, about 24 characters. -->
+    <string name="workout_summary_settled_short">Heart settled <xliff:g id="from" example="96">%1$d</xliff:g> to <xliff:g id="to" example="66">%2$d</xliff:g></string>
+    <!-- The share card's short form of the line above. One line, about 24 characters. -->
+    <string name="workout_summary_held_short">Heart held near <xliff:g id="bpm" example="72">%1$d</xliff:g></string>
+    <!-- How a game went: the effort dropped from some minutes in. -->
+    <string name="workout_summary_game_faded">You faded a little after <xliff:g id="minutes" example="70">%1$d</xliff:g> min.</string>
+    <!-- How a game went: harder at the end than at the start. -->
+    <string name="workout_summary_game_stronger">You finished stronger than you started.</string>
+    <!-- How a game went: steady to the end. -->
+    <string name="workout_summary_game_kept_up">You kept your effort up to the end.</string>
+    <!-- How many workouts this week, the start of the line under the week's days. -->
+    <plurals name="workout_summary_week_count">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout this week</item>
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> workouts this week</item>
+    </plurals>
+    <!-- The line under the week's days once the weekly goal is met. The start is "4 workouts this week". -->
+    <string name="workout_summary_week_goal_met"><xliff:g id="week" example="4 workouts this week">%1$s</xliff:g>, goal met.</string>
+    <!-- The line under the week's days: how many more workouts the weekly goal needs. The start is "3 workouts this week". -->
+    <string name="workout_summary_week_goal_more"><xliff:g id="week" example="3 workouts this week">%1$s</xliff:g>, <xliff:g id="more" example="1">%2$d</xliff:g> more for your goal.</string>
+    <!-- The heart rate zone the workout spent most time in. Short, about 16 characters. -->
+    <string name="workout_summary_mostly_zone">Mostly zone <xliff:g id="zone" example="3">%1$d</xliff:g></string>
+    <!-- Against the last workout of the same sport and length: a lower average heart rate. The day is a weekday, "Monday". -->
+    <string name="workout_summary_versus_lower"><xliff:g id="bpm" example="4">%1$d</xliff:g> bpm lower than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
+    <!-- As above, a higher average heart rate. -->
+    <string name="workout_summary_versus_higher"><xliff:g id="bpm" example="4">%1$d</xliff:g> bpm higher than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
+    <!-- As above, about the same. -->
+    <string name="workout_summary_versus_same">About the same heart rate as <xliff:g id="day" example="Monday">%1$s</xliff:g>, over a similar time.</string>
+    <!-- Under a game's Load figure. Short, about 12 characters. -->
+    <string name="workout_summary_load_label">Load</string>
+    <!-- Under a game's Load figure, when it's above your usual. Short, about 12 characters. -->
+    <string name="workout_summary_load_label_hard">Load, hard</string>
+    <!-- Under a game's Load figure, when it's below your usual. Short, about 12 characters. -->
+    <string name="workout_summary_load_label_light">Load, light</string>
+    <!-- A game's share card: its Load. One line. -->
+    <string name="workout_summary_load_line">Load <xliff:g id="load" example="80">%1$d</xliff:g></string>
+    <!-- A game's share card: its Load, above your usual. One line. -->
+    <string name="workout_summary_load_line_hard">Load <xliff:g id="load" example="130">%1$d</xliff:g>, hard</string>
+    <!-- A game's share card: its Load, below your usual. One line. -->
+    <string name="workout_summary_load_line_light">Load <xliff:g id="load" example="60">%1$d</xliff:g>, light</string>
+</resources>

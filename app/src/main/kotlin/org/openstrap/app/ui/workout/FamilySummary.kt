@@ -6,6 +6,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.openstrap.app.R
 import org.openstrap.app.data.Games
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
@@ -13,6 +14,7 @@ import org.openstrap.app.data.WorkoutSummaryData
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.AppWorkoutRound
 import org.openstrap.app.data.db.AppWorkoutSet
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.LoadBand
 import org.openstrap.app.presentation.TimeOfDay
@@ -23,7 +25,8 @@ import org.openstrap.app.data.HeartZones
 /*
  * What each kind of workout's summary says under its hero (workouts spec 2.8): the fastest split, sets per exercise
  * and how fast rest brought the heart rate down, each round's peak and drop, how the heart settled, a game's periods
- * and whether you faded. Pure, so it's tested without a workout ending.
+ * and whether you faded. Pure, so it's tested without a workout ending. The text is in
+ * res/values/strings_workout_summary.xml.
  */
 
 /** One logged or numbered set on the summary: "10 × 60 kg" (or "Set 3" unlogged) and its peak. */
@@ -45,19 +48,19 @@ object FamilySummary {
      */
     fun whenLine(
         start: Long, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(),
-        use24Hour: Boolean = org.openstrap.app.presentation.ClockSetting.use24Hour,
+        use24Hour: Boolean = org.openstrap.app.presentation.ClockSetting.use24Hour, strings: Strings = Strings.app,
     ): String {
         val t = Instant.ofEpochSecond(start).atZone(zone)
         val clock = TimeOfDay.format(start, zone, use24Hour, locale)
         val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
         return when (t.toLocalDate()) {
             today -> when (t.hour) {
-                in 4..11 -> "This morning, $clock"
-                in 17..23 -> "This evening, $clock"
-                else -> "Today, $clock"
+                in 4..11 -> strings.format(R.string.workout_summary_when_morning, clock)
+                in 17..23 -> strings.format(R.string.workout_summary_when_evening, clock)
+                else -> strings.format(R.string.workout_summary_when_today, clock)
             }
-            today.minusDays(1) -> "Yesterday, $clock"
-            else -> DayWords.relative(t.toLocalDate(), today, locale) + " " + clock
+            today.minusDays(1) -> strings.format(R.string.workout_summary_when_yesterday, clock)
+            else -> strings.format(R.string.workout_summary_when_day, DayWords.relative(t.toLocalDate(), today, locale), clock)
         }
     }
 
@@ -72,14 +75,19 @@ object FamilySummary {
      * Finished [sets] by exercise, in the order each was first done, with the peak of [readings] (time, bpm) in each set.
      * A logged set reads "10 × 60 kg"; one without a log reads by its time.
      */
-    fun exerciseSets(sets: List<AppWorkoutSet>, readings: List<Pair<Long, Int>>): List<ExerciseSets> {
+    fun exerciseSets(sets: List<AppWorkoutSet>, readings: List<Pair<Long, Int>>, strings: Strings = Strings.app): List<ExerciseSets> {
         val done = sets.filter { it.end != null }
         val order = done.map { it.exercise?.trim()?.takeIf(String::isNotEmpty) }.distinctBy { it?.lowercase() }
         return order.map { name ->
             val mine = done.filter { it.exercise?.trim()?.takeIf(String::isNotEmpty)?.lowercase() == name?.lowercase() }
             ExerciseSets(name, mine.mapIndexed { i, s ->
-                val text = if (s.reps != null && s.weightKg != null) "${s.reps} × ${Strength.kgText(s.weightKg)} kg"
-                else if (s.reps != null) "${s.reps} reps" else Units.workoutClock(s.end!! - s.start)
+                val text = if (s.reps != null && s.weightKg != null) {
+                    strings.format(R.string.workout_summary_set_reps_kg, s.reps, Strength.kgText(s.weightKg))
+                } else if (s.reps != null) {
+                    strings.format(R.string.workout_summary_set_reps, s.reps)
+                } else {
+                    Units.workoutClock(s.end!! - s.start)
+                }
                 SetLine(if (name == null) s.index + 1 else i + 1, text, Strength.peak(readings, s.start, s.end!!))
             })
         }
@@ -102,14 +110,14 @@ object FamilySummary {
      * "Your heart rate dropped under 110 in 58 s on average", and against the last strength session's [before]: "9 s
      * faster than last time" or slower. Within 3 s it says "about the same as last time".
      */
-    fun restLine(seconds: Long, below: Int, before: Long?): String {
-        val first = "Your heart rate dropped under $below in ${clockOrSeconds(seconds)} on average"
+    fun restLine(seconds: Long, below: Int, before: Long?, strings: Strings = Strings.app): String {
+        val time = clockOrSeconds(seconds)
         val diff = before?.minus(seconds)
         return when {
-            diff == null -> "$first."
-            diff > 3 -> "$first, ${clockOrSeconds(diff)} faster than last time."
-            diff < -3 -> "$first, ${clockOrSeconds(-diff)} slower than last time."
-            else -> "$first, about the same as last time."
+            diff == null -> strings.format(R.string.workout_summary_rest, below, time)
+            diff > 3 -> strings.format(R.string.workout_summary_rest_faster, below, time, clockOrSeconds(diff))
+            diff < -3 -> strings.format(R.string.workout_summary_rest_slower, below, time, clockOrSeconds(-diff))
+            else -> strings.format(R.string.workout_summary_rest_same, below, time)
         }
     }
 
@@ -131,17 +139,22 @@ object FamilySummary {
      * The line under the rounds: "You recovered 19 bpm in 10 s on average. Round 6 was your hardest." The rest is
      * [restSeconds] when the rounds had a set rest; the hardest round is the highest peak, named only with 3 or more.
      */
-    fun roundsLine(lines: List<RoundLine>, restSeconds: Long?): String? {
+    fun roundsLine(lines: List<RoundLine>, restSeconds: Long?, strings: Strings = Strings.app): String? {
         val drops = lines.mapNotNull { it.drop }
-        val hardest = hardestRound(lines)?.let { lines[it] }
-        val parts = listOfNotNull(
-            drops.takeIf { it.isNotEmpty() }?.let {
-                val avg = Math.round(it.average()).toInt()
-                if (restSeconds != null) "You recovered $avg bpm in ${clockOrSeconds(restSeconds)} on average." else "You recovered $avg bpm in each rest on average."
-            },
-            hardest?.let { "Round ${it.number} was your hardest." },
-        )
-        return parts.joinToString(" ").takeIf { it.isNotEmpty() }
+        val hardest = hardestRound(lines)?.let { lines[it] }?.let { strings.format(R.string.workout_summary_rounds_hardest, it.number) }
+        val recovered = drops.takeIf { it.isNotEmpty() }?.let {
+            val avg = Math.round(it.average()).toInt()
+            if (restSeconds != null) {
+                strings.format(R.string.workout_summary_rounds_recovered, avg, clockOrSeconds(restSeconds))
+            } else {
+                strings.format(R.string.workout_summary_rounds_recovered_each, avg)
+            }
+        }
+        return if (recovered != null && hardest != null) {
+            strings.format(R.string.workout_sentences, recovered, hardest)
+        } else {
+            recovered ?: hardest
+        }
     }
 
     /** The hardest of [lines], the highest peak (the first of equals), as its index; named only with 3 or more peaks. */
@@ -200,10 +213,20 @@ object FamilySummary {
     fun settledDrop(from: Int, to: Int): Int? = (from - to).takeIf { it >= SETTLED_BPM }
 
     /** "Your heart settled from 96 to 66.", or when it didn't come down, "Your heart held near 72." */
-    fun settledLine(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Your heart settled from $from to $to." else "Your heart held near $to."
+    fun settledLine(from: Int, to: Int, strings: Strings = Strings.app): String =
+        if (settledDrop(from, to) != null) {
+            strings.format(R.string.workout_summary_settled, from, to)
+        } else {
+            strings.format(R.string.workout_summary_held, to)
+        }
 
     /** [settledLine] as the share card says it: "Heart settled 96 to 66", or "Heart held near 72". */
-    fun settledShort(from: Int, to: Int): String = if (settledDrop(from, to) != null) "Heart settled $from to $to" else "Heart held near $to"
+    fun settledShort(from: Int, to: Int, strings: Strings = Strings.app): String =
+        if (settledDrop(from, to) != null) {
+            strings.format(R.string.workout_summary_settled_short, from, to)
+        } else {
+            strings.format(R.string.workout_summary_held_short, to)
+        }
 
     /**
      * A game's [periods] from its rounds, named as the live screen names them out of the [of] it was set up with
@@ -233,7 +256,7 @@ object FamilySummary {
      * average, "You finished stronger than you started" when the last block is that far above it, else "You kept your
      * effort up to the end". Null for games under half an hour.
      */
-    fun gameRead(readings: List<Pair<Long, Int>>, start: Long, end: Long): String? {
+    fun gameRead(readings: List<Pair<Long, Int>>, start: Long, end: Long, strings: Strings = Strings.app): String? {
         if (end - start < 3 * READ_BLOCK_S) return null
         val firstHalf = WorkoutCopy.averageOver(readings, start, start + (end - start) / 2) ?: return null
         val blocks = generateSequence(start) { it + READ_BLOCK_S }.takeWhile { it + READ_BLOCK_S / 2 < end }
@@ -242,9 +265,9 @@ object FamilySummary {
         val fadeFrom = blocks.indices.drop(1).firstOrNull { i -> blocks.drop(i).all { (_, avg) -> avg != null && avg <= low } }
         val last = blocks.lastOrNull()?.second
         return when {
-            fadeFrom != null -> "You faded a little after ${(blocks[fadeFrom].first - start) / 60} min."
-            last != null && last >= firstHalf * (100 + FADE_PCT) / 100 -> "You finished stronger than you started."
-            else -> "You kept your effort up to the end."
+            fadeFrom != null -> strings.format(R.string.workout_summary_game_faded, (blocks[fadeFrom].first - start) / 60)
+            last != null && last >= firstHalf * (100 + FADE_PCT) / 100 -> strings.get(R.string.workout_summary_game_stronger)
+            else -> strings.get(R.string.workout_summary_game_kept_up)
         }
     }
 
@@ -271,9 +294,13 @@ object FamilySummary {
      * The line under the week's days with the weekly goal (board SummaryMind): "3 workouts this week, 1 more for your
      * goal." or, once it's met, "4 workouts this week, goal met."
      */
-    fun weekGoalLine(count: Int, goal: Int): String {
-        val first = "$count ${if (count == 1) "workout" else "workouts"} this week"
-        return if (count >= goal) "$first, goal met." else "$first, ${goal - count} more for your goal."
+    fun weekGoalLine(count: Int, goal: Int, strings: Strings = Strings.app): String {
+        val first = strings.plural(R.plurals.workout_summary_week_count, count, count)
+        return if (count >= goal) {
+            strings.format(R.string.workout_summary_week_goal_met, first)
+        } else {
+            strings.format(R.string.workout_summary_week_goal_more, first, goal - count)
+        }
     }
 
     /** Whether a kcal [target] was reached: at [reachedSeconds], or by the [activeKcal] at the end. */
@@ -283,7 +310,9 @@ object FamilySummary {
     }
 
     /** "Mostly zone 3": the zone with the most time, or null with none. */
-    fun mostlyZone(zones: List<Int>): String? = zones.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.let { "Mostly zone ${it.index + 1}" }
+    fun mostlyZone(zones: List<Int>, strings: Strings = Strings.app): String? =
+        zones.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }
+            ?.let { strings.format(R.string.workout_summary_mostly_zone, it.index + 1) }
 
     /** Another workout of the same sport counts as like this one within this share of its active time. */
     const val SIMILAR_SHARE = 0.25
@@ -293,7 +322,10 @@ object FamilySummary {
      * sport in [others] whose active time is within [SIMILAR_SHARE] of it. Within 2 bpm, "about the same as Monday".
      * Null without one.
      */
-    fun versusLast(a: WorkoutAnalysis, others: List<WorkoutAnalysis>, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String? {
+    fun versusLast(
+        a: WorkoutAnalysis, others: List<WorkoutAnalysis>, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String? {
         val mine = a.workout.averageHeartRate ?: return null
         val active = a.activeSeconds.takeIf { it > 0 } ?: return null
         val last = others.filter {
@@ -303,9 +335,9 @@ object FamilySummary {
         val day = Instant.ofEpochSecond(last.workout.start).atZone(zone).format(DateTimeFormatter.ofPattern("EEEE", locale))
         val diff = mine - last.workout.averageHeartRate!!
         return when {
-            diff <= -3 -> "${-diff} bpm lower than $day, over a similar time."
-            diff >= 3 -> "$diff bpm higher than $day, over a similar time."
-            else -> "About the same heart rate as $day, over a similar time."
+            diff <= -3 -> strings.format(R.string.workout_summary_versus_lower, -diff, day)
+            diff >= 3 -> strings.format(R.string.workout_summary_versus_higher, diff, day)
+            else -> strings.format(R.string.workout_summary_versus_same, day)
         }
     }
 
@@ -317,17 +349,27 @@ object FamilySummary {
     }
 
     /** "Load, hard" style label for the game hero's figure: Load and how it compares with your usual. */
-    fun loadLabel(load: Int, usual: Float?): String = "Load" + loadWord(load, usual)
+    fun loadLabel(load: Int, usual: Float?, strings: Strings = Strings.app): String = strings.get(
+        when (loadBand(load, usual)) {
+            LoadBand.Above -> R.string.workout_summary_load_label_hard
+            LoadBand.Below -> R.string.workout_summary_load_label_light
+            else -> R.string.workout_summary_load_label
+        },
+    )
 
     /** The game's share card line, the number in: "Load 120, hard", "Load 80". */
-    fun loadLine(load: Int, usual: Float?): String = "Load $load" + loadWord(load, usual)
+    fun loadLine(load: Int, usual: Float?, strings: Strings = Strings.app): String = strings.format(
+        when (loadBand(load, usual)) {
+            LoadBand.Above -> R.string.workout_summary_load_line_hard
+            LoadBand.Below -> R.string.workout_summary_load_line_light
+            else -> R.string.workout_summary_load_line
+        },
+        load,
+    )
 
-    /** How [load] compares with your [usual], as the Load labels end: ", hard", ", light", or nothing. */
-    private fun loadWord(load: Int, usual: Float?): String = when (org.openstrap.app.presentation.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)) {
-        LoadBand.Above -> ", hard"
-        LoadBand.Below -> ", light"
-        else -> ""
-    }
+    /** How [load] compares with your [usual]: above it reads hard, below it light. */
+    private fun loadBand(load: Int, usual: Float?): LoadBand? =
+        org.openstrap.app.presentation.TodayCopy.loadStatus(load.toFloat(), usual, endOfDay = true)
 
     /** Whether [a] is a run whose distance came from GPS, the only one whose pace means something. */
     fun gpsDistance(meters: Float?, fromSteps: Boolean): Float? = meters?.takeIf { !fromSteps && it > 0f }

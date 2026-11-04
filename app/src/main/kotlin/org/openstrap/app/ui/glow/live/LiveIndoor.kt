@@ -32,6 +32,9 @@ import org.openstrap.app.ui.glow.workoutColor
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /**
  * Indoor cardio, and a distance sport without GPS (workouts spec 2.3, board Main): one view under the moving time.
@@ -64,11 +67,15 @@ internal fun LiveIndoorScreen(
         // "2.14 km from steps", or metres under a kilometre.
         r.workout.distanceMeters?.takeIf { it >= Units.SHOWN_FROM_METERS }?.let { m ->
             val km = m >= Units.METERS_PER_KM
-            (if (km) Units.km(m, Units.Precision.Workout) else Units.count(m.toLong())) to
-                (if (km) "km" else "m") + if (r.workout.distanceFromSteps) " from steps" else ""
+            val label = when {
+                !r.workout.distanceFromSteps -> if (km) R.string.workout_live_figure_km else R.string.workout_live_figure_m
+                km -> R.string.workout_live_figure_km_from_steps
+                else -> R.string.workout_live_figure_m_from_steps
+            }
+            (if (km) Units.km(m, Units.Precision.Workout) else Units.count(m.toLong())) to stringResource(label)
         },
-        stats?.average?.toString() to "Avg bpm",
-        kcal?.active?.toInt()?.toString() to "Active kcal",
+        stats?.average?.toString() to stringResource(R.string.workout_live_figure_avg_bpm),
+        kcal?.active?.toInt()?.toString() to stringResource(R.string.workout_live_figure_active_kcal),
     )
     LiveFrame(
         r, color, connected, contentPadding, controls,
@@ -97,7 +104,12 @@ internal fun LiveIndoorScreen(
 @Composable
 internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
     val total = zoneSeconds.sum().coerceAtLeast(1)
-    val described = zoneSeconds.withIndex().joinToString(", ") { (z, s) -> "zone ${z + 1} ${if (s < 60) "none" else "${s / 60} min"}" }
+    val res = LocalResources.current
+    val each = zoneSeconds.withIndex().joinToString(", ") { (z, s) ->
+        if (s < 60) res.getString(R.string.workout_live_zone_time_none, z + 1)
+        else res.getString(R.string.workout_live_zone_time_minutes, z + 1, s / 60)
+    }
+    val described = stringResource(R.string.workout_live_zone_times_description, each)
     val segments = zoneSeconds.mapIndexed { z, s ->
         val color = when {
             z == current -> Color.White
@@ -106,7 +118,7 @@ internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
         }
         Segment(maxOf(s.toFloat() / total, 0.04f), color)
     }
-    SegmentBar(segments, Modifier.semantics { contentDescription = "Time in each zone: $described" }, height = 8.dp, gap = 3.dp)
+    SegmentBar(segments, Modifier.semantics { contentDescription = described }, height = 8.dp, gap = 3.dp)
 }
 
 /**
@@ -125,7 +137,7 @@ private fun CompactHeartCard(
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
-                if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                if (bpm != null) HeroValue("$bpm", stringResource(R.string.workout_live_unit_bpm), dot = DotSize.Detail)
                 else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                 Spacer(Modifier.weight(1f))
                 Text(

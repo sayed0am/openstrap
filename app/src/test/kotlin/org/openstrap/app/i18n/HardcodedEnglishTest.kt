@@ -156,14 +156,8 @@ class HardcodedEnglishTest {
             "ui/glow/GoalsAndBests.kt", "ui/glow/HeartZonesScreen.kt", "ui/glow/InfoSheet.kt", "ui/glow/PageParts.kt",
             "ui/glow/ReadyCardio.kt", "ui/glow/ReadyPlans.kt", "ui/glow/ReadyScreen.kt", "ui/glow/ScoreDetail.kt",
             "ui/glow/ShareCards.kt", "ui/glow/ShareScreen.kt", "ui/glow/SleepDetail.kt", "ui/glow/SummarySections.kt",
-            "ui/glow/TodayCards.kt", "ui/glow/WorkoutCapsule.kt", "ui/glow/live/LiveDistance.kt",
-            "ui/glow/live/LiveFrame.kt", "ui/glow/live/LiveGame.kt", "ui/glow/live/LiveHeart.kt",
-            "ui/glow/live/LiveIndoor.kt", "ui/glow/live/LiveIntervals.kt", "ui/glow/live/LiveMap.kt",
-            "ui/glow/live/LiveMind.kt", "ui/glow/live/LivePaused.kt", "ui/glow/live/LiveSets.kt",
+            "ui/glow/TodayCards.kt", "ui/glow/WorkoutCapsule.kt",
             "ui/root/AppNavState.kt",
-            "ui/workout/FamilySummary.kt", "ui/workout/HeartZonesCopy.kt", "ui/workout/LiveGlance.kt",
-            "ui/workout/ReadyHero.kt", "ui/workout/StartCopy.kt", "ui/workout/SummaryCopy.kt",
-            "ui/workout/WorkoutDetailCopy.kt",
             "ui/zepp/ZeppSignIn.kt",
         )
     }

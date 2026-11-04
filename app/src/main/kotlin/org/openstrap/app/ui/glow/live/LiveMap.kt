@@ -44,6 +44,8 @@ import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
 import org.openstrap.app.ui.glow.*
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /**
  * A distance workout's map page (board Map view): the map from the top of the screen, with minimize, the heart rate
@@ -92,7 +94,7 @@ internal fun LiveMapScreen(
                 Modifier.fillMaxWidth().padding(top = top, start = 16.dp, end = 16.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                RoundIcon(AppIcons.CaretDown, "Minimize", controls.onMinimize, surface = OverMap)
+                RoundIcon(AppIcons.CaretDown, stringResource(R.string.workout_live_minimize), controls.onMinimize, surface = OverMap)
                 if (heartPill) LitHeartPill(bpm, null, color, r.paused, 44.dp)
                 Spacer(Modifier.weight(1f))
                 val acc = route.lastOrNull()?.accuracy
@@ -111,8 +113,12 @@ internal fun LiveMapScreen(
                 else Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = PANEL_OVERLAP + 44.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                MapButton(AppIcons.MapFold, if (routeOnly) "Show the map" else "Show route only, no map", lit = routeOnly) { routeOnly = !routeOnly }
-                MapButton(AppIcons.NavigationArrow, "Follow my position", lit = follow) { follow = true }
+                MapButton(
+                    AppIcons.MapFold,
+                    stringResource(if (routeOnly) R.string.workout_live_map_show_map else R.string.workout_live_map_route_only),
+                    lit = routeOnly,
+                ) { routeOnly = !routeOnly }
+                MapButton(AppIcons.NavigationArrow, stringResource(R.string.workout_live_map_follow), lit = follow) { follow = true }
             }
         }
         Column(
@@ -126,7 +132,8 @@ internal fun LiveMapScreen(
             Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), verticalAlignment = Alignment.Bottom) {
                 LiveStat(figures[0].second, Modifier.weight(1f)) { LiveValue(figures[0].first) }
                 StatRule()
-                LiveStat("Moving time", Modifier.weight(1.3f)) { ClockText(time, GlowType.mapClock, maxLines = 1) }
+                val moving = stringResource(R.string.workout_live_moving_time)
+                LiveStat(moving, Modifier.weight(1.3f)) { ClockText(time, GlowType.mapClock, maxLines = 1) }
                 StatRule()
                 LiveStat(figures[1].second, Modifier.weight(1f)) { LiveValue(figures[1].first) }
             }

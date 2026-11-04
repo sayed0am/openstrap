@@ -40,6 +40,8 @@ import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
 import androidx.compose.foundation.gestures.detectTapGestures
 import org.openstrap.app.presentation.WorkoutCopy
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 
 /** The screen dims this long after the last touch. */
 private const val DIM_AFTER_MS = 10_000L
@@ -103,7 +105,8 @@ internal fun LiveMindScreen(
             val first = values.firstOrNull { it != null }?.toInt()
             Text(
                 bpm?.let { b ->
-                    "Heart rate $b, settling" + (first?.minus(b)?.takeIf { it > 0 }?.let { ", down $it since you started" } ?: "")
+                    first?.minus(b)?.takeIf { it > 0 }?.let { stringResource(R.string.workout_live_mind_heart_down, b, it) }
+                        ?: stringResource(R.string.workout_live_mind_heart, b)
                 } ?: WorkoutCopy.noHeartRate(r.paused, connected),
                 color = Color.White.copy(alpha = 0.8f), style = GlowType.body,
                 modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
@@ -139,7 +142,9 @@ private fun MindClock(time: () -> Long, length: Long?) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1)
         Text(
-            length?.let { "of ${it / 60} min" + if (active >= it) ", the length is up" else "" } ?: "Open, no length",
+            length?.let {
+                stringResource(if (active >= it) R.string.workout_live_mind_length_up else R.string.workout_live_mind_length, it / 60)
+            } ?: stringResource(R.string.workout_live_mind_open),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
         )
     }

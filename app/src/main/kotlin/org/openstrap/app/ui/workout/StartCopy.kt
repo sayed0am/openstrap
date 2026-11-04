@@ -1,6 +1,8 @@
 package org.openstrap.app.ui.workout
 
+import androidx.annotation.StringRes
 import androidx.compose.ui.graphics.vector.ImageVector
+import org.openstrap.app.R
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.Strength
 import org.openstrap.app.data.WorkoutAnalysis
@@ -8,6 +10,7 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
@@ -19,54 +22,73 @@ import org.openstrap.app.presentation.WorkoutCopy
 
 /*
  * What Choose and Ready say (workouts spec 2.1, 2.2, 7): the sport, the goal and what the strap will do, never the
- * family. Pure, so it's tested without the screens.
+ * family. Pure, so it's tested without the screens. The text is in res/values/strings_workout_start.xml.
  */
 object StartCopy {
     /** The strap's one line on Choose: "Strap ready, 72 bpm", or what's wrong. */
-    fun strapLine(connection: ConnectionState, bpm: Int?): String = when (connection) {
-        is ConnectionState.Connected -> if (bpm != null) "Strap ready, $bpm bpm" else "Strap ready"
-        ConnectionState.Connecting, ConnectionState.Authenticating -> "Connecting to the strap"
-        ConnectionState.NotPaired -> "No strap paired. You can start anyway."
-        ConnectionState.Disconnected, is ConnectionState.Failed -> "Strap not connected. You can start anyway."
+    fun strapLine(connection: ConnectionState, bpm: Int?, strings: Strings = Strings.app): String = when (connection) {
+        is ConnectionState.Connected ->
+            bpm?.let { strings.format(R.string.workout_start_strap_ready_bpm, it) } ?: strings.get(R.string.workout_start_strap_ready)
+        ConnectionState.Connecting, ConnectionState.Authenticating -> strings.get(R.string.workout_start_strap_connecting)
+        ConnectionState.NotPaired -> strings.get(R.string.workout_start_strap_not_paired)
+        ConnectionState.Disconnected, is ConnectionState.Failed -> strings.get(R.string.workout_start_strap_not_connected)
     }
 
     /** The goal chip for no goal, named for the sport: "Just run", "Just walk", "Just ride", else "Just go". */
-    fun noGoal(type: Int): String = when {
-        type in SportTypes.RUNS -> "Just run"
-        type in SportTypes.WALKS -> "Just walk"
-        Workouts.tileType(type) == 4 -> "Just ride"
-        else -> "Just go"
-    }
+    fun noGoal(type: Int, strings: Strings = Strings.app): String = strings.get(
+        when {
+            type in SportTypes.RUNS -> R.string.workout_start_just_run
+            type in SportTypes.WALKS -> R.string.workout_start_just_walk
+            Workouts.tileType(type) == 4 -> R.string.workout_start_just_ride
+            else -> R.string.workout_start_just_go
+        },
+    )
 
     /** No plan: strength's open sets, or mind and body with no length. */
-    const val OPEN = "Open"
+    val OPEN: String get() = Strings.app.get(R.string.workout_start_open)
 
     /** Above Ready's plan card, by family: "Goal", "Plan", "Length", "Match". */
-    fun planTitle(family: Workouts.Family): String = when (family) {
-        Workouts.Family.Distance, Workouts.Family.IndoorCardio -> "Goal"
-        Workouts.Family.Strength, Workouts.Family.Intervals -> "Plan"
-        Workouts.Family.MindBody -> "Length"
-        Workouts.Family.Games -> "Match"
-    }
+    fun planTitle(family: Workouts.Family, strings: Strings = Strings.app): String = strings.get(
+        when (family) {
+            Workouts.Family.Distance, Workouts.Family.IndoorCardio -> R.string.workout_start_plan_title_goal
+            Workouts.Family.Strength, Workouts.Family.Intervals -> R.string.workout_start_plan_title_plan
+            Workouts.Family.MindBody -> R.string.workout_start_plan_title_length
+            Workouts.Family.Games -> R.string.workout_start_plan_title_match
+        },
+    )
 
     /** The plan pill's sheet title, and what the pill says it does to a screen reader. */
-    fun planSheet(family: Workouts.Family): String = if (family == Workouts.Family.Games) "Free play or periods" else "Choose a ${planTitle(family).lowercase()}"
-    fun planHint(family: Workouts.Family): String = "Change the ${planTitle(family).lowercase()}"
+    fun planSheet(family: Workouts.Family, strings: Strings = Strings.app): String = strings.get(
+        when (family) {
+            Workouts.Family.Distance, Workouts.Family.IndoorCardio -> R.string.workout_start_plan_sheet_goal
+            Workouts.Family.Strength, Workouts.Family.Intervals -> R.string.workout_start_plan_sheet_plan
+            Workouts.Family.MindBody -> R.string.workout_start_plan_sheet_length
+            Workouts.Family.Games -> R.string.workout_start_plan_sheet_games
+        },
+    )
+    fun planHint(family: Workouts.Family, strings: Strings = Strings.app): String = strings.get(
+        when (family) {
+            Workouts.Family.Distance, Workouts.Family.IndoorCardio -> R.string.workout_start_plan_hint_goal
+            Workouts.Family.Strength, Workouts.Family.Intervals -> R.string.workout_start_plan_hint_plan
+            Workouts.Family.MindBody -> R.string.workout_start_plan_hint_length
+            Workouts.Family.Games -> R.string.workout_start_plan_hint_match
+        },
+    )
 
     /** A typed number in [range]; null for anything else. */
     fun parseNumber(text: String, range: LongRange): Long? = text.trim().toLongOrNull()?.takeIf { it in range }
 
     /* -------------------------------------------- Strength's plan ------------------------------------------- */
 
-    const val PLAN = "Plan"
-    const val STRENGTH_STATUS = "The strap buzzes when rest is over, so the phone can stay on the bench."
-    const val OPEN_SETS_KIND_NOTE = "As many sets as you like, rest after each"
-    const val PLAN_KIND_NOTE = "A number of sets with rest between"
-    const val OPEN_SETS_NOTE = "As many sets as you like. The strap buzzes when rest is over."
-    const val STRENGTH_TYPING = "How many sets, then the rest in seconds"
+    val PLAN: String get() = Strings.app.get(R.string.workout_start_strength_plan)
+    val STRENGTH_STATUS: String get() = Strings.app.get(R.string.workout_start_strength_status)
+    val OPEN_SETS_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_open_sets_kind_note)
+    val PLAN_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_plan_kind_note)
+    val OPEN_SETS_NOTE: String get() = Strings.app.get(R.string.workout_start_open_sets_note)
+    val STRENGTH_TYPING: String get() = Strings.app.get(R.string.workout_start_strength_typing)
 
     /** The sets presets under the plan. */
-    val SET_PRESETS: List<Pair<Int, String>> = (3..6).map { it to "$it sets" }
+    val SET_PRESETS: List<Pair<Int, String>> get() = (3..6).map { it to Strings.app.plural(R.plurals.workout_start_sets, it, it) }
 
     /** What the plan opens on when there's none from last time. */
     const val DEFAULT_SETS = 5
@@ -77,31 +99,31 @@ object StartCopy {
     /** Typed rest in seconds, within [Strength.Rest.RANGE_S]. */
     fun parseSetRest(text: String): Long? = parseNumber(text, Strength.Rest.RANGE_S)
 
-    const val END_REST_EARLY = "End rest early"
+    val END_REST_EARLY: String get() = Strings.app.get(R.string.workout_start_end_rest_early)
 
     /** End rest early's note, with the level it ends at: "Once you're under 110 bpm". */
-    fun endRestNote(bpm: Int): String = "Once you're under $bpm bpm"
+    fun endRestNote(bpm: Int, strings: Strings = Strings.app): String = strings.format(R.string.workout_start_end_rest_note, bpm)
 
     /** The level End rest early turns on at when none was chosen before. */
     const val DEFAULT_BELOW = 110
 
-    const val LOG_SETS = "Log reps and weight"
-    const val LOG_SETS_NOTE = "A quick card after each set"
+    val LOG_SETS: String get() = Strings.app.get(R.string.workout_start_log_sets)
+    val LOG_SETS_NOTE: String get() = Strings.app.get(R.string.workout_start_log_sets_note)
 
-    const val GAMES_STATUS = "Phone in your bag? That's fine."
+    val GAMES_STATUS: String get() = Strings.app.get(R.string.workout_start_games_status)
 
     /** The GPS line on Ready for an outdoor sport: finding a fix with its accuracy, then ready with it ("GPS ready, 6 m"). */
-    fun gpsStatus(accuracy: Float?): String = when {
-        accuracy == null || accuracy > 1000 -> "Finding GPS"
-        accuracy > Route.MAX_ACCURACY_M -> "Finding GPS, ±${accuracy.toInt()} m"
-        else -> "GPS ready, ${accuracy.roundToInt().coerceAtLeast(1)} m"
+    fun gpsStatus(accuracy: Float?, strings: Strings = Strings.app): String = when {
+        accuracy == null || accuracy > 1000 -> strings.get(R.string.workout_start_gps_finding)
+        accuracy > Route.MAX_ACCURACY_M -> strings.format(R.string.workout_start_gps_finding_accuracy, accuracy.toInt())
+        else -> strings.format(R.string.workout_start_gps_ready, accuracy.roundToInt().coerceAtLeast(1))
     }
 
     /** Under two minutes in seconds ("90 s"), then minutes: "2 min", "2 min 30 s". */
-    fun restText(seconds: Long): String = when {
-        seconds < 120 -> "$seconds s"
-        seconds % 60 == 0L -> "${seconds / 60} min"
-        else -> "${seconds / 60} min ${seconds % 60} s"
+    fun restText(seconds: Long, strings: Strings = Strings.app): String = when {
+        seconds < 120 -> strings.format(R.string.workout_start_seconds, seconds)
+        seconds % 60 == 0L -> strings.format(R.string.workout_start_minutes, seconds / 60)
+        else -> strings.format(R.string.workout_start_minutes_seconds, seconds / 60, seconds % 60)
     }
 
     /**
@@ -111,32 +133,49 @@ object StartCopy {
     class HiitPreset(val rounds: org.openstrap.app.data.Structure?, val name: String, val note: String, val icon: ImageVector?)
 
     /** HIIT's presets on Ready, Free last. */
-    val PRESETS: List<HiitPreset> = listOf(
-        HiitPreset(org.openstrap.app.data.Structure.TABATA, "Tabata", "20 s on, 10 off, 8 rounds", AppIcons.Timer),
-        HiitPreset(org.openstrap.app.data.Structure.FORTY_TWENTY, "40 / 20", "10 rounds", AppIcons.Hourglass),
-        HiitPreset(org.openstrap.app.data.Structure.EVERY_MINUTE, "Every minute", "12 rounds, rest is what's left", AppIcons.Alarm),
-        HiitPreset(null, "Free", "No timer, laps mark the rounds", null),
+    val PRESETS: List<HiitPreset> get() = presets(Strings.app)
+
+    private fun presets(strings: Strings): List<HiitPreset> = listOf(
+        HiitPreset(
+            org.openstrap.app.data.Structure.TABATA, strings.get(R.string.workout_start_preset_tabata),
+            strings.get(R.string.workout_start_preset_tabata_note), AppIcons.Timer,
+        ),
+        HiitPreset(
+            org.openstrap.app.data.Structure.FORTY_TWENTY, strings.get(R.string.workout_start_preset_forty_twenty),
+            strings.get(R.string.workout_start_preset_forty_twenty_note), AppIcons.Hourglass,
+        ),
+        HiitPreset(
+            org.openstrap.app.data.Structure.EVERY_MINUTE, strings.get(R.string.workout_start_every_minute),
+            strings.get(R.string.workout_start_preset_every_minute_note), AppIcons.Alarm,
+        ),
+        HiitPreset(null, strings.get(R.string.workout_start_preset_free), strings.get(R.string.workout_start_preset_free_note), null),
     )
 
-    const val INTERVALS_STATUS = "The strap buzzes at every switch, so the phone can stay on the floor."
-    const val HIIT_FREE_NOTE = "No timer. Laps mark the rounds."
-    const val HIIT_TYPING = "Work, then rest, then how many rounds"
-    const val EVERY_TYPING = "Each round's time, then how many rounds"
-    const val WARM_UP = "Warm up first"
-    const val WARM_UP_NOTE = "No timer until you start the rounds."
+    val INTERVALS_STATUS: String get() = Strings.app.get(R.string.workout_start_intervals_status)
+    val HIIT_FREE_NOTE: String get() = Strings.app.get(R.string.workout_start_hiit_free_note)
+    val HIIT_TYPING: String get() = Strings.app.get(R.string.workout_start_hiit_typing)
+    val EVERY_TYPING: String get() = Strings.app.get(R.string.workout_start_every_typing)
+    val WARM_UP: String get() = Strings.app.get(R.string.workout_start_warm_up)
+    val WARM_UP_NOTE: String get() = Strings.app.get(R.string.workout_start_warm_up_note)
 
     /** HIIT's plan in its pill: a preset's name, else what it is ("30 / 15", "Every 90 s"). */
-    fun hiitName(s: org.openstrap.app.data.Structure): String {
-        PRESETS.firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
+    fun hiitName(s: org.openstrap.app.data.Structure, strings: Strings = Strings.app): String {
+        presets(strings).firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
         return when (s) {
-            is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}"
-            is org.openstrap.app.data.Structure.EveryMinute -> if (s.period == 60L) "Every minute" else "Every ${restText(s.period)}"
-            else -> structureName(s)
+            is org.openstrap.app.data.Structure.Timed -> strings.format(R.string.workout_start_work_rest, s.work, s.rest)
+            is org.openstrap.app.data.Structure.EveryMinute ->
+                if (s.period == 60L) {
+                    strings.get(R.string.workout_start_every_minute)
+                } else {
+                    strings.format(R.string.workout_start_every, restText(s.period, strings))
+                }
+            else -> structureName(s, strings)
         }
     }
 
     /** All of a timed structure's time, in a line beside its rounds: "4:00 in all"; null where it has none. */
-    fun totalLine(s: org.openstrap.app.data.Structure): String? = totalTime(s)?.let { "${Units.workoutClock(it)} in all" }
+    fun totalLine(s: org.openstrap.app.data.Structure, strings: Strings = Strings.app): String? =
+        totalTime(s)?.let { strings.format(R.string.workout_start_total_line, Units.workoutClock(it)) }
 
     /** Typed work, rest and rounds over [s]: work 5 s to 10 min, rest up to 10 min, 1 to [MAX_ROUNDS]; what doesn't read stays. */
     fun typedTimed(s: org.openstrap.app.data.Structure.Timed, typed: List<String>): org.openstrap.app.data.Structure.Timed = s.copy(
@@ -154,65 +193,90 @@ object StartCopy {
     const val MAX_ROUNDS = 50
 
     /** A structure's name: a preset's ("Tabata"), else what it is ("6 × 400 m", "8 × 2 min", "30 / 15, 6 rounds"). */
-    fun structureName(s: org.openstrap.app.data.Structure): String {
-        PRESETS.firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
+    fun structureName(s: org.openstrap.app.data.Structure, strings: Strings = Strings.app): String {
+        presets(strings).firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
         return when (s) {
-            is org.openstrap.app.data.Structure.Timed -> "${s.work} / ${s.rest}, ${s.rounds} rounds"
-            is org.openstrap.app.data.Structure.EveryMinute -> "Every ${restText(s.period)}, ${s.rounds} rounds"
+            is org.openstrap.app.data.Structure.Timed -> strings.format(R.string.workout_start_structure_timed, s.work, s.rest, s.rounds)
+            is org.openstrap.app.data.Structure.EveryMinute ->
+                strings.format(R.string.workout_start_structure_every, restText(s.period, strings), s.rounds)
             // As Ready's rep field and note say it ([repParts]): "6 × 1.5 km", "8 × 1 min".
-            is org.openstrap.app.data.Structure.Reps -> repParts(s).let { (n, unit) -> "${s.rounds} × $n $unit" }
-            is org.openstrap.app.data.Structure.Periods -> periodsName(s)
+            is org.openstrap.app.data.Structure.Reps ->
+                strings.format(R.string.workout_start_structure_reps, s.rounds, repLength(s, strings))
+            is org.openstrap.app.data.Structure.Periods -> periodsName(s, strings)
         }
+    }
+
+    /** A rep's length with its unit, as [repParts] splits it: "400 m", "1.5 km", "4 min", "90 s". */
+    private fun repLength(r: org.openstrap.app.data.Structure.Reps, strings: Strings): String = when {
+        r.meters != null -> if (r.meters >= 1000) {
+            strings.format(R.string.workout_start_km, distanceValue(r.meters))
+        } else {
+            strings.format(R.string.workout_start_meters, r.meters)
+        }
+        (r.seconds ?: 0) % 60 == 0L -> strings.format(R.string.workout_start_minutes, (r.seconds ?: 0) / 60)
+        else -> strings.format(R.string.workout_start_seconds, r.seconds ?: 0)
     }
 
     /** "Halves", "Quarters" or "3 periods". */
-    fun periodsName(s: org.openstrap.app.data.Structure.Periods): String = when (s.rounds) {
-        2 -> "Halves"
-        4 -> "Quarters"
-        else -> "${s.rounds} periods"
+    fun periodsName(s: org.openstrap.app.data.Structure.Periods, strings: Strings = Strings.app): String = when (s.rounds) {
+        2 -> strings.get(R.string.workout_start_halves)
+        4 -> strings.get(R.string.workout_start_quarters)
+        else -> strings.format(R.string.workout_start_periods, s.rounds)
     }
 
-    /** A period by its place: "1st half", "3rd quarter", "Period 2". */
-    fun periodName(index: Int, of: Int): String {
+    /**
+     * A period by its place: "1st half", "3rd quarter", "Period 2". Each half and quarter is its own string, since
+     * languages put the place in the word differently. A game never has more of them than it was set up with, so past
+     * those it reads as a numbered period.
+     */
+    fun periodName(index: Int, of: Int, strings: Strings = Strings.app): String {
         val n = index + 1
-        val nth = when {
-            n % 100 in 11..13 -> "${n}th"
-            n % 10 == 1 -> "${n}st"
-            n % 10 == 2 -> "${n}nd"
-            n % 10 == 3 -> "${n}rd"
-            else -> "${n}th"
+        val id = when (of) {
+            2 -> HALVES.getOrNull(index)
+            4 -> QUARTERS.getOrNull(index)
+            else -> null
         }
-        return when (of) {
-            2 -> "$nth half"
-            4 -> "$nth quarter"
-            else -> "Period $n"
-        }
+        return if (id != null) strings.get(id) else strings.format(R.string.workout_start_period_n, n)
     }
+
+    private val HALVES = listOf(R.string.workout_start_half_1, R.string.workout_start_half_2)
+    private val QUARTERS = listOf(
+        R.string.workout_start_quarter_1, R.string.workout_start_quarter_2,
+        R.string.workout_start_quarter_3, R.string.workout_start_quarter_4,
+    )
 
     /** What the break between periods is called. */
-    fun breakName(of: Int): String = if (of == 2) "Half time" else "Break"
+    fun breakName(of: Int, strings: Strings = Strings.app): String =
+        strings.get(if (of == 2) R.string.workout_start_half_time else R.string.workout_start_break)
 
     /** Mind and body's line on Ready (workouts spec 2.2), with a length and without one. */
-    const val MIND_STATUS = "Quiet strap and a dim screen. One soft buzz at the end."
-    const val MIND_OPEN_NOTE = "Quiet strap and a dim screen. End it when you're ready."
-    const val MIND_OPEN_KIND_NOTE = "No length, end it yourself"
-    const val MIND_TIME_KIND_NOTE = "One soft buzz when the time is up"
+    val MIND_STATUS: String get() = Strings.app.get(R.string.workout_start_mind_status)
+    val MIND_OPEN_NOTE: String get() = Strings.app.get(R.string.workout_start_mind_open_note)
+    val MIND_OPEN_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_mind_open_kind_note)
+    val MIND_TIME_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_mind_time_kind_note)
 
     /** Mind and body's length presets: 15, 30 and 45 min and 1 h. */
-    val MIND_PRESETS: List<Pair<Long, String>> = org.openstrap.app.data.WorkoutSetup.LENGTHS.map { it.seconds to timeValue(it.seconds) }
+    val MIND_PRESETS: List<Pair<Long, String>>
+        get() = org.openstrap.app.data.WorkoutSetup.LENGTHS.map { it.seconds to timeValue(it.seconds) }
 
     /** A game's choice on Ready: free play or its periods. */
-    const val FREE_PLAY = "Free play"
-    const val FREE_PLAY_KIND_NOTE = "No periods, the clock just runs"
-    const val HALVES_KIND_NOTE = "Two halves with half time between"
-    const val QUARTERS_KIND_NOTE = "Four quarters with a break between each"
-    const val GAMES_TYPING = "How many, how long, then the break"
+    val FREE_PLAY: String get() = Strings.app.get(R.string.workout_start_free_play)
+    val FREE_PLAY_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_free_play_kind_note)
+    val HALVES_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_halves_kind_note)
+    val QUARTERS_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_quarters_kind_note)
+    val GAMES_TYPING: String get() = Strings.app.get(R.string.workout_start_games_typing)
 
     /** What a game's strap does: "...The strap buzzes at the end of each half and break.", or nothing in free play. */
-    fun gamesNote(p: org.openstrap.app.data.Structure.Periods?): String {
-        p ?: return GAMES_STATUS
-        val each = when (p.rounds) { 2 -> "half"; 4 -> "quarter"; else -> "period" }
-        return "$GAMES_STATUS The strap buzzes at the end of each $each" + if (p.rest > 0 && p.rounds > 1) " and break." else "."
+    fun gamesNote(p: org.openstrap.app.data.Structure.Periods?, strings: Strings = Strings.app): String {
+        p ?: return strings.get(R.string.workout_start_games_status)
+        val breaks = p.rest > 0 && p.rounds > 1
+        return strings.get(
+            when (p.rounds) {
+                2 -> if (breaks) R.string.workout_start_games_note_half_break else R.string.workout_start_games_note_half
+                4 -> if (breaks) R.string.workout_start_games_note_quarter_break else R.string.workout_start_games_note_quarter
+                else -> if (breaks) R.string.workout_start_games_note_period_break else R.string.workout_start_games_note_period
+            },
+        )
     }
 
     /** Typed periods, minutes long and break minutes over [p]: 2 to 8 periods of 1 to 90 min, a break up to 30 min. */
@@ -234,74 +298,89 @@ object StartCopy {
      * Your usual's line: what you did last time and when ("Last time 5.2 km, Tuesday"): the distance for a distance
      * sport that has one, the sets for strength, else the minutes.
      */
-    fun lastTime(a: WorkoutAnalysis, today: LocalDate, zone: java.time.ZoneId, locale: Locale = Locale.getDefault()): String {
+    fun lastTime(
+        a: WorkoutAnalysis, today: LocalDate, zone: java.time.ZoneId, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+    ): String {
         val what = when {
             a.distanceMeters != null && a.distanceMeters >= 100 && Workouts.family(a.workout.sportType) == Workouts.Family.Distance ->
                 Units.distance(a.distanceMeters, Units.Precision.Workout, locale = locale).orEmpty()
-            a.sets != null && a.sets > 0 -> if (a.sets == 1) "1 set" else "${a.sets} sets"
-            else -> "${(a.activeSeconds / 60).coerceAtLeast(1)} min"
+            a.sets != null && a.sets > 0 -> strings.plural(R.plurals.workout_start_sets, a.sets, a.sets)
+            else -> strings.format(R.string.workout_start_minutes, (a.activeSeconds / 60).coerceAtLeast(1))
         }
         val day = java.time.Instant.ofEpochSecond(a.workout.start).atZone(zone).toLocalDate()
-        return "Last time $what, ${DayWords.inSentence(day, today, locale)}"
+        return strings.format(R.string.workout_start_last_time, what, DayWords.inSentence(day, today, locale))
     }
 
     /* -------------------------------------------- Ready's where --------------------------------------------- */
 
     /** Start on Ready, naming the sport: "Start run", and "Start treadmill run" on the treadmill. */
-    fun startLabel(type: Int): String = if (type == TREADMILL) "Start treadmill run" else WorkoutCopy.startLabel(type)
+    fun startLabel(type: Int, strings: Strings = Strings.app): String =
+        if (type == TREADMILL) strings.get(R.string.workout_start_start_treadmill) else WorkoutCopy.startLabel(type)
 
     /** Where row's title for the side you're on: "Outside", "On a treadmill", "Indoors", "Open water", "In a pool". */
-    fun place(sides: Workouts.Sides, indoor: Boolean): String = when {
-        !indoor -> if (sides.outdoor == OPEN_WATER) "Open water" else "Outside"
-        sides.indoor == TREADMILL -> "On a treadmill"
-        sides.indoor == POOL -> "In a pool"
-        else -> "Indoors"
-    }
+    fun place(sides: Workouts.Sides, indoor: Boolean, strings: Strings = Strings.app): String = strings.get(
+        when {
+            !indoor -> if (sides.outdoor == OPEN_WATER) R.string.workout_start_place_open_water else R.string.workout_start_place_outside
+            sides.indoor == TREADMILL -> R.string.workout_start_place_treadmill
+            sides.indoor == POOL -> R.string.workout_start_place_pool
+            else -> R.string.workout_start_place_indoors
+        },
+    )
 
     /** The where row's pill, naming the other side: "Treadmill", "Outside", "Indoors", "Pool", "Open water". */
-    fun otherPlace(sides: Workouts.Sides, indoor: Boolean): String = when {
-        indoor -> if (sides.outdoor == OPEN_WATER) "Open water" else "Outside"
-        sides.indoor == TREADMILL -> "Treadmill"
-        sides.indoor == POOL -> "Pool"
-        else -> "Indoors"
-    }
+    fun otherPlace(sides: Workouts.Sides, indoor: Boolean, strings: Strings = Strings.app): String = strings.get(
+        when {
+            indoor -> if (sides.outdoor == OPEN_WATER) R.string.workout_start_other_open_water else R.string.workout_start_other_outside
+            sides.indoor == TREADMILL -> R.string.workout_start_other_treadmill
+            sides.indoor == POOL -> R.string.workout_start_other_pool
+            else -> R.string.workout_start_other_indoors
+        },
+    )
 
     /** Under an indoor side's title: what you get without GPS. */
-    fun indoorNote(type: Int): String = when {
-        type in SportTypes.RUNS -> "Pace from your steps"
-        type in SportTypes.ON_FOOT -> "Distance from your steps"
-        else -> "Time and your heart, no distance"
-    }
+    fun indoorNote(type: Int, strings: Strings = Strings.app): String = strings.get(
+        when {
+            type in SportTypes.RUNS -> R.string.workout_start_indoor_note_run
+            type in SportTypes.ON_FOOT -> R.string.workout_start_indoor_note_on_foot
+            else -> R.string.workout_start_indoor_note_other
+        },
+    )
 
     private const val TREADMILL = 2
+    private const val CYCLING = 4
+    private const val INDOOR_CYCLING = 8
+    private const val SKIING = 12
+    private const val RUCKING = 225
     private const val POOL = 6
     private const val OPEN_WATER = 7
 
     /* -------------------------------------------- Ready's goal ---------------------------------------------- */
 
     /** The goal kinds' names after the sport's [noGoal], in the goal pill and its sheet. */
-    const val DISTANCE = "Distance"
-    const val TIME = "Time"
-    const val ZONE = "Zone"
-    const val INTERVALS = "Intervals"
+    val DISTANCE: String get() = Strings.app.get(R.string.workout_start_kind_distance)
+    val TIME: String get() = Strings.app.get(R.string.workout_start_kind_time)
+    val ZONE: String get() = Strings.app.get(R.string.workout_start_kind_zone)
+    val INTERVALS: String get() = Strings.app.get(R.string.workout_start_kind_intervals)
 
-    const val TAP_TO_TYPE = "Tap to type"
+    val TAP_TO_TYPE: String get() = Strings.app.get(R.string.workout_start_tap_to_type)
 
     /** Under each goal kind in the pill's sheet, what the strap does with it. */
-    const val DISTANCE_KIND_NOTE = "A buzz at halfway and at the goal"
-    const val TIME_KIND_NOTE = "A buzz when the time is up"
-    const val ZONE_KIND_NOTE = "A buzz when you leave your zone"
-    const val INTERVALS_KIND_NOTE = "Repeats with rest between, a buzz at each switch"
+    val DISTANCE_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_distance_kind_note)
+    val TIME_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_time_kind_note)
+    val ZONE_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_zone_kind_note)
+    val INTERVALS_KIND_NOTE: String get() = Strings.app.get(R.string.workout_start_intervals_kind_note)
 
     /** No goal's note: what's recorded, the distance only where there is one. */
-    fun noGoalNote(hasDistance: Boolean): String = if (hasDistance) "No goal. Time, distance and your heart." else "No goal. Time and your heart."
+    fun noGoalNote(hasDistance: Boolean, strings: Strings = Strings.app): String =
+        strings.get(if (hasDistance) R.string.workout_start_no_goal_note_distance else R.string.workout_start_no_goal_note)
 
     /** A distance goal's value in km, as typed: "5", "7.5", "12.45", and a half marathon "21.1". */
     fun distanceValue(meters: Int): String =
         if (meters % 1000 == 0) "${meters / 1000}" else String.format(Locale.ROOT, "%.2f", meters / 1000.0).trimEnd('0').trimEnd('.')
 
     /** What a distance goal does: "The strap buzzes at halfway and at 7.5 km." */
-    fun distanceNote(meters: Int): String = "The strap buzzes at halfway and at ${distanceValue(meters)} km."
+    fun distanceNote(meters: Int, strings: Strings = Strings.app): String =
+        strings.format(R.string.workout_start_distance_note, distanceValue(meters))
 
     /** Typed km ("12.4", "12,4") as metres, 0.1 to [MAX_KM] km; null for anything else. */
     fun parseDistance(text: String): Int? {
@@ -319,15 +398,19 @@ object StartCopy {
     const val MAX_KM = 300
 
     /** The distance presets under the value: 3, 5 and 10 km and a half marathon, with their labels. */
-    val DISTANCE_PRESETS: List<Pair<Int, String>> = listOf(3000 to "3", 5000 to "5", 10_000 to "10", HALF_MARATHON to "Half")
+    val DISTANCE_PRESETS: List<Pair<Int, String>>
+        get() = listOf(3000 to "3", 5000 to "5", 10_000 to "10", HALF_MARATHON to Strings.app.get(R.string.workout_start_half_marathon))
 
     const val HALF_MARATHON = 21_097
 
     /** A time goal's value as numbers and units: "1" "h" "15" "min", "1" "h", or "45" "min" under an hour. */
-    fun timeParts(seconds: Long): List<Pair<String, String>> {
+    fun timeParts(seconds: Long, strings: Strings = Strings.app): List<Pair<String, String>> {
         val h = seconds / 3600
         val m = seconds / 60 % 60
-        return listOfNotNull(("$h" to "h").takeIf { h > 0 }, ("$m" to "min").takeIf { m > 0 || h == 0L })
+        return listOfNotNull(
+            ("$h" to strings.get(R.string.workout_start_unit_h)).takeIf { h > 0 },
+            ("$m" to strings.get(R.string.workout_start_unit_min)).takeIf { m > 0 || h == 0L },
+        )
     }
 
     /** A time goal in one line, as every duration reads ([Units.duration]): "1 h 15", "1 h", "45 min". */
@@ -350,29 +433,44 @@ object StartCopy {
     }
 
     /** The time presets under the value: 30 and 45 min, 1 h and 1 h 30, with their labels. */
-    val TIME_PRESETS: List<Pair<Long, String>> = listOf(1800L to "30 min", 2700L to "45 min", 3600L to "1 h", 5400L to "1 h 30")
+    val TIME_PRESETS: List<Pair<Long, String>>
+        get() = Strings.app.let { s ->
+            listOf(
+                1800L to s.format(R.string.workout_start_minutes, 30), 2700L to s.format(R.string.workout_start_minutes, 45),
+                3600L to s.format(R.string.workout_start_hours, 1), 5400L to s.format(R.string.workout_start_hours_minutes, 1, 30),
+            )
+        }
 
     /** A time goal's note: when it would end if you started now, "Ends near 19:15". */
-    fun endsNear(now: java.time.LocalTime, seconds: Long, is24Hour: Boolean): String =
-        "Ends near " + TimeOfDay.format(now.plusSeconds(seconds), is24Hour)
+    fun endsNear(now: java.time.LocalTime, seconds: Long, is24Hour: Boolean, strings: Strings = Strings.app): String =
+        strings.format(R.string.workout_start_ends_near, TimeOfDay.format(now.plusSeconds(seconds), is24Hour))
 
     /** While a time is typed: "Type hours, then minutes. Ends near 19:15". */
-    fun timeTypingNote(endsNear: String): String = "Type hours, then minutes. $endsNear"
+    fun timeTypingNote(endsNear: String, strings: Strings = Strings.app): String =
+        strings.format(R.string.workout_start_time_typing_note, endsNear)
 
     /** How the zone buttons work, and what the strap does. */
-    const val ZONE_NOTE = "Tap a zone, or a second one for a range. The strap buzzes when you leave it."
+    val ZONE_NOTE: String get() = Strings.app.get(R.string.workout_start_zone_note)
 
-    const val YOUR_ZONES = "Your zones"
+    val YOUR_ZONES: String get() = Strings.app.get(R.string.workout_start_your_zones)
 
     /**
      * A zone goal's heart rates in [zones] at [maxHr], with the zones' names: "115 to 152 bpm, aerobic to tempo",
      * "115 to 133 bpm, aerobic", and up from zone 5: "172 bpm and up, max".
      */
-    fun zoneRangeLine(goal: WorkoutTarget.Zones, zones: org.openstrap.app.data.HeartZones, maxHr: Int): String {
+    fun zoneRangeLine(
+        goal: WorkoutTarget.Zones, zones: org.openstrap.app.data.HeartZones, maxHr: Int, strings: Strings = Strings.app,
+    ): String {
         val from = zones.startBpm(goal.low, maxHr)
-        val bpm = zones.endBpm(goal.high, maxHr)?.let { "$from to $it bpm" } ?: "$from bpm and up"
-        val names = if (goal.low == goal.high) ZONE_NAMES[goal.low].lowercase() else "${ZONE_NAMES[goal.low].lowercase()} to ${ZONE_NAMES[goal.high].lowercase()}"
-        return "$bpm, $names"
+        val to = zones.endBpm(goal.high, maxHr)
+        val low = ZONE_NAMES[goal.low].lowercase()
+        val high = ZONE_NAMES[goal.high].lowercase()
+        return when {
+            to != null && goal.low == goal.high -> strings.format(R.string.workout_start_zone_range_one, from, to, low)
+            to != null -> strings.format(R.string.workout_start_zone_range, from, to, low, high)
+            goal.low == goal.high -> strings.format(R.string.workout_start_zone_up_one, from, low)
+            else -> strings.format(R.string.workout_start_zone_up, from, low, high)
+        }
     }
 
     /** Run intervals' presets on Ready: 8 × 200 m, 6 × 400 m, 5 × 1 km and 4 × 4 min, each with its rest. */
@@ -387,35 +485,53 @@ object StartCopy {
     val DEFAULT_INTERVALS: org.openstrap.app.data.Structure.Reps = INTERVAL_PRESETS[1]
 
     /** A rep's length as a number and its unit: "400" "m", "1.5" "km", "4" "min", "90" "s". */
-    fun repParts(r: org.openstrap.app.data.Structure.Reps): Pair<String, String> = when {
-        r.meters != null -> if (r.meters >= 1000) distanceValue(r.meters) to "km" else "${r.meters}" to "m"
-        (r.seconds ?: 0) % 60 == 0L -> "${(r.seconds ?: 0) / 60}" to "min"
-        else -> "${r.seconds}" to "s"
+    fun repParts(r: org.openstrap.app.data.Structure.Reps, strings: Strings = Strings.app): Pair<String, String> = when {
+        r.meters != null -> if (r.meters >= 1000) {
+            distanceValue(r.meters) to strings.get(R.string.workout_start_unit_km)
+        } else {
+            "${r.meters}" to strings.get(R.string.workout_start_unit_m)
+        }
+        (r.seconds ?: 0) % 60 == 0L -> "${(r.seconds ?: 0) / 60}" to strings.get(R.string.workout_start_unit_min)
+        else -> "${r.seconds}" to strings.get(R.string.workout_start_unit_s)
     }
 
     /** The rest between reps as a number and its unit: "90" "s", "2" "min", "150" "s". */
-    fun restParts(seconds: Long): Pair<String, String> = if (seconds >= 120 && seconds % 60 == 0L) "${seconds / 60}" to "min" else "$seconds" to "s"
+    fun restParts(seconds: Long, strings: Strings = Strings.app): Pair<String, String> =
+        if (seconds >= 120 && seconds % 60 == 0L) {
+            "${seconds / 60}" to strings.get(R.string.workout_start_unit_min)
+        } else {
+            "$seconds" to strings.get(R.string.workout_start_unit_s)
+        }
 
     /**
      * What run intervals do: "The strap buzzes at the end of each 400 m and when rest is up. 2.4 km in all.", or for
      * reps of a time "at the end of each 4 min rep", with "16 min of reps in all".
      */
-    fun intervalsNote(r: org.openstrap.app.data.Structure.Reps): String {
-        val (n, unit) = repParts(r)
-        val each = if (r.meters != null) "each $n $unit" else "each $n $unit rep"
-        val total = r.meters?.let { m ->
-            val all = m * r.rounds
-            if (all >= 1000) "${distanceValue(all)} km in all" else "$all m in all"
-        } ?: "${timeValue((r.seconds ?: 0) * r.rounds)} of reps in all"
-        return "The strap buzzes at the end of $each and when rest is up. $total."
+    fun intervalsNote(r: org.openstrap.app.data.Structure.Reps, strings: Strings = Strings.app): String {
+        val each = repLength(r, strings)
+        val meters = r.meters ?: return strings.format(
+            R.string.workout_start_intervals_note_time, each, timeValue((r.seconds ?: 0) * r.rounds),
+        )
+        val all = meters * r.rounds
+        val total = if (all >= 1000) {
+            strings.format(R.string.workout_start_km, distanceValue(all))
+        } else {
+            strings.format(R.string.workout_start_meters, all)
+        }
+        return strings.format(R.string.workout_start_intervals_note_distance, each, total)
     }
 
-    const val INTERVALS_TYPING = "How many, then each rep, then the rest"
-    const val TAP_A_NUMBER = "Tap a number to type it"
-    const val EACH_REP_IN = "Each rep in"
+    val INTERVALS_TYPING: String get() = Strings.app.get(R.string.workout_start_intervals_typing)
+    val TAP_A_NUMBER: String get() = Strings.app.get(R.string.workout_start_tap_a_number)
+    val EACH_REP_IN: String get() = Strings.app.get(R.string.workout_start_each_rep_in)
 
     /** The units a rep's length is typed in. */
-    enum class RepUnit(val label: String) { Meters("m"), Kilometers("km"), Minutes("min") }
+    enum class RepUnit(@StringRes private val id: Int) {
+        Meters(R.string.workout_start_unit_m), Kilometers(R.string.workout_start_unit_km), Minutes(R.string.workout_start_unit_min),
+        ;
+
+        val label: String get() = Strings.app.get(id)
+    }
 
     /** The unit [r] is shown in, to type it in the same one. */
     fun repUnit(r: org.openstrap.app.data.Structure.Reps): RepUnit = when {
@@ -442,24 +558,21 @@ object StartCopy {
     fun parseRest(text: String): Long? = text.trim().toLongOrNull()?.takeIf { it in 0..900 }
 
     /** Saving the reps by name, to find them on Choose and here. */
-    const val SAVE_INTERVALS = "Save"
-    const val SAVED_INTERVALS = "Saved"
-    const val SAVE_NOTE = "To find on Choose and here. Up to ten are kept."
-    const val NAME_HINT = "Name, like Tuesday intervals"
+    val SAVE_INTERVALS: String get() = Strings.app.get(R.string.workout_start_save_intervals)
+    val SAVED_INTERVALS: String get() = Strings.app.get(R.string.workout_start_saved_intervals)
+    val SAVE_NOTE: String get() = Strings.app.get(R.string.workout_start_save_note)
+    val NAME_HINT: String get() = Strings.app.get(R.string.workout_start_name_hint)
 
     /** Ready's switch rows, under the where row. */
-    const val ASK_TO_END = "Ask to end when I stop"
-    const val ASK_TO_END_NOTE = "The strap buzzes after 8 min still"
+    val ASK_TO_END: String get() = Strings.app.get(R.string.workout_start_ask_to_end)
+    val ASK_TO_END_NOTE: String get() = Strings.app.get(R.string.workout_start_ask_to_end_note)
     /** The route switch, named for what it gives you: "Save a map of my run", "...of my walk", "...of my ride". */
-    fun keepRoute(type: Int): String {
-        val name = Workouts.shortName(type).lowercase()
-        val noun = when {
-            "cycl" in name || "bik" in name -> "ride"
-            name == "skiing" -> "ski"
-            name == "rucking" -> "ruck"
-            else -> name
-        }
-        return "Save a map of my $noun"
+    fun keepRoute(type: Int, strings: Strings = Strings.app): String = when (type) {
+        // By type rather than by name, so it holds in any language: cycling outdoors and in, skiing and rucking.
+        CYCLING, INDOOR_CYCLING -> strings.get(R.string.workout_start_keep_route_ride)
+        SKIING -> strings.get(R.string.workout_start_keep_route_ski)
+        RUCKING -> strings.get(R.string.workout_start_keep_route_ruck)
+        else -> strings.format(R.string.workout_start_keep_route, Workouts.shortName(type).lowercase())
     }
-    const val TURN_ON_LOCATION = "Turn on location"
+    val TURN_ON_LOCATION: String get() = Strings.app.get(R.string.workout_start_turn_on_location)
 }
