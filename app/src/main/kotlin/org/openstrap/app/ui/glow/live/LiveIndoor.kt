@@ -2,30 +2,24 @@ package org.openstrap.app.ui.glow.live
 
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.layout.Arrangement
-import org.openstrap.app.ui.glow.draw.chart
-import org.openstrap.app.ui.glow.draw.GlowMotion
-import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.GlowCard
+import org.openstrap.app.ui.glow.Segment
+import org.openstrap.app.ui.glow.SegmentBar
 import org.openstrap.app.presentation.WorkoutCopy
 import androidx.compose.ui.Alignment
 import androidx.compose.material3.Text
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.background
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -104,19 +98,15 @@ internal fun LiveIndoorScreen(
 internal fun ZoneTimeBar(zoneSeconds: ZoneSeconds, current: Int?) {
     val total = zoneSeconds.sum().coerceAtLeast(1)
     val described = zoneSeconds.withIndex().joinToString(", ") { (z, s) -> "zone ${z + 1} ${if (s < 60) "none" else "${s / 60} min"}" }
-    Row(
-        Modifier.fillMaxWidth().height(8.dp).semantics { contentDescription = "Time in each zone: $described" },
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
-    ) {
-        zoneSeconds.forEachIndexed { z, s ->
-            val color = when {
-                z == current -> Color.White
-                s == 0 -> Color.White.copy(alpha = 0.18f)
-                else -> ZONE_COLORS[z]
-            }
-            Box(Modifier.weight(maxOf(s.toFloat() / total, 0.04f)).height(8.dp).clip(RoundedCornerShape(50)).background(color))
+    val segments = zoneSeconds.mapIndexed { z, s ->
+        val color = when {
+            z == current -> Color.White
+            s == 0 -> Color.White.copy(alpha = 0.18f)
+            else -> ZONE_COLORS[z]
         }
+        Segment(maxOf(s.toFloat() / total, 0.04f), color)
     }
+    SegmentBar(segments, Modifier.semantics { contentDescription = "Time in each zone: $described" }, height = 8.dp, gap = 3.dp)
 }
 
 /**
@@ -131,22 +121,15 @@ private fun CompactHeartCard(
     val heartZones = LocalHeartZones.current
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
-    val style = GlowStyle.chart(workoutColor(r, liveHeartRate, connected, heartZones)).copy(
-        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
-        lightLevel = WorkoutCopy.zoneLightLevel(zone),
-        outline = r.paused,
-    )
+    val style = liveHeartStyle(workoutColor(r, liveHeartRate, connected, heartZones), bpm, zone, r.paused)
     GlowCard(style, Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(verticalAlignment = Alignment.Bottom) {
-                if (bpm != null) {
-                    DotMatrixText("$bpm", dot = DotSize.Detail)
-                    Spacer(Modifier.width(8.dp))
-                    Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-                } else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
+                if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                 Spacer(Modifier.weight(1f))
                 Text(
-                    zone?.let { WorkoutCopy.zoneLine(it) } ?: if (r.paused) "No zone while paused" else "No zone yet",
+                    zone?.let { WorkoutCopy.zoneLine(it) } ?: WorkoutCopy.noZone(r.paused),
                     color = Color.White, style = GlowType.secondary, maxLines = 1,
                 )
             }

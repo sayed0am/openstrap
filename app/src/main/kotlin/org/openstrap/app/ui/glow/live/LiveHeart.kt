@@ -248,12 +248,7 @@ internal fun WorkoutHeartCard(
     val bpm = liveHeartRate.takeIf { connected && !r.paused }
     val zone = WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)
     val color = workoutColor(r, liveHeartRate, connected, heartZones)
-    val style = GlowStyle.chart(color).copy(
-        motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
-        lightLevel = WorkoutCopy.zoneLightLevel(zone),
-        outline = r.paused,
-    )
-    GlowCard(style, modifier) {
+    GlowCard(liveHeartStyle(color, bpm, zone, r.paused), modifier) {
         Column(if (fill) Modifier.fillMaxSize() else Modifier) {
             GlowHeader("Heart rate", trailing = bpm?.let { "${it * 100 / r.maxHeartRate}% of max" })
             BoxWithConstraints(Modifier.fillMaxWidth().then(if (fill) Modifier.weight(1f) else Modifier.height(220.dp))) {
@@ -266,7 +261,7 @@ internal fun WorkoutHeartCard(
                 // Sized for three digits inside the arc, whatever the reading, so the number never spills past it
                 // and doesn't jump in size as the heart rate crosses 100.
                 val inside = (minOf(maxWidth, maxHeight) - 18.dp) * 0.78f
-                val scale = (inside / dotNumberWidth(3, DotSize.Live)).coerceAtMost(1f)
+                val scale = dotFitScale("000", DotSize.Live, inside)
                 Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                     if (bpm != null) {
                         DotMatrixText(bpm.toString(), dot = DotSize.Live, scale = scale)
@@ -286,7 +281,7 @@ internal fun WorkoutHeartCard(
                     Spacer(Modifier.width(6.dp))
                     Text(word, color = Color.White.copy(alpha = 0.75f), style = GlowType.sentence, modifier = Modifier.weight(1f))
                     Text(zoneRange(zone, r.maxHeartRate), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary)
-                } else Text(if (r.paused) "No zone while paused" else "No zone yet", color = Color.White, style = GlowType.sentence)
+                } else Text(WorkoutCopy.noZone(r.paused), color = Color.White, style = GlowType.sentence)
             }
             if (zoneBar) {
                 Spacer(Modifier.height(12.dp))
@@ -298,17 +293,27 @@ internal fun WorkoutHeartCard(
     }
 }
 
+/**
+ * The live heart card's glow (pattern D1): [color] beating at [bpm], lit as high as the [zone], and only its outline
+ * while [paused]. The full card and the short one on a phone on its side light alike.
+ */
+internal fun liveHeartStyle(color: Color, bpm: Int?, zone: Int?, paused: Boolean) = GlowStyle.chart(color).copy(
+    motion = if (bpm != null) GlowMotion.Heartbeat(bpm) else GlowMotion.Still,
+    lightLevel = WorkoutCopy.zoneLightLevel(zone),
+    outline = paused,
+)
+
 /** The time in the [zone] you're in on the left of the heart card's foot, and the target's progress on the right. */
 @Composable
 internal fun HeartNotes(r: WorkoutState.Recording, zone: Int?, zoneSeconds: ZoneSeconds, active: () -> Long, kcal: Float?) {
     Row {
-        zone?.let { Note(WorkoutCopy.zoneTime(zoneSeconds[it])) }
+        zone?.let { PageNote(WorkoutCopy.zoneTime(zoneSeconds[it])) }
         Spacer(Modifier.weight(1f))
         when (val t = WorkoutTarget.parse(r.workout.target)) {
-            is WorkoutTarget.Zones -> Note("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
+            is WorkoutTarget.Zones -> PageNote("Target ${t.label.removePrefix("Zone ")}, the strap buzzes if you drift")
             is WorkoutTarget.Time -> TimeTargetNote(active, t.label)
-            is WorkoutTarget.Kcal -> Note(WorkoutCopy.kcalProgress(kcal, t))
-            is WorkoutTarget.Distance -> Note(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
+            is WorkoutTarget.Kcal -> PageNote(WorkoutCopy.kcalProgress(kcal, t))
+            is WorkoutTarget.Distance -> PageNote(WorkoutCopy.distanceProgress(r.workout.distanceMeters, t))
             null -> Unit
         }
     }
@@ -339,7 +344,7 @@ fun GlowWorkoutGlance(
 
 /** "12:30 of 30 min" under the heart card: its own scope, so only it reads the time. */
 @Composable
-private fun TimeTargetNote(active: () -> Long, target: String) = Note("${workoutClock(active())} of $target")
+private fun TimeTargetNote(active: () -> Long, target: String) = PageNote("${workoutClock(active())} of $target")
 
 private const val BUCKET_S = 5L
 private const val WINDOW_S = 600L

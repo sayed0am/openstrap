@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -114,30 +112,6 @@ internal fun HeroNumber(value: String?, lines: List<String>, modifier: Modifier 
     }
 }
 
-/** The white pill that starts something, like the ready screen's Start. */
-@Composable
-internal fun HeroButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: Boolean = false) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        modifier.height(48.dp).clip(shape).background(Color.White).pressClickable(onClick, shape).padding(horizontal = 18.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center,
-    ) {
-        if (icon) {
-            Icon(AppIcons.PlayFill, null, tint = Color.Black, modifier = Modifier.size(14.dp))
-            Spacer(Modifier.width(8.dp))
-        }
-        Text(text, color = Color.Black, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-    }
-}
-
-/** A quieter glass pill beside [HeroButton]. */
-@Composable
-internal fun HeroSecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(modifier.height(48.dp).glass(RoundedCornerShape(50), onClick).padding(horizontal = 18.dp), contentAlignment = Alignment.Center) {
-        Text(text, color = Color.White, style = MaterialTheme.typography.titleSmall, maxLines = 1)
-    }
-}
-
 /* ---------------------------------------------- Strips ---------------------------------------------- */
 
 /** A strip is only 68 dp high, so its words get less above and below than a card; the sides are a card's. */
@@ -190,19 +164,9 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
             if (feeling != null) Text(CheckIn.label(feeling), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
         Spacer(Modifier.height(10.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (CheckIn.MIN..CheckIn.MAX).forEach { v ->
-                val selected = feeling == v
-                val shape = RoundedCornerShape(50)
-                Box(
-                    Modifier.weight(1f)
-                        .let { if (selected) it.background(Color.White.copy(alpha = 0.85f), shape) else it }
-                        .glass(shape, { onCheckIn(if (selected) null else v) })
-                        .padding(vertical = 7.dp),
-                    contentAlignment = Alignment.Center,
-                ) { Text("$v", color = if (selected) Color.Black else Color.White, style = MaterialTheme.typography.labelLarge) }
-            }
-        }
+        // Tapping the chosen one again takes the answer back.
+        val values = (CheckIn.MIN..CheckIn.MAX).toList()
+        GlowSegments(values.map { "$it" }, feeling?.let(values::indexOf) ?: -1, { onCheckIn(values[it].takeIf { v -> v != feeling }) })
     }
 
 /**
@@ -259,9 +223,14 @@ internal fun AlertsStrip(alerts: List<HealthAlertRow>, onOpenMetric: (Metric) ->
 
 /* ------------------------------------------- Edge cards --------------------------------------------- */
 
-/** An edge card's title row: [title] left with its sync [marker] or neutral [tag] beside it ([TitleMark]), [note] right. */
+/**
+ * An edge card's title row: [title] left with its sync [marker] or neutral [tag] beside it ([TitleMark]), [note] right,
+ * and a small [action] after the note (a workout's Trim).
+ */
 @Composable
-internal fun EdgeTitle(title: String, note: String?, marker: String? = null, tag: TitleTag? = null) {
+internal fun EdgeTitle(
+    title: String, note: String?, marker: String? = null, tag: TitleTag? = null, action: (@Composable () -> Unit)? = null,
+) {
     // The note drops under the title when they can't share a line, so the title never wraps.
     TitleRow(
         start = {
@@ -270,7 +239,14 @@ internal fun EdgeTitle(title: String, note: String?, marker: String? = null, tag
                 if (marker != null || tag != null) TitleMark(marker, tag, Modifier.padding(start = 8.dp))
             }
         },
-        end = note?.let { { NoteText(it) } },
+        end = if (note == null && action == null) null else {
+            {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    note?.let { NoteText(it) }
+                    action?.invoke()
+                }
+            }
+        },
     )
 }
 
@@ -426,7 +402,7 @@ internal fun RecoveryEarlierCard(
 internal fun RecoveryFailed(failure: RecoveryFailure, onRetry: () -> Unit) {
     failure.yesterday?.let { y -> Column(Modifier.alpha(FAILED_ALPHA)) { EdgeValue(y.toString(), "yesterday", null) } }
     Text(RECOVERY_FAILED, color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
-    HeroSecondaryButton(TRY_AGAIN, onRetry, Modifier.padding(top = 12.dp))
+    PageButton(TRY_AGAIN, onRetry, Modifier.padding(top = 12.dp), size = ButtonSize.Hero, onCard = true)
 }
 
 /** How dim a value kept from before is, beside a failure. */

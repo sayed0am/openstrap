@@ -1,9 +1,7 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -26,8 +24,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -40,7 +38,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.HeartZonesCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
-import org.openstrap.app.ui.glow.draw.DotSize
 
 /**
  * Heart rate zones (board SettingsHeartZones), from Ready's Your zones and the You page: your max heart rate as the
@@ -83,22 +80,13 @@ fun HeartZonesScreen(
 /** The max as the page's hero: its Doto number on heart red lit from the left, where it comes from, and Set it myself. */
 @Composable
 private fun MaxHero(max: MaxHeartRate?, onSet: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
-            .drawBehind {
-                val r = size.width * HERO_LIGHT_REACH
-                drawCardLight(MetricColors.heart, Offset(0f, size.height / 2), r, r, HeroLight)
-            }
-            .border(1.dp, MetricColors.heart.copy(alpha = 0.3f), GlowLayout.CardShape)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
+    LitPanel(
+        MetricColors.heart, HeroLight,
+        lightCenter = { Offset(0f, it.height / 2) }, reach = { Size(it.width * HERO_LIGHT_REACH, it.width * HERO_LIGHT_REACH) },
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(HeartZonesCopy.MAX_TITLE, color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
-        Row(verticalAlignment = Alignment.Bottom) {
-            DotMatrixText(max?.bpm?.toString() ?: "0", dot = DotSize.Hero, color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f))
-            Spacer(Modifier.width(8.dp))
-            Text("bpm", color = Color.White.copy(alpha = 0.8f), style = GlowType.body)
-        }
+        HeroValue(max?.bpm?.toString() ?: "0", "bpm", color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f))
         if (max != null) Text(HeartZonesCopy.source(max), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         PageButton(HeartZonesCopy.SET_IT, onSet, enabled = max != null, icon = AppIcons.PencilEdit)
     }

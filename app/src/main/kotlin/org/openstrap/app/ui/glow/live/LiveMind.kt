@@ -2,16 +2,8 @@ package org.openstrap.app.ui.glow.live
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Box
@@ -30,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -41,6 +32,9 @@ import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.LineDots
+import org.openstrap.app.ui.glow.PlainLine
+import org.openstrap.app.ui.glow.ProgressRing
 import org.openstrap.app.ui.glow.activeSecondsState
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.theme.MetricColors
@@ -102,7 +96,10 @@ internal fun LiveMindScreen(
             val now = recent.lastOrNull()?.first ?: (System.currentTimeMillis() / 1000)
             val values = remember(recent) { bucketRecent(recent, now) }
             // Lower on a short screen (a phone on its side), so the heart rate line under it still fits beside the buttons.
-            if (values.count { it != null } >= 2) MindHeartLine(values, if (compact) 40.dp else 64.dp)
+            // The heart rate as one thin violet line edge to edge, with a dot at now: no axis, no numbers.
+            PlainLine(
+                values, MindColor.copy(alpha = 0.7f), if (compact) 40.dp else 64.dp, smooth = false, dots = LineDots.Last, stroke = 2.dp,
+            )
             val first = values.firstOrNull { it != null }?.toInt()
             Text(
                 bpm?.let { b ->
@@ -126,20 +123,11 @@ internal fun LiveMindScreen(
  * faint track. Without the [ring], the time and its line alone.
  */
 @Composable
-private fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
+internal fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
     // The time is read by the ring's draw and the clock's text, so the second composes only the text again.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        if (ring) Canvas(Modifier.size(280.dp)) {
-            // The strength rest ring's line and track, so the app's rings read as one.
-            val stroke = 8.dp.toPx()
-            val inset = stroke / 2
-            val arc = Size(size.width - stroke, size.height - stroke)
-            drawArc(Color.White.copy(alpha = 0.1f), 0f, 360f, false, Offset(inset, inset), arc, style = Stroke(stroke))
-            if (length != null && length > 0) {
-                val sweep = 360f * (time().toFloat() / length).coerceIn(0f, 1f)
-                drawArc(MindColor, -90f, sweep, false, Offset(inset, inset), arc, style = Stroke(stroke, cap = StrokeCap.Round))
-            }
-        }
+        // The strength rest ring's line and track, so the app's rings read as one.
+        if (ring) ProgressRing({ if (length != null && length > 0) time().toFloat() / length else 0f }, MindColor, Modifier.size(280.dp))
         MindClock(time, length)
     }
 }
@@ -155,34 +143,6 @@ private fun MindClock(time: () -> Long, length: Long?) {
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
         )
     }
-}
-
-/** The heart rate as one thin violet line edge to edge, with a dot at now: no axis, no numbers. */
-@Composable
-private fun MindHeartLine(values: List<Float?>, height: androidx.compose.ui.unit.Dp) {
-    val known = values.filterNotNull()
-    val lo = known.min() - 4
-    val hi = known.max() + 4
-    Spacer(
-        Modifier.fillMaxWidth().height(height).drawWithCache {
-            // Built once per size and readings, not on every draw.
-            val step = size.width / (values.size - 1).coerceAtLeast(1)
-            val path = Path()
-            var last: Offset? = null
-            values.forEachIndexed { i, v ->
-                if (v == null) return@forEachIndexed
-                val p = Offset(i * step, size.height * (1f - (v - lo) / (hi - lo)))
-                if (last == null) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y)
-                last = p
-            }
-            val stroke = Stroke(2.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
-            val end = last
-            onDrawBehind {
-                drawPath(path, MindColor.copy(alpha = 0.7f), style = stroke)
-                end?.let { drawCircle(MindColor, 4.dp.toPx(), it) }
-            }
-        },
-    )
 }
 
 /** Mind and body's colour: the evening violet, never a zone's. */

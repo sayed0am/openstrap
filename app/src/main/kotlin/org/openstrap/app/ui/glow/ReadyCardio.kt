@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import org.openstrap.app.ui.glow.draw.EdgeSurface
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -43,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -81,7 +81,6 @@ import org.openstrap.app.ui.workout.StartCopy
 import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import java.time.LocalTime
-import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.workout.readyHero
 
 /*
@@ -107,25 +106,14 @@ internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, co
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
     val light = if (bpm != null) 1f else 0.4f
-    Row(
-        Modifier.fillMaxWidth().clip(GlowLayout.CardShape).background(EdgeSurface)
-            .drawBehind {
-                // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
-                drawCardLight(
-                    color, Offset(size.width / 2, size.height * HEART_LIGHT_BELOW),
-                    size.width * HEART_LIGHT_WIDTH, size.height * HEART_LIGHT_HEIGHT,
-                    HeartLight.map { (at, alpha) -> at to alpha * light },
-                )
-            }
-            .border(1.dp, color.copy(alpha = 0.3f), GlowLayout.CardShape)
-            .padding(horizontal = 20.dp, vertical = 18.dp),
-        verticalAlignment = Alignment.Bottom,
+    // An ellipse 1.2 widths across and 1.1 heights tall, centred a quarter of the height below the card.
+    LitPanel(
+        color, HeartLight.map { (at, alpha) -> at to alpha * light },
+        lightCenter = { Offset(it.width / 2, it.height * HEART_LIGHT_BELOW) },
+        reach = { Size(it.width * HEART_LIGHT_WIDTH, it.height * HEART_LIGHT_HEIGHT) },
     ) {
-        if (bpm != null) {
-            DotMatrixText(bpm.toString(), dot = DotSize.Hero)
-            Spacer(Modifier.width(14.dp))
-            Text("bpm, live from your strap", color = Color.White.copy(alpha = 0.8f), style = GlowType.body, modifier = Modifier.weight(1f))
-        } else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (bpm != null) HeroValue(bpm.toString(), "bpm, live from your strap", gap = 14.dp)
+        else Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(hero.title, color = Color.White, style = GlowType.sentence)
             Text(hero.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
         }
@@ -163,7 +151,10 @@ internal fun ReadyWhere(
                     !locationOn -> WorkoutCopy.LOCATION_OFF
                     else -> gpsLine
                 },
-            ) { PlacePill(placeIcon(sides, !indoor), StartCopy.otherPlace(sides, indoor), onSwitch) }
+            ) {
+                val other = StartCopy.otherPlace(sides, indoor)
+                IconPill(other, onSwitch, icon = placeIcon(sides, !indoor), height = 36.dp, description = other)
+            }
             rows++
         } else if (outdoor && !locationOn) {
             PlaceRow(SportIconsLocation, TrendBad, WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, trailing = null)
@@ -206,20 +197,6 @@ private fun PlaceRow(icon: ImageVector, tint: Color, title: String, note: String
             Spacer(Modifier.width(12.dp))
             trailing()
         }
-    }
-}
-
-/** The pill at the where row's end: the other side's icon and name. Tapping it goes there. */
-@Composable
-private fun PlacePill(icon: ImageVector, label: String, onClick: () -> Unit) {
-    Row(
-        Modifier.height(36.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape)
-            .semantics { role = Role.Button; contentDescription = label }.padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(icon, null, tint = Color.White, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(6.dp))
-        Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
     }
 }
 
@@ -325,7 +302,12 @@ private fun ReadyPlanCard(
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         var choosing by rememberSaveable { mutableStateOf(false) }
-        KindPill(shown.icon, shown.name, StartCopy.planHint(family)) { onTyping(false); choosing = true }
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            IconPill(
+                shown.name, { onTyping(false); choosing = true }, icon = shown.icon, tint = TypingLime, caret = true, height = 40.dp,
+                description = "${shown.name}. ${StartCopy.planHint(family)}",
+            )
+        }
         if (choosing) PageSheet({ choosing = false }, StartCopy.planSheet(family)) {
             Column {
                 options.forEachIndexed { i, o ->
@@ -363,24 +345,6 @@ private fun kindNote(k: GoalKind, hasDistance: Boolean): String = when (k) {
     GoalKind.Time -> StartCopy.TIME_KIND_NOTE
     GoalKind.Zone -> StartCopy.ZONE_KIND_NOTE
     GoalKind.Intervals -> StartCopy.INTERVALS_KIND_NOTE
-}
-
-/** The plan's choice in one pill (board ReadyKindPill): its icon in lime, its name and a caret, opening the kinds' sheet. */
-@Composable
-private fun KindPill(icon: ImageVector, label: String, hint: String, onClick: () -> Unit) {
-    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-        Row(
-            Modifier.height(40.dp).clip(CircleShape).background(Raised)
-                .pressClickable(onClick, CircleShape).semantics { role = Role.Button; contentDescription = "$label. $hint" }
-                .padding(start = 12.dp, end = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Icon(icon, null, tint = TypingLime, modifier = Modifier.size(18.dp))
-            Text(label, color = Color.White, style = GlowType.body, maxLines = 1)
-            Icon(AppIcons.CaretDown, null, tint = Color.White, modifier = Modifier.size(14.dp))
-        }
-    }
 }
 
 /** A plan's choice in the sheet (board ReadyKindSheet): its icon on a tile, its name, what the strap does, a tick when chosen. */
@@ -680,7 +644,7 @@ private fun IntervalsGoal(
             Text(StartCopy.EACH_REP_IN, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
             Spacer(Modifier.width(10.dp))
             StartCopy.RepUnit.entries.forEach { e ->
-                UnitChip(e.label, e == unit) { unit = e }
+                PageChip(e.label, e == unit, { unit = e }, role = Role.RadioButton, filled = true)
                 Spacer(Modifier.width(6.dp))
             }
         }
@@ -810,18 +774,6 @@ internal fun RowScope.TapNumber(n: String, unit: String?, style: TextStyle, onCl
             Spacer(Modifier.width(4.dp))
             Text(unit, color = Color.White.copy(alpha = 0.75f), style = GlowType.body, modifier = Modifier.alignByBaseline())
         }
-    }
-}
-
-/** A rep's unit while it's typed: white when chosen. */
-@Composable
-private fun UnitChip(label: String, on: Boolean, onClick: () -> Unit) {
-    Box(
-        Modifier.height(30.dp).clip(CircleShape).background(if (on) Color.White else Raised)
-            .clickable(onClick = onClick).semantics { selected = on }.padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(label, color = if (on) Color.Black else Color.White.copy(alpha = 0.85f), style = GlowType.secondary.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal))
     }
 }
 

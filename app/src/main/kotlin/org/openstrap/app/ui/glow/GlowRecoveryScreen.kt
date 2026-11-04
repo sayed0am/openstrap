@@ -1,6 +1,5 @@
 package org.openstrap.app.ui.glow
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -20,9 +18,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
@@ -61,6 +58,8 @@ import org.openstrap.app.ui.glow.draw.DotSize
  * The hero, the contributors and the Charge battery open their details on this tab's stack.
  */
 
+// A whole tab, filling the pane like the other tab screens: nothing outside places it.
+@Suppress("ModifierMissing")
 @Composable
 fun GlowRecoveryScreen(
     state: DayUiState,
@@ -111,7 +110,10 @@ fun GlowRecoveryScreen(
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->
                 when (card) {
                     RecoveryCard.Hero ->
-                        if (failure != null) RecoveryFailedHero(failure, onOpen = { onOpenScore(Score.Recovery) }, onRetry = onRetryRecovery)
+                        if (failure != null) RecoveryFailedHero(
+                            failure, recoveryHeroStyle(MetricColors.readiness), { onOpenScore(Score.Recovery) }, onRetryRecovery,
+                            Modifier.fillMaxWidth().gridSize(CardSize.Wide), gap = 22.dp,
+                        )
                         else RecoveryHero(
                             r, onOpen = { onOpenScore(Score.Recovery) }, onInfo = { info = true }, firstNights = firstNights,
                             noSleep = isToday && state.loaded && state.asleepSeconds == null, deleted = state.deletedSleep != null, firstScore = firstScore,
@@ -211,20 +213,27 @@ private fun RecoveryHero(
 
 /**
  * Today's score failed to work out (spec 4.3, E5): yesterday's stays, dimmed, with the line and Try again, so the
- * hero never waits forever.
+ * hero never waits forever. The Recovery tab and Today both show it, each in its own hero [style] and [gap].
  */
 @Composable
-private fun RecoveryFailedHero(failure: RecoveryFailure, onOpen: () -> Unit, onRetry: () -> Unit) {
-    GlowCard(recoveryHeroStyle(MetricColors.readiness), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
+internal fun RecoveryFailedHero(
+    failure: RecoveryFailure,
+    style: GlowStyle,
+    onOpen: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier,
+    gap: Dp,
+) {
+    GlowCard(style, modifier, onClick = onOpen) {
         Column {
             GlowHeader("Recovery")
             HeroSentence(RECOVERY_FAILED)
             failure.yesterday?.let { y ->
-                Spacer(Modifier.height(22.dp))
+                Spacer(Modifier.height(gap))
                 HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
             }
-            Spacer(Modifier.height(22.dp))
-            HeroButton(TRY_AGAIN, onRetry)
+            Spacer(Modifier.height(gap))
+            PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
 }
@@ -290,7 +299,7 @@ private fun ChargeTall(
 
 /** Recharged or Drained beside the Charge battery: a number and a word. */
 @Composable
-private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier, failed: Boolean = false) {
+private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier = Modifier, failed: Boolean = false) {
     val ready = c != null && c.anchored && c.latest != null
     val value = c?.takeIf { ready }?.let {
         if (recharged) TabCopy.chargeAmount(it.recharged, +1)
@@ -368,32 +377,3 @@ private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Met
         }
     }
 }
-
-/* --------------------------------------------- Shared ------------------------------------------------ */
-
-/**
- * The quiet panels' progress bar: a faint solid track, the first [fraction] of it a glowing line in [color], and a
- * dot where it ends, like the knob on the sleep score's arc.
- */
-@Composable
-internal fun GlowBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.fillMaxWidth().height(12.dp)) {
-        val y = size.height / 2
-        val r = 5.dp.toPx()
-        // Inset by the dot's halo, so a full or empty bar keeps its dot inside the panel.
-        val x0 = r
-        val x1 = size.width - r
-        drawLine(Color.White.copy(alpha = 0.10f), Offset(x0, y), Offset(x1, y), 2.dp.toPx(), StrokeCap.Round)
-        val f = fraction.coerceIn(0f, 1f)
-        if (f <= 0f) return@Canvas
-        val end = Offset(x0 + (x1 - x0) * f, y)
-        drawLine(color.copy(alpha = 0.22f), Offset(x0, y), end, 6.dp.toPx(), StrokeCap.Round)
-        drawLine(color, Offset(x0, y), end, 2.2.dp.toPx(), StrokeCap.Round)
-        drawCircle(color.copy(alpha = 0.30f), r, end)
-        drawCircle(color, 3.dp.toPx(), end)
-        drawCircle(Color.White, 1.2.dp.toPx(), end)
-    }
-}
-
-@Composable
-internal fun Note(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)

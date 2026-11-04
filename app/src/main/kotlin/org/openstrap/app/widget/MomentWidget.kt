@@ -170,10 +170,6 @@ private fun ColumnScope.WideContent(m: MomentWidgetModel, fit: MomentLayout.Fit,
     Spacer(GlanceModifier.height(edge.dp))
 }
 
-/** A gap between blocks: they all share the spare height alike. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
 @Composable
 private fun Name(name: MomentLayout.Line) = Text(name.text, style = NameStyle.copy(fontSize = name.sp.sp), maxLines = 1)
 

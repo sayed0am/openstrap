@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,7 +28,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.settings.Units
 import org.openstrap.app.data.settings.UserProfile
@@ -38,7 +36,7 @@ import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageConfirm
-import org.openstrap.app.ui.glow.PageField
+import org.openstrap.app.ui.glow.PageNumberField
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PagePanel
@@ -155,31 +153,32 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                             "Age sets your maximum heart rate, which every effort and recovery number depends on. " +
                                 "All fields are optional and stay on this phone.",
                         )
-                        NumberField(age, { age = it }, "Age", "years", age.isNotBlank() && ageValue == null)
+                        PageNumberField(age, { age = it }, "Age", "years", age.isNotBlank() && ageValue == null)
                         // Sex as labelled segments like Units, not two bare symbols beside Age. Tapping the chosen one
                         // again clears it.
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Sex, for energy, Load, fitness and Habit Age")
+                            PageNote("Sex, for energy, Load, fitness and Habit Age")
                             org.openstrap.app.ui.glow.GlowSegments(listOf("Female", "Male"), if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i })
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Units")
+                            PageNote("Units")
                             org.openstrap.app.ui.glow.GlowSegments(listOf("Metric", "Imperial"), if (imperial) 1 else 0, { switchUnits(it == 1) })
                         }
-                        NumberField(
+                        PageNumberField(
                             weight, { weight = it }, "Weight", if (imperial) "lb" else "kg",
                             weight.isNotBlank() && weightValue == null, decimal = true,
                         )
                         if (imperial) {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                NumberField(feet, { feet = it.take(1) }, "Feet", "ft", !heightBlank && heightValue == null, Modifier.weight(1f))
-                                NumberField(inches, { inches = it.take(2) }, "Inches", "in", !heightBlank && heightValue == null, Modifier.weight(1f))
+                                val wrong = !heightBlank && heightValue == null
+                                PageNumberField(feet, { feet = it.take(1) }, "Feet", "ft", wrong, Modifier.weight(1f))
+                                PageNumberField(inches, { inches = it.take(2) }, "Inches", "in", wrong, Modifier.weight(1f))
                             }
                         } else {
-                            NumberField(heightCm, { heightCm = it }, "Height", "cm", !heightBlank && heightValue == null)
+                            PageNumberField(heightCm, { heightCm = it }, "Height", "cm", !heightBlank && heightValue == null)
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Usual activity, for the fitness estimate")
+                            PageNote("Usual activity, for the fitness estimate")
                             // Tapping the chosen level again clears it.
                             org.openstrap.app.ui.glow.GlowSegments((1..5).map { "$it" }, activity, { i -> activity = if (activity == i) -1 else i })
                             PageNote(if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity] else "Pick the level that best matches a usual week.")
@@ -191,7 +190,7 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                             org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW, org.openstrap.app.ui.workout.HeartZonesCopy.profileLine(profile.maxHeartRate),
                             onClick = onHeartZones, below = true, divider = false,
                         )
-                        NumberField(
+                        PageNumberField(
                             sleepNeed, { sleepNeed = it }, "Sleep need (7 to 9, blank for your age's default)", "h",
                             sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true,
                         )
@@ -208,26 +207,6 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
 
 /** The pinned Save button's height, as Start on Ready. */
 private val SaveHeight = 56.dp
-
-@Composable
-internal fun NumberField(
-    value: String,
-    onChange: (String) -> Unit,
-    label: String,
-    unit: String,
-    error: Boolean,
-    modifier: Modifier = Modifier.fillMaxWidth(),
-    decimal: Boolean = false,
-) {
-    PageField(
-        value, { v -> onChange(v.filter { it.isDigit() || (decimal && (it == '.' || it == ',')) }.take(5)) },
-        label.ifEmpty { null }, modifier, unit = unit, error = error,
-        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
-    )
-}
-
-@Composable
-private fun FieldLabel(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
 
 /** 72.0 -> "72", 158.7 -> "158.7". */
 private fun formatNumber(v: Float): String = "%.1f".format(java.util.Locale.ROOT, v).removeSuffix(".0")

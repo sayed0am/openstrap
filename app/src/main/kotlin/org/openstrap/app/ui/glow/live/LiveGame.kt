@@ -1,8 +1,6 @@
 package org.openstrap.app.ui.glow.live
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,13 +8,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -27,11 +23,13 @@ import org.openstrap.app.data.Structure
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.DotMatrixText
+import org.openstrap.app.ui.glow.HeroValue
 import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.draw.GlowMotion
 import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.Segment
+import org.openstrap.app.ui.glow.SegmentBar
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.WorkoutButton
 import org.openstrap.app.ui.glow.activeSecondsState
@@ -94,11 +92,8 @@ internal fun LiveGameScreen(
         if (split) EffortBar(effort) else GlowCard(style, Modifier.fillMaxWidth()) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(verticalAlignment = androidx.compose.ui.Alignment.Bottom) {
-                    if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
-                    if (bpm != null) {
-                        Spacer(Modifier.width(8.dp))
-                        Text("bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body)
-                    }
+                    if (bpm != null) HeroValue("$bpm", "bpm", dot = DotSize.Detail)
+                    else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)
                     Spacer(Modifier.weight(1f))
                     WorkoutRecorder.liveZone(bpm, r.maxHeartRate, heartZones)?.let { z ->
                         Text(WorkoutCopy.zoneLine(z), color = Color.White, style = GlowType.secondary)
@@ -132,17 +127,13 @@ private fun PeriodRow(r: WorkoutState.Recording, periods: Structure.Periods, pha
 
 /** Effort 1 to 5 as five steps, lit up to it in the zones' colours, "Effort 3 of 5" beside them. */
 @Composable
-private fun EffortBar(effort: Int?) {
+internal fun EffortBar(effort: Int?) {
     Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-        Row(
+        SegmentBar(
+            List(5) { i -> Segment(1f, if (effort != null && i < effort) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)) },
             Modifier.weight(1f).semantics { contentDescription = effort?.let { "Effort $it of 5" } ?: "No effort yet" },
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            repeat(5) { i ->
-                val on = effort != null && i < effort
-                Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(50)).background(if (on) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)))
-            }
-        }
+            height = 8.dp, gap = 4.dp,
+        )
         Spacer(Modifier.width(12.dp))
         Text(effort?.let { "Effort $it of 5" } ?: "Effort", color = Color.White, style = GlowType.secondary)
     }

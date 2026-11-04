@@ -31,7 +31,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.Route
@@ -56,11 +55,7 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
-import org.openstrap.app.ui.glow.draw.LightAngle
-import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.draw.chart
 import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
@@ -118,14 +113,21 @@ fun GlowWorkoutDetailScreen(
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
+                // The day and times under the name, as a phone workout's page has them.
+                val day = shown?.let { WorkoutDetailCopy.day(it.shownStart, LocalDate.now()) + ", " + Ranges.times(it.shownStart, it.end) }
                 PageHeader(
-                    (shown ?: a)?.sportName ?: "Workout", onBack,
-                    trailing = if ((shown ?: a)?.startedByYou == false) ({ FoundTag() }) else null,
+                    (shown ?: a)?.sportName ?: "Workout", onBack, subtitle = day,
+                    trailing = if ((shown ?: a)?.startedByYou == false) ({ OutlineTag(TabCopy.AUTO_DETECTED) }) else null,
                 )
             }
             if (shown == null) return@ScreenList
             val w = shown.workout
-            item { WorkoutHero(shown, usual, zones) }
+            item {
+                // The summary's hero with the length in dots: a strap workout has no kind of its own to show.
+                val sentence = WorkoutDetailCopy.sentence(w.sportType, shown.activeSeconds, w.trainingLoad, usual, zones)
+                val hero = SummaryHero(dotClock(shown.activeSeconds), "", sentence = sentence)
+                SummaryHeroCard(hero, MetricColors.heart, Workouts.effort(w.trainingLoad, usual))
+            }
             if (shown.heartRate.isNotEmpty() || w.averageHeartRate != null) item { HeartRateCard(shown) }
             val activeKcal = Workouts.activeKcal(shown, bmrPerMinute)
             val facts = WorkoutDetailCopy.facts(
@@ -134,7 +136,7 @@ fun GlowWorkoutDetailScreen(
                 activeKcal = activeKcal.takeIf { bmrPerMinute != null },
             ) + listOfNotNull(WorkoutDetailCopy.targetFact(shown.target, shown.targetReachedSeconds, shown.activeKcal?.roundToInt()))
             val factsShown = facts.isNotEmpty()
-            if (factsShown) item { FactsList(facts, null) }
+            if (factsShown) item { WorkoutFactsList(facts, null) }
             // The workout's share of its day, right under its kcal (calories spec 4.2).
             val today = LocalDate.now()
             val inDay = activeKcal?.let { k ->
@@ -144,7 +146,7 @@ fun GlowWorkoutDetailScreen(
             if (inDay != null) item { InYourDayCard(inDay, onOpenDay) }
             val drop = WorkoutDetailCopy.dropLine(shown.recovery60, shown.recoveryIsMeaningful, usualDrop)
             val loadShown = w.trainingLoad != null || (shown.recoveryMinutes ?: 0) > 0 || drop != null
-            if (loadShown) item { LoadCard(shown, usual, best = null, drop = drop, onInfo = { info = true }) }
+            if (loadShown) item { WorkoutLoadCard(shown, usual, drop = drop, onInfo = { info = true }) }
             // A list right under another would look the same, so the later one sits on a neutral edge card (spec 2.4):
             // the zones when the facts are right above them, else the splits under a plain list.
             val zonesShown = zones.sum() > 0
@@ -163,9 +165,9 @@ fun GlowWorkoutDetailScreen(
 
 /**
  * A past phone workout (workouts spec 2.8, past): the summary's hero and the kind's own section, then everything this
- * page always had: the heart rate line with the drop after the end, the facts and the map, In your day, Load with its
- * (i), the zones and splits where the kind's section doesn't show them, Trim and Delete. No Done and nothing earned:
- * that was said when it ended.
+ * page always had: the heart rate line with the drop after the end and Trim on it, the facts and the map, In your day,
+ * Load with its (i), the zones and splits where the kind's section doesn't show them, and Delete. No Done and nothing
+ * earned: that was said when it ended.
  */
 @Composable
 private fun PastSummary(
@@ -189,13 +191,14 @@ private fun PastSummary(
     val usual = remember(others) { Workouts.usualLoad(others.map { it.workout.trainingLoad }) }
     val family = org.openstrap.app.ui.workout.FamilySummary.familyOf(w.sportType, summary.structure)
     val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
+    val trim = rememberWorkoutTrim(summary, onTrim, onUndoTrim)
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         ScreenList(contentPadding, list, gutter = GlowLayout.Gutter) {
             item {
                 PageHeader(
                     a.sportName, onBack,
                     subtitle = WorkoutDetailCopy.day(a.shownStart, LocalDate.now()) + ", ${Ranges.times(a.shownStart, a.end)}",
-                    trailing = if (foundTag) ({ FoundTag() }) else null,
+                    trailing = if (foundTag) ({ OutlineTag(TabCopy.AUTO_DETECTED) }) else null,
                 )
             }
             item {
@@ -212,25 +215,25 @@ private fun PastSummary(
                     SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual))
                     val sectionOnEdge = FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
                     // The heart rate card is lit from the left; under the section's own edge card it takes the bottom.
-                    if (a.heartRate.isNotEmpty() || w.averageHeartRate != null) {
-                        CompositionLocalProvider(LocalEdgeOverride provides if (sectionOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-                            HeartRateCard(a)
-                        }
-                    }
+                    // Always there, even before any heart rate, since it holds Trim.
+                    val heartEdge = if (sectionOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()
+                    CompositionLocalProvider(LocalEdgeOverride provides heartEdge) { HeartRateCard(a, trim) }
                     val facts = WorkoutDetailCopy.facts(
                         a.distanceMeters, a.distanceFromSteps, (a.durationSeconds - a.activeSeconds).coerceAtLeast(0), w.steps, w.calories,
                         activeKcal = Workouts.activeKcal(a, null),
                     ) + listOfNotNull(WorkoutDetailCopy.targetFact(a.target, a.targetReachedSeconds, a.activeKcal?.roundToInt()))
                     // The map is in the route card for a run; any other kind with a kept route has it here.
                     val map = family != Workouts.Family.Distance && Route.mappable(summary.route)
-                    if (facts.isNotEmpty() || map) FactsList(facts, summary.takeIf { map })
+                    if (facts.isNotEmpty() || map) WorkoutFactsList(facts, summary.takeIf { map })
                     val inDay = Workouts.activeKcal(a, null)?.let { k ->
                         val date = Instant.ofEpochSecond(a.shownStart).atZone(ZoneId.systemDefault()).toLocalDate()
                         CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, LocalDate.now()), true)
                     }
                     if (inDay != null) InYourDayCard(inDay, onOpenDay)
                     val drop = WorkoutDetailCopy.dropLine(a.recovery60, a.recoveryIsMeaningful, null)
-                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) LoadCard(a, usual, best = null, drop = drop, onInfo = { info = true })
+                    if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) > 0 || drop != null) {
+                        WorkoutLoadCard(a, usual, drop = drop, onInfo = { info = true })
+                    }
                     // Zones and splits for the kinds whose section doesn't already show them.
                     val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
                     if (zonesShown) ZoneStripPanel(zones)
@@ -239,39 +242,23 @@ private fun PastSummary(
                             SplitsList(summary, liveRoute = emptyList())
                         }
                     }
-                    TrimSection(summary, onTrim, onUndoTrim)
                     SummaryActions(justEnded = false, onDone = onBack, onDelete = onDelete)
                 }
             }
         }
     }
     if (info) EffectInfo(a, usual, summary.strapWorkouts, summary.effectFromStrap, onDismiss = { info = false })
-}
-
-/**
- * The sentence ([WorkoutDetailCopy.sentence]), the day and time range, and the length in dots. Lit from below, the
- * light as high as the effort (spec 2.5): an easy walk leaves most of the card dark, a hard run floods it.
- */
-@Composable
-private fun WorkoutHero(a: WorkoutAnalysis, usual: Float?, zones: List<Int>) {
-    val w = a.workout
-    val style = GlowStyle.chart(MetricColors.heart).copy(lightAngle = LightAngle.Below, lightLevel = Workouts.effort(w.trainingLoad, usual))
-    GlowCard(style, Modifier.fillMaxWidth()) {
-        Column {
-            GlowHeader(WorkoutDetailCopy.day(a.shownStart, LocalDate.now()), trailing = Ranges.times(a.shownStart, a.end))
-            HeroSentence(WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones))
-            DotMatrixText(dotClock(a.activeSeconds), Modifier.padding(top = 16.dp), dot = DotSize.Hero)
-        }
-    }
+    TrimSheet(trim)
 }
 
 /**
  * Heart rate over the workout in its zones' colours, and the strap's minutes after the end, dimmer, as the drop. The
  * number is the average; hold the line to scrub and it follows the finger (spec 2.7), with the scrub ticks. Lit from
- * the left: about earlier.
+ * the left: about earlier. A phone workout's [trim] puts Trim in the title row and what was trimmed, with Undo, under
+ * the chart, there even before any heart rate has arrived.
  */
 @Composable
-private fun HeartRateCard(a: WorkoutAnalysis) {
+private fun HeartRateCard(a: WorkoutAnalysis, trim: WorkoutTrim? = null) {
     val w = a.workout
     val first = a.shownStart
     val last = (a.heartRate.maxOfOrNull { it.timestamp } ?: a.end).coerceIn(a.end, a.end + Workouts.RECOVERY_TAIL_S)
@@ -282,7 +269,7 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val at = scrubbed?.let { i -> values.getOrNull(i)?.let { v -> first + i * HeartStep to v.roundToInt() } }
     EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
-        EdgeTitle("Heart rate", if (a.heartRate.isNotEmpty()) "Coloured by zone" else null)
+        EdgeTitle("Heart rate", if (a.heartRate.isNotEmpty()) "Coloured by zone" else null, action = trim?.let { { TrimButton(it.open) } })
         if (at != null) {
             EdgeValue(
                 at.second.toString(), "bpm", if (at.first > a.end) "At ${clock(at.first)}, after the end" else "At ${clock(at.first)}",
@@ -291,24 +278,24 @@ private fun HeartRateCard(a: WorkoutAnalysis) {
             val range = listOfNotNull(w.maxHeartRate?.let { "Max $it" }, w.minHeartRate?.let { "lowest $it" }).joinToString(", ")
             EdgeValue(w.averageHeartRate?.toString(), "bpm average", range.ifEmpty { null }?.let { "$it bpm" }, waiting = false)
         }
-        if (a.heartRate.isEmpty()) {
-            Text(
-                "The strap hasn't sent this workout's heart rate yet.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
+        if (a.heartRate.isEmpty()) Text(
+            "The strap hasn't sent this workout's heart rate yet.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
+        ) else {
+            ZoneHeartLine(values, first, a.end, a.maxHeartRate, a.historyRanges, scrubbed, { scrubbed = it }, Modifier.padding(top = 16.dp))
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
+                PageNote(clock(first))
+                Spacer(Modifier.weight(1f))
+                PageNote(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
+            }
+            if (a.historyRanges.isNotEmpty()) Text(
+                "Dimmed: " + a.historyRanges.joinToString(", ") { Ranges.times(it.first, it.last + 1) } +
+                    " came from the strap's history.",
+                color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                modifier = Modifier.padding(top = 8.dp),
             )
-            return@EdgeCard
         }
-        ZoneHeartLine(values, first, a.end, a.maxHeartRate, a.historyRanges, scrubbed, { scrubbed = it }, Modifier.padding(top = 16.dp))
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp)) {
-            Note(clock(first))
-            Spacer(Modifier.weight(1f))
-            Note(if (last > a.end + HeartStep) "Drop after ${clock(a.end)}" else clock(a.end))
-        }
-        if (a.historyRanges.isNotEmpty()) Text(
-            "Dimmed: " + a.historyRanges.joinToString(", ") { Ranges.times(it.first, it.last + 1) } +
-                " came from the strap's history.",
-            color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
-        )
+        trim?.let { TrimNote(it.summary, it.undo, Modifier.padding(top = 12.dp)) }
     }
 }
 
@@ -340,16 +327,12 @@ private fun ZoneHeartLine(
         if (endIndex in 1 until values.lastIndex) drawLine(
             Color.White.copy(alpha = 0.35f), Offset(endIndex * dx, 0f), Offset(endIndex * dx, size.height), strokeWidth = 1.dp.toPx(),
         )
-        for (i in 0 until values.lastIndex) {
-            val v0 = values[i] ?: continue
-            val v1 = values[i + 1] ?: continue
+        drawZoneLine(values.size, 2.5.dp.toPx(), at = { i -> values[i]?.let { Offset(i * dx, y(it)) } }) { i ->
+            val v = values[i] ?: return@drawZoneLine null
             val t = first + i * HeartStep
-            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v0.roundToInt(), maxHr, heartZones)
-            drawLine(
-                // The strap's history, filled in after: the same line, dimmed (spec 2.7, no dashes).
-                if (history.any { t in it }) color.copy(alpha = color.alpha * 0.45f) else color,
-                Offset(i * dx, y(v0)), Offset((i + 1) * dx, y(v1)), strokeWidth = 2.5.dp.toPx(), cap = StrokeCap.Round,
-            )
+            val color = if (i >= endIndex) Color.White.copy(alpha = 0.55f) else zoneColor(v.roundToInt(), maxHr, heartZones)
+            // The strap's history, filled in after: the same line, dimmed (spec 2.7, no dashes).
+            if (history.any { t in it }) color.copy(alpha = color.alpha * 0.45f) else color
         }
         scrubbed?.let { i ->
             val v = values.getOrNull(i) ?: return@let
@@ -375,7 +358,7 @@ private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
 
 /** The small facts ([WorkoutDetailCopy.facts]) as rows, and the map under them when the route was kept. */
 @Composable
-private fun FactsList(facts: List<WorkoutFact>, summary: PhoneSummary?) {
+private fun WorkoutFactsList(facts: List<WorkoutFact>, summary: PhoneSummary?) {
     ListPanel(title = "The workout") {
         facts.forEachIndexed { i, f ->
             val color = when (f.kind) {

@@ -44,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import org.openstrap.app.ui.components.growClick
 import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.RoundIconButton
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -82,14 +83,20 @@ fun MomentHeader(
             // You and the Strap page grow out of the button tapped (spec 3.5).
             start = {
                 growClick(onOpenYou).let { g ->
-                    RoundButton(AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", "Open You", g.onClick, g.modifier, dot = updateWaiting)
+                    RoundIconButton(
+                        AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", g.onClick, g.modifier,
+                        surface = Avatar, iconSize = 20.dp, clickLabel = "Open You", dot = updateWaiting,
+                    )
                 }
             },
             centre = { DaySwitcher(title, date, hasNext, onPrev, onNext, { calendarOpen = true }, Modifier) },
             end = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onOpenAllMetrics != null) {
-                        RoundButton(AppIcons.ChartBar, "All metrics", "Open all metrics", onOpenAllMetrics)
+                        RoundIconButton(
+                            AppIcons.ChartBar, "All metrics", onOpenAllMetrics, surface = Avatar, iconSize = 20.dp,
+                            clickLabel = "Open all metrics",
+                        )
                         Spacer(Modifier.width(8.dp))
                     }
                     growClick(onOpenStrap).let { g -> StrapChipButton(chip, g.onClick, g.modifier) }
@@ -125,22 +132,6 @@ private fun CentredRow(
             val x = ((w - cp.width) / 2).coerceIn(sp.width, (w - ep.width - cp.width + over).coerceAtLeast(sp.width))
             cp.place(x, (h - cp.height) / 2)
         }
-    }
-}
-
-/** A round button at either end of the header: the avatar, and All metrics in its likeness. [dot] marks its top right. */
-@Composable
-private fun RoundButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, clickLabel: String, onClick: () -> Unit, modifier: Modifier = Modifier,
-    dot: Boolean = false,
-) {
-    Box(modifier.size(38.dp)) {
-        Box(
-            Modifier.matchParentSize().clip(CircleShape).background(Avatar).clickable(onClickLabel = clickLabel, onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, description, Modifier.size(20.dp), tint = Color.White) }
-        // On the circle's edge at its top right, ringed in the page's black so it reads apart from the button.
-        if (dot) org.openstrap.app.ui.glow.NoticeDot(Modifier.align(Alignment.TopEnd), ring = Color.Black)
     }
 }
 

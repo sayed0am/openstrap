@@ -7,7 +7,6 @@ import org.openstrap.app.presentation.Ranges
 import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -67,7 +66,6 @@ import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.SleepWindows
 import org.openstrap.app.presentation.TabCopy
-import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.sleepWeek
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -316,11 +314,7 @@ private fun DeleteSleepSheet(title: String, times: String, onDelete: () -> Unit,
 /** In a deleted night's place: No sleep recorded, which times were deleted and what Recovery does, and Restore. */
 @Composable
 private fun DeletedNight(text: String, onRestore: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().padding(top = 8.dp)
-            .border(1.5.dp, Color.White.copy(alpha = 0.14f), GlowLayout.CardShape).padding(20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
+    OutlineCard(Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Text(SleepCopy.NO_SLEEP_TITLE, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
         Text(text, color = Color.White.copy(alpha = 0.75f), style = GlowType.body)
         PageButton("Restore", onRestore, Modifier.padding(top = 4.dp), icon = AppIcons.ArrowCounterClockwise)
@@ -392,10 +386,7 @@ private fun StageBars(b: Summaries.SleepBreakdown, modifier: Modifier = Modifier
             val secs = b.byStage[st] ?: 0L
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(SLEEP_NAMES[st].orEmpty(), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.width(56.dp))
-                val shape = RoundedCornerShape(50)
-                Box(Modifier.weight(1f).height(10.dp).background(Color.White.copy(alpha = 0.06f), shape)) {
-                    Box(Modifier.fillMaxWidth((secs.toFloat() / total).coerceIn(0f, 1f)).height(10.dp).background(stageColor(st), shape))
-                }
+                FillBar(secs.toFloat() / total, stageColor(st), Modifier.weight(1f), height = 10.dp)
                 Text(
                     Units.duration(secs), color = Color.White, style = GlowType.secondary,
                     modifier = Modifier.padding(start = 12.dp).width(56.dp), textAlign = androidx.compose.ui.text.style.TextAlign.End,
@@ -702,37 +693,20 @@ private const val HR_STEP_SECONDS = 5 * 60L
 /** The rows under a sleep detail: the other two sleep details and Recovery, each with the day's value, opening it. */
 @Composable
 private fun SleepRelated(current: Score, state: DayUiState, r: RecoveryResult?, onOpen: (Detail) -> Unit) {
-    val score = state.sleep?.score
     val reg = r?.regularity
     val naps = state.naps
-    val ready = r?.readiness
     val rows = buildList<@Composable (Boolean) -> Unit> {
-        if (current != Score.Sleep) add { divider ->
-            ListRow(
-                Score.Sleep.title, MetricColors.sleepDeep, score?.toString(), score?.let(TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
-                onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, divider = divider, icon = Score.Sleep.rowIcon(),
-            )
-        }
+        if (current != Score.Sleep) add { divider -> SleepScoreRow(state, divider, onOpen) }
         if (current != Score.Regularity) add { divider ->
-            ListRow(
-                Score.Regularity.title, MetricColors.sleepDeep, reg?.sri?.let { Math.round(it).toString() }, TabCopy.regularity(reg),
-                onClick = { onOpen(Detail.OfScore(Score.Regularity)) }, divider = divider, icon = Score.Regularity.rowIcon(),
-            )
+            val sri = reg?.sri?.let { Math.round(it).toString() }
+            ScoreRow(Score.Regularity, MetricColors.sleepDeep, sri, TabCopy.regularity(reg), divider, onOpen)
         }
         if (current != Score.Naps) add { divider ->
-            ListRow(
-                Score.Naps.title, MetricColors.sleepDeep, naps.takeIf { it.isNotEmpty() }?.let { n -> Units.duration(n.sumOf { it.end - it.start }) },
-                if (naps.isEmpty()) "None that day" else TabCopy.naps(naps.size, clock(naps.minOf { it.start })),
-                onClick = { onOpen(Detail.OfScore(Score.Naps)) }, divider = divider, icon = Score.Naps.rowIcon(),
-            )
+            val total = naps.takeIf { it.isNotEmpty() }?.let { n -> Units.duration(n.sumOf { it.end - it.start }) }
+            val word = if (naps.isEmpty()) "None that day" else TabCopy.naps(naps.size, clock(naps.minOf { it.start }))
+            ScoreRow(Score.Naps, MetricColors.sleepDeep, total, word, divider, onOpen)
         }
-        add { divider ->
-            ListRow(
-                Score.Recovery.title, MetricColors.readiness, ready?.score?.toString(),
-                ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE,
-                onClick = { onOpen(Detail.OfScore(Score.Recovery)) }, divider = divider, icon = Score.Recovery.rowIcon(),
-            )
-        }
+        add { divider -> RecoveryScoreRow(r?.readiness, divider, onOpen) }
     }
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") { rows.forEachIndexed { i, row -> row(i > 0) } }
+    RelatedPanel { rows.forEachIndexed { i, row -> row(i > 0) } }
 }

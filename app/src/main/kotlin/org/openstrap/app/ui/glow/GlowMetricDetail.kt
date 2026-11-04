@@ -6,16 +6,15 @@ import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +24,6 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -51,6 +49,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.data.History
@@ -59,10 +58,10 @@ import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.components.LocalCardsGrow
 import org.openstrap.app.ui.components.detailNumber
 import org.openstrap.app.ui.components.detailSurface
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
+import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
 import org.openstrap.app.presentation.Metric
@@ -82,27 +81,6 @@ import org.openstrap.app.ui.theme.ControlSurface
 
 /** [date] as a heading: "Today", "Yesterday", the weekday within the week, then the date ([DayWords.relative]). */
 internal fun dayName(date: LocalDate): String = DayWords.relative(date, LocalDate.now())
-
-/** A row of choices on a faint pill; the chosen one is a soft white pill. */
-@Composable
-internal fun GlowSegments(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.06f)).padding(4.dp),
-    ) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).clip(RoundedCornerShape(50))
-                    .background(if (on) Color.White.copy(alpha = 0.16f) else Color.Transparent)
-                    .pressClickable({ onSelect(i) }, RoundedCornerShape(50), scale = 0.97f)
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(label, color = if (on) Color.White else Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
 
 /* ---------------------------------------------- Template --------------------------------------------- */
 
@@ -213,7 +191,11 @@ internal fun DetailTemplate(
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
-            if (ranges.size > 1) item { RangePills(ranges, range, onRange) }
+            if (ranges.size > 1) item {
+                GlowSegments(
+                    ranges.map { it.label }, ranges.indexOf(range), { onRange(ranges[it]) }, Modifier.padding(top = 6.dp), role = Role.Tab,
+                )
+            }
             body()
         }
     }
@@ -259,32 +241,6 @@ private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, on
     PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton("About $title", onInfo) }
 }
 
-/**
- * Heart rate's Live control in its detail header: a chip on the Control surface (spec 2.2, 2.4), white with black
- * text while live, so it reads as the design system's own control and not a coloured switch.
- */
-@Composable
-internal fun LiveChip(on: Boolean, onChange: (Boolean) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(36.dp).clip(shape).background(if (on) Color.White else ControlSurface)
-            .toggleable(on, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Live", color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
-    }
-}
-
-/** A 38 dp round glass button with an icon, as on the detail mockup. */
-@Composable
-internal fun RoundButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, size: Dp = 38.dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).clickable(onClickLabel = label, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, Modifier.size(size * 0.47f), tint = Color.White) }
-}
-
 /** The status word under the value, in the metric's colour with a soft glow of it. */
 @Composable
 private fun StatusWord(word: String, color: Color, modifier: Modifier = Modifier) {
@@ -314,36 +270,16 @@ private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (Loc
     }
 }
 
-/** Day, Week, Month, Year: a dark track with the chosen one on a soft pill. */
-@Composable
-private fun RangePills(ranges: List<Range>, range: Range, onRange: (Range) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp).clip(shape).background(Color(0xFF121214)).border(1.dp, Color.White.copy(alpha = 0.07f), shape).padding(4.dp),
-    ) {
-        ranges.forEach { r ->
-            val on = r == range
-            Box(
-                Modifier.weight(1f).clip(shape).background(if (on) Color.White.copy(alpha = 0.12f) else Color.Transparent)
-                    .clickable(role = Role.Tab) { onRange(r) }.padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) { Text(r.label, color = if (on) Color.White else Color.White.copy(alpha = 0.55f), style = GlowType.body) }
-        }
-    }
-}
-
 /** The switcher's choices, as a sheet over the detail: the group's details, the one showing ticked. */
 @Composable
 private fun SwitcherSheet(siblings: List<DetailSibling>, color: Color, onDismiss: () -> Unit) {
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 16.dp)) {
-            ListPanel {
-                siblings.forEachIndexed { i, s ->
-                    ListRow(
-                        s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
-                        onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
-                    )
-                }
+    PageSheet(onDismiss, side = 16.dp) {
+        ListPanel {
+            siblings.forEachIndexed { i, s ->
+                ListRow(
+                    s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
+                    onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
+                )
             }
         }
     }
@@ -358,21 +294,30 @@ internal fun DetailSentence(text: String) {
 /**
  * A detail's second figures side by side, each in an equal share of the width: the value as text in Body, its name
  * under it in Secondary. Text, not dots, since the header's number is the detail's one dotted number (spec 2.3). A
- * figure without a value shows "No reading" in its place.
+ * figure without a value shows [missing] ("No reading") in its place, or the waiting dash when [missing] is null. A
+ * workout's hero shows its three figures larger ([valueStyle] Row value) and close under them ([gap]).
  */
 @Composable
-internal fun DetailFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
+internal fun DetailFigures(
+    figures: List<Pair<String?, String>>,
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = GlowType.body.copy(fontFeatureSettings = "tnum"),
+    missing: String? = "No reading",
+    gap: Dp = 4.dp,
+) {
     Row(modifier.fillMaxWidth()) {
         figures.forEachIndexed { i, (value, label) ->
             val end = i == figures.lastIndex && i > 0
             Column(
                 Modifier.weight(1f), horizontalAlignment = if (end) Alignment.End else Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(gap),
             ) {
-                Text(
-                    value ?: "No reading", color = if (value != null) Color.White else Color.White.copy(alpha = 0.3f),
-                    style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1,
-                )
+                when {
+                    value != null -> Text(value, color = Color.White, style = valueStyle, maxLines = 1)
+                    missing != null -> Text(missing, color = Color.White.copy(alpha = 0.3f), style = valueStyle, maxLines = 1)
+                    // As tall as a Row value line, so a missing figure keeps its label level with the others.
+                    else -> WaitingDash(Modifier.padding(vertical = 10.5.dp))
+                }
                 Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
             }
         }
@@ -485,7 +430,7 @@ fun GlowMetricDetailScreen(
         ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
         heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
             {
-                LiveChip(liveEnabled, onLiveToggle)
+                PageChip("Live", liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch, filled = true)
             }
         } else null,
     ) {
@@ -724,26 +669,51 @@ internal fun series(
  */
 @Composable
 private fun RelatedList(related: List<Metric>, state: DayUiState, history: DailyHistory, onOpen: (Detail) -> Unit, sleepRow: Boolean = false) {
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
-        if (sleepRow) {
-            val score = state.sleep?.score
-            ListRow(
-                org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE,
-                onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
-                icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
-            )
-        }
-        related.forEachIndexed { i, m ->
-            val normal = rememberNormal(m, state.date, history)
-            val v = dayValue(m, state)
-            val status = if (m == Metric.HeartRate) null else History.status(v, normal)
-            ListRow(
-                m.title, colorOf(m), v?.let { m.format(it) },
-                if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-                offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = i > 0 || sleepRow,
-                icon = m.rowIcon(),
-            )
-        }
+    RelatedPanel {
+        if (sleepRow) SleepScoreRow(state, divider = false, onOpen)
+        related.forEachIndexed { i, m -> RelatedMetricRow(m, state, history, divider = i > 0 || sleepRow, onOpen) }
     }
+}
+
+/** The "Related" list at the foot of a detail: the details next to this one, each a row opening it. */
+@Composable
+internal fun RelatedPanel(content: @Composable ColumnScope.() -> Unit) =
+    ListPanel(Modifier.padding(top = 8.dp), title = "Related", content = content)
+
+/** A score as a related row: its [value] and [word] beside its name and icon, opening its detail. */
+@Composable
+internal fun ScoreRow(score: Score, color: Color, value: String?, word: String, divider: Boolean, onOpen: (Detail) -> Unit) = ListRow(
+    score.title, color, value, word, onClick = { onOpen(Detail.OfScore(score)) }, divider = divider, icon = score.rowIcon(),
+)
+
+/** The night's Sleep score as a related row, with its word. */
+@Composable
+internal fun SleepScoreRow(state: DayUiState, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val score = state.sleep?.score
+    ScoreRow(
+        Score.Sleep, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
+        score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE, divider, onOpen,
+    )
+}
+
+/** The day's Recovery as a related row, with its word. */
+@Composable
+internal fun RecoveryScoreRow(ready: org.openstrap.app.data.Recovery.Readiness?, divider: Boolean, onOpen: (Detail) -> Unit) = ScoreRow(
+    Score.Recovery, org.openstrap.app.ui.theme.MetricColors.readiness, ready?.score?.toString(),
+    ready?.score?.let { org.openstrap.app.presentation.TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE, divider, onOpen,
+)
+
+/** A body signal as a related row: the day's value and its word against your normal, marked when it's off normal. */
+@Composable
+internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistory, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val normal = rememberNormal(m, state.date, history)
+    val v = dayValue(m, state)
+    // The heart rate moves all day, so it has no word against a normal.
+    val status = if (m == Metric.HeartRate) null else History.status(v, normal)
+    ListRow(
+        m.title, colorOf(m), v?.let { m.format(it) },
+        if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+        offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        icon = m.rowIcon(),
+    )
 }

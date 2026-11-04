@@ -243,9 +243,9 @@ internal fun TrimBar(
             }
         }
         Row(Modifier.fillMaxWidth()) {
-            Note(clock(first))
+            PageNote(clock(first))
             Spacer(Modifier.weight(1f))
-            Note(clock(last))
+            PageNote(clock(last))
         }
     }
 }

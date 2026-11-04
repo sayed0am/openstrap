@@ -207,7 +207,7 @@ internal fun widgetMood(data: WidgetData, usualBedtime: LocalTime?): GlowMood =
     }
 
 /** The Strap page (spec 5): the status line's tap while the strap isn't paired or its battery is low. */
-internal fun openStrap(context: Context): Intent =
+private fun openStrap(context: Context): Intent =
     Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_STRAP, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
 /** Opens the detail at [route] (`open_metric`, one of [org.openstrap.app.data.DetailRoutes]) for [day]. */
@@ -360,7 +360,7 @@ private fun statusAction(status: StrapStatus): Action? {
 }
 
 /** A glow card's light ([style], its mood set) for a widget [w] by [h] dp with [corner] dp corners, at [density] px per dp. */
-internal fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float, density: Float): Bitmap {
+private fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float, density: Float): Bitmap {
     val pw = w * density
     val ph = h * density
     return renderToBitmap(pw, ph) { drawGlow(it, style.copy(radius = corner.dp), pw, ph, density) }
@@ -370,7 +370,7 @@ internal fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float,
  * An edge card's light ([light] in [ink] at [mood]) for a widget [w] by [h] dp, with [corner] dp corners, at
  * [density] px per dp: the same [edgePaint] the app's edge cards draw.
  */
-internal fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Float, h: Float, corner: Float, density: Float): Bitmap {
+private fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Float, h: Float, corner: Float, density: Float): Bitmap {
     val paint = edgePaint(light, ink, null, mood, w * density, h * density, density)
     return renderEdge(paint.copy(radius = corner * density))
 }
@@ -455,7 +455,7 @@ internal fun TopRowView(title: String, note: String?, top: TopRow, f: WidgetFram
 }
 
 /** The status words: Secondary in amber, the strap and sync colour (v2 spec: amber is for those only). */
-internal val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), fontSize = StatusButton.WORDS_SP.sp)
+private val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), fontSize = StatusButton.WORDS_SP.sp)
 
 /**
  * The status button (spec 5): a [StatusButton.SIZE_DP] circle in the Control surface Start's tiles wear, the state's
@@ -463,7 +463,7 @@ internal val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), f
  * battery in amber. Its tap, read out as the whole line, is [StatusTapTarget]'s (while it syncs, the spinner reads it).
  */
 @Composable
-internal fun StatusButtonView(line: StatusLine, f: WidgetFrame) {
+private fun StatusButtonView(line: StatusLine, f: WidgetFrame) {
     val status = line.status
     val size = GlanceModifier.size(StatusButton.SIZE_DP.dp)
     if (status == StrapStatus.Syncing) {
@@ -502,6 +502,27 @@ private fun statusButtonBitmap(icon: ImageVector?, color: Color, density: Float)
 internal fun iconBitmap(icon: ImageVector, color: Color, sizeDp: Float, density: Float): Bitmap {
     val s = sizeDp * density
     return renderToBitmap(s, s) { c -> drawIcon(c, icon, color, 0f, 0f, s) }
+}
+
+/** The weighted gap between blocks: every gap in a column shares what the blocks leave. */
+@Composable
+internal fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
+
+/** The half gap above the first block or below the last, at the cell's real height. */
+@Composable
+internal fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
+
+/** Between a figure's Caption and its Body. */
+internal const val FIGURE_LINE_GAP_DP = 2f
+
+/** A figure: its [label] in Caption over its [value] in Body. */
+@Composable
+internal fun FigureCell(label: String, value: String, modifier: GlanceModifier = GlanceModifier) {
+    Column(modifier) {
+        Text(label, style = WidgetType.caption, maxLines = 1)
+        Spacer(GlanceModifier.height(FIGURE_LINE_GAP_DP.dp))
+        Text(value, style = WidgetType.body, maxLines = 1)
+    }
 }
 
 /**

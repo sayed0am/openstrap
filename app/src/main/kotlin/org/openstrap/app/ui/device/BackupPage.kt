@@ -7,7 +7,7 @@ import androidx.compose.runtime.remember
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowSwitch
+import org.openstrap.app.ui.glow.PageSwitchRow
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageRows
@@ -39,9 +39,9 @@ fun BackupPage(
         item { PageHeader("Backup", onBack) }
         item {
             PageRows {
-                PageRow("Automatic backup", BackupCopy.status(state, now), onClick = { toggle(!state.on) }, below = true, divider = false, icon = AppIcons.ShieldCheck) {
-                    GlowSwitch(state.on, toggle)
-                }
+                PageSwitchRow(
+                    "Automatic backup", BackupCopy.status(state, now), state.on, toggle, divider = false, icon = AppIcons.ShieldCheck,
+                )
                 if (state.on) {
                     PageRow("Backup folder", BackupCopy.folder(state), onClick = onFolder, below = true, icon = AppIcons.FolderOpen)
                     PageRow(

@@ -174,9 +174,9 @@ fun GlowActivityScreen(
                         heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
                         onClick = { open(Score.HeartPoints) },
                     )
-                    ActivityCard.Load -> LoadCard(r) { open(Score.Load) }
+                    ActivityCard.Load -> DayLoadCard(r) { open(Score.Load) }
                     ActivityCard.HeartRate -> HeartCard(state, live, { onOpenMetric(Metric.HeartRate) }, restingRange = restingRange)
-                    ActivityCard.Facts -> FactsList(state, r, workouts, isToday, onEditProfile, open, partial)
+                    ActivityCard.Facts -> DayFactsList(state, r, workouts, isToday, onEditProfile, open, partial)
                     ActivityCard.Workouts -> WorkoutsList(
                         state.date, workouts, suggestion?.takeIf { isToday }, onOpenWorkout, onAllWorkouts, onAddWorkout,
                         onSaveSuggestion, onDismissSuggestion,
@@ -211,11 +211,11 @@ private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: ()
                 horizontalArrangement = Arrangement.spacedBy(StartTileGap),
             ) {
                 sports.take(columns - 1).forEach { type ->
-                    SportTile(SportIcons.of(type), Workouts.sportName(type), outdoor = type in Workouts.OUTDOOR, Modifier.weight(1f)) {
+                    SportTile(SportIcons.of(type), Workouts.sportName(type), Modifier.weight(1f), outdoor = type in Workouts.OUTDOOR) {
                         onStart(type)
                     }
                 }
-                SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
+                SportTile(AppIcons.MoreHorizontalCircle01, "All sports", Modifier.weight(1f), outdoor = false, onClick = onAllSports)
             }
         }
     }
@@ -228,35 +228,6 @@ private val StartTileGap = 8.dp
 /** How many sports by use a wide Start card offers before the everyday ones pad it. */
 private const val MORE_BY_USE = 8
 
-private val SportTileSize = 64.dp
-private val SportTileShape = RoundedCornerShape(GlowLayout.TileCorner)
-
-/**
- * A sport as a tile: its icon on a 64 dp Control tile, its name in Secondary under it, up to two lines. An [outdoor]
- * sport carries a small location mark in the tile's corner.
- */
-@Composable
-private fun SportTile(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, outdoor: Boolean, modifier: Modifier, onClick: () -> Unit,
-) {
-    Column(
-        modifier.pressClickable(onClick, SportTileShape).semantics(mergeDescendants = true) { role = Role.Button },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(SportTileSize).background(ControlSurface, SportTileShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
-            if (outdoor) Icon(
-                AppIcons.Location01, null, tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                modifier = Modifier.align(Alignment.TopEnd).padding(7.dp).size(12.dp),
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
-            textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 /* ----------------------------------------------- Steps ---------------------------------------------- */
 
@@ -334,13 +305,14 @@ private val HourPillsHeight = 56.dp
  * of your usual Load by this time needs past days' Load hour by hour. The engine keeps each past day's Load only as a
  * total ([org.openstrap.app.data.Recovery.dailyLoad]); hours would mean re-running it 24 times for each of 30 days in
  * every recompute, with nothing to cache them in.
+ * As high as its title and number, not the grid's Wide height, which left a band of empty light under them (user, 2026-11-04).
  */
 @Composable
-private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
+private fun DayLoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
     EdgeCard(
-        MetricColors.load, Modifier.fillMaxWidth().gridSize(CardSize.Wide),
+        MetricColors.load, Modifier.fillMaxWidth(),
         status = if (status == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
         kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
     ) {
@@ -355,8 +327,10 @@ private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
  * The day's smaller facts: VO2 max, time to recover, calories and distance, each opening its detail. Active minutes and
  * Heart points are the Small pair above.
  */
+// One branch per fact and its missing case, as flat as the list reads. It was FactsList before the rename.
+@Suppress("CyclomaticComplexMethod")
 @Composable
-private fun FactsList(
+private fun DayFactsList(
     state: DayUiState, r: RecoveryResult?, workouts: List<WorkoutAnalysis>, isToday: Boolean, onEditProfile: () -> Unit, open: (Score) -> Unit,
     /** The Partial day tag: calories and distance are the day's totals. */
     tag: TitleTag? = null,
@@ -442,8 +416,8 @@ private fun WorkoutsList(
             }
             WorkoutRow(a, usual, divider()) { onOpen(a.workout.start) }
         }
-        LinkRow("Add a workout you didn't record", onAdd, divider = divider())
-        LinkRow("All workouts", onAll)
+        PageRow("Add a workout you didn't record", onClick = onAdd, divider = divider())
+        PageRow("All workouts", onClick = onAll)
     }
 }
 
@@ -492,7 +466,7 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
                     )
                     if (!a.startedByYou) {
                         Spacer(Modifier.width(6.dp))
-                        FoundTag()
+                        OutlineTag(TabCopy.AUTO_DETECTED)
                     }
                 }
                 Text(
@@ -538,16 +512,6 @@ private fun EffortLight(icon: androidx.compose.ui.graphics.vector.ImageVector, e
     }
 }
 
-/** "Auto-detected": a quiet outlined label beside the sport's name. */
-@Composable
-internal fun FoundTag() {
-    Text(
-        TabCopy.AUTO_DETECTED, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary.copy(fontSize = 11.sp, lineHeight = 14.sp),
-        maxLines = 1,
-        modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.19f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
-    )
-}
-
 /** A stretch nobody started, as a row with Save: when it was and how hard. */
 @Composable
 private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestion, onSave: () -> Unit, onDismiss: () -> Unit, divider: Boolean) {
@@ -558,8 +522,8 @@ private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestio
             dash = false, divider = divider, icon = AppIcons.Heartbeat,
         )
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RowPill("Save", onSave, primary = true)
-            RowPill("Not a workout", onDismiss)
+            PageButton("Save", onSave, primary = true, size = ButtonSize.Row)
+            PageButton("Not a workout", onDismiss, size = ButtonSize.Row, onCard = true)
             Box(Modifier.weight(1f))
         }
     }

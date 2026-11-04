@@ -44,6 +44,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
@@ -112,12 +113,12 @@ fun GlowChooseScreen(
         // The search opens a page of its own (board ActivitySearchTyping).
         SearchEntry("Search all sports") { searching = true }
         if (recent.isNotEmpty()) {
-            ChipLabel("Recent")
+            SectionLabel("Recent")
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { chip ->
                     when (chip) {
-                        is RecentChip.Sport -> RecentChipButton(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
-                        is RecentChip.Saved -> RecentChipButton(chip.sport, chip.name) { onSaved(chip) }
+                        is RecentChip.Sport -> RecentPill(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
+                        is RecentChip.Saved -> RecentPill(chip.sport, chip.name) { onSaved(chip) }
                     }
                 }
             }
@@ -133,7 +134,7 @@ fun GlowChooseScreen(
                 Row(Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(GlowLayout.ColumnGap * 2)) {
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)
                     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        ChipLabel("More sports")
+                        SectionLabel("More sports")
                         MoreSportsList(onReady)
                     }
                 }
@@ -179,42 +180,43 @@ private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
     }
 }
 
-/** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */
-@Composable
-private fun RecentChipButton(sport: Int, name: String, onClick: () -> Unit) {
-    Row(
-        Modifier.height(44.dp).clip(CircleShape).background(QuietCard).border(1.dp, RowHairline, CircleShape)
-            .pressClickable(onClick, CircleShape).semantics { role = Role.Button }
-            .padding(start = 10.dp, end = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(SportIcons.of(sport), null, tint = familyColor(Workouts.family(sport)), modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(name, color = Color.White, style = GlowType.body, maxLines = 1)
-    }
-}
-
 /** Choose's quiet chips, a step off black so the usual's glow stays the one lit thing. */
 private val QuietCard = ListSurface
+
+/** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */
+@Composable
+private fun RecentPill(sport: Int, name: String, onClick: () -> Unit) =
+    IconPill(name, onClick, icon = SportIcons.of(sport), tint = familyColor(Workouts.family(sport)), surface = QuietCard, hairline = true)
 
 /* --------------------------------------------- Sport picker -------------------------------------------- */
 
 /**
- * A sport's tile in the picker (spec 6.3): a 64 dp Control tile with 16 dp corners, the icon at 24 dp, the name in
- * Secondary under it. The chosen sport's tile is white with a black icon; a sport done only outdoors carries the
- * 12 dp location mark in its corner.
+ * A sport's tile (spec 6.3), in the picker and on Activity's Start a workout: a 64 dp Control tile with 16 dp corners,
+ * the [icon] at 24 dp, the [name] in Secondary under it. The chosen sport's tile is white with a black icon; an
+ * [outdoor] sport carries the 12 dp location mark in its corner.
  */
 @Composable
-private fun SportTile(type: Int, name: String, modifier: Modifier, selected: Boolean = false, onClick: () -> Unit) {
+internal fun SportTile(
+    icon: ImageVector,
+    name: String,
+    modifier: Modifier,
+    outdoor: Boolean,
+    selected: Boolean = false,
+    onClick: () -> Unit,
+) {
     // Tight corners and room underneath, so the press area never clips a label that fills the width.
-    Column(modifier.pressClickable(onClick, RoundedCornerShape(8.dp)).padding(vertical = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(
+        modifier.pressClickable(onClick, RoundedCornerShape(8.dp)).semantics(mergeDescendants = true) { role = Role.Button }
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Box(
             Modifier.size(SportTileSize).clip(GlowLayout.TileShape).background(if (selected) Color.White else Raised),
             contentAlignment = Alignment.Center,
         ) {
             val ink = if (selected) Color.Black else Color.White
-            Icon(SportIcons.of(type), null, tint = ink, modifier = Modifier.size(24.dp))
-            if (type in Workouts.OUTDOOR_ONLY) Icon(
+            Icon(icon, null, tint = ink, modifier = Modifier.size(24.dp))
+            if (outdoor) Icon(
                 SportIcons.Location, "Outdoors", tint = ink.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(12.dp),
             )
@@ -375,10 +377,13 @@ private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
 @Composable
 private fun SportTiles(title: String?, types: List<Int>, name: (Int) -> String, isSelected: (Int) -> Boolean, onPick: (Int) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (title != null) ChipLabel(title)
+        if (title != null) SectionLabel(title)
         types.chunked(4).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.Top) {
-                row.forEach { type -> SportTile(type, name(type), Modifier.weight(1f), selected = isSelected(type)) { onPick(type) } }
+                row.forEach { type ->
+                    val outdoor = type in Workouts.OUTDOOR_ONLY
+                    SportTile(SportIcons.of(type), name(type), Modifier.weight(1f), outdoor, isSelected(type)) { onPick(type) }
+                }
                 repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }

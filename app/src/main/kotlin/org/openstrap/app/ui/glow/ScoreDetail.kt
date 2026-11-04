@@ -21,7 +21,6 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.flowOf
 import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.DailyMetric
-import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.ui.components.detailNumber
@@ -37,7 +36,6 @@ import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.presentation.TabCopy
 import org.openstrap.app.presentation.TodayCopy
-import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 import java.time.LocalTime
@@ -309,34 +307,21 @@ private fun ChargeDetail(
  */
 @Composable
 private fun ScoreRelated(score: Score, state: DayUiState, r: RecoveryResult?, history: DailyHistory, onOpen: (Detail) -> Unit) {
-    val ready = r?.readiness
     // Before the first night Charge is only the simulation's starting guess: a dash, as on the Recovery tab's battery.
     val charge = r?.charge?.takeIf { it.anchored }?.latest?.let(::chargeShown)
     val chargeWaiting = if (r?.charge?.anchored == false) org.openstrap.app.presentation.AFTER_FIRST_NIGHT else NO_VALUE
     val asleep = state.asleepSeconds
     val metrics = if (score == Score.Recovery) listOf(Metric.Hrv, Metric.RestingHr) else listOf(Metric.Stress)
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
-        if (score == Score.Recovery) ListRow(
-            "Energy", MetricColors.charge, charge?.toString(), charge?.let(Narrative::chargeHeadline) ?: chargeWaiting,
-            onClick = { onOpen(Detail.OfScore(Score.Energy)) }, divider = false, icon = Score.Energy.rowIcon(),
-        ) else ListRow(
-            "Recovery", MetricColors.readiness, ready?.score?.toString(),
-            ready?.score?.let { TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE,
-            onClick = { onOpen(Detail.OfScore(Score.Recovery)) }, divider = false, icon = Score.Recovery.rowIcon(),
-        )
+    RelatedPanel {
+        if (score == Score.Recovery) {
+            val word = charge?.let(Narrative::chargeHeadline) ?: chargeWaiting
+            ScoreRow(Score.Energy, MetricColors.charge, charge?.toString(), word, divider = false, onOpen)
+        } else RecoveryScoreRow(r?.readiness, divider = false, onOpen)
         ListRow(
             "Last night", MetricColors.sleepDeep, asleep?.let { Units.duration(it) }, if (asleep == null) "No sleep recorded" else "Asleep",
             onClick = { onOpen(Detail.OfScore(Score.Sleep)) }, icon = Score.Sleep.rowIcon(),
         )
-        metrics.forEach { m ->
-            val normal = rememberNormal(m, state.date, history)
-            val v = dayValue(m, state)
-            val status = History.status(v, normal)
-            ListRow(
-                m.title, colorOf(m), v?.let(m::format), if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-                offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, icon = m.rowIcon(),
-            )
-        }
+        metrics.forEach { m -> RelatedMetricRow(m, state, history, divider = true, onOpen) }
     }
 }
 

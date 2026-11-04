@@ -120,7 +120,7 @@ class DesignTokenTest {
             "glow/TodayCards.kt" to cards("WeekCard"),
             "glow/GlowRecoveryScreen.kt" to cards("RecoveryHero", "RecoveryFailedHero", "ChargeTall", "ChargeSmall"),
             "glow/GlowSleepScreen.kt" to cards("NightHero", "RegularityCard", "BreathingCard"),
-            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "LoadCard"),
+            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "DayLoadCard"),
             "glow/GlowHealthspan.kt" to cards("HabitAgeEdgeCard"),
         ).forEach { (path, fn) ->
             val code = sources.getValue(path).joinToString("\n")
@@ -190,6 +190,14 @@ class DesignTokenTest {
         if (found.isNotEmpty()) fail("Dot sizes come from DotSize (spec 2.3):\n" + found.joinToString("\n"))
     }
 
+    @Test fun `a workout hero's glow and a lit panel are each built in one place`() {
+        // The summary, the past workout and the heart rate drop light by effortGlow, Ready's heart and the max heart
+        // rate's hero are LitPanel (component consolidation, 2026-11-04). The share cards light a whole image, not a panel.
+        val found = find(Regex("""lightAngle\s*=\s*LightAngle\.Below,\s*lightLevel"""), except = setOf("glow/CardLight.kt")) +
+            find(Regex("""\bdrawCardLight\("""), except = setOf("glow/CardLight.kt", "glow/ShareCards.kt"))
+        if (found.isNotEmpty()) fail("Use effortGlow and LitPanel:\n" + found.joinToString("\n"))
+    }
+
     /** Card-sized corners: anything this round is a card, a panel or a sheet, and takes [GlowLayout.CardShape]. */
     @Test fun `cards take their corners from GlowLayout`() {
         val found = mutableListOf<String>()
@@ -227,7 +235,21 @@ class DesignTokenTest {
         assertTrue("type allowlist is higher than the code, lower it: $stale (now ${stale.keys.associateWith { counts[it] ?: 0 }})", stale.isEmpty())
     }
 
+    @Test fun `the glow screens and the app's frame take no type or colour from Material`() {
+        // Material's roles are another product's type (spec 2.3). The theme glue in components/Glass.kt and the
+        // colorScheme.background blacks behind whole screens stay, as does PageMenuRow's DropdownMenu.
+        val frame = setOf("dashboard/DayCalendar.kt", "components/PullToSync.kt", "components/Insights.kt")
+        val found = find(
+            Regex("""MaterialTheme\.(typography|colorScheme)|\b(IconButton|TextButton|Surface)\(|material3\.Surface\b"""),
+            except = sources.keys.filterNot { (it.startsWith("glow/") || it in frame) && it !in materialNotMigrated }.toSet(),
+        )
+        if (found.isNotEmpty()) fail("Text takes a GlowType role, controls come from PageParts (spec 2.3, 2.4):\n" + found.joinToString("\n"))
+    }
+
     private companion object {
+        /** Glow files still on Material type. Empty since the charts moved ScaleLabel onto ScaleLabels. */
+        val materialNotMigrated = emptySet<String>()
+
         /** From this radius up a corner is a card's. Tiles, chips, bars and pills stay under it. */
         const val CARD_SIZED = 20f
 
@@ -246,8 +268,7 @@ class DesignTokenTest {
          */
         val typeNotMigrated = mapOf(
             "dashboard/SleepPanels.kt" to 1,
-            "glow/AllMetricsScreen.kt" to 1,
-            "glow/GlowActivityScreen.kt" to 2,
+            "glow/GlowActivityScreen.kt" to 1,
             "glow/GlowCharts.kt" to 4,
             "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,

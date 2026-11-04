@@ -12,13 +12,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,7 +30,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -61,12 +56,9 @@ fun InfoSheet(
     info: Info, color: Color, here: Int?, hereLine: String?, onDismiss: () -> Unit, notes: List<String> = emptyList(),
     rows: List<Pair<String, String>>? = null,
 ) {
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.85f).dp
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(
-            Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState())
-                .padding(horizontal = 22.dp).navigationBarsPadding().padding(bottom = 20.dp),
-        ) {
+    PageSheet(onDismiss) {
+        // One block, so the sheet's gap between blocks leaves this one's own spacing alone.
+        Column {
             Text(info.name, color = Color.White.copy(alpha = 0.5f), style = GlowType.secondary)
             Text(
                 info.meaning, color = Color.White, modifier = Modifier.padding(top = 6.dp),

@@ -39,7 +39,6 @@ import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.level
 import org.openstrap.app.ui.glow.draw.Edge
 
@@ -79,32 +78,19 @@ private fun GoalWeekCard(
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))
                 trailing?.invoke()
             }
-            Row(Modifier.padding(top = GlowLayout.TitleGap), verticalAlignment = Alignment.Bottom) {
-                DotMatrixText("$count", dot = DotSize.Hero)
-                Text("of $goal workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))
-            }
-            if (bar) GoalBar(count, goal, Modifier.padding(top = 18.dp)) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
+            HeroValue("$count", "of $goal workouts", Modifier.padding(top = GlowLayout.TitleGap))
+            // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
+            if (bar) SegmentBar(
+                List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
+                Modifier.padding(top = 18.dp).semantics { contentDescription = "$count of $goal workouts" }, height = 8.dp, gap = 6.dp,
+            ) else WeekDots(dots, Color.White, Modifier.padding(top = 18.dp))
             Text(line, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 14.dp))
         }
     }
 }
 
-/** The week's workouts against the goal as a bar of [goal] segments, [count] of them white. */
-@Composable
-private fun GoalBar(count: Int, goal: Int, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(
-        modifier.fillMaxWidth().height(8.dp).semantics { contentDescription = "$count of $goal workouts" },
-    ) {
-        val n = goal.coerceIn(1, 14)
-        val gap = 6.dp.toPx()
-        val w = (size.width - gap * (n - 1)) / n
-        val corner = androidx.compose.ui.geometry.CornerRadius(size.height / 2)
-        for (i in 0 until n) drawRoundRect(
-            Color.White.copy(alpha = if (i < count) 1f else 0.2f), androidx.compose.ui.geometry.Offset(i * (w + gap), 0f),
-            androidx.compose.ui.geometry.Size(w, size.height), corner,
-        )
-    }
-}
+/** The most workouts the goal bar splits into, so each part stays wide enough to read. */
+private const val MAX_GOAL_SHOWN = 14
 
 /** A week's distance shows from a tenth of a km, the first the figure can write. */
 private const val MIN_WEEK_METERS = 100f
@@ -172,7 +158,7 @@ fun GoalsAndBestsPage(
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
         item { PageHeader("Goals and bests", onBack) }
         if (view == null) {
-            item { Note("Loading…") }
+            item { PageNote("Loading…") }
             return@ScreenList
         }
         item {
@@ -314,13 +300,13 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
             EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
                 EdgeTitle("In all", "${mine.size} ${if (mine.size == 1) "workout" else "workouts"}")
-                SummaryFigures(
+                DetailFigures(
                     listOf(
                         Units.clockDuration(seconds) to "Hours",
                         Units.km(meters, Units.Precision.Day) to "km",
                         Units.count(Math.round(kcal)) to "Active kcal",
                     ),
-                    Modifier.padding(top = 12.dp),
+                    Modifier.padding(top = 12.dp), valueStyle = GlowType.rowValue, missing = null, gap = 0.dp,
                 )
             }
         }

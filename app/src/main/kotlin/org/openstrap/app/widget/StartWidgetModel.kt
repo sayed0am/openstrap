@@ -224,9 +224,8 @@ object StartLayout {
     /** Between the tile and play on the Small with a status. */
     const val STATUS_PLAY_GAP_DP = 16f
 
-    /** Between a tile and its caption, and a figure's Caption and its Body. */
+    /** Between a tile and its caption ([FIGURE_LINE_GAP_DP] is a figure's Caption to its Body). */
     const val CAPTION_GAP_DP = 4f
-    const val FIGURE_LINE_GAP_DP = 2f
 
     /** Between the two figures side by side, and between captions in the tile row. */
     const val FIGURE_GAP_DP = 12f

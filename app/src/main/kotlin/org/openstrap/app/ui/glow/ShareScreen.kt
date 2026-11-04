@@ -14,7 +14,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -24,14 +23,11 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -54,12 +50,6 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
@@ -73,7 +63,6 @@ import org.openstrap.app.data.catching
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.FamilySummary
@@ -199,7 +188,7 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
     ) {
         // Close on the left, the title in the middle (board ShareRun).
         Box(Modifier.fillMaxWidth().height(44.dp), contentAlignment = Alignment.Center) {
-            Box(Modifier.align(Alignment.CenterStart)) { RoundButton(AppIcons.X, "Close", onClose, size = 44.dp) }
+            Box(Modifier.align(Alignment.CenterStart)) { RoundIconButton(AppIcons.X, "Close", onClose, size = 44.dp) }
             Text("Share", color = Color.White, style = GlowType.cardTitle, maxLines = 1)
             // The picture for Save and Share: the same card at 1080 by 1920, recorded but never drawn on screen.
             if (export != null) Box(
@@ -225,64 +214,29 @@ private fun ShareScreen(card: StoryCard, route: List<Route.Point>, fileName: Str
                         StoryCardView(card, photo, shown)
                     }
                     if (photo != null) Box(Modifier.align(Alignment.TopEnd).padding(10.dp)) {
-                        RoundButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
+                        RoundIconButton(AppIcons.X, "Remove the photo", { photoUri = null }, size = 32.dp)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
-                PhotoButton(if (photo != null) "Change photo" else "Add a photo", Modifier) {
-                    pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                }
+                IconPill(
+                    if (photo != null) "Change photo" else "Add a photo",
+                    { pick.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) }, icon = AppIcons.Image,
+                )
             }
         }
         if (hasRoute) {
-            Row(Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 Text("Route", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.width(84.dp))
-                RouteChoice(routeMode) { routeMode = it }
+                val routes = StoryRoute.entries
+                GlowSegments(routes.map { it.name }, routeMode.ordinal, { routeMode = routes[it] }, Modifier.weight(1f))
             }
-            if (routeMode == StoryRoute.Line) Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("Hide start and end", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.weight(1f))
-                GlowSwitch(hideEnds, { hideEnds = it })
-            }
+            if (routeMode == StoryRoute.Line) PageSwitchRow("Hide start and end", null, hideEnds, { hideEnds = it }, divider = false)
         }
     }
 }
 
 /** The tallest the preview grows on a big screen. */
 private val MaxPreviewHeight = 560.dp
-
-/** The photo pill under the card: a picture icon and what it does. */
-@Composable
-private fun PhotoButton(label: String, modifier: Modifier, onClick: () -> Unit) {
-    Row(
-        modifier.height(44.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape).padding(start = 16.dp, end = 20.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(AppIcons.Image, null, tint = Color.White, modifier = Modifier.size(18.dp))
-        Spacer(Modifier.width(8.dp))
-        Text(label, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
-    }
-}
-
-/** Off or Line on a dark pill, the chosen one white (board ShareRun). */
-@Composable
-private fun androidx.compose.foundation.layout.RowScope.RouteChoice(selected: StoryRoute, onSelect: (StoryRoute) -> Unit) {
-    Row(Modifier.weight(1f).fillMaxHeight().clip(CircleShape).background(Raised).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-        StoryRoute.entries.forEach { mode ->
-            val on = mode == selected
-            Box(
-                Modifier.weight(1f).fillMaxHeight().clip(CircleShape).background(if (on) Color.White else Color.Transparent)
-                    .pressClickable({ onSelect(mode) }, CircleShape)
-                    .semantics { role = Role.RadioButton; this.selected = on },
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    mode.name, color = if (on) Color.Black else Color.White.copy(alpha = 0.75f),
-                    style = if (on) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center,
-                )
-            }
-        }
-    }
-}
 
 /** [uri] from the photo picker as a bitmap no bigger than the saved picture needs, upright; null when it can't be read. */
 private suspend fun decodePhoto(context: Context, uri: Uri): ImageBitmap? = withContext(Dispatchers.IO) {

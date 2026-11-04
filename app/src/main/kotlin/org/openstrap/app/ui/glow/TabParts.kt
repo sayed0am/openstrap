@@ -32,7 +32,6 @@ import org.openstrap.app.ui.dashboard.Hue
 import org.openstrap.app.ui.dashboard.TabSlot
 import org.openstrap.app.ui.dashboard.Tier
 import org.openstrap.app.ui.dashboard.items
-import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * What the Recovery, Sleep and Activity tabs share: laying out a tab's planned cards ([tabCards]) with the edge each
@@ -134,47 +133,6 @@ internal fun ContributorRow(
         if (onClick != null) {
             Spacer(Modifier.width(RowCaretGap))
             TapCaret(ROW_CARET_ALPHA)
-        }
-    }
-}
-
-/** The last rows of a list: an action or a way on, with a caret. */
-@Composable
-internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .topHairline(divider, RowHairline)
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-        TapCaret(ROW_CARET_ALPHA)
-    }
-}
-
-/** A small pill button inside a row: white for the main action, glass otherwise. */
-@Composable
-internal fun RowPill(text: String, onClick: () -> Unit, primary: Boolean = false) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(32.dp)
-            .let { if (primary) it.background(Color.White, shape).clickable(onClick = onClick) else it.glass(shape, onClick) }
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, color = if (primary) Color.Black else Color.White, style = GlowType.secondary, maxLines = 1) }
-}
-
-/**
- * A few figures side by side, each a [HeroFigure] in an equal share of the width, so four still fit a phone. Four or
- * more take smaller dots.
- */
-@Composable
-internal fun FigureRow(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
-    val dot = if (figures.size >= 4) DotSize.Row else DotSize.Edge
-    Row(modifier.fillMaxWidth()) {
-        figures.forEachIndexed { i, (value, label) ->
-            val end = i == figures.lastIndex && i > 0
-            HeroFigure(value, label, horizontal = if (end) Alignment.End else Alignment.Start, dot = dot, modifier = Modifier.weight(1f))
         }
     }
 }
