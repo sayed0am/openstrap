@@ -29,16 +29,16 @@ class NarrativeTest {
     @Test
     fun noCauseFollowsTheScore() {
         assertEquals("Solid night", headline(night(8 * 60, 10, 92, wakes = 2, deep = 90, rem = 110)))
-        assertEquals("Good night", headline(night(7 * 60 + 20, 15, 84, wakes = 3, deep = 80, rem = 95)))
+        assertEquals("Restful night", headline(night(7 * 60 + 20, 15, 84, wakes = 3, deep = 80, rem = 95)))
         assertEquals("Okay night", headline(night(6 * 60 + 40, 12, 72, wakes = 2, deep = 70, rem = 80)))
     }
 
     @Test
     fun lightSleepOnlyWhenNothingElseAndBelowGood() {
         // 7 h asleep with 30 + 40 min deep + REM: 17 %, under a quarter.
-        assertEquals("Light sleep", headline(night(7 * 60, 10, 72, wakes = 2, deep = 30, rem = 40)))
+        assertEquals("Shallow night", headline(night(7 * 60, 10, 72, wakes = 2, deep = 30, rem = 40)))
         // A good score outranks it, and short outranks it.
-        assertEquals("Good night", headline(night(7 * 60, 10, 82, wakes = 2, deep = 30, rem = 40)))
+        assertEquals("Restful night", headline(night(7 * 60, 10, 82, wakes = 2, deep = 30, rem = 40)))
         assertEquals("Short night", headline(night(5 * 60, 10, 50, wakes = 2, deep = 20, rem = 20)))
         // Without REM (strap without REM support) it isn't judged.
         assertEquals("Okay night", headline(night(7 * 60, 10, 72, wakes = 2, deep = 30, rem = null)))
@@ -54,7 +54,7 @@ class NarrativeTest {
     fun brokenOutranksTheScoreBand() {
         assertEquals("Broken sleep", headline(night(8 * 60, 35, 91)))
         assertEquals("Broken sleep", headline(night(8 * 60, 10, 85, wakes = 7)))
-        assertEquals("Good night", headline(night(8 * 60, 10, 85, wakes = Narrative.BROKEN_WAKE_COUNT - 1)))
+        assertEquals("Restful night", headline(night(8 * 60, 10, 85, wakes = Narrative.BROKEN_WAKE_COUNT - 1)))
         assertEquals("Short night", headline(night(5 * 60 + 59, 29, 70)))
     }
 

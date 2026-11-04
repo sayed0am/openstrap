@@ -55,7 +55,7 @@ class TabCopyTest {
         // Nothing under the bar, well recovered, or an alert that already says why: the meaning alone.
         assertEquals("Recovered enough for your usual training.", TabCopy.recovery(75, false, listOf(c(Factor.HrvBalance, 80))))
         assertEquals("Well recovered. A good day for a hard session.", TabCopy.recovery(88, false, drivers))
-        assertEquals("Some overnight signals are off your normal. An easy day suits.", TabCopy.recovery(50, true, drivers))
+        assertEquals("Some overnight signals are off your normal. An easy day may help.", TabCopy.recovery(50, true, drivers))
         assertNull(TabCopy.heldBackBy(emptyList()))
     }
 
@@ -63,7 +63,7 @@ class TabCopyTest {
         assertEquals("Helping", TabCopy.contributorWord(90))
         assertEquals("Usual", TabCopy.contributorWord(80))
         assertEquals("Holding back a little", TabCopy.contributorWord(60))
-        assertEquals("Holding you back", TabCopy.contributorWord(30))
+        assertEquals("Holding back", TabCopy.contributorWord(30))
         assertFalse(TabCopy.contributorOff(80))
         assertTrue(TabCopy.contributorOff(60))
         val all = listOf(c(Factor.BloodOxygen, 50), c(Factor.Sleep, 70), c(Factor.HrvBalance, 80), c(Factor.RestingHr, 90))
@@ -77,10 +77,10 @@ class TabCopyTest {
             listOf("+32", "12", "5", "0"),
             TabCopy.chargeRows(32.7f, 12.2f, 5f, 0.4f).map { it.value },
         )
-        assertEquals(listOf("Recharged", "Drained", "Drained", "Drained"), TabCopy.chargeRows(1f, 1f, 1f, 1f).map { it.status })
+        assertEquals(listOf("Filled", "Drained", "Drained", "Drained"), TabCopy.chargeRows(1f, 1f, 1f, 1f).map { it.status })
         assertEquals("Used 20 since waking", TabCopy.chargeLine(64, 84, true))
         assertEquals("Up 5 since waking", TabCopy.chargeLine(89, 84, true))
-        assertEquals("Level since waking", TabCopy.chargeLine(84, 84, true))
+        assertEquals("Same as at waking", TabCopy.chargeLine(84, 84, true))
         assertEquals("Energy starts after your first night. Sleep is what fills it.", TabCopy.chargeLine(null, null, false))
     }
 
@@ -92,7 +92,7 @@ class TabCopyTest {
         assertEquals("7 h 10 asleep.", TabCopy.night(7 * h + 600, week))
         // Too few other nights to call it the longest.
         assertEquals("9 h asleep.", TabCopy.night(9 * h, listOf(7 * h, 6 * h)))
-        assertEquals("No night sleep recorded, only naps.", TabCopy.noNight(naps = true, isToday = true))
+        assertEquals("No night's sleep recorded, only naps.", TabCopy.noNight(naps = true, isToday = true))
         assertEquals("No sleep recorded last night. Was the strap on?", TabCopy.noNight(naps = false, isToday = true))
     }
 
@@ -198,7 +198,7 @@ class TabCopyTest {
         assertEquals(TabCopy.SportFact.Other, TabCopy.sportFact(4))
         assertEquals(TabCopy.SportFact.Other, TabCopy.sportFact(223))
         // 5.2 km in 28:05 of running: 5:24 /km.
-        assertEquals("5.2 km, 5:24 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
+        assertEquals("5.2 km, 5:24/km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
         assertEquals("3.4 km", TabCopy.workoutFact(TabCopy.SportFact.Walk, 3400f, false, 2530, null, 108))
         assertEquals("14 sets", TabCopy.workoutFact(TabCopy.SportFact.Strength, null, false, 2100, 14, 121))
         assertEquals("1 set", TabCopy.workoutFact(TabCopy.SportFact.Strength, null, false, 300, 1, 121))
@@ -210,7 +210,7 @@ class TabCopyTest {
         assertEquals("≈ 5.2 km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, true, 1685, null, 152))
         // Under 100 m, too short for a pace to mean much. From 100 m it has one, as on the live screen.
         assertEquals("80 m", TabCopy.workoutFact(TabCopy.SportFact.Run, 80f, false, 30, null, 152))
-        assertEquals("420 m, 5:57 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 420f, false, 150, null, 152))
+        assertEquals("420 m, 5:57/km", TabCopy.workoutFact(TabCopy.SportFact.Run, 420f, false, 150, null, 152))
         // A strap run carries no distance: its heart rate.
         assertEquals("Average 152 bpm", TabCopy.workoutFact(TabCopy.SportFact.Run, null, false, 1685, null, 152))
         assertEquals("Average 108 bpm", TabCopy.workoutFact(TabCopy.SportFact.Walk, null, false, 2530, null, 108))
@@ -224,8 +224,8 @@ class TabCopyTest {
     @Test fun `distance and pace`() {
         assertEquals("850 m", TabCopy.distanceText(850f, false))
         assertEquals("≈ 1.0 km", TabCopy.distanceText(1000f, true))
-        assertEquals("4:05 /km", TabCopy.paceText(245f))
-        assertEquals("10:00 /km", TabCopy.paceText(600f))
+        assertEquals("4:05/km", TabCopy.paceText(245f))
+        assertEquals("10:00/km", TabCopy.paceText(600f))
         assertNull(TabCopy.paceText(4000f))
         assertNull(TabCopy.paceText(0f))
     }
@@ -260,7 +260,7 @@ class TabCopyTest {
 
     @Test fun `numbers and pace follow the phone's language`() {
         Locale.setDefault(Locale.GERMANY)
-        assertEquals("5,2 km, 5:24 /km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
+        assertEquals("5,2 km, 5:24/km", TabCopy.workoutFact(TabCopy.SportFact.Run, 5200f, false, 1685, null, 152))
         assertEquals("≈ 1,0 km", TabCopy.distanceText(1000f, true))
         assertEquals("Your usual is 2,1 an hour", TabCopy.breathing(Recovery.BreathingDisturbances(3.4f, 2.1f, 20)))
     }
@@ -285,6 +285,6 @@ class TabCopyTest {
 
     @Test fun `the bands come from the shared definitions`() {
         assertEquals(listOf("Poor", "Fair", "Good", "Great"), listOf(59, 60, 80, 90).map(TabCopy::sleepScoreWord))
-        assertEquals(listOf("Holding you back", "Holding back a little", "Usual", "Helping"), listOf(10, Recovery.FAIR_FROM, 70, 85).map(TabCopy::contributorWord))
+        assertEquals(listOf("Holding back", "Holding back a little", "Usual", "Helping"), listOf(10, Recovery.FAIR_FROM, 70, 85).map(TabCopy::contributorWord))
     }
 }

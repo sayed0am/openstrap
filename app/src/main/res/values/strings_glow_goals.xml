@@ -50,8 +50,8 @@
     <string name="glow_goals_goal_met">Goal met</string>
     <!-- Under the weekly recap's dots: how many weeks in a row met the goal. -->
     <plurals name="glow_goals_weekly_streak">
-        <item quantity="one">Weekly streak: <xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
-        <item quantity="other">Weekly streak: <xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
+        <item quantity="one">Goal met <xliff:g id="weeks" example="1">%d</xliff:g> week in a row</item>
+        <item quantity="other">Goal met <xliff:g id="weeks" example="3">%d</xliff:g> weeks in a row</item>
     </plurals>
     <!-- Under the weekly recap's dots when the goal wasn't met: how many workouts were missing. -->
     <plurals name="glow_goals_short_of_goal">

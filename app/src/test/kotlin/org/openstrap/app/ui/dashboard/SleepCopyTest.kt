@@ -115,16 +115,16 @@ class SleepCopyTest {
 
     @Test fun `regularity's night sits against your usual bedtime`() {
         assertEquals(
-            "Last night you fell asleep at 23:40 and woke at 07:05, 35 min later than usual.",
+            "Last night you fell asleep at 23:40, 35 min later than usual, and woke at 07:05.",
             SleepCopy.regularityNight(23 * 60 + 40, 7 * 60 + 5, usualBed = 23 * 60 + 5, today = true),
         )
         // Usual bedtime past midnight, kept past 24 h by SleepHistory.
         assertEquals(
-            "That night you fell asleep at 23:50 and woke at 07:00, 25 min earlier than usual.",
+            "That night you fell asleep at 23:50, 25 min earlier than usual, and woke at 07:00.",
             SleepCopy.regularityNight(23 * 60 + 50, 7 * 60, usualBed = 24 * 60 + 15, today = false),
         )
         assertEquals(
-            "Last night you fell asleep at 00:10 and woke at 07:00, close to your usual.",
+            "Last night you fell asleep at 00:10, close to your usual, and woke at 07:00.",
             SleepCopy.regularityNight(10, 7 * 60, usualBed = 24 * 60, today = true),
         )
         assertTrue(SleepCopy.regularity(SleepRegularity.Result(90f, 9000, null)).startsWith("Very regular"))
@@ -187,7 +187,7 @@ class SleepCopyTest {
         assertEquals("Last night's sleep deleted", SleepCopy.deleted(nap = false, today = true, start = "23:20"))
         assertEquals("Nap at 10:40 deleted", SleepCopy.deleted(nap = true, today = true, start = "10:40"))
         assertEquals(
-            "You deleted 23:20 to 07:21. Recovery this morning works without last night, as on a night the strap was off.",
+            "You deleted 23:20 to 07:21. This morning's Recovery leaves it out, as if the strap was off.",
             SleepCopy.deletedNight("23:20", "07:21", today = true),
         )
         assertEquals("Night of Wed 29 Oct", SleepCopy.deletedName(false, "Wed 29 Oct"))
@@ -203,7 +203,7 @@ class SleepCopyTest {
     }
 
     @Test fun `a deleted night says the user deleted it, never asks whether the strap was on`() {
-        assertEquals("You can bring it back from You, Your data, Deleted sleep for 7 days.", SleepCopy.DELETE_RESTORE)
+        assertEquals("For 7 days you can bring it back from Deleted sleep, in You, Your data.", SleepCopy.DELETE_RESTORE)
         assertEquals("Nothing deleted in the last 7 days.", SleepCopy.DELETED_NONE)
         assertEquals("You deleted last night's sleep.", TabCopy.noNight(naps = true, isToday = true, deleted = true))
         assertEquals("You deleted that night's sleep.", TabCopy.noNight(naps = false, isToday = false, deleted = true))

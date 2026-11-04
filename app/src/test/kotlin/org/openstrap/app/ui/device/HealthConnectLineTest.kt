@@ -24,10 +24,10 @@ class HealthConnectLineTest {
     }
 
     @Test fun `on says when it last synced`() {
-        assertEquals("On. Last synced 10:42", line(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
-        assertEquals("On. Last synced yesterday 22:10", line(HealthConnectAuto(on = true, lastSynced = at(28, 22, 10))))
-        assertEquals("On. Last synced Tuesday 09:00", line(HealthConnectAuto(on = true, lastSynced = at(27, 9, 0))))
-        assertEquals("On. Last synced Mon 12 Oct 09:00", line(HealthConnectAuto(on = true, lastSynced = at(12, 9, 0))))
+        assertEquals("On. Last copied 10:42", line(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
+        assertEquals("On. Last copied yesterday at 22:10", line(HealthConnectAuto(on = true, lastSynced = at(28, 22, 10))))
+        assertEquals("On. Last copied Tuesday at 09:00", line(HealthConnectAuto(on = true, lastSynced = at(27, 9, 0))))
+        assertEquals("On. Last copied Mon 12 Oct at 09:00", line(HealthConnectAuto(on = true, lastSynced = at(12, 9, 0))))
     }
 
     @Test fun `stopped says why`() {
@@ -42,7 +42,7 @@ class HealthConnectLineTest {
         fun summary(auto: HealthConnectAuto) = healthConnectSummary(auto, now, zone, Locale.UK)
         assertEquals("Off", summary(HealthConnectAuto()))
         assertEquals("On", summary(HealthConnectAuto(on = true)))
-        assertEquals("On. Last synced 10:42", summary(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
+        assertEquals("On. Last copied 10:42", summary(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
         assertEquals("Stopped. Permissions were turned off", summary(HealthConnectAuto(stopped = HealthConnectAuto.Stopped.PERMISSIONS)))
         assertEquals("Stopped. Not available on this phone", summary(HealthConnectAuto(stopped = HealthConnectAuto.Stopped.UNAVAILABLE)))
     }

@@ -23,7 +23,7 @@
     <!-- The Profile page's row value when you set your max. -->
     <string name="workout_zones_profile_set"><xliff:g id="bpm" example="185">%1$d</xliff:g> bpm, set by you</string>
     <!-- The Profile page's row value when the app works your max out. -->
-    <string name="workout_zones_profile_worked_out">Worked out from your age and workouts</string>
+    <string name="workout_zones_profile_worked_out">Calculated from your age and workouts</string>
     <!-- Under your max: you typed it. -->
     <string name="workout_zones_source_set">Set by you</string>
     <!-- Under your max: learned from workouts, with the day it was. The day is "3 Oct". -->

@@ -180,7 +180,7 @@ class MomentWidgetModelTest {
         assertEquals(listOf("left"), m.shortWords)
         assertEquals("Drained 60, recharged 38", m.figures.first())
         assertEquals(TodayCopy.charge(62, 60, true, 13), m.sentences.first())
-        assertEquals("The day so far drained 60. Plenty left for this evening.", m.sentences.first())
+        assertEquals("The day has drained 60 so far. Plenty left for this evening.", m.sentences.first())
         // Lit from below up to the value, as Today's Charge hero.
         assertEquals(0.62f, m.light.level!!, 1e-4f)
         val chart = m.chart!!
@@ -553,7 +553,7 @@ class MomentWidgetModelTest {
         val fit = MomentLayout.wide(middayModel(), 313f, 180f, 1f)
         assertEquals("left", fit.row!!.word!!.text)
         assertEquals("Drained 60, recharged 38", fit.row.figure!!.text)
-        assertEquals("The day so far drained 60. Plenty left for this evening.", fit.sentence!!.text)
+        assertEquals("The day has drained 60 so far. Plenty left for this evening.", fit.sentence!!.text)
     }
 
     @Test fun `a tall cell grows the parts before the gaps, a short one shrinks them`() {

@@ -7,7 +7,7 @@
     <!-- The small label at the top of the full screen personal best card. -->
     <string name="glow_celebrate_personal_best">Personal best</string>
     <!-- A text button under Continue on the goal moment that opens the Celebrations sheet. -->
-    <string name="glow_celebrate_settings">Celebrations settings</string>
+    <string name="glow_celebrate_settings">Celebrations</string>
     <!-- The goal moment's title, under "4/4" in large dots. -->
     <string name="glow_celebrate_goal_met">Weekly goal met</string>
     <!-- The note under the week's days on the goal moment. -->

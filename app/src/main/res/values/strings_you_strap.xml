@@ -7,14 +7,14 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The line under the strap's name. One line each. -->
     <string name="you_strap_state_charging">Charging. Wear data pauses until it\'s back on.</string>
-    <string name="you_strap_state_syncing">Connected. Syncing</string>
+    <string name="you_strap_state_syncing">Connected. Syncing…</string>
     <!-- The time is how long ago, in lower case, "2 min ago" or "just now". -->
     <string name="you_strap_state_synced">Connected. Synced <xliff:g id="ago" example="2 min ago">%1$s</xliff:g></string>
     <string name="you_strap_state_not_synced">Connected. Not synced</string>
     <string name="you_strap_state_connected">Connected</string>
-    <string name="you_strap_state_connecting">Connecting</string>
+    <string name="you_strap_state_connecting">Connecting…</string>
     <!-- The strap refused OpenStrap's auth key. -->
-    <string name="you_strap_state_key_rejected">The strap turned the key down</string>
+    <string name="you_strap_state_key_rejected">The strap rejected the key</string>
     <string name="you_strap_state_cant_connect">Can\'t connect</string>
     <string name="you_strap_state_not_paired">Not paired</string>
     <!-- The time is how long ago, in lower case, "18 min ago". -->
@@ -36,7 +36,7 @@
     <string name="you_strap_restart">Restart</string>
     <!-- Asked before Forget this strap. -->
     <string name="you_strap_forget_title">Forget this strap?</string>
-    <string name="you_strap_forget_text">OpenStrap will disconnect and delete the strap\'s address and auth key from this phone. Your synced health data stays. To pair again you\'ll need the auth key.\n\nThis doesn\'t unbind the strap from your Zepp account.</string>
+    <string name="you_strap_forget_text">OpenStrap will disconnect and delete the strap\'s address and auth key from this phone. Your synced health data stays. To pair again you\'ll need the auth key.\n\nThis doesn\'t unlink the strap from your Zepp account.</string>
     <string name="you_strap_forget">Forget</string>
 
     <!-- The Strap page's title. -->
@@ -48,7 +48,7 @@
     <string name="you_strap_find">Find strap</string>
     <string name="you_strap_find_stop">Stop buzzing</string>
     <!-- A row's value while the strap's alarms or alerts are read. -->
-    <string name="you_strap_reading">Reading</string>
+    <string name="you_strap_reading">Reading…</string>
     <!-- A row's value when the strap isn't connected: what it holds is on the strap. -->
     <string name="you_strap_on_strap">On the strap</string>
     <!-- Row titles on the Strap page, one line each. -->
@@ -67,7 +67,7 @@
     <string name="you_strap_row_restart">Restart strap</string>
     <string name="you_strap_row_forget">Forget this strap</string>
     <!-- The row that keeps the strap connected while OpenStrap is closed. -->
-    <string name="you_strap_row_background">Stay connected in background</string>
+    <string name="you_strap_row_background">Stay connected in the background</string>
     <string name="you_strap_battery_settings_failed">Couldn\'t open battery settings on this phone.</string>
     <!-- After the battery's number in large dots, "86% battery". The number isn't part of it: the placeholder is the percent sign, which can move or take a space before it. -->
     <string name="you_strap_battery_unit"><xliff:g id="percent_sign" example="%">%1$s</xliff:g> battery</string>
@@ -99,7 +99,7 @@
     <string name="you_pair_enter_key">Enter it yourself</string>
     <!-- The sheet for pairing with a key the user has. -->
     <string name="you_pair_manual_title">Enter the key yourself</string>
-    <string name="you_pair_manual_note">Scan with the strap on its charger and tap it to fill in the address, then paste the 32-character auth key. The dBm beside each strap is its signal, and nearer zero is closer.</string>
+    <string name="you_pair_manual_note">Scan with the strap on its charger and tap it to fill in the address, then paste the 32-character auth key. The number beside each strap is its signal. Nearer zero means closer.</string>
     <string name="you_pair_scan_stop">Stop scanning</string>
     <string name="you_pair_scan">Scan for straps</string>
     <!-- The reason is Android's, a few words. -->
@@ -119,13 +119,13 @@
     <string name="you_pair_again">Start pairing again</string>
 
     <!-- Messages from the Strap page's actions. -->
-    <string name="you_pair_key_invalid">The auth key must be 32 characters of 0 to 9 and a to f. You entered <xliff:g id="count" example="30">%1$d</xliff:g>.</string>
+    <string name="you_pair_key_invalid">The auth key is 32 characters, only 0 to 9 and a to f. You entered <xliff:g id="count" example="30">%1$d</xliff:g>.</string>
     <string name="you_pair_address_invalid">The Bluetooth address should look like C8:0F:10:AB:CD:EF. Scan to fill it in.</string>
-    <string name="you_pair_no_key">Zepp sign-in saved, but no auth key came with it. Get the key on a computer and enter it by hand.</string>
+    <string name="you_pair_no_key">Zepp sign-in saved, but Zepp sent no auth key. Check the strap is still linked in the Zepp app, then sign in again.</string>
     <!-- Debug builds only. -->
     <string name="you_strap_sample_loaded">Loaded a week of sample data.</string>
     <!-- Android's prompt to keep the strap connected was turned down. -->
-    <string name="you_strap_not_linked">Not linked. You can turn off battery optimization for OpenStrap instead.</string>
+    <string name="you_strap_not_linked">Background connection not allowed. You can turn off battery optimisation for OpenStrap instead.</string>
     <string name="you_strap_buzz_failed">Couldn\'t buzz the strap</string>
     <string name="you_strap_stop_buzz_failed">Couldn\'t stop the strap buzzing</string>
     <string name="you_strap_restarting">Restarting the strap. OpenStrap reconnects when it\'s back.</string>

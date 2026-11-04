@@ -36,10 +36,10 @@
     <string name="glow_activity_vo2max_from_workouts">From your workouts</string>
     <!-- Under VO2 max, a word for how it compares. The word is "Good", "Fair" and the like. -->
     <string name="glow_activity_vo2max_band"><xliff:g id="band" example="Good">%1$s</xliff:g> for your age</string>
-    <!-- Under VO2 max when it's worked out from age, weight and height. -->
+    <!-- Under VO2 max when it's calculated from age, weight and height. -->
     <string name="glow_activity_vo2max_estimated">Estimated from your profile</string>
     <!-- Under VO2 max when there's no number yet: the strap reads it after a kind of workout it can. -->
-    <string name="glow_activity_vo2max_after_workout">After a workout the strap can read it from</string>
+    <string name="glow_activity_vo2max_after_workout">After a workout the strap rates</string>
     <!-- A row's name: how long until the body has recovered from the latest workout. -->
     <string name="glow_activity_time_to_recover">Time to recover</string>
     <!-- Under Time to recover when no recent workout says. -->
@@ -54,8 +54,8 @@
     <string name="glow_activity_workouts">Workouts</string>
     <!-- Beside the Workouts list's title: how many workouts the day had. English uses the same words for any count. -->
     <plurals name="glow_activity_this_day">
-        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> this day</item>
-        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> this day</item>
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> on this day</item>
+        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> on this day</item>
     </plurals>
     <!-- The Workouts list's row before there are any. -->
     <string name="glow_activity_no_workouts">No workouts yet</string>
@@ -74,8 +74,8 @@
 
     <!-- Heart points detail -->
 
-    <!-- Beside the month's headline number: the 7-day total of Heart points, on average. -->
-    <string name="glow_activity_points_week_average">points, 7-day total on average</string>
+    <!-- Beside the month's headline number: the Heart points of a 7-day stretch, on average. -->
+    <string name="glow_activity_points_week_average">points a week, on average</string>
     <!-- Headline in the number's place when the month has no Heart points. -->
     <string name="glow_activity_no_points">No points</string>
     <!-- Under No points or No reading: the range it looked at. -->
@@ -85,7 +85,7 @@
     <!-- Headline in the number's place before the strap gave any Heart points. -->
     <string name="glow_activity_no_points_yet">No points yet</string>
     <!-- In the chart's place when the week has no Heart points. -->
-    <string name="glow_activity_no_heart_points_week">No Heart points from the strap for these days yet.</string>
+    <string name="glow_activity_no_heart_points_week">No Heart points in the last 7 days yet.</string>
     <!-- In the chart's place when the month has no Heart points. -->
     <string name="glow_activity_no_heart_points_month">No Heart points in the last 30 days yet.</string>
     <!-- Beside a held day's number on the month chart. The day is "Wed 21" or "Today". -->
@@ -126,19 +126,19 @@
     <!-- Under a Load number: the part from moving about the rest of the day. Short, a third of the width. -->
     <string name="glow_activity_moving_about">Moving about</string>
     <!-- Under a number: how hard the day was against your usual days. Short, a third of the width. -->
-    <string name="glow_activity_strain">Strain</string>
+    <string name="glow_activity_strain">Vs usual</string>
     <!-- The title of the Load detail's list of the week's loads. -->
     <string name="glow_activity_this_week">This week</string>
     <!-- A row's name: the Load you usually carry. -->
     <string name="glow_activity_your_usual">Your usual</string>
     <!-- Under Your usual. -->
-    <string name="glow_activity_your_usual_line">A day, over the last 6 weeks</string>
+    <string name="glow_activity_your_usual_line">Daily average, last 6 weeks</string>
     <!-- A row's name: the Load of the last week. -->
     <string name="glow_activity_last_7_days">Last 7 days</string>
     <!-- Under Last 7 days. -->
-    <string name="glow_activity_last_7_days_line">A day, this week</string>
+    <string name="glow_activity_last_7_days_line">Daily average</string>
     <!-- A row's name: the strap's own figure for the week's load. -->
-    <string name="glow_activity_strap_weekly_load">The strap\'s weekly load</string>
+    <string name="glow_activity_strap_weekly_load">The strap\'s weekly Load</string>
     <!-- Under the strap's weekly load when it gave no range. -->
     <string name="glow_activity_from_the_strap">From the strap</string>
     <!-- In the Load info sheet, beside the bar's marker. The number is your usual Load a day. -->
@@ -167,7 +167,7 @@
     <string name="glow_activity_recover_after_workout">After a workout the strap rates</string>
     <!-- Headline in the number's place when the body has recovered. -->
     <string name="glow_activity_recovered">Recovered</string>
-    <!-- Under Recovered: the workout it counted from, in lower case, and when it ended ("yesterday at 18:40"). -->
+    <!-- Under Recovered: the workout it counted from, in lower case, and when it ended ("yesterday at 18:40"). The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
     <string name="glow_activity_recovered_after">After your <xliff:g id="sport" example="run">%1$s</xliff:g>, <xliff:g id="ended" example="yesterday at 18:40">%2$s</xliff:g></string>
     <!-- Beside the big number of hours left to recover. The number itself is drawn apart, so the text has none. -->
     <plurals name="glow_activity_hours_to_go">

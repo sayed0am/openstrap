@@ -97,7 +97,7 @@ class ShareCardsTest {
 
         val played = PhoneSummary(WorkoutRecorder.analyse(w.copy(epoc = 130f), hr, 190, HeartZones.STANDARD), recorded, start, start + 1800, null)
         val game = storyCard(Workouts.Family.Games, played, summaryHero(Workouts.Family.Games, played, 100f), emptyList(), 100f, start) as StoryCard.Game
-        assertEquals("Load 130, hard", game.load)
+        assertEquals("Load 130, above usual", game.load)
         assertEquals("Peak 96", game.peak)
     }
 

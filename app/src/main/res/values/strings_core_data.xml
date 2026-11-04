@@ -20,9 +20,9 @@
     <!-- Recovery score detail, under skin temperature: the change from your usual in degrees Celsius, signed. -->
     <string name="core_data_recovery_temperature"><xliff:g id="change" example="+0.3">%1$s</xliff:g> °C vs usual</string>
     <!-- Recovery score detail, under breathing rate: the change from your usual in breaths a minute, signed. -->
-    <string name="core_data_recovery_breathing"><xliff:g id="change" example="−0.4">%1$s</xliff:g> /min vs usual</string>
+    <string name="core_data_recovery_breathing"><xliff:g id="change" example="−0.4">%1$s</xliff:g>/min vs usual</string>
     <!-- Recovery score detail, under blood oxygen: the night's average percent, then the change from your usual, signed. -->
-    <string name="core_data_recovery_blood_oxygen"><xliff:g id="percent" example="96.3">%1$s</xliff:g> %%, <xliff:g id="change" example="−1.2">%2$s</xliff:g> vs usual</string>
+    <string name="core_data_recovery_blood_oxygen"><xliff:g id="percent" example="96.3">%1$s</xliff:g>%%, <xliff:g id="change" example="−1.2">%2$s</xliff:g> vs usual</string>
     <!-- Recovery score detail, under Load: yesterday's Load and your usual. -->
     <string name="core_data_recovery_load">Load <xliff:g id="yesterday" example="62">%1$s</xliff:g>, usual <xliff:g id="usual" example="45">%2$s</xliff:g></string>
 
@@ -63,7 +63,7 @@
     <string name="core_data_vo2_band_50_70">50th to 70th percentile</string>
     <string name="core_data_vo2_band_70_90">70th to 90th percentile</string>
     <!-- The top band. The percent sign is written twice, since the text is a format. -->
-    <string name="core_data_vo2_band_top_10">Top <xliff:g id="percent" example="10">%1$d</xliff:g> %%</string>
+    <string name="core_data_vo2_band_top_10">Top <xliff:g id="percent" example="10">%1$d</xliff:g>%%</string>
     <!-- VO2 max detail's hero, beside the low end drawn large: the rest of the range with its unit. -->
     <string name="core_data_vo2_estimate_rest">to <xliff:g id="high" example="45">%1$s</xliff:g> ml/kg/min</string>
 

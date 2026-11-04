@@ -45,7 +45,7 @@ class RecoveryWidgetModelTest {
         assertNull(m.waiting)
         assertEquals(today, m.date)
         assertEquals(
-            listOf(RecoveryFigure("Resting HR", "52 bpm"), RecoveryFigure("HRV", "64 ms"), RecoveryFigure("Sleep", "82")),
+            listOf(RecoveryFigure("Resting", "52 bpm"), RecoveryFigure("HRV", "64 ms"), RecoveryFigure("Sleep", "82")),
             m.figures,
         )
     }

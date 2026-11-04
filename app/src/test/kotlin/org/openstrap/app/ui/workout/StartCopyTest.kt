@@ -145,8 +145,8 @@ class StartCopyTest {
     @Test fun `GPS says how close the fix is`() {
         assertEquals("Finding GPS", StartCopy.gpsStatus(null))
         assertEquals("Finding GPS, ±48 m", StartCopy.gpsStatus(48f))
-        assertEquals("GPS ready, 8 m", StartCopy.gpsStatus(8f))
-        assertEquals("GPS ready, 6 m", StartCopy.gpsStatus(6.4f))
+        assertEquals("GPS ready, ±8 m", StartCopy.gpsStatus(8f))
+        assertEquals("GPS ready, ±6 m", StartCopy.gpsStatus(6.4f))
     }
 
     @Test fun `what the strap will do, without banned punctuation`() {
@@ -181,7 +181,7 @@ class StartCopyTest {
         assertEquals("Open water", StartCopy.otherPlace(swim, indoor = true))
         assertEquals("Pace from your steps", StartCopy.indoorNote(2))
         assertEquals("Distance from your steps", StartCopy.indoorNote(40))
-        assertEquals("Time and your heart, no distance", StartCopy.indoorNote(8))
+        assertEquals("Time and heart rate, no distance", StartCopy.indoorNote(8))
         assertEquals("Start treadmill run", StartCopy.startLabel(2))
         assertEquals("Start run", StartCopy.startLabel(1))
     }
@@ -223,8 +223,8 @@ class StartCopyTest {
         assertEquals(null, StartCopy.parseTime("11", "0"))
         assertEquals(null, StartCopy.parseTime("1", "x"))
         assertEquals(listOf("30 min", "45 min", "1 h", "1 h 30"), StartCopy.TIME_PRESETS.map { it.second })
-        assertEquals("Ends near 19:15", StartCopy.endsNear(java.time.LocalTime.of(18, 0), 4500, is24Hour = true))
-        assertEquals("Type hours, then minutes. Ends near 19:15", StartCopy.timeTypingNote("Ends near 19:15"))
+        assertEquals("Ends about 19:15", StartCopy.endsNear(java.time.LocalTime.of(18, 0), 4500, is24Hour = true))
+        assertEquals("Type hours, then minutes. Ends about 19:15", StartCopy.timeTypingNote("Ends about 19:15"))
     }
 
     @Test fun `a zone goal reads its heart rates and names from your zones`() {
@@ -245,8 +245,8 @@ class StartCopyTest {
         assertEquals("90" to "s", StartCopy.restParts(90))
         assertEquals("2" to "min", StartCopy.restParts(120))
         assertEquals("150" to "s", StartCopy.restParts(150))
-        assertEquals("The strap buzzes at the end of each 400 m and when rest is up. 2.4 km in all.", StartCopy.intervalsNote(reps))
-        assertEquals("The strap buzzes at the end of each 200 m and when rest is up. 800 m in all.", StartCopy.intervalsNote(reps.copy(meters = 200, rounds = 4)))
+        assertEquals("The strap buzzes at the end of each 400 m rep and when rest is up. 2.4 km of reps in all.", StartCopy.intervalsNote(reps))
+        assertEquals("The strap buzzes at the end of each 200 m rep and when rest is up. 800 m of reps in all.", StartCopy.intervalsNote(reps.copy(meters = 200, rounds = 4)))
         assertEquals(
             "The strap buzzes at the end of each 4 min rep and when rest is up. 16 min of reps in all.",
             StartCopy.intervalsNote(org.openstrap.app.data.Structure.Reps(null, 240, 180, 4)),
@@ -267,8 +267,8 @@ class StartCopyTest {
     }
 
     @Test fun `no goal says what's recorded`() {
-        assertEquals("No goal. Time, distance and your heart.", StartCopy.noGoalNote(hasDistance = true))
-        assertEquals("No goal. Time and your heart.", StartCopy.noGoalNote(hasDistance = false))
+        assertEquals("No goal. Time, distance and heart rate.", StartCopy.noGoalNote(hasDistance = true))
+        assertEquals("No goal. Time and heart rate.", StartCopy.noGoalNote(hasDistance = false))
     }
 
     @Test fun `the zones page says where your max comes from and each zone's heart rates`() {

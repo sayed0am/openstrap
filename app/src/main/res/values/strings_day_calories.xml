@@ -6,7 +6,7 @@
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The Activity tab's Calories row, under the active kcal, before the goal is met: the goal, then the day's total kcal. One line. -->
-    <string name="day_calories_row_line">Active, of <xliff:g id="goal" example="450">%1$s</xliff:g>. Total <xliff:g id="total" example="1,468">%2$s</xliff:g></string>
+    <string name="day_calories_row_line">Active of <xliff:g id="goal" example="450">%1$s</xliff:g>. <xliff:g id="total" example="1,468">%2$s</xliff:g> total</string>
     <!-- The same once the goal is met: the day's total kcal. One line. -->
     <string name="day_calories_row_line_met">Active, goal met. Total <xliff:g id="total" example="2,140">%1$s</xliff:g></string>
 
@@ -19,7 +19,7 @@
     <!-- Under the goal bar once it's met. -->
     <string name="day_calories_to_goal_met">Goal of <xliff:g id="goal" example="450">%1$s</xliff:g> met</string>
     <!-- The hourly chart's note: the busiest hour's start, then its active kcal. -->
-    <string name="day_calories_peak">Peak <xliff:g id="hour" example="07:00">%1$s</xliff:g>, <xliff:g id="kcal" example="228">%2$s</xliff:g></string>
+    <string name="day_calories_peak">Peak at <xliff:g id="hour" example="07:00">%1$s</xliff:g>, <xliff:g id="kcal" example="228">%2$s</xliff:g> kcal</string>
     <!-- The label under the big number while an hour of the chart is picked. Lower case, it reads on from the number. -->
     <string name="day_calories_hour_label">active kcal, <xliff:g id="hours" example="07:00 to 08:00">%1$s</xliff:g></string>
 
@@ -43,7 +43,7 @@
     <string name="day_calories_range_label_year">active kcal a day, last 12 months</string>
     <!-- The same on Week and Month. -->
     <plurals name="day_calories_range_label">
-        <item quantity="one">active kcal a day, last <xliff:g id="days" example="1">%1$d</xliff:g> days</item>
+        <item quantity="one">active kcal a day, last <xliff:g id="days" example="1">%1$d</xliff:g> day</item>
         <item quantity="other">active kcal a day, last <xliff:g id="days" example="7">%1$d</xliff:g> days</item>
     </plurals>
     <!-- On a range: how many days met the goal, of the days counted (day_calories_days). -->
@@ -57,11 +57,11 @@
     <string name="day_calories_vs_year">vs the year before</string>
     <!-- The name of the change against the same number of days before, beside its figure ("+42"). -->
     <plurals name="day_calories_vs_days">
-        <item quantity="one">vs the <xliff:g id="days" example="1">%1$d</xliff:g> days before</item>
+        <item quantity="one">vs the <xliff:g id="days" example="1">%1$d</xliff:g> day before</item>
         <item quantity="other">vs the <xliff:g id="days" example="7">%1$d</xliff:g> days before</item>
     </plurals>
     <!-- A range's sentence: the share of the active kcal workouts made. -->
-    <string name="day_calories_range_workouts">Workouts made <xliff:g id="percent" example="18">%1$d</xliff:g>%% of your active kcal, the rest came from walking and moving about.</string>
+    <string name="day_calories_range_workouts">Workouts made <xliff:g id="percent" example="18">%1$d</xliff:g>%% of your active kcal. The rest came from walking and moving about.</string>
     <!-- A range's sentence without workouts: the busiest day ("Mon 26 Oct") and its active kcal. -->
     <string name="day_calories_range_busiest">Your busiest day was <xliff:g id="day" example="Mon 26 Oct">%1$s</xliff:g>, with <xliff:g id="kcal" example="500">%2$s</xliff:g> active kcal.</string>
 
@@ -76,7 +76,7 @@
       ("run", "walk"), its active kcal, the day (day_calories_day_word_today: "today's", "yesterday's", "that day's"),
       then the day's active kcal.
     -->
-    <string name="day_calories_in_your_day_phone">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of <xliff:g id="day" example="today's">%3$s</xliff:g> <xliff:g id="day_kcal" example="702">%4$s</xliff:g> active kcal. The day counts it exactly as shown here.</string>
+    <string name="day_calories_in_your_day_phone">This <xliff:g id="sport" example="run">%1$s</xliff:g> is <xliff:g id="kcal" example="486">%2$s</xliff:g> of <xliff:g id="day" example="today's">%3$s</xliff:g> <xliff:g id="day_kcal" example="702">%4$s</xliff:g> active kcal. Your day counts the same figure.</string>
     <!-- The same for a workout the strap recorded: the day counts the strap's own kcal for it. -->
     <string name="day_calories_in_your_day_strap">This <xliff:g id="sport" example="walk">%1$s</xliff:g> is <xliff:g id="kcal" example="86">%2$s</xliff:g> of <xliff:g id="day" example="yesterday's">%3$s</xliff:g> <xliff:g id="day_kcal" example="702">%4$s</xliff:g> active kcal. The day counts it from the strap\'s own figure.</string>
 </resources>

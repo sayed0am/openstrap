@@ -80,18 +80,18 @@
     <string name="workout_detail_target_not_reached">Not reached</string>
 
     <!-- The Load card's line: how many bpm the heart rate fell in the minute after the end. -->
-    <string name="workout_detail_drop">Heart rate drop <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute.</string>
+    <string name="workout_detail_drop">Heart rate drop of <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute.</string>
     <!-- As above, bigger than your usual drop. -->
-    <string name="workout_detail_drop_quick">Heart rate drop <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute, quick for you.</string>
+    <string name="workout_detail_drop_quick">Heart rate drop of <xliff:g id="bpm" example="30">%1$d</xliff:g> bpm in the first minute, quick for you.</string>
     <!-- As above, smaller than your usual drop. -->
-    <string name="workout_detail_drop_slow">Heart rate drop <xliff:g id="bpm" example="20">%1$d</xliff:g> bpm in the first minute, slow for you.</string>
+    <string name="workout_detail_drop_slow">Heart rate drop of <xliff:g id="bpm" example="20">%1$d</xliff:g> bpm in the first minute, slow for you.</string>
     <!-- As above, near your usual drop. -->
-    <string name="workout_detail_drop_usual">Heart rate drop <xliff:g id="bpm" example="25">%1$d</xliff:g> bpm in the first minute, about usual for you.</string>
+    <string name="workout_detail_drop_usual">Heart rate drop of <xliff:g id="bpm" example="25">%1$d</xliff:g> bpm in the first minute, about usual for you.</string>
 
     <!-- Training effect's scale from 0 to 5, its first band (under 2). One or two words, under a bar. -->
     <string name="workout_detail_scale_light">Light</string>
     <!-- Training effect's band from 2 to 3: keeps the fitness you have. One or two words. -->
-    <string name="workout_detail_scale_keeps">Keeps</string>
+    <string name="workout_detail_scale_keeps">Maintains</string>
     <!-- Training effect's band from 3 to 4: builds fitness. One or two words. -->
     <string name="workout_detail_scale_builds">Builds</string>
     <!-- Training effect's band from 4 to 5. A few words. -->
@@ -143,10 +143,10 @@
     <string name="workout_detail_row_where">Where these come from</string>
     <!-- The Where row for a phone workout whose figures are the strap's own. -->
     <string name="workout_detail_where_strap_too">From the strap, which recorded this workout alongside the phone and worked these out itself.</string>
-    <!-- The Where row for a phone workout the app worked out. -->
-    <string name="workout_detail_where_phone">Worked out by OpenStrap from your heart rate, on the strap\'s own scales.</string>
+    <!-- The Where row for a phone workout the app calculated. -->
+    <string name="workout_detail_where_phone">Calculated by OpenStrap from your heart rate, on the strap\'s own scales.</string>
     <!-- The Where row for a workout the strap recorded. -->
-    <string name="workout_detail_where_strap">From the strap, worked out during the workout.</string>
+    <string name="workout_detail_where_strap">From the strap, calculated during the workout.</string>
     <!-- After the Where row: the strap kept its own record of this phone workout. The figures are "aerobic 3.0, anaerobic 0.8, Load 80, time to recover 12 h". -->
     <string name="workout_detail_strap_one">The strap recorded this workout too. Its own figures: <xliff:g id="figures" example="aerobic 3.0, Load 80">%1$s</xliff:g>.</string>
     <!-- After the Where row: the strap split this phone workout into several of its own. Each follows as a sentence. -->

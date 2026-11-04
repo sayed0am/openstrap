@@ -37,7 +37,7 @@ class CaloriesCopyTest {
     )
 
     @Test fun `the row leads with active and says the goal and the total`() {
-        assertEquals("Active, of 450. Total 1,468", CaloriesCopy.rowLine(348, 450, 1468, Locale.UK))
+        assertEquals("Active of 450. 1,468 total", CaloriesCopy.rowLine(348, 450, 1468, Locale.UK))
         assertEquals("Active, goal met. Total 2,140", CaloriesCopy.rowLine(450, 450, 2140, Locale.UK))
         assertEquals(0.5f, CaloriesCopy.share(225, 450), 1e-6f)
         assertEquals(1f, CaloriesCopy.share(900, 450), 1e-6f)
@@ -49,7 +49,7 @@ class CaloriesCopyTest {
         assertEquals("active kcal so far today", CaloriesCopy.dayLabel(true))
         assertEquals("active kcal", CaloriesCopy.dayLabel(false))
         val hours = List(24) { if (it == 7) 228.4f else it.toFloat() }
-        assertEquals("Peak 07:00, 228", CaloriesCopy.peak(hours, Locale.UK))
+        assertEquals("Peak at 07:00, 228 kcal", CaloriesCopy.peak(hours, Locale.UK))
         assertNull(CaloriesCopy.peak(List(24) { 0.2f }))
         assertEquals("active kcal, 23:00 to 00:00", CaloriesCopy.hourLabel(23))
     }
@@ -59,7 +59,7 @@ class CaloriesCopyTest {
         try {
             org.openstrap.app.presentation.ClockSetting.use24Hour = false
             val hours = List(24) { if (it == 7) 228.4f else it.toFloat() }
-            assertEquals("Peak 7:00 AM, 228", CaloriesCopy.peak(hours, Locale.US))
+            assertEquals("Peak at 7:00 AM, 228 kcal", CaloriesCopy.peak(hours, Locale.US))
             assertEquals("active kcal, 11:00 PM to 12:00 AM", CaloriesCopy.hourLabel(23, Locale.US))
             assertEquals("steps, 9:00 AM to 10:00 AM", ActivityCopy.hourLabel(9, Locale.US))
         } finally {
@@ -125,7 +125,7 @@ class CaloriesCopyTest {
         assertEquals("vs the 7 days before", CaloriesCopy.vsLabel(Range.Week))
         assertEquals("vs the year before", CaloriesCopy.vsLabel(Range.Year))
         assertEquals("active kcal a day, last 30 days", CaloriesCopy.rangeLabel(Range.Month))
-        assertEquals("Workouts made 18% of your active kcal, the rest came from walking and moving about.", CaloriesCopy.rangeSentence(s, Locale.UK))
+        assertEquals("Workouts made 18% of your active kcal. The rest came from walking and moving about.", CaloriesCopy.rangeSentence(s, Locale.UK))
     }
 
     @Test fun `a range without days before it has no change, and no days says nothing`() {
@@ -158,7 +158,7 @@ class CaloriesCopyTest {
 
     @Test fun `a workout says its share of its day`() {
         assertEquals(
-            "This run is 486 of today's 702 active kcal. The day counts it exactly as shown here.",
+            "This run is 486 of today's 702 active kcal. Your day counts the same figure.",
             CaloriesCopy.inYourDay("run", 486, 702, CaloriesCopy.dayWord(date, date), fromPhone = true, Locale.UK),
         )
         assertEquals(

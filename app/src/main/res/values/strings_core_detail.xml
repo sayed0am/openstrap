@@ -106,14 +106,14 @@
     <!-- The same, below your normal. -->
     <string name="core_detail_run_below">Below your normal for <xliff:g id="count" example="three nights">%1$s</xliff:g>.</string>
     <!-- A week's or month's sentence when every value was within your normal. "with data" when some days had none. -->
-    <string name="core_detail_every_night">Within your normal on every night.</string>
-    <string name="core_detail_every_night_with_data">Within your normal on every night with data.</string>
-    <string name="core_detail_every_night_month">Within your normal on every night in the last 30 days.</string>
-    <string name="core_detail_every_night_with_data_month">Within your normal on every night with data in the last 30 days.</string>
-    <string name="core_detail_every_day">Within your normal on every day.</string>
-    <string name="core_detail_every_day_with_data">Within your normal on every day with data.</string>
-    <string name="core_detail_every_day_month">Within your normal on every day in the last 30 days.</string>
-    <string name="core_detail_every_day_with_data_month">Within your normal on every day with data in the last 30 days.</string>
+    <string name="core_detail_every_night">Within your normal every night.</string>
+    <string name="core_detail_every_night_with_data">Within your normal every night with data.</string>
+    <string name="core_detail_every_night_month">Within your normal every night in the last 30 days.</string>
+    <string name="core_detail_every_night_with_data_month">Within your normal every night with data in the last 30 days.</string>
+    <string name="core_detail_every_day">Within your normal every day.</string>
+    <string name="core_detail_every_day_with_data">Within your normal every day with data.</string>
+    <string name="core_detail_every_day_month">Within your normal every day in the last 30 days.</string>
+    <string name="core_detail_every_day_with_data_month">Within your normal every day with data in the last 30 days.</string>
     <!-- A week's or month's sentence: on how many of the nights or days with data the value was within your normal. -->
     <string name="core_detail_inside_nights">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> nights.</string>
     <string name="core_detail_inside_nights_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> nights in the last 30 days.</string>
@@ -121,18 +121,18 @@
     <string name="core_detail_inside_days_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> days in the last 30 days.</string>
 
     <!-- The year's sentence from weekly averages, after which comes the unit ("ms", "bpm"). The values are already written with their decimals. -->
-    <string name="core_detail_year_unit">Over the last 12 months, weeks averaged from <xliff:g id="lowest" example="48">%1$s</xliff:g> to <xliff:g id="highest" example="61">%2$s</xliff:g> <xliff:g id="unit" example="ms">%3$s</xliff:g>.</string>
+    <string name="core_detail_year_unit">Over the last 12 months, weekly averages ran from <xliff:g id="lowest" example="48">%1$s</xliff:g> to <xliff:g id="highest" example="61">%2$s</xliff:g> <xliff:g id="unit" example="ms">%3$s</xliff:g>.</string>
     <!-- The year's sentence for a value with no unit (Stress). -->
-    <string name="core_detail_year">Over the last 12 months, weeks averaged from <xliff:g id="lowest" example="20">%1$s</xliff:g> to <xliff:g id="highest" example="41">%2$s</xliff:g>.</string>
+    <string name="core_detail_year">Over the last 12 months, weekly averages ran from <xliff:g id="lowest" example="20">%1$s</xliff:g> to <xliff:g id="highest" example="41">%2$s</xliff:g>.</string>
 
     <!-- A score's week sentence with a single score so far. -->
     <string name="core_detail_score_week_one">One score in the last 7 days so far.</string>
     <!-- A score's week sentence: its average, lowest and highest. -->
     <string name="core_detail_score_week">Averaged <xliff:g id="average" example="74">%1$d</xliff:g> over the last 7 days, from <xliff:g id="lowest" example="61">%2$d</xliff:g> to <xliff:g id="highest" example="84">%3$d</xliff:g>.</string>
 
-    <!-- Charge detail, a past day: the charge it started and ended at. -->
+    <!-- Energy detail, a past day: the Energy it started and ended at. -->
     <string name="core_detail_charge_started">Started the day at <xliff:g id="start" example="84">%1$d</xliff:g> and ended it at <xliff:g id="end" example="30">%2$d</xliff:g>.</string>
-    <!-- Charge detail, a past day whose start is unknown: the charge it ended at. -->
+    <!-- Energy detail, a past day whose start is unknown: the Energy it ended at. -->
     <string name="core_detail_charge_ended">Ended the day at <xliff:g id="end" example="30">%1$d</xliff:g>.</string>
 
     <!-- Recovery's hero word with no score yet for the night. One short word. -->
@@ -150,5 +150,5 @@
     <!-- Under it, when the night had too little heart data. -->
     <string name="core_detail_recovery_no_heart_data">Not enough heart data that night</string>
     <!-- Under it, otherwise. -->
-    <string name="core_detail_recovery_scored_mornings">Scored each morning from the night</string>
+    <string name="core_detail_recovery_scored_mornings">Scored each morning from the night before</string>
 </resources>

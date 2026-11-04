@@ -25,7 +25,7 @@
     <!-- Why a backup or a saved copy failed: the phone is full. -->
     <string name="you_backup_failure_no_space">There isn\'t enough space for it.</string>
     <string name="you_backup_failure_cant_write">OpenStrap couldn\'t write to the folder.</string>
-    <string name="you_backup_failure_other">It tries again tomorrow.</string>
+    <string name="you_backup_failure_other">Try again, or wait for tomorrow\'s backup.</string>
 
     <!-- A message after a restore: how many records came back, and the settings. The number is already formatted, "1,234". -->
     <plurals name="you_backup_restored_records_settings">
@@ -39,13 +39,13 @@
     </plurals>
     <string name="you_backup_restored_settings">Restored your settings. Your records were already here.</string>
     <string name="you_backup_restored_nothing">Nothing to restore. It\'s all already here.</string>
-    <!-- Added after the restore message when some rows of the zip were damaged. The number is already formatted, "3". -->
+    <!-- Added after the restore message when some records of the zip were damaged. The number is already formatted, "3". -->
     <plurals name="you_backup_restored_skipped">
-        <item quantity="one"><xliff:g id="count" example="3">%1$s</xliff:g> row couldn\'t be read.</item>
-        <item quantity="other"><xliff:g id="count" example="3">%1$s</xliff:g> rows couldn\'t be read.</item>
+        <item quantity="one"><xliff:g id="count" example="3">%1$s</xliff:g> record couldn\'t be read.</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$s</xliff:g> records couldn\'t be read.</item>
     </plurals>
-    <!-- The restore message, then the damaged rows. Both are whole sentences, "Restored 12 records. 3 rows couldn't be read." -->
-    <string name="you_backup_restored_with_skipped"><xliff:g id="restored" example="Restored 12 records.">%1$s</xliff:g> <xliff:g id="skipped" example="3 rows couldn't be read.">%2$s</xliff:g></string>
+    <!-- The restore message, then the damaged records. Both are whole sentences, "Restored 12 records. 3 records couldn't be read." -->
+    <string name="you_backup_restored_with_skipped"><xliff:g id="restored" example="Restored 12 records.">%1$s</xliff:g> <xliff:g id="skipped" example="3 records couldn't be read.">%2$s</xliff:g></string>
     <!-- The Backup folder row before the folder's name is known. -->
     <string name="you_backup_folder_unknown">The folder you chose</string>
     <!-- What Back up now says when it's done. The name is the zip's file name. -->
@@ -65,16 +65,16 @@
     <string name="you_backup_folder">Backup folder</string>
     <string name="you_backup_now">Back up now</string>
     <!-- Under Back up now while it runs. -->
-    <string name="you_backup_now_running">Backing up</string>
+    <string name="you_backup_now_running">Backing up…</string>
     <string name="you_backup_now_note">Saves today\'s zip in that folder</string>
     <string name="you_backup_restore_note">Any OpenStrap zip. Fills in what this phone is missing</string>
     <string name="you_backup_save_copy">Save a copy</string>
-    <string name="you_backup_save_copy_note">A zip saved where you choose, never cleared</string>
+    <string name="you_backup_save_copy_note">A zip where you choose. OpenStrap never deletes it</string>
 
     <!-- The Deleted sleep page's title. -->
     <string name="you_deleted_sleep_title">Deleted sleep</string>
 
-    <!-- The auto sync row on the Health Connect page, stopped by itself because its permissions were taken back. -->
+    <!-- The auto copy row on the Health Connect page, stopped by itself because its permissions were taken back. -->
     <string name="you_hc_line_stopped_permissions">Stopped. Health Connect permissions were turned off</string>
     <!-- Stopped because Health Connect was removed, where the Play Store can install it again. -->
     <string name="you_hc_line_stopped_install">Stopped. Install Health Connect to turn it back on</string>
@@ -84,18 +84,18 @@
     <!-- On, before its first copy. -->
     <string name="you_hc_line_on">On. Copies new data after each strap sync</string>
     <!-- On, with the last copy. The time is "10:42", "yesterday 10:42", "Tuesday 10:42" or "Tue 12 Oct 10:42". -->
-    <string name="you_hc_line_last">On. Last synced <xliff:g id="when" example="yesterday 10:42">%1$s</xliff:g></string>
+    <string name="you_hc_line_last">On. Last copied <xliff:g id="when" example="yesterday 10:42">%1$s</xliff:g></string>
     <!-- The You page's Health Connect row, shorter: stopped, and why. -->
     <string name="you_hc_summary_stopped_permissions">Stopped. Permissions were turned off</string>
     <string name="you_hc_summary_stopped_install">Stopped. Install Health Connect</string>
     <string name="you_hc_summary_stopped_unavailable">Stopped. Not available on this phone</string>
 
-    <!-- The Health Connect page: its title, the auto sync switch and the rows under Any time. -->
+    <!-- The Health Connect page: its title, the auto copy switch and the rows under Any time. -->
     <string name="you_hc_title">Health Connect</string>
-    <string name="you_hc_auto">Auto sync to Health Connect</string>
+    <string name="you_hc_auto">Auto copy to Health Connect</string>
     <string name="you_hc_any_time">Any time</string>
     <string name="you_hc_copy_now">Copy now</string>
-    <string name="you_hc_copy_now_note">The last 30 days, to Android Health Connect</string>
+    <string name="you_hc_copy_now_note">The last 30 days, to Health Connect</string>
     <string name="you_hc_restore_note">Bring back what OpenStrap saved there</string>
     <string name="you_hc_open">Open Health Connect</string>
     <string name="you_hc_open_note">Permissions and data</string>
@@ -113,18 +113,18 @@
         <item quantity="other">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> records from Health Connect.</item>
     </plurals>
     <plurals name="you_hc_wrote">
-        <item quantity="one">Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
-        <item quantity="other">Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
+        <item quantity="one">Copied <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
+        <item quantity="other">Copied <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
     </plurals>
-    <!-- After the auto sync switch is turned on, which copies the last 30 days at once. -->
+    <!-- After the auto copy switch is turned on, which copies the last 30 days at once. -->
     <plurals name="you_hc_auto_wrote">
-        <item quantity="one">Auto sync is on. Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
-        <item quantity="other">Auto sync is on. Wrote <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
+        <item quantity="one">Auto copy is on. Copied <xliff:g id="count" example="1234">%1$d</xliff:g> record to Health Connect (last 30 days).</item>
+        <item quantity="other">Auto copy is on. Copied <xliff:g id="count" example="1234">%1$d</xliff:g> records to Health Connect (last 30 days).</item>
     </plurals>
     <!-- What failed, before the reason (you_error_hc). -->
     <string name="you_hc_restore_failed">Couldn\'t restore from Health Connect</string>
-    <string name="you_hc_write_failed">Couldn\'t write to Health Connect</string>
-    <string name="you_hc_auto_failed">Auto sync is on, but the first copy didn\'t work</string>
+    <string name="you_hc_write_failed">Couldn\'t copy to Health Connect</string>
+    <string name="you_hc_auto_failed">Auto copy is on, but the first copy didn\'t work</string>
 
     <!-- A failed Save a copy. The reason is one of the sentences below. -->
     <string name="you_error_save_copy">Couldn\'t save the copy. <xliff:g id="reason" example="Try again, or choose another place.">%1$s</xliff:g></string>
@@ -138,7 +138,7 @@
     <!-- The reason a failure gives when there's nothing better to say. -->
     <string name="you_error_try_again">Try again.</string>
     <!-- A failed Health Connect read or write: what failed (you_hc_restore_failed and the like), then why. -->
-    <string name="you_error_hc"><xliff:g id="what" example="Couldn't write to Health Connect">%1$s</xliff:g>. <xliff:g id="reason" example="Try again.">%2$s</xliff:g></string>
+    <string name="you_error_hc"><xliff:g id="what" example="Couldn't copy to Health Connect">%1$s</xliff:g>. <xliff:g id="reason" example="Try again.">%2$s</xliff:g></string>
     <string name="you_error_hc_permission">OpenStrap no longer has permission. Allow it in Health Connect.</string>
     <string name="you_error_hc_no_answer">Health Connect didn\'t answer. Try again.</string>
 </resources>

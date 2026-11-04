@@ -127,10 +127,10 @@ class WorkoutDetailCopyTest {
     }
 
     @Test fun `the drop shows only after a real effort, against your usual`() {
-        assertEquals("Heart rate drop 30 bpm in the first minute.", WorkoutDetailCopy.dropLine(30, true, null))
-        assertEquals("Heart rate drop 30 bpm in the first minute, quick for you.", WorkoutDetailCopy.dropLine(30, true, 24))
-        assertEquals("Heart rate drop 20 bpm in the first minute, slow for you.", WorkoutDetailCopy.dropLine(20, true, 26))
-        assertEquals("Heart rate drop 25 bpm in the first minute, about usual for you.", WorkoutDetailCopy.dropLine(25, true, 26))
+        assertEquals("Heart rate drop of 30 bpm in the first minute.", WorkoutDetailCopy.dropLine(30, true, null))
+        assertEquals("Heart rate drop of 30 bpm in the first minute, quick for you.", WorkoutDetailCopy.dropLine(30, true, 24))
+        assertEquals("Heart rate drop of 20 bpm in the first minute, slow for you.", WorkoutDetailCopy.dropLine(20, true, 26))
+        assertEquals("Heart rate drop of 25 bpm in the first minute, about usual for you.", WorkoutDetailCopy.dropLine(25, true, 26))
         assertNull(WorkoutDetailCopy.dropLine(30, false, null))
         assertNull(WorkoutDetailCopy.dropLine(0, true, null))
         assertNull(WorkoutDetailCopy.dropLine(null, true, null))

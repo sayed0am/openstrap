@@ -15,13 +15,13 @@ class StrapPageTest {
     @Test fun `state line says what the strap is doing and when it was heard from`() {
         assertEquals("Connected. Synced 2 min ago", strapStateLine(connected, SyncState.Done(now - 120), null, now))
         assertEquals("Connected. Synced just now", strapStateLine(connected, SyncState.Done(now - 5), null, now))
-        assertEquals("Connected. Syncing", strapStateLine(connected, SyncState.Running("Heart rate"), null, now))
+        assertEquals("Connected. Syncing…", strapStateLine(connected, SyncState.Running("Heart rate"), null, now))
         assertEquals("Connected. Not synced", strapStateLine(connected, SyncState.Failed("timeout"), null, now))
         assertEquals("Connected", strapStateLine(connected, SyncState.Idle, null, now))
         assertEquals("Charging. Wear data pauses until it's back on.", strapStateLine(connected.copy(charging = true), SyncState.Idle, null, now))
         assertEquals("Last seen 18 min ago", strapStateLine(ConnectionState.Disconnected, SyncState.Idle, now - 18 * 60, now))
         assertEquals("Not connected", strapStateLine(ConnectionState.Disconnected, SyncState.Idle, null, now))
-        assertEquals("Connecting", strapStateLine(ConnectionState.Connecting, SyncState.Idle, null, now))
+        assertEquals("Connecting…", strapStateLine(ConnectionState.Connecting, SyncState.Idle, null, now))
     }
 
     @Test fun `You page values`() {

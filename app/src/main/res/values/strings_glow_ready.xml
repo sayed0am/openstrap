@@ -54,15 +54,15 @@
       The plan cards lay a typed number out among words, a number drawn large then words beside it: "5 × 400 m" over
       "with [90 s] rest between". Each piece stands on its own beside a number, so keep them short.
     -->
-    <!-- Before the rest time, under the repeats. -->
+    <!-- Before the rest time, under the repeats. The line is built in a fixed order around a number, and the whole card reads as "8 × 400 m, with 1:30 rest between" or "4 sets, with 1:30 rest between". -->
     <string name="glow_ready_with">with</string>
-    <!-- After the rest time, under the repeats or the sets. -->
+    <!-- After the rest time, under the repeats or the sets. The line is built in a fixed order around a number, and the whole card reads as "8 × 400 m, with 1:30 rest between" or "4 sets, with 1:30 rest between". -->
     <string name="glow_ready_rest_between">rest between</string>
     <!-- After the rest time when strength has no planned sets. -->
     <string name="glow_ready_rest_after_set">rest after each set</string>
-    <!-- Before a game's break length, under its periods. -->
+    <!-- Before a game's break length, under its periods. The line is built in a fixed order around a number, and the whole card reads as "2 × 45 min, with a 15 min break". -->
     <string name="glow_ready_with_a">with a</string>
-    <!-- After a game's break length. -->
+    <!-- After a game's break length. The line is built in a fixed order around a number, and the whole card reads as "2 × 45 min, with a 15 min break". -->
     <string name="glow_ready_break">break</string>
     <!-- Beside the number of planned strength sets. Always this form, whatever the number. -->
     <string name="glow_ready_unit_sets">sets</string>

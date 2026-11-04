@@ -32,7 +32,7 @@ class TodayCopyTest {
         val slept = (7 * 60 + 40) * 60L
         assertEquals("Slept 7 h 40. Recovered enough for your usual training.", TodayCopy.waking(slept, 78, false, null, false, true))
         assertEquals("Slept 7 h 40. Well recovered. A good day for a hard session.", TodayCopy.waking(slept, 90, false, null, false, true))
-        assertEquals("Slept 7 h 40. Some overnight signals are off your normal. An easy day suits.", TodayCopy.waking(slept, 90, true, null, false, true))
+        assertEquals("Slept 7 h 40. Some overnight signals are off your normal. An easy day may help.", TodayCopy.waking(slept, 90, true, null, false, true))
     }
 
     @Test fun `waking falls back honestly`() {
@@ -69,7 +69,7 @@ class TodayCopyTest {
 
     @Test fun `charge says what the day took and what's left`() {
         assertEquals("The morning drained 22. Plenty left for this evening.", TodayCopy.charge(62, 22, true, 11))
-        assertEquals("The day so far drained 40. Enough left for an easy evening.", TodayCopy.charge(44, 40, true, 15))
+        assertEquals("The day has drained 40 so far. Enough left for an easy evening.", TodayCopy.charge(44, 40, true, 15))
         assertEquals("Nothing drained since waking. Running low. An early night helps.", TodayCopy.charge(20, 0, true, 15))
         assertEquals("Plenty left for this evening.", TodayCopy.charge(80, null, true, 13))
         assertEquals("Energy starts after your first night. Sleep is what fills it.", TodayCopy.charge(80, 80, false, 13))
@@ -90,7 +90,7 @@ class TodayCopyTest {
         assertEquals("Heart rate settling.", TodayCopy.after(74, 52))
         assertEquals("Heart rate back near resting.", TodayCopy.after(62, 52))
         assertEquals("Heart rate 74 now.", TodayCopy.after(74, null))
-        assertEquals("Heart rate since the end shows once the strap sends it.", TodayCopy.after(null, 52))
+        assertEquals("Heart rate after your workout shows once the strap sends it.", TodayCopy.after(null, 52))
     }
 
     @Test fun `load is only low at the end of the day`() {
@@ -105,7 +105,7 @@ class TodayCopyTest {
         assertEquals("Load, learning your usual", TodayCopy.loadLine(null))
         assertEquals("Load above your usual", TodayCopy.loadLine(LoadBand.Above))
         assertEquals("Load so far today", TodayCopy.loadLine(LoadBand.SoFar))
-        assertEquals("Your usual Load", TodayCopy.loadLine(LoadBand.Usual))
+        assertEquals("Load near your usual", TodayCopy.loadLine(LoadBand.Usual))
         assertEquals("Load below your usual", TodayCopy.loadLine(LoadBand.Below))
     }
 
@@ -153,10 +153,10 @@ class TodayCopyTest {
             Locale.setDefault(Locale.US)
             // In the US the week starts on Sunday: the week before Friday 23 Oct is Sunday 11 to Saturday 17.
             assertEquals(LocalDate.of(2026, 10, 11)..LocalDate.of(2026, 10, 17), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
-            assertEquals("Week on week comparisons start next Sunday.", TodayCopy.WEEK_FIRST)
+            assertEquals("Week-on-week comparisons start next Sunday.", TodayCopy.WEEK_FIRST)
             Locale.setDefault(Locale.UK)
             assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
-            assertEquals("Week on week comparisons start next Monday.", TodayCopy.WEEK_FIRST)
+            assertEquals("Week-on-week comparisons start next Monday.", TodayCopy.WEEK_FIRST)
         } finally {
             Locale.setDefault(was)
         }
@@ -210,8 +210,8 @@ class TodayCopyTest {
     }
 
     @Test fun `the heart rate card says how to read its line`() {
-        assertEquals("Hold to scrub, the number follows. The band is your resting range.", TodayCopy.heartLineNote(band = true))
-        assertEquals("Hold to scrub, the number follows.", TodayCopy.heartLineNote(band = false))
+        assertEquals("Touch and hold the line to read any moment. The band is your resting range.", TodayCopy.heartLineNote(band = true))
+        assertEquals("Touch and hold the line to read any moment.", TodayCopy.heartLineNote(band = false))
         assertEquals("Live now", TodayCopy.heartAt(live = true, at = "20:52"))
         assertEquals("At 20:52", TodayCopy.heartAt(live = false, at = "20:52"))
         assertEquals("Waiting for the strap", TodayCopy.heartAt(live = false, at = null))

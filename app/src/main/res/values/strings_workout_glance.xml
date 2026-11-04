@@ -105,7 +105,7 @@
     <!-- The hero's line under its bar while resting: the heart rate and how far it has come down. -->
     <string name="workout_glance_rest_bpm_down_sentence"><xliff:g id="bpm" example="122">%1$d</xliff:g> bpm, down <xliff:g id="drop" example="20">%2$d</xliff:g>.</string>
     <!-- The hero's line under its bar while resting: rest ends early once the heart rate stays under a level. -->
-    <string name="workout_glance_rest_ends_sooner">Ends sooner once you stay under <xliff:g id="bpm" example="110">%1$d</xliff:g>.</string>
+    <string name="workout_glance_rest_ends_sooner">Ends early once you\'re under <xliff:g id="bpm" example="110">%1$d</xliff:g> bpm.</string>
     <!-- A button: thirty more seconds of rest. About 8 characters. -->
     <string name="workout_glance_add_rest_30">+30 s</string>
     <!-- The first line before the first set. About 30 characters. -->
@@ -161,8 +161,8 @@
     <!-- The hero's split strip: the last kilometre's average heart rate. -->
     <string name="workout_glance_split_average">Avg <xliff:g id="bpm" example="146">%1$d</xliff:g> bpm.</string>
 
-    <!-- The hero's line under its bar for a heart rate zone target. The target is "Zone 2" or "Zones 2 to 3". -->
-    <string name="workout_glance_target">Target <xliff:g id="target" example="Zone 2">%1$s</xliff:g></string>
+    <!-- The hero's line under its bar for a heart rate zone target. The target is "zone 2" or "zones 2 to 3", in lower case. -->
+    <string name="workout_glance_target">Target <xliff:g id="target" example="zone 2">%1$s</xliff:g></string>
     <!-- The hero's line under its bar: the goal. The goal is "5 km", "30 min" or "400 kcal". -->
     <string name="workout_glance_goal">Goal <xliff:g id="goal" example="5 km">%1$s</xliff:g></string>
     <!-- Beside the goal once it's met. About 12 characters. -->
@@ -170,7 +170,7 @@
     <!-- Beside a distance goal: about how long it takes at this pace, rounded up. About 22 characters. -->
     <string name="workout_glance_about_minutes_to_go">About <xliff:g id="minutes" example="4">%1$d</xliff:g> min to go</string>
     <!-- Beside a distance goal, under a minute away at this pace. About 26 characters. -->
-    <string name="workout_glance_about_under_a_minute">About Under a minute to go</string>
+    <string name="workout_glance_about_under_a_minute">Under a minute to go</string>
     <!-- Beside a time goal, or in the bar: the minutes left, rounded up. About 16 characters. -->
     <string name="workout_glance_minutes_to_go"><xliff:g id="minutes" example="4">%1$d</xliff:g> min to go</string>
     <!-- Beside a time goal, or in the bar, under a minute away. About 22 characters. -->

@@ -18,7 +18,7 @@
     <string name="core_healthspan_habit_time_asleep">Time asleep</string>
 
     <!-- Why there is no Habit Age, on its card: no birth year. -->
-    <string name="core_healthspan_withheld_no_age">Add your birth year in your profile to start your estimate.</string>
+    <string name="core_healthspan_withheld_no_age">Add your birth year in your profile to see your Habit Age.</string>
     <!-- Why there is no Habit Age: the user's age is outside the range it's built for. -->
     <string name="core_healthspan_withheld_age">Habit Age is for ages 20 to 79.</string>
     <!-- Why there is no Habit Age: no sex in the profile. -->
@@ -28,13 +28,13 @@
     <!-- Why there is no Habit Age yet: too little wear so far. -->
     <string name="core_healthspan_withheld_learning">Needs 30 days of wear before a first estimate.</string>
     <!-- Why there is no Habit Age yet: too few nights with resting heart rate. -->
-    <string name="core_healthspan_withheld_resting_hr">Needs more nights of resting heart rate: about half the nights.</string>
+    <string name="core_healthspan_withheld_resting_hr">Needs resting heart rate on about half of recent nights.</string>
     <!-- Why there is no Habit Age yet: too few days worn most of the day. -->
-    <string name="core_healthspan_withheld_steps">Needs more days worn for 10 hours or more: about half the days.</string>
+    <string name="core_healthspan_withheld_steps">Needs about half of recent days worn 10 hours or more.</string>
     <!-- Why there is no Habit Age yet: too few weeks to measure sleep regularity. -->
     <string name="core_healthspan_withheld_regularity">Needs more weeks of sleep regularity.</string>
     <!-- Why there is no Habit Age yet: too few nights of sleep. -->
-    <string name="core_healthspan_withheld_sleep">Needs more nights of sleep: about half the nights.</string>
+    <string name="core_healthspan_withheld_sleep">Needs sleep on about half of recent nights.</string>
 
     <!-- What's missing from the profile, lower case, put into "Add your birth year and sex in your profile to see your Habit Age." -->
     <string name="core_healthspan_missing_birth_year">birth year</string>

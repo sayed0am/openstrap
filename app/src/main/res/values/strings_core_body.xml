@@ -18,13 +18,13 @@
     <string name="core_body_disclaimer">This is a wellness estimate, not a medical assessment.</string>
 
     <!-- The alert's first sentence when two or more signals are off, for two nights or more. The signals are a list of the names below, "resting heart rate, skin temperature". -->
-    <string name="core_body_push_several_again">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) are outside your usual range for the second night.</string>
+    <string name="core_body_push_several_again">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) have been outside your normal range for two nights or more.</string>
     <!-- The alert's first sentence when two or more signals are off, last night only. -->
-    <string name="core_body_push_several_once">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) are outside your usual range last night.</string>
+    <string name="core_body_push_several_once">Several of your overnight signals (<xliff:g id="signals" example="resting heart rate, skin temperature">%1$s</xliff:g>) were outside your normal range last night.</string>
     <!-- The alert's first sentence when one signal is off, for two nights or more. The signal is one of the names below. -->
-    <string name="core_body_push_one_again">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> is outside your usual range for the second night.</string>
+    <string name="core_body_push_one_again">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> has been outside your normal range for two nights or more.</string>
     <!-- The alert's first sentence when one signal is off, last night only. -->
-    <string name="core_body_push_one_once">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> is outside your usual range last night.</string>
+    <string name="core_body_push_one_once">Your overnight <xliff:g id="signal" example="skin temperature">%1$s</xliff:g> was outside your normal range last night.</string>
 
     <!-- A signal family's name, lower case, inside the alert's sentence. -->
     <string name="core_body_family_cardiac">resting heart rate</string>
@@ -36,7 +36,7 @@
     <!-- A signal that is off, in plain words, lower case, listed under Recovery. -->
     <string name="core_body_signal_rhr">resting heart rate up <xliff:g id="bpm" example="6">%1$d</xliff:g> bpm</string>
     <!-- A signal that is off, in plain words, lower case. -->
-    <string name="core_body_signal_temperature">skin temperature up from your usual</string>
+    <string name="core_body_signal_temperature">skin temperature up from your normal</string>
     <!-- A signal that is off, in plain words, lower case. The number is breaths a minute, "1.4". -->
     <string name="core_body_signal_breathing">breathing rate up <xliff:g id="breaths" example="1.4">%1$s</xliff:g>/min</string>
     <!-- A signal that is off, in plain words. HRV is heart rate variability. -->

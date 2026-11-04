@@ -86,7 +86,7 @@ class WorkoutTrimCardTest {
     @Test fun `a trimmed workout says so on the card, with Undo as a button`() {
         var undone = false
         show(summary(end = start + 1200), onUndo = { undone = true })
-        compose.compose.onNodeWithText("The rest is kept.", substring = true).assertExists()
+        compose.compose.onNodeWithText("Nothing is deleted.", substring = true).assertExists()
 
         val undo = compose.compose.onNodeWithText("Undo")
         undo.assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))

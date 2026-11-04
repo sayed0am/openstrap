@@ -17,7 +17,7 @@
     <!-- Title of the list of heart rate, HRV and breathing while asleep. -->
     <string name="glow_sleep_vitals_title">Night vitals</string>
     <!-- The note on the night vitals' title row: each is compared with your earlier nights. -->
-    <string name="glow_sleep_vitals_note">Against your nights</string>
+    <string name="glow_sleep_vitals_note">Against your normal</string>
     <!-- Title of the sleep regularity card. -->
     <string name="glow_sleep_regularity_title">Sleep regularity</string>
     <!-- The regularity card's note on its title row. -->

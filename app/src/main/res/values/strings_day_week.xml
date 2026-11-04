@@ -13,11 +13,11 @@
     <string name="day_week_asleep"><xliff:g id="time" example="7 h 40">%1$s</xliff:g> asleep</string>
     <!-- Under the chart: the day of the week with the most steps, and its steps written out ("12,400"). -->
     <plurals name="day_week_busiest">
-        <item quantity="one">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="1">%1$s</xliff:g> steps.</item>
+        <item quantity="one">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="1">%1$s</xliff:g> step.</item>
         <item quantity="other">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="12,400">%1$s</xliff:g> steps.</item>
     </plurals>
     <!-- Under the chart: no workouts this week or the week before. -->
-    <string name="day_week_workouts_none">No workouts, nor the week before.</string>
+    <string name="day_week_workouts_none">No workouts this week or the week before.</string>
     <!-- Under the chart: the week's workouts ("Two workouts"), as many as the week before. -->
     <string name="day_week_workouts_same"><xliff:g id="workouts" example="Two workouts">%1$s</xliff:g>, as many as the week before.</string>
     <!-- Under the chart: the week's workouts ("Three workouts"), and how many more than the week before, a number word ("two"). -->

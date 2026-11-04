@@ -27,10 +27,10 @@ class StrapRowsTest {
     @Test fun `health alerts in a few words, or Off`() {
         assertNull(healthAlertsSummary(AlarmsUiState()))
         assertEquals("Off", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 0))))
-        assertEquals("Over 140 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140))))
-        assertEquals("Over 140, under 40", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140, SettingsCodec.KEY_LOW_HR_ALERT to 40))))
-        assertEquals("Under 40 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_HR_ALERT to 40))))
-        assertEquals("Oxygen under 90%", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
+        assertEquals("Above 140 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140))))
+        assertEquals("Above 140, below 40", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140, SettingsCodec.KEY_LOW_HR_ALERT to 40))))
+        assertEquals("Below 40 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_HR_ALERT to 40))))
+        assertEquals("Oxygen below 90%", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
         assertEquals("Heart rate and oxygen", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 150, SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
         assertEquals(
             "Heart rate and oxygen",

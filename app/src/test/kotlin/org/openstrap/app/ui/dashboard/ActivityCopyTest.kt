@@ -61,7 +61,7 @@ class ActivityCopyTest {
     @Test fun `heart points say how far to the aim and what drops off`() {
         assertEquals("36 to go for 100.", ActivityCopy.heartPointsWeek(64))
         assertNull(ActivityCopy.heartPointsWord(99))
-        assertEquals("Tomorrow Thursday's 12 points drop off.", ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK))
+        assertEquals("Tomorrow, the 12 points from Thursday drop off.", ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK))
         assertNull(ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 0, Locale.UK))
         assertEquals("At 100 or more on 1 of 2 days in the last 30.", ActivityCopy.heartPointsMonth(listOf(40, null, 110)))
     }

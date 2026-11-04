@@ -26,7 +26,7 @@ class LiveGlanceTest {
         val g = Glance.of(run())
         assertEquals("4.32", g.figure)
         assertEquals("km", g.unit)
-        assertEquals("4.32 km, 5:42 /km", g.line1)
+        assertEquals("4.32 km, 5:42/km", g.line1)
         assertEquals("24:51, 680 m to go", g.line2)
         assertEquals(0.864f, g.progress!!.fraction, 1e-3f)
         assertFalse(g.progress!!.drain)
@@ -125,7 +125,7 @@ class LiveGlanceTest {
         assertEquals("Set 4", g.shortLabel)
         assertEquals(GlanceAction.AddRest, g.second)
         assertEquals("+30 s", g.secondLabel)
-        assertEquals("118 bpm, down 28. Ends sooner once you stay under 110.", g.goal)
+        assertEquals("118 bpm, down 28. Ends early once you're under 110 bpm.", g.goal)
         assertEquals("Set 4, bench press 10 × 60 kg", g.next)
     }
 

@@ -39,8 +39,8 @@
     <string name="core_activity_points_week_to_go"><xliff:g id="left" example="36">%1$d</xliff:g> to go for <xliff:g id="aim" example="100">%2$d</xliff:g>.</string>
     <!-- Heart points detail: the points the oldest day of the 7 earned, which leave the total tomorrow. The day is a weekday name. -->
     <plurals name="core_activity_points_drop_off">
-        <item quantity="one">Tomorrow <xliff:g id="day" example="Thursday">%2$s</xliff:g>\'s <xliff:g id="points" example="1">%1$d</xliff:g> point drops off.</item>
-        <item quantity="other">Tomorrow <xliff:g id="day" example="Thursday">%2$s</xliff:g>\'s <xliff:g id="points" example="12">%1$d</xliff:g> points drop off.</item>
+        <item quantity="one">Tomorrow, the <xliff:g id="points" example="1">%1$d</xliff:g> point from <xliff:g id="day" example="Thursday">%2$s</xliff:g> drops off.</item>
+        <item quantity="other">Tomorrow, the <xliff:g id="points" example="12">%1$d</xliff:g> points from <xliff:g id="day" example="Thursday">%2$s</xliff:g> drop off.</item>
     </plurals>
     <!-- Heart points detail, the label under one day's points while its bar is tapped. The day is a short date. -->
     <string name="core_activity_points_earned">points earned, <xliff:g id="day" example="Tue 20 Oct">%1$s</xliff:g></string>
@@ -82,8 +82,8 @@
     <!-- Load detail, the day's sentence before a week of wear. -->
     <string name="core_activity_load_learning">Your usual shows after a week of wear.</string>
     <!-- Load detail, the day's sentence: the share of your days in the last 3 months with this Load or less. -->
-    <string name="core_activity_load_harder_today">So far today, as hard as or harder than <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
-    <string name="core_activity_load_harder_day">That day, as hard as or harder than <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <string name="core_activity_load_harder_today">So far today, at least as hard as <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
+    <string name="core_activity_load_harder_day">That day, at least as hard as <xliff:g id="percent" example="72">%1$d</xliff:g>%% of your days in the last 3 months.</string>
     <!-- Load detail, the day's sentence: the share of your days in the last 3 months with a higher Load. -->
     <string name="core_activity_load_easier_today">So far today, easier than <xliff:g id="percent" example="60">%1$d</xliff:g>%% of your days in the last 3 months.</string>
     <string name="core_activity_load_easier_day">That day, easier than <xliff:g id="percent" example="60">%1$d</xliff:g>%% of your days in the last 3 months.</string>
@@ -110,10 +110,10 @@
         <item quantity="other"><xliff:g id="days" example="8">%1$d</xliff:g> days above your usual in the last 30 days.</item>
     </plurals>
     <!-- Load detail, a row's status: the weekly load range the strap itself calls productive. -->
-    <string name="core_activity_strap_range">The strap\'s productive range is <xliff:g id="low" example="120">%1$d</xliff:g> to <xliff:g id="high" example="340">%2$d</xliff:g></string>
+    <string name="core_activity_strap_range">Strap\'s productive range, <xliff:g id="low" example="120">%1$d</xliff:g> to <xliff:g id="high" example="340">%2$d</xliff:g></string>
 
     <!-- VO2 max detail, the sentence when the number comes from a workout. -->
-    <string name="core_activity_vo2_workout">From your latest workout the strap could read it from.</string>
+    <string name="core_activity_vo2_workout">From your latest workout with a usable reading.</string>
     <!-- VO2 max detail, the sentence when the number is estimated from the profile. -->
     <string name="core_activity_vo2_profile">Estimated from your profile and resting heart rate, updated weekly.</string>
 
@@ -125,7 +125,7 @@
     <!-- Calories detail, under the day's kcal. The number has the phone's thousands mark. -->
     <string name="core_activity_calories_at_rest">Your body uses about <xliff:g id="kcal" example="1,650">%1$s</xliff:g> kcal a day at rest, before any movement.</string>
 
-    <!-- Distance row's line and the detail's label: the kilometres were worked out from steps. Short. -->
+    <!-- Distance row's line and the detail's label: the kilometres were calculated from steps. Short. -->
     <string name="core_activity_distance_from_steps">km, from your steps</string>
     <!-- Distance row's line and the detail's label: the strap measured the kilometres. Short. -->
     <string name="core_activity_distance_from_strap">km, from the strap</string>

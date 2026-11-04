@@ -67,7 +67,7 @@ class WorkoutCopyTest {
     @Test fun `the split line shows the latest whole kilometre for ten seconds`() {
         val line = WorkoutCopy.splitLine(splits, history, firstT = 1_000, now = 1_645)
         // Km 2 ran from 1300 to 1642: readings 140, 150 and 154.
-        assertEquals(SplitLine(1, 1_642, "Km 2 in 5:42, avg 148"), line)
+        assertEquals(SplitLine(1, 1_642, "Km 2 in 5:42, 148 bpm"), line)
         assertEquals(line, WorkoutCopy.splitLine(splits, history, 1_000, now = 1_651))
         assertNull(WorkoutCopy.splitLine(splits, history, 1_000, now = 1_652))
         // A fix stamped just ahead of the phone's clock still shows.
@@ -76,7 +76,7 @@ class WorkoutCopyTest {
 
     @Test fun `the first kilometre starts at the first fix, and no readings drop the average`() {
         val first = splits.take(1)
-        assertEquals("Km 1 in 5:00, avg 130", WorkoutCopy.splitLine(first, history, firstT = 1_000, now = 1_300)?.text)
+        assertEquals("Km 1 in 5:00, 130 bpm", WorkoutCopy.splitLine(first, history, firstT = 1_000, now = 1_300)?.text)
         assertEquals("Km 1 in 5:00", WorkoutCopy.splitLine(first, emptyList(), firstT = 1_000, now = 1_300)?.text)
         // Only a partial kilometre so far: nothing to say.
         assertNull(WorkoutCopy.splitLine(listOf(Route.Split(0, 1_100, 60, 300.0)), history, 1_000, 1_100))

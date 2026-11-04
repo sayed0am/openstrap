@@ -63,8 +63,8 @@
     <!-- A value against your usual range: within it. -->
     <string name="core_today_normal_usual">Usual</string>
 
-    <!-- What a Recovery score means for the day, when overnight signals are off your usual. -->
-    <string name="core_today_meaning_alert">Some overnight signals are off your normal. An easy day suits.</string>
+    <!-- What a Recovery score means for the day, when overnight signals are off your normal. -->
+    <string name="core_today_meaning_alert">Some overnight signals are off your normal. An easy day may help.</string>
     <!-- What a Recovery score of 85 or more means for the day. -->
     <string name="core_today_meaning_ready_for_more">Well recovered. A good day for a hard session.</string>
     <!-- What a Recovery score of 70 to 84 means for the day. -->
@@ -101,7 +101,7 @@
     <!-- The Energy hero before noon: how much Energy the morning used. A sentence follows. -->
     <string name="core_today_energy_morning_drained">The morning drained <xliff:g id="amount" example="22">%1$d</xliff:g>.</string>
     <!-- The Energy hero after noon: how much Energy the day used so far. A sentence follows. -->
-    <string name="core_today_energy_day_drained">The day so far drained <xliff:g id="amount" example="40">%1$d</xliff:g>.</string>
+    <string name="core_today_energy_day_drained">The day has drained <xliff:g id="amount" example="40">%1$d</xliff:g> so far.</string>
     <!-- The Energy hero when nothing was used since waking. A sentence follows. -->
     <string name="core_today_energy_nothing_drained">Nothing drained since waking.</string>
     <!-- The Energy hero with 50 or more left. -->
@@ -134,7 +134,7 @@
     <string name="core_today_window_energy_low">Energy is <xliff:g id="energy" example="20">%1$d</xliff:g>, running low.</string>
 
     <!-- After a workout, before the strap sends heart rate. -->
-    <string name="core_today_after_waiting">Heart rate since the end shows once the strap sends it.</string>
+    <string name="core_today_after_waiting">Heart rate after your workout shows once the strap sends it.</string>
     <!-- After a workout: the heart rate now, in beats a minute, before there is a resting heart rate. -->
     <string name="core_today_after_now">Heart rate <xliff:g id="bpm" example="74">%1$d</xliff:g> now.</string>
     <!-- After a workout, with the heart near its resting rate. -->
@@ -167,7 +167,7 @@
     <!-- An item of the evening list, as above. -->
     <string name="core_today_evening_load_below">a Load below your usual</string>
     <!-- An item of the evening list, as above. -->
-    <string name="core_today_evening_load_usual">a usual Load</string>
+    <string name="core_today_evening_load_usual">a Load near your usual</string>
     <!-- Joins the evening list's items before the last: "a run, 13,860 steps". -->
     <string name="core_today_list_comma"><xliff:g id="first" example="a run">%1$s</xliff:g>, <xliff:g id="next" example="13,860 steps">%2$s</xliff:g></string>
     <!-- Joins the evening list's last item: "a run, 13,860 steps and a Load above your usual". -->
@@ -214,7 +214,7 @@
     <!-- The line under Load today's number. -->
     <string name="core_today_load_line_above">Load above your usual</string>
     <!-- The line under Load today's number. -->
-    <string name="core_today_load_line_usual">Your usual Load</string>
+    <string name="core_today_load_line_usual">Load near your usual</string>
     <!-- The line under Load today's number. -->
     <string name="core_today_load_line_below">Load below your usual</string>
     <!-- The line under Load today's number, before the evening. -->
@@ -223,7 +223,7 @@
     <string name="core_today_load_word_learning">Learning your usual</string>
 
     <!-- Under Your week before there is a week to compare with. The day is the week's first, "Monday" or "Sunday". -->
-    <string name="core_today_week_first">Week on week comparisons start next <xliff:g id="weekday" example="Monday">%1$s</xliff:g>.</string>
+    <string name="core_today_week_first">Week-on-week comparisons start next <xliff:g id="weekday" example="Monday">%1$s</xliff:g>.</string>
     <!-- Your week: steps this week against the week before, up. -->
     <string name="core_today_steps_up">Steps up <xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
     <!-- Your week: steps this week against the week before, down. -->
@@ -235,9 +235,9 @@
     <string name="core_today_last_night_score"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g>, score <xliff:g id="score" example="83">%2$d</xliff:g></string>
 
     <!-- How to read the heart rate line, when your resting range is drawn behind it. -->
-    <string name="core_today_heart_note_band">Hold to scrub, the number follows. The band is your resting range.</string>
+    <string name="core_today_heart_note_band">Touch and hold the line to read any moment. The band is your resting range.</string>
     <!-- How to read the heart rate line. -->
-    <string name="core_today_heart_note">Hold to scrub, the number follows.</string>
+    <string name="core_today_heart_note">Touch and hold the line to read any moment.</string>
     <!-- The heart rate card's line under its number while it is live. Short. -->
     <string name="core_today_heart_live">Live now</string>
     <!-- The heart rate card's line: when the reading shown was taken, "20:52". Short. -->

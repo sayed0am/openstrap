@@ -49,7 +49,7 @@ class BackupCopyTest {
         assertEquals("Restored 12 records.", BackupCopy.restored(12, settings = false, skipped = 0))
         assertEquals("Restored your settings. Your records were already here.", BackupCopy.restored(0, settings = true, skipped = 0))
         assertEquals("Nothing to restore. It's all already here.", BackupCopy.restored(0, settings = false, skipped = 0))
-        assertEquals("Restored 12 records. 3 rows couldn't be read.", BackupCopy.restored(12, settings = false, skipped = 3))
+        assertEquals("Restored 12 records. 3 records couldn't be read.", BackupCopy.restored(12, settings = false, skipped = 3))
     }
 
     @Test fun `a backup's time follows the phone's clock`() {

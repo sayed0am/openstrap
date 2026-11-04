@@ -16,10 +16,10 @@
     <!-- A message when Health Connect can be installed from the Play Store. -->
     <string name="day_hc_install_first">Install Health Connect first.</string>
     <!-- A message when the user turned Health Connect's permissions down. -->
-    <string name="day_hc_not_granted">Health Connect permissions were not granted.</string>
+    <string name="day_hc_not_granted">OpenStrap doesn\'t have Health Connect permission.</string>
 
     <!-- A message when the user turned the Bluetooth permission down. -->
-    <string name="day_bluetooth_required">Bluetooth permission is required.</string>
+    <string name="day_bluetooth_required">OpenStrap needs Nearby devices to reach your strap.</string>
     <!-- A message when the user turned location down for a workout: it starts anyway, without GPS. -->
     <string name="day_location_declined">Without location, distance comes from the strap\'s steps.</string>
     <!-- The dialog when Nearby devices was turned down for good: its title. -->
@@ -34,7 +34,7 @@
     <!-- A message after a pull to sync failed, then "Your data is still on the strap." -->
     <string name="day_pull_sync_failed">Couldn\'t sync. <xliff:g id="data_on_strap" example="Your data is still on the strap.">%1$s</xliff:g></string>
     <!-- A message when pulling to sync while the strap isn't connected. -->
-    <string name="day_pull_not_connected">The strap isn\'t connected</string>
+    <string name="day_pull_not_connected">The strap isn\'t connected.</string>
     <!-- Under the header while pulling down: the line while a sync runs. One line. -->
     <string name="day_pull_syncing">Syncing strap…</string>
     <!-- The same once the pull is far enough. -->

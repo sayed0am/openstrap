@@ -10,13 +10,13 @@
     <string name="core_day_yesterday">Yesterday</string>
     <!-- The current day after other words, as in "Synced today". Lower case in English. -->
     <string name="core_day_today_in_sentence">today</string>
-    <!-- The day before after other words, as in "Synced yesterday 10:42". Lower case in English. -->
+    <!-- The day before after other words, as in "Synced yesterday at 10:42". Lower case in English. -->
     <string name="core_day_yesterday_in_sentence">yesterday</string>
     <!--
       A moment on an earlier day with its time, after other words. The day is "yesterday", a weekday ("Tuesday") or a
       date ("Tue 21 Oct").
     -->
-    <string name="core_day_at"><xliff:g id="day" example="yesterday">%1$s</xliff:g> <xliff:g id="time" example="10:42">%2$s</xliff:g></string>
+    <string name="core_day_at"><xliff:g id="day" example="yesterday">%1$s</xliff:g> at <xliff:g id="time" example="10:42">%2$s</xliff:g></string>
     <!-- When something last happened (a backup, an update check), after other words such as "Checked". -->
     <string name="core_day_done_today">today at <xliff:g id="time" example="10:42">%1$s</xliff:g></string>
     <!-- When something last happened, the day before. -->

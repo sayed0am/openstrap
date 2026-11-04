@@ -71,7 +71,7 @@
     <string name="you_sleep_goal_line"><xliff:g id="goal" example="7 h 30">%1$s</xliff:g>. Your sleep need is <xliff:g id="need" example="8 h">%2$s</xliff:g></string>
 
     <!-- The Profile row when nothing is filled in. One line. -->
-    <string name="you_profile_empty">Add age and sex for accurate effort and recovery</string>
+    <string name="you_profile_empty">Add age and sex for accurate Load and Recovery</string>
     <!-- The age in the Profile row, "34 years, male, 72 kg, 178 cm". -->
     <plurals name="you_profile_age">
         <item quantity="one"><xliff:g id="age" example="34">%1$d</xliff:g> year</item>
@@ -92,8 +92,8 @@
     <!-- A field's label, then the unit shown inside it, short. -->
     <string name="you_profile_age">Age</string>
     <string name="you_profile_age_unit">years</string>
-    <!-- Over the Female and Male segments. Load and Habit Age are names of OpenStrap's scores. -->
-    <string name="you_profile_sex_note">Sex, for energy, Load, fitness and Habit Age</string>
+    <!-- Over the Female and Male segments. Calories, Load and Habit Age are names of OpenStrap's pages and scores. -->
+    <string name="you_profile_sex_note">Sex, for Calories, Load, fitness and Habit Age</string>
     <!-- Two segments side by side, a word each. -->
     <string name="you_profile_sex_female">Female</string>
     <string name="you_profile_sex_male">Male</string>
@@ -118,7 +118,7 @@
     <string name="you_profile_beta_blockers">Taking beta-blockers</string>
     <string name="you_profile_pregnant">Pregnant</string>
     <!-- The sleep need field's label: hours, 7 to 9, or empty for the default for the user's age. -->
-    <string name="you_profile_sleep_need">Sleep need (7 to 9, blank for your age\'s default)</string>
+    <string name="you_profile_sleep_need">Sleep need in hours (7 to 9, or blank)</string>
     <!-- The unit for hours, short. -->
     <string name="you_unit_h">h</string>
 

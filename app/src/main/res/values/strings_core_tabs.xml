@@ -65,8 +65,8 @@
     <!-- After the Recovery hero's sentence: what held the score back most, a contributor from the list above. -->
     <string name="core_tab_held_back_by">Mostly held back by <xliff:g id="contributor" example="HRV">%1$s</xliff:g>.</string>
 
-    <!-- The Recovery hero before the day's Recovery is worked out. -->
-    <string name="core_tab_recovery_waiting">Recovery shows once last night is in.</string>
+    <!-- The Recovery hero before the day's Recovery is calculated. -->
+    <string name="core_tab_recovery_waiting">Recovery shows once last night\'s sleep syncs.</string>
     <!-- The Recovery hero with no sleep recorded last night. -->
     <string name="core_tab_no_sleep_score">No sleep recorded last night, so there\'s no score today.</string>
     <!-- The Recovery hero when the user deleted last night's sleep. -->
@@ -79,7 +79,7 @@
     <!-- A Recovery contributor's status word. Short. -->
     <string name="core_tab_contributor_little">Holding back a little</string>
     <!-- A Recovery contributor's status word. Short. -->
-    <string name="core_tab_contributor_holding">Holding you back</string>
+    <string name="core_tab_contributor_holding">Holding back</string>
 
     <!-- A row of Energy today, and the line under Recharged: what filled Energy. -->
     <string name="core_tab_charge_sleep_rest">Sleep and calm rest</string>
@@ -90,7 +90,7 @@
     <!-- A row of Energy today: what drained it. -->
     <string name="core_tab_charge_awake">Being awake</string>
     <!-- A row of Energy today's status, beside the amount: it filled Energy. Short. -->
-    <string name="core_tab_charge_recharged">Recharged</string>
+    <string name="core_tab_charge_recharged">Filled</string>
     <!-- A row of Energy today's status, beside the amount: it used Energy. Short. -->
     <string name="core_tab_charge_drained">Drained</string>
 
@@ -105,7 +105,7 @@
     <!-- The Energy card's line: how much it rose since waking. -->
     <string name="core_tab_charge_up">Up <xliff:g id="amount" example="5">%1$d</xliff:g> since waking</string>
     <!-- The Energy card's line: the same as at waking. -->
-    <string name="core_tab_charge_level">Level since waking</string>
+    <string name="core_tab_charge_level">Same as at waking</string>
 
     <!-- The Sleep hero's sentence. The time is "7 h 40", "7 h" or "40 min". -->
     <string name="core_tab_night_asleep"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g> asleep.</string>
@@ -116,7 +116,7 @@
     <!-- The Sleep tab's night before the strap has seen one. -->
     <string name="core_tab_first_night_sleep">Your first night with the strap shows here in the morning.</string>
     <!-- The Sleep tab's night when only naps were recorded. -->
-    <string name="core_tab_only_naps">No night sleep recorded, only naps.</string>
+    <string name="core_tab_only_naps">No night\'s sleep recorded, only naps.</string>
     <!-- The Sleep tab on a past day with no sleep recorded. -->
     <string name="core_tab_no_sleep_that_night">No sleep recorded that night.</string>
 
@@ -220,8 +220,8 @@
         <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> set</item>
         <item quantity="other"><xliff:g id="count" example="14">%d</xliff:g> sets</item>
     </plurals>
-    <!-- A run's fact: its distance and pace, "5.2 km, 5:24 /km". -->
-    <string name="core_tab_fact_distance_pace"><xliff:g id="distance" example="5.2 km">%1$s</xliff:g>, <xliff:g id="pace" example="5:24 /km">%2$s</xliff:g></string>
+    <!-- A run's fact: its distance and pace, "5.2 km, 5:24/km". -->
+    <string name="core_tab_fact_distance_pace"><xliff:g id="distance" example="5.2 km">%1$s</xliff:g>, <xliff:g id="pace" example="5:24/km">%2$s</xliff:g></string>
     <!-- A workout row's second line: its fact and when it started, "3.4 km, 17:35". -->
     <string name="core_tab_workout_line"><xliff:g id="fact" example="3.4 km">%1$s</xliff:g>, <xliff:g id="time" example="17:35">%2$s</xliff:g></string>
 

@@ -28,8 +28,8 @@ class FamilySummaryTest {
         assertEquals("This evening, 19:05", FamilySummary.whenLine(day + 19 * 3600 + 5 * 60, now, utc, Locale.UK))
         assertEquals("Yesterday, 10:00", FamilySummary.whenLine(day - 14 * 3600, now, utc, Locale.UK))
         // Further back the day words' rule, and the time follows the 12 or 24 hour setting.
-        assertEquals("Tuesday 10:00", FamilySummary.whenLine(day - 3 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
-        assertEquals("Mon 19 Oct 10:00", FamilySummary.whenLine(day - 11 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
+        assertEquals("Tuesday, 10:00", FamilySummary.whenLine(day - 3 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
+        assertEquals("Mon 19 Oct, 10:00", FamilySummary.whenLine(day - 11 * 86_400 + 10 * 3600, now, utc, Locale.UK, use24Hour = true))
         assertEquals("This evening, 7:05 pm", FamilySummary.whenLine(day + 19 * 3600 + 5 * 60, now, utc, Locale.UK, use24Hour = false))
     }
 
@@ -90,7 +90,7 @@ class FamilySummaryTest {
         val lines = FamilySummary.rounds(rounds, readings)
         assertEquals(3, lines.size)
         assertEquals(listOf(10, 25, 3), lines.map { it.drop })
-        assertEquals("You recovered 13 bpm in 10 s on average. Round 2 was your hardest.", FamilySummary.roundsLine(lines, 10))
+        assertEquals("Heart rate came down 13 bpm per 10 s rest, on average. Round 2 was your hardest.", FamilySummary.roundsLine(lines, 10))
         assertEquals(45L, FamilySummary.workSeconds(rounds))
     }
 
@@ -165,10 +165,10 @@ class FamilySummaryTest {
 
     @Test
     fun aGamesLoadReadsTheSameOnTheSummaryAndTheCard() {
-        assertEquals("Load, hard", FamilySummary.loadLabel(130, 100f))
-        assertEquals("Load 130, hard", FamilySummary.loadLine(130, 100f))
-        assertEquals("Load, light", FamilySummary.loadLabel(60, 100f))
-        assertEquals("Load 60, light", FamilySummary.loadLine(60, 100f))
+        assertEquals("Load, above usual", FamilySummary.loadLabel(130, 100f))
+        assertEquals("Load 130, above usual", FamilySummary.loadLine(130, 100f))
+        assertEquals("Load, below usual", FamilySummary.loadLabel(60, 100f))
+        assertEquals("Load 60, below usual", FamilySummary.loadLine(60, 100f))
         assertEquals("Load", FamilySummary.loadLabel(100, 100f))
         assertEquals("Load 100", FamilySummary.loadLine(100, 100f))
         assertEquals("Load 80", FamilySummary.loadLine(80, null))
@@ -178,7 +178,7 @@ class FamilySummaryTest {
     fun aGameReadsAFadeOrAStrongFinish() {
         val end = 92 * 60L
         val faded = (0L..end step 10).map { t -> t to if (t < 70 * 60) 160 else 140 }
-        assertEquals("You faded a little after 70 min.", FamilySummary.gameRead(faded, 0, end))
+        assertEquals("Your effort dropped a little after 70 min.", FamilySummary.gameRead(faded, 0, end))
         val steady = (0L..end step 10).map { t -> t to 155 }
         assertEquals("You kept your effort up to the end.", FamilySummary.gameRead(steady, 0, end))
         val strong = (0L..end step 10).map { t -> t to if (t > 80 * 60) 175 else 150 }

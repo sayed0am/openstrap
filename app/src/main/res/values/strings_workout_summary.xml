@@ -94,7 +94,7 @@
     <!-- When the workout was: yesterday. -->
     <string name="workout_summary_when_yesterday">Yesterday, <xliff:g id="time" example="10:00">%1$s</xliff:g></string>
     <!-- When the workout was, another day: the day ("Tuesday", "Mon 19 Oct"), then the time. -->
-    <string name="workout_summary_when_day"><xliff:g id="day" example="Tuesday">%1$s</xliff:g> <xliff:g id="time" example="10:00">%2$s</xliff:g></string>
+    <string name="workout_summary_when_day"><xliff:g id="day" example="Tuesday">%1$s</xliff:g>, <xliff:g id="time" example="10:00">%2$s</xliff:g></string>
 
     <!-- A strength set on the summary: reps and the weight in kilograms. Short, about 12 characters. -->
     <string name="workout_summary_set_reps_kg"><xliff:g id="reps" example="10">%1$d</xliff:g> × <xliff:g id="kg" example="60">%2$s</xliff:g> kg</string>
@@ -109,9 +109,9 @@
     <!-- As above, about as fast as the last strength workout. -->
     <string name="workout_summary_rest_same">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average, about the same as last time.</string>
     <!-- Under an interval workout's rounds: how far the heart rate came down in each rest. The time is the rest, "10 s" or "1:30". -->
-    <string name="workout_summary_rounds_recovered">You recovered <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm in <xliff:g id="time" example="10 s">%2$s</xliff:g> on average.</string>
+    <string name="workout_summary_rounds_recovered">Heart rate came down <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm per <xliff:g id="time" example="10 s">%2$s</xliff:g> rest, on average.</string>
     <!-- As above, when the rests had no set length. -->
-    <string name="workout_summary_rounds_recovered_each">You recovered <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm in each rest on average.</string>
+    <string name="workout_summary_rounds_recovered_each">Heart rate came down <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm each rest, on average.</string>
     <!-- Under an interval workout's rounds: the one with the highest heart rate. -->
     <string name="workout_summary_rounds_hardest">Round <xliff:g id="number" example="6">%1$d</xliff:g> was your hardest.</string>
     <!-- After a calm session (yoga and the like): the heart rate at the start and at the end, in bpm. -->
@@ -123,7 +123,7 @@
     <!-- The share card's short form of the line above. One line, about 24 characters. -->
     <string name="workout_summary_held_short">Heart held near <xliff:g id="bpm" example="72">%1$d</xliff:g></string>
     <!-- How a game went: the effort dropped from some minutes in. -->
-    <string name="workout_summary_game_faded">You faded a little after <xliff:g id="minutes" example="70">%1$d</xliff:g> min.</string>
+    <string name="workout_summary_game_faded">Your effort dropped a little after <xliff:g id="minutes" example="70">%1$d</xliff:g> min.</string>
     <!-- How a game went: harder at the end than at the start. -->
     <string name="workout_summary_game_stronger">You finished stronger than you started.</string>
     <!-- How a game went: steady to the end. -->
@@ -140,21 +140,21 @@
     <!-- The heart rate zone the workout spent most time in. Short, about 16 characters. -->
     <string name="workout_summary_mostly_zone">Mostly zone <xliff:g id="zone" example="3">%1$d</xliff:g></string>
     <!-- Against the last workout of the same sport and length: a lower average heart rate. The day is a weekday, "Monday". -->
-    <string name="workout_summary_versus_lower"><xliff:g id="bpm" example="4">%1$d</xliff:g> bpm lower than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
+    <string name="workout_summary_versus_lower">Average heart rate <xliff:g id="bpm" example="4">%1$d</xliff:g> bpm lower than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
     <!-- As above, a higher average heart rate. -->
-    <string name="workout_summary_versus_higher"><xliff:g id="bpm" example="4">%1$d</xliff:g> bpm higher than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
+    <string name="workout_summary_versus_higher">Average heart rate <xliff:g id="bpm" example="4">%1$d</xliff:g> bpm higher than <xliff:g id="day" example="Monday">%2$s</xliff:g>, over a similar time.</string>
     <!-- As above, about the same. -->
-    <string name="workout_summary_versus_same">About the same heart rate as <xliff:g id="day" example="Monday">%1$s</xliff:g>, over a similar time.</string>
+    <string name="workout_summary_versus_same">About the same average heart rate as <xliff:g id="day" example="Monday">%1$s</xliff:g>, over a similar time.</string>
     <!-- Under a game's Load figure. Short, about 12 characters. -->
     <string name="workout_summary_load_label">Load</string>
-    <!-- Under a game's Load figure, when it's above your usual. Short, about 12 characters. -->
-    <string name="workout_summary_load_label_hard">Load, hard</string>
-    <!-- Under a game's Load figure, when it's below your usual. Short, about 12 characters. -->
-    <string name="workout_summary_load_label_light">Load, light</string>
+    <!-- Under a game's Load figure, when it's above your usual. Short, about 18 characters. -->
+    <string name="workout_summary_load_label_hard">Load, above usual</string>
+    <!-- Under a game's Load figure, when it's below your usual. Short, about 18 characters. -->
+    <string name="workout_summary_load_label_light">Load, below usual</string>
     <!-- A game's share card: its Load. One line. -->
     <string name="workout_summary_load_line">Load <xliff:g id="load" example="80">%1$d</xliff:g></string>
     <!-- A game's share card: its Load, above your usual. One line. -->
-    <string name="workout_summary_load_line_hard">Load <xliff:g id="load" example="130">%1$d</xliff:g>, hard</string>
+    <string name="workout_summary_load_line_hard">Load <xliff:g id="load" example="130">%1$d</xliff:g>, above usual</string>
     <!-- A game's share card: its Load, below your usual. One line. -->
-    <string name="workout_summary_load_line_light">Load <xliff:g id="load" example="60">%1$d</xliff:g>, light</string>
+    <string name="workout_summary_load_line_light">Load <xliff:g id="load" example="60">%1$d</xliff:g>, below usual</string>
 </resources>

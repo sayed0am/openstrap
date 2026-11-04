@@ -2,7 +2,7 @@
 <!--
   The strap's firmware and the Zepp account its update check signs in with, pages opened from the Strap page, and the
   Zepp sign-in (ui/firmware/, ui/zepp/ZeppSignIn.kt, ui/device/ErrorCopy.kt). OpenStrap is the app's name, Zepp is the
-  strap maker's app, account and servers, Amazfit Helio Strap is the strap, HMFW is a firmware file's signature block
+  strap maker's app, account and servers, Amazfit Helio Strap is the strap
   and Google, Apple, Facebook and Xiaomi are sign-in providers. Keep them as they are.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -36,10 +36,10 @@
     <!-- The update panel before a check: its title, what it does and the button. -->
     <string name="you_firmware_updates">Updates</string>
     <string name="you_firmware_updates_text">Ask Zepp\'s update server whether there\'s newer firmware for this strap.</string>
-    <string name="you_firmware_check">Check for update</string>
+    <string name="you_firmware_check">Check for updates</string>
     <string name="you_firmware_checking">Checking for updates…</string>
     <!-- While a part downloads: its name and version, "Firmware 3.25.1". -->
-    <string name="you_firmware_downloading">Downloading <xliff:g id="part" example="Firmware">%1$s</xliff:g> <xliff:g id="version" example="3.25.1">%2$s</xliff:g></string>
+    <string name="you_firmware_downloading">Downloading <xliff:g id="part" example="Firmware">%1$s</xliff:g> <xliff:g id="version" example="3.25.1">%2$s</xliff:g>…</string>
     <!-- A downloaded part's title: its name and version. -->
     <string name="you_firmware_part_title"><xliff:g id="part" example="Firmware">%1$s</xliff:g> <xliff:g id="version" example="3.25.1">%2$s</xliff:g></string>
     <string name="you_firmware_ready">Ready to install</string>
@@ -70,7 +70,7 @@
     <string name="you_firmware_parts_note">Parts are installed one at a time. After the strap restarts, check again to install the next one.</string>
     <string name="you_firmware_not_now">Not now</string>
     <!-- The download button when no part can be installed by OpenStrap. -->
-    <string name="you_firmware_unsupported">Unsupported</string>
+    <string name="you_firmware_unsupported">Can\'t install</string>
     <string name="you_firmware_download">Download</string>
     <!-- Asked before installing. The title is the image's, "Firmware 3.25.1". -->
     <string name="you_firmware_confirm_title">Install <xliff:g id="title" example="Firmware 3.25.1">%1$s</xliff:g>?</string>
@@ -79,11 +79,11 @@
     <string name="you_firmware_confirm_anyway">I understand and want to install it anyway</string>
 
     <!-- Why a check, download or install can't start, or went wrong. -->
-    <string name="you_firmware_no_account">Add your Zepp app token first.</string>
+    <string name="you_firmware_no_account">Sign in to Zepp first.</string>
     <string name="you_firmware_no_version">Connect the strap first so its firmware version is known.</string>
     <string name="you_firmware_check_failed">Update check failed</string>
     <!-- A part of a kind OpenStrap doesn't know, by its code. -->
-    <string name="you_firmware_unknown_part">Unknown part type <xliff:g id="code" example="xyz">%1$s</xliff:g></string>
+    <string name="you_firmware_unknown_part">OpenStrap can\'t install this kind of part (<xliff:g id="code" example="xyz">%1$s</xliff:g>)</string>
     <string name="you_firmware_download_failed">Download failed</string>
     <string name="you_firmware_install_failed">Install failed</string>
     <plurals name="you_firmware_file_size">
@@ -92,23 +92,23 @@
     </plurals>
     <!-- Warnings to read before installing a file. -->
     <string name="you_firmware_file_untrusted">This file didn\'t come from Zepp\'s update server for this strap. Only install files you trust.</string>
-    <string name="you_firmware_file_unsigned">The file has no HMFW signature block. It\'s probably not a strap firmware image.</string>
+    <string name="you_firmware_file_unsigned">This file has no firmware signature. It\'s probably not firmware for this strap.</string>
     <!-- The title of an image from a file. -->
     <string name="you_firmware_file_title">Firmware from file</string>
     <string name="you_firmware_file_unread">Couldn\'t read the file. Choose it again.</string>
     <string name="you_firmware_wrong_product">The image says it\'s for product <xliff:g id="image" example="158">%1$d</xliff:g>, but this strap is product <xliff:g id="strap" example="157">%2$d</xliff:g>.</string>
-    <string name="you_firmware_wrong_size">The image\'s size field (<xliff:g id="size" example="1234567">%1$d</xliff:g>) is larger than the file.</string>
+    <string name="you_firmware_wrong_size">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> bytes). It may be incomplete.</string>
     <!-- What must be done before installing. -->
     <string name="you_firmware_block_connect">Connect the strap.</string>
     <string name="you_firmware_block_battery_unknown">Battery level unknown. Reconnect the strap.</string>
     <string name="you_firmware_block_battery">Charge the strap above <xliff:g id="min" example="30">%1$d</xliff:g>%% (now <xliff:g id="battery" example="20">%2$d</xliff:g>%%).</string>
-    <string name="you_firmware_block_no_service">This strap doesn\'t offer the firmware update service.</string>
+    <string name="you_firmware_block_no_service">This strap can\'t take firmware updates from OpenStrap.</string>
     <!-- Install steps, one line each. -->
     <string name="you_firmware_step_starting">Starting…</string>
-    <string name="you_firmware_step_sending">Sending to strap</string>
-    <string name="you_firmware_step_validating">Strap is checking the image</string>
-    <string name="you_firmware_step_applying">Strap is installing</string>
-    <string name="you_firmware_step_restarting">Restarting</string>
+    <string name="you_firmware_step_sending">Sending to strap…</string>
+    <string name="you_firmware_step_validating">Strap is checking the image…</string>
+    <string name="you_firmware_step_applying">Strap is installing…</string>
+    <string name="you_firmware_step_restarting">Restarting…</string>
 
     <!-- Why the update server or Zepp failed. -->
     <string name="you_error_firmware_rejected">Zepp\'s update server didn\'t accept the sign-in. It may have expired. Sign in again.</string>
@@ -148,15 +148,15 @@
     <string name="you_zepp_sign_in_note">This is Zepp\'s own page, so OpenStrap never sees your password. It reads only the app token and user ID, then asks Zepp once for your devices.</string>
     <!-- The provider is a sign-in the user picked, "Google" or "Apple", named twice. "sign-in in" is meant, not a typo. -->
     <string name="you_zepp_third_party" tools:ignore="Typos"><xliff:g id="provider" example="Google">%1$s</xliff:g> sign-in doesn\'t work inside OpenStrap, because <xliff:g id="provider" example="Google">%1$s</xliff:g> blocks sign-in in embedded pages.\n\nOpen the Zepp app and add an email and password to your account in its account settings. Then sign in here with that email. Or get the auth key on a computer.</string>
-    <string name="you_zepp_fetching">Signed in. Looking up your devices</string>
+    <string name="you_zepp_fetching">Signed in. Looking up your devices…</string>
     <string name="you_zepp_use_email">Use email sign-in</string>
     <string name="you_zepp_no_devices">Couldn\'t get your devices</string>
     <string name="you_zepp_sign_in_email">Sign in with email</string>
     <string name="you_zepp_found">Found your Helio Strap</string>
     <string name="you_zepp_not_found">No Helio Strap on this account</string>
-    <string name="you_zepp_account_empty">This account has no devices. Link the strap in the Zepp app first. If you did, it\'s on another account: sign in with the email added to the account you use in the Zepp app.</string>
+    <string name="you_zepp_account_empty">This account has no devices. Link the strap in the Zepp app first. If it\'s already linked, sign in with the email of the account the Zepp app uses.</string>
     <plurals name="you_zepp_account_other_devices">
-        <item quantity="one">This account has <xliff:g id="count" example="2">%1$d</xliff:g> device, but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
+        <item quantity="one">This account has <xliff:g id="count" example="2">%1$d</xliff:g> device, but it isn\'t an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
         <item quantity="other">This account has <xliff:g id="count" example="2">%1$d</xliff:g> devices, but none is an Amazfit Helio Strap. Link the strap in the Zepp app, then sign in again.</item>
     </plurals>
     <string name="you_zepp_key_missing">Not on the account</string>
@@ -165,11 +165,11 @@
     <string name="you_zepp_region">Region</string>
     <string name="you_zepp_region_china">China</string>
     <string name="you_zepp_region_global">Global</string>
-    <string name="you_zepp_no_key">Zepp didn\'t return an auth key for this strap. Open the Zepp app and check the strap is still linked (unlink and link it again if needed), then sign in here again.</string>
+    <string name="you_zepp_no_key">Zepp didn\'t return an auth key for this strap. Check in the Zepp app that the strap is still linked, then sign in here again.</string>
     <string name="you_zepp_user">Zepp user</string>
     <string name="you_zepp_keep_on_charger">Keep the strap on its charger near the phone. Don\'t unlink it in the Zepp app: that wipes this key from the strap.</string>
     <string name="you_zepp_token_stays">The app token and user ID stay on this phone only, for firmware checks.</string>
-    <string name="you_zepp_keep_sign_in">Keep sign-in only</string>
+    <string name="you_zepp_keep_sign_in">Save sign-in only</string>
     <string name="you_zepp_other_account">Use another account</string>
     <!-- A two line button that opens a guide in the browser: the question, then what it does. -->
     <string name="you_zepp_guide">Can\'t sign in with email?</string>

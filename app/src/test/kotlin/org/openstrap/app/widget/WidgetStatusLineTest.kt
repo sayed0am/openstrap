@@ -54,7 +54,7 @@ class WidgetStatusLineTest {
     @Test fun `each state's wordings, longest first, the line's own copy first`() {
         assertEquals(listOf("Pair your strap", "Pair strap"), line(StrapStatus.NotPaired).options)
         assertEquals(listOf("Strap at 12%", "12%"), line(StrapStatus.LowBattery(12)).options)
-        assertEquals(listOf("Syncing"), line(StrapStatus.Syncing).options)
+        assertEquals(listOf("Syncing…"), line(StrapStatus.Syncing).options)
         assertEquals(listOf("Synced 08:59", "08:59"), line(StrapStatus.StaleSync(now - 3 * 3600 - 60)).options)
         assertEquals(listOf("Synced yesterday", "Yesterday"), line(StrapStatus.StaleSync(now - 86_400)).options)
         assertEquals(listOf("Synced Wednesday", "Synced Wed", "Wednesday", "Wed"), line(StrapStatus.StaleSync(now - 3 * 86_400)).options)

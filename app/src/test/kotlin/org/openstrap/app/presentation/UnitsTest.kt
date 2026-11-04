@@ -148,10 +148,10 @@ class UnitsTest(private val locale: Locale) {
 
     @Test
     fun paceReadsPerKm() {
-        assertEquals(n("5:24") + " /km", Pace.text(324.0).kept())
-        assertEquals(n("5:24") + " /km", Pace.text(324.4))
+        assertEquals(n("5:24") + "/km", Pace.text(324.0).kept())
+        assertEquals(n("5:24") + "/km", Pace.text(324.4))
         assertEquals(n("5:25"), Pace.clock(324.5))
-        assertEquals(n("60:00") + " /km", Pace.text(3600.0))
+        assertEquals(n("60:00") + "/km", Pace.text(3600.0))
     }
 
     @Test

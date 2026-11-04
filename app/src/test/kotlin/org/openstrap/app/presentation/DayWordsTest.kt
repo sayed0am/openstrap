@@ -103,20 +103,20 @@ class DayWordsTest(private val locale: Locale) {
         // 00:30 on the 29th in Berlin, an hour before the change: today.
         assertEquals(n("00:30"), DayWords.at(epoch("2026-03-28T23:30:00Z"), now, BERLIN, use24Hour = true).kept())
         // 23:59 on the 28th.
-        assertEquals(n("yesterday 23:59"), DayWords.at(epoch("2026-03-28T22:59:00Z"), now, BERLIN, use24Hour = true).kept())
-        assertEquals(n("yesterday 11:59 ") + amPm(LocalTime.of(23, 59)), DayWords.at(epoch("2026-03-28T22:59:00Z"), now, BERLIN, use24Hour = false).kept())
+        assertEquals(n("yesterday at 23:59"), DayWords.at(epoch("2026-03-28T22:59:00Z"), now, BERLIN, use24Hour = true).kept())
+        assertEquals(n("yesterday at 11:59 ") + amPm(LocalTime.of(23, 59)), DayWords.at(epoch("2026-03-28T22:59:00Z"), now, BERLIN, use24Hour = false).kept())
         assertEquals(
-            weekday(LocalDate.of(2026, 3, 26)) + n(" 10:42"),
+            weekday(LocalDate.of(2026, 3, 26)) + " at " + n("10:42"),
             DayWords.at(epoch("2026-03-26T09:42:00Z"), now, BERLIN, use24Hour = true).kept(),
         )
-        assertEquals(dated(LocalDate.of(2026, 3, 2)) + n(" 10:42"), DayWords.at(epoch("2026-03-02T09:42:00Z"), now, BERLIN, use24Hour = true).kept())
+        assertEquals(dated(LocalDate.of(2026, 3, 2)) + " at " + n("10:42"), DayWords.at(epoch("2026-03-02T09:42:00Z"), now, BERLIN, use24Hour = true).kept())
     }
 
     @Test
     fun withATimeOnTheDayTheClocksGoBack() {
         val now = epoch("2026-10-25T23:30:00Z") // 00:30 on the 26th in Berlin, after a 25 hour day
-        assertEquals(n("yesterday 00:30"), DayWords.at(epoch("2026-10-24T22:30:00Z"), now, BERLIN, use24Hour = true).kept())
-        assertEquals(n("yesterday 02:30"), DayWords.at(epoch("2026-10-25T01:30:00Z"), now, BERLIN, use24Hour = true))
+        assertEquals(n("yesterday at 00:30"), DayWords.at(epoch("2026-10-24T22:30:00Z"), now, BERLIN, use24Hour = true).kept())
+        assertEquals(n("yesterday at 02:30"), DayWords.at(epoch("2026-10-25T01:30:00Z"), now, BERLIN, use24Hour = true))
         assertEquals(n("00:10"), DayWords.at(epoch("2026-10-25T23:10:00Z"), now, BERLIN, use24Hour = true))
         assertEquals(n("12:10 ") + amPm(LocalTime.of(0, 10)), DayWords.at(epoch("2026-10-25T23:10:00Z"), now, BERLIN, use24Hour = false).kept())
     }
@@ -126,7 +126,7 @@ class DayWordsTest(private val locale: Locale) {
         // 23:30 UTC on the 28th is already the 29th in Berlin, and the 29th in Kathmandu too, but not in New York.
         val now = epoch("2026-03-29T12:00:00Z")
         val t = epoch("2026-03-28T23:30:00Z")
-        assertEquals(n("yesterday 19:30"), DayWords.at(t, now, ZoneId.of("America/New_York"), use24Hour = true))
+        assertEquals(n("yesterday at 19:30"), DayWords.at(t, now, ZoneId.of("America/New_York"), use24Hour = true))
     }
 
     @Test

@@ -31,13 +31,13 @@
     <!-- How far a new best beat the old one: minutes longer. -->
     <string name="core_rewards_beat_longer"><xliff:g id="minutes" example="4">%1$d</xliff:g> min longer</string>
     <!-- How far a new best beat the old one: more steps. The number has the phone's thousands mark. -->
-    <string name="core_rewards_beat_more"><xliff:g id="steps" example="1,240">%1$s</xliff:g> more</string>
+    <string name="core_rewards_beat_more"><xliff:g id="steps" example="1,240">%1$s</xliff:g> more steps</string>
     <!-- The best card's sentence: how far it beat the old best, and the month of the old best ("August", or "August 2025" in another year). -->
     <string name="core_rewards_beat_line_faster"><xliff:g id="time" example="22 s">%1$s</xliff:g> faster than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
     <string name="core_rewards_beat_line_kg_more"><xliff:g id="kg" example="2.5">%1$s</xliff:g> kg more than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
     <string name="core_rewards_beat_line_farther"><xliff:g id="distance" example="1.23 km">%1$s</xliff:g> farther than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
     <string name="core_rewards_beat_line_longer"><xliff:g id="minutes" example="4">%1$d</xliff:g> min longer than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
-    <string name="core_rewards_beat_line_more"><xliff:g id="steps" example="1,240">%1$s</xliff:g> more than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
+    <string name="core_rewards_beat_line_more"><xliff:g id="steps" example="1,240">%1$s</xliff:g> more steps than your best from <xliff:g id="month" example="August">%2$s</xliff:g>.</string>
 
     <!-- The weekly goal row under Earned, its note: the goal met this many weeks in a row. Used from 2 weeks up. -->
     <plurals name="core_rewards_goal_weeks_in_a_row">
@@ -65,7 +65,7 @@
         <item quantity="other"><xliff:g id="weeks" example="6">%1$d</xliff:g> weeks in a row. Rest days never count against you.</item>
     </plurals>
     <!-- The goal moment's line the first week the goal is met. -->
-    <string name="core_rewards_moment_first">Your first week in a row. Rest days never count against you.</string>
+    <string name="core_rewards_moment_first">Your first week with the goal met. Rest days never count against you.</string>
 
     <!-- A best's details: the full date, then the time of day and the sport in lower case, like "Thursday, 30 October 2026, morning run". -->
     <string name="core_rewards_when_morning"><xliff:g id="date" example="Thursday, 30 October 2026">%1$s</xliff:g>, morning <xliff:g id="sport" example="run">%2$s</xliff:g></string>
@@ -79,7 +79,7 @@
         <item quantity="other"><xliff:g id="weeks" example="6">%1$d</xliff:g> weeks</item>
     </plurals>
     <!-- Goals and bests page: the current run of weeks with the goal met, then the best run. The weeks are like "6 weeks". -->
-    <string name="core_rewards_run_best_is">Goal met <xliff:g id="weeks" example="6 weeks">%1$s</xliff:g> in a row. Best is <xliff:g id="best" example="9">%2$d</xliff:g>.</string>
+    <string name="core_rewards_run_best_is">Goal met <xliff:g id="weeks" example="6 weeks">%1$s</xliff:g> in a row. Your best is <xliff:g id="best" example="9">%2$d</xliff:g>.</string>
     <!-- Goals and bests page: the current run, when it is the best run yet. -->
     <plurals name="core_rewards_run_best_yet">
         <item quantity="one">Goal met <xliff:g id="weeks" example="1">%1$d</xliff:g> week in a row, your best yet.</item>

@@ -98,7 +98,7 @@ class RewardsCopyTest {
 
     @Test
     fun runsOfWeeksAndProgressRead() {
-        assertEquals("Goal met 6 weeks in a row. Best is 9.", RewardsCopy.runLine(6, 9))
+        assertEquals("Goal met 6 weeks in a row. Your best is 9.", RewardsCopy.runLine(6, 9))
         assertEquals("Goal met 1 week in a row, your best yet.", RewardsCopy.runLine(1, 1))
         assertEquals("712 of 1,000 km", RewardsCopy.progressLine(712, 1000, "km", Locale.UK))
         assertEquals("4.2 of 5 km", RewardsCopy.progressLine(4200, 5000, "m", Locale.UK))

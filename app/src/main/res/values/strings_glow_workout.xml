@@ -21,7 +21,7 @@
     <!-- Title of the offer to save a stretch of high heart rate nobody started as a workout. One line. -->
     <string name="glow_workout_suggestion_title">Looks like you worked out</string>
     <!-- The offer's text. The day is "Today" or "Yesterday" or a weekday, the times "18:02 to 18:44". -->
-    <string name="glow_workout_suggestion_text"><xliff:g id="day" example="Today">%1$s</xliff:g> <xliff:g id="times" example="18:02 to 18:44">%2$s</xliff:g>, mostly zone <xliff:g id="zone" example="3">%3$d</xliff:g>, <xliff:g id="bpm" example="141">%4$d</xliff:g> bpm on average. Nobody pressed Start.</string>
+    <string name="glow_workout_suggestion_text"><xliff:g id="day" example="Today">%1$s</xliff:g>, <xliff:g id="times" example="18:02 to 18:44">%2$s</xliff:g>, mostly zone <xliff:g id="zone" example="3">%3$d</xliff:g>, <xliff:g id="bpm" example="141">%4$d</xliff:g> bpm on average. It wasn\'t recorded.</string>
     <!-- Button that saves the stretch as a workout. Half the width. -->
     <string name="glow_workout_suggestion_save">Save as workout</string>
     <!-- Button that dismisses the offer. Half the width. -->
@@ -29,7 +29,7 @@
     <!-- Title of the offer to record an effort still under way that nobody started. One line. -->
     <string name="glow_workout_offer_title">Looks like a workout</string>
     <!-- The offer's text. The time is "18:02", the same both times, and the sport is in lower case, as "run". -->
-    <string name="glow_workout_offer_text">Your heart rate has been up since <xliff:g id="time" example="18:02">%1$s</xliff:g>, <xliff:g id="bpm" example="141">%2$d</xliff:g> bpm on average. Record a <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time_again" example="18:02">%1$s</xliff:g>?</string>
+    <string name="glow_workout_offer_text">Your heart rate has been up since <xliff:g id="time" example="18:02">%1$s</xliff:g>, <xliff:g id="bpm" example="141">%2$d</xliff:g> bpm on average. Record it as <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time_again" example="18:02">%1$s</xliff:g>?</string>
     <!-- Button that starts recording from when the effort began. Half the width. -->
     <string name="glow_workout_offer_record">Record</string>
     <!-- Button that declines the offer. Half the width. -->
@@ -60,17 +60,17 @@
     <!-- Small button beside a note on what was done to a workout's times, which puts them back. One word. -->
     <string name="glow_workout_undo">Undo</string>
     <!-- Note after a workout's start was moved. The time is "18:05". -->
-    <string name="glow_workout_trim_start">Trimmed to start at <xliff:g id="time" example="18:05">%1$s</xliff:g>. The rest is kept.</string>
+    <string name="glow_workout_trim_start">Trimmed to start at <xliff:g id="time" example="18:05">%1$s</xliff:g>. Nothing is deleted.</string>
     <!-- How much was left out at a workout's end, under a minute. Goes into the notes below. -->
     <string name="glow_workout_trim_seconds"><xliff:g id="seconds" example="40">%1$d</xliff:g> s</string>
     <!-- How much was left out at a workout's end, in minutes. Goes into the notes below. -->
     <string name="glow_workout_trim_minutes"><xliff:g id="minutes" example="6">%1$d</xliff:g> min</string>
     <!-- Note after the app ended a workout when you got in a car. The time is "18:44", the length "6 min" or "40 s". -->
-    <string name="glow_workout_trim_car">Ended at <xliff:g id="time" example="18:44">%1$s</xliff:g>. <xliff:g id="length" example="6 min">%2$s</xliff:g> of driving were left out.</string>
+    <string name="glow_workout_trim_car">Ended at <xliff:g id="time" example="18:44">%1$s</xliff:g>. <xliff:g id="length" example="6 min">%2$s</xliff:g> of driving was left out.</string>
     <!-- Note after the app ended a workout when you had stopped moving. The time is "18:44", the length "6 min" or "40 s". -->
     <string name="glow_workout_trim_auto">Ended at <xliff:g id="time" example="18:44">%1$s</xliff:g>, when you\'d stopped. <xliff:g id="length" example="6 min">%2$s</xliff:g> after that were left out.</string>
     <!-- Note after a workout's start and end were moved. The times are "18:05 to 18:40". -->
-    <string name="glow_workout_trim_range">Trimmed, now from <xliff:g id="times" example="18:05 to 18:40">%1$s</xliff:g>. The rest is kept.</string>
+    <string name="glow_workout_trim_range">Trimmed, now from <xliff:g id="times" example="18:05 to 18:40">%1$s</xliff:g>. Nothing is deleted.</string>
 
     <!-- Beside the heart rate card's title: the line is in each zone's colour. Short. -->
     <string name="glow_workout_heart_by_zone">Coloured by zone</string>
@@ -81,11 +81,11 @@
     <!-- Unit beside the workout's average heart rate. Short. -->
     <string name="glow_workout_unit_bpm_average">bpm average</string>
     <!-- Under the average heart rate: the highest and the lowest. -->
-    <string name="glow_workout_heart_max_lowest">Max <xliff:g id="max" example="172">%1$d</xliff:g>, lowest <xliff:g id="min" example="98">%2$d</xliff:g> bpm</string>
+    <string name="glow_workout_heart_max_lowest">Highest <xliff:g id="max" example="172">%1$d</xliff:g>, lowest <xliff:g id="min" example="98">%2$d</xliff:g> bpm</string>
     <!-- Under the average heart rate: the highest, when the lowest isn't known. -->
-    <string name="glow_workout_heart_max">Max <xliff:g id="max" example="172">%1$d</xliff:g> bpm</string>
-    <!-- Under the average heart rate: the lowest, when the highest isn't known. Starts in lower case as it was written. -->
-    <string name="glow_workout_heart_lowest">lowest <xliff:g id="min" example="98">%1$d</xliff:g> bpm</string>
+    <string name="glow_workout_heart_max">Highest <xliff:g id="max" example="172">%1$d</xliff:g> bpm</string>
+    <!-- Under the average heart rate: the lowest, when the highest isn't known. -->
+    <string name="glow_workout_heart_lowest">Lowest <xliff:g id="min" example="98">%1$d</xliff:g> bpm</string>
     <!-- On the heart rate card before the strap has sent it. -->
     <string name="glow_workout_heart_none">The strap hasn\'t sent this workout\'s heart rate yet.</string>
     <!-- Under the line's right end, when it runs on past the workout's end. The time is "18:44". -->

@@ -26,7 +26,7 @@
     <!-- The card with the strap's health alerts. -->
     <string name="day_card_alerts">From your strap</string>
     <!-- The morning check-in, asking how the user feels. -->
-    <string name="day_card_check_in">How do you feel</string>
+    <string name="day_card_check_in">How do you feel?</string>
     <string name="day_card_body_morning">Your body this morning</string>
     <string name="day_card_right_now">Right now</string>
     <string name="day_card_last_night">Last night</string>
@@ -48,8 +48,8 @@
     <string name="day_pair_connecting">Connecting to your strap. Keep it close.</string>
     <string name="day_pair_connected">Connected. The first sync starts now.</string>
     <string name="day_pair_failed">Couldn\'t connect yet. Keep the strap on its charger, near the phone.</string>
-    <!-- The strap refused the pairing key. Open your strap means the Strap page. -->
-    <string name="day_pair_key_rejected">The strap turned the key down. Open your strap to pair again.</string>
+    <!-- The strap refused the pairing. The Strap page is where pairing starts. -->
+    <string name="day_pair_key_rejected">The strap refused to pair. Open the Strap page to pair again.</string>
 
     <!-- The tag on the Recovery score the day the first score shows. A chip, two words. -->
     <string name="day_first_score">First score</string>
@@ -67,7 +67,7 @@
     <!-- The partial day sheet's folded row title. -->
     <string name="day_partial_when_title">When a day counts as partial</string>
     <!-- The time a full day needs worn ("20 h"). -->
-    <string name="day_partial_when">When the strap was worn for under <xliff:g id="full_day" example="20 h">%1$s</xliff:g> of the day, or under that share of the day so far.</string>
+    <string name="day_partial_when">When the strap was worn for under <xliff:g id="full_day" example="20 h">%1$s</xliff:g> of the day. Today, under that share of the hours so far.</string>
 
     <!-- The marker beside a card's title when its data stops at a time because syncing stopped: that clock time. A chip. -->
     <string name="day_up_to">Up to <xliff:g id="time" example="09:40">%1$s</xliff:g></string>
@@ -75,19 +75,19 @@
     <string name="day_stuck_last_night_title">Last night</string>
     <string name="day_stuck_last_night">Last night is still on the strap.</string>
     <!-- Under the sync trouble hero's sentence. -->
-    <string name="day_stuck_keep_near">Keep it near your phone and it comes across.</string>
+    <string name="day_stuck_keep_near">Keep it near your phone and it will sync.</string>
     <!-- Today's hero while syncing has failed for hours: its title. -->
     <string name="day_stuck_not_synced_title">Not synced</string>
     <!-- Its sentence: the time the data on the phone reaches. -->
     <string name="day_stuck_data_since">Your data since <xliff:g id="time" example="09:40">%1$s</xliff:g> is still on the strap.</string>
     <!-- On the sync trouble hero: the last time a sync was tried, a clock time. -->
     <string name="day_last_tried">Last tried <xliff:g id="time" example="07:42">%1$s</xliff:g></string>
-    <!-- On the Recovery card when the score couldn't be worked out, with Try again. -->
-    <string name="day_recovery_failed">Couldn\'t work out today\'s score.</string>
-    <!-- On the Energy card when it couldn't be worked out, with Try again. -->
-    <string name="day_charge_failed">Couldn\'t work out today\'s Energy.</string>
+    <!-- On the Recovery card when the score couldn't be calculated, with Try again. -->
+    <string name="day_recovery_failed">Couldn\'t calculate today\'s score.</string>
+    <!-- On the Energy card when it couldn't be calculated, with Try again. -->
+    <string name="day_charge_failed">Couldn\'t calculate today\'s Energy.</string>
     <!-- The same on a small card, a few words. -->
-    <string name="day_failed_short">Couldn\'t work it out</string>
+    <string name="day_failed_short">Couldn\'t calculate it</string>
     <!-- A button. -->
     <string name="day_try_again">Try again</string>
     <!-- On a card waiting for last night to sync, in place of its value. -->

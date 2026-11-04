@@ -10,7 +10,7 @@
     <string name="glow_recovery_about">About Recovery</string>
     <!-- The Recovery sentence when there's no score yet and no other reason to give. -->
     <string name="glow_recovery_scored_each_morning">Recovery is scored each morning from the night\'s sleep.</string>
-    <!-- Under yesterday's score, dimmed, when today's couldn't be worked out. One word. -->
+    <!-- Under yesterday's score, dimmed, when today's couldn't be calculated. One word. -->
     <string name="glow_recovery_yesterday">Yesterday</string>
     <!-- Title of the list of what raised or lowered Recovery. -->
     <string name="glow_recovery_what_drove">What drove it</string>
@@ -48,7 +48,7 @@
     <string name="glow_recovery_stress">Stress</string>
     <!-- Title of the body signals list. -->
     <string name="glow_recovery_body_signals">Body signals</string>
-    <!-- The note on the body signals' title row: each is compared with your usual. -->
+    <!-- The note on the body signals' title row: each is compared with your normal. -->
     <string name="glow_recovery_against_normal">Against your normal</string>
 
     <!-- Under the Recovery score in the week view. -->
@@ -62,9 +62,9 @@
     <!-- Under an earlier day's Recovery score, lower case: when it was scored. -->
     <string name="glow_recovery_that_morning">that morning</string>
     <!-- Under the strap's own score, shown while OpenStrap's is held back. -->
-    <string name="glow_recovery_strap_estimate">Strap\'s estimate</string>
+    <string name="glow_recovery_strap_estimate">The strap\'s estimate</string>
     <!-- The Recovery detail's week view when no day has a score. -->
-    <string name="glow_recovery_none_week">No Recovery in the last 7 days yet.</string>
+    <string name="glow_recovery_none_week">No Recovery scores in the last 7 days yet.</string>
     <!-- Stands large in Energy's place before the first night. -->
     <string name="glow_recovery_waiting">Waiting</string>
     <!-- Under Waiting: when Energy starts. -->

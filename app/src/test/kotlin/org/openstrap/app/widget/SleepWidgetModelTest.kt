@@ -114,16 +114,16 @@ class SleepWidgetModelTest {
 
     @Test fun `with no night at all after the first, the Sleep tab's no-night line`() {
         assertEquals("No sleep recorded last night. Was the strap on?", SleepWidgetModel.from(null, null, false, false, zone).waiting)
-        assertEquals("No night sleep recorded, only naps.", SleepWidgetModel.from(null, null, false, true, zone).waiting)
+        assertEquals("No night's sleep recorded, only naps.", SleepWidgetModel.from(null, null, false, true, zone).waiting)
     }
 
-    @Test fun `before this morning's night is synced, yesterday's with Last synced night`() {
+    @Test fun `before this morning's night is synced, yesterday's with Earlier night`() {
         val y = today.minusDays(1)
         val ys = SleepSession(at(y.minusDays(1), 23, 10), at(y, 6, 40), score = 74, wakeCount = 1)
         val m = SleepWidgetModel.from(null, night(ys, stages(ys), y), firstNight = false, napsToday = false, zone = zone)
         assertTrue(m.stale)
         assertEquals("Sleep", m.title)
-        assertEquals("Last synced night", m.note)
+        assertEquals("Earlier night", m.note)
         assertEquals(y, m.date)
         assertEquals("74", m.score)
         assertEquals("Fair", m.word)
@@ -210,13 +210,14 @@ class SleepWidgetModelTest {
                 f.lines.forEach { assertTrue(WidgetText.width(it.text, WidgetText.SECONDARY_SP, s) <= small.first * it.lines) }
             }
         }
-        // Yesterday's: "Last synced night" stays (on two lines at the minimum's width), time asleep and then the bar go.
+        // Yesterday's: "Earlier night" stays on one line with the bar at the minimum's width, time asleep goes.
         val stale = SleepLayout.small(SleepWidgetModel.from(null, night(), false, false, zone), small.first, small.second, 1f)
-        assertEquals(listOf(SleepLayout.SmallLine("Last synced night", 2)), stale.lines)
+        assertEquals(listOf(SleepLayout.SmallLine("Earlier night")), stale.lines)
+        assertTrue(stale.bar)
         // On One UI's real 2 x 2 (167 by 201 dp), one line, then time asleep and the bar.
         val real = SleepLayout.small(SleepWidgetModel.from(null, night(), false, false, zone), 167.6f - 40f, 201.1f - 40f, 1f)
         assertTrue(real.bar)
-        assertEquals(listOf(SleepLayout.SmallLine("Last synced night"), SleepLayout.SmallLine("7 h 40 asleep")), real.lines)
+        assertEquals(listOf(SleepLayout.SmallLine("Earlier night"), SleepLayout.SmallLine("7 h 40 asleep")), real.lines)
         // A score of 100 shrinks the dots to keep the word, and at 1.3 drops the word before the dots get too small.
         val hundred = SleepLayout.small(m.copy(score = "100", word = "Great"), small.first, small.second, 1f)
         assertEquals("Great", hundred.row.word)

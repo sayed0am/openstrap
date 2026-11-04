@@ -7,14 +7,14 @@
     <!-- The You page's Updates row, under its title, when a newer version can be installed. One line. -->
     <string name="update_summary_ready">OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g> is ready to install</string>
     <!-- The You page's Updates row while it asks GitHub for new versions. -->
-    <string name="update_summary_checking">Checking</string>
+    <string name="update_summary_checking">Checking…</string>
     <!-- The You page's Updates row before it has ever checked: the version running. -->
     <string name="update_summary_version">Version <xliff:g id="version" example="2.1.0">%1$s</xliff:g></string>
     <!-- The You page's Updates row when no newer version is out. The time is "today at 19:00", "yesterday at 23:50" or a date. -->
     <string name="update_summary_up_to_date">Up to date. Checked <xliff:g id="when" example="today at 19:00">%1$s</xliff:g></string>
 
     <!-- The Updates page's Check now row, under its title, while it asks GitHub. -->
-    <string name="update_check_checking">Checking GitHub</string>
+    <string name="update_check_checking">Checking GitHub…</string>
     <!-- The Check now row when the last check failed. The time is "today at 19:00", "yesterday at 23:50" or a date. -->
     <string name="update_check_failed_last">Couldn\'t reach GitHub. Last checked <xliff:g id="when" example="today at 19:00">%1$s</xliff:g></string>
     <!-- The Check now row when the only check failed. -->
@@ -31,7 +31,7 @@
     <!-- The install row once Android has the new version. OpenStrap closes itself to update. -->
     <string name="update_install_installing">Installing. OpenStrap closes when it\'s done</string>
     <!-- The install row when the release on GitHub has no app file (APK) to install. -->
-    <string name="update_install_no_apk">No APK in this release. Open it on GitHub</string>
+    <string name="update_install_no_apk">No app file in this release. Open it on GitHub</string>
     <!-- The install row while a workout records, and why an install waited for one: installing closes the app. -->
     <string name="update_install_after_workout">After your workout. Installing closes the app</string>
     <!-- The install row, a tap to start: the download's size. -->
@@ -42,9 +42,9 @@
     <!-- Why an install stopped, in the install row: the connection dropped. -->
     <string name="update_failure_network">The download stopped. Tap to try again</string>
     <!-- Why an install stopped: the file wasn't the one GitHub published. -->
-    <string name="update_failure_checksum">The download didn\'t match GitHub\'s checksum. Tap to try again</string>
+    <string name="update_failure_checksum">The download didn\'t match the file on GitHub. Tap to try again</string>
     <!-- Why an install stopped: GitHub had no checksum to check the file against. -->
-    <string name="update_failure_no_checksum">GitHub gave no checksum for it, so it wasn\'t installed</string>
+    <string name="update_failure_no_checksum">GitHub had no way to check the download, so it wasn\'t installed</string>
     <!-- Why an install stopped: the file is another app. -->
     <string name="update_failure_not_openstrap">The download isn\'t OpenStrap, so it wasn\'t installed</string>
     <!-- Why an install stopped: this copy came from somewhere else (a store, a build of its own) and Android won't replace it. -->

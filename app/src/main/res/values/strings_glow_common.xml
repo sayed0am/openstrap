@@ -24,7 +24,7 @@
     <!-- Stands large in a figure's place when the strap gave no value for it. -->
     <string name="glow_no_reading">No reading</string>
     <!-- Stands in a figure's place while it is read from the database. -->
-    <string name="glow_loading">Loading</string>
+    <string name="glow_loading">Loading…</string>
 
     <!-- Unit beside a heart rate, beats per minute. Very short. -->
     <string name="glow_unit_bpm">bpm</string>
@@ -41,7 +41,7 @@
     <string name="glow_no_reading_yet">No reading yet</string>
     <!-- On Heart points and the like, which come with the strap's daily records. -->
     <string name="glow_after_next_sync">After the strap\'s next sync</string>
-    <!-- A row that opens the profile: Calories needs these before it can be worked out. -->
+    <!-- A row that opens the profile: Calories needs these before it can be calculated. -->
     <string name="glow_add_profile">Add age, weight and height</string>
     <!-- Spoken for the short dim bar that stands in for a value not in yet, for screen readers. -->
     <string name="glow_no_value_yet">No value yet</string>
@@ -55,16 +55,16 @@
     <!-- What a tap on a card's small outlined tag does, for screen readers. The tag is in lower case, "partial day". -->
     <string name="glow_tag_about">About <xliff:g id="tag" example="partial day">%1$s</xliff:g></string>
 
-    <!-- The info sheet's folded rows, which open onto how a number is worked out. One line each. -->
-    <string name="glow_info_how">How it\'s worked out</string>
+    <!-- The info sheet's folded rows, which open onto how a number is calculated. One line each. -->
+    <string name="glow_info_how">How it\'s calculated</string>
     <!-- The info sheet's folded row about what raises and lowers a number. -->
     <string name="glow_info_moves">What moves it</string>
     <!-- The info sheet's folded row about why a number might be wrong. -->
     <string name="glow_info_off">Why it might be off</string>
     <!-- What a tap on an open folded row does, for screen readers. -->
-    <string name="glow_info_fold">Fold</string>
+    <string name="glow_info_fold">Collapse</string>
     <!-- What a tap on a folded row does, for screen readers. -->
-    <string name="glow_info_open">Open</string>
+    <string name="glow_info_open">Expand</string>
 
     <!-- The tabletop page (the phone half folded): its card's title. -->
     <string name="glow_tabletop_heart_rate">Heart rate</string>

@@ -57,10 +57,10 @@
     <string name="glow_metrics_updated_weekly">Updated weekly</string>
     <!-- Under Habit Age while it learns: the number is your age, where it starts. -->
     <string name="glow_metrics_starting_point">Starting point</string>
-    <!-- Under Habit Age when the profile misses your age. -->
-    <string name="glow_metrics_needs_profile">Needs your profile</string>
+    <!-- Under Habit Age when the profile misses your birth year or sex. -->
+    <string name="glow_metrics_needs_profile">Needs birth year and sex</string>
     <!-- Under Habit Age before there's a workout to work from. -->
-    <string name="glow_metrics_not_worked_out">Not worked out yet</string>
+    <string name="glow_metrics_not_worked_out">No estimate yet</string>
 
     <!-- A metric's detail -->
 

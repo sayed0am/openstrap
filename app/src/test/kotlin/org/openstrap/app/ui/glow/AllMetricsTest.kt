@@ -98,7 +98,7 @@ class AllMetricsTest {
             null, org.openstrap.app.data.Healthspan.Withheld.Learning, age = 30,
         )
         assertEquals("30" to "Starting point", habitAgeRow(learning))
-        assertEquals(null to "Not worked out yet", habitAgeRow(null))
+        assertEquals(null to "No estimate yet", habitAgeRow(null))
         val row = metricIndex(empty, null, learning, emptyList()).flatMap { it.rows }.first { it.name == "Habit Age" }
         assertEquals("30", row.value)
         assertEquals("Starting point", row.status)

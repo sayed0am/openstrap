@@ -39,7 +39,7 @@
     <string name="system_alert_low_heart_rate_text">Your heart rate dropped to <xliff:g id="bpm" example="38">%1$d</xliff:g> bpm.</string>
     <string name="system_alert_high_stress_title">High stress</string>
     <!-- Stress is a score from 1 to 100. -->
-    <string name="system_alert_high_stress_text">Your stress is at <xliff:g id="stress" example="82">%1$d</xliff:g>. Take a moment to breathe.</string>
+    <string name="system_alert_high_stress_text">Your stress is at <xliff:g id="stress" example="82">%1$d</xliff:g>.</string>
     <string name="system_alert_low_spo2_title">Low blood oxygen</string>
     <string name="system_alert_low_spo2_text">Your blood oxygen was <xliff:g id="percent" example="88">%1$d</xliff:g>%%.</string>
     <string name="system_alert_irregular_rhythm_title">Irregular heart rhythm</string>
@@ -53,19 +53,19 @@
 
     <!-- The strap's ongoing notification. Its title before there's anything of your day to show: the strap's name. -->
     <string name="system_strap_title" translatable="false">Helio Strap</string>
-    <!-- Its title: today's Recovery and Energy scores, from 0 to 100. Energy is the app's Charge. -->
+    <!-- Its title: today's Recovery and Energy scores, from 0 to 100. Energy is the body's energy score, 0 to 100, not the strap battery. -->
     <string name="system_strap_title_both">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g>, Energy <xliff:g id="energy" example="58">%2$d</xliff:g></string>
     <string name="system_strap_title_recovery">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g></string>
     <string name="system_strap_title_energy">Energy <xliff:g id="energy" example="58">%1$d</xliff:g></string>
     <!-- Its text while the app connects to the strap. -->
     <string name="system_strap_connecting">Connecting…</string>
     <!-- Its text while the strap checks the app's key. -->
-    <string name="system_strap_authenticating">Authenticating…</string>
+    <string name="system_strap_authenticating">Checking the key…</string>
     <!-- Its text when connecting failed. A Retry button is beside it. -->
     <string name="system_strap_failed">Couldn\'t reach the strap</string>
     <string name="system_strap_not_connected">Strap not connected</string>
     <!-- Its text during a sync. The step is "Preparing…" or "Syncing heart rate (3/12)". -->
-    <string name="system_strap_syncing">Syncing, <xliff:g id="step" example="Syncing heart rate (3/12)">%1$s</xliff:g></string>
+    <string name="system_strap_syncing"><xliff:g id="step" example="Syncing heart rate (3/12)">%1$s</xliff:g></string>
     <!-- Its text when the strap's battery is low and it isn't charging. -->
     <string name="system_strap_low_battery">Strap battery <xliff:g id="percent" example="12">%1$d</xliff:g>%%. Charge it tonight.</string>
     <string name="system_strap_connected">Strap connected</string>
@@ -142,7 +142,7 @@
     <string name="system_offer_action_decline">Not now</string>
 
     <!-- When the strap is taken off. -->
-    <string name="system_wear_title">Strap is off your body</string>
+    <string name="system_wear_title">Strap is off</string>
     <string name="system_wear_text">Heart rate and sleep tracking are paused until you put it back on.</string>
 
     <!-- Last week's recap. The range is "20 to 26 Oct". -->

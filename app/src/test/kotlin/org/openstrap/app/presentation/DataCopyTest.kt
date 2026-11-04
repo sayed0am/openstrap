@@ -77,7 +77,7 @@ class DataCopyTest {
 
     @Test fun `the VO2max words, with the bands as ranges in words`() {
         assertEquals("Needs an age between 20 and 79.", Vo2maxCopy.reason(Vo2max.Withheld.Age))
-        assertEquals("Top 10 %", Vo2maxCopy.band(Vo2max.Friend.Band.Top10))
+        assertEquals("Top 10%", Vo2maxCopy.band(Vo2max.Friend.Band.Top10))
         // The ranges say "to" now: copy uses no en dash between words.
         assertEquals("30th to 50th percentile", Vo2maxCopy.band(Vo2max.Friend.Band.P30to50))
         assertCleanCopy(Vo2max.Withheld.entries.map(Vo2maxCopy::reason) + Vo2max.Friend.Band.entries.map(Vo2maxCopy::band))
@@ -101,12 +101,12 @@ class DataCopyTest {
         assertEquals(
             listOf(
                 "52 ms, −8% vs usual", "54 bpm, +2 vs usual", "7 h 40 asleep", "No sleep debt", "1 h 15 of sleep debt",
-                "Lowest heart rate 1 h 35 before waking", "±0,0 °C vs usual", "+0,4 /min vs usual", "96,3 %, −1,2 vs usual",
+                "Lowest heart rate 1 h 35 before waking", "±0,0 °C vs usual", "+0,4/min vs usual", "96,3%, −1,2 vs usual",
                 "Load 140, usual 95",
             ),
             all.map { RecoveryCopy.detail(it) },
         )
-        assertEquals("96.3 %, −1.2 vs usual", RecoveryCopy.detail(Recovery.Detail.BloodOxygen(96.25f, -1.2f), Locale.US))
+        assertEquals("96.3%, −1.2 vs usual", RecoveryCopy.detail(Recovery.Detail.BloodOxygen(96.25f, -1.2f), Locale.US))
         assertCleanCopy(all.map { RecoveryCopy.detail(it) } + all.map { RecoveryCopy.detail(it, Locale.US) })
     }
 }

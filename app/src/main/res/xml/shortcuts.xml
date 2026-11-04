@@ -5,7 +5,8 @@
         android:shortcutId="start_run"
         android:enabled="true"
         android:icon="@drawable/ic_shortcut_run"
-        android:shortcutShortLabel="@string/shortcut_run">
+        android:shortcutShortLabel="@string/shortcut_run"
+        android:shortcutLongLabel="@string/shortcut_run_long">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="org.openstrap.app"
@@ -17,7 +18,8 @@
         android:shortcutId="start_strength"
         android:enabled="true"
         android:icon="@drawable/ic_shortcut_strength"
-        android:shortcutShortLabel="@string/shortcut_strength">
+        android:shortcutShortLabel="@string/shortcut_strength"
+        android:shortcutLongLabel="@string/shortcut_strength_long">
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="org.openstrap.app"

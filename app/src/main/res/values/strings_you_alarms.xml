@@ -47,11 +47,11 @@
     <!-- The Strap page's Health alerts row, at most 22 characters. Both heart rate and oxygen alerts are on. -->
     <string name="you_health_summary_both">Heart rate and oxygen</string>
     <!-- Heart rate alerts above and below, in beats a minute. -->
-    <string name="you_health_summary_over_under">Over <xliff:g id="high" example="150">%1$d</xliff:g>, under <xliff:g id="low" example="40">%2$d</xliff:g></string>
-    <string name="you_health_summary_over">Over <xliff:g id="high" example="150">%1$d</xliff:g> bpm</string>
-    <string name="you_health_summary_under">Under <xliff:g id="low" example="40">%1$d</xliff:g> bpm</string>
+    <string name="you_health_summary_over_under">Above <xliff:g id="high" example="150">%1$d</xliff:g>, below <xliff:g id="low" example="40">%2$d</xliff:g></string>
+    <string name="you_health_summary_over">Above <xliff:g id="high" example="150">%1$d</xliff:g> bpm</string>
+    <string name="you_health_summary_under">Below <xliff:g id="low" example="40">%1$d</xliff:g> bpm</string>
     <!-- The blood oxygen alert, in percent. -->
-    <string name="you_health_summary_oxygen">Oxygen under <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
+    <string name="you_health_summary_oxygen">Oxygen below <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
 
     <!-- Asked before deleting every alarm. -->
     <string name="you_alarms_delete_all_title">Delete all alarms?</string>
@@ -60,7 +60,7 @@
     <string name="you_alarms_delete_all">Delete all</string>
     <!-- The Alarms page's title. -->
     <string name="you_alarms_title">Alarms</string>
-    <string name="you_alarms_reading">Reading from the strap</string>
+    <string name="you_alarms_reading">Reading from the strap…</string>
     <string name="you_alarms_try_again">Try again</string>
     <!-- The alarms panel's title. -->
     <string name="you_alarms_on_strap">On the strap</string>
@@ -68,7 +68,7 @@
     <string name="you_alarms_count"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="max" example="10">%2$d</xliff:g></string>
     <string name="you_alarms_none">No alarms on the strap.</string>
     <string name="you_alarms_add">Add alarm</string>
-    <string name="you_alarms_tip">The strap vibrates at the alarm time. To stop it, tap the front of the strap several times.</string>
+    <string name="you_alarms_tip">The strap buzzes at the alarm time. To stop it, tap the front of the strap several times.</string>
     <!-- The alarm sheet's title. -->
     <string name="you_alarms_new">New alarm</string>
     <string name="you_alarms_edit">Edit alarm</string>
@@ -92,7 +92,7 @@
     <string name="you_health_oxygen">Low blood oxygen alert</string>
     <!-- The blood oxygen alert's value, in percent. -->
     <string name="you_health_below_percent">Below <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
-    <string name="you_health_note">The strap vibrates when an alert goes off. OpenStrap isn\'t a medical device.</string>
+    <string name="you_health_note">The strap buzzes when an alert goes off. OpenStrap isn\'t a medical device.</string>
 
     <!-- The Strap page's Phone alerts row. -->
     <string name="you_phone_summary_both">Calls and notifications</string>
@@ -123,7 +123,7 @@
     <string name="you_phone_quiet_from">From</string>
     <string name="you_phone_quiet_to">To</string>
     <string name="you_phone_quiet_calls">Calls too</string>
-    <string name="you_phone_quiet_calls_note">Off lets a ringing phone still buzz.</string>
+    <string name="you_phone_quiet_calls_note">When off, the strap still buzzes for calls.</string>
     <string name="you_phone_note">Follows Do Not Disturb and silent apps. Never reads what a notification says.</string>
     <!-- The time sheet's title for each end of quiet hours. -->
     <string name="you_phone_quiet_from_title">Quiet from</string>

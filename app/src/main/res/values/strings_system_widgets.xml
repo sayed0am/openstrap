@@ -14,7 +14,7 @@
     <string name="system_widget_status_low_battery">Strap at <xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
     <!-- Shortest, the battery alone. -->
     <string name="system_widget_status_percent"><xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
-    <string name="system_widget_status_syncing">Syncing</string>
+    <string name="system_widget_status_syncing">Syncing…</string>
     <!-- When the last sync was a while ago: "Synced 09:10", "Synced yesterday", "Synced Tuesday", "Synced Tue 21 Oct" or "Synced Tue". -->
     <string name="system_widget_status_synced">Synced <xliff:g id="when" example="yesterday">%1$s</xliff:g></string>
 
@@ -55,8 +55,8 @@
     <string name="system_widget_recovery_yesterday">Yesterday</string>
     <!-- Recovery: a figure the night didn't give, in place of its value. -->
     <string name="system_widget_recovery_no_reading">No reading</string>
-    <!-- Recovery: the three figures' labels, one short line each. HR is heart rate. HRV is heart rate variability. -->
-    <string name="system_widget_recovery_resting_hr">Resting HR</string>
+    <!-- Recovery: the three figures' labels, one short line each. Resting is the resting heart rate. HRV is heart rate variability. -->
+    <string name="system_widget_recovery_resting_hr">Resting</string>
     <string name="system_widget_recovery_hrv">HRV</string>
     <string name="system_widget_recovery_sleep">Sleep</string>
     <!-- Recovery: a figure's value and its unit, "52 bpm", "64 ms". -->
@@ -69,7 +69,7 @@
     <!-- Sleep: the title. -->
     <string name="system_widget_sleep_title">Last night</string>
     <!-- Sleep: the note at the top right while this morning's night isn't synced and the night before shows. -->
-    <string name="system_widget_sleep_last_synced">Last synced night</string>
+    <string name="system_widget_sleep_last_synced">Earlier night</string>
     <!-- TalkBack, for the sleep score: "Sleep score 82, good". The word is lower case. -->
     <string name="system_widget_sleep_score_word">Sleep score <xliff:g id="score" example="82">%1$s</xliff:g>, <xliff:g id="word" example="good">%2$s</xliff:g></string>
     <!-- TalkBack, for the sleep score with no word. -->
@@ -110,7 +110,7 @@
     <string name="system_widget_recording">Recording</string>
     <string name="system_widget_paused">Paused</string>
 
-    <!-- Moment: under or beside the Energy number (0 to 100). Energy is the app's Charge. -->
+    <!-- Moment: under or beside the Energy number. Energy is the body's energy score, 0 to 100, not the strap battery. -->
     <string name="system_widget_moment_energy_left">Energy left</string>
     <!-- The same, shorter, beside the number: "62 left". -->
     <string name="system_widget_moment_left">left</string>

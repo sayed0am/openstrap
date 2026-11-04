@@ -18,7 +18,7 @@
     <!-- A finished workout or a gap under a minute, in seconds. -->
     <string name="core_unit_seconds"><xliff:g id="seconds" example="45">%1$s</xliff:g> s</string>
     <!-- A pace, minutes and seconds per kilometre. -->
-    <string name="core_unit_pace"><xliff:g id="pace" example="5:24">%1$s</xliff:g> /km</string>
+    <string name="core_unit_pace"><xliff:g id="pace" example="5:24">%1$s</xliff:g>/km</string>
     <!-- Active energy burned, in kilocalories. -->
     <string name="core_unit_kcal"><xliff:g id="kcal" example="312">%1$s</xliff:g> kcal</string>
     <!-- Heart rate's unit, beats per minute, shown beside a figure. -->

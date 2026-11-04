@@ -40,13 +40,13 @@
     <!-- A habit's line when there's too little data. -->
     <string name="glow_healthspan_no_data">Not enough data yet, counted as typical</string>
     <!-- The strength habit's line with no strength workouts, and the minutes a week to aim for. -->
-    <string name="glow_healthspan_strength_none_aim">None recorded, most people your age do none, aim for <xliff:g id="minutes" example="40">%1$d</xliff:g></string>
+    <string name="glow_healthspan_strength_none_aim">None recorded, typical: none, aim for <xliff:g id="minutes" example="40">%1$d</xliff:g> min a week</string>
     <!-- The strength habit's line with no strength workouts. -->
-    <string name="glow_healthspan_strength_none">None recorded, most people your age do none</string>
+    <string name="glow_healthspan_strength_none">None recorded, typical: none</string>
     <!-- The strength habit's line: your minutes a week, and the minutes to aim for. -->
-    <string name="glow_healthspan_strength_minutes_aim"><xliff:g id="minutes" example="25">%1$d</xliff:g> min a week, most people your age do none, aim for <xliff:g id="target" example="40">%2$d</xliff:g></string>
+    <string name="glow_healthspan_strength_minutes_aim"><xliff:g id="minutes" example="25">%1$d</xliff:g> min a week, typical: none, aim for <xliff:g id="target" example="40">%2$d</xliff:g> min</string>
     <!-- The strength habit's line: your minutes a week. -->
-    <string name="glow_healthspan_strength_minutes"><xliff:g id="minutes" example="45">%1$d</xliff:g> min a week, most people your age do none</string>
+    <string name="glow_healthspan_strength_minutes"><xliff:g id="minutes" example="45">%1$d</xliff:g> min a week, typical: none</string>
     <!-- The VO2 max habit's line: yours, your age and the typical value at that age. -->
     <string name="glow_healthspan_vo2max"><xliff:g id="vo2max" example="42">%1$d</xliff:g> ml/kg/min, typical at <xliff:g id="age" example="40">%2$d</xliff:g>: <xliff:g id="typical" example="38">%3$s</xliff:g></string>
     <!-- The steps habit's line: your steps a day, the typical, and the range to aim for. -->
@@ -58,7 +58,7 @@
     <!-- The resting heart rate habit's line: yours while asleep and the typical. -->
     <string name="glow_healthspan_resting_hr"><xliff:g id="bpm" example="54">%1$d</xliff:g> bpm asleep, typical: about <xliff:g id="typical" example="60">%2$s</xliff:g></string>
     <!-- The time asleep habit's line: yours, and the length below which it counts. -->
-    <string name="glow_healthspan_time_asleep"><xliff:g id="duration" example="5 h 40">%1$s</xliff:g>, counts only below <xliff:g id="limit" example="6 h 30">%2$s</xliff:g></string>
+    <string name="glow_healthspan_time_asleep"><xliff:g id="duration" example="5 h 40">%1$s</xliff:g> a night, only counts below <xliff:g id="limit" example="6 h 30">%2$s</xliff:g></string>
     <!-- The Habit Age card when one thing is missing from the profile, "birth year" or "sex". -->
     <string name="glow_healthspan_profile_one">Add your <xliff:g id="missing" example="birth year">%1$s</xliff:g> in your profile to see your Habit Age.</string>
     <!-- The Habit Age card when two things are missing from the profile, "birth year" and "sex". -->
@@ -110,5 +110,5 @@
     <!-- The right end of the habits' scale, years older. Very short. -->
     <string name="glow_healthspan_scale_older">older +1½ y</string>
     <!-- Under the habits list when the fitness habits hit their cap. -->
-    <string name="glow_healthspan_fitness_capped">Fitness terms capped: resting heart rate, steps and VO2 max together count for at most 3 years either way.</string>
+    <string name="glow_healthspan_fitness_capped">Fitness habits capped: resting heart rate, steps and VO2 max together count for at most 3 years either way.</string>
 </resources>

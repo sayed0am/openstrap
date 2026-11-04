@@ -39,7 +39,7 @@
     <string name="core_strength_plank">Plank</string>
 
     <!-- The profile's usual activity level, 1 of 5, under the level picker. One or two lines. -->
-    <string name="core_vo2_activity_inactive">Inactive, or little activity beyond usual daily activities</string>
+    <string name="core_vo2_activity_inactive">Inactive, or little beyond everyday activities</string>
     <!-- The usual activity level, 2 of 5. -->
     <string name="core_vo2_activity_light">Light activity, at least 10 minutes at a time, 5 or more days a week</string>
     <!-- The usual activity level, 3 of 5. -->

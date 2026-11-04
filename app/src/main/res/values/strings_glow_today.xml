@@ -26,13 +26,13 @@
     <string name="glow_today_now">Now</string>
     <!-- The workout window hero's note on its title row: this morning's Recovery score. -->
     <string name="glow_today_recovery_score">Recovery <xliff:g id="score" example="72">%1$d</xliff:g></string>
-    <!-- A button on the workout window hero that starts your usual sport. The sport is lower case, "run" or "outdoor cycling". -->
+    <!-- A button on the workout window hero that starts your usual sport. The sport is lower case, "run" or "outdoor cycling". The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
     <string name="glow_today_start_sport">Start <xliff:g id="sport" example="run">%1$s</xliff:g></string>
     <!-- A button beside Start that opens the list of sports. -->
     <string name="glow_today_other_sport">Other sport</string>
     <!-- The word for a workout whose sport has no noun of its own, lower case, inside a sentence: "Since your workout". -->
     <string name="glow_today_workout_noun">workout</string>
-    <!-- Title of the hero after a workout. The noun is the sport, lower case: "run", "ride" or "workout". -->
+    <!-- Title of the hero after a workout. The noun is the sport, lower case: "run", "ride" or "workout". The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
     <string name="glow_today_since_your">Since your <xliff:g id="sport" example="run">%1$s</xliff:g></string>
     <!-- Beside the heart rate in dots after a workout: the rate at the workout's end and your resting rate. -->
     <string name="glow_today_after_end_resting"><xliff:g id="end" example="142">%1$d</xliff:g> at the end, resting <xliff:g id="resting" example="58">%2$d</xliff:g></string>
@@ -51,7 +51,7 @@
     <!-- Title of the hero when no strap is paired. Helio Strap is the strap's name. -->
     <string name="glow_today_pair_title">Pair your Helio Strap</string>
     <!-- A button on the pairing hero that opens the Strap page. -->
-    <string name="glow_today_find_strap">Find my strap</string>
+    <string name="glow_today_find_strap">Pair strap</string>
     <!-- A button on the hero when syncing is stuck. -->
     <string name="glow_today_sync_now">Sync now</string>
     <!-- Title of the morning list of body signals. -->
@@ -69,22 +69,22 @@
     <!-- A row in the Right now list. -->
     <string name="glow_today_stress">Stress</string>
     <!-- The Energy card's status in the evening: sleep is what recharges it. -->
-    <string name="glow_today_charge_fills_back">Sleep fills it back</string>
+    <string name="glow_today_charge_fills_back">Sleep refills it</string>
     <!-- The Energy card's status when the day has drained less than one point. -->
     <string name="glow_today_charge_steady">Steady since waking</string>
     <!-- Title of the small Load card: the Load score's name. -->
     <string name="glow_today_load">Load</string>
     <!-- Title of the Load list in your usual workout window. -->
     <string name="glow_today_load_before">Before you start</string>
-    <!-- Title of the Load list after a workout. The noun is the sport, lower case: "run", "ride" or "workout". -->
+    <!-- Title of the Load list after a workout. The noun is the sport, lower case: "run", "ride" or "workout". The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
     <string name="glow_today_load_after">What the <xliff:g id="sport" example="run">%1$s</xliff:g> did</string>
     <!-- Title of the Load list, and its first row. -->
     <string name="glow_today_load_today">Load today</string>
     <!-- Title of the small card with the hours left to recover. -->
-    <string name="glow_today_to_recover">To recover</string>
+    <string name="glow_today_to_recover">Time to recover</string>
     <!-- Unit beside the hours left to recover, hours. Very short. -->
     <string name="glow_today_hours_unit">h</string>
-    <!-- The To recover card when the strap gave no time to recover. -->
+    <!-- The Time to recover card when the strap gave no time to recover. -->
     <string name="glow_today_recover_no_estimate">No estimate from the strap</string>
 
     <!-- Title of the Last night strip and card. -->
@@ -136,7 +136,7 @@
     <string name="glow_today_steps_goal">Goal <xliff:g id="steps" example="8,000">%1$s</xliff:g></string>
     <!-- The Recovery card's note on its title row: the score is from this morning. -->
     <string name="glow_today_this_morning">This morning</string>
-    <!-- Beside yesterday's Recovery score, dimmed, when today's couldn't be worked out. Very short. -->
+    <!-- Beside yesterday's Recovery score, dimmed, when today's couldn't be calculated. Very short. -->
     <string name="glow_today_yesterday">yesterday</string>
     <!-- Beside a workout's length in dots: the time is how long it was. Very short. -->
     <string name="glow_today_workout_long">long</string>
@@ -159,7 +159,7 @@
     <string name="glow_today_week_line"><xliff:g id="duration" example="7 h 10">%1$s</xliff:g> asleep a night, <xliff:g id="workouts" example="3 workouts">%2$s</xliff:g></string>
     <!-- The week card's steps against the week before. The change is "12% more steps" or "About the same steps". -->
     <string name="glow_today_week_change"><xliff:g id="change" example="12% more steps">%1$s</xliff:g> on the week before.</string>
-    <!-- The note on a body list's title row: each value is compared with your usual. -->
+    <!-- The note on a body list's title row: each value is compared with your normal. -->
     <string name="glow_today_against_normal">Against your normal</string>
     <!-- A row in the Load list: the hours left until recovered. -->
     <string name="glow_today_time_to_recover">Time to recover</string>

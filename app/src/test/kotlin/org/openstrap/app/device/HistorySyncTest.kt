@@ -272,7 +272,7 @@ class HistorySyncTest {
         strap.onStart = { strap.connected.value = false; withTimeout(10) { awaitCancellation() } }
         runSync()
 
-        assertEquals(SyncState.Failed("The link to the strap dropped."), state.value)
+        assertEquals(SyncState.Failed("The Bluetooth connection to the strap dropped."), state.value)
     }
 
     @Test fun `fast-charge mode stops the sync and the log keeps the strap's reason`() = runTest {

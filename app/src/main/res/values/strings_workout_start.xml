@@ -25,7 +25,7 @@
     <!-- The goal chip for no goal on any other sport. A short chip. -->
     <string name="workout_start_just_go">Just go</string>
     <!-- No plan: strength's open sets, or mind and body with no length. A pill. -->
-    <string name="workout_start_open">Open</string>
+    <string name="workout_start_open">No limit</string>
 
     <!-- Above Ready's plan card for a distance sport or indoor cardio. One word. -->
     <string name="workout_start_plan_title_goal">Goal</string>
@@ -98,7 +98,7 @@
     <!-- Ready's GPS line with a rough position: how many metres off it may be. -->
     <string name="workout_start_gps_finding_accuracy">Finding GPS, ±<xliff:g id="meters" example="48">%1$d</xliff:g> m</string>
     <!-- Ready's GPS line once the position is good: how many metres off it may be. -->
-    <string name="workout_start_gps_ready">GPS ready, <xliff:g id="meters" example="6">%1$d</xliff:g> m</string>
+    <string name="workout_start_gps_ready">GPS ready, ±<xliff:g id="meters" example="6">%1$d</xliff:g> m</string>
 
     <!-- A time in seconds, for a rest or a round: "90 s". -->
     <string name="workout_start_seconds"><xliff:g id="seconds" example="90">%1$d</xliff:g> s</string>
@@ -240,7 +240,7 @@
     <!-- Under another indoor sport on foot. -->
     <string name="workout_start_indoor_note_on_foot">Distance from your steps</string>
     <!-- Under any other indoor sport. -->
-    <string name="workout_start_indoor_note_other">Time and your heart, no distance</string>
+    <string name="workout_start_indoor_note_other">Time and heart rate, no distance</string>
 
     <!-- A goal kind in the goal pill and its sheet. One word. -->
     <string name="workout_start_kind_distance">Distance</string>
@@ -259,18 +259,18 @@
     <!-- Under Zone in the goal sheet. -->
     <string name="workout_start_zone_kind_note">A buzz when you leave your zone</string>
     <!-- Under Intervals in the goal sheet. -->
-    <string name="workout_start_intervals_kind_note">Repeats with rest between, a buzz at each switch</string>
+    <string name="workout_start_intervals_kind_note">Reps with rest between, a buzz at each switch</string>
     <!-- The note with no goal, for a sport that records a distance. -->
-    <string name="workout_start_no_goal_note_distance">No goal. Time, distance and your heart.</string>
+    <string name="workout_start_no_goal_note_distance">No goal. Time, distance and heart rate.</string>
     <!-- The note with no goal, for a sport without a distance. -->
-    <string name="workout_start_no_goal_note">No goal. Time and your heart.</string>
+    <string name="workout_start_no_goal_note">No goal. Time and heart rate.</string>
     <!-- A distance goal's note. The number is in kilometres, as typed. -->
     <string name="workout_start_distance_note">The strap buzzes at halfway and at <xliff:g id="km" example="7.5">%1$s</xliff:g> km.</string>
     <!-- The distance preset for a half marathon. A short chip, about 6 characters. -->
     <string name="workout_start_half_marathon">Half</string>
     <!-- A time goal's note: when it would end if started now. -->
-    <string name="workout_start_ends_near">Ends near <xliff:g id="time" example="19:15">%1$s</xliff:g></string>
-    <!-- While a time goal is typed. The end is "Ends near 19:15". -->
+    <string name="workout_start_ends_near">Ends about <xliff:g id="time" example="19:15">%1$s</xliff:g></string>
+    <!-- While a time goal is typed. The end is "Ends about 19:15". -->
     <string name="workout_start_time_typing_note">Type hours, then minutes. <xliff:g id="ends_near" example="Ends near 19:15">%1$s</xliff:g></string>
     <!-- How the zone buttons work. -->
     <string name="workout_start_zone_note">Tap a zone, or a second one for a range. The strap buzzes when you leave it.</string>
@@ -286,7 +286,7 @@
     <string name="workout_start_zone_up_one"><xliff:g id="from" example="173">%1$d</xliff:g> bpm and up, <xliff:g id="zone" example="max">%2$s</xliff:g></string>
 
     <!-- What run intervals of a distance do. The rep is "400 m", the total "2.4 km" or "800 m". -->
-    <string name="workout_start_intervals_note_distance">The strap buzzes at the end of each <xliff:g id="rep" example="400 m">%1$s</xliff:g> and when rest is up. <xliff:g id="total" example="2.4 km">%2$s</xliff:g> in all.</string>
+    <string name="workout_start_intervals_note_distance">The strap buzzes at the end of each <xliff:g id="rep" example="400 m">%1$s</xliff:g> rep and when rest is up. <xliff:g id="total" example="2.4 km">%2$s</xliff:g> of reps in all.</string>
     <!-- What run intervals of a time do. The rep is "4 min", the total "16 min" or "1 h 15". -->
     <string name="workout_start_intervals_note_time">The strap buzzes at the end of each <xliff:g id="rep" example="4 min">%1$s</xliff:g> rep and when rest is up. <xliff:g id="total" example="16 min">%2$s</xliff:g> of reps in all.</string>
     <!-- While run intervals are typed: the three fields in order. -->
@@ -300,20 +300,20 @@
     <!-- The button once they're saved. -->
     <string name="workout_start_saved_intervals">Saved</string>
     <!-- Under the save button. -->
-    <string name="workout_start_save_note">To find on Choose and here. Up to ten are kept.</string>
+    <string name="workout_start_save_note">Find them when you start a workout. Up to ten are kept.</string>
     <!-- The hint in the name field. -->
     <string name="workout_start_name_hint">Name, like Tuesday intervals</string>
 
     <!-- A switch on Ready: the strap asks to end the workout when you stop moving. One line. -->
     <string name="workout_start_ask_to_end">Ask to end when I stop</string>
     <!-- Under Ask to end when I stop. -->
-    <string name="workout_start_ask_to_end_note">The strap buzzes after 8 min still</string>
+    <string name="workout_start_ask_to_end_note">The strap buzzes after 8 min without moving</string>
     <!-- The route switch for any sport with GPS. The sport is its name in lower case: "run", "walk", "hike". One line. -->
     <string name="workout_start_keep_route">Save a map of my <xliff:g id="sport" example="run">%1$s</xliff:g></string>
     <!-- The route switch on a bike. One line. -->
     <string name="workout_start_keep_route_ride">Save a map of my ride</string>
     <!-- The route switch on skis. One line. -->
-    <string name="workout_start_keep_route_ski">Save a map of my ski</string>
+    <string name="workout_start_keep_route_ski">Save a map of my skiing</string>
     <!-- The route switch for rucking (walking with a weighted pack). One line. -->
     <string name="workout_start_keep_route_ruck">Save a map of my ruck</string>
     <!-- A button when the phone's location is off. -->
