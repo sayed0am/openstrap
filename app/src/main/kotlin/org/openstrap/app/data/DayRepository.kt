@@ -52,6 +52,15 @@ interface DayRepository {
     /** Each day's stored calories from [from] to [to], keyed by local date. */
     fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>>
 
+    /** Each local day's steps from [from] to [to] ([DailyMetric.Steps]), keyed by date, days without steps absent. */
+    fun dailySteps(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, Int>> = kotlinx.coroutines.flow.flowOf(emptyMap())
+
+    /** The stored personal best of [kind] ([Rewards.Kind]) as it changes, null without one. */
+    fun personalBest(kind: String): Flow<org.openstrap.app.data.db.PersonalBest?> = kotlinx.coroutines.flow.flowOf(null)
+
+    /** The most steps of any day before [date], over all the history, read once, null without any. */
+    suspend fun mostStepsBefore(date: LocalDate): Int? = null
+
     /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first. */
     fun deletedSleep(): Flow<List<SleepEdits.Resolved>>
 

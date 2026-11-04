@@ -311,6 +311,20 @@ class HealthRepository(
             rows.mapNotNull { r -> DayStat.parseDay(r.day)?.let { it to r } }.toMap()
         }
 
+    /** Each local day's steps from [from] to [to], as Steps' daily history counts them, keyed by date. */
+    fun dailySteps(from: LocalDate, to: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Flow<Map<LocalDate, Int>> =
+        dao.dailySteps(DayWindow.of(from, zone).from, DayWindow.of(to, zone).to).map { rows ->
+            rows.mapNotNull { r -> DayStat.parseDay(r.day)?.let { it to r.value.toInt() } }.toMap()
+        }
+
+    /** The stored personal best of [kind] ([Rewards.Kind]) as it changes, null without one. */
+    fun personalBest(kind: String): Flow<org.openstrap.app.data.db.PersonalBest?> =
+        dao.personalBests().map { bests -> bests.firstOrNull { it.kind == kind } }
+
+    /** The most steps of any day before [date], over all the history, read once, null without a day with steps. */
+    suspend fun mostStepsBefore(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): Int? =
+        dao.dailyStepsOnce(0, DayWindow.of(date, zone).from - 1).maxOfOrNull { it.value.toInt() }?.takeIf { it > 0 }
+
     /** Each day's stored calories from [from] to [to] ([DailyCaloriesHistory]), by local day, for Calories' ranges. */
     fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, org.openstrap.app.data.db.DailyCaloriesRow>> =
         dao.dailyCalories(from, to).map { rows -> rows.associateBy { it.day } }

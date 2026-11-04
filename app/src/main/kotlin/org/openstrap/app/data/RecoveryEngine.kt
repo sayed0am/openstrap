@@ -71,6 +71,15 @@ data class RecoveryResult(
      * ([SleepHistory.strapDay]), so a night moved to another day keeps it. Null without one.
      */
     val strapScore: Int? = null,
+    /**
+     * Recovery's usual: mean ± 1 SD of the score over the [History.NORMAL_DAYS] days ending on [date], each night as
+     * its morning had it, as [History.normal] works out every normal. Null under [History.MIN_NORMAL_DAYS] scored days.
+     */
+    val readinessUsual: History.Normal? = null,
+    /** Breathing disturbances (events an hour) for the [TREND_DAYS] nights ending on [date], oldest first, null without. */
+    val disturbancesWeek: List<Pair<LocalDate, Float?>> = emptyList(),
+    /** The usual band of breathing disturbances before tonight ([Recovery.disturbancesUsual]). */
+    val disturbancesUsual: History.Normal? = null,
 )
 
 /** Loads what [Recovery] needs from the database and runs it. All work happens off the main thread by the caller. */
@@ -112,6 +121,17 @@ class RecoveryEngine(private val dao: HealthDao) {
             val m = DayWindow.of(d, zone).from
             d to if (back == 0) readiness.score else base.nights.lastOrNull { it.day == m }?.let(readinessOf)?.score
         }
+        // Recovery's usual: each night of the last 30 days as its morning had it, today's only with a night.
+        val readinessUsual = History.normal(
+            (History.NORMAL_DAYS - 1 downTo 0).mapNotNull { back ->
+                val d = date.minusDays(back.toLong())
+                val m = DayWindow.of(d, zone).from
+                val score = if (back == 0) readiness.score?.takeIf { base.tonight != null }
+                else base.nights.lastOrNull { it.day == m }?.let(readinessOf)?.score
+                score?.toFloat()?.let { DayStat(d, it, it, it, 1) }
+            },
+            date,
+        )
         val stressThreshold = stressThreshold(span, reads, base)
         val charge = charge(span, reads, base, readiness, stressThreshold, readinessOf)
         val activity = activity(span, reads, base, profile)
@@ -152,6 +172,13 @@ class RecoveryEngine(private val dao: HealthDao) {
             dailyLoads = base.loadDays.map { span.dayOf(it.first) to it.second }
                 .filter { it.first >= date.minusDays(RECENT_LOAD_DAYS.toLong()) },
             strapScore = tonight?.strapDay?.let(reads.strapNights::get)?.score,
+            readinessUsual = readinessUsual,
+            disturbancesWeek = (TREND_DAYS - 1 downTo 0).map { back ->
+                val d = date.minusDays(back.toLong())
+                val m = DayWindow.of(d, zone).from
+                d to nights.lastOrNull { it.day == m }?.odi
+            },
+            disturbancesUsual = Recovery.disturbancesUsual(nights, midnight),
         )
     }
 
@@ -419,7 +446,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             sleepRestingHr = runMains.map { it.start to chargeNightRestingHr(it, reads.moved, refHr) },
             sleepHrvScore = base.nights.filter { it.end > simFrom && it.start < simTo }.map { it.start to hrvContributor(readinessOf(it)) },
         )
-        return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end)
+        return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end, bedtime = base.tonight?.start)
     }
 
     /** The HRV balance contributor of [r] (0-100), which scales how well that night's sleep recharges. Null without one. */
