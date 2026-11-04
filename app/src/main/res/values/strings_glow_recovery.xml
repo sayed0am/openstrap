@@ -34,11 +34,9 @@
     <string name="glow_recovery_recharged">Recharged</string>
     <!-- Title of the small card with what the day took from Energy. One word. -->
     <string name="glow_recovery_drained">Drained</string>
-    <!-- A row in the body signals list. -->
-    <string name="glow_recovery_resting_hr">Resting heart rate</string>
-    <!-- A row in the body signals list: heart rate variability, as an abbreviation. -->
-    <string name="glow_recovery_hrv">HRV</string>
-    <!-- A row in the body signals list. -->
+    <!-- Under Recharged's number: Energy when you went to sleep and when you woke, out of 100. -->
+    <string name="glow_recovery_overnight">Overnight, <xliff:g id="bedtime" example="34">%1$d</xliff:g> to <xliff:g id="waking" example="72">%2$d</xliff:g></string>
+    <!-- Title of the skin temperature card, which shows the change from your normal. -->
     <string name="glow_recovery_skin_temperature">Skin temperature</string>
     <!-- A row in the body signals list. -->
     <string name="glow_recovery_breathing_rate">Breathing rate</string>
