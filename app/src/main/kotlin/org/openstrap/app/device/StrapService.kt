@@ -217,6 +217,7 @@ class StrapService : LifecycleService() {
         nm.deleteNotificationChannel("strap_quiet")
         nm.createNotificationChannel(NotificationChannel(SAVED_CHANNEL, "Workout saved", NotificationManager.IMPORTANCE_LOW))
         WorkoutNotification.createChannel(this)
+        KeepRecordingNotice.createChannel(this)
         // Seen, not heard: the strap's buzz is the alert.
         nm.createNotificationChannel(NotificationChannel(OFFER_CHANNEL, "Workout noticed", NotificationManager.IMPORTANCE_DEFAULT).apply {
             setSound(null, null)

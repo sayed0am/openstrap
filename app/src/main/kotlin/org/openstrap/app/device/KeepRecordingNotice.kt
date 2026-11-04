@@ -1,5 +1,6 @@
 package org.openstrap.app.device
 
+import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -13,10 +14,14 @@ import org.openstrap.app.data.Workouts
  * Shown when Android refuses the workout's foreground service (a start from the background on Android 12 and up, a
  * restore after a widget's broadcast, say): the workout records on, but can be killed. A tap brings the app to the
  * front, where the service may start ([WorkoutSession.inFront]). Cleared once the service runs or the workout ends.
- * On the workout channel: it stands in for the workout's own notification, which can't show without the service.
+ * On its own channel, which pops up: the workout's own channel is low and stays quiet in the shade, and the notice is
+ * there to be seen in time. It stands in for the workout's own notification, which can't show without the service.
  */
 object KeepRecordingNotice {
     const val TEXT = "Android may stop it while OpenStrap is closed. Tap to keep it going."
+
+    /** A channel's importance is fixed once it exists, so the heads-up needed a new id, not the workout's. */
+    const val CHANNEL = "workout_keep_recording"
 
     /** Its own id and request code, apart from the service's (1 to 6), the wear reminder's (17) and health alerts'. */
     internal const val NOTIFICATION_ID = 8
@@ -29,8 +34,21 @@ object KeepRecordingNotice {
     private fun inSentence(name: String): String =
         name.split(" ").joinToString(" ") { w -> if (w.all { it.isUpperCase() || it.isDigit() }) w else w.lowercase() }
 
+    /**
+     * High, so it shows as a heads-up, with no sound or vibration: a nudge to open the app, not an alarm. Made here as
+     * well as with the service's channels, since the notice shows exactly when the service couldn't start.
+     */
+    fun createChannel(context: Context) {
+        val channel = NotificationChannel(CHANNEL, "Keep recording", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Asks you to open OpenStrap when Android may stop a workout."
+            setSound(null, null)
+            enableVibration(false)
+        }
+        context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
     fun show(context: Context, sportType: Int) {
-        WorkoutNotification.createChannel(context)
+        createChannel(context)
         val open = PendingIntent.getActivity(
             context, REQUEST_OPEN,
             Intent(context, MainActivity::class.java)
@@ -38,7 +56,7 @@ object KeepRecordingNotice {
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
-        val notification = NotificationCompat.Builder(context, WorkoutNotification.CHANNEL)
+        val notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_stat_openstrap)
             .setContentTitle(title(sportType))
             .setContentText(TEXT)
