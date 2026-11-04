@@ -13,14 +13,15 @@ import android.os.SystemClock
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
-import androidx.compose.ui.graphics.toArgb
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
+import org.openstrap.app.data.HeartZones
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.ui.workout.NotificationCopy
-import org.openstrap.app.ui.workout.WorkoutCard
-import org.openstrap.app.ui.workout.ZONE_COLORS
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.NotificationCopy
+import org.openstrap.app.presentation.WorkoutCard
+import org.openstrap.app.presentation.WorkoutColors
 
 /**
  * The ongoing workout notification as the black card (patterns D4), for phones that don't show it as a Live Update,
@@ -46,23 +47,35 @@ object WorkoutNotification {
 
     fun createChannel(context: Context) {
         context.getSystemService(NotificationManager::class.java)
-            .createNotificationChannel(NotificationChannel(CHANNEL, "Workout", NotificationManager.IMPORTANCE_LOW))
+            .createNotificationChannel(
+                NotificationChannel(CHANNEL, Strings.app.get(R.string.system_channel_workout), NotificationManager.IMPORTANCE_LOW),
+            )
     }
 
     /**
      * The actions under the card: Pause and Lap while it runs, Resume while paused, End, or the End question's answers.
      * [intent] makes each one's pending intent from its service action.
      */
-    fun actions(paused: Boolean, confirming: Boolean, intent: (String) -> PendingIntent): List<NotificationCompat.Action> = when {
-        confirming -> listOf(action("Yes, end", intent(StrapService.ACTION_END)), action("Cancel", intent(StrapService.ACTION_END_CANCEL)))
-        paused -> listOf(action("Resume", intent(StrapService.ACTION_RESUME)), action("End", intent(StrapService.ACTION_END_ASK)))
-        else -> listOf(
-            action("Pause", intent(StrapService.ACTION_PAUSE)), action("Lap", intent(StrapService.ACTION_LAP)),
-            action("End", intent(StrapService.ACTION_END_ASK)),
-        )
+    fun actions(
+        paused: Boolean, confirming: Boolean, strings: Strings = Strings.app, intent: (String) -> PendingIntent,
+    ): List<NotificationCompat.Action> {
+        fun action(title: Int, of: String) = NotificationCompat.Action(0, strings.get(title), intent(of))
+        return when {
+            confirming -> listOf(
+                action(R.string.system_workout_action_end_yes, StrapService.ACTION_END),
+                action(R.string.system_workout_action_end_cancel, StrapService.ACTION_END_CANCEL),
+            )
+            paused -> listOf(
+                action(R.string.system_workout_action_resume, StrapService.ACTION_RESUME),
+                action(R.string.system_workout_action_end, StrapService.ACTION_END_ASK),
+            )
+            else -> listOf(
+                action(R.string.system_workout_action_pause, StrapService.ACTION_PAUSE),
+                action(R.string.system_workout_action_lap, StrapService.ACTION_LAP),
+                action(R.string.system_workout_action_end, StrapService.ACTION_END_ASK),
+            )
+        }
     }
-
-    private fun action(title: String, intent: PendingIntent) = NotificationCompat.Action(0, title, intent)
 
     /** The card for [card] with [actions], opening [open] on a tap. Colorized only counts for a foreground service's. */
     fun build(context: Context, card: WorkoutCard, actions: List<NotificationCompat.Action>, open: PendingIntent): NotificationCompat.Builder {
@@ -125,7 +138,8 @@ object WorkoutNotification {
         val confirming = kind == "end"
         val card = NotificationCopy.card(
             Workouts.sportName(if (outdoor) 1 else 8), activeSeconds = 23 * 60 + 41, paused = paused, connected = true,
-            bpm = 152, maxHr = 190, gps = outdoor, distanceMeters = 4210f, distanceFromSteps = false, target = null,
+            bpm = 152, maxHr = 190, zones = HeartZones.STANDARD, gps = outdoor, distanceMeters = 4210f, distanceFromSteps = false,
+            target = null,
             zoneSeconds = listOf(180, 420, 540, 260, 21), confirming = confirming, activeKcal = 286f,
         )
         val open = PendingIntent.getActivity(
@@ -152,7 +166,7 @@ object WorkoutNotification {
         var x = 0
         widths.forEachIndexed { zone, w ->
             if (w == 0) return@forEachIndexed
-            paint.color = ZONE_COLORS[zone].toArgb()
+            paint.color = WorkoutColors.ZONES[zone]
             canvas.drawRect(x.toFloat(), 0f, (x + w).toFloat(), 1f, paint)
             x += w
         }

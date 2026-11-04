@@ -38,7 +38,7 @@ class WearEventMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val dao = room.healthDao()
             assertEquals(1, room.openHelper.readableDatabase.query("SELECT * FROM health_alert").use { it.count })

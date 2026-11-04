@@ -3,6 +3,7 @@ package org.openstrap.protocol.history
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.protocol.ByteReader
@@ -111,6 +112,24 @@ class GdspClientTest {
         val client = GdspClient(strap::send, strap.control, strap.data, onDataAvailable = { pushes += it })
         assertTrue(client.fetchWorkout(trackId, zone) is WorkoutFetch.Workout)
         assertEquals(listOf(5, 6, 79), pushes.single().typesToSync)
+    }
+
+    @Test
+    fun aFailedVersionQueryIsLoggedAndReadsAsNone() = runTest {
+        val strap = strap()
+        val logs = mutableListOf<String>()
+        val client = GdspClient({ throw IllegalStateException("link lost") }, strap.control, strap.data, log = { logs += it })
+        assertNull(client.queryVersion())
+        assertTrue(logs.toString(), logs.any { "version query failed" in it && "link lost" in it })
+    }
+
+    @Test
+    fun anUnansweredStartIsLogged() = runTest {
+        val strap = strap().apply { silentStarts = 1 }
+        val logs = mutableListOf<String>()
+        val client = GdspClient(strap::send, strap.control, strap.data, log = { logs += it })
+        assertTrue(client.fetch(HistoryDataType.ACTIVITY.code, trackId, zone) is GdspFetch.Failed)
+        assertTrue(logs.toString(), logs.any { it.startsWith("history: start ${HistoryDataType.ACTIVITY.code}: ") && "no reply" in it })
     }
 
     @Test

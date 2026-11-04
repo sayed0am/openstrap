@@ -5,8 +5,10 @@ import android.graphics.SweepGradient
 import android.provider.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
@@ -26,15 +28,16 @@ import kotlinx.coroutines.flow.first
 /**
  * A light travelling round a card's border, once every [periodMillis], brightest at its head and fading along its
  * tail, with a soft halo outside it. The one moving light on a screen, kept for the action it offers (Start a workout,
- * spec 2.5). It holds still while the list scrolls or the page is off screen ([LocalGlowPaused],
+ * spec 2.5). It holds still while the list scrolls, the page is off screen or the workout covers it ([LocalGlowPaused],
  * [LocalGlowPagePaused]), as the glows do, and with the system's animations off the light rests at the top.
  */
 @Composable
 fun Modifier.movingBorder(color: Color, periodMillis: Int = MOVING_BORDER_PERIOD): Modifier {
     val context = LocalContext.current
     val animate = remember(context) { Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) > 0f }
-    val listPaused = LocalGlowPaused.current
-    val pagePaused = LocalGlowPagePaused.current
+    // Read through state, so the running loop follows a newly provided lambda rather than the first one it saw.
+    val listPaused by rememberUpdatedState(LocalGlowPaused.current)
+    val pagePaused by rememberUpdatedState(LocalGlowPagePaused.current)
     // Degrees round the border; only the draw phase reads it, so a turn never recomposes the card.
     val angle = remember { mutableFloatStateOf(0f) }
     if (animate) LaunchedEffect(periodMillis) {

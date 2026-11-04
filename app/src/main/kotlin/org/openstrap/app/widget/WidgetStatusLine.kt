@@ -1,6 +1,9 @@
 package org.openstrap.app.widget
 
-import org.openstrap.app.ui.dashboard.clockText
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.TextStyle
@@ -20,24 +23,27 @@ data class StatusLine(val status: StrapStatus, val options: List<String>) {
          * [status]'s wordings at [now] (epoch seconds): the line ("Synced Tuesday"), then shorter ones that keep its
          * sense beside the button's icon ("Synced Tue", "Tuesday", "Tue"). Never a dot, semicolon or dash.
          */
-        fun of(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): StatusLine {
-            val full = strapStatusLine(status, now, zone, locale)
+        fun of(
+            status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+        ): StatusLine {
+            val full = strapStatusLine(status, now, zone, locale, strings)
             val shorter = when (status) {
-                StrapStatus.NotPaired -> listOf("Pair strap")
-                is StrapStatus.LowBattery -> listOf("${status.percent}%")
+                StrapStatus.NotPaired -> listOf(strings.get(R.string.system_widget_status_not_paired_short))
+                is StrapStatus.LowBattery -> listOf(strings.format(R.string.system_widget_status_percent, status.percent))
                 StrapStatus.Syncing -> emptyList()
                 is StrapStatus.StaleSync -> {
                     val then = Instant.ofEpochSecond(status.at).atZone(zone).toLocalDate()
                     val days = ChronoUnit.DAYS.between(then, Instant.ofEpochSecond(now).atZone(zone).toLocalDate())
                     when {
-                        days <= 0 -> listOf(clockText(status.at, zone))
-                        days == 1L -> listOf("Yesterday")
+                        days <= 0 -> listOf(TimeOfDay.format(status.at, zone, locale = locale))
+                        days == 1L -> listOf(DayWords.YESTERDAY)
                         days < 7 -> {
                             val day = then.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
                             val short = then.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
-                            listOf("Synced $short", day, short)
+                            listOf(strings.format(R.string.system_widget_status_synced, short), day, short)
                         }
-                        else -> listOf(full.removePrefix("Synced "))
+                        // "Tue 13 Oct", then "13 Oct" where even that doesn't fit.
+                        else -> listOf(syncedWhen(status.at, now, zone, locale), DayWords.dayMonth(then, locale))
                     }
                 }
             }

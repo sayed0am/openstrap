@@ -102,6 +102,8 @@ internal class Proto(private val b: ByteArray, private var i: Int = 0, private v
     fun int(field: Int): Int? = ints[field]?.toInt()
 }
 
+// The byte reader reports a short record as an IndexOutOfBoundsException, so that is what a truncated record is.
+@Suppress("TooGenericExceptionCaught")
 object WorkoutParsers {
     private const val PROTOBUF_SUMMARY = 0x8000
 

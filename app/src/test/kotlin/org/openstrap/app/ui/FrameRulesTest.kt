@@ -99,7 +99,8 @@ class FrameRulesTest {
         assertTrue("the avatar records itself", Regex("""growClick\(onOpenYou\)""").containsMatchIn(header))
         assertTrue("the strap chip records itself", Regex("""growClick\(onOpenStrap\)""").containsMatchIn(header))
         val root = source("MainActivity.kt")
-        assertTrue("the pages over the tab grow from the origin", "GrowFromButton(" in root && "growOrigin.take()" in root)
+        val pages = source("ui/root/PagesOverTab.kt")
+        assertTrue("the pages over the tab grow from the origin", "GrowFromButton(" in pages && "growOrigin.take()" in root)
     }
 
     @Test fun `tabs keep their phone gutters folded, and unfolded are at most 960 dp with a 24 dp gutter`() {
@@ -254,7 +255,6 @@ class FrameRulesTest {
         assertTrue("PageRow no longer squeezes its value beside the name", "widthIn(max = 160.dp)" !in row)
         assertTrue("PageSwitchRow keeps its name on one line", "RowName(title)" in parts.substringAfter("fun PageSwitchRow("))
         assertTrue("ListRow keeps its name on one line", "RowName(name)" in source("ui/glow/GlowList.kt").substringAfter("fun ListRow("))
-        assertTrue("SettingRow keeps its name on one line", "RowName(title)" in source("ui/glow/GlowWorkoutMode.kt").substringAfter("fun SettingRow("))
     }
 
     /* --------------------------------- A fade under pinned buttons (spec 3.2) --------------------------------- */
@@ -280,7 +280,7 @@ class FrameRulesTest {
         assertTrue("WorkoutPage's content ends clear of them", "PinnedFade.listClearance(pinnedHeight)" in workout)
         assertTrue("WorkoutPage's old short fade is gone", "0.25f to Color.Black" !in workout)
         // Every page with pinned buttons uses WorkoutPage's or Profile's.
-        for (f in listOf("ui/glow/GlowWorkoutMode.kt", "ui/glow/GlowWorkoutSummary.kt")) {
+        for (f in listOf("ui/glow/GlowWorkoutMode.kt", "ui/glow/ReadyScreen.kt", "ui/glow/ChooseScreen.kt", "ui/glow/GlowWorkoutSummary.kt")) {
             val src = source(f)
             assertTrue("$f pins its buttons through WorkoutPage", "pinned = {" !in src || "WorkoutPage(" in src)
         }

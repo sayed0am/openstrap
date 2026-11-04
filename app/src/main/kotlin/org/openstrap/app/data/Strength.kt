@@ -1,5 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+
 /**
  * Strength training as sets and rest rather than distance, worked out in pure Kotlin like [Recovery]. Rest ends at
  * the chosen time or earlier once heart rate drops below a chosen level, whichever comes first (Hevy's rest timer is
@@ -7,9 +10,6 @@ package org.openstrap.app.data
  * the time limit always applies.
  */
 object Strength {
-    /** Sports counted in sets rather than distance. */
-    val SPORTS = setOf(24, 50, 52, 222, 226)
-
     /** How rest works for a workout, chosen on the ready screen; stored as [code] ("r:90:110"). */
     data class Rest(val seconds: Long, val belowBpm: Int?) {
         val code: String get() = "r:$seconds:${belowBpm ?: 0}"
@@ -23,8 +23,79 @@ object Strength {
             }
             val TIMES = listOf(60L, 90L, 120L, 180L)
             val LEVELS = listOf(null, 100, 110, 120)
+            val RANGE_S = 30L..300L
         }
     }
+
+    /** Ready's sets stepper; below its first is open, no plan. */
+    val SETS = 1..10
+
+    /** The exercise list's built in lifts (workouts spec 11: a short list plus typed names), after your own. */
+    val COMMON_LIFTS: List<String> get() = LIFT_IDS.map(Strings.app::get)
+
+    private val LIFT_IDS = listOf(
+        R.string.core_strength_bench_press, R.string.core_strength_squat, R.string.core_strength_deadlift,
+        R.string.core_strength_overhead_press, R.string.core_strength_barbell_row, R.string.core_strength_pull_up,
+        R.string.core_strength_lat_pulldown, R.string.core_strength_romanian_deadlift, R.string.core_strength_hip_thrust,
+        R.string.core_strength_leg_press, R.string.core_strength_lunge, R.string.core_strength_dumbbell_curl,
+        R.string.core_strength_triceps_extension, R.string.core_strength_push_up, R.string.core_strength_dips,
+        R.string.core_strength_plank,
+    )
+
+    /** The exercise list: yours, last used first ([used]), then the built in lifts you haven't used. */
+    fun exerciseList(used: List<String>): List<String> = used + COMMON_LIFTS.filter { c -> used.none { it.equals(c, ignoreCase = true) } }
+
+    /** Without anything to fill the log card from: 10 reps and 20 kg. */
+    const val DEFAULT_REPS = 10
+    const val DEFAULT_KG = 20f
+
+    /** The log card's reps and kg steppers. */
+    val REPS = 1..100
+    const val KG_STEP = 2.5f
+    const val KG_MAX = 500f
+
+    fun stepReps(reps: Int, by: Int): Int = (reps + by).coerceIn(REPS)
+    fun stepKg(kg: Float, by: Int): Float = (kg + by * KG_STEP).coerceIn(0f, KG_MAX)
+
+    /**
+     * What the log card opens on for [exercise] (workouts spec 2.4): the last set of it logged in this workout ([sets]),
+     * else what was last logged for it ([lastReps], [lastKg] from the exercise list), else [DEFAULT_REPS] and
+     * [DEFAULT_KG].
+     */
+    fun prefill(exercise: String?, sets: List<org.openstrap.app.data.db.AppWorkoutSet>, lastReps: Int?, lastKg: Float?): Pair<Int, Float> {
+        val here = sets.lastOrNull { it.reps != null && it.exercise.equals(exercise, ignoreCase = true) }
+        return (here?.reps ?: lastReps ?: DEFAULT_REPS) to (here?.weightKg ?: lastKg ?: DEFAULT_KG)
+    }
+
+    /** Kilograms lifted: reps times weight over the sets logged with both; null when none was. */
+    fun kgLifted(sets: List<org.openstrap.app.data.db.AppWorkoutSet>): Float? {
+        val logged = sets.filter { it.reps != null && it.weightKg != null }
+        return if (logged.isEmpty()) null else logged.sumOf { it.reps!! * it.weightKg!!.toDouble() }.toFloat()
+    }
+
+    /**
+     * The highest heart rate of [readings] (time, bpm, oldest first, as every workout's are) from [from] to [to]; null
+     * without any. Found by a binary search and a scan of just that stretch: it's asked once per set row and round.
+     */
+    fun peak(readings: List<Pair<Long, Int>>, from: Long, to: Long): Int? {
+        var lo = 0
+        var hi = readings.size
+        while (lo < hi) {
+            val mid = (lo + hi) ushr 1
+            if (readings[mid].first < from) lo = mid + 1 else hi = mid
+        }
+        var best: Int? = null
+        var i = lo
+        while (i < readings.size && readings[i].first <= to) {
+            val bpm = readings[i].second
+            if (best == null || bpm > best) best = bpm
+            i++
+        }
+        return best
+    }
+
+    /** "60", or "62.5" kg. */
+    fun kgText(kg: Float): String = if (kg % 1f == 0f) kg.toInt().toString() else String.format(java.util.Locale.ROOT, "%.1f", kg)
 
     /**
      * Whether a rest that began at [restStart] (and may have been extended to [restUntil]) is over at [now]: its time

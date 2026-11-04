@@ -1,6 +1,7 @@
 package org.openstrap.app.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -18,6 +19,14 @@ class RouteTest {
     @Test
     fun distanceAlongTheEquator() {
         assertEquals(300.0, Route.distance(run(100)), 1.0)
+    }
+
+    @Test
+    fun aMapNeedsTheRouteToGoSomewhere() {
+        // Standing still with the fixes wandering a few metres is a dot, not a route.
+        assertFalse(Route.mappable((0..90).map { east(it.toLong(), (it % 3) * 2.0) }))
+        assertFalse(Route.mappable(listOf(east(0, 0.0))))
+        assertTrue(Route.mappable(run(10)))
     }
 
     @Test
@@ -66,10 +75,8 @@ class RouteTest {
     }
 
     @Test
-    fun paceAndItsFormat() {
+    fun currentPace() {
         assertEquals(333.0, Route.currentPace(run(100))!!, 2.0)
-        assertEquals("5′33″", Route.formatPace(333.0))
-        assertNull(Route.formatPace(null))
     }
 
     /**
@@ -224,5 +231,18 @@ class RouteTest {
         assertEquals(176.0, skippingDistance(points), 0.5)
         val smoothed = Route.distance(points)
         assertTrue("smoothed $smoothed m", smoothed in 178.0..188.0)
+    }
+
+    @Test
+    fun climbCountsRisesPastTheNoise() {
+        fun at(t: Long, h: Double?, acc: Float = 5f) = Route.Point(t, 51.5, -0.1, acc, altitude = h)
+        // Up 10 m, down 6, up 8: 18 m climbed. The 2 m wobbles along the way don't count.
+        val hill = listOf(100.0, 102.0, 101.0, 105.0, 110.0, 108.0, 104.0, 106.0, 104.0, 112.0).mapIndexed { i, h -> at(i.toLong(), h) }
+        assertEquals(18.0, Route.climb(hill)!!, 1e-6)
+        // Flat with noise under the step: nothing.
+        assertEquals(0.0, Route.climb(listOf(100.0, 102.0, 100.0, 103.0, 101.0).mapIndexed { i, h -> at(i.toLong(), h) })!!, 1e-6)
+        // A bad fix's height is left out; no heights at all is no climb.
+        assertEquals(0.0, Route.climb(listOf(at(0, 100.0), at(1, 150.0, acc = 80f), at(2, 101.0)))!!, 1e-6)
+        assertNull(Route.climb(listOf(at(0, null), at(1, null))))
     }
 }

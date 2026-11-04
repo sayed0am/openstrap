@@ -1,0 +1,340 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Starting a workout: the Choose page and the Ready page, with its plan, goal and where rows and their sheets
+  (ui/workout/StartCopy.kt). The strap is the Helio Strap the app records with. Tabata is the name of a workout, keep it
+  unless your language has its own. Units (km, m, min, s, h, bpm) read as the app writes them elsewhere.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Choose's one line about the strap, when it's connected and reads a heart rate. One line. -->
+    <string name="workout_start_strap_ready_bpm">Strap ready, <xliff:g id="bpm" example="72">%1$d</xliff:g> bpm</string>
+    <!-- Choose's strap line when it's connected but no heart rate has come yet. -->
+    <string name="workout_start_strap_ready">Strap ready</string>
+    <!-- Choose's strap line while the app connects to it. -->
+    <string name="workout_start_strap_connecting">Connecting to the strap</string>
+    <!-- Choose's strap line with no strap paired. A workout records from the phone alone. -->
+    <string name="workout_start_strap_not_paired">No strap paired. You can start anyway.</string>
+    <!-- Choose's strap line when the paired strap isn't connected. -->
+    <string name="workout_start_strap_not_connected">Strap not connected. You can start anyway.</string>
+
+    <!-- The goal chip for no goal on a run. A short chip, about 12 characters. -->
+    <string name="workout_start_just_run">Just run</string>
+    <!-- The goal chip for no goal on a walk. A short chip. -->
+    <string name="workout_start_just_walk">Just walk</string>
+    <!-- The goal chip for no goal on a bike ride. A short chip. -->
+    <string name="workout_start_just_ride">Just ride</string>
+    <!-- The goal chip for no goal on any other sport. A short chip. -->
+    <string name="workout_start_just_go">Just go</string>
+    <!-- No plan: strength's open sets, or mind and body with no length. A pill. -->
+    <string name="workout_start_open">No limit</string>
+
+    <!-- Above Ready's plan card for a distance sport or indoor cardio. One word. -->
+    <string name="workout_start_plan_title_goal">Goal</string>
+    <!-- Above Ready's plan card for strength and intervals. One word. -->
+    <string name="workout_start_plan_title_plan">Plan</string>
+    <!-- Above Ready's plan card for mind and body (yoga and the like): how long it lasts. One word. -->
+    <string name="workout_start_plan_title_length">Length</string>
+    <!-- Above Ready's plan card for a game (football and the like). One word. -->
+    <string name="workout_start_plan_title_match">Match</string>
+    <!-- The title of the sheet that picks a goal. -->
+    <string name="workout_start_plan_sheet_goal">Choose a goal</string>
+    <!-- The title of the sheet that picks a plan. -->
+    <string name="workout_start_plan_sheet_plan">Choose a plan</string>
+    <!-- The title of the sheet that picks a length (mind and body). -->
+    <string name="workout_start_plan_sheet_length">Choose a length</string>
+    <!-- The title of a game's sheet: play freely, or in halves, quarters or periods. -->
+    <string name="workout_start_plan_sheet_games">Free play or periods</string>
+    <!-- What the goal pill does, read by a screen reader. -->
+    <string name="workout_start_plan_hint_goal">Change the goal</string>
+    <!-- What the plan pill does, read by a screen reader. -->
+    <string name="workout_start_plan_hint_plan">Change the plan</string>
+    <!-- What the length pill does, read by a screen reader. -->
+    <string name="workout_start_plan_hint_length">Change the length</string>
+    <!-- What a game's pill does, read by a screen reader. -->
+    <string name="workout_start_plan_hint_match">Change the match</string>
+
+    <!-- Strength's plan kind with a set number of sets, in its sheet. One word. -->
+    <string name="workout_start_strength_plan">Plan</string>
+    <!-- Ready's line for strength. -->
+    <string name="workout_start_strength_status">The strap buzzes when rest is over, so the phone can stay on the bench.</string>
+    <!-- Under Open in strength's sheet. One line. -->
+    <string name="workout_start_open_sets_kind_note">As many sets as you like, rest after each</string>
+    <!-- Under Plan in strength's sheet. One line. -->
+    <string name="workout_start_plan_kind_note">A number of sets with rest between</string>
+    <!-- Strength's note with open sets. -->
+    <string name="workout_start_open_sets_note">As many sets as you like. The strap buzzes when rest is over.</string>
+    <!-- While the sets and rest are typed: the two fields in order. -->
+    <string name="workout_start_strength_typing">How many sets, then the rest in seconds</string>
+    <!-- A count of sets: a preset chip ("5 sets") and in "Last time 5 sets, Tuesday". -->
+    <plurals name="workout_start_sets">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="count" example="5">%d</xliff:g> sets</item>
+    </plurals>
+    <!-- A switch: rest ends once the heart rate is low enough. One line. -->
+    <string name="workout_start_end_rest_early">End rest early</string>
+    <!-- Under End rest early: the heart rate it ends at. -->
+    <string name="workout_start_end_rest_note">Once you\'re under <xliff:g id="bpm" example="110">%1$d</xliff:g> bpm</string>
+    <!-- A switch: a card after each set to note its reps and weight. One line. -->
+    <string name="workout_start_log_sets">Log reps and weight</string>
+    <!-- Under Log reps and weight. -->
+    <string name="workout_start_log_sets_note">A quick card after each set</string>
+
+    <!-- Ready's line for a game in free play: the strap records on its own. -->
+    <string name="workout_start_games_status">Phone in your bag? That\'s fine.</string>
+    <!-- Ready's line for a game in halves with half time between. -->
+    <string name="workout_start_games_note_half_break">Phone in your bag? That\'s fine. The strap buzzes at the end of each half and break.</string>
+    <!-- Ready's line for a game in halves with no break. -->
+    <string name="workout_start_games_note_half">Phone in your bag? That\'s fine. The strap buzzes at the end of each half.</string>
+    <!-- Ready's line for a game in quarters with breaks. -->
+    <string name="workout_start_games_note_quarter_break">Phone in your bag? That\'s fine. The strap buzzes at the end of each quarter and break.</string>
+    <!-- Ready's line for a game in quarters with no breaks. -->
+    <string name="workout_start_games_note_quarter">Phone in your bag? That\'s fine. The strap buzzes at the end of each quarter.</string>
+    <!-- Ready's line for a game in periods with breaks. -->
+    <string name="workout_start_games_note_period_break">Phone in your bag? That\'s fine. The strap buzzes at the end of each period and break.</string>
+    <!-- Ready's line for a game in periods with no breaks. -->
+    <string name="workout_start_games_note_period">Phone in your bag? That\'s fine. The strap buzzes at the end of each period.</string>
+
+    <!-- Ready's GPS line while it looks for a position. One line. -->
+    <string name="workout_start_gps_finding">Finding GPS</string>
+    <!-- Ready's GPS line with a rough position: how many metres off it may be. -->
+    <string name="workout_start_gps_finding_accuracy">Finding GPS, ±<xliff:g id="meters" example="48">%1$d</xliff:g> m</string>
+    <!-- Ready's GPS line once the position is good: how many metres off it may be. -->
+    <string name="workout_start_gps_ready">GPS ready, ±<xliff:g id="meters" example="6">%1$d</xliff:g> m</string>
+
+    <!-- A time in seconds, for a rest or a round: "90 s". -->
+    <string name="workout_start_seconds"><xliff:g id="seconds" example="90">%1$d</xliff:g> s</string>
+    <!-- A time in minutes: "2 min", a time preset, a rep or the minutes of last time's workout. -->
+    <string name="workout_start_minutes"><xliff:g id="minutes" example="2">%1$d</xliff:g> min</string>
+    <!-- A time in minutes and seconds: "2 min 30 s". -->
+    <string name="workout_start_minutes_seconds"><xliff:g id="minutes" example="2">%1$d</xliff:g> min <xliff:g id="seconds" example="30">%2$d</xliff:g> s</string>
+    <!-- A time preset of whole hours: "1 h". A short chip. -->
+    <string name="workout_start_hours"><xliff:g id="hours" example="1">%1$d</xliff:g> h</string>
+    <!-- A time preset of hours and minutes, as every duration in the app reads: "1 h 30". A short chip. -->
+    <string name="workout_start_hours_minutes"><xliff:g id="hours" example="1">%1$d</xliff:g> h <xliff:g id="minutes" example="30">%2$d</xliff:g></string>
+    <!-- A distance in kilometres, the number as typed: "2.4 km". -->
+    <string name="workout_start_km"><xliff:g id="km" example="2.4">%1$s</xliff:g> km</string>
+    <!-- A distance in metres: "400 m". -->
+    <string name="workout_start_meters"><xliff:g id="meters" example="400">%1$d</xliff:g> m</string>
+    <!-- The unit kilometres, beside a number drawn on its own. -->
+    <string name="workout_start_unit_km">km</string>
+    <!-- The unit metres, beside a number drawn on its own. -->
+    <string name="workout_start_unit_m">m</string>
+    <!-- The unit minutes, beside a number drawn on its own. -->
+    <string name="workout_start_unit_min">min</string>
+    <!-- The unit seconds, beside a number drawn on its own. -->
+    <string name="workout_start_unit_s">s</string>
+    <!-- The unit hours, beside a number drawn on its own. -->
+    <string name="workout_start_unit_h">h</string>
+
+    <!-- HIIT's preset named after its inventor: 20 seconds of work, 10 of rest, 8 rounds. -->
+    <string name="workout_start_preset_tabata">Tabata</string>
+    <!-- Under Tabata in HIIT's sheet. -->
+    <string name="workout_start_preset_tabata_note">20 s on, 10 off, 8 rounds</string>
+    <!-- HIIT's preset of 40 seconds of work and 20 of rest. A pill. -->
+    <string name="workout_start_preset_forty_twenty">40 / 20</string>
+    <!-- Under 40 / 20 in HIIT's sheet. -->
+    <string name="workout_start_preset_forty_twenty_note">10 rounds</string>
+    <!-- HIIT's preset where a round starts every minute: work, then rest for what's left of the minute. A pill. -->
+    <string name="workout_start_every_minute">Every minute</string>
+    <!-- Under Every minute in HIIT's sheet. -->
+    <string name="workout_start_preset_every_minute_note">12 rounds, rest is what\'s left</string>
+    <!-- HIIT with no timer. A pill. -->
+    <string name="workout_start_preset_free">Free</string>
+    <!-- Under Free in HIIT's sheet. A lap is a tap on the lap button. -->
+    <string name="workout_start_preset_free_note">No timer, laps mark the rounds</string>
+    <!-- HIIT's own rounds in its pill: seconds of work, then of rest. -->
+    <string name="workout_start_work_rest"><xliff:g id="work" example="30">%1$d</xliff:g> / <xliff:g id="rest" example="15">%2$d</xliff:g></string>
+    <!-- A round that starts every so often, in HIIT's pill: "Every 90 s". -->
+    <string name="workout_start_every">Every <xliff:g id="time" example="90 s">%1$s</xliff:g></string>
+    <!-- Beside HIIT's rounds: all of their time, as a clock. -->
+    <string name="workout_start_total_line"><xliff:g id="time" example="4:00">%1$s</xliff:g> in all</string>
+    <!-- Timed rounds by name: seconds of work and of rest, then the rounds. -->
+    <string name="workout_start_structure_timed"><xliff:g id="work" example="30">%1$d</xliff:g> / <xliff:g id="rest" example="15">%2$d</xliff:g>, <xliff:g id="rounds" example="6">%3$d</xliff:g> rounds</string>
+    <!-- Rounds that start every so often, by name. -->
+    <string name="workout_start_structure_every">Every <xliff:g id="time" example="90 s">%1$s</xliff:g>, <xliff:g id="rounds" example="10">%2$d</xliff:g> rounds</string>
+    <!-- Run intervals by name: how many reps of what length. -->
+    <string name="workout_start_structure_reps"><xliff:g id="reps" example="6">%1$d</xliff:g> × <xliff:g id="length" example="400 m">%2$s</xliff:g></string>
+    <!-- HIIT's note with no timer. -->
+    <string name="workout_start_hiit_free_note">No timer. Laps mark the rounds.</string>
+    <!-- Ready's line for intervals. -->
+    <string name="workout_start_intervals_status">The strap buzzes at every switch, so the phone can stay on the floor.</string>
+    <!-- While HIIT's rounds are typed: the three fields in order. -->
+    <string name="workout_start_hiit_typing">Work, then rest, then how many rounds</string>
+    <!-- While Every minute's rounds are typed: the two fields in order. -->
+    <string name="workout_start_every_typing">Each round\'s time, then how many rounds</string>
+    <!-- A switch: warm up before the rounds start. One line. -->
+    <string name="workout_start_warm_up">Warm up first</string>
+    <!-- Under Warm up first. -->
+    <string name="workout_start_warm_up_note">No timer until you start the rounds.</string>
+
+    <!-- A game played in two halves. A pill. -->
+    <string name="workout_start_halves">Halves</string>
+    <!-- A game played in four quarters. A pill. -->
+    <string name="workout_start_quarters">Quarters</string>
+    <!-- A game played in another number of periods. A pill. -->
+    <string name="workout_start_periods"><xliff:g id="count" example="3">%1$d</xliff:g> periods</string>
+    <!-- The first half of a game: on the live screen under its clock and on the summary. About 12 characters. -->
+    <string name="workout_start_half_1">1st half</string>
+    <!-- The second half of a game. About 12 characters. -->
+    <string name="workout_start_half_2">2nd half</string>
+    <!-- The first quarter of a game. About 12 characters. -->
+    <string name="workout_start_quarter_1">1st quarter</string>
+    <!-- The second quarter of a game. About 12 characters. -->
+    <string name="workout_start_quarter_2">2nd quarter</string>
+    <!-- The third quarter of a game. About 12 characters. -->
+    <string name="workout_start_quarter_3">3rd quarter</string>
+    <!-- The fourth quarter of a game. About 12 characters. -->
+    <string name="workout_start_quarter_4">4th quarter</string>
+    <!-- A game's period by its number. About 12 characters. -->
+    <string name="workout_start_period_n">Period <xliff:g id="number" example="2">%1$d</xliff:g></string>
+    <!-- The break between two halves, and the button that starts it. A button, about 12 characters. -->
+    <string name="workout_start_half_time">Half time</string>
+    <!-- The break between quarters or periods, and the button that starts it. A button, about 12 characters. -->
+    <string name="workout_start_break">Break</string>
+    <!-- A game with no periods. A pill. -->
+    <string name="workout_start_free_play">Free play</string>
+    <!-- Under Free play in a game's sheet. -->
+    <string name="workout_start_free_play_kind_note">No periods, the clock just runs</string>
+    <!-- Under Halves in a game's sheet. -->
+    <string name="workout_start_halves_kind_note">Two halves with half time between</string>
+    <!-- Under Quarters in a game's sheet. -->
+    <string name="workout_start_quarters_kind_note">Four quarters with a break between each</string>
+    <!-- While a game's periods are typed: the three fields in order. -->
+    <string name="workout_start_games_typing">How many, how long, then the break</string>
+
+    <!-- Ready's line for mind and body with a length. -->
+    <string name="workout_start_mind_status">Quiet strap and a dim screen. One soft buzz at the end.</string>
+    <!-- Ready's line for mind and body with no length. -->
+    <string name="workout_start_mind_open_note">Quiet strap and a dim screen. End it when you\'re ready.</string>
+    <!-- Under Open in mind and body's sheet. -->
+    <string name="workout_start_mind_open_kind_note">No length, end it yourself</string>
+    <!-- Under a length in mind and body's sheet. -->
+    <string name="workout_start_mind_time_kind_note">One soft buzz when the time is up</string>
+
+    <!-- Your usual workout's line on Choose: what you did and the day. The what is "5.21 km", "5 sets" or "30 min", the day "Tuesday", "yesterday" or "Fri 23 Oct". -->
+    <string name="workout_start_last_time">Last time <xliff:g id="what" example="5.21 km">%1$s</xliff:g>, <xliff:g id="day" example="Tuesday">%2$s</xliff:g></string>
+    <!-- Ready's start button on a treadmill. A button. -->
+    <string name="workout_start_start_treadmill">Start treadmill run</string>
+
+    <!-- The where row's title when outdoors. One line. -->
+    <string name="workout_start_place_outside">Outside</string>
+    <!-- The where row's title for a swim in a lake or the sea. -->
+    <string name="workout_start_place_open_water">Open water</string>
+    <!-- The where row's title for a run on a treadmill. -->
+    <string name="workout_start_place_treadmill">On a treadmill</string>
+    <!-- The where row's title for a swim in a pool. -->
+    <string name="workout_start_place_pool">In a pool</string>
+    <!-- The where row's title for any other sport indoors. -->
+    <string name="workout_start_place_indoors">Indoors</string>
+    <!-- The where row's pill that switches to outdoors. A short pill. -->
+    <string name="workout_start_other_outside">Outside</string>
+    <!-- The where row's pill that switches to a swim in a lake or the sea. A short pill. -->
+    <string name="workout_start_other_open_water">Open water</string>
+    <!-- The where row's pill that switches to a treadmill. A short pill. -->
+    <string name="workout_start_other_treadmill">Treadmill</string>
+    <!-- The where row's pill that switches to a pool. A short pill. -->
+    <string name="workout_start_other_pool">Pool</string>
+    <!-- The where row's pill that switches to indoors. A short pill. -->
+    <string name="workout_start_other_indoors">Indoors</string>
+    <!-- Under an indoor run: no GPS, so the pace comes from the steps. -->
+    <string name="workout_start_indoor_note_run">Pace from your steps</string>
+    <!-- Under another indoor sport on foot. -->
+    <string name="workout_start_indoor_note_on_foot">Distance from your steps</string>
+    <!-- Under any other indoor sport. -->
+    <string name="workout_start_indoor_note_other">Time and heart rate, no distance</string>
+
+    <!-- A goal kind in the goal pill and its sheet. One word. -->
+    <string name="workout_start_kind_distance">Distance</string>
+    <!-- A goal kind in the goal pill and its sheet. One word. -->
+    <string name="workout_start_kind_time">Time</string>
+    <!-- A goal kind: stay in a heart rate zone. One word. -->
+    <string name="workout_start_kind_zone">Zone</string>
+    <!-- A goal kind: run intervals. One word. -->
+    <string name="workout_start_kind_intervals">Intervals</string>
+    <!-- Under a goal's value: tap the number to type one. -->
+    <string name="workout_start_tap_to_type">Tap to type</string>
+    <!-- Under Distance in the goal sheet. -->
+    <string name="workout_start_distance_kind_note">A buzz at halfway and at the goal</string>
+    <!-- Under Time in the goal sheet. -->
+    <string name="workout_start_time_kind_note">A buzz when the time is up</string>
+    <!-- Under Zone in the goal sheet. -->
+    <string name="workout_start_zone_kind_note">A buzz when you leave your zone</string>
+    <!-- Under Intervals in the goal sheet. -->
+    <string name="workout_start_intervals_kind_note">Reps with rest between, a buzz at each switch</string>
+    <!-- The note with no goal, for a sport that records a distance. -->
+    <string name="workout_start_no_goal_note_distance">No goal. Time, distance and heart rate.</string>
+    <!-- The note with no goal, for a sport without a distance. -->
+    <string name="workout_start_no_goal_note">No goal. Time and heart rate.</string>
+    <!-- A distance goal's note. The number is in kilometres, as typed. -->
+    <string name="workout_start_distance_note">The strap buzzes at halfway and at <xliff:g id="km" example="7.5">%1$s</xliff:g> km.</string>
+    <!-- The distance preset for a half marathon. A short chip, about 6 characters. -->
+    <string name="workout_start_half_marathon">Half</string>
+    <!-- A time goal's note: when it would end if started now. -->
+    <string name="workout_start_ends_near">Ends about <xliff:g id="time" example="19:15">%1$s</xliff:g></string>
+    <!-- While a time goal is typed. The end is "Ends about 19:15". -->
+    <string name="workout_start_time_typing_note">Type hours, then minutes. <xliff:g id="ends_near" example="Ends near 19:15">%1$s</xliff:g></string>
+    <!-- How the zone buttons work. -->
+    <string name="workout_start_zone_note">Tap a zone, or a second one for a range. The strap buzzes when you leave it.</string>
+    <!-- A heading over the zone buttons. -->
+    <string name="workout_start_your_zones">Your zones</string>
+    <!-- A zone goal over two zones: the heart rates, then the zones' names in lower case ("aerobic", "tempo"). -->
+    <string name="workout_start_zone_range"><xliff:g id="from" example="115">%1$d</xliff:g> to <xliff:g id="to" example="152">%2$d</xliff:g> bpm, <xliff:g id="low" example="aerobic">%3$s</xliff:g> to <xliff:g id="high" example="tempo">%4$s</xliff:g></string>
+    <!-- A zone goal of one zone: the heart rates, then its name in lower case. -->
+    <string name="workout_start_zone_range_one"><xliff:g id="from" example="115">%1$d</xliff:g> to <xliff:g id="to" example="133">%2$d</xliff:g> bpm, <xliff:g id="zone" example="aerobic">%3$s</xliff:g></string>
+    <!-- A zone goal up to the top zone, which has no end: the heart rate, then the zones' names in lower case. -->
+    <string name="workout_start_zone_up"><xliff:g id="from" example="153">%1$d</xliff:g> bpm and up, <xliff:g id="low" example="threshold">%2$s</xliff:g> to <xliff:g id="high" example="max">%3$s</xliff:g></string>
+    <!-- A zone goal of the top zone alone, which has no end: the heart rate, then its name in lower case. -->
+    <string name="workout_start_zone_up_one"><xliff:g id="from" example="173">%1$d</xliff:g> bpm and up, <xliff:g id="zone" example="max">%2$s</xliff:g></string>
+
+    <!-- What run intervals of a distance do. The rep is "400 m", the total "2.4 km" or "800 m". -->
+    <string name="workout_start_intervals_note_distance">The strap buzzes at the end of each <xliff:g id="rep" example="400 m">%1$s</xliff:g> rep and when rest is up. <xliff:g id="total" example="2.4 km">%2$s</xliff:g> of reps in all.</string>
+    <!-- What run intervals of a time do. The rep is "4 min", the total "16 min" or "1 h 15". -->
+    <string name="workout_start_intervals_note_time">The strap buzzes at the end of each <xliff:g id="rep" example="4 min">%1$s</xliff:g> rep and when rest is up. <xliff:g id="total" example="16 min">%2$s</xliff:g> of reps in all.</string>
+    <!-- While run intervals are typed: the three fields in order. -->
+    <string name="workout_start_intervals_typing">How many, then each rep, then the rest</string>
+    <!-- Under the run intervals' numbers. -->
+    <string name="workout_start_tap_a_number">Tap a number to type it</string>
+    <!-- Before the unit buttons (m, km, min) a rep's length is typed in. -->
+    <string name="workout_start_each_rep_in">Each rep in</string>
+    <!-- Saves the run intervals by a name. A button. -->
+    <string name="workout_start_save_intervals">Save</string>
+    <!-- The button once they're saved. -->
+    <string name="workout_start_saved_intervals">Saved</string>
+    <!-- Under the save button. -->
+    <string name="workout_start_save_note">Find them when you start a workout. Up to ten are kept.</string>
+    <!-- The hint in the name field. -->
+    <string name="workout_start_name_hint">Name, like Tuesday intervals</string>
+
+    <!-- A switch on Ready: the strap asks to end the workout when you stop moving. One line. -->
+    <string name="workout_start_ask_to_end">Ask to end when I stop</string>
+    <!-- Under Ask to end when I stop. -->
+    <string name="workout_start_ask_to_end_note">The strap buzzes after 8 min without moving</string>
+    <!-- The route switch for any sport with GPS. The sport is its name in lower case: "run", "walk", "hike". One line. -->
+    <string name="workout_start_keep_route">Save a map of my <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- The route switch on a bike. One line. -->
+    <string name="workout_start_keep_route_ride">Save a map of my ride</string>
+    <!-- The route switch on skis. One line. -->
+    <string name="workout_start_keep_route_ski">Save a map of my skiing</string>
+    <!-- The route switch for rucking (walking with a weighted pack). One line. -->
+    <string name="workout_start_keep_route_ruck">Save a map of my ruck</string>
+    <!-- A button when the phone's location is off. -->
+    <string name="workout_start_turn_on_location">Turn on location</string>
+
+    <!-- Ready's hero title with the strap connected. One line, large. -->
+    <string name="workout_ready_connected">Strap connected</string>
+    <!-- Ready's hero line under it while the heart rate comes in. -->
+    <string name="workout_ready_live">Live from your strap.</string>
+    <!-- Ready's hero line while no heart rate has come yet. -->
+    <string name="workout_ready_waiting">Waiting for heart rate.</string>
+    <!-- Ready's hero line while the heart rate comes in and the strap's battery is low. -->
+    <string name="workout_ready_live_battery">Live from your strap. Battery <xliff:g id="percent" example="15">%1$d</xliff:g>%%.</string>
+    <!-- Ready's hero line while no heart rate has come yet and the strap's battery is low. -->
+    <string name="workout_ready_waiting_battery">Waiting for heart rate. Battery <xliff:g id="percent" example="15">%1$d</xliff:g>%%.</string>
+    <!-- Ready's hero title while the app connects to the strap. One line, large. -->
+    <string name="workout_ready_connecting">Connecting to the strap</string>
+    <!-- Ready's hero title with no strap paired. One line, large. -->
+    <string name="workout_ready_not_paired">No strap paired</string>
+    <!-- Ready's hero title when the paired strap isn't connected. One line, large. -->
+    <string name="workout_ready_not_connected">Strap not connected</string>
+    <!-- Ready's hero line under any of the three above: a workout records from the phone alone. -->
+    <string name="workout_ready_anyway">You can start anyway.</string>
+</resources>

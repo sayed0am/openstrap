@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Badges (data/Rewards.kt): each badge's title under its art on the Goals and bests page, in celebrations and in a
+  workout's summary, and the few letters drawn on the art itself. Tabata is a workout format, keep it as is.
+-->
+<resources>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_workout">First workout</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_10k_steps">First 10,000-step day</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_workouts_10">10 workouts</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_workouts_50">50 workouts</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_workouts_100">100 workouts</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_workouts_500">500 workouts</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_km_100">100 km in all</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_km_500">500 km in all</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_km_1000">1,000 km in all</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_steps_1m">A million steps</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_goal_first">First weekly goal met</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_goal_4">Goal met 4 weeks in a row</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_goal_12">Goal met 12 weeks in a row</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_goal_26">Goal met 26 weeks in a row</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_goal_52">Goal met 52 weeks in a row</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_run">First run</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_5k">First 5 km run</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_10k">First 10 km run</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_indoor">First indoor workout</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_log">First logged strength session</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_tabata">First Tabata</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_reps">First run intervals</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_mind">First yoga or calm session</string>
+    <!-- A badge's title, under its art in a grid of three. Up to two short lines. -->
+    <string name="core_badge_first_game">First game</string>
+
+    <!-- The letters drawn on a badge's art, for a first run. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_run">Run</string>
+    <!-- The letters drawn on a badge's art, for a first indoor workout, short for indoor. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_indoor">In</string>
+    <!-- The letters drawn on a badge's art, for a first logged strength session, short for kilograms. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_log">kg</string>
+    <!-- The letters drawn on a badge's art, for a first Tabata, short for Tabata. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_tabata">Tab</string>
+    <!-- The letters drawn on a badge's art, for first run intervals, short for repetitions. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_reps">Reps</string>
+    <!-- The letters drawn on a badge's art, for a first yoga or calm session, the meditation syllable. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_mind">Om</string>
+    <!-- The letters drawn on a badge's art, for a first game. Two to four letters, it must fit inside a small circle. -->
+    <string name="core_badge_art_game">Play</string>
+</resources>

@@ -8,11 +8,10 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.HealthConnectAuto
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.StrapController
@@ -57,6 +56,16 @@ object AutoHealthConnect {
     fun workoutRange(from: Long, end: Long, now: Long): Pair<Long, Long> =
         from / 3600 * 3600 to minOf(maxOf(now, end), (end / 3600 + 1) * 3600 - 1)
 
+    /**
+     * The range written after a sleep the strap started at [strapStart] was edited: one that reaches every time it
+     * can be shown at ([org.openstrap.app.data.SleepEdits.MAX_SHIFT_SECONDS] either side of a session up to 16 h), not
+     * past [now]. The export's own sleep delete reaches a day further back.
+     */
+    fun sleepRange(strapStart: Long, now: Long): Pair<Long, Long> {
+        val shift = org.openstrap.app.data.SleepEdits.MAX_SHIFT_SECONDS
+        return strapStart - shift to minOf(now, strapStart + org.openstrap.app.data.SleepEdits.SLEEP_MAX_SECONDS + shift)
+    }
+
     /** Why auto sync has to stop: Health Connect not [available], or the write permissions not [granted]. Null when fine. */
     fun stopReason(available: Boolean, granted: Boolean): HealthConnectAuto.Stopped? = when {
         !available -> HealthConnectAuto.Stopped.UNAVAILABLE
@@ -76,29 +85,25 @@ class HealthConnectAutoSync(
     private val settings: SettingsStore,
     private val exporter: HealthConnectExporter,
     strap: StrapController,
+    /** The app's scope ([org.openstrap.app.AppContainer.appScope]): the writes outlive any screen. */
+    private val scope: CoroutineScope,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-
     init {
         scope.launch { strap.syncEnded.collect { syncEnded() } }
     }
 
     /** A strap sync ended: queues a write of the recent days, unless one is queued already. */
     private suspend fun syncEnded() {
-        try {
+        catching {
             val auto = settings.healthConnectAuto.first()
-            if (!auto.on) return
+            if (!auto.on) return@catching
             val delay = AutoHealthConnect.delayMs(System.currentTimeMillis(), auto.lastSynced?.times(1000))
             // KEEP: a write already waiting reads the database when it runs, so it covers this sync too.
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK, ExistingWorkPolicy.KEEP,
                 OneTimeWorkRequestBuilder<HealthConnectWorker>().setInitialDelay(delay, TimeUnit.MILLISECONDS).build(),
             )
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            Log.w(TAG, "health connect: auto sync not queued: $e")
-        }
+        }.onFailure { Log.w(TAG, "health connect: auto sync not queued: $it") }
     }
 
     /** A phone workout was saved (ended, added from history, trimmed): writes it now. */
@@ -107,6 +112,20 @@ class HealthConnectAutoSync(
             guarded("workout $start") {
                 val n = exporter.exportWorkout(start)
                 Log.i(TAG, "health connect: wrote workout $start, $n records")
+            }
+        }
+    }
+
+    /**
+     * A sleep or nap the strap started at [strapStart] was moved, deleted or brought back: writes its night again now
+     * ([AutoHealthConnect.sleepRange]), not on the next sync, so Health Connect moves or drops it too.
+     */
+    fun sleepEdited(strapStart: Long) {
+        scope.launch {
+            guarded("sleep $strapStart") {
+                val (from, to) = AutoHealthConnect.sleepRange(strapStart, System.currentTimeMillis() / 1000)
+                val n = exporter.exportSleep(from, to)
+                Log.i(TAG, "health connect: wrote the sleep at $strapStart again, $n records")
             }
         }
     }
@@ -137,8 +156,10 @@ class HealthConnectAutoSync(
      */
     suspend fun check(): Boolean {
         if (!settings.healthConnectAuto.first().on) return false
-        val available = runCatching { exporter.isAvailable() }.getOrDefault(false)
-        val granted = available && runCatching { exporter.hasPermissions() }.getOrDefault(false)
+        val available = catching { exporter.isAvailable() }
+            .onFailure { Log.w(TAG, "health connect: availability not read: $it") }.getOrDefault(false)
+        val granted = available && catching { exporter.hasPermissions() }
+            .onFailure { Log.w(TAG, "health connect: permissions not read: $it") }.getOrDefault(false)
         val why = AutoHealthConnect.stopReason(available, granted) ?: return true
         settings.stopHealthConnectAuto(why)
         Log.i(TAG, "health connect: auto sync stopped, $why")
@@ -147,16 +168,16 @@ class HealthConnectAutoSync(
 
     /** Runs [write] while auto sync is on and still can; a permission taken back mid-write stops it too. Never throws. */
     private suspend fun guarded(what: String, write: suspend () -> Unit) {
-        try {
-            if (!check()) return
-            write()
-        } catch (e: kotlinx.coroutines.CancellationException) {
-            throw e
-        } catch (e: SecurityException) {
-            runCatching { settings.stopHealthConnectAuto(HealthConnectAuto.Stopped.PERMISSIONS) }
-            Log.w(TAG, "health connect: auto sync stopped writing $what: $e")
-        } catch (e: Exception) {
-            Log.w(TAG, "health connect: auto sync of $what failed: $e")
+        catching {
+            if (check()) write()
+        }.onFailure { e ->
+            if (e is SecurityException) {
+                catching { settings.stopHealthConnectAuto(HealthConnectAuto.Stopped.PERMISSIONS) }
+                    .onFailure { Log.w(TAG, "health connect: auto sync not turned off: $it") }
+                Log.w(TAG, "health connect: auto sync stopped writing $what: $e")
+            } else {
+                Log.w(TAG, "health connect: auto sync of $what failed: $e")
+            }
         }
     }
 

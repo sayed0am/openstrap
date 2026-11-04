@@ -17,7 +17,7 @@ class WorkoutsTest {
 
     @Test
     fun endComesFromTheRecoveryTail() {
-        val a = Workouts.analyse(workout(), hr, emptyList(), 190)
+        val a = Workouts.analyse(workout(), hr, emptyList(), 190, HeartZones.STANDARD)
         assertEquals(start + 1200, a.end)
         assertEquals(30, a.recovery60)
         assertEquals(60, a.recovery120)
@@ -30,7 +30,7 @@ class WorkoutsTest {
     @Test
     fun sportEffectSetsEndAndMaxHr() {
         val effect = SportEffectRow(start + 1100, 127, null, null, null, null, null, null, 160)
-        val a = Workouts.analyse(workout(), hr, listOf(effect), 190)
+        val a = Workouts.analyse(workout(), hr, listOf(effect), 190, HeartZones.STANDARD)
         assertEquals(start + 1100, a.end)
         assertEquals(160, a.maxHeartRate)
         assertEquals(127, a.effect?.recoveryMinutes)
@@ -38,7 +38,7 @@ class WorkoutsTest {
 
     @Test
     fun noHeartRateFallsBackToExerciseTime() {
-        val a = Workouts.analyse(workout(600), emptyList(), emptyList(), 190)
+        val a = Workouts.analyse(workout(600), emptyList(), emptyList(), 190, HeartZones.STANDARD)
         assertEquals(start + 600, a.end)
         assertNull(a.recovery60)
         assertEquals(0, a.zoneSeconds.sum())
@@ -46,10 +46,10 @@ class WorkoutsTest {
 
     @Test
     fun zones() {
-        assertNull(Workouts.zoneOf(90, 190))
-        assertEquals(0, Workouts.zoneOf(100, 190))
-        assertEquals(4, Workouts.zoneOf(190, 190))
-        assertEquals(4, Workouts.zoneOf(200, 190))
+        assertNull(Workouts.zoneOf(90, 190, HeartZones.STANDARD))
+        assertEquals(0, Workouts.zoneOf(100, 190, HeartZones.STANDARD))
+        assertEquals(4, Workouts.zoneOf(190, 190, HeartZones.STANDARD))
+        assertEquals(4, Workouts.zoneOf(200, 190, HeartZones.STANDARD))
     }
 
     /** Only a fresh, auto-detected strap workout gets the "detected" notification (codemap 05 §8). */
@@ -73,16 +73,16 @@ class WorkoutsTest {
         val run = workout().copy(sportType = 1)
         val auto = run.copy(subtype = Workouts.SUBTYPE_AUTO_DETECTED)
         val activity = run.copy(sportType = Workouts.GENERIC_ACTIVITY)
-        org.junit.Assert.assertTrue(Workouts.analyse(run, emptyList(), emptyList(), 190).startedByYou)
-        org.junit.Assert.assertFalse(Workouts.analyse(auto, emptyList(), emptyList(), 190).startedByYou)
-        org.junit.Assert.assertFalse(Workouts.analyse(activity, emptyList(), emptyList(), 190).startedByYou)
+        org.junit.Assert.assertTrue(Workouts.analyse(run, emptyList(), emptyList(), 190, HeartZones.STANDARD).startedByYou)
+        org.junit.Assert.assertFalse(Workouts.analyse(auto, emptyList(), emptyList(), 190, HeartZones.STANDARD).startedByYou)
+        org.junit.Assert.assertFalse(Workouts.analyse(activity, emptyList(), emptyList(), 190, HeartZones.STANDARD).startedByYou)
     }
 
     @org.junit.Test
     fun autoDetectedLabelOnlyOnStrapWorkouts() {
         val auto = workout().copy(subtype = Workouts.SUBTYPE_AUTO_DETECTED)
-        org.junit.Assert.assertTrue(Workouts.analyse(auto, emptyList(), emptyList(), 190).autoDetected)
-        org.junit.Assert.assertFalse(Workouts.analyse(workout(), emptyList(), emptyList(), 190).autoDetected)
+        org.junit.Assert.assertTrue(Workouts.analyse(auto, emptyList(), emptyList(), 190, HeartZones.STANDARD).autoDetected)
+        org.junit.Assert.assertFalse(Workouts.analyse(workout(), emptyList(), emptyList(), 190, HeartZones.STANDARD).autoDetected)
     }
 
     @Test
@@ -113,7 +113,7 @@ class WorkoutsTest {
     fun aPhoneWorkoutShowsItsMovingTimeAndAStrapWorkoutItsWholeLength() {
         // 108 s from start to end, 97 s of them moving.
         val w = Workout(start, start + 108, 1, 97, null, null, null, null, null, null, null, null, null)
-        val strap = Workouts.analyse(w, emptyList(), emptyList(), 190)
+        val strap = Workouts.analyse(w, emptyList(), emptyList(), 190, HeartZones.STANDARD)
         assertEquals(108, strap.activeSeconds)
         assertEquals(97, strap.copy(fromPhone = true).activeSeconds)
     }
@@ -146,6 +146,20 @@ class WorkoutsTest {
     }
 
     @Test
+    fun aTrimOrEndAtLeavesTheStrapCopyWithItsWorkout() {
+        // A 30 min walk, the stop prompt 8 min later, End at tapped at 41 min: the strap stopped at 41 min. Shown as
+        // 0 to 30 min, 11 min of the strap's copy lies outside, more than the 10 min allowed, so it listed twice.
+        val walk = org.openstrap.app.data.db.AppWorkout(start, start + 1800, 3, recordedEnd = start + 2460)
+        val strapCopy = Workout(start, start + 2460, 3, 2460, 200, 110, 130, 80, 1f, 0.1f, 10, null, null)
+        assertEquals(walk, Workouts.phoneTwin(strapCopy, listOf(walk), start + 9000))
+        assertEquals(1, Workouts.listed(listOf(strapCopy), emptyList(), emptyList(), listOf(walk), emptyMap(), 190, now = start + 9000).size)
+        // Trimmed at both ends: still the strap's copy of it.
+        val trimmed = walk.copy(shownStart = start + 900, end = start + 1500)
+        assertEquals(trimmed, Workouts.phoneTwin(strapCopy, listOf(trimmed), start + 9000))
+        assertEquals(listOf(strapCopy.start), Workouts.strapTwins(listOf(strapCopy), Workouts.phoneRange(trimmed, start + 9000)).map { it.start })
+    }
+
+    @Test
     fun onlyARecordOfNearlyAllOfAPhoneWorkoutStandsForItsEffect() {
         val walk = start..(start + 6892)
         // A session the strap ran alongside, a few seconds off at each end: its figures are the walk's.
@@ -158,8 +172,8 @@ class WorkoutsTest {
     fun recoveryCountsFromTheWorkoutWhoseOwnRunsOutLast() {
         // A long walk ending 23:31 that needs 17 h, then a 6-minute walk at 00:15 that needs 35 min of its own and
         // carries the long one's 16 h: the time left counts from the long walk.
-        val long = Workouts.analyse(workout(), emptyList(), emptyList(), 190).copy(end = start, recoveryMinutes = 1022, ownRecoveryMinutes = 1022)
-        val short = Workouts.analyse(workout(), emptyList(), emptyList(), 190).copy(end = start + 3000, recoveryMinutes = 978, ownRecoveryMinutes = 35)
+        val long = Workouts.analyse(workout(), emptyList(), emptyList(), 190, HeartZones.STANDARD).copy(end = start, recoveryMinutes = 1022, ownRecoveryMinutes = 1022)
+        val short = Workouts.analyse(workout(), emptyList(), emptyList(), 190, HeartZones.STANDARD).copy(end = start + 3000, recoveryMinutes = 978, ownRecoveryMinutes = 35)
         assertEquals(long, Workouts.recoverySource(listOf(short, long)))
         // Without its own, a workout's whole time stands.
         val unknown = short.copy(ownRecoveryMinutes = null)

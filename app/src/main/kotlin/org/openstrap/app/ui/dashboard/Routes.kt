@@ -1,46 +1,50 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.saveable.Saver
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.Goals
-import org.openstrap.app.data.DailyMetric
-
-/** A metric with its own detail screen: its title, unit, decimals shown, and the per-day series behind it. */
-enum class Metric(val title: String, val unit: String, val decimals: Int, val daily: DailyMetric) {
-    HeartRate("Heart rate", "bpm", 0, DailyMetric.HeartRate),
-    RestingHr("Resting heart rate", "bpm", 0, DailyMetric.RestingHr),
-    Hrv("HRV", "ms", 0, DailyMetric.Hrv),
-    Spo2("Blood oxygen", "%", 0, DailyMetric.Spo2),
-    Stress("Stress", "", 0, DailyMetric.Stress),
-    SkinTemperature("Skin temperature", "°C", 1, DailyMetric.SkinTemperature),
-    Breathing("Breathing rate", "br/min", 1, DailyMetric.Breathing),
-    Steps("Steps", "steps", 0, DailyMetric.Steps),
-    ;
-
-    fun format(v: Float): String = if (this == Steps) "%,d".format(Math.round(v)) else "%.${decimals}f".format(v)
-
-    /** A change from your normal, signed with a true minus (spec 2.3): "+0.2", "−0.3"; no sign is lost to rounding. */
-    fun formatChange(d: Float): String {
-        val shown = format(kotlin.math.abs(d))
-        return (if (d < 0 && shown.any { it in '1'..'9' }) "\u2212" else "+") + shown
-    }
-}
+import org.openstrap.app.data.HeartZones
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.Metric
 
 /**
  * A detail in the metric template with no per-day series behind it, unlike a [Metric]'s: Recovery keeps only its last
- * 7 days, Charge only the day shown, the strap's Sleep score and the night's times only the 14 nights the day loads,
- * and the day's Naps are only that day's. The Activity tab's: Heart points over the strap's 7 days, Active minutes over
- * the 14 days the day works out, Load over the 30 days before it, and VO2 max, Time to recover, Energy and Distance as
- * the day has them.
+ * 7 days, Energy (the Charge model) only the day shown, the strap's Sleep score and the night's times only the 14
+ * nights the day loads, and the day's Naps are only that day's. The Activity tab's: Heart points over the strap's 7
+ * days, Active minutes over the 14 days the day works out, Load over the 30 days before it, and VO2 max, Time to
+ * recover, Calories and Distance as the day has them.
+ *
+ * [key] names it in saved stacks ([Detail.StackSaver]) and card motion: its name, except for the two renamed to match
+ * what the screens say. Energy was `Charge` and Calories was `Energy`, and they keep those names there, so a stack
+ * saved before the rename still opens the same detail and a saved "Energy" only ever means Calories.
  */
-enum class Score(val title: String) {
-    Recovery("Recovery"), Charge("Energy"), Sleep("Sleep score"), Regularity("Sleep regularity"), Naps("Naps"),
-    HeartPoints("Heart points"), ActiveMinutes("Active minutes"), Load("Load"), Vo2Max("VO2 max"),
-    Recover("Time to recover"), Energy("Calories"), Distance("Distance"),
+enum class Score(@StringRes val titleRes: Int, private val savedAs: String? = null) {
+    Recovery(R.string.day_score_recovery), Energy(R.string.day_score_energy, savedAs = "Charge"),
+    Sleep(R.string.day_score_sleep), Regularity(R.string.day_score_regularity), Naps(R.string.day_score_naps),
+    HeartPoints(R.string.day_score_heart_points), ActiveMinutes(R.string.day_score_active_minutes), Load(R.string.day_score_load),
+    Vo2Max(R.string.day_score_vo2max), Recover(R.string.day_score_recover), Calories(R.string.day_score_calories, savedAs = "Energy"),
+    Distance(R.string.day_score_distance),
+    ;
+
+    /** The detail's title, in the app's language. */
+    val title: String get() = title()
+
+    /** [title] in [strings]. */
+    fun title(strings: Strings = Strings.app): String = strings.get(titleRes)
+
+    /** The name a saved stack knows it by. */
+    val key: String get() = savedAs ?: name
 }
 
 /** Your daily goals, provided once at the top of the app so every screen measures against the same ones. */
 val LocalGoals = compositionLocalOf { Goals() }
+
+/** Your heart rate zones as stored, provided once at the top of the app so every zone on screen reads the same ones. */
+// Like LocalGoals: every zone on screen reads the same stored zones, without threading them through every live screen.
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
+val LocalHeartZones = compositionLocalOf { HeartZones.STANDARD }
 
 /**
  * A screen pushed on top of a tab. Each tab keeps its own, so opening one never moves you to another tab: a card on
@@ -63,7 +67,7 @@ sealed interface Detail {
     data object Recovery : Detail
     /** The Sleep tab's screen, opened from a card on another tab. */
     data object Sleep : Detail
-    /** The week story: last Monday to Sunday day by day, opened from Your week on Today. */
+    /** The week story: last week day by day, opened from Your week on Today. */
     data object Week : Detail
 
     companion object {
@@ -76,7 +80,7 @@ sealed interface Detail {
         /** A detail's saved key ("m:Hrv"), also its key in the card to detail motion. */
         fun keyOf(d: Detail): String = when (d) {
             is OfMetric -> "${if (d.night) "n" else "m"}:${d.metric.name}"
-            is OfScore -> "c:${d.score.name}"
+            is OfScore -> "c:${d.score.key}"
             is Workout -> "w:${d.start}"
             AllWorkouts -> "a:"
             Healthspan -> "h:"
@@ -90,7 +94,7 @@ sealed interface Detail {
             return when (s.substringBefore(':')) {
                 "m" -> Metric.entries.firstOrNull { it.name == value }?.let { OfMetric(it) }
                 "n" -> NIGHT_VITALS.firstOrNull { it.name == value }?.let { OfMetric(it, night = true) }
-                "c" -> Score.entries.firstOrNull { it.name == value }?.let(::OfScore)
+                "c" -> Score.entries.firstOrNull { it.key == value }?.let(::OfScore)
                 "w" -> value.toLongOrNull()?.let(::Workout)
                 "a" -> AllWorkouts
                 "h" -> Healthspan

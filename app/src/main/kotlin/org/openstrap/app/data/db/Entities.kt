@@ -4,8 +4,10 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import org.openstrap.app.data.DayKey
+import java.time.LocalDate
 
-/** All timestamps are epoch seconds (UTC). */
+/** All timestamps are epoch seconds (UTC). A day is a [LocalDate], stored as its [DayKey]. */
 
 @Entity(tableName = "heart_rate")
 data class HeartRateSample(
@@ -28,12 +30,18 @@ data class ActivityMinute(
     val heartRate: Int?,
 )
 
-/** A main sleep or a nap. The strap's own totals and score are kept as it reported them. */
-@Entity(tableName = "sleep_session", indices = [Index("day")])
+/**
+ * A main sleep or a nap. The strap's own totals and score are kept as it reported them. Indexed on [nap] and [end] as
+ * well as [day], since most reads pick sessions by when they ended, and some by main sleep or nap too.
+ */
+@Entity(tableName = "sleep_session", indices = [Index("day"), Index("nap", "end")])
 data class SleepSession(
     @PrimaryKey val start: Long,
     val end: Long,
-    /** Local midnight of the day the strap assigned this sleep to; 0 for rows from before v2. */
+    /**
+     * The day the strap assigned this sleep to, as a [DayKey] (its date's UTC midnight), 0 for
+     * rows from before v2. Kept as the raw key for the 0, read it as [strapDate].
+     */
     @ColumnInfo(defaultValue = "0") val day: Long = 0,
     @ColumnInfo(defaultValue = "0") val nap: Boolean = false,
     val score: Int? = null,
@@ -43,18 +51,33 @@ data class SleepSession(
     val remMinutes: Int? = null,
     val awakeMinutes: Int? = null,
     val wakeCount: Int? = null,
-)
+) {
+    /** The strap's day for this sleep, null for a row from before v2. */
+    val strapDate: LocalDate? get() = day.takeIf { it != 0L }?.let(DayKey::date)
+}
 
 /**
- * The user's own times for a nap the strap detected, kept apart from [SleepSession] because a sync rewrites the
- * day's naps. Keyed by the strap's start for the nap, which stays the same across syncs.
+ * The user's own times for a sleep or nap the strap detected, or its removal, kept apart from [SleepSession] because a
+ * sync rewrites the day's sessions. Keyed by the strap's start for the session, which stays the same across syncs or
+ * moves a few minutes ([org.openstrap.app.data.SleepEdits.resolve] allows for that). The strap's rows are never
+ * changed by an edit, so Undo and Restore bring back exactly what was there.
  */
-@Entity(tableName = "nap_edit")
-data class NapEdit(
+@Entity(tableName = "sleep_edit")
+data class SleepEdit(
     @PrimaryKey val strapStart: Long,
-    val start: Long,
-    val end: Long,
-)
+    /** Which kind the strap's session was, so an edit never moves or removes a session of the other kind. */
+    @ColumnInfo(defaultValue = "0") val nap: Boolean,
+    /** The user's times; both null when not moved. */
+    val start: Long? = null,
+    val end: Long? = null,
+    /** Removed: left out of everything. Its session goes for good after [org.openstrap.app.data.SleepEdits.KEEP_DAYS]. */
+    @ColumnInfo(defaultValue = "0") val deleted: Boolean = false,
+    /** When it was last changed, epoch seconds: for the Deleted sleep list and the clean up. */
+    @ColumnInfo(defaultValue = "0") val editedAt: Long = 0,
+) {
+    /** True when the user moved the session's times. */
+    val moved: Boolean get() = start != null && end != null
+}
 
 @Entity(tableName = "sleep_stage", indices = [Index("sessionStart")])
 data class SleepStage(
@@ -91,8 +114,7 @@ data class HrvSample(
 
 @Entity(tableName = "resting_hr")
 data class RestingHeartRate(
-    /** Start of the local day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val bpm: Int,
 )
 
@@ -167,7 +189,7 @@ data class WorkoutHeartRate(
  * A workout recorded on the phone from the strap's live heart rate, apart from the strap's own [Workout] so a later
  * merge with strap-side sessions stays explicit. [end] is null while it is recording.
  */
-@Entity(tableName = "app_workout")
+@Entity(tableName = "app_workout", indices = [Index("end")])
 data class AppWorkout(
     @PrimaryKey val start: Long,
     val end: Long?,
@@ -205,7 +227,7 @@ data class AppWorkout(
     /** Lap marks, epoch seconds, comma separated; see [lapMarks]. */
     @ColumnInfo(defaultValue = "") val laps: String = "",
     /**
-     * What the workout did ([org.openstrap.app.data.WorkoutEffect]): peak EPOC in ml/kg, aerobic training effect 0–5,
+     * What the workout did ([org.openstrap.app.data.WorkoutEffect]): peak EPOC in ml/kg, aerobic training effect 0 to 5,
      * recovery time and, for outdoor runs, VO2max in ml/kg/min. Worked out when it ends and again on a trim or a gap
      * fill; null on workouts from before version 14 until they are opened.
      */
@@ -213,7 +235,7 @@ data class AppWorkout(
     val aerobicTrainingEffect: Float? = null,
     val recoveryMinutes: Int? = null,
     val vo2max: Float? = null,
-    /** Anaerobic training effect 0–5: only from the strap ([effectFromStrap]), as no open model makes one. */
+    /** Anaerobic training effect 0 to 5: only from the strap ([effectFromStrap]), as no open model makes one. */
     val anaerobicTrainingEffect: Float? = null,
     /**
      * The effect figures and [averageHeartRate] and [maxHeartRate] are the strap's own, from a record it kept of nearly
@@ -230,12 +252,22 @@ data class AppWorkout(
     /**
      * kcal over the shown range less pauses, above rest and in all ([org.openstrap.app.data.EnergyExpenditure.workoutMinutes]).
      * Worked out when it ends and again on a trim or a gap fill; null without a profile, and on workouts from before
-     * version 20 until the daily energy history fills them in.
+     * version 20 until the daily calories history fills them in.
      */
     val activeKcal: Float? = null,
     val totalKcal: Float? = null,
     /** When the live active kcal first reached a kcal [target], epoch seconds; null until then and for other targets. */
     val targetReachedAt: Long? = null,
+    /**
+     * Rounds or periods ([org.openstrap.app.data.Phases]): intervals ("t:20/10x8"), run reps ("r:400m/90x6") or a
+     * game's periods ("p:2x2700/900"); null for an open workout. Added in version 25.
+     */
+    val structure: String? = null,
+    /**
+     * A GPS run's fastest stretches ([org.openstrap.app.data.Rewards.Stretch.code]), worked out from the route when it
+     * ends, kept or not, so its bests can be worked out again later. Null without GPS. Added in version 25.
+     */
+    val stretches: String? = null,
 ) {
     val lapMarks: List<Long> get() = laps.split(',').mapNotNull { it.toLongOrNull() }
 
@@ -264,7 +296,10 @@ data class AppWorkout(
     }
 }
 
-/** One set of a strength workout: when it began and ended, and when the rest after it ended (null while resting). */
+/**
+ * One set of a strength workout: when it began and ended, and when the rest after it ended (null while resting). Its
+ * [exercise], [reps] and [weightKg] are logged on the card after it when logging is on (version 25), else null.
+ */
 @Entity(tableName = "app_workout_set", primaryKeys = ["workoutStart", "index"])
 data class AppWorkoutSet(
     val workoutStart: Long,
@@ -272,6 +307,81 @@ data class AppWorkoutSet(
     val start: Long,
     val end: Long? = null,
     val restEnd: Long? = null,
+    val exercise: String? = null,
+    val reps: Int? = null,
+    val weightKg: Float? = null,
+)
+
+/**
+ * One round of an interval workout or one rep of run intervals (version 25): when its work began and ended, when the
+ * rest after it ended, and its peak heart rate. [workEnd] and [restEnd] are null while under way.
+ */
+@Entity(tableName = "app_workout_round", primaryKeys = ["workoutStart", "index"])
+data class AppWorkoutRound(
+    val workoutStart: Long,
+    val index: Int,
+    val workStart: Long,
+    val workEnd: Long? = null,
+    val restEnd: Long? = null,
+    val peakBpm: Int? = null,
+)
+
+/** An interval workout saved by name ("Tuesday intervals"), offered on Choose and in More (version 25). */
+@Entity(tableName = "saved_workout")
+data class SavedWorkout(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val name: String,
+    val sport: Int,
+    /** As [AppWorkout.structure]. */
+    val structure: String,
+    /** A goal as [AppWorkout.target], or null. */
+    val goal: String? = null,
+    val createdAt: Long,
+)
+
+/** An exercise named in a strength log, with its last reps and weight to fill the next log card (version 25). */
+@Entity(tableName = "exercise")
+data class ExerciseRow(
+    @PrimaryKey val name: String,
+    val lastReps: Int? = null,
+    val lastKg: Float? = null,
+    /** When it was last logged, epoch seconds, for the list's order. */
+    val usedAt: Long,
+)
+
+/**
+ * A personal best ([org.openstrap.app.data.Rewards]) by its [kind] ("run_5k", "lift:Bench press"): the [value] in its
+ * kind's unit, the [date] it was set (epoch seconds: the workout's shown start, or the local midnight of a day's
+ * steps) and the workout that set it, if one did (version 25).
+ */
+@Entity(tableName = "personal_best")
+data class PersonalBest(
+    @PrimaryKey val kind: String,
+    val value: Double,
+    val date: Long,
+    val workoutStart: Long? = null,
+)
+
+/** A badge earned (requests spec 7.2, workouts spec 3.3): when, and the workout or day that earned it (version 25). */
+@Entity(tableName = "badge")
+data class BadgeRow(
+    @PrimaryKey val id: String,
+    val earnedAt: Long,
+    val workoutStart: Long? = null,
+    /** The epoch day, for a badge a day earned. */
+    val day: Long? = null,
+)
+
+/**
+ * A week's workouts against the weekly goal it had (workouts spec 3.1): [weekStart] its first day (epoch day), the
+ * [goal] then, how many workouts [count]ed and whether it was [met] (version 25).
+ */
+@Entity(tableName = "week_result")
+data class WeekResult(
+    @PrimaryKey val weekStart: Long,
+    val goal: Int,
+    val count: Int,
+    val met: Boolean,
 )
 
 /**
@@ -312,7 +422,7 @@ data class DeletedWorkout(
 )
 
 /** A stretch answered "Not a workout", so it isn't offered again ([org.openstrap.app.data.WorkoutSuggestions]). */
-@Entity(tableName = "app_workout_dismissed")
+@Entity(tableName = "app_workout_dismissed", indices = [Index("end")])
 data class DismissedWorkout(
     @PrimaryKey val start: Long,
     val end: Long,
@@ -347,8 +457,8 @@ data class SportEffectRow(
  */
 @Entity(tableName = "strap_readiness")
 data class StrapReadinessRow(
-    /** Local midnight of the scored day. */
-    @PrimaryKey val day: Long,
+    /** The scored day. */
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     val score: Int?,
     val hrvScore: Int?,
@@ -398,8 +508,7 @@ data class OsaResultRow(
 /** The day's highest exercise heart rate (type 61). */
 @Entity(tableName = "daily_max_hr")
 data class DailyMaxHr(
-    /** Start of the local day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val bpm: Int,
 )
 
@@ -468,6 +577,9 @@ data class SetCount(val workoutStart: Long, val sets: Int)
 data class HrStreamMark(val workoutStart: Long, val lastSample: Long, val samples: Int, val bpmSum: Long)
 
 /** One local day of a sampled metric: its average (or total, for steps), lowest, highest and sample count. */
+/** A table's row count and latest time ([HealthDao.activityStampOnce]). */
+data class TableStamp(val rowCount: Long, val latest: Long?)
+
 data class DailyAggregate(
     /** The local date as SQLite prints it, `yyyy-MM-dd`. */
     val day: String,
@@ -489,8 +601,7 @@ data class DailyPai(val day: String, val daily: Float, val total: Float, val lat
  */
 @Entity(tableName = "check_in")
 data class CheckInRow(
-    /** Local midnight of the day, epoch seconds. */
-    @PrimaryKey val day: Long,
+    @PrimaryKey val day: LocalDate,
     val feeling: Int,
     val updatedAt: Long,
 )
@@ -498,8 +609,7 @@ data class CheckInRow(
 /** Something the user said happened on [day] that can move body signals: see `DayTag` for the keys. */
 @Entity(tableName = "day_tag", primaryKeys = ["day", "tag"])
 data class DayTagRow(
-    /** Local midnight of the day, epoch seconds. */
-    val day: Long,
+    val day: LocalDate,
     val tag: String,
 )
 
@@ -510,8 +620,8 @@ data class DayTagRow(
  */
 @Entity(tableName = "night_metrics")
 data class NightMetricsRow(
-    /** Local midnight of the morning the sleep ended. */
-    @PrimaryKey val day: Long,
+    /** The morning the sleep ended. */
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     /** `hrv_n`: ln(mean of the gated RMSSD samples during sleep). */
     val hrvLn: Float?,
@@ -534,8 +644,8 @@ data class NightMetricsRow(
  */
 @Entity(tableName = "habit_age_week")
 data class HabitAgeWeekRow(
-    /** Local midnight of the Sunday the estimate is for. */
-    @PrimaryKey val asOf: Long,
+    /** The Sunday the estimate is for. */
+    @PrimaryKey val asOf: LocalDate,
     val estimate: Float,
     val low: Int,
     val high: Int,
@@ -543,13 +653,13 @@ data class HabitAgeWeekRow(
 )
 
 /**
- * One local day's energy as the engine last worked it out ([org.openstrap.app.data.EnergyExpenditure.Day]), so week,
- * month and year views don't run the model for every day. Rewritten whenever the day is worked out again.
+ * One local day's calories as the engine last worked it out ([org.openstrap.app.data.EnergyExpenditure.Day]), so week,
+ * month and year views don't run the model for every day. Rewritten whenever the day is worked out again. The table
+ * keeps its first name, `daily_energy`, and so does its backup file, `daily_energy.csv`.
  */
 @Entity(tableName = "daily_energy")
-data class DailyEnergyRow(
-    /** Local midnight of the day, epoch seconds. */
-    @PrimaryKey val day: Long,
+data class DailyCaloriesRow(
+    @PrimaryKey val day: LocalDate,
     val updatedAt: Long,
     val totalKcal: Float,
     val activeKcal: Float,

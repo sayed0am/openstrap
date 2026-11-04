@@ -5,6 +5,9 @@ import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
+import androidx.room.migration.Migration
+import java.time.ZoneId
 
 @Database(
     entities = [
@@ -43,10 +46,16 @@ import androidx.room.RoomDatabase
         WearEventRow::class,
         HabitAgeWeekRow::class,
         DeletedWorkout::class,
-        DailyEnergyRow::class,
-        NapEdit::class,
+        DailyCaloriesRow::class,
+        SleepEdit::class,
+        AppWorkoutRound::class,
+        SavedWorkout::class,
+        ExerciseRow::class,
+        PersonalBest::class,
+        BadgeRow::class,
+        WeekResult::class,
     ],
-    version = 24,
+    version = 28,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6),
@@ -58,13 +67,25 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 18, to = 19), AutoMigration(from = 19, to = 20),
         AutoMigration(from = 20, to = 21), AutoMigration(from = 21, to = 22), AutoMigration(from = 22, to = 23),
         AutoMigration(from = 23, to = 24),
+        AutoMigration(from = 24, to = 25, spec = SleepEditMigration::class),
     ],
 )
+@TypeConverters(DayKeyConverter::class)
 abstract class OpenStrapDatabase : RoomDatabase() {
     abstract fun healthDao(): HealthDao
 
     companion object {
+        /**
+         * Migrations Room can't make itself, after the automatic ones above. [zone] is asked for when the day keys are
+         * converted ([DayKeyMigration]), so it is the phone's zone when the database first opens after the upgrade.
+         */
+        fun migrations(zone: () -> ZoneId = ZoneId::systemDefault): Array<Migration> =
+            arrayOf(WorkoutsMigration, IndicesMigration, DayKeyMigration(zone))
+
+        /** [migrations] in the phone's zone. */
+        val MIGRATIONS = migrations()
+
         fun create(context: Context): OpenStrapDatabase =
-            Room.databaseBuilder(context, OpenStrapDatabase::class.java, "openstrap.db").build()
+            Room.databaseBuilder(context, OpenStrapDatabase::class.java, "openstrap.db").addMigrations(*MIGRATIONS).build()
     }
 }

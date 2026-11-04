@@ -8,9 +8,16 @@ import org.junit.Test
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
+import org.junit.Rule
+import org.openstrap.app.testing.LocaleRule
+import java.util.Locale
+import org.openstrap.app.presentation.Metric
 
 /** The info sheets (spec 6.2): one for every detail, in the copy rules of spec 7. */
 class InfoCopyTest {
+    // The expected numbers are written the English way, whatever the machine's language.
+    @get:Rule val locale = LocaleRule(Locale.US)
+
     private fun ready(capped: Boolean = false, fallbackHrv: Float? = null, weekNights: Int = 7) = Recovery.Readiness(
         score = 70, contributors = emptyList(), baselineNights = 30, strainAlert = false, alertSignals = emptyList(),
         capped = capped, fallbackHrv = fallbackHrv, hrvWeekNights = weekNights,
@@ -34,7 +41,7 @@ class InfoCopyTest {
                 org.openstrap.app.data.Vo2max.Estimate(45, 40, 50, 52f, fitnessAge = 28..38, sex = org.openstrap.app.data.settings.UserProfile.Sex.Male),
                 org.openstrap.app.data.Vo2max.Withheld.Age,
             ) +
-            InfoCopy.energyNotes(org.openstrap.app.data.EnergyExpenditure.Day(1940f, 1650f, 600, partial = true, pal = null, palImplausible = true, hrAssistedMinutes = 12))
+            InfoCopy.caloriesNotes(org.openstrap.app.data.EnergyExpenditure.Day(1940f, 1650f, 600, partial = true, pal = null, palImplausible = true, hrAssistedMinutes = 12))
 
     @Test fun `no info sheet uses an interpunct, semicolon or em dash`() {
         val strings = every.flatMap { listOf(it.name, it.meaning, it.how, it.moves, it.off) + it.scale } + dynamic
@@ -53,8 +60,8 @@ class InfoCopyTest {
         // Heart points name PAI once, here and nowhere on a card.
         assertTrue(InfoCopy.of(Score.HeartPoints).how.contains("PAI"))
         assertFalse(InfoCopy.of(Score.HeartPoints).meaning.contains("PAI"))
-        assertTrue(InfoCopy.of(Score.Energy).how.contains("Mifflin-St Jeor"))
-        assertTrue(InfoCopy.of(Score.Energy).off.contains("Food digestion"))
+        assertTrue(InfoCopy.of(Score.Calories).how.contains("Mifflin-St Jeor"))
+        assertTrue(InfoCopy.of(Score.Calories).off.contains("Food digestion"))
         assertTrue(InfoCopy.of(Score.Vo2Max).how.contains("Jurca") && InfoCopy.of(Score.Vo2Max).how.contains("FRIEND"))
         assertTrue(InfoCopy.of(Score.Load).how.contains("Building, Steady and Easing off"))
         assertTrue(InfoCopy.of(Score.Load).off.contains("EPOC"))

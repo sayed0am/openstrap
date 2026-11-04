@@ -8,9 +8,9 @@ import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.DayStat
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
-
-/** How far back a metric detail looks: the selected day, or one value per day (per week, for a year). */
-internal enum class Range(val label: String, val days: Int) { Day("Day", 1), Week("Week", 7), Month("Month", 30), Year("Year", 365) }
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.daySource
 
 /** Loads one value per day of a metric between two dates; the app root passes the repository's. */
 typealias DailyHistory = (DailyMetric, LocalDate, LocalDate) -> Flow<List<DayStat>>
@@ -33,11 +33,11 @@ internal val NIGHT_VITALS: List<Metric> = listOf(Metric.HeartRate, Metric.Hrv, M
 
 /**
  * The Activity tab's details, in the tab's order: Steps, the Small pair, Load, Heart rate, then the Today list's VO2
- * max, time to recover, energy and distance.
+ * max, time to recover, calories and distance.
  */
 internal val ACTIVITY_GROUP: List<Detail> = listOf(
     Detail.OfMetric(Metric.Steps), Detail.OfScore(Score.ActiveMinutes), Detail.OfScore(Score.HeartPoints), Detail.OfScore(Score.Load),
-    Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Energy),
+    Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Calories),
     Detail.OfScore(Score.Distance),
 )
 
@@ -49,31 +49,13 @@ internal val ACTIVITY_GROUP: List<Detail> = listOf(
 internal val DETAIL_GROUPS: List<List<Detail>> = listOf(
     listOf(Metric.RestingHr, Metric.Hrv, Metric.SkinTemperature, Metric.Breathing, Metric.Spo2, Metric.Stress).map { Detail.OfMetric(it) },
     ACTIVITY_GROUP,
-    listOf(Score.Recovery, Score.Charge).map(Detail::OfScore),
+    listOf(Score.Recovery, Score.Energy).map(Detail::OfScore),
     listOf(Score.Sleep, Score.Regularity, Score.Naps).map(Detail::OfScore),
     NIGHT_VITALS.map { Detail.OfMetric(it, night = true) },
 )
 
 /** [detail]'s group, itself included, in order; alone when it's in none. */
 internal fun siblingsOf(detail: Detail): List<Detail> = DETAIL_GROUPS.firstOrNull { detail in it } ?: listOf(detail)
-
-/** Where a metric's number for a day comes from, which decides how its sentence talks about the day. */
-internal enum class DaySource {
-    /** From the night: breathing rate in sleep, and the strap's resting heart rate from your calmest stretch. */
-    Night,
-
-    /** The average of every reading dated that day: HRV, blood oxygen spot readings, skin temperature, stress. */
-    Average,
-
-    /** A running total or the latest reading: steps, heart rate. */
-    SoFar,
-}
-
-internal fun daySource(metric: Metric): DaySource = when (metric) {
-    Metric.Breathing, Metric.RestingHr -> DaySource.Night
-    Metric.Hrv, Metric.Spo2, Metric.SkinTemperature, Metric.Stress -> DaySource.Average
-    Metric.Steps, Metric.HeartRate -> DaySource.SoFar
-}
 
 /** Metrics with one value a night, so their words say "nights" and "last night". */
 internal val NIGHTLY: Set<Metric> = Metric.entries.filter { daySource(it) == DaySource.Night }.toSet()

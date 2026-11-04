@@ -5,9 +5,15 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.History
-import org.openstrap.app.ui.dashboard.DetailCopy.Level
+import org.openstrap.app.presentation.DetailCopy.Level
 import java.time.LocalDate
 import java.util.Locale
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.daySource
+import org.openstrap.app.presentation.TodayCopy
 
 /** A detail screen's words and plain decisions (spec 6.1). */
 class DetailCopyTest {
@@ -77,9 +83,9 @@ class DetailCopyTest {
         assertEquals("Below your normal for three nights.", DetailCopy.span(Range.Week, run, nightly = true, normalKnown = true, days = 30))
         val mixed = listOf(Level.Inside, Level.Above, Level.Inside, Level.Inside, Level.Inside, Level.Inside, Level.Inside)
         assertEquals("Within your normal on 6 of 7 days.", DetailCopy.span(Range.Week, mixed, nightly = false, normalKnown = true, days = 30))
-        assertEquals("Within your normal on every day.", DetailCopy.span(Range.Week, List(7) { Level.Inside }, nightly = false, normalKnown = true, days = 30))
+        assertEquals("Within your normal every day.", DetailCopy.span(Range.Week, List(7) { Level.Inside }, nightly = false, normalKnown = true, days = 30))
         assertEquals(
-            "Within your normal on every day with data in the last 30 days.",
+            "Within your normal every day with data in the last 30 days.",
             DetailCopy.span(Range.Month, List(20) { Level.Inside } + List(10) { null }, nightly = false, normalKnown = true, days = 20),
         )
         // One day off isn't a run.
@@ -89,8 +95,8 @@ class DetailCopyTest {
     }
 
     @Test fun `the year and a score's week in a sentence`() {
-        assertEquals("Over the last 12 months, weeks averaged from 48 to 61 ms.", DetailCopy.year("48", "61", "ms"))
-        assertEquals("Over the last 12 months, weeks averaged from 20 to 41.", DetailCopy.year("20", "41", ""))
+        assertEquals("Over the last 12 months, weekly averages ran from 48 to 61 ms.", DetailCopy.year("48", "61", "ms"))
+        assertEquals("Over the last 12 months, weekly averages ran from 20 to 41.", DetailCopy.year("20", "41", ""))
         assertEquals("Averaged 74 over the last 7 days, from 61 to 84.", DetailCopy.scoreWeek(listOf(61, null, 84, 77)))
         assertEquals("One score in the last 7 days so far.", DetailCopy.scoreWeek(listOf(null, 70)))
         assertNull(DetailCopy.scoreWeek(listOf(null, null)))

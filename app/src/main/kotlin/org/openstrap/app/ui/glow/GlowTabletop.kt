@@ -8,16 +8,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.chart
 
 /**
  * The top half of a foldable standing half-open on a table: your heart rate, big enough to read from across
@@ -38,12 +44,15 @@ fun GlowTabletopHeart(
         GlowCard(style, Modifier.fillMaxSize()) {
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 GlowHeader(
-                    "Heart rate",
-                    trailing = if (live == null && liveEnabled == null) "Latest" else null,
+                    stringResource(R.string.glow_tabletop_heart_rate),
+                    trailing = if (live == null && liveEnabled == null) stringResource(R.string.glow_tabletop_latest) else null,
                     trailingContent = liveEnabled?.let { on ->
                         {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Live", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    stringResource(R.string.glow_tabletop_live), color = Color.White.copy(alpha = 0.85f),
+                                    style = GlowType.secondary,
+                                )
                                 Spacer(Modifier.width(8.dp))
                                 GlowSwitch(on, onLiveToggle, accent = style.color)
                             }
@@ -53,15 +62,26 @@ fun GlowTabletopHeart(
                 Row(verticalAlignment = Alignment.Bottom) {
                     DotMatrixText(now?.toString() ?: "-", dot = DotSize.Live)
                     Column(Modifier.padding(start = 12.dp).weight(1f)) {
-                        Text("bpm", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.glow_unit_bpm), color = Color.White.copy(alpha = 0.7f), style = GlowType.cardTitle,
+                            maxLines = 1,
+                        )
                     }
                     state.restingHeartRate?.let {
-                        Text("Resting $it", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            stringResource(R.string.glow_tabletop_resting, it), color = Color.White.copy(alpha = 0.85f),
+                            style = GlowType.body,
+                        )
                     }
                 }
                 if (state.heartRate.isNotEmpty()) {
-                    val values = remember(state.heartRate, state.dayStart) { bucket(state.heartRate, state.dayStart..state.dayEnd, 5 * 60) }
-                    GlowLineChart(values, height = GlowLayout.ChartHeight, labels = listOf("00", "06", "12", "18", "24")) { _, v -> "${v.toInt()} bpm" }
+                    val values = remember(state.heartRate, state.dayStart, state.dayEnd) {
+                        bucket(state.heartRate, state.dayStart..state.dayEnd, 5 * 60)
+                    }
+                    val resources = LocalResources.current
+                    GlowLineChart(values, height = GlowLayout.ChartHeight, labels = listOf("00", "06", "12", "18", "24")) { _, v ->
+                        resources.getString(R.string.glow_tabletop_bpm, v.toInt())
+                    }
                 }
             }
         }

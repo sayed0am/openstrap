@@ -25,6 +25,7 @@ import org.openstrap.app.ui.dashboard.TodayCard.Suggestion
 import org.openstrap.app.ui.dashboard.TodayCard.Week
 import org.openstrap.app.ui.dashboard.TodayCard.Workout
 import org.openstrap.app.ui.glow.CardSize
+import org.openstrap.app.presentation.usualSport
 
 /** Which cards Today shows per moment (spec 4.2) and the Edit Today rules. */
 class TodayPlanTest {

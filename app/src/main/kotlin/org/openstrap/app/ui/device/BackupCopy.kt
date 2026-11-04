@@ -1,51 +1,59 @@
 package org.openstrap.app.ui.device
 
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.BackupState
 import org.openstrap.app.export.AutoBackup
-import org.openstrap.app.export.BackupFiles
-import java.time.Instant
+import org.openstrap.app.i18n.Strings
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import java.util.Locale
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.data.settings.BackupFailure
 
-/** The words of backup on the You and Backup pages and in its messages. */
+/** The words of backup on the You and Backup pages and in its messages. The text is in res/values/strings_you_data.xml. */
 object BackupCopy {
     /** The Automatic backup row's value: off, waiting for the first one, the last one, or why the last one failed. */
-    fun status(state: BackupState, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
-        if (!state.on) return "Off. A zip each day in a folder you choose"
-        state.failed?.let { return "Last backup failed. ${failure(it)}" }
-        val done = state.lastDone ?: return "Each day while the phone charges. No backup yet"
-        return "Last backup ${whenDone(done, now, zone, locale)}"
+    fun status(
+        state: BackupState,
+        now: Long,
+        zone: ZoneId = ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String {
+        if (!state.on) return strings.get(R.string.you_backup_status_off)
+        state.failed?.let { return strings.format(R.string.you_backup_status_failed, failure(it, strings)) }
+        val done = state.lastDone ?: return strings.get(R.string.you_backup_status_waiting)
+        return strings.format(R.string.you_backup_last, whenDone(done, now, zone, locale))
     }
 
     /** The You page's Backup row: off, waiting for the first one, the last one, or that it failed (the page says why). */
-    fun summary(state: BackupState, now: Long, zone: ZoneId = ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String {
-        if (!state.on) return "Off"
-        if (state.failed != null) return "Last backup failed"
-        val done = state.lastDone ?: return "On. No backup yet"
-        return "Last backup ${whenDone(done, now, zone, locale)}"
+    fun summary(
+        state: BackupState,
+        now: Long,
+        zone: ZoneId = ZoneId.systemDefault(),
+        locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String {
+        if (!state.on) return strings.get(R.string.you_value_off)
+        if (state.failed != null) return strings.get(R.string.you_backup_summary_failed)
+        val done = state.lastDone ?: return strings.get(R.string.you_backup_summary_waiting)
+        return strings.format(R.string.you_backup_last, whenDone(done, now, zone, locale))
     }
 
     /** Why a backup failed, said once. */
-    fun failure(f: BackupFiles.Failure): String = when (f) {
-        BackupFiles.Failure.FolderGone -> "The folder is no longer available."
-        BackupFiles.Failure.PermissionLost -> "OpenStrap can no longer reach the folder. Choose it again."
-        BackupFiles.Failure.NoSpace -> "There isn't enough space for it."
-        BackupFiles.Failure.CantWrite -> "OpenStrap couldn't write to the folder."
-        BackupFiles.Failure.Other -> "It tries again tomorrow."
-    }
+    fun failure(f: BackupFailure, strings: Strings = Strings.app): String = strings.get(
+        when (f) {
+            BackupFailure.FolderGone -> R.string.you_backup_failure_folder_gone
+            BackupFailure.PermissionLost -> R.string.you_backup_failure_permission
+            BackupFailure.NoSpace -> R.string.you_backup_failure_no_space
+            BackupFailure.CantWrite -> R.string.you_backup_failure_cant_write
+            BackupFailure.Other -> R.string.you_backup_failure_other
+        },
+    )
 
-    /** "today at 03:12", "yesterday at 03:12", "on Tue 20 Oct". */
-    fun whenDone(epochSeconds: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String {
-        val at = Instant.ofEpochSecond(epochSeconds).atZone(zone)
-        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
-        val clock = at.format(DateTimeFormatter.ofPattern("HH:mm", locale))
-        return when (at.toLocalDate()) {
-            today -> "today at $clock"
-            today.minusDays(1) -> "yesterday at $clock"
-            else -> "on ${at.format(DateTimeFormatter.ofPattern("EEE d MMM", locale))}"
-        }
-    }
+    /** "today at 03:12", "yesterday at 03:12", "on Tue 20 Oct": [DayWords.whenDone], on the phone's clock. */
+    fun whenDone(epochSeconds: Long, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String =
+        DayWords.whenDone(epochSeconds, now, zone, locale = locale)
 
     /**
      * Where the folder picker opens when backup is first turned on. The top of the phone's storage can't be chosen
@@ -58,24 +66,30 @@ object BackupCopy {
      * What a restore says, short enough for a toast: what came back, and rows that couldn't be read. Records already on
      * this phone aren't counted, since restoring only fills gaps.
      */
-    fun restored(records: Int, settings: Boolean, skipped: Int): String {
+    fun restored(
+        records: Int, settings: Boolean, skipped: Int, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+    ): String {
+        val count = Units.count(records.toLong(), locale)
         val what = when {
-            records > 0 && settings -> "Restored %,d records and your settings.".format(records)
-            records > 0 -> "Restored %,d records.".format(records)
-            settings -> "Restored your settings. Your records were already here."
-            else -> "Nothing to restore. It's all already here."
+            records > 0 && settings -> strings.plural(R.plurals.you_backup_restored_records_settings, records, count)
+            records > 0 -> strings.plural(R.plurals.you_backup_restored_records, records, count)
+            settings -> strings.get(R.string.you_backup_restored_settings)
+            else -> strings.get(R.string.you_backup_restored_nothing)
         }
-        return if (skipped > 0) "$what %,d rows couldn't be read.".format(skipped) else what
+        if (skipped <= 0) return what
+        val rows = strings.plural(R.plurals.you_backup_restored_skipped, skipped, Units.count(skipped.toLong(), locale))
+        return strings.format(R.string.you_backup_restored_with_skipped, what, rows)
     }
 
     /** The Backup folder row's value. */
-    fun folder(state: BackupState): String = state.folderName ?: "The folder you chose"
+    fun folder(state: BackupState, strings: Strings = Strings.app): String =
+        state.folderName ?: strings.get(R.string.you_backup_folder_unknown)
 
     /** What Back up now says when it's done. */
-    fun outcome(o: AutoBackup.Outcome): String = when (o) {
-        is AutoBackup.Outcome.Done -> "Backed up as ${o.name}."
-        AutoBackup.Outcome.Recording -> "A workout is recording. The backup runs after it ends."
-        AutoBackup.Outcome.Off -> "Automatic backup is off."
-        is AutoBackup.Outcome.Failed -> "Couldn't back up. ${failure(o.failure)}"
+    fun outcome(o: AutoBackup.Outcome, strings: Strings = Strings.app): String = when (o) {
+        is AutoBackup.Outcome.Done -> strings.format(R.string.you_backup_outcome_done, o.name)
+        AutoBackup.Outcome.Recording -> strings.get(R.string.you_backup_outcome_recording)
+        AutoBackup.Outcome.Off -> strings.get(R.string.you_backup_outcome_off)
+        is AutoBackup.Outcome.Failed -> strings.format(R.string.you_backup_outcome_failed, failure(o.failure, strings))
     }
 }

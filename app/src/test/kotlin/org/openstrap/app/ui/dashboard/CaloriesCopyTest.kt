@@ -11,6 +11,8 @@ import org.openstrap.app.data.db.Workout
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.presentation.Range
 
 /** Calories' words and sums (calories spec 4.4 to 4.6). */
 class CaloriesCopyTest {
@@ -35,7 +37,7 @@ class CaloriesCopyTest {
     )
 
     @Test fun `the row leads with active and says the goal and the total`() {
-        assertEquals("Active, of 450. Total 1,468", CaloriesCopy.rowLine(348, 450, 1468, Locale.UK))
+        assertEquals("Active of 450. 1,468 total", CaloriesCopy.rowLine(348, 450, 1468, Locale.UK))
         assertEquals("Active, goal met. Total 2,140", CaloriesCopy.rowLine(450, 450, 2140, Locale.UK))
         assertEquals(0.5f, CaloriesCopy.share(225, 450), 1e-6f)
         assertEquals(1f, CaloriesCopy.share(900, 450), 1e-6f)
@@ -47,9 +49,22 @@ class CaloriesCopyTest {
         assertEquals("active kcal so far today", CaloriesCopy.dayLabel(true))
         assertEquals("active kcal", CaloriesCopy.dayLabel(false))
         val hours = List(24) { if (it == 7) 228.4f else it.toFloat() }
-        assertEquals("Peak 07:00, 228", CaloriesCopy.peak(hours, Locale.UK))
+        assertEquals("Peak at 07:00, 228 kcal", CaloriesCopy.peak(hours, Locale.UK))
         assertNull(CaloriesCopy.peak(List(24) { 0.2f }))
         assertEquals("active kcal, 23:00 to 00:00", CaloriesCopy.hourLabel(23))
+    }
+
+    @Test fun `hours follow the phone's clock`() {
+        val was = org.openstrap.app.presentation.ClockSetting.use24Hour
+        try {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = false
+            val hours = List(24) { if (it == 7) 228.4f else it.toFloat() }
+            assertEquals("Peak at 7:00 AM, 228 kcal", CaloriesCopy.peak(hours, Locale.US))
+            assertEquals("active kcal, 11:00 PM to 12:00 AM", CaloriesCopy.hourLabel(23, Locale.US))
+            assertEquals("steps, 9:00 AM to 10:00 AM", ActivityCopy.hourLabel(9, Locale.US))
+        } finally {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = was
+        }
     }
 
     @Test fun `a strap workout's active kcal is its kcal less rest for its minutes`() {
@@ -78,6 +93,9 @@ class CaloriesCopyTest {
         assertEquals("38 min walking or running, outside workouts", rows[2].line)
         assertNull(rows[2].workoutStart)
         assertEquals("1 h 05", CaloriesCopy.minutes(65 * 60L))
+        // On the hour it reads as every length of time does, and to the nearest minute.
+        assertEquals("1 h", CaloriesCopy.minutes(60 * 60L - 20))
+        assertEquals("42 min", CaloriesCopy.minutes(41 * 60L + 30))
         assertEquals("No walking outside workouts", CaloriesCopy.walkingLine(0))
     }
 
@@ -107,7 +125,7 @@ class CaloriesCopyTest {
         assertEquals("vs the 7 days before", CaloriesCopy.vsLabel(Range.Week))
         assertEquals("vs the year before", CaloriesCopy.vsLabel(Range.Year))
         assertEquals("active kcal a day, last 30 days", CaloriesCopy.rangeLabel(Range.Month))
-        assertEquals("Workouts made 18% of your active kcal, the rest came from walking and moving about.", CaloriesCopy.rangeSentence(s, Locale.UK))
+        assertEquals("Workouts made 18% of your active kcal. The rest came from walking and moving about.", CaloriesCopy.rangeSentence(s, Locale.UK))
     }
 
     @Test fun `a range without days before it has no change, and no days says nothing`() {
@@ -140,24 +158,31 @@ class CaloriesCopyTest {
 
     @Test fun `a workout says its share of its day`() {
         assertEquals(
-            "This run is 486 of today's 702 active kcal. The day counts it exactly as shown here.",
-            CaloriesCopy.inYourDay("run", 486, 702, CaloriesCopy.dayWord(date, date), fromPhone = true, Locale.UK),
+            "This run is 486 of today's 702 active kcal. Your day counts the same figure.",
+            CaloriesCopy.inYourDay("run", 486, 702, date, date, fromPhone = true, Locale.UK),
         )
         assertEquals(
             "This walk is 86 of yesterday's 702 active kcal. The day counts it from the strap's own figure.",
-            CaloriesCopy.inYourDay("walk", 86, 702, CaloriesCopy.dayWord(date.minusDays(1), date), fromPhone = false, Locale.UK),
+            CaloriesCopy.inYourDay("walk", 86, 702, date.minusDays(1), date, fromPhone = false, Locale.UK),
         )
-        assertEquals("that day's", CaloriesCopy.dayWord(date.minusDays(3), date))
+        assertEquals(
+            "This run is 486 of that day's 702 active kcal. Your day counts the same figure.",
+            CaloriesCopy.inYourDay("run", 486, 702, date.minusDays(3), date, fromPhone = true, Locale.UK),
+        )
+        assertEquals(
+            "This walk is 86 of today's 702 active kcal. The day counts it from the strap's own figure.",
+            CaloriesCopy.inYourDay("walk", 86, 702, date, date, fromPhone = false, Locale.UK),
+        )
         // A day row behind its workout, or none yet: nothing to say.
-        assertNull(CaloriesCopy.inYourDay("run", 486, 300, "today's", true))
-        assertNull(CaloriesCopy.inYourDay("run", 486, null, "today's", true))
+        assertNull(CaloriesCopy.inYourDay("run", 486, 300, date, date, true))
+        assertNull(CaloriesCopy.inYourDay("run", 486, null, date, date, true))
     }
 
     @Test fun `no Calories string uses an interpunct, semicolon or em dash`() {
         val s = CaloriesCopy.summary(mapOf(d(26, 500f)), LocalDate.of(2026, 10, 21), LocalDate.of(2026, 10, 27), 450, null)
         val all = listOf(
             CaloriesCopy.rowLine(1, 2, 3), CaloriesCopy.toGoal(1, 2), CaloriesCopy.walkingLine(3), CaloriesCopy.goalDays(s)!!,
-            CaloriesCopy.rangeSentence(s)!!, CaloriesCopy.inYourDay("run", 1, 2, "today's", false)!!,
+            CaloriesCopy.rangeSentence(s)!!, CaloriesCopy.inYourDay("run", 1, 2, date.minusDays(2), date, false)!!,
         )
         all.forEach { t -> assertTrue(t, t.none { it in "·;—" }) }
     }

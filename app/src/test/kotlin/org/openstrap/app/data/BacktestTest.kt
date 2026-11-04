@@ -57,9 +57,10 @@ class BacktestTest {
     @Test fun `replays every day with the strap score, check-in and tags beside ours`() = runTest {
         fill(20)
         val d = db.healthDao()
-        val day10 = first.plusDays(10).atStartOfDay(zone).toEpochSecond()
-        d.insertStrapReadiness(listOf(StrapReadinessRow(day10, day10, 88, 80, 75, 100, 100, 50, 54, "4.3")))
-        d.insertCheckIns(listOf(CheckInRow(day10, 4, day10)))
+        val day10 = first.plusDays(10)
+        val at10 = day10.atStartOfDay(zone).toEpochSecond()
+        d.insertStrapReadiness(listOf(StrapReadinessRow(day10, at10, 88, 80, 75, 100, 100, 50, 54, "4.3")))
+        d.insertCheckIns(listOf(CheckInRow(day10, 4, at10)))
         d.insertDayTags(listOf(DayTagRow(day10, "alcohol"), DayTagRow(day10, "travel")))
 
         val rows = Backtest(d, zone).run(first, first.plusDays(19), UserProfile(birthYear = 1990, sex = UserProfile.Sex.Male))
@@ -102,7 +103,7 @@ class BacktestTest {
         assumeTrue("set -Pbacktest=<openstrap.db or backup .zip> to run", path != null)
         val source = File(path!!)
         val target = if (source.extension == "zip") {
-            CsvImporter(db, ZoneId.systemDefault()).importZip(source.inputStream())
+            CsvImporter(db).importZip(source.inputStream())
             db
         } else {
             // Work on a copy (with its WAL beside it), so Room's migration never touches the original.
@@ -110,7 +111,7 @@ class BacktestTest {
             listOf("", "-wal", "-shm").map { File(source.path + it) }.filter { it.exists() }
                 .forEach { it.copyTo(File(dir, "openstrap.db" + it.name.removePrefix(source.name))) }
             Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, File(dir, "openstrap.db").absolutePath)
-                .allowMainThreadQueries().build()
+                .addMigrations(*org.openstrap.app.data.db.OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         }
         val profile = System.getProperty("openstrap.backtestProfile")?.split(',')?.let { p ->
             UserProfile(birthYear = p.getOrNull(0)?.toIntOrNull(), sex = p.getOrNull(1)?.let { s -> UserProfile.Sex.entries.firstOrNull { it.name.equals(s, true) } })

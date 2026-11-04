@@ -4,7 +4,7 @@ name: Android
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
     tags: ["v*"]
   pull_request:
 
@@ -14,7 +14,8 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Named, not ubuntu-latest, so the image changes only when this line does (ubuntu-latest moved to 26.04 in Nov 2026).
+    runs-on: ubuntu-26.04
     steps:
       - uses: actions/checkout@v5
 
@@ -28,14 +29,47 @@ jobs:
       - name: Install Android SDK packages
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" "build-tools;36.0.0" > /dev/null
 
+      # Robolectric downloads its Android jar (about 200 MB) from Maven Central into ~/.m2 while the tests run, outside
+      # the Gradle cache. Fetched on every run, it gets rate limited (HTTP 429) and every Robolectric test fails.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository/org/robolectric
+          key: robolectric-${{ hashFiles('gradle/libs.versions.toml', 'app/src/test/resources/robolectric.properties') }}
+
       - name: Test
         run: ./gradlew :protocol:test :app:testDebugUnitTest
+
+      # Android lint and detekt fail on any finding not in their baselines (app/lint-baseline.xml, */detekt-baseline-*.xml).
+      - name: Lint and static analysis
+        run: ./gradlew :app:lintDebug detektMain
+
+      # ktlint's baseline pins findings by line and column, so any edit that moves lines brings old findings back.
+      # It reports here without failing the build until the code is formatted once.
+      - name: Formatting
+        continue-on-error: true
+        run: ./gradlew ktlintCheck
+
+      # A German locale and a zone with a 45 minute offset, so a comma decimal mark or a fixed zone fails the build.
+      - name: Tests under a German locale
+        run: ./gradlew :app:testDebugUnitTest -PtestLocale=de-DE
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-reports
+          path: app/build/reports/tests/
+
+      # Only when lint ran: a failed test step stops before it, and a missing report would hide that failure.
+      - uses: github/codeql-action/upload-sarif@v4
+        if: ${{ always() && hashFiles('app/build/reports/lint-results-debug.sarif') != '' }}
+        with:
+          sarif_file: app/build/reports/lint-results-debug.sarif
 
       - name: Build debug APK
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         run: ./gradlew :app:assembleDebug
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
         with:
           name: openstrap-debug
@@ -70,3 +104,5 @@ jobs:
 
 permissions:
   contents: write
+  # SARIF upload of the lint report.
+  security-events: write

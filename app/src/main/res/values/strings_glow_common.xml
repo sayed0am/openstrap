@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Words the glow screens share (ui/glow): buttons, the states a figure can be in, and short units beside a number.
+  OpenStrap is the app's name. Keep it as it is.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A button that closes a sheet or a page without saving. One short word. -->
+    <string name="glow_cancel">Cancel</string>
+    <!-- A button that finishes a sheet, a celebration or a workout's summary. One short word. -->
+    <string name="glow_done">Done</string>
+    <!-- A button that saves a change in a sheet. One short word. -->
+    <string name="glow_save">Save</string>
+    <!-- The spoken name of the round X button at the top of a page or a celebration, for screen readers. -->
+    <string name="glow_close">Close</string>
+    <!-- A button that deletes a workout or a night, in red. One short word. -->
+    <string name="glow_delete">Delete</string>
+    <!-- A button that moves on from a celebration. One short word. -->
+    <string name="glow_continue">Continue</string>
+    <!-- A button that opens the system's share sheet, or the Share page's title. One short word. -->
+    <string name="glow_share">Share</string>
+    <!-- A small button with scissors that opens a workout's or a night's trimmer. One short word. -->
+    <string name="glow_trim">Trim</string>
+
+    <!-- Stands large in a figure's place when the strap gave no value for it. -->
+    <string name="glow_no_reading">No reading</string>
+    <!-- Stands in a figure's place while it is read from the database. -->
+    <string name="glow_loading">Loading…</string>
+
+    <!-- Unit beside a heart rate, beats per minute. Very short. -->
+    <string name="glow_unit_bpm">bpm</string>
+    <!-- Unit beside a number of minutes. Very short. -->
+    <string name="glow_unit_min">min</string>
+    <!-- Unit beside a distance in kilometres. Very short. -->
+    <string name="glow_unit_km">km</string>
+
+    <!-- Under a row's name in All metrics and the detail pages when the day has no value for it. -->
+    <string name="glow_no_value">Nothing for this day</string>
+    <!-- Under a sleep row's name when the night has no value for it. -->
+    <string name="glow_no_night_value">Nothing for this night</string>
+    <!-- On a card or a row whose number hasn't come in yet today. -->
+    <string name="glow_no_reading_yet">No reading yet</string>
+    <!-- On Heart points and the like, which come with the strap's daily records. -->
+    <string name="glow_after_next_sync">After the strap\'s next sync</string>
+    <!-- A row that opens the profile: Calories needs these before it can be calculated. -->
+    <string name="glow_add_profile">Add age, weight and height</string>
+    <!-- Spoken for the short dim bar that stands in for a value not in yet, for screen readers. -->
+    <string name="glow_no_value_yet">No value yet</string>
+
+    <!-- The spoken name of the round arrow button at the top left of every page, for screen readers. -->
+    <string name="glow_back">Back</string>
+    <!-- What a tap on a page's title does, for screen readers, where the title switches between two pages. -->
+    <string name="glow_page_switch">Switch</string>
+    <!-- What a tap on a row with a dropdown does, for screen readers. -->
+    <string name="glow_page_change">Change</string>
+    <!-- What a tap on a card's small outlined tag does, for screen readers. The tag is in lower case, "partial day". -->
+    <string name="glow_tag_about">About <xliff:g id="tag" example="partial day">%1$s</xliff:g></string>
+
+    <!-- The info sheet's folded rows, which open onto how a number is calculated. One line each. -->
+    <string name="glow_info_how">How it\'s calculated</string>
+    <!-- The info sheet's folded row about what raises and lowers a number. -->
+    <string name="glow_info_moves">What moves it</string>
+    <!-- The info sheet's folded row about why a number might be wrong. -->
+    <string name="glow_info_off">Why it might be off</string>
+    <!-- What a tap on an open folded row does, for screen readers. -->
+    <string name="glow_info_fold">Collapse</string>
+    <!-- What a tap on a folded row does, for screen readers. -->
+    <string name="glow_info_open">Expand</string>
+
+    <!-- The tabletop page (the phone half folded): its card's title. -->
+    <string name="glow_tabletop_heart_rate">Heart rate</string>
+    <!-- The tabletop card's corner when the number is the last one the strap sent, not live. One short word. -->
+    <string name="glow_tabletop_latest">Latest</string>
+    <!-- Beside the switch that turns live heart rate on, on the tabletop card. One short word. -->
+    <string name="glow_tabletop_live">Live</string>
+    <!-- The tabletop card's resting heart rate, beats per minute. -->
+    <string name="glow_tabletop_resting">Resting <xliff:g id="bpm" example="58">%1$d</xliff:g></string>
+    <!-- The reading under the finger on the tabletop card's heart rate chart. -->
+    <string name="glow_tabletop_bpm"><xliff:g id="bpm" example="72">%1$d</xliff:g> bpm</string>
+
+    <!-- Unit beside a number of hours, typed in a workout's time goal. Very short. -->
+    <string name="glow_unit_h">h</string>
+    <!-- Unit beside a number of seconds, typed in a rest time. Very short. -->
+    <string name="glow_unit_s">s</string>
+</resources>

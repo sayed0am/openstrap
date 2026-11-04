@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Words the data package hands over as values (presentation/DataCopy.kt): the lines under Recovery's contributors, why a
+  sleep edit can't be saved, the VO2 max estimate's reasons and bands, and the goals sheet. Load is the app's name for
+  a measure, keep it capitalised. FRIEND is the name of the study the VO2 max bands come from.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Recovery score detail, under HRV: last night's value in milliseconds and the change from your usual, signed. One line. -->
+    <string name="core_data_recovery_hrv"><xliff:g id="ms" example="52">%1$s</xliff:g> ms, <xliff:g id="change" example="+4">%2$s</xliff:g>%% vs usual</string>
+    <!-- Recovery score detail, under resting heart rate: beats a minute and the change from your usual, signed. -->
+    <string name="core_data_recovery_resting_hr"><xliff:g id="bpm" example="54">%1$s</xliff:g> bpm, <xliff:g id="change" example="−3">%2$s</xliff:g> vs usual</string>
+    <!-- Recovery score detail, under sleep: the time asleep, like "7 h 40". -->
+    <string name="core_data_recovery_asleep"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g> asleep</string>
+    <!-- Recovery score detail, under sleep debt, when there is none. -->
+    <string name="core_data_recovery_no_debt">No sleep debt</string>
+    <!-- Recovery score detail, under sleep debt: how much sleep you are short, like "1 h 10". -->
+    <string name="core_data_recovery_debt"><xliff:g id="duration" example="1 h 10">%1$s</xliff:g> of sleep debt</string>
+    <!-- Recovery score detail: how long before waking the night's lowest heart rate came, like "40 min". -->
+    <string name="core_data_recovery_lowest_hr">Lowest heart rate <xliff:g id="duration" example="40 min">%1$s</xliff:g> before waking</string>
+    <!-- Recovery score detail, under skin temperature: the change from your usual in degrees Celsius, signed. -->
+    <string name="core_data_recovery_temperature"><xliff:g id="change" example="+0.3">%1$s</xliff:g> °C vs usual</string>
+    <!-- Recovery score detail, under breathing rate: the change from your usual in breaths a minute, signed. -->
+    <string name="core_data_recovery_breathing"><xliff:g id="change" example="−0.4">%1$s</xliff:g>/min vs usual</string>
+    <!-- Recovery score detail, under blood oxygen: the night's average percent, then the change from your usual, signed. -->
+    <string name="core_data_recovery_blood_oxygen"><xliff:g id="percent" example="96.3">%1$s</xliff:g>%%, <xliff:g id="change" example="−1.2">%2$s</xliff:g> vs usual</string>
+    <!-- Recovery score detail, under Load: yesterday's Load and your usual. -->
+    <string name="core_data_recovery_load">Load <xliff:g id="yesterday" example="62">%1$s</xliff:g>, usual <xliff:g id="usual" example="45">%2$s</xliff:g></string>
+
+    <!-- Sleep edit sheet, why it can't be saved: the wake time is before the time asleep. -->
+    <string name="core_data_edit_wake_before_sleep">Waking up has to come after falling asleep.</string>
+    <!-- Sleep edit sheet: a nap shorter than 5 minutes. -->
+    <string name="core_data_edit_nap_too_short">A nap needs at least 5 minutes.</string>
+    <!-- Sleep edit sheet: a night shorter than an hour. -->
+    <string name="core_data_edit_sleep_too_short">Sleep needs at least an hour.</string>
+    <!-- Sleep edit sheet: a nap longer than 4 hours. -->
+    <string name="core_data_edit_nap_too_long">A nap can be 4 hours at most.</string>
+    <!-- Sleep edit sheet: a night longer than 16 hours. -->
+    <string name="core_data_edit_sleep_too_long">Sleep can be 16 hours at most.</string>
+    <!-- Sleep edit sheet: a time after the present. -->
+    <string name="core_data_edit_future">That\'s later than now.</string>
+    <!-- Sleep edit sheet: moved more than 3 hours from what the strap recorded. -->
+    <string name="core_data_edit_too_far">Keep it within 3 hours of what the strap saw.</string>
+    <!-- Sleep edit sheet: it overlaps a nap that starts at this clock time. -->
+    <string name="core_data_edit_runs_into_nap">That runs into your nap at <xliff:g id="time" example="13:00">%1$s</xliff:g>.</string>
+    <!-- Sleep edit sheet: it overlaps a night's sleep that starts at this clock time. -->
+    <string name="core_data_edit_runs_into_sleep">That runs into your sleep at <xliff:g id="time" example="23:10">%1$s</xliff:g>.</string>
+
+    <!-- VO2 max, why there is no estimate: the age is outside the equation's range. -->
+    <string name="core_data_vo2_needs_age">Needs an age between 20 and 79.</string>
+    <!-- VO2 max, why there is no estimate: the profile has no sex. -->
+    <string name="core_data_vo2_needs_sex">Needs your sex: the equation differs for women and men.</string>
+    <!-- VO2 max, why there is no estimate: no recent weight and height. -->
+    <string name="core_data_vo2_needs_body">Needs a weight and height entered in the last 90 days.</string>
+    <!-- VO2 max, why there is no estimate: the activity question is unanswered or too old. -->
+    <string name="core_data_vo2_needs_activity">Answer the activity question (asked every 6 months).</string>
+    <!-- VO2 max, why there is no estimate: medication or pregnancy set in the profile. -->
+    <string name="core_data_vo2_medication">Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn\'t reflect fitness then.</string>
+    <!-- VO2 max, why there is no estimate: too few nights of resting heart rate. -->
+    <string name="core_data_vo2_needs_resting_hr">Needs at least 5 nights of resting heart rate in the last 2 weeks.</string>
+    <!-- VO2 max, where the estimate falls among people of your age and sex (FRIEND). Short, one line. -->
+    <string name="core_data_vo2_band_below_30">Below the 30th percentile</string>
+    <string name="core_data_vo2_band_30_50">30th to 50th percentile</string>
+    <string name="core_data_vo2_band_50_70">50th to 70th percentile</string>
+    <string name="core_data_vo2_band_70_90">70th to 90th percentile</string>
+    <!-- The top band. The percent sign is written twice, since the text is a format. -->
+    <string name="core_data_vo2_band_top_10">Top <xliff:g id="percent" example="10">%1$d</xliff:g>%%</string>
+    <!-- VO2 max detail's hero, beside the low end drawn large: the rest of the range with its unit. -->
+    <string name="core_data_vo2_estimate_rest">to <xliff:g id="high" example="45">%1$s</xliff:g> ml/kg/min</string>
+
+    <!-- Goals sheet, the summary of the goals. The numbers have the phone's thousands mark, the sleep is like "8 h". -->
+    <string name="core_data_goal_summary"><xliff:g id="steps" example="8,000">%1$s</xliff:g> steps, <xliff:g id="kcal" example="300">%2$s</xliff:g> active kcal, <xliff:g id="sleep" example="8 h">%3$s</xliff:g> sleep, <xliff:g id="hours" example="10">%4$s</xliff:g> active hours</string>
+    <!-- Goals sheet, under a field when the typed number is outside what it takes. -->
+    <string name="core_data_goal_out_of_range">Pick a number from <xliff:g id="low" example="200">%1$s</xliff:g> to <xliff:g id="high" example="3,000">%2$s</xliff:g></string>
+</resources>

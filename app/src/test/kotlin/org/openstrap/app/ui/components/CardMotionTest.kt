@@ -5,14 +5,14 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
 
 class CardMotionTest {
     private val hero = 11L
     private val note = 22L
     private val recovery = Detail.keyOf(Detail.OfScore(Score.Recovery))
-    private val charge = Detail.keyOf(Detail.OfScore(Score.Charge))
+    private val charge = Detail.keyOf(Detail.OfScore(Score.Energy))
 
     /** The hero on the tab's root pressed, then clicked. */
     private fun clicked(source: Long = hero, number: String? = "72") =

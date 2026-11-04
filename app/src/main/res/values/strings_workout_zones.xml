@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Heart rate zones: the Heart rate zones page, its sheets, and its rows on the You and Profile pages
+  (ui/workout/HeartZonesCopy.kt). Zepp is the strap maker's app, keep its name. Zones are numbered 1 to 5.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The page's title, and its row on the You page. -->
+    <string name="workout_zones_title">Heart rate zones</string>
+    <!-- The heading over your max heart rate on the page. -->
+    <string name="workout_zones_max_title">Your max heart rate</string>
+    <!-- A button: type your max yourself. -->
+    <string name="workout_zones_set_it">Set it myself</string>
+    <!-- A button: forget the max you set and learn it from workouts again. -->
+    <string name="workout_zones_learn_it">Learn it again</string>
+    <!-- Under the list of zones. Load is the app's name for how much a workout or a day asked of your body. -->
+    <string name="workout_zones_note">The same for every sport. Zone goals and time in zones use them, and Load uses your max. Tap a zone to move its edges.</string>
+    <!-- The You page's Heart rate zones row, with your max. One line. -->
+    <string name="workout_zones_you_line_max">Max <xliff:g id="bpm" example="192">%1$d</xliff:g> bpm, the same zones for every sport</string>
+    <!-- The You page's Heart rate zones row before a max is known. One line. -->
+    <string name="workout_zones_you_line">The same zones for every sport</string>
+    <!-- The Profile page's row for your max. -->
+    <string name="workout_zones_max_row">Max heart rate</string>
+    <!-- The Profile page's row value when you set your max. -->
+    <string name="workout_zones_profile_set"><xliff:g id="bpm" example="185">%1$d</xliff:g> bpm, set by you</string>
+    <!-- The Profile page's row value when the app works your max out. -->
+    <string name="workout_zones_profile_worked_out">Calculated from your age and workouts</string>
+    <!-- Under your max: you typed it. -->
+    <string name="workout_zones_source_set">Set by you</string>
+    <!-- Under your max: learned from workouts, with the day it was. The day is "3 Oct". -->
+    <string name="workout_zones_source_learned_on">Learned from your hardest efforts, <xliff:g id="day" example="3 Oct">%1$s</xliff:g></string>
+    <!-- Under your max: learned from workouts, with no day kept. -->
+    <string name="workout_zones_source_learned">Learned from your hardest efforts</string>
+    <!-- Under your max: worked out from your age for now. -->
+    <string name="workout_zones_source_age">From your age, until a hard effort shows more</string>
+    <!-- Under your max: taken from the profile in the Zepp app for now. -->
+    <string name="workout_zones_source_strap">From your Zepp profile, until a hard effort shows more</string>
+    <!-- Under your max: a guess with nothing to go on. -->
+    <string name="workout_zones_source_guess">A first guess. Add your age, or set it yourself.</string>
+    <!-- A zone's name on the list. -->
+    <string name="workout_zones_zone_name">Zone <xliff:g id="zone" example="2">%1$d</xliff:g></string>
+    <!-- A zone's heart rates on the list, in bpm. Short, beside the zone's name. -->
+    <string name="workout_zones_bpm_range"><xliff:g id="from" example="115">%1$d</xliff:g> to <xliff:g id="to" example="133">%2$d</xliff:g></string>
+    <!-- The top zone's heart rates on the list, in bpm: it has no end. Short. -->
+    <string name="workout_zones_bpm_up"><xliff:g id="from" example="172">%1$d</xliff:g> and up</string>
+    <!-- A stepper in the sheet that moves a zone's edges: the zone's lowest heart rate. -->
+    <string name="workout_zones_starts_at">Starts at</string>
+    <!-- A stepper in the sheet that moves a zone's edges: the zone's highest heart rate. -->
+    <string name="workout_zones_ends_at">Ends at</string>
+    <!-- The edges sheet's note for zone 1. -->
+    <string name="workout_zones_edges_first">Moving its end moves where zone 2 starts.</string>
+    <!-- The edges sheet's note for zone 5. -->
+    <string name="workout_zones_edges_last">Zone 5 runs on up to your max. Moving its start moves where zone 4 ends.</string>
+    <!-- The edges sheet's note for zones 2 to 4. -->
+    <string name="workout_zones_edges_other">Moving an edge moves the zone beside it too.</string>
+    <!-- A button: put every zone back where it starts. -->
+    <string name="workout_zones_reset">Back to the usual zones</string>
+    <!-- The title of the sheet for typing your max. -->
+    <string name="workout_zones_set_title">Your max heart rate</string>
+    <!-- The note in the sheet for typing your max. -->
+    <string name="workout_zones_set_note">From a test or a race you ran flat out. Your zones follow it.</string>
+    <!-- The field's label in the sheet for typing your max. -->
+    <string name="workout_zones_set_field">Max heart rate</string>
+    <!-- The sheet's save button. -->
+    <string name="workout_zones_save">Save</string>
+</resources>

@@ -2,14 +2,20 @@ package org.openstrap.app.ui.glow
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.testing.LocaleRule
+import org.openstrap.app.presentation.chargeShown
+import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 
 /** The All metrics index is a map of what exists: every metric detail once, and the screens without one. */
 class AllMetricsTest {
+    // The values are checked as an English phone writes them: a German one groups steps with a dot.
+    @get:Rule val locale = LocaleRule()
+
     private val empty = DayUiState()
 
     @Test fun `every metric detail appears exactly once`() {
@@ -92,7 +98,7 @@ class AllMetricsTest {
             null, org.openstrap.app.data.Healthspan.Withheld.Learning, age = 30,
         )
         assertEquals("30" to "Starting point", habitAgeRow(learning))
-        assertEquals(null to "Not worked out yet", habitAgeRow(null))
+        assertEquals(null to "No estimate yet", habitAgeRow(null))
         val row = metricIndex(empty, null, learning, emptyList()).flatMap { it.rows }.first { it.name == "Habit Age" }
         assertEquals("30", row.value)
         assertEquals("Starting point", row.status)

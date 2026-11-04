@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The ongoing workout notification's card (presentation/NotificationCopy.kt): the bpm slot, the line under it and the
+  third figure. Room is tight: the collapsed card shares one line with the sport and the time.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Workout notification, where the zone line goes while End waits for a second tap. "Yes, end" is the button's label. -->
+    <string name="core_notif_end_question">End the workout? Tap Yes, end to save it.</string>
+    <!-- Workout notification, the bpm slot while the workout is paused. One short word. -->
+    <string name="core_notif_paused">Paused</string>
+    <!-- Workout notification, the bpm slot before the first heart reading. One short word. -->
+    <string name="core_notif_waiting">Waiting</string>
+    <!-- Workout notification, the bpm slot: the live heart rate in beats a minute. -->
+    <string name="core_notif_bpm"><xliff:g id="bpm" example="152">%1$d</xliff:g> bpm</string>
+    <!-- Workout notification, under the bpm slot while the strap is out of reach: the workout goes on. -->
+    <string name="core_notif_still_recording">Still recording</string>
+    <!-- Workout notification, the third figure with a heart zone target: minutes spent in the target, like "Zone 2 to 3". -->
+    <string name="core_notif_minutes_in_target"><xliff:g id="minutes" example="16">%1$d</xliff:g> min in <xliff:g id="target" example="Zone 2 to 3">%2$s</xliff:g></string>
+    <!-- Workout notification, the third figure with a time or calorie target: the target, like "30 min" or "500 kcal". -->
+    <string name="core_notif_goal">Goal <xliff:g id="target" example="30 min">%1$s</xliff:g></string>
+</resources>

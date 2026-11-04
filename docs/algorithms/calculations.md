@@ -4,7 +4,7 @@ Every number OpenStrap works out itself, explained in plain words. Written from 
 
 * For research sources and the reasoning behind each choice, see [recovery.md](recovery.md) and [evidence-review.md](evidence-review.md).
 * For the planned check against the strap's own Readiness, see [readiness-calibration.md](readiness-calibration.md).
-* Code lives in `app/src/main/kotlin/org/openstrap/app/data/`. Most of it is in `Recovery.kt`, and `RecoveryEngine.kt` feeds it from the database.
+* Code lives in `app/src/main/kotlin/org/openstrap/app/data/`. The rules are in one file per part: `ReadinessModel.kt` (Readiness, §5, and the sleep score, §9), `ChargeModel.kt` (Energy, §7), `LoadModel.kt` (training load, Strain and fitness, §8, and daytime resting HR, §4) and `MaxHrModel.kt` (maximum HR, §4). Their inputs, results and constants are in `Recovery.kt`, named `Recovery.X` as the code names them, and `RecoveryEngine.kt` feeds them from the database.
 
 OpenStrap is a wellness app. None of these numbers is a medical measurement.
 
@@ -114,9 +114,8 @@ A running average where recent days count more: each day, v = λ·today + (1 −
 ### Days and nights
 
 * A day runs from local midnight to midnight.
-* A night belongs to the **morning it ended on**. The main sleep of a morning is the longest session that isn't a nap.
-* Naps count toward the day they started on.
-* The strap's sleep-apnea summary counts toward the day of its time + 2 hours.
+* A sleep belongs to the **day it ended on** (the day you woke up), midnight to midnight, by its times as shown, so a night the user edits to end after midnight moves to the new day. This is one rule everywhere (`SleepHistory.nightOf`): the Sleep tab, Today, the widgets, Recovery and the nights strip, naps and Health Connect imports included. It wins over the strap's own day for the session, which Zepp follows. The main sleep of a day is the longest session that ended on it and isn't a nap.
+* The strap's own nightly rows (its readiness with the night's HRV and resting HR, and the sleep-apnea summary, whose day is its time + 2 hours) are keyed by the strap's day for the session. They go with the main sleep from that strap session (`SleepHistory.strapDay`), which an edit never changes, so a night that moves day keeps them.
 * Time windows allow two hours of slack so a daylight-saving change doesn't drop a day.
 
 ---
@@ -157,6 +156,8 @@ On an invalid night, the strap's own nightly HRV and resting HR are **shown** in
 
 ## 4. Your heart-rate settings: resting and maximum
 
+Code: `LoadModel.kt` (`daytimeRestingHr`) and `MaxHrModel.kt` (`maxHeartRate`).
+
 ### Daytime resting HR (for heart-rate reserve)
 
 Heart-rate reserve is defined against resting HR while **awake**. Using the much lower sleeping minimum would make every waking minute look harder than it was. In order of preference:
@@ -183,6 +184,8 @@ One rule for the whole app: Readiness, Energy, load, active minutes, calories, a
 ---
 
 ## 5. Readiness (0–100, each morning)
+
+Code: `ReadinessModel.kt` (`readiness`).
 
 "How far last night sat from your own normal." It's a comparison, not a prediction.
 
@@ -230,7 +233,7 @@ Temperature, breathing and blood-oxygen baselines use all usable past nights, no
 
 * **HRV normal range:** the 7-night HRV is "below", "within" or "above" your usual ± 0.5 spread.
 * **Data-quality notes:** shown when OpenStrap's and the strap's values disagree by more than 15 % (HRV) or 3 bpm (resting HR).
-* **7-day trend:** Readiness recalculated for each of the last 7 mornings, each with the daily loads up to the day before it, so a past day shows what that morning showed. (Loads use today's resting and max HR, so a change to those since can still move a past value slightly.)
+* **7-day trend:** Readiness recalculated for each of the last 7 mornings, each against its own baseline (the 60 nights before it) and with the daily loads up to the day before it, so a past day shows what that morning showed. (Loads use today's resting and max HR, so a change to those since can still move a past value slightly.)
 
 ### Breathing disturbances card (not part of Readiness)
 
@@ -283,6 +286,8 @@ Once on, an Alert stays until **2 nights in a row without a core flag**.
 
 ## 7. Energy (0–100, minute by minute)
 
+Code: `ChargeModel.kt` (`charge`).
+
 A body-battery: sleep fills it, and the day drains it.
 
 ### How it runs
@@ -314,7 +319,7 @@ Energy is always kept within 0–100.
 **Sleep details**
 * **Stage weight:** deep 1.0, light 0.8, REM 0.65, awake-inside-sleep 0.1.
 * **Relaxation:** 1.2 − 0.04 × (HR − that night's resting HR), kept between 0.5 and 1.2. A calmer heart recharges better.
-* **HRV factor:** 0.75 + 0.25 × (tonight's HRV contributor ÷ 80), kept between 0.6 and 1.1.
+* **HRV factor:** 0.75 + 0.25 × (the sleep's HRV contributor ÷ 80), kept between 0.6 and 1.1. Each sleep uses its own night's contributor, so an earlier night in the replay isn't scored by tonight's HRV.
 * Recharge is a share of the room left, so it slows as you fill up. About 30 → 92 over 7.5 hours of normal sleep.
 
 **Exercise recovery details**
@@ -349,15 +354,18 @@ The point where the strap's stress score starts to drain Energy.
 
 ## 8. Training load, Strain and fitness/fatigue
 
+Code: `LoadModel.kt` (`dailyLoad`, `strain`, `fitnessFatigue`).
+
 ### Daily training load (TRIMP)
 
 Two parts, added up for the day's load and shown split on the Load screen ("62 today · 48 workouts · 14 everyday"), as Zepp's Exertion splits workout from everyday activity:
 
 * **Workouts:** every minute of a recorded workout (phone or strap) counts, whatever the intensity, except time a phone workout was paused, so an easy warm-up counts too. The minute's heart rate comes from the workout's own recording when it has one. A phone and a strap workout over the same time count each minute once.
 * **Everyday:** outside workouts, a minute counts only when you're **awake** and the strap counted **at least one step** that minute, at HRR ≥ **35 %**, or at HRR ≥ **20 %** when it has **60 or more steps** (a walk). A raised heart rate while sitting is not training load. The walking exception is there because sustained walking at about 100 steps a minute sits at HRR 24–34 %, under the 35 % line. A minute also needs at least 3 of the last 5 minutes (itself included) to pass the same test, so single PPG spikes don't add load.
-* Steps are the movement signal because the strap's other per-minute activity fields don't separate sitting from walking in real data. Cycling or weights outside a recorded workout therefore add nothing; record a workout for them.
+* Steps are the movement signal because the strap's other per-minute activity fields don't separate sitting from walking in real data.
+* **Without steps:** 10 or more awake minutes in a row at HRR ≥ **30 %** outside a workout (and the 20 minutes after one) count, all of them, as everyday load. It is the same sustained run that Energy counts as Exercise, so unrecorded cycling or rowing counts in both. Weights between sets rarely make one, so record a workout for them.
 * Fitness, fatigue, the acute:chronic ratio and Readiness all use the total. A workout's EPOC (below, section 13) is a different measure and is never added in.
-* For history, days with under 8 hours of heart-rate data are skipped (strap mostly off). Up to 90 days are used.
+* For history, days with under 8 hours of heart-rate data are skipped (strap mostly off), unless a recorded workout is in them: its load still counts. Up to 90 days are used.
 * Today's load is the running total so far.
 
 ### Strain (0–21)

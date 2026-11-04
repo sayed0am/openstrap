@@ -12,6 +12,9 @@ import org.openstrap.app.ui.workout.WorkoutDetailCopy.Effort
 
 /** The page of a past workout: its sentence, facts, heart rate drop and the (i) on Load (spec 6.3). */
 class WorkoutDetailCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val run = 1
     private val walk = 3
     private val strength = 52
@@ -89,13 +92,19 @@ class WorkoutDetailCopyTest {
         fun at(d: LocalDate) = d.atTime(18, 0).toEpochSecond(ZoneOffset.UTC)
         assertEquals("Today", WorkoutDetailCopy.day(at(today), today, ZoneOffset.UTC, Locale.UK))
         assertEquals("Yesterday", WorkoutDetailCopy.day(at(today.minusDays(1)), today, ZoneOffset.UTC, Locale.UK))
-        assertEquals("Wed 21 Oct", WorkoutDetailCopy.day(at(LocalDate.of(2026, 10, 21)), today, ZoneOffset.UTC, Locale.UK))
+        // Within the week the weekday, as every day word reads, then the date.
+        assertEquals("Wednesday", WorkoutDetailCopy.day(at(LocalDate.of(2026, 10, 21)), today, ZoneOffset.UTC, Locale.UK))
+        assertEquals("Fri 16 Oct", WorkoutDetailCopy.day(at(LocalDate.of(2026, 10, 16)), today, ZoneOffset.UTC, Locale.UK))
         assertEquals("Fri 24 Oct 2025", WorkoutDetailCopy.day(at(LocalDate.of(2025, 10, 24)), today, ZoneOffset.UTC, Locale.UK))
     }
 
     @Test fun `facts leave out what there's nothing to say about`() {
         val all = WorkoutDetailCopy.facts(5210f, false, 4 * 60L + 12, 6201, 412, locale = Locale.UK)
         assertEquals(listOf("Distance", "Paused", "Steps", "Calories"), all.map { it.name })
+        // Colours and icons go by the kind, not the words.
+        assertEquals(
+            listOf(WorkoutFact.Kind.Distance, WorkoutFact.Kind.Paused, WorkoutFact.Kind.Steps, WorkoutFact.Kind.Calories), all.map { it.kind },
+        )
         assertEquals("5.21", all[0].value)
         assertEquals("Kilometres", all[0].status)
         assertEquals("4:12", all[1].value)
@@ -118,10 +127,10 @@ class WorkoutDetailCopyTest {
     }
 
     @Test fun `the drop shows only after a real effort, against your usual`() {
-        assertEquals("Heart rate drop 30 bpm in the first minute.", WorkoutDetailCopy.dropLine(30, true, null))
-        assertEquals("Heart rate drop 30 bpm in the first minute, quick for you.", WorkoutDetailCopy.dropLine(30, true, 24))
-        assertEquals("Heart rate drop 20 bpm in the first minute, slow for you.", WorkoutDetailCopy.dropLine(20, true, 26))
-        assertEquals("Heart rate drop 25 bpm in the first minute, about usual for you.", WorkoutDetailCopy.dropLine(25, true, 26))
+        assertEquals("Heart rate drop of 30 bpm in the first minute.", WorkoutDetailCopy.dropLine(30, true, null))
+        assertEquals("Heart rate drop of 30 bpm in the first minute, quick for you.", WorkoutDetailCopy.dropLine(30, true, 24))
+        assertEquals("Heart rate drop of 20 bpm in the first minute, slow for you.", WorkoutDetailCopy.dropLine(20, true, 26))
+        assertEquals("Heart rate drop of 25 bpm in the first minute, about usual for you.", WorkoutDetailCopy.dropLine(25, true, 26))
         assertNull(WorkoutDetailCopy.dropLine(30, false, null))
         assertNull(WorkoutDetailCopy.dropLine(0, true, null))
         assertNull(WorkoutDetailCopy.dropLine(null, true, null))
@@ -201,9 +210,9 @@ class WorkoutDetailCopyTest {
     }
 
     @Test fun `a kcal target is a fact, reached at its time or not reached with how far it got`() {
-        assertEquals(WorkoutFact("Target", "300 kcal", "Reached at 24:40"), WorkoutDetailCopy.targetFact("k:300", 1480, 340, Locale.UK))
-        assertEquals(WorkoutFact("Target", "300 kcal", "Not reached, 212 of 300"), WorkoutDetailCopy.targetFact("k:300", null, 212, Locale.UK))
-        assertEquals(WorkoutFact("Target", "1,200 kcal", "Reached"), WorkoutDetailCopy.targetFact("k:1200", null, 1250, Locale.UK))
+        assertEquals(WorkoutFact("Target", "300 kcal", "Reached at 24:40", WorkoutFact.Kind.Target), WorkoutDetailCopy.targetFact("k:300", 1480, 340, Locale.UK))
+        assertEquals(WorkoutFact("Target", "300 kcal", "Not reached, 212 of 300", WorkoutFact.Kind.Target), WorkoutDetailCopy.targetFact("k:300", null, 212, Locale.UK))
+        assertEquals(WorkoutFact("Target", "1,200 kcal", "Reached", WorkoutFact.Kind.Target), WorkoutDetailCopy.targetFact("k:1200", null, 1250, Locale.UK))
         assertEquals("Not reached", WorkoutDetailCopy.targetFact("k:300", null, null, Locale.UK)!!.status)
         // Other targets say nothing here.
         assertNull(WorkoutDetailCopy.targetFact("t:1800", 1800, 400))

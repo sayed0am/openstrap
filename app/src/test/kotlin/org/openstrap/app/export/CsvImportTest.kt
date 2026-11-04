@@ -74,7 +74,7 @@ class CsvImportTest {
     }
 
     @Test fun `every table's key column is in its header`() {
-        for (t in CSV_TABLES) for (column in listOfNotNull(t.key.epoch, t.key.span?.epoch)) {
+        for (t in CSV_TABLES) for (column in listOfNotNull(t.key.epoch, t.key.span?.epoch, t.key.unique?.csv, t.key.part?.csv)) {
             assertTrue("${t.file} lacks $column", column in CsvImporter.parseLine(t.header))
         }
     }

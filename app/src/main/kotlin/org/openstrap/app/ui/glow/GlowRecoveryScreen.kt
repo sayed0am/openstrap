@@ -1,6 +1,7 @@
 package org.openstrap.app.ui.glow
 
-import androidx.compose.foundation.Canvas
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -9,11 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -21,15 +20,15 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.presentation.chargeShown
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.data.History
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.FIRST_SCORE
 import org.openstrap.app.ui.dashboard.PARTIAL_DAY
@@ -37,18 +36,21 @@ import org.openstrap.app.ui.dashboard.Wear
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.InfoCopy
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.FAILED_SHORT
 import org.openstrap.app.ui.dashboard.RECOVERY_FAILED
 import org.openstrap.app.ui.dashboard.RecoveryFailure
 import org.openstrap.app.ui.dashboard.TRY_AGAIN
 import org.openstrap.app.ui.dashboard.RecoveryCard
 import org.openstrap.app.ui.dashboard.RecoveryFacts
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.recoveryCards
 import org.openstrap.app.ui.theme.MetricColors
+import org.openstrap.app.ui.glow.draw.CoreShape
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * The Recovery tab (spec 5.1): "can I push today, and why". The score glows with the last 7 days beside it, what
@@ -58,9 +60,8 @@ import org.openstrap.app.ui.theme.MetricColors
  * The hero, the contributors and the Charge battery open their details on this tab's stack.
  */
 
-/** Charge as a whole number the way every screen shows it, cut rather than rounded, so they all agree. */
-fun chargeShown(value: Float): Int = value.toInt()
-
+// A whole tab, filling the pane like the other tab screens: nothing outside places it.
+@Suppress("ModifierMissing")
 @Composable
 fun GlowRecoveryScreen(
     state: DayUiState,
@@ -97,28 +98,33 @@ fun GlowRecoveryScreen(
     val failure = recoveryFailure?.takeIf { it.date == state.date && r == null }
     val learning = r?.readiness?.calibrating == true
     val firstNights = r != null && !r.charge.anchored
-    val waiting = if (firstNights) AFTER_FIRST_NIGHT else "No reading yet"
+    val waiting = if (firstNights) AFTER_FIRST_NIGHT else NO_READING
     val slots = recoveryCards(RecoveryFacts(habitAge = healthspan != null, learning = learning, hasRecovery = r != null))
     var info by rememberSaveable { mutableStateOf(false) }
     var partialInfo by rememberSaveable { mutableStateOf(false) }
-    val partial = wear?.takeIf { it.partial }?.let { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    // Built once, so the cards given it can skip (audit K11).
+    val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    val partial = partialTag.takeIf { wear?.partial == true }
     val isToday = state.date == java.time.LocalDate.now()
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         GlowScreenList(contentPadding, list, focus = showCharge, onFocused = onChargeShown) {
-            full { header() }
+            add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots, focus = RecoveryCard.Charge) { card, m ->
                 when (card) {
                     RecoveryCard.Hero ->
-                        if (failure != null) RecoveryFailedHero(failure, onOpen = { onOpenScore(Score.Recovery) }, onRetry = onRetryRecovery)
+                        if (failure != null) RecoveryFailedHero(
+                            failure, recoveryHeroStyle(MetricColors.readiness), { onOpenScore(Score.Recovery) }, onRetryRecovery,
+                            Modifier.fillMaxWidth().gridSize(CardSize.Wide), gap = 22.dp,
+                        )
                         else RecoveryHero(
                             r, onOpen = { onOpenScore(Score.Recovery) }, onInfo = { info = true }, firstNights = firstNights,
-                            noSleep = isToday && state.loaded && state.asleepSeconds == null, firstScore = firstScore,
+                            noSleep = isToday && state.loaded && state.asleepSeconds == null, deleted = state.deletedSleep != null, firstScore = firstScore,
                             shown = TodayCopy.recoveryShown(r?.readiness, strapScore, waiting),
                         )
                     RecoveryCard.Drivers -> DriversList(r?.readiness, onAll = { onOpenScore(Score.Recovery) })
                     // Charge is worked out with Recovery, so a failure there says so here too, not "after your first night".
                     RecoveryCard.Charge -> ChargeTall(
-                        r?.charge, state.dayStart..state.dayEnd, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Charge) },
+                        r?.charge, state.dayStart..state.dayEnd, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Energy) },
                     )
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
@@ -155,7 +161,7 @@ private fun recoveryHeroStyle(color: Color) = GlowStyle.Bloom.copy(
  */
 @Composable
 private fun RecoveryHero(
-    r: RecoveryResult?, onOpen: () -> Unit, onInfo: () -> Unit, firstNights: Boolean = false, noSleep: Boolean = false, firstScore: Boolean = false,
+    r: RecoveryResult?, onOpen: () -> Unit, onInfo: () -> Unit, firstNights: Boolean = false, noSleep: Boolean = false, deleted: Boolean = false, firstScore: Boolean = false,
     shown: TodayCopy.RecoveryShown? = null,
 ) {
     val ready = r?.readiness
@@ -165,11 +171,11 @@ private fun RecoveryHero(
     GlowCard(recoveryHeroStyle(MetricColors.readiness), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
         Column {
             GlowHeader(
-                "Recovery", trailing = score?.let { TabCopy.vsYesterday(it, yesterday) },
+                stringResource(R.string.glow_recovery_title), trailing = score?.let { TabCopy.vsYesterday(it, yesterday) },
                 tag = if (firstScore && score != null) TitleTag(FIRST_SCORE) else null,
                 trailingContent = {
                     androidx.compose.foundation.layout.Spacer(Modifier.width(10.dp))
-                    InfoButton("About Recovery", onInfo)
+                    InfoButton(stringResource(R.string.glow_recovery_about), onInfo)
                 },
             )
             HeroSentence(
@@ -177,10 +183,10 @@ private fun RecoveryHero(
                     firstNights -> TodayCopy.RECOVERY_FIRST_NIGHT
                     ready == null -> TabCopy.RECOVERY_WAITING
                     score != null -> TabCopy.recovery(score, alert, ready.contributors)
-                    noSleep -> TabCopy.NO_SLEEP_SCORE
+                    noSleep -> if (deleted) TabCopy.DELETED_SLEEP_SCORE else TabCopy.NO_SLEEP_SCORE
                     ready.phase == Recovery.Phase.Withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.Learning(ready.baselineNights, Recovery.SCORED_NIGHTS))
                     ready.withheld -> TodayCopy.noScoreLine(TodayCopy.NoScore.NoHeartData)
-                    else -> "Recovery is scored each morning from the night's sleep."
+                    else -> stringResource(R.string.glow_recovery_scored_each_morning)
                 },
             )
             // The strap's estimate stands in for a withheld score, under its own word.
@@ -209,20 +215,29 @@ private fun RecoveryHero(
 
 /**
  * Today's score failed to work out (spec 4.3, E5): yesterday's stays, dimmed, with the line and Try again, so the
- * hero never waits forever.
+ * hero never waits forever. The Recovery tab and Today both show it, each in its own hero [style] and [gap].
  */
 @Composable
-private fun RecoveryFailedHero(failure: RecoveryFailure, onOpen: () -> Unit, onRetry: () -> Unit) {
-    GlowCard(recoveryHeroStyle(MetricColors.readiness), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onOpen) {
+internal fun RecoveryFailedHero(
+    failure: RecoveryFailure,
+    style: GlowStyle,
+    onOpen: () -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier,
+    gap: Dp,
+) {
+    GlowCard(style, modifier, onClick = onOpen) {
         Column {
-            GlowHeader("Recovery")
+            GlowHeader(stringResource(R.string.glow_recovery_title))
             HeroSentence(RECOVERY_FAILED)
             failure.yesterday?.let { y ->
-                Spacer(Modifier.height(22.dp))
-                HeroFigure(y.toString(), "Yesterday", big = true, modifier = Modifier.alpha(FAILED_ALPHA))
+                Spacer(Modifier.height(gap))
+                HeroFigure(
+                    y.toString(), stringResource(R.string.glow_recovery_yesterday), big = true, modifier = Modifier.alpha(FAILED_ALPHA),
+                )
             }
-            Spacer(Modifier.height(22.dp))
-            HeroButton(TRY_AGAIN, onRetry)
+            Spacer(Modifier.height(gap))
+            PageButton(TRY_AGAIN, onRetry, primary = true, size = ButtonSize.Hero)
         }
     }
 }
@@ -233,8 +248,15 @@ private fun DriversList(ready: Recovery.Readiness?, onAll: () -> Unit) {
     val all = ready?.contributors.orEmpty()
     val top = TabCopy.topDrivers(all)
     // "All" and each row open the Recovery detail, which has every contributor.
-    ListPanel(title = "What drove it", note = if (all.size > top.size) "All ${all.size}" else null, onNote = onAll.takeIf { all.isNotEmpty() }) {
-        if (top.isEmpty()) ListRow("Waiting for a night", MetricColors.readiness, null, "What drove Recovery shows here each morning", dash = false, divider = false)
+    ListPanel(
+        title = stringResource(R.string.glow_recovery_what_drove),
+        note = if (all.size > top.size) stringResource(R.string.glow_recovery_drivers_all, all.size) else null,
+        onNote = onAll.takeIf { all.isNotEmpty() },
+    ) {
+        if (top.isEmpty()) ListRow(
+            stringResource(R.string.glow_recovery_waiting_night), MetricColors.readiness, null,
+            stringResource(R.string.glow_recovery_drivers_waiting), dash = false, divider = false,
+        )
         top.forEachIndexed { i, c ->
             ContributorRow(
                 TabCopy.factorName(c.factor), MetricColors.readiness, TabCopy.contributorWord(c.score),
@@ -260,10 +282,10 @@ private fun ChargeTall(
     val step = 15 * 60L
     val values = remember(c?.points, day) { c?.points?.let { bucket(it, day, step) }.orEmpty() }
     var picked by remember(values) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clockAt(day.first + i * step) } }
+    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clock(day.first + i * step) } }
     GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, second = true), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
-            GlowHeader("Energy", tag = tag)
+            GlowHeader(stringResource(R.string.glow_recovery_energy), tag = tag)
             if (c != null && now != null && c.points.size >= 2) {
                 Spacer(Modifier.height(10.dp))
                 // The Charge curve (chart kit): sleep fills it, the day drains it. Scrubbing moves the number.
@@ -273,12 +295,12 @@ private fun ChargeTall(
             HeroFigure(
                 scrubbed?.first?.toString() ?: now?.toString(),
                 when {
-                    scrubbed != null -> "At ${scrubbed.second}"
+                    scrubbed != null -> stringResource(R.string.glow_recovery_charge_at, scrubbed.second)
                     failed -> FAILED_SHORT
                     c == null || !c.anchored -> AFTER_FIRST_NIGHT
-                    atWake == null -> "Now"
-                    c.strapOffOvernight -> "$atWake at start"
-                    else -> "$atWake at waking"
+                    atWake == null -> stringResource(R.string.glow_recovery_now)
+                    c.strapOffOvernight -> stringResource(R.string.glow_recovery_charge_at_start, atWake)
+                    else -> stringResource(R.string.glow_recovery_charge_at_waking, atWake)
                 },
                 big = true, dot = DotSize.Second, labelLines = 2,
             )
@@ -288,7 +310,7 @@ private fun ChargeTall(
 
 /** Recharged or Drained beside the Charge battery: a number and a word. */
 @Composable
-private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier, failed: Boolean = false) {
+private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier = Modifier, failed: Boolean = false) {
     val ready = c != null && c.anchored && c.latest != null
     val value = c?.takeIf { ready }?.let {
         if (recharged) TabCopy.chargeAmount(it.recharged, +1)
@@ -300,19 +322,8 @@ private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Mo
         recharged -> TabCopy.RECHARGED
         else -> TabCopy.drainedMostly(c.drainedExercise, c.drainedStress, c.drainedLiving)
     }
-    SmallCard(MetricColors.charge, if (recharged) "Recharged" else "Drained", value, null, status, modifier, plain = true)
-}
-
-/** Averages charge samples into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun bucket(points: List<Recovery.ChargePoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.t - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.value; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+    val title = stringResource(if (recharged) R.string.glow_recovery_recharged else R.string.glow_recovery_drained)
+    SmallCard(MetricColors.charge, title, value, null, status, modifier, plain = true)
 }
 
 /* ------------------------------------------- Body signals ------------------------------------------- */
@@ -329,30 +340,37 @@ private class BodySignal(
     val unit: String = "",
 )
 
-/** Loads the last 30 days of each body signal, enough for its normal. */
+/**
+ * Loads the last 30 days of each body signal, enough for its normal ([rememberNormal], keyed on the day and the
+ * history, each normal worked out once per load), and the signals once per day state (audit K8).
+ */
 @Composable
 private fun rememberSignals(state: DayUiState, history: DailyHistory): List<BodySignal> {
-    val end = state.date
-    val from = end.minusDays(History.NORMAL_DAYS - 1L)
-    @Composable fun daily(m: Metric) = remember(m, end) { history(m.daily, from, end) }
-    val rhr by daily(Metric.RestingHr).collectAsState(emptyList())
-    val hrv by daily(Metric.Hrv).collectAsState(emptyList())
-    val skin by daily(Metric.SkinTemperature).collectAsState(emptyList())
-    val breath by daily(Metric.Breathing).collectAsState(emptyList())
-    val spo2 by daily(Metric.Spo2).collectAsState(emptyList())
-    val stress by daily(Metric.Stress).collectAsState(emptyList())
-    fun normalOf(stats: List<org.openstrap.app.data.DayStat>) = History.normal(stats, end)
-    return listOf(
-        BodySignal(Metric.RestingHr, "Resting heart rate", MetricColors.heart, state.restingHeartRate?.toFloat(), normalOf(rhr)),
-        BodySignal(Metric.Hrv, "HRV", MetricColors.hrv, state.hrv.avg()?.toFloat(), normalOf(hrv)),
-        BodySignal(
-            Metric.SkinTemperature, "Skin temperature", MetricColors.temperature,
-            state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), normalOf(skin), asDeviation = true,
-        ),
-        BodySignal(Metric.Breathing, "Breathing rate", MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), normalOf(breath)),
-        BodySignal(Metric.Spo2, "Blood oxygen", MetricColors.spo2, state.spo2.avg()?.toFloat(), normalOf(spo2), unit = "%"),
-        BodySignal(Metric.Stress, "Stress", MetricColors.stress, state.stress.avg()?.toFloat(), normalOf(stress)),
-    )
+    val rhr = rememberNormal(Metric.RestingHr, state.date, history)
+    val hrv = rememberNormal(Metric.Hrv, state.date, history)
+    val skin = rememberNormal(Metric.SkinTemperature, state.date, history)
+    val breath = rememberNormal(Metric.Breathing, state.date, history)
+    val spo2 = rememberNormal(Metric.Spo2, state.date, history)
+    val stress = rememberNormal(Metric.Stress, state.date, history)
+    val rhrName = stringResource(R.string.glow_recovery_resting_hr)
+    val hrvName = stringResource(R.string.glow_recovery_hrv)
+    val skinName = stringResource(R.string.glow_recovery_skin_temperature)
+    val breathName = stringResource(R.string.glow_recovery_breathing_rate)
+    val spo2Name = stringResource(R.string.glow_recovery_blood_oxygen)
+    val stressName = stringResource(R.string.glow_recovery_stress)
+    return remember(state, rhr, hrv, skin, breath, spo2, stress) {
+        listOf(
+            BodySignal(Metric.RestingHr, rhrName, MetricColors.heart, state.restingHeartRate?.toFloat(), rhr),
+            BodySignal(Metric.Hrv, hrvName, MetricColors.hrv, state.hrv.avg()?.toFloat(), hrv),
+            BodySignal(
+                Metric.SkinTemperature, skinName, MetricColors.temperature,
+                state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), skin, asDeviation = true,
+            ),
+            BodySignal(Metric.Breathing, breathName, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), breath),
+            BodySignal(Metric.Spo2, spo2Name, MetricColors.spo2, state.spo2.avg()?.toFloat(), spo2, unit = "%"),
+            BodySignal(Metric.Stress, stressName, MetricColors.stress, state.stress.avg()?.toFloat(), stress),
+        )
+    }
 }
 
 /**
@@ -361,7 +379,7 @@ private fun rememberSignals(state: DayUiState, history: DailyHistory): List<Body
  */
 @Composable
 private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Metric) -> Unit) {
-    ListPanel(title = "Body signals", note = "Against your normal") {
+    ListPanel(title = stringResource(R.string.glow_recovery_body_signals), note = stringResource(R.string.glow_recovery_against_normal)) {
         signals.forEachIndexed { i, s ->
             val direction = History.status(s.today, s.normal)
             val value = s.today?.let { v ->
@@ -377,32 +395,3 @@ private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Met
         }
     }
 }
-
-/* --------------------------------------------- Shared ------------------------------------------------ */
-
-/**
- * The quiet panels' progress bar: a faint solid track, the first [fraction] of it a glowing line in [color], and a
- * dot where it ends, like the knob on the sleep score's arc.
- */
-@Composable
-internal fun GlowBar(fraction: Float, color: Color, modifier: Modifier = Modifier) {
-    Canvas(modifier.fillMaxWidth().height(12.dp)) {
-        val y = size.height / 2
-        val r = 5.dp.toPx()
-        // Inset by the dot's halo, so a full or empty bar keeps its dot inside the panel.
-        val x0 = r
-        val x1 = size.width - r
-        drawLine(Color.White.copy(alpha = 0.10f), Offset(x0, y), Offset(x1, y), 2.dp.toPx(), StrokeCap.Round)
-        val f = fraction.coerceIn(0f, 1f)
-        if (f <= 0f) return@Canvas
-        val end = Offset(x0 + (x1 - x0) * f, y)
-        drawLine(color.copy(alpha = 0.22f), Offset(x0, y), end, 6.dp.toPx(), StrokeCap.Round)
-        drawLine(color, Offset(x0, y), end, 2.2.dp.toPx(), StrokeCap.Round)
-        drawCircle(color.copy(alpha = 0.30f), r, end)
-        drawCircle(color, 3.dp.toPx(), end)
-        drawCircle(Color.White, 1.2.dp.toPx(), end)
-    }
-}
-
-@Composable
-internal fun Note(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.bodySmall)

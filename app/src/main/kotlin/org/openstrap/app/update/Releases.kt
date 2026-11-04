@@ -1,5 +1,6 @@
 package org.openstrap.app.update
 
+import android.os.Build
 import org.json.JSONArray
 import org.json.JSONObject
 import java.time.Instant
@@ -21,6 +22,8 @@ data class Release(
     val apk: ReleaseAsset?,
     /** SHA256SUMS.txt, for an APK GitHub gives no digest for. */
     val sums: ReleaseAsset?,
+    /** The oldest Android API level the release installs on, when its notes say ([Releases.minSdk]). */
+    val minSdk: Int? = null,
 ) {
     /** "2.1.0". */
     val versionName: String get() = version.joinToString(".")
@@ -52,10 +55,20 @@ object Releases {
     }
 
     /**
-     * The releases in GitHub's `GET /repos/{repo}/releases` reply, newest first. Drafts, pre-releases and tags that
-     * aren't versions are left out.
+     * A release's notes can say the oldest Android it installs on with a line `<!-- minSdk: 36 -->`. GitHub and the
+     * Updates page both hide the comment. The plain form `minSdk: 36` reads too, but shows in the notes.
      */
-    fun parse(json: String): List<Release> {
+    private val minSdkMarker = Regex("""(?im)^\s*(?:<!--\s*)?minSdk:\s*(\d+)\s*(?:-->)?\s*$""")
+
+    /** The API level the [notes] declare as the oldest the release installs on ([minSdkMarker]), or null for none. */
+    fun minSdk(notes: String): Int? = minSdkMarker.find(notes)?.groupValues?.get(1)?.toIntOrNull()
+
+    /**
+     * The releases in GitHub's `GET /repos/{repo}/releases` reply, newest first. Drafts, pre-releases and tags that
+     * aren't versions are left out, and so is a release whose notes ask for a newer Android than [sdk], since the
+     * package installer would turn it down after the download.
+     */
+    fun parse(json: String, sdk: Int = Build.VERSION.SDK_INT): List<Release> {
         val array = JSONArray(json)
         return (0 until array.length()).mapNotNull { i ->
             val r = array.getJSONObject(i)
@@ -63,15 +76,19 @@ object Releases {
             val tag = r.optString("tag_name")
             val version = version(tag) ?: return@mapNotNull null
             val assets = r.optJSONArray("assets")?.let { a -> (0 until a.length()).map { asset(a.getJSONObject(it)) } }.orEmpty()
+            val notes = r.optString("body").takeUnless { r.isNull("body") }.orEmpty()
+            val minSdk = minSdk(notes)
+            if (minSdk != null && minSdk > sdk) return@mapNotNull null
             Release(
                 tag = tag,
                 version = version,
-                notes = r.optString("body").takeUnless { r.isNull("body") }.orEmpty(),
+                notes = notes,
                 publishedAt = r.optString("published_at").takeIf { it.isNotEmpty() && !r.isNull("published_at") }
                     ?.let { runCatching { Instant.parse(it) }.getOrNull() },
                 page = r.optString("html_url").ifEmpty { "$PAGE/tag/$tag" },
                 apk = assets.firstOrNull { it.name.endsWith(".apk", ignoreCase = true) },
                 sums = assets.firstOrNull { it.name.equals("SHA256SUMS.txt", ignoreCase = true) },
+                minSdk = minSdk,
             )
         }.sortedWith { a, b -> compare(b.version, a.version) }
     }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Backup rules for Android 12 and up, written to match what allowBackup="false" already does there: nothing goes to
+     cloud backup, and a device to device transfer copies the app's data as before (Android 12 ignores allowBackup for
+     transfers, and with no device-transfer section here the default of everything still applies). -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="." />
+        <exclude domain="file" path="." />
+        <exclude domain="database" path="." />
+        <exclude domain="sharedpref" path="." />
+        <exclude domain="external" path="." />
+        <exclude domain="device_root" path="." />
+        <exclude domain="device_file" path="." />
+        <exclude domain="device_database" path="." />
+        <exclude domain="device_sharedpref" path="." />
+    </cloud-backup>
+</data-extraction-rules>

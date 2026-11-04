@@ -25,12 +25,14 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.components.LocalCardNumbers
@@ -38,7 +40,7 @@ import org.openstrap.app.ui.components.cardNumber
 import org.openstrap.app.ui.components.cardOpening
 
 /*
- * The quiet tier of the glow language: a grouped list for small facts (body signals, time to recover, energy) and
+ * The quiet tier of the glow language: a grouped list for small facts (body signals, time to recover, calories) and
  * for lists of things (workouts, contributors, settings). No glow at all, so the cards above it keep the light.
  */
 
@@ -169,7 +171,8 @@ fun ListRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (ring != null) {
-            RowRing(ring, color, Modifier.size(RowIcon))
+            // A row's progress ring (spec 2.7): as thick as an icon's stroke reads at 20 dp, a dp in from its box.
+            ProgressRing({ ring }, color, Modifier.size(RowIcon).padding(1.dp), stroke = 2.5.dp, track = 0.12f)
             Spacer(Modifier.width(RowIconGap))
         } else if (icon != null) {
             Icon(icon, null, tint = iconTint.copy(alpha = iconTint.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), modifier = Modifier.size(RowIcon))
@@ -196,26 +199,6 @@ fun ListRow(
             Spacer(Modifier.width(RowCaretGap))
             TapCaret(ROW_CARET_ALPHA)
         }
-    }
-}
-
-/**
- * A row's progress ring (spec 2.7): a track of white at 12% and the [share] of a goal from the top, clockwise, in
- * [color], round caps, as thick as an icon's stroke reads at 20 dp. Full once the goal is met.
- */
-@Composable
-private fun RowRing(share: Float, color: Color, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(modifier) {
-        val stroke = 2.5.dp.toPx()
-        val inset = stroke / 2 + 1.dp.toPx()
-        val box = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2)
-        val at = Offset(inset, inset)
-        drawArc(Color.White.copy(alpha = 0.12f), 0f, 360f, false, at, box, style = androidx.compose.ui.graphics.drawscope.Stroke(stroke))
-        val sweep = 360f * share.coerceIn(0f, 1f)
-        if (sweep > 0f) drawArc(
-            color, -90f, sweep, false, at, box,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round),
-        )
     }
 }
 
@@ -248,14 +231,14 @@ internal fun Metric.rowIcon(): ImageVector = when (this) {
  */
 internal fun Score.rowIcon(): ImageVector = when (this) {
     Score.Recovery -> AppIcons.Plant
-    Score.Charge -> AppIcons.BatteryCharging // BatteryCharging01
+    Score.Energy -> AppIcons.BatteryCharging // BatteryCharging01
     Score.Sleep, Score.Regularity, Score.Naps -> AppIcons.Moon // Moon02
     Score.HeartPoints -> AppIcons.Heart // Favourite
     Score.ActiveMinutes -> AppIcons.Timer
     Score.Load -> AppIcons.Barbell // Dumbbell01
     Score.Vo2Max -> AppIcons.FastWind
     Score.Recover -> AppIcons.Hourglass
-    Score.Energy -> AppIcons.Fire
+    Score.Calories -> AppIcons.Fire
     Score.Distance -> AppIcons.Route01
 }
 
@@ -274,10 +257,11 @@ internal fun Detail.rowIcon(): ImageVector? = when (this) {
 /** The empty value: a short dim bar drawn by the UI, never a dash character. */
 @Composable
 fun WaitingDash(modifier: Modifier = Modifier) {
+    val described = stringResource(R.string.glow_no_value_yet)
     Box(
         modifier
             .size(14.dp, 3.dp)
             .background(Color.White.copy(alpha = 0.3f), RoundedCornerShape(2.dp))
-            .semantics { contentDescription = "No value yet" },
+            .semantics { contentDescription = described },
     )
 }

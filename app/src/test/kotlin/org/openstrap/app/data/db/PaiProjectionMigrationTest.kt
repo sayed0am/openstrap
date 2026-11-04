@@ -38,7 +38,7 @@ class PaiProjectionMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val dao = room.healthDao()
             val old = dao.paiOnce(0, 2000).single()

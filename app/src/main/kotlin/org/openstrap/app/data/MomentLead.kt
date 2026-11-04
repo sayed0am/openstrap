@@ -1,7 +1,5 @@
 package org.openstrap.app.data
 
-import org.openstrap.app.widget.WidgetKind
-
 /** What the Moment widget leads with (widgets spec 3.1): its number and word, or what stands in for them. */
 enum class MomentLead {
     /** Recovery's score and status word, the waking lead. */

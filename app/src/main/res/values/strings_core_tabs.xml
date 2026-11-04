@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The Recovery, Sleep and Activity tabs: their heroes, cards and rows, the workout list's lines and Habit Age
+  (presentation/TabCopy.kt). The widgets show some of them too.
+  Recovery, Energy, Load and Habit Age are the names of the app's scores. HRV and REM stay as they are unless the
+  language has its own short form. kcal and bpm are units.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A sleep stage's name, on the hypnogram, the stage totals and the Sleep widget. Short, one word. -->
+    <string name="core_tab_stage_awake">Awake</string>
+    <!-- A sleep stage's name, as above: rapid eye movement sleep. -->
+    <string name="core_tab_stage_rem">REM</string>
+    <!-- A sleep stage's name, as above. -->
+    <string name="core_tab_stage_light">Light</string>
+    <!-- A sleep stage's name, as above. -->
+    <string name="core_tab_stage_deep">Deep</string>
+
+    <!-- Recovery against yesterday's score, higher. The sign is a plus. Short. -->
+    <string name="core_tab_vs_yesterday_up">+<xliff:g id="points" example="3">%1$d</xliff:g> vs yesterday</string>
+    <!-- Recovery against yesterday's score, lower. The sign is a real minus sign (U+2212). Short. -->
+    <string name="core_tab_vs_yesterday_down">−<xliff:g id="points" example="3">%1$d</xliff:g> vs yesterday</string>
+    <!-- Recovery the same as yesterday's score. Short. -->
+    <string name="core_tab_same_as_yesterday">Same as yesterday</string>
+
+    <!-- The caveat while Recovery calibrates: nights so far of the nights it needs. Short. -->
+    <string name="core_tab_learning_nights">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+
+    <!-- A Recovery contributor's name on its row: heart rate variability. -->
+    <string name="core_tab_factor_hrv">HRV</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_resting_hr">Resting heart rate</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_sleep">Last night\'s sleep</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_sleep_balance">Sleep over recent nights</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_temperature">Skin temperature</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_breathing">Breathing rate</string>
+    <!-- A Recovery contributor's name on its row: the Load of the day before. -->
+    <string name="core_tab_factor_previous_load">Yesterday\'s Load</string>
+    <!-- A Recovery contributor's name on its row. -->
+    <string name="core_tab_factor_blood_oxygen">Blood oxygen</string>
+    <!-- A Recovery contributor's name on its row: how late in the night the heart rate settled. -->
+    <string name="core_tab_factor_recovery_index">When your heart settled</string>
+
+    <!-- A Recovery contributor inside "Mostly held back by …", lower case. -->
+    <string name="core_tab_phrase_hrv">HRV</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_resting_hr">resting heart rate</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_sleep">last night\'s sleep</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_sleep_balance">sleep over recent nights</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_temperature">skin temperature</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_breathing">breathing rate</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_previous_load">yesterday\'s Load</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_blood_oxygen">blood oxygen</string>
+    <!-- The same. -->
+    <string name="core_tab_phrase_recovery_index">how late your heart settled</string>
+    <!-- After the Recovery hero's sentence: what held the score back most, a contributor from the list above. -->
+    <string name="core_tab_held_back_by">Mostly held back by <xliff:g id="contributor" example="HRV">%1$s</xliff:g>.</string>
+
+    <!-- The Recovery hero before the day's Recovery is calculated. -->
+    <string name="core_tab_recovery_waiting">Recovery shows once last night\'s sleep syncs.</string>
+    <!-- The Recovery hero with no sleep recorded last night. -->
+    <string name="core_tab_no_sleep_score">No sleep recorded last night, so there\'s no score today.</string>
+    <!-- The Recovery hero when the user deleted last night's sleep. -->
+    <string name="core_tab_deleted_sleep_score">You deleted last night\'s sleep, so there\'s no score today.</string>
+
+    <!-- A Recovery contributor's status word, when it lifts the score. Short. -->
+    <string name="core_tab_contributor_helping">Helping</string>
+    <!-- A Recovery contributor's status word, when it is as usual. Short. -->
+    <string name="core_tab_contributor_usual">Usual</string>
+    <!-- A Recovery contributor's status word. Short. -->
+    <string name="core_tab_contributor_little">Holding back a little</string>
+    <!-- A Recovery contributor's status word. Short. -->
+    <string name="core_tab_contributor_holding">Holding back</string>
+
+    <!-- A row of Energy today, and the line under Recharged: what filled Energy. -->
+    <string name="core_tab_charge_sleep_rest">Sleep and calm rest</string>
+    <!-- A row of Energy today: what drained it. -->
+    <string name="core_tab_charge_movement">Movement</string>
+    <!-- A row of Energy today: what drained it. -->
+    <string name="core_tab_charge_stress">Stress</string>
+    <!-- A row of Energy today: what drained it. -->
+    <string name="core_tab_charge_awake">Being awake</string>
+    <!-- A row of Energy today's status, beside the amount: it filled Energy. Short. -->
+    <string name="core_tab_charge_recharged">Filled</string>
+    <!-- A row of Energy today's status, beside the amount: it used Energy. Short. -->
+    <string name="core_tab_charge_drained">Drained</string>
+
+    <!-- The Energy card's line before the first night. -->
+    <string name="core_tab_charge_first_night">Energy starts after your first night. Sleep is what fills it.</string>
+    <!-- The Energy card's line before there is enough heart rate. -->
+    <string name="core_tab_charge_waiting">Energy shows once the strap has a few hours of heart rate.</string>
+    <!-- The Energy card's line when there is no waking level to compare with. Short. -->
+    <string name="core_tab_charge_now">Now</string>
+    <!-- The Energy card's line: how much it fell since waking. -->
+    <string name="core_tab_charge_used">Used <xliff:g id="amount" example="20">%1$d</xliff:g> since waking</string>
+    <!-- The Energy card's line: how much it rose since waking. -->
+    <string name="core_tab_charge_up">Up <xliff:g id="amount" example="5">%1$d</xliff:g> since waking</string>
+    <!-- The Energy card's line: the same as at waking. -->
+    <string name="core_tab_charge_level">Same as at waking</string>
+
+    <!-- The Sleep hero's sentence. The time is "7 h 40", "7 h" or "40 min". -->
+    <string name="core_tab_night_asleep"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g> asleep.</string>
+    <!-- The Sleep hero's sentence for the week's longest night. -->
+    <string name="core_tab_night_longest"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g>, your longest this week.</string>
+    <!-- The Sleep hero's sentence for the week's shortest night. -->
+    <string name="core_tab_night_shortest"><xliff:g id="duration" example="5 h 50">%1$s</xliff:g>, your shortest this week.</string>
+    <!-- The Sleep tab's night before the strap has seen one. -->
+    <string name="core_tab_first_night_sleep">Your first night with the strap shows here in the morning.</string>
+    <!-- The Sleep tab's night when only naps were recorded. -->
+    <string name="core_tab_only_naps">No night\'s sleep recorded, only naps.</string>
+    <!-- The Sleep tab on a past day with no sleep recorded. -->
+    <string name="core_tab_no_sleep_that_night">No sleep recorded that night.</string>
+
+    <!-- Beside the night's sleep score, by its band. Short. -->
+    <string name="core_tab_sleep_score_poor">Sleep score, poor</string>
+    <!-- The same. -->
+    <string name="core_tab_sleep_score_fair">Sleep score, fair</string>
+    <!-- The same. -->
+    <string name="core_tab_sleep_score_good">Sleep score, good</string>
+    <!-- The same. -->
+    <string name="core_tab_sleep_score_great">Sleep score, great</string>
+    <!-- A night the strap gave no score. Short. -->
+    <string name="core_tab_no_strap_score">No score from the strap</string>
+    <!-- A stage's total on the stage bar's legend: the stage's name and its time, "Deep 1 h 32". -->
+    <string name="core_tab_stage_total"><xliff:g id="stage" example="Deep">%1$s</xliff:g> <xliff:g id="duration" example="1 h 32">%2$s</xliff:g></string>
+    <!-- Time asleep. The time is "7 h 40", "7 h" or "40 min". Short. -->
+    <string name="core_tab_asleep"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g> asleep</string>
+
+    <!-- How often you woke in the night: not at all. Short. -->
+    <string name="core_tab_slept_through">Slept through</string>
+    <!-- How often you woke in the night. Short. -->
+    <plurals name="core_tab_woke">
+        <item quantity="one">Woke once</item>
+        <item quantity="other">Woke <xliff:g id="count" example="3">%d</xliff:g> times</item>
+    </plurals>
+
+    <!-- Sleep regularity before there are enough days. Short. -->
+    <string name="core_tab_regularity_needs">Needs about 5 days of wear</string>
+    <!-- Sleep regularity from bedtimes alone, when they held steady. Short. -->
+    <string name="core_tab_regularity_steady">Steady bedtimes this week</string>
+    <!-- Sleep regularity from bedtimes alone, when they moved. Short. -->
+    <string name="core_tab_regularity_moved">Bedtimes moved this week</string>
+    <!-- When you usually fall asleep and wake, as times of day ("23:10" or "11:10 PM"). -->
+    <string name="core_tab_usual_times">Usually asleep by <xliff:g id="bedtime" example="23:10">%1$s</xliff:g>, up at <xliff:g id="wake" example="06:50">%2$s</xliff:g>.</string>
+
+    <!-- Breathing disturbances before there is a usual: nights so far of the nights it needs. -->
+    <string name="core_tab_breathing_learning">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <!-- Breathing disturbances: your usual number of them an hour, "2.1". -->
+    <string name="core_tab_breathing_usual">Your usual is <xliff:g id="per_hour" example="2.1">%1$s</xliff:g> an hour</string>
+    <!-- Breathing disturbances on a small card before there is a usual. Short. -->
+    <string name="core_tab_breathing_short_learning">Learning, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <!-- Breathing disturbances on a small card: your usual an hour, and that it is early. Short. -->
+    <string name="core_tab_breathing_short_usual">Usual <xliff:g id="per_hour" example="2.1">%1$s</xliff:g>, early estimate</string>
+
+    <!-- Under Load's number: your usual Load for a whole day. -->
+    <string name="core_tab_load_usual">Your usual is <xliff:g id="load" example="40">%1$d</xliff:g></string>
+    <!-- Under Load's number before there is a usual. -->
+    <string name="core_tab_load_learning">Learning your usual</string>
+    <!-- The week's training balance: well above your usual. One word if it can. -->
+    <string name="core_tab_balance_building">Building</string>
+    <!-- The week's training balance: well below your usual. -->
+    <string name="core_tab_balance_easing">Easing off</string>
+    <!-- The week's training balance: near your usual. -->
+    <string name="core_tab_balance_steady">Steady</string>
+
+    <!-- Active minutes over the last 7 days, with the goal reached. -->
+    <string name="core_tab_active_reached">Last 7 days, goal of <xliff:g id="goal" example="150">%1$d</xliff:g> reached</string>
+    <!-- Active minutes over the last 7 days, with the goal. -->
+    <string name="core_tab_active_goal">Last 7 days, goal <xliff:g id="goal" example="150">%1$d</xliff:g></string>
+    <!-- Heart points over the last 7 days, with the aim reached. -->
+    <string name="core_tab_points_reached">Last 7 days, at <xliff:g id="aim" example="100">%1$d</xliff:g> or more</string>
+    <!-- Heart points over the last 7 days, with the aim. -->
+    <string name="core_tab_points_aim">Last 7 days, aim for <xliff:g id="aim" example="100">%1$d</xliff:g></string>
+    <!-- Under the calories number, today. kcal is kilocalories. -->
+    <string name="core_tab_calories_today">Estimated kcal so far today</string>
+    <!-- Under the calories number, a past day the strap was worn for part of. -->
+    <string name="core_tab_calories_partial">Estimated kcal, part of the day worn</string>
+    <!-- Under the calories number. -->
+    <string name="core_tab_calories">Estimated kcal</string>
+
+    <!-- Under Drained: what took the most Energy. Short. -->
+    <string name="core_tab_mostly_movement">Mostly movement</string>
+    <!-- The same. -->
+    <string name="core_tab_mostly_stress">Mostly stress</string>
+    <!-- The same. -->
+    <string name="core_tab_mostly_awake">Mostly being awake</string>
+    <!-- Under Drained when nothing drained Energy yet. Short. -->
+    <string name="core_tab_nothing_yet">Nothing yet</string>
+
+    <!-- The naps card's title. One word. -->
+    <plurals name="core_tab_naps_title">
+        <item quantity="one">Nap</item>
+        <item quantity="other">Naps</item>
+    </plurals>
+    <!-- Under the naps card with one nap: when it was, "14:10". -->
+    <string name="core_tab_nap_at">At <xliff:g id="time" example="14:10">%1$s</xliff:g></string>
+    <!-- Under the naps card with more than one nap: how many, and when the first was. -->
+    <plurals name="core_tab_naps_first_at">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> nap, first at <xliff:g id="time" example="14:10">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> naps, first at <xliff:g id="time" example="14:10">%2$s</xliff:g></item>
+    </plurals>
+    <!-- Under the Recovery hero's trend dots. Short. -->
+    <string name="core_tab_last_7_days">Last 7 days</string>
+
+    <!-- The quiet tag beside a workout the strap found by itself. Short. -->
+    <string name="core_tab_auto_detected">Auto-detected</string>
+    <!-- A workout's fact: its average heart rate in beats a minute. -->
+    <string name="core_tab_fact_average_bpm">Average <xliff:g id="bpm" example="128">%1$d</xliff:g> bpm</string>
+    <!-- A strength workout's fact: how many sets. -->
+    <plurals name="core_tab_fact_sets">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="count" example="14">%d</xliff:g> sets</item>
+    </plurals>
+    <!-- A run's fact: its distance and pace, "5.2 km, 5:24/km". -->
+    <string name="core_tab_fact_distance_pace"><xliff:g id="distance" example="5.2 km">%1$s</xliff:g>, <xliff:g id="pace" example="5:24/km">%2$s</xliff:g></string>
+    <!-- A workout row's second line: its fact and when it started, "3.4 km, 17:35". -->
+    <string name="core_tab_workout_line"><xliff:g id="fact" example="3.4 km">%1$s</xliff:g>, <xliff:g id="time" example="17:35">%2$s</xliff:g></string>
+
+    <!-- Habit Age: the day its estimate is for, "Sun 18 Oct". -->
+    <string name="core_tab_habit_age_updated">Updated <xliff:g id="date" example="Sun 18 Oct">%1$s</xliff:g></string>
+    <!-- Habit Age before its first estimate: the day it comes, "Sunday 22 Nov". -->
+    <string name="core_tab_first_estimate">First estimate <xliff:g id="date" example="Sunday 22 Nov">%1$s</xliff:g></string>
+    <!-- Habit Age before its first estimate, under your own age in its place. -->
+    <string name="core_tab_age_for_now">Your age for now</string>
+    <!-- The same, followed by what it waits for, a sentence from elsewhere. -->
+    <string name="core_tab_age_for_now_waiting">Your age for now. <xliff:g id="waiting" example="Needs 3 more nights of wear.">%1$s</xliff:g></string>
+    <!-- Habit Age before there is last week's estimate: the likely range, in years. -->
+    <string name="core_tab_habit_age_likely">Likely <xliff:g id="low" example="27">%1$d</xliff:g> to <xliff:g id="high" example="31">%2$d</xliff:g></string>
+    <!-- Habit Age against last week's estimate, lower. -->
+    <plurals name="core_tab_habit_age_younger">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> year younger than last week</item>
+        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> years younger than last week</item>
+    </plurals>
+    <!-- Habit Age against last week's estimate, higher. -->
+    <plurals name="core_tab_habit_age_older">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> year older than last week</item>
+        <item quantity="other"><xliff:g id="count" example="2">%d</xliff:g> years older than last week</item>
+    </plurals>
+    <!-- Habit Age the same as last week. -->
+    <string name="core_tab_habit_age_same">Same as last week</string>
+    <!-- The age scale's label under its band: a range of ages. Short. -->
+    <string name="core_tab_age_range"><xliff:g id="low" example="27">%1$d</xliff:g> to <xliff:g id="high" example="31">%2$d</xliff:g></string>
+    <!-- The age scale's label at your own age's hairline. Short. -->
+    <string name="core_tab_your_age">You, <xliff:g id="age" example="34">%1$d</xliff:g></string>
+</resources>

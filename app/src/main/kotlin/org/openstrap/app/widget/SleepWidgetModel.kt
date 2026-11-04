@@ -1,21 +1,24 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.ui.components.StageSpan
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.SLEEP_NAMES
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.StageSpan
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.SLEEP_NAMES
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.draw.stageTotals
 import java.time.LocalDate
 import java.time.ZoneId
+import org.openstrap.app.presentation.Units
 
 /**
- * One night as the Sleep tab's hero reads it ([org.openstrap.app.ui.dashboard.DayUiState]): the night's main sleep, its
+ * One night as the Sleep tab's hero reads it: the night's main sleep, its
  * stages and their totals, and the week's other nights for the longest or shortest rule.
  */
 data class SleepWidgetNight(
@@ -58,7 +61,7 @@ data class SleepWidgetModel(
     /** The night's day, which a tap opens the Sleep score's detail on; null while waiting. */
     val date: LocalDate?,
     val title: String,
-    /** Bedtime to waking ("22:58–06:56"), or "Last synced night" while this morning's night isn't in. */
+    /** Bedtime to waking ("22:58 to 06:56"), or "Earlier night" while this morning's night isn't in. */
     val note: String?,
     /** Yesterday's night, shown while this morning's isn't synced. */
     val stale: Boolean,
@@ -83,45 +86,57 @@ data class SleepWidgetModel(
     val waiting: String?,
 ) {
     /** What TalkBack reads for the dotted number: "Sleep score 82, good". */
-    val scoreDescription: String? get() = score?.let { s -> word?.let { "Sleep score $s, ${it.lowercase()}" } ?: "Sleep score $s" }
+    val scoreDescription: String?
+        get() = score?.let { s ->
+            word?.let { Strings.app.format(R.string.system_widget_sleep_score_word, s, it.lowercase()) }
+                ?: Strings.app.format(R.string.system_widget_sleep_score, s)
+        }
 
     /** The Large's right of the score row: how often you woke, else time asleep. */
     val largeRight: String? get() = woke ?: asleep
 
     companion object {
-        const val TITLE = "Last night"
+        val TITLE: String get() = Strings.app.get(R.string.system_widget_sleep_title)
 
         /** The title while yesterday's night stands in: it isn't last night. */
-        const val STALE_TITLE = "Sleep"
-        const val LAST_SYNCED = "Last synced night"
+        val STALE_TITLE: String get() = Strings.app.get(R.string.widget_sleep_name)
+        val LAST_SYNCED: String get() = Strings.app.get(R.string.system_widget_sleep_last_synced)
 
         /**
-         * The widget for [today]'s night, or [yesterday]'s with "Last synced night" as the note while this morning's
+         * The widget for [today]'s night, or [yesterday]'s with "Earlier night" as the note while this morning's
          * isn't synced. Before any: the title and why, "After your first night" before the strap has seen one
          * ([firstNight]), else what the Sleep tab says for a day with no night ([napsToday] as it reads them).
          */
-        fun from(today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean, zone: ZoneId = ZoneId.systemDefault()): SleepWidgetModel {
-            today?.let { return night(it, stale = false, zone) }
-            yesterday?.let { return night(it, stale = true, zone) }
-            val line = if (firstNight) AFTER_FIRST_NIGHT else TabCopy.noNight(napsToday, isToday = true)
-            return SleepWidgetModel(null, TITLE, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line)
+        fun from(
+            today: SleepWidgetNight?, yesterday: SleepWidgetNight?, firstNight: Boolean, napsToday: Boolean,
+            zone: ZoneId = ZoneId.systemDefault(), deleted: Boolean = false, strings: Strings = Strings.app,
+        ): SleepWidgetModel {
+            today?.let { return night(it, stale = false, zone, strings) }
+            yesterday?.let { return night(it, stale = true, zone, strings) }
+            val line = if (firstNight) AFTER_FIRST_NIGHT else TabCopy.noNight(napsToday, isToday = true, deleted = deleted)
+            val title = strings.get(R.string.system_widget_sleep_title)
+            return SleepWidgetModel(
+                null, title, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line,
+            )
         }
 
         /** Each stage's name, time and share of the night's stage seconds, as the Sleep score detail lists them. */
         fun stageRows(totals: List<Pair<Int, Long>>): List<SleepStageRow> {
             val all = totals.sumOf { it.second }.coerceAtLeast(1L)
-            return totals.map { (stage, seconds) -> SleepStageRow(stage, SLEEP_NAMES[stage].orEmpty(), TodayCopy.duration(seconds), seconds.toFloat() / all) }
+            return totals.map { (stage, seconds) ->
+                SleepStageRow(stage, SLEEP_NAMES[stage].orEmpty(), Units.duration(seconds), seconds.toFloat() / all)
+            }
         }
 
-        private fun night(n: SleepWidgetNight, stale: Boolean, zone: ZoneId): SleepWidgetModel {
+        private fun night(n: SleepWidgetNight, stale: Boolean, zone: ZoneId, strings: Strings): SleepWidgetModel {
             val s = n.session
             val score = s.score
             // Stage totals as text, never dots (spec 2.3): a stage under a minute leaves its segment and legend out.
             val totals = n.breakdown?.let { stageTotals(it.byStage) }.orEmpty()
             return SleepWidgetModel(
                 date = n.date,
-                title = if (stale) STALE_TITLE else TITLE,
-                note = if (stale) LAST_SYNCED else TabCopy.nightTimes(s.start, s.end, zone),
+                title = strings.get(if (stale) R.string.widget_sleep_name else R.string.system_widget_sleep_title),
+                note = if (stale) strings.get(R.string.system_widget_sleep_last_synced) else TabCopy.nightTimes(s.start, s.end, zone),
                 stale = stale,
                 score = score?.toString(),
                 word = score?.let(TabCopy::sleepScoreWord),
@@ -259,7 +274,7 @@ object SleepLayout {
     data class SmallLine(val text: String, val lines: Int = 1)
 
     /**
-     * What the Small keeps: its score [row], the Secondary [lines] under it ("Last synced night" while stale, then
+     * What the Small keeps: its score [row], the Secondary [lines] under it ("Earlier night" while stale, then
      * time asleep) and whether the stage [bar] shows.
      */
     data class Small(
@@ -272,8 +287,8 @@ object SleepLayout {
     /**
      * The Small in [width] by [height]: the title and the score with its word always (the dots smaller for a long
      * score, the word dropped before the dots get smaller than 2.4 dp), then while they fit time asleep, the stage bar
-     * and "Last synced night", dropped in that order. Time asleep only on one line;
-     * "Last synced night" on two when one can't hold it, since without it yesterday's night would pass for last
+     * and "Earlier night", dropped in that order. Time asleep only on one line;
+     * "Earlier night" on two when one can't hold it, since without it yesterday's night would pass for last
      * night's.
      */
     fun small(m: SleepWidgetModel, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Small {
@@ -328,10 +343,6 @@ object SleepLayout {
         val note: Boolean, val row: ScoreRow, val bar: Boolean, val legendRows: Int,
         val top: TopRow = TopRow(null, note, 0f), val spread: Spread = Spread(0f, 0),
     )
-
-    /** Whether the title row holds [title] and [note] on one line in [width]. */
-    fun noteFits(title: String, note: String?, width: Float, fontScale: Float): Boolean = note != null &&
-        WidgetText.width(title, WidgetText.TITLE_SP, fontScale) + SIDE_GAP_DP + WidgetText.width(note, WidgetText.SECONDARY_SP, fontScale) <= width
 
     /**
      * The Wide in [width] by [height]: the title row, the score row ([scoreRow] with time asleep) and the stage bar

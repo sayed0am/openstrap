@@ -8,9 +8,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.weekBars
 
@@ -45,7 +45,7 @@ class RecoveryWidgetModelTest {
         assertNull(m.waiting)
         assertEquals(today, m.date)
         assertEquals(
-            listOf(RecoveryFigure("Resting HR", "52 bpm"), RecoveryFigure("HRV", "64 ms"), RecoveryFigure("Sleep", "82")),
+            listOf(RecoveryFigure("Resting", "52 bpm"), RecoveryFigure("HRV", "64 ms"), RecoveryFigure("Sleep", "82")),
             m.figures,
         )
     }
@@ -104,7 +104,7 @@ class RecoveryWidgetModelTest {
             hrvSamples = 40, hrMinutes = 400,
         )
         val ready = Recovery.Readiness(
-            78, listOf(Recovery.Contributor(Recovery.Factor.Sleep, 82, "7 h 30 asleep")), 30, false, emptyList(), false,
+            78, listOf(Recovery.Contributor(Recovery.Factor.Sleep, 82, Recovery.Detail.Asleep(450))), 30, false, emptyList(), false,
         )
         val r = RecoveryResult(
             today, ready, Recovery.ChargeDay(emptyList(), null, null, 0f, 0f, 0f, 0f, null, null, anchored = true), week,

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Paint
 import android.os.SystemClock
-import android.util.Log
 import android.util.TypedValue
 import android.widget.RemoteViews
 import androidx.compose.runtime.Composable
@@ -40,25 +39,23 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
-import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.R
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.glow.ControlSurface
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
-import org.openstrap.app.ui.glow.GlowMood
+import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.edgeLight
-import org.openstrap.app.ui.glow.locationAvailable
+import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import java.time.Instant
 import java.time.ZoneId
 
@@ -69,7 +66,7 @@ import java.time.ZoneId
  * and the moment's mood. Play, a tile or the widget opens Ready with that sport, All sports the sport picker.
  */
 class StartWidget : LoadingWidget<StartWidget.Shown>(WidgetKind.Start) {
-    override suspend fun loadShown(context: Context): Shown = load(context)
+    override fun shown(data: WidgetData, context: Context): Shown = load(data)
 
     override fun sample(): Shown = Shown(WidgetSamples.start(Instant.now(), ZoneId.systemDefault()), GlowMood.Day)
 
@@ -82,43 +79,18 @@ class StartWidget : LoadingWidget<StartWidget.Shown>(WidgetKind.Start) {
     companion object {
         /**
          * Every workout as the workout lists read them ([Workouts.listed]), the Outdoor or Indoor side last chosen per
-         * sport and whether location is on, as Ready reads them, and the workout recording now. The mood from the
-         * moment now ([widgetMood]).
+         * sport and whether location is on, as Ready reads them, and the workout recording then. The mood from the
+         * moment then ([widgetMood]).
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): Shown {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val recording = (container.workout.state.value as? WorkoutState.Recording)?.let { r ->
+        internal fun load(data: WidgetData): Shown {
+            val read = checkNotNull(data.start) { "not read for Start" }
+            val recording = (read.state as? WorkoutState.Recording)?.let { r ->
                 val w = r.workout
-                StartRecordingInput(w.sportType, w.start, WorkoutRecorder.activeSeconds(w, now.epochSecond), r.paused)
+                StartRecordingInput(w.sportType, w.start, WorkoutRecorder.activeSeconds(w, data.now.epochSecond), r.paused)
             }
-            val model = try {
-                val dao = container.database.healthDao()
-                val workouts = Workouts.listed(
-                    dao.workouts().first(), dao.sportEffects().first(), dao.lastWorkoutHeartRates().first(), dao.appWorkouts().first(),
-                    dao.setCounts().first().associate { it.workoutStart to it.sets }, LIST_MAX_HR,
-                )
-                StartWidgetModel.from(workouts, container.settings.workoutSides.first(), locationAvailable(context), recording, now, zone)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(WIDGET_TAG, "widgets: workouts for Start not read: $e")
-                StartWidgetModel.from(emptyList(), emptyMap(), false, recording, now, zone)
-            }
-            val bedtime = try {
-                container.health.usualBedtime(now.atZone(zone).toLocalDate())
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                null
-            }
-            return Shown(model, widgetMood(container, bedtime, now, zone))
+            val model = StartWidgetModel.from(read.workouts.orEmpty(), read.sides, read.location, recording, data.now, data.zone)
+            return Shown(model, widgetMood(data, data.usualBedtime))
         }
-
-        /**
-         * The max heart rate the lists' zones are shares of. The widget shows no zones, so it skips the app's 90-day
-         * read for it ([org.openstrap.app.data.RecoveryEngine.maxHeartRate]); nothing it shows depends on it.
-         */
-        private const val LIST_MAX_HR = 190
     }
 }
 
@@ -207,25 +179,25 @@ private fun ColumnScope.SmallContent(m: StartWidgetModel, f: WidgetFrame) {
         Text(fit.words.name, style = NameStyle, maxLines = 1)
         fit.words.line?.let { Text(it, style = WidgetType.secondary, maxLines = 1) }
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     if (fit.actionTop) {
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             if (fit.tile) UsualTile(sport, false, sz, f.density)
             Spacer(GlanceModifier.defaultWeight())
             Action(m, sz, f)
         }
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         Column(GlanceModifier.fillMaxWidth()) { words() }
     } else {
         UsualTile(sport, false, sz, f.density)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(GlanceModifier.defaultWeight()) { words() }
             Spacer(GlanceModifier.width(StartLayout.SMALL_GAP_DP.dp))
             Action(m, sz, f)
         }
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /**
@@ -239,13 +211,13 @@ private fun ColumnScope.StatusSmallContent(m: StartWidgetModel, line: StatusLine
     val edge = fit.spread.edge(f.drawContentHeight)
     Spacer(GlanceModifier.height(edge.dp))
     TopRowView(fit.title.orEmpty(), null, fit.top, f, edge)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         UsualTile(m.usual, false, fit.sizes, f.density)
         Spacer(GlanceModifier.width(StartLayout.STATUS_PLAY_GAP_DP.dp))
         Action(m, fit.sizes, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Column(GlanceModifier.fillMaxWidth()) {
         Text(fit.words.name, style = NameStyle, maxLines = 1)
         fit.words.line?.let { Text(it, style = WidgetType.secondary, maxLines = 1) }
@@ -266,13 +238,13 @@ private fun ColumnScope.WideContent(m: StartWidgetModel, f: WidgetFrame, top: To
         Spacer(GlanceModifier.height(gap.dp))
         StatusTitle(top, f, gap)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     UsualRow(m, b, f)
     b.tiles?.let {
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
         TileRow(it, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /**
@@ -286,16 +258,16 @@ private fun ColumnScope.LargeContent(m: StartWidgetModel, f: WidgetFrame, top: T
     Spacer(GlanceModifier.height(edge.dp))
     if (top != null) {
         StatusTitle(top, f, edge)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
     }
     UsualRow(m, b, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     b.tiles?.let {
         TileRow(it, f)
-        Spacer(GlanceModifier.defaultWeight())
+        Gap()
     }
     Hairline()
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     b.figures?.let { Figures(m, it) }
     Spacer(GlanceModifier.height(edge.dp))
 }
@@ -347,30 +319,30 @@ private fun UsualRow(m: StartWidgetModel, b: StartLayout.Block, f: WidgetFrame) 
 @Composable
 private fun ColumnScope.SmallRecording(m: StartWidgetModel, r: StartRecording, f: WidgetFrame) {
     val fit = StartLayout.smallRecording(r, f.contentWidth, f.contentHeight, f.fontScale)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         if (fit.tile >= StartLayout.MIN_TILE_DP) UsualTile(r.sport, true, StartLayout.Sizes(fit.tile, fit.open, 0f), f.density)
         Spacer(GlanceModifier.defaultWeight())
         Action(m, fit.sizes, f)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Column(GlanceModifier.fillMaxWidth()) {
         Timer(r, fit.timerSp)
         Text(fit.name, style = NameStyle, maxLines = 1)
         if (fit.since == StartLayout.SincePlace.Under) Text(if (r.paused) r.status else r.since, style = WidgetType.secondary, maxLines = 1)
     }
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /** Wide while recording: the sport's row with "Recording" and Open, then the timer as the hero. */
 @Composable
 private fun ColumnScope.WideRecording(m: StartWidgetModel, r: StartRecording, f: WidgetFrame) {
     val fit = StartLayout.wideRecording(r, f.contentWidth, f.contentHeight, f.fontScale)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     RecordingRow(m, r, fit, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     TimerRow(r, fit)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
 }
 
 /** Large while recording: the Wide's, then the hairline and the week's figures, secondary to the timer. */
@@ -380,11 +352,11 @@ private fun ColumnScope.LargeRecording(m: StartWidgetModel, r: StartRecording, f
     val edge = fit.edgeGap(f.drawHeight - 2 * WidgetSizes.PADDING_DP)
     Spacer(GlanceModifier.height(edge.dp))
     RecordingRow(m, r, fit, f)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     TimerRow(r, fit)
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     Hairline()
-    Spacer(GlanceModifier.defaultWeight())
+    Gap()
     fit.figures?.let { Figures(m, it) }
     Spacer(GlanceModifier.height(edge.dp))
 }
@@ -543,9 +515,9 @@ private fun TileRow(tiles: StartLayout.Tiles, f: WidgetFrame) {
 private fun Figures(m: StartWidgetModel, fit: StartLayout.Figures) {
     when (fit.layout) {
         StartLayout.FigureLayout.Side -> Row(GlanceModifier.fillMaxWidth().then(Inset)) {
-            Figure(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.defaultWeight())
+            FigureCell(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.defaultWeight())
             Spacer(GlanceModifier.width(StartLayout.FIGURE_GAP_DP.dp))
-            Figure(m.lastLabel, m.lastLine, GlanceModifier.defaultWeight())
+            FigureCell(m.lastLabel, m.lastLine, GlanceModifier.defaultWeight())
         }
         StartLayout.FigureLayout.Rows -> Column(GlanceModifier.fillMaxWidth().then(Inset)) {
             FigureRow(StartWidgetModel.THIS_WEEK, m.weekLine)
@@ -553,19 +525,10 @@ private fun Figures(m: StartWidgetModel, fit: StartLayout.Figures) {
             FigureRow(m.lastLabel, m.lastLine)
         }
         StartLayout.FigureLayout.Stacked -> Column(GlanceModifier.fillMaxWidth().then(Inset)) {
-            Figure(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.fillMaxWidth())
+            FigureCell(StartWidgetModel.THIS_WEEK, m.weekLine, GlanceModifier.fillMaxWidth())
             Spacer(GlanceModifier.height(StartLayout.FIGURE_ROW_GAP_DP.dp))
-            Figure(m.lastLabel, m.lastLine, GlanceModifier.fillMaxWidth())
+            FigureCell(m.lastLabel, m.lastLine, GlanceModifier.fillMaxWidth())
         }
-    }
-}
-
-@Composable
-private fun Figure(label: String, value: String, modifier: GlanceModifier) {
-    Column(modifier) {
-        Text(label, style = WidgetType.caption, maxLines = 1)
-        Spacer(GlanceModifier.height(StartLayout.FIGURE_LINE_GAP_DP.dp))
-        Text(value, style = WidgetType.body, maxLines = 1)
     }
 }
 

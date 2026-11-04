@@ -1,19 +1,20 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.presentation.TimeOfDay
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -23,11 +24,10 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -47,72 +47,43 @@ import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.data.DayStat
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.History
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.data.Weeks
+import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.components.LocalCardsGrow
 import org.openstrap.app.ui.components.detailNumber
 import org.openstrap.app.ui.components.detailSurface
-import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.DetailCopy
+import org.openstrap.app.ui.dashboard.Score
+import org.openstrap.app.presentation.DetailCopy
 import org.openstrap.app.ui.dashboard.InfoCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.NIGHTLY
 import org.openstrap.app.ui.dashboard.RELATED
-import org.openstrap.app.ui.dashboard.Range
+import org.openstrap.app.presentation.Range
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.dashboard.colorOf
 import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
-import org.openstrap.app.ui.theme.AppIcons
-import java.time.DayOfWeek
-import java.time.Instant
 import java.time.LocalDate
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.time.temporal.TemporalAdjusters
-import java.util.Locale
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.theme.ControlSurface
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
 
-/** The one page header ([PageHeader], spec 3.4): the round back button, the page title, and the day or note under it. */
-@Composable
-internal fun GlowDetailHeader(title: String, subtitle: String?, onBack: () -> Unit) = PageHeader(title, onBack, subtitle = subtitle)
-
-internal fun dayName(date: LocalDate): String = when (date) {
-    LocalDate.now() -> "Today"
-    LocalDate.now().minusDays(1) -> "Yesterday"
-    else -> date.format(DateTimeFormatter.ofPattern("EEE d MMM"))
-}
-
-/** A row of choices on a faint pill; the chosen one is a soft white pill. */
-@Composable
-internal fun GlowSegments(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.06f)).padding(4.dp),
-    ) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.weight(1f).clip(RoundedCornerShape(50))
-                    .background(if (on) Color.White.copy(alpha = 0.16f) else Color.Transparent)
-                    .pressClickable({ onSelect(i) }, RoundedCornerShape(50), scale = 0.97f)
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(label, color = if (on) Color.White else Color.White.copy(alpha = 0.6f), style = MaterialTheme.typography.labelLarge)
-            }
-        }
-    }
-}
+/** [date] as a heading: "Today", "Yesterday", the weekday within the week, then the date ([DayWords.relative]). */
+internal fun dayName(date: LocalDate): String = DayWords.relative(date, LocalDate.now())
 
 /* ---------------------------------------------- Template --------------------------------------------- */
 
@@ -149,7 +120,8 @@ internal fun siblings(detail: Detail, onSwitch: (Detail) -> Unit): List<DetailSi
  * [headline] and the seven-day [strip] ([onDay] picks a day). Under it the [ranges] as pills when there's more than
  * one, then [body]: the chart, the sentence and the rows. [heroValue] replaces the value row with a score gauge (the
  * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroSide] sits to the right of
- * a plain value row (heart rate's Live switch).
+ * a plain value row (heart rate's Live switch). While a chart is scrubbed, [scrubbed] gives the reading under the
+ * finger in the headline's place, on the value row in the gauge's place. It's read only inside the hero.
  */
 @Composable
 internal fun DetailTemplate(
@@ -167,38 +139,51 @@ internal fun DetailTemplate(
     onRange: (Range) -> Unit,
     heroValue: (@Composable () -> Unit)? = null,
     heroSide: (@Composable () -> Unit)? = null,
+    scrubbed: () -> DetailHeadline? = { null },
     body: LazyListScope.() -> Unit,
 ) {
     BackHandler(onBack = onBack)
     val list = rememberLazyListState()
-    var switching by remember { mutableStateOf(false) }
+    var switching by rememberSaveable { mutableStateOf(false) }
     val gutter = GlowLayout.WideGutter
     // Rows inside a detail open the next one with a crossfade, not by growing (spec 3.5).
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }, LocalCardsGrow provides false) {
         ScreenList(contentPadding, list, gutter = gutter) {
             item {
                 DetailHero(color, gutter) {
+                    // A scrub is read here, so only the hero follows the finger, not the whole detail (audit K4).
+                    val scrub = scrubbed()
+                    val shown = scrub ?: headline
+                    // A scrubbed reading takes the gauge's place, as the value row.
+                    val gauge = heroValue.takeIf { scrub == null }
                     DetailNav(title, siblings.size > 1, onBack, onInfo, onSwitch = { switching = true })
                     // A score gauge, its label and status word make one block, centred in the header (spec 6.1).
-                    if (heroValue != null) Column(Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                        heroValue()
+                    if (gauge != null) Column(
+                        Modifier.fillMaxWidth().padding(top = 22.dp), horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        gauge()
                         Text(
-                            headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                            shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                             style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp),
                         )
-                        if (headline.word != null && headline.value != null) StatusWord(headline.word, color, Modifier.padding(top = 12.dp))
+                        if (shown.word != null && shown.value != null) StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
                     } else Row(Modifier.fillMaxWidth().padding(top = 22.dp), verticalAlignment = Alignment.Bottom) {
                         Box(Modifier.weight(1f)) {
                             when {
                                 // No number: the state in words, large in the value's place, as a Small does.
-                                headline.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                                    Text(headline.word ?: "No reading", color = Color.White, style = GlowType.pageTitle)
-                                    Text(headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)
+                                shown.value == null -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        shown.word ?: stringResource(R.string.glow_no_reading), color = Color.White,
+                                        style = GlowType.pageTitle,
+                                    )
+                                    Text(
+                                        shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                                    )
                                 }
                                 else -> Row(verticalAlignment = Alignment.Bottom) {
-                                    DotMatrixText(headline.value, Modifier.detailNumber(headline.value), dot = DotSize.Detail)
+                                    DotMatrixText(shown.value, Modifier.detailNumber(shown.value), dot = DotSize.Detail)
                                     Text(
-                                        headline.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                                        shown.label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                                         style = GlowType.secondary, modifier = Modifier.padding(start = 10.dp, bottom = 2.dp),
                                     )
                                 }
@@ -206,11 +191,17 @@ internal fun DetailTemplate(
                         }
                         heroSide?.invoke()
                     }
-                    if (heroValue == null && headline.word != null && headline.value != null) StatusWord(headline.word, color, Modifier.padding(top = 12.dp))
+                    if (gauge == null && shown.word != null && shown.value != null) {
+                        StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
+                    }
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
-            if (ranges.size > 1) item { RangePills(ranges, range, onRange) }
+            if (ranges.size > 1) item {
+                GlowSegments(
+                    ranges.map { it.label }, ranges.indexOf(range), { onRange(ranges[it]) }, Modifier.padding(top = 6.dp), role = Role.Tab,
+                )
+            }
             body()
         }
     }
@@ -253,33 +244,9 @@ private fun DetailHero(color: Color, gutter: Dp, content: @Composable () -> Unit
  */
 @Composable
 private fun DetailNav(title: String, switchable: Boolean, onBack: () -> Unit, onInfo: () -> Unit, onSwitch: () -> Unit) {
-    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) { InfoButton("About $title", onInfo) }
-}
-
-/**
- * Heart rate's Live control in its detail header: a chip on the Control surface (spec 2.2, 2.4), white with black
- * text while live, so it reads as the design system's own control and not a coloured switch.
- */
-@Composable
-internal fun LiveChip(on: Boolean, onChange: (Boolean) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(36.dp).clip(shape).background(if (on) Color.White else ControlSurface)
-            .toggleable(on, role = Role.Switch, onValueChange = onChange)
-            .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text("Live", color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)
+    PageHeader(title, onBack, onTitle = if (switchable) onSwitch else null) {
+        InfoButton(stringResource(R.string.glow_metrics_about, title), onInfo)
     }
-}
-
-/** A 38 dp round glass button with an icon, as on the detail mockup. */
-@Composable
-internal fun RoundButton(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, onClick: () -> Unit, size: Dp = 38.dp) {
-    Box(
-        Modifier.size(size).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).clickable(onClickLabel = label, role = Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(icon, label, Modifier.size(size * 0.47f), tint = Color.White) }
 }
 
 /** The status word under the value, in the metric's colour with a soft glow of it. */
@@ -296,10 +263,11 @@ private fun StatusWord(word: String, color: Color, modifier: Modifier = Modifier
 private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (LocalDate) -> Unit, modifier: Modifier = Modifier) {
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         days.forEach { d ->
+            val show = stringResource(R.string.glow_metrics_show_day, d.label)
             Column(
                 Modifier.width(40.dp).clip(RoundedCornerShape(14.dp))
                     .background(if (d.selected) Color.White.copy(alpha = 0.10f) else Color.Transparent)
-                    .clickable(onClickLabel = "Show ${d.label}", role = Role.Button) { onDay(d.date) }
+                    .clickable(onClickLabel = show, role = Role.Button) { onDay(d.date) }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -311,36 +279,17 @@ private fun WeekStrip(days: List<DetailCopy.StripDay>, color: Color, onDay: (Loc
     }
 }
 
-/** Day, Week, Month, Year: a dark track with the chosen one on a soft pill. */
-@Composable
-private fun RangePills(ranges: List<Range>, range: Range, onRange: (Range) -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        Modifier.fillMaxWidth().padding(top = 6.dp).clip(shape).background(Color(0xFF121214)).border(1.dp, Color.White.copy(alpha = 0.07f), shape).padding(4.dp),
-    ) {
-        ranges.forEach { r ->
-            val on = r == range
-            Box(
-                Modifier.weight(1f).clip(shape).background(if (on) Color.White.copy(alpha = 0.12f) else Color.Transparent)
-                    .clickable(role = Role.Tab) { onRange(r) }.padding(vertical = 8.dp),
-                contentAlignment = Alignment.Center,
-            ) { Text(r.label, color = if (on) Color.White else Color.White.copy(alpha = 0.55f), style = GlowType.body) }
-        }
-    }
-}
-
 /** The switcher's choices, as a sheet over the detail: the group's details, the one showing ticked. */
 @Composable
 private fun SwitcherSheet(siblings: List<DetailSibling>, color: Color, onDismiss: () -> Unit) {
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(Modifier.padding(horizontal = 16.dp).navigationBarsPadding().padding(bottom = 16.dp)) {
-            ListPanel {
-                siblings.forEachIndexed { i, s ->
-                    ListRow(
-                        s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null, if (s.current) "Showing" else null,
-                        onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
-                    )
-                }
+    PageSheet(onDismiss, side = 16.dp) {
+        ListPanel {
+            siblings.forEachIndexed { i, s ->
+                ListRow(
+                    s.title, if (s.current) color else Color.White.copy(alpha = 0.3f), null,
+                    if (s.current) stringResource(R.string.glow_metrics_showing) else null,
+                    onClick = { onDismiss(); s.open() }, divider = i > 0, dash = false, icon = s.icon,
+                )
             }
         }
     }
@@ -355,21 +304,30 @@ internal fun DetailSentence(text: String) {
 /**
  * A detail's second figures side by side, each in an equal share of the width: the value as text in Body, its name
  * under it in Secondary. Text, not dots, since the header's number is the detail's one dotted number (spec 2.3). A
- * figure without a value shows "No reading" in its place.
+ * figure without a value shows [missing] ("No reading") in its place, or the waiting dash when [missing] is null. A
+ * workout's hero shows its three figures larger ([valueStyle] Row value) and close under them ([gap]).
  */
 @Composable
-internal fun DetailFigures(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
+internal fun DetailFigures(
+    figures: List<Pair<String?, String>>,
+    modifier: Modifier = Modifier,
+    valueStyle: TextStyle = GlowType.body.copy(fontFeatureSettings = "tnum"),
+    missing: String? = stringResource(R.string.glow_no_reading),
+    gap: Dp = 4.dp,
+) {
     Row(modifier.fillMaxWidth()) {
         figures.forEachIndexed { i, (value, label) ->
             val end = i == figures.lastIndex && i > 0
             Column(
                 Modifier.weight(1f), horizontalAlignment = if (end) Alignment.End else Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(gap),
             ) {
-                Text(
-                    value ?: "No reading", color = if (value != null) Color.White else Color.White.copy(alpha = 0.3f),
-                    style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1,
-                )
+                when {
+                    value != null -> Text(value, color = Color.White, style = valueStyle, maxLines = 1)
+                    missing != null -> Text(missing, color = Color.White.copy(alpha = 0.3f), style = valueStyle, maxLines = 1)
+                    // As tall as a Row value line, so a missing figure keeps its label level with the others.
+                    else -> WaitingDash(Modifier.padding(vertical = 10.5.dp))
+                }
                 Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
             }
         }
@@ -432,13 +390,14 @@ fun GlowMetricDetailScreen(
     val to = maxOf(end, strip0.last().date)
     val from = minOf(end.minusDays(maxOf(range.days, History.NORMAL_DAYS) - 1L), strip0.first().date)
     val daily = if (night) SleepCopy.nightDaily(metric) else metric.daily
-    val stats by remember(daily, from, to) { history(daily, from, to) }.collectAsState(null)
-    val normal = stats?.let { History.normal(it, end) }
-    val normalDays = stats?.count { it.date in end.minusDays(History.NORMAL_DAYS - 1L)..end } ?: 0
+    val stats by remember(daily, from, to, history) { history(daily, from, to) }.collectAsStateWithLifecycle(null)
+    // Worked out once per load, not on every pass of the screen (audit K4).
+    val normal = remember(stats, end) { stats?.let { History.normal(it, end) } }
+    val normalDays = remember(stats, end) { stats?.count { it.date in end.minusDays(History.NORMAL_DAYS - 1L)..end } ?: 0 }
     // The night's own: its normal from the nights before, and the last 7 nights. Day and Week read against these.
-    val nightNormal = if (night) SleepCopy.nightNormal(state, metric) else null
-    val nightDays = if (night) SleepCopy.nightNormalNights(state, metric) else 0
-    val nightWeek = if (night) SleepCopy.nightWeek(state, metric) else emptyList()
+    val nightNormal = remember(night, state, metric) { if (night) SleepCopy.nightNormal(state, metric) else null }
+    val nightDays = remember(night, state, metric) { if (night) SleepCopy.nightNormalNights(state, metric) else 0 }
+    val nightWeek = remember(night, state, metric) { if (night) SleepCopy.nightWeek(state, metric) else emptyList() }
     val fromNight = night && (range == Range.Day || range == Range.Week)
     val color = colorOf(metric)
     val nightly = if (night) range == Range.Day || range == Range.Week || SleepCopy.dailyIsNightly(metric) else metric in NIGHTLY
@@ -449,7 +408,7 @@ fun GlowMetricDetailScreen(
 
     // The range's number and the daily values its chart draws (weekly over a year).
     val start = end.minusDays(range.days - 1L)
-    val summary = stats?.takeIf { range != Range.Day }?.let { History.summary(it, start, end) }
+    val summary = remember(stats, range, start, end) { stats?.takeIf { range != Range.Day }?.let { History.summary(it, start, end) } }
     val value = when {
         night && range == Range.Day -> SleepCopy.nightValue(state, metric)
         night && range == Range.Week -> nightWeek.mapNotNull { it.second }.takeIf { it.isNotEmpty() }?.average()?.toFloat()
@@ -463,23 +422,30 @@ fun GlowMetricDetailScreen(
         else -> History.status(value, normal)
     }
     val label = if (night) SleepCopy.nightLabel(metric, range) else DetailCopy.valueLabel(metric, range, live = live != null, today = isToday)
-    val headline = scrub ?: when {
-        value != null -> DetailHeadline(metric.format(value), label, DetailCopy.statusWord(status))
+    val headline = when {
+        value != null -> DetailHeadline(metric.format(value, Units.DOT_LOCALE), label, DetailCopy.statusWord(status))
         night && range == Range.Day -> SleepCopy.nightNoValue(state.sleep != null, isToday).let { (word, why) -> DetailHeadline.none(word, why) }
-        night && range == Range.Week -> DetailHeadline.none("No reading", "In the last 7 nights")
-        range != Range.Day && stats == null -> DetailHeadline.none("Loading", DetailCopy.noValue(metric, range, isToday))
-        else -> DetailHeadline.none("No reading", DetailCopy.noValue(metric, range, isToday))
+        night && range == Range.Week ->
+            DetailHeadline.none(stringResource(R.string.glow_no_reading), stringResource(R.string.glow_metrics_last_7_nights))
+        range != Range.Day && stats == null ->
+            DetailHeadline.none(stringResource(R.string.glow_loading), DetailCopy.noValue(metric, range, isToday))
+        else -> DetailHeadline.none(stringResource(R.string.glow_no_reading), DetailCopy.noValue(metric, range, isToday))
     }
-    val withData = stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
+    val withData = remember(stats, nightWeek) {
+        stats.orEmpty().map { it.date }.toSet() + nightWeek.filter { it.second != null }.map { it.first }
+    }
 
     DetailTemplate(
         metric.title, color, siblings(Detail.OfMetric(metric, night), onSwitch), onInfo = { info = true }, onBack = onBack,
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(end, today, withData), onDay = onSelectDay,
-        ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal },
+        ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
         heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
             {
-                LiveChip(liveEnabled, onLiveToggle)
+                PageChip(
+                    stringResource(R.string.glow_metrics_live), liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch,
+                    filled = true,
+                )
             }
         } else null,
     ) {
@@ -490,20 +456,26 @@ fun GlowMetricDetailScreen(
                 metric == Metric.HeartRate -> SleepCopy.lowestHeart(state).let { low ->
                     SleepCopy.nightHeart(low?.y?.toInt(), low?.x?.let(::clock), Math.round(value), isToday)
                 }
-                else -> DetailCopy.day(status, org.openstrap.app.ui.dashboard.DaySource.Night, isToday, nightDays)
+                else -> DetailCopy.day(status, org.openstrap.app.presentation.DaySource.Night, isToday, nightDays)
             }
             if (sentence != null) item { DetailSentence(sentence) }
         } else if (night && range == Range.Week) {
             val values = nightWeek.map { it.second }
             item {
-                if (values.all { it == null }) DetailEmpty("No ${inSentence(metric.title)} in the last 7 nights yet.")
+                if (values.all { it == null }) {
+                    DetailEmpty(stringResource(R.string.glow_metrics_none_last_7_nights))
+                }
                 else Column {
                     NormalTrend(
-                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { shortDay(it.first) },
+                        values, DetailCopy.levels(values, nightNormal), color, labels = nightWeek.map { DayWords.weekdayShort(it.first) },
                         band = nightNormal?.let { it.low..it.high }, bandLabel = nightNormal?.let { DetailCopy.bandLabel(it, metric::format) },
                         onScrub = { i ->
                             scrub = i?.let { nightWeek[it] }?.let { (d, v) ->
-                                v?.let { DetailHeadline(metric.format(it), "${metric.unit}, ${d.format(DateTimeFormatter.ofPattern("EEE d MMM"))}", DetailCopy.statusWord(History.status(it, nightNormal))) }
+                                v?.let {
+                                    val word = DetailCopy.statusWord(History.status(it, nightNormal))
+                                    val unitAndDay = Strings.app.format(R.string.glow_metrics_unit_day, metric.unit, DayWords.short(d))
+                                    DetailHeadline(metric.format(it, Units.DOT_LOCALE), unitAndDay, word)
+                                }
                             }
                         },
                     )
@@ -520,15 +492,15 @@ fun GlowMetricDetailScreen(
                 metric == Metric.HeartRate -> state.heartRate.takeIf { it.isNotEmpty() }?.let { s ->
                     DetailCopy.heartDay(s.minOf { it.y }.toInt(), s.maxOf { it.y }.toInt(), isToday)
                 }
-                else -> DetailCopy.day(status, org.openstrap.app.ui.dashboard.daySource(metric), isToday, normalDays)
+                else -> DetailCopy.day(status, org.openstrap.app.presentation.daySource(metric), isToday, normalDays)
             }
             if (sentence != null) item { DetailSentence(sentence) }
         } else {
             val inRange = stats
             item {
                 when {
-                    inRange == null -> DetailEmpty("Loading")
-                    summary == null -> DetailEmpty("No ${inSentence(metric.title)} in this range yet.")
+                    inRange == null -> DetailEmpty(stringResource(R.string.glow_loading))
+                    summary == null -> DetailEmpty(stringResource(R.string.glow_metrics_none_in_range))
                     else -> HistoryChart(metric, range, inRange, normal, start, end, color, nightly) { scrub = it }
                 }
             }
@@ -567,7 +539,6 @@ fun GlowMetricDetailScreen(
     }
 }
 
-private fun shortDay(d: LocalDate) = d.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault())
 
 /**
  * The night's readings of [metric] while asleep as a line to scrub, from falling asleep to waking ([SleepCopy.nightSeries]);
@@ -578,39 +549,49 @@ private fun NightChart(metric: Metric, state: DayUiState, color: Color, onScrub:
     val session = state.sleep
     val series = SleepCopy.nightSeries(state, metric)
     if (session == null || series.isEmpty()) {
-        DetailEmpty(if (session == null) SleepCopy.noNight(state.date == LocalDate.now()) else "No ${inSentence(metric.title)} readings while asleep.")
+        DetailEmpty(
+            if (session == null) {
+                SleepCopy.noNight(state.date == LocalDate.now())
+            } else {
+                stringResource(R.string.glow_metrics_none_asleep)
+            },
+        )
         return
     }
     val window = session.start..session.end
     // Heart rate and breathing come every few minutes in sleep, the rest more sparsely.
-    val bucket = if (metric == Metric.HeartRate || metric == Metric.Breathing) 5 * 60L else 15 * 60L
-    val values = remember(series, window) { evenly(series, window, bucket) }
+    val slot = if (metric == Metric.HeartRate || metric == Metric.Breathing) 5 * 60L else 15 * 60L
+    val values = remember(series, window) { bucket(series, window, slot) }
     Column(Modifier.padding(top = 8.dp)) {
         GlowLineChart(
             values, height = 220.dp, labels = listOf(clock(window.first), clock(window.last)), color = color, showAverage = false, format = metric::format,
             onScrub = { i ->
-                onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                onScrub(i?.let { values[it] }?.let { v -> scrubAt(metric, v, window.first + i * slot) })
             },
         )
     }
 }
 
-/** Averages timed points into evenly spaced buckets across [range]; empty buckets are gaps. */
-private fun evenly(points: List<ChartPoint>, range: LongRange, seconds: Long): List<Float?> {
-    val n = ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2)
-    val sums = FloatArray(n)
-    val counts = IntArray(n)
-    points.forEach {
-        val i = ((it.x - range.first) / seconds).toInt()
-        if (i in 0 until n) { sums[i] += it.y; counts[i]++ }
-    }
-    return List(n) { if (counts[it] == 0) null else sums[it] / counts[it] }
+/** A scrubbed reading of [metric] in the headline: its value and the time it was taken, "bpm at 22:30". */
+private fun scrubAt(metric: Metric, v: Float, at: Long, strings: Strings = Strings.app) = DetailHeadline(
+    metric.format(v, Units.DOT_LOCALE),
+    if (metric.unit.isBlank()) {
+        strings.format(R.string.glow_metrics_at_time, clock(at))
+    } else {
+        strings.format(R.string.glow_metrics_unit_at_time, metric.unit, clock(at))
+    },
+    null,
+)
+
+/** A held hour's steps in the headline: "steps, 09:00 to 10:00". */
+private fun hourSteps(hour: Int, steps: Float, strings: Strings = Strings.app): DetailHeadline {
+    val (from, to) = TimeOfDay.minutes(hour * MINUTES_PER_HOUR) to TimeOfDay.minutes((hour + 1) * MINUTES_PER_HOUR)
+    return DetailHeadline(
+        Units.count(Math.round(steps), Units.DOT_LOCALE), strings.format(R.string.glow_metrics_steps_hours, Ranges.of(from, to)), null,
+    )
 }
 
-/** A name inside a sentence: lower case, unless it's an acronym like HRV. */
-internal fun inSentence(name: String): String = if (name.all { it.isUpperCase() || it.isDigit() }) name else name.lowercase()
-
-private fun clock(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(ZoneId.systemDefault()).format(DateTimeFormatter.ofPattern("HH:mm"))
+private const val MINUTES_PER_HOUR = 60
 
 /**
  * The selected day's own chart: steps by the hour, the week of resting heart rates, or the day's readings as a line
@@ -629,7 +610,13 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
         else -> emptyList<ChartPoint>() to day
     }
     if (!hasValue) {
-        DetailEmpty(if (metric == Metric.Breathing) "Breathing rate is measured during sleep." else "No ${inSentence(metric.title)} for this day yet.")
+        DetailEmpty(
+            if (metric == Metric.Breathing) {
+                stringResource(R.string.glow_metrics_breathing_in_sleep)
+            } else {
+                stringResource(R.string.glow_metrics_none_this_day)
+            },
+        )
         return
     }
     Column(Modifier.padding(top = 8.dp)) {
@@ -637,21 +624,21 @@ private fun DayChart(metric: Metric, state: DayUiState, color: Color, hasValue: 
             // Holding an hour puts its steps in the headline.
             Metric.Steps -> GlowBars(
                 state.hourlySteps, height = 200.dp, labels = HOURS, accent = color,
-                onScrub = { h -> onScrub(h?.let { DetailHeadline("%,d".format(Math.round(state.hourlySteps[it])), "steps, %02d:00 to %02d:00".format(it, (it + 1) % 24), null) }) },
+                onScrub = { h -> onScrub(h?.let { hourSteps(it, state.hourlySteps[it]) }) },
             )
             Metric.RestingHr -> if (state.restingTrend.any { it.value != null }) {
                 GlowTrend(state.restingTrend.map { GlowDay(it.label, it.value) }, height = 200.dp)
             }
             else -> if (series.isNotEmpty()) {
                 // Readings come every minute for heart rate, sparser for the rest.
-                val bucket = if (metric == Metric.HeartRate) 5 * 60L else 15 * 60L
-                val values = remember(series, window) { evenly(series, window, bucket) }
+                val slot = if (metric == Metric.HeartRate) 5 * 60L else 15 * 60L
+                val values = remember(series, window) { bucket(series, window, slot) }
                 val labels = if (window == day) HOURS else listOf(clock(window.first), clock(window.last))
                 val band = if (metric == Metric.HeartRate) normalOf(Metric.RestingHr)?.let { it.low..it.high } else null
                 GlowLineChart(
                     values, height = 220.dp, labels = labels, color = color, showAverage = false, band = band, format = metric::format,
                     onScrub = { i ->
-                        onScrub(i?.let { values[it] }?.let { v -> DetailHeadline(metric.format(v), "${metric.unit} at ${clock(window.first + i * bucket)}".trim(), null) })
+                        onScrub(i?.let { values[it] }?.let { v -> scrubAt(metric, v, window.first + i * slot) })
                     },
                 )
             }
@@ -670,15 +657,23 @@ private fun HistoryChart(
 ) {
     val (values, labels, dates) = remember(stats, range, start, end) { series(range, stats, start, end) }
     val levels = remember(values, normal) { DetailCopy.levels(values, normal) }
-    val day = DateTimeFormatter.ofPattern("EEE d MMM")
     NormalTrend(
         values, levels, color, labels = labels,
         band = normal?.let { it.low..it.high }, bandLabel = normal?.let { DetailCopy.bandLabel(it, metric::format) },
         onScrub = { i ->
             onScrub(i?.let { values[it] }?.let { v ->
                 val d = dates[i]
-                val label = if (range == Range.Year) "week of ${d.format(DateTimeFormatter.ofPattern("d MMM"))}" else d.format(day)
-                DetailHeadline(metric.format(v), listOf(metric.unit, label).filter { it.isNotEmpty() }.joinToString(", "), DetailCopy.statusWord(History.status(v, normal)))
+                val label = if (range == Range.Year) {
+                    Strings.app.format(R.string.glow_metrics_week_of, DayWords.dayMonth(d))
+                } else {
+                    DayWords.short(d)
+                }
+                val unitAndDay = if (metric.unit.isEmpty()) {
+                    label
+                } else {
+                    Strings.app.format(R.string.glow_metrics_unit_day, metric.unit, label)
+                }
+                DetailHeadline(metric.format(v, Units.DOT_LOCALE), unitAndDay, DetailCopy.statusWord(History.status(v, normal)))
             })
         },
     )
@@ -689,22 +684,25 @@ private fun HistoryChart(
 }
 
 /** Evenly spaced values for the chart: one a day, or one a week over a year; gaps are null. Also axis labels and each point's date. */
-private fun series(range: Range, stats: List<DayStat>, start: LocalDate, end: LocalDate): Triple<List<Float?>, List<String>, List<LocalDate>> {
+internal fun series(
+    range: Range, stats: List<DayStat>, start: LocalDate, end: LocalDate,
+): Triple<List<Float?>, List<String>, List<LocalDate>> {
     val inRange = stats.filter { it.date in start..end }
     val dates: List<LocalDate>
     val byDate: Map<LocalDate, Float>
     if (range == Range.Year) {
-        val first = start.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        dates = generateSequence(first) { it.plusWeeks(1) }.takeWhile { !it.isAfter(end) }.toList()
-        byDate = History.weekly(inRange).associate { it.date to it.value }
+        // The chart's weeks and History's must start on the same day, or no week finds its average.
+        val firstDay = Weeks.firstDay()
+        dates = generateSequence(Weeks.start(start, firstDay)) { it.plusWeeks(1) }.takeWhile { !it.isAfter(end) }.toList()
+        byDate = History.weekly(inRange, firstDay).associate { it.date to it.value }
     } else {
         dates = generateSequence(start) { it.plusDays(1) }.takeWhile { !it.isAfter(end) }.toList()
         byDate = inRange.associate { it.date to it.value }
     }
     val labels = when (range) {
-        Range.Week -> dates.map { it.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
-        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dates[((dates.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("d MMM")) }
-        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { dates[((dates.size - 1) * it).toInt()].format(DateTimeFormatter.ofPattern("MMM")) }
+        Range.Week -> dates.map { DayWords.weekdayShort(it) }
+        Range.Month -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.dayMonth(dates[((dates.size - 1) * it).toInt()]) }
+        else -> listOf(0f, 1 / 3f, 2 / 3f, 1f).map { DayWords.monthShort(dates[((dates.size - 1) * it).toInt()]) }
     }
     return Triple(dates.map { byDate[it] }, labels, dates)
 }
@@ -715,26 +713,51 @@ private fun series(range: Range, stats: List<DayStat>, start: LocalDate, end: Lo
  */
 @Composable
 private fun RelatedList(related: List<Metric>, state: DayUiState, history: DailyHistory, onOpen: (Detail) -> Unit, sleepRow: Boolean = false) {
-    ListPanel(Modifier.padding(top = 8.dp), title = "Related") {
-        if (sleepRow) {
-            val score = state.sleep?.score
-            ListRow(
-                org.openstrap.app.ui.dashboard.Score.Sleep.title, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
-                score?.let(org.openstrap.app.ui.dashboard.TabCopy::sleepScoreWord) ?: "Nothing for this night",
-                onClick = { onOpen(Detail.OfScore(org.openstrap.app.ui.dashboard.Score.Sleep)) }, divider = false,
-                icon = org.openstrap.app.ui.dashboard.Score.Sleep.rowIcon(),
-            )
-        }
-        related.forEachIndexed { i, m ->
-            val normal = rememberNormal(m, state.date, history)
-            val v = dayValue(m, state)
-            val status = if (m == Metric.HeartRate) null else History.status(v, normal)
-            ListRow(
-                m.title, colorOf(m), v?.let { m.format(it) },
-                if (v == null) "Nothing for this day" else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-                offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = i > 0 || sleepRow,
-                icon = m.rowIcon(),
-            )
-        }
+    RelatedPanel {
+        if (sleepRow) SleepScoreRow(state, divider = false, onOpen)
+        related.forEachIndexed { i, m -> RelatedMetricRow(m, state, history, divider = i > 0 || sleepRow, onOpen) }
     }
+}
+
+/** The "Related" list at the foot of a detail: the details next to this one, each a row opening it. */
+@Composable
+internal fun RelatedPanel(content: @Composable ColumnScope.() -> Unit) =
+    ListPanel(Modifier.padding(top = 8.dp), title = stringResource(R.string.glow_metrics_related), content = content)
+
+/** A score as a related row: its [value] and [word] beside its name and icon, opening its detail. */
+@Composable
+internal fun ScoreRow(score: Score, color: Color, value: String?, word: String, divider: Boolean, onOpen: (Detail) -> Unit) = ListRow(
+    score.title, color, value, word, onClick = { onOpen(Detail.OfScore(score)) }, divider = divider, icon = score.rowIcon(),
+)
+
+/** The night's Sleep score as a related row, with its word. */
+@Composable
+internal fun SleepScoreRow(state: DayUiState, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val score = state.sleep?.score
+    ScoreRow(
+        Score.Sleep, org.openstrap.app.ui.theme.MetricColors.sleepDeep, score?.toString(),
+        score?.let(org.openstrap.app.presentation.TabCopy::sleepScoreWord) ?: NO_NIGHT_VALUE, divider, onOpen,
+    )
+}
+
+/** The day's Recovery as a related row, with its word. */
+@Composable
+internal fun RecoveryScoreRow(ready: org.openstrap.app.data.Recovery.Readiness?, divider: Boolean, onOpen: (Detail) -> Unit) = ScoreRow(
+    Score.Recovery, org.openstrap.app.ui.theme.MetricColors.readiness, ready?.score?.toString(),
+    ready?.score?.let { org.openstrap.app.presentation.TodayCopy.recoveryWord(it, ready.strainAlert) } ?: NO_VALUE, divider, onOpen,
+)
+
+/** A body signal as a related row: the day's value and its word against your normal, marked when it's off normal. */
+@Composable
+internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistory, divider: Boolean, onOpen: (Detail) -> Unit) {
+    val normal = rememberNormal(m, state.date, history)
+    val v = dayValue(m, state)
+    // The heart rate moves all day, so it has no word against a normal.
+    val status = if (m == Metric.HeartRate) null else History.status(v, normal)
+    ListRow(
+        m.title, colorOf(m), v?.let { m.format(it) },
+        if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+        offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        icon = m.rowIcon(),
+    )
 }

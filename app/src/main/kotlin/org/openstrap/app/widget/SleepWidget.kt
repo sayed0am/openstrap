@@ -3,7 +3,6 @@ package org.openstrap.app.widget
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -29,23 +28,18 @@ import androidx.glance.layout.width
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.unit.ColorProvider
-import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.data.DayWindow
-import org.openstrap.app.data.SleepHistory
-import org.openstrap.app.ui.dashboard.Detail
-import org.openstrap.app.ui.dashboard.SLEEP_NIGHTS
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
-import org.openstrap.app.ui.glow.GlowMood
+import org.openstrap.app.R
+import org.openstrap.app.data.DetailRoutes
+import org.openstrap.app.data.WidgetKind
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawStageBar
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.edgeLight
-import org.openstrap.app.ui.glow.stageColor
+import org.openstrap.app.ui.glow.draw.edgeLight
+import org.openstrap.app.ui.glow.draw.stageColor
 import org.openstrap.app.ui.theme.MetricColors
 
 /**
@@ -55,7 +49,7 @@ import org.openstrap.app.ui.theme.MetricColors
  * as the Sleep tab. The whole widget opens the Sleep score's detail for that night.
  */
 class SleepWidget : LoadingWidget<SleepWidgetModel>(WidgetKind.Sleep) {
-    override suspend fun loadShown(context: Context): SleepWidgetModel = load(context)
+    override fun shown(data: WidgetData, context: Context): SleepWidgetModel = load(data)
 
     override fun sample(): SleepWidgetModel = ZoneId.systemDefault().let { WidgetSamples.sleep(LocalDate.now(it), it) }
 
@@ -64,33 +58,13 @@ class SleepWidget : LoadingWidget<SleepWidgetModel>(WidgetKind.Sleep) {
 
     companion object {
         /**
-         * This morning's night as the Sleep tab reads it ([SleepHistory.mainSleep] over the night ending today, its
-         * stages, the week's other nights from [SleepHistory.mainSleeps] over the tab's [SLEEP_NIGHTS]), and
-         * yesterday's while this morning's isn't synced. "After your first night" until the strap has stored a sleep.
+         * This morning's night as the Sleep tab reads it ([WidgetSnapshot.gather]), and yesterday's while this
+         * morning's isn't synced. "After your first night" until the strap has stored a sleep.
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): SleepWidgetModel {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val dao = container.database.healthDao()
-            val today = now.atZone(zone).toLocalDate()
-            return try {
-                val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
-                val sessions = dao.sleepSessionsOnce(span.from, span.to)
-                val nights = SleepHistory.mainSleeps(sessions, zone)
-                suspend fun night(date: LocalDate): SleepWidgetNight? = SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(date, zone))?.let { main ->
-                    SleepWidgetNight.of(date, main, dao.sleepStagesOnce(main.start), nights)
-                }
-                val tonight = night(today)
-                val yesterday = if (tonight == null) night(today.minusDays(1)) else null
-                val first = tonight == null && yesterday == null && nights.isEmpty() && dao.latestSleepEnd().first() == null
-                val day = DayWindow.of(today, zone)
-                val naps = sessions.any { it.nap && it.start in day.from..day.to }
-                SleepWidgetModel.from(tonight, yesterday, first, naps, zone)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(WIDGET_TAG, "widgets: sleep for $today not read: $e")
-                SleepWidgetModel.from(null, null, firstNight = false, napsToday = false, zone = zone)
-            }
+        internal fun load(data: WidgetData): SleepWidgetModel {
+            val read = checkNotNull(data.sleep) { "not read for Sleep" }.getOrNull()
+                ?: return SleepWidgetModel.from(null, null, firstNight = false, napsToday = false, zone = data.zone)
+            return SleepWidgetModel.from(read.tonight, read.yesterday, read.firstNight, read.napsToday, data.zone, read.deleted)
         }
     }
 }
@@ -117,7 +91,7 @@ private val LegendStyle = WidgetType.caption.copy(color = ColorProvider(Color.Wh
 @Composable
 private fun SleepContent(m: SleepWidgetModel) {
     val context = LocalContext.current
-    val open = if (m.date != null) openMetric(context, Detail.SLEEP_SCORE_ROUTE, m.date) else openMetric(context, SLEEP_ROUTE, null)
+    val open = if (m.date != null) openMetric(context, DetailRoutes.SLEEP_SCORE, m.date) else openMetric(context, DetailRoutes.SLEEP, null)
     EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Sleep), Ink, GlowMood.Night, open, BITMAP_EXTRA) { frame ->
         when {
             m.waiting != null -> WaitingContent(m.title, m.waiting, frame)
@@ -127,14 +101,6 @@ private fun SleepContent(m: SleepWidgetModel) {
         }
     }
 }
-
-/** A gap between blocks: they share the spare height alike, with half a gap above and below. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
-/** The half gap above the first block or below the last, at the cell's real height. */
-@Composable
-private fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
 
 /** Small: the top row, the score and its word, then time asleep and the stage bar. */
 @Composable
@@ -300,7 +266,7 @@ private fun StageRows(rows: List<SleepStageRow>, f: WidgetFrame) {
                 Spacer(GlanceModifier.width(SleepLayout.STAGE_GAP_DP.dp))
                 Image(
                     ImageProvider(stageRowBar(r, track, f.density)),
-                    contentDescription = "${r.name} ${r.time}",
+                    contentDescription = LocalContext.current.getString(R.string.system_widget_sleep_stage_description, r.name, r.time),
                     modifier = GlanceModifier.defaultWeight().height(SleepLayout.STAGE_BAR_DP.dp),
                     contentScale = ContentScale.FillBounds,
                 )
@@ -333,9 +299,6 @@ private fun stageRowBar(r: SleepStageRow, widthDp: Float, density: Float): Bitma
 /* ------------------------------------------------------------------------------------------------ */
 /* Bitmaps                                                                                           */
 /* ------------------------------------------------------------------------------------------------ */
-
-/** The route `open_metric` takes for the Sleep screen, while there's no night to open the score of. */
-internal const val SLEEP_ROUTE = "Sleep"
 
 /** Room for the dots, the stage bar and the stage rows' bars beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.35

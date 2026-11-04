@@ -1,5 +1,7 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.spring
@@ -44,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import org.openstrap.app.ui.components.growClick
 import org.openstrap.app.ui.glow.GlowType
+import org.openstrap.app.ui.glow.RoundIconButton
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -82,14 +85,22 @@ fun MomentHeader(
             // You and the Strap page grow out of the button tapped (spec 3.5).
             start = {
                 growClick(onOpenYou).let { g ->
-                    RoundButton(AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", "Open You", g.onClick, g.modifier, dot = updateWaiting)
+                    RoundIconButton(
+                        AppIcons.User,
+                        stringResource(if (updateWaiting) R.string.day_header_you_update else R.string.day_header_you),
+                        g.onClick, g.modifier,
+                        surface = Avatar, iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_you), dot = updateWaiting,
+                    )
                 }
             },
             centre = { DaySwitcher(title, date, hasNext, onPrev, onNext, { calendarOpen = true }, Modifier) },
             end = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     if (onOpenAllMetrics != null) {
-                        RoundButton(AppIcons.ChartBar, "All metrics", "Open all metrics", onOpenAllMetrics)
+                        RoundIconButton(
+                            AppIcons.ChartBar, stringResource(R.string.day_header_all_metrics), onOpenAllMetrics, surface = Avatar,
+                            iconSize = 20.dp, clickLabel = stringResource(R.string.day_header_open_all_metrics),
+                        )
                         Spacer(Modifier.width(8.dp))
                     }
                     growClick(onOpenStrap).let { g -> StrapChipButton(chip, g.onClick, g.modifier) }
@@ -128,22 +139,6 @@ private fun CentredRow(
     }
 }
 
-/** A round button at either end of the header: the avatar, and All metrics in its likeness. [dot] marks its top right. */
-@Composable
-private fun RoundButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, description: String, clickLabel: String, onClick: () -> Unit, modifier: Modifier = Modifier,
-    dot: Boolean = false,
-) {
-    Box(modifier.size(38.dp)) {
-        Box(
-            Modifier.matchParentSize().clip(CircleShape).background(Avatar).clickable(onClickLabel = clickLabel, onClick = onClick),
-            contentAlignment = Alignment.Center,
-        ) { Icon(icon, description, Modifier.size(20.dp), tint = Color.White) }
-        // On the circle's edge at its top right, ringed in the page's black so it reads apart from the button.
-        if (dot) org.openstrap.app.ui.glow.NoticeDot(Modifier.align(Alignment.TopEnd), ring = Color.Black)
-    }
-}
-
 /** The title over the day, with its neighbours peeking in either side; it follows a sideways drag and springs back. */
 @Composable
 private fun DaySwitcher(
@@ -156,6 +151,7 @@ private fun DaySwitcher(
     val prev by rememberUpdatedState(onPrev)
     val next by rememberUpdatedState(onNext)
     val canNext by rememberUpdatedState(hasNext)
+    val description = stringResource(R.string.day_header_day_description, title, dateLine(date))
     Row(
         modifier.height(60.dp)
             .pointerInput(threshold) {
@@ -180,9 +176,9 @@ private fun DaySwitcher(
         Peek(peekDay(date.minusDays(1)))
         Column(
             Modifier.padding(horizontal = 16.dp).widthIn(max = 200.dp).clip(CircleShape)
-                .clickable(onClickLabel = "Pick a day", onClick = onPick)
+                .clickable(onClickLabel = stringResource(R.string.day_header_pick_day), onClick = onPick)
                 .padding(horizontal = 10.dp, vertical = 4.dp)
-                .semantics { contentDescription = "$title, ${dateLine(date)}" },
+                .semantics { contentDescription = description },
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(1.dp),
         ) {
@@ -210,7 +206,7 @@ private fun StrapChipButton(chip: StrapChip, onClick: () -> Unit, modifier: Modi
     val shape = CircleShape
     Row(
         modifier.clip(shape).background(ChipSurface).border(1.dp, Color.White.copy(alpha = 0.07f), shape)
-            .clickable(onClickLabel = "Open your strap", onClick = onClick)
+            .clickable(onClickLabel = stringResource(R.string.day_header_open_strap), onClick = onClick)
             .semantics { contentDescription = chip.description }
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

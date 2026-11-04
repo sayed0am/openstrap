@@ -17,7 +17,7 @@ You can skip the sign-in and paste the key and token by hand instead.
 
 ## Permissions
 
-- **Nearby devices (Bluetooth)** to find and connect to the strap. On Android 11 and older, Android calls this Location.
+- **Nearby devices (Bluetooth)** to find and connect to the strap.
 - **Location** only if you turn on GPS for an outdoor workout, and only while that workout records. Never in the background otherwise. The route is used for distance, pace and the map, then discarded unless you choose **Keep route on this phone**. Without location, distance comes from the strap's steps (shown with ≈).
 - **Notifications** for the "Helio Strap" connection notification, health alerts, the off-body reminder and new versions of OpenStrap.
 - **Health Connect** read and write, only if you export to or restore from it.

@@ -1,18 +1,17 @@
 package org.openstrap.app.device
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
-import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
-import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 import java.time.LocalTime
@@ -30,6 +29,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
 import org.openstrap.app.data.settings.QuietHours
@@ -65,8 +65,8 @@ class PhoneAlerts(
     val callPermission = MutableStateFlow(hasCallPermission())
     val notificationAccess = MutableStateFlow(hasNotificationAccess())
 
-    private var callListener: Any? = null
-    private var modeListener: Any? = null
+    private var callListener: TelephonyCallback? = null
+    private var modeListener: AudioManager.OnModeChangedListener? = null
     private var ringing: Job? = null
     private var lastBuzz = 0L
     /** When a call notification last came in, from any app; Android often posts it before the ringing state. */
@@ -115,7 +115,9 @@ class PhoneAlerts(
             strap.startCallBuzz(style == CallBuzz.PULSED)
             delay(CALL_PREVIEW_MS)
         } finally {
-            if (!callRinging && previews.get() == mine) withContext(NonCancellable) { runCatching { strap.stopCallBuzz() } }
+            if (!callRinging && previews.get() == mine) {
+                withContext(NonCancellable) { catching { strap.stopCallBuzz() }.onFailure { log("call buzz preview not stopped: $it") } }
+            }
         }
     }
 
@@ -124,36 +126,19 @@ class PhoneAlerts(
     private fun updateCallListener() {
         val want = callsOn && hasCallPermission()
         if (want == (callListener != null)) return
-        // Callbacks are registered and removed on the main thread, which PhoneStateListener needs (it binds a Looper).
+        // Callbacks are registered and removed on the main thread, so they never race each other.
         ContextCompat.getMainExecutor(context).execute {
             if (want && callListener == null) {
                 log("call listener on")
-                callListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-                        override fun onCallStateChanged(state: Int) = onCallState(state)
-                    }.also { telephony.registerTelephonyCallback(context.mainExecutor, it) }
-                } else {
-                    @Suppress("DEPRECATION")
-                    object : PhoneStateListener() {
-                        @Deprecated("Deprecated in Java")
-                        override fun onCallStateChanged(state: Int, phoneNumber: String?) = onCallState(state)
-                    }.also { @Suppress("DEPRECATION") telephony.listen(it, PhoneStateListener.LISTEN_CALL_STATE) }
-                }
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    modeListener = AudioManager.OnModeChangedListener { onAudioMode(it) }
-                        .also { audio.addOnModeChangedListener(context.mainExecutor, it) }
-                }
+                callListener = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                    override fun onCallStateChanged(state: Int) = onCallState(state)
+                }.also { telephony.registerTelephonyCallback(context.mainExecutor, it) }
+                modeListener = AudioManager.OnModeChangedListener { onAudioMode(it) }
+                    .also { audio.addOnModeChangedListener(context.mainExecutor, it) }
             } else if (!want) {
-                val l = callListener
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && l is TelephonyCallback) {
-                    telephony.unregisterTelephonyCallback(l)
-                } else {
-                    @Suppress("DEPRECATION")
-                    if (l is PhoneStateListener) telephony.listen(l, PhoneStateListener.LISTEN_NONE)
-                }
+                callListener?.let(telephony::unregisterTelephonyCallback)
                 callListener = null
-                val m = modeListener
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && m is AudioManager.OnModeChangedListener) audio.removeOnModeChangedListener(m)
+                modeListener?.let(audio::removeOnModeChangedListener)
                 modeListener = null
                 endAllRinging()
             }
@@ -229,12 +214,13 @@ class PhoneAlerts(
                 withTimeoutOrNull(CONNECT_WAIT_MS) { strap.connection.first { it is ConnectionState.Connected } }
                     ?: run { log("call ringing: the strap didn't connect in time"); return@launch }
             }
-            runCatching { strap.startCallBuzz(callStyle == CallBuzz.PULSED) }.onFailure { log("call buzz failed: ${it.message}"); return@launch }
+            catching { strap.startCallBuzz(callStyle == CallBuzz.PULSED) }
+                .onFailure { log("call buzz failed: ${it.message}"); return@launch }
             // A missed call can end without a state change reaching us; don't leave the strap buzzing.
             delay(MAX_RING_MS)
             log("call ringing: ${MAX_RING_MS / 1000} s limit")
             synchronized(ringSources) { ringSources.clear() }
-            runCatching { strap.stopCallBuzz() }
+            catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") }
         }
     }
 
@@ -242,7 +228,7 @@ class PhoneAlerts(
         val job = ringing ?: return
         ringing = null
         job.cancel()
-        scope.launch { runCatching { strap.stopCallBuzz() } }
+        scope.launch { catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") } }
     }
 
     /**
@@ -275,7 +261,7 @@ class PhoneAlerts(
     fun reconnectStrap() {
         val c = strap.connection.value
         if (c is ConnectionState.Connected || (c as? ConnectionState.Failed)?.keyRejected == true) return
-        if (context.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) return
+        if (!BlePermissions.granted(context)) return
         strap.backgroundConnect()
     }
 
@@ -286,7 +272,10 @@ class PhoneAlerts(
         reconnectStrap()
         val now = SystemClock.elapsedRealtime()
         val n = sbn.notification
-        val callType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0) else 0
+        // CallStyle sets its call type extra on every version the app runs on. The key and values only became public
+        // in 14, and are compiled in, so reading them on 12 and 13 works.
+        @SuppressLint("InlinedApi")
+        val callType = n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0)
         // A call notification, from the dialer, Samsung's call screen or a calling app, never plays a pattern: it
         // usually comes just before the ringing state, and a motor pattern then cuts off the call's buzz (seen 2026-10-20).
         if (n.category == Notification.CATEGORY_CALL || callType != 0) {
@@ -304,7 +293,7 @@ class PhoneAlerts(
             if (now - lastBuzz < MIN_GAP_MS) return
             lastBuzz = now
         }
-        scope.launch { runCatching { strap.buzz(pattern.millis) } }
+        scope.launch { catching { strap.buzz(pattern.millis) }.onFailure { log("notification buzz not played: $it") } }
     }
 
     private fun quietNow(): Boolean = LocalTime.now().let { quiet.covers(it.hour * 60 + it.minute) }
@@ -313,12 +302,13 @@ class PhoneAlerts(
     fun onNotificationRemoved(key: String) = ringEnded(key)
 
     /**
-     * Android 12's CallStyle says "incoming" outright. An app without it is taken as ringing while its call
+     * CallStyle says "incoming" outright. An app without it is taken as ringing while its call
      * notification has a full-screen intent, the incoming call screen; once answered or ended it is removed or posted
      * again without one.
      */
+    @SuppressLint("InlinedApi") // The call type values, public from 14 but read on 12 and 13 as above.
     private fun isIncomingCall(n: Notification, callType: Int): Boolean = when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && callType != 0 -> callType == Notification.CallStyle.CALL_TYPE_INCOMING
+        callType != 0 -> callType == Notification.CallStyle.CALL_TYPE_INCOMING
         else -> n.category == Notification.CATEGORY_CALL && n.fullScreenIntent != null
     }
 

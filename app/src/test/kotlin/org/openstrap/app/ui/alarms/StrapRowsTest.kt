@@ -27,10 +27,10 @@ class StrapRowsTest {
     @Test fun `health alerts in a few words, or Off`() {
         assertNull(healthAlertsSummary(AlarmsUiState()))
         assertEquals("Off", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 0))))
-        assertEquals("Over 140 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140))))
-        assertEquals("Over 140, under 40", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140, SettingsCodec.KEY_LOW_HR_ALERT to 40))))
-        assertEquals("Under 40 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_HR_ALERT to 40))))
-        assertEquals("Oxygen under 90%", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
+        assertEquals("Above 140 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140))))
+        assertEquals("Above 140, below 40", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 140, SettingsCodec.KEY_LOW_HR_ALERT to 40))))
+        assertEquals("Below 40 bpm", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_HR_ALERT to 40))))
+        assertEquals("Oxygen below 90%", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
         assertEquals("Heart rate and oxygen", healthAlertsSummary(AlarmsUiState(health = health(SettingsCodec.KEY_HIGH_HR_ALERT to 150, SettingsCodec.KEY_LOW_SPO2_ALERT to 90))))
         assertEquals(
             "Heart rate and oxygen",
@@ -43,5 +43,25 @@ class StrapRowsTest {
         assertEquals("Calls", phoneAlertsSummary(calls = true, notifications = false))
         assertEquals("Notifications", phoneAlertsSummary(calls = false, notifications = true))
         assertEquals("Off", phoneAlertsSummary(calls = false, notifications = false))
+    }
+
+    @Test fun `alarm and quiet hour times follow the phone's clock, the dots without letters`() {
+        val was = org.openstrap.app.presentation.ClockSetting.use24Hour
+        val locale = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.US)
+            assertEquals("06:40" to null, dotClock(6, 40, use24Hour = true))
+            assertEquals("6:40" to "AM", dotClock(6, 40, use24Hour = false))
+            assertEquals("10:00" to "PM", dotClock(22, 0, use24Hour = false))
+            org.openstrap.app.presentation.ClockSetting.use24Hour = false
+            val alarms = listOf(Alarm(0, 6, 40, Alarm.WEEKDAYS, enabled = true))
+            assertEquals("6:40 AM weekdays", alarmsSummary(AlarmsUiState(caps = caps, alarms = alarms)))
+            assertEquals("10:00 PM", quietClock(22 * 60))
+            org.openstrap.app.presentation.ClockSetting.use24Hour = true
+            assertEquals("22:00", quietClock(22 * 60))
+        } finally {
+            org.openstrap.app.presentation.ClockSetting.use24Hour = was
+            java.util.Locale.setDefault(locale)
+        }
     }
 }

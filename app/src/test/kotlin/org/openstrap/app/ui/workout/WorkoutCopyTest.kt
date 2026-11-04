@@ -8,9 +8,15 @@ import org.junit.Test
 import org.openstrap.app.data.WorkoutTarget
 import org.openstrap.app.data.Route
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.presentation.LiveView
+import org.openstrap.app.presentation.SplitLine
+import org.openstrap.app.presentation.WorkoutCopy
 
 /** The Ready and live workout screens' words and rules (spec 6.3). */
 class WorkoutCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val connected = ConnectionState.Connected(batteryPercent = 80, firmware = null)
 
     @Test fun `the ready hero is the strap in every state`() {
@@ -18,6 +24,10 @@ class WorkoutCopyTest {
         assertEquals(live, WorkoutCopy.readyHero(connected, 72))
         assertEquals(live.copy(line = "Waiting for heart rate."), WorkoutCopy.readyHero(connected, null))
         assertEquals(live.copy(line = "Live from your strap. Battery 15%."), WorkoutCopy.readyHero(connected.copy(batteryPercent = 15), 72))
+        // Ready warns at 20%, earlier than the 15% everywhere else, before a workout that may run long.
+        assertEquals(live.copy(line = "Live from your strap. Battery 20%."), WorkoutCopy.readyHero(connected.copy(batteryPercent = 20), 72))
+        assertEquals(live, WorkoutCopy.readyHero(connected.copy(batteryPercent = 21), 72))
+        assertTrue(WorkoutCopy.READY_LOW_BATTERY > org.openstrap.app.presentation.StrapBands.LOW_BATTERY)
         // Charging, a low battery is on its way up: not worth a word.
         assertEquals(live, WorkoutCopy.readyHero(connected.copy(batteryPercent = 15, charging = true), 72))
         val away = WorkoutCopy.ReadyHero("Strap not connected", "You can start anyway.", live = false)
@@ -29,12 +39,7 @@ class WorkoutCopyTest {
     }
 
     @Test fun `gps and route notes`() {
-        assertEquals("Off. No distance without GPS.", WorkoutCopy.gpsNote(false, 4))
-        assertEquals("Off. Distance from the strap's steps, roughly.", WorkoutCopy.gpsNote(false, 1))
-        assertEquals("On. Distance, pace and the map.", WorkoutCopy.gpsNote(true, 1))
         assertEquals("Off. Only the totals are kept.", WorkoutCopy.routeNote(false))
-        assertEquals(1, WorkoutCopy.readyRows(outdoor = false).size)
-        assertEquals(listOf("Heart rate", "GPS", "Keep the route"), WorkoutCopy.readyRows(outdoor = true).map { it.first })
     }
 
     @Test fun `zone name and time in it`() {
@@ -47,9 +52,8 @@ class WorkoutCopyTest {
         val strings = listOf(
             WorkoutCopy.readyHero(connected.copy(batteryPercent = 5), 60).line, WorkoutCopy.readyHero(ConnectionState.NotPaired, null).line,
             WorkoutCopy.LOCATION_OFF, WorkoutCopy.LOCATION_OFF_NOTE, WorkoutCopy.startLabel(1),
-            WorkoutCopy.gpsNote(true, 1), WorkoutCopy.gpsNote(false, 1), WorkoutCopy.gpsNote(false, 4),
-            WorkoutCopy.routeNote(true), WorkoutCopy.routeNote(false), WorkoutCopy.READY_MEANING, WorkoutCopy.zoneTime(600),
-        ) + WorkoutCopy.readyRows(true).flatMap { listOf(it.first, it.second) } + (0..4).flatMap { WorkoutCopy.zoneTitle(it).toList() }
+            WorkoutCopy.routeNote(true), WorkoutCopy.routeNote(false), WorkoutCopy.zoneTime(600),
+        ) + (0..4).flatMap { WorkoutCopy.zoneTitle(it).toList() }
         strings.forEach { s -> assertFalse("\"$s\"", s.any { it == '·' || it == ';' || it == '—' }) }
     }
 
@@ -63,7 +67,7 @@ class WorkoutCopyTest {
     @Test fun `the split line shows the latest whole kilometre for ten seconds`() {
         val line = WorkoutCopy.splitLine(splits, history, firstT = 1_000, now = 1_645)
         // Km 2 ran from 1300 to 1642: readings 140, 150 and 154.
-        assertEquals(SplitLine(1, 1_642, "Km 2 in 5:42, avg 148"), line)
+        assertEquals(SplitLine(1, 1_642, "Km 2 in 5:42, 148 bpm"), line)
         assertEquals(line, WorkoutCopy.splitLine(splits, history, 1_000, now = 1_651))
         assertNull(WorkoutCopy.splitLine(splits, history, 1_000, now = 1_652))
         // A fix stamped just ahead of the phone's clock still shows.
@@ -72,7 +76,7 @@ class WorkoutCopyTest {
 
     @Test fun `the first kilometre starts at the first fix, and no readings drop the average`() {
         val first = splits.take(1)
-        assertEquals("Km 1 in 5:00, avg 130", WorkoutCopy.splitLine(first, history, firstT = 1_000, now = 1_300)?.text)
+        assertEquals("Km 1 in 5:00, 130 bpm", WorkoutCopy.splitLine(first, history, firstT = 1_000, now = 1_300)?.text)
         assertEquals("Km 1 in 5:00", WorkoutCopy.splitLine(first, emptyList(), firstT = 1_000, now = 1_300)?.text)
         // Only a partial kilometre so far: nothing to say.
         assertNull(WorkoutCopy.splitLine(listOf(Route.Split(0, 1_100, 60, 300.0)), history, 1_000, 1_100))
@@ -119,35 +123,15 @@ class WorkoutCopyTest {
         assertEquals(levels.sorted(), levels)
     }
 
-    /* ------------------------------------------ Side figures ------------------------------------------ */
-
-    private val indoor = WorkoutCopy.sideFigures(kcal = true, distance = false, gps = false)
-    private val steps = WorkoutCopy.sideFigures(kcal = true, distance = true, gps = false)
-    private val gps = WorkoutCopy.sideFigures(kcal = true, distance = true, gps = true)
-
-    @Test fun `every figure the workout has shows at once`() {
-        val heart = listOf(SideFigure.Avg, SideFigure.Max)
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal)), WorkoutCopy.liveFigures(indoor))
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal, SideFigure.Distance)), WorkoutCopy.liveFigures(steps))
-        assertEquals(LiveFigures(heart, listOf(SideFigure.Kcal, SideFigure.Distance, SideFigure.Pace)), WorkoutCopy.liveFigures(gps))
-        // Without a profile there's no kcal, and indoors nothing goes under the time.
-        assertEquals(LiveFigures(heart, emptyList()), WorkoutCopy.liveFigures(WorkoutCopy.sideFigures(kcal = false, distance = false, gps = false)))
-        // Every available figure shows exactly once.
-        for (a in listOf(indoor, steps, gps)) WorkoutCopy.liveFigures(a).let { assertEquals(a, it.sides + it.below) }
-    }
-
     @Test fun `kcal reads as whole active kcal`() {
         assertEquals("312 kcal", WorkoutCopy.kcalText(312.9f))
         assertNull(WorkoutCopy.kcalText(null))
     }
 
-    @Test fun `a kcal target says when the strap buzzes and how far the workout is`() {
-        assertEquals("Target. The strap buzzes at 300 active kcal.", WorkoutCopy.targetHint(WorkoutTarget.Kcal(300)))
-        assertEquals("Target. The strap buzzes if you drift out.", WorkoutCopy.targetHint(WorkoutTarget.Zones(1, 2)))
-        assertEquals("Target. The strap buzzes if you drift out.", WorkoutCopy.targetHint(null))
+    @Test fun `a kcal target says how far the workout is`() {
         assertEquals("212 of 300 kcal", WorkoutCopy.kcalProgress(212.8f, WorkoutTarget.Kcal(300)))
         assertEquals("0 of 500 kcal", WorkoutCopy.kcalProgress(null, WorkoutTarget.Kcal(500)))
-        listOf(WorkoutCopy.targetHint(WorkoutTarget.Kcal(800)), WorkoutCopy.kcalProgress(1f, WorkoutTarget.Kcal(800)))
+        listOf(WorkoutCopy.kcalProgress(1f, WorkoutTarget.Kcal(800)))
             .forEach { l -> listOf("·", ";", "—").forEach { b -> assertFalse("$l has $b", l.contains(b)) } }
     }
 }

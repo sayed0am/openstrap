@@ -11,7 +11,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.device.WidgetUpdater
 
 /**
  * Widgets spec 5: the strap status line's wordings, its button and words in the title row, and that every widget
@@ -55,11 +54,11 @@ class WidgetStatusLineTest {
     @Test fun `each state's wordings, longest first, the line's own copy first`() {
         assertEquals(listOf("Pair your strap", "Pair strap"), line(StrapStatus.NotPaired).options)
         assertEquals(listOf("Strap at 12%", "12%"), line(StrapStatus.LowBattery(12)).options)
-        assertEquals(listOf("Syncing"), line(StrapStatus.Syncing).options)
+        assertEquals(listOf("Syncing…"), line(StrapStatus.Syncing).options)
         assertEquals(listOf("Synced 08:59", "08:59"), line(StrapStatus.StaleSync(now - 3 * 3600 - 60)).options)
         assertEquals(listOf("Synced yesterday", "Yesterday"), line(StrapStatus.StaleSync(now - 86_400)).options)
         assertEquals(listOf("Synced Wednesday", "Synced Wed", "Wednesday", "Wed"), line(StrapStatus.StaleSync(now - 3 * 86_400)).options)
-        assertEquals(listOf("Synced 13 Oct", "13 Oct"), line(StrapStatus.StaleSync(now - 11 * 86_400)).options)
+        assertEquals(listOf("Synced Tue 13 Oct", "Tue 13 Oct", "13 Oct"), line(StrapStatus.StaleSync(now - 11 * 86_400)).options)
         lines.forEach { l ->
             assertEquals(strapStatusLine(l.status, now, zone, Locale.UK), l.full)
             l.options.forEach { assertFalse(it, it.any { c -> c in "·;—–" }) }
@@ -120,11 +119,11 @@ class WidgetStatusLineTest {
     }
 
     @Test fun `a stale line has an alarm of its own, only while widgets are placed`() {
-        assertEquals(now + 1, WidgetUpdater.staleAt(true, now - SYNC_STALE_SECONDS, now - 10))
+        assertEquals(now + 1, WidgetUpdater.staleAt(true, now - org.openstrap.app.presentation.StrapBands.STALE_AFTER_S, now - 10))
         assertNull(WidgetUpdater.staleAt(false, now, now))
         assertNull(WidgetUpdater.staleAt(true, null, now))
         // Already stale: the line shows now, no alarm needed.
-        assertNull(WidgetUpdater.staleAt(true, now - SYNC_STALE_SECONDS - 5, now))
+        assertNull(WidgetUpdater.staleAt(true, now - org.openstrap.app.presentation.StrapBands.STALE_AFTER_S - 5, now))
     }
 
     @Test fun `the gaps share the spare height, half above and below`() {

@@ -7,14 +7,19 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
 import org.openstrap.app.data.Summaries
+import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
 
 /** Widgets spec 3.3: what the Steps widget shows in each state, from the app's own sums and copy, and how it fits. */
 class StepsWidgetModelTest {
+    // TalkBack's words follow the phone's language, and these tests read them in English.
+    @get:Rule val phone = LocaleRule(Locale.UK)
+
     private val today = LocalDate.of(2026, 10, 24) // a Saturday
     private val monday = LocalDate.of(2026, 10, 19)
 
@@ -39,6 +44,67 @@ class StepsWidgetModelTest {
         assertFalse(m.goalMet)
         assertEquals("8,432 steps today, 84% of your goal", m.description)
         assertEquals(today, m.date)
+    }
+
+    @Test fun `the dots keep the dot font's marks, the words follow the phone's language`() {
+        Locale.setDefault(Locale.GERMANY)
+        val m = StepsWidgetModel.from(today, 8_432, hourly, 14, 10_000, past, Locale.GERMANY)
+        assertEquals("8,432", m.stepsText)
+        assertEquals("Goal 10.000", m.goalNote)
+        assertEquals("1.568 to go", m.toGo)
+        assertEquals("8.432 steps today, 84% of your goal", m.description)
+    }
+
+    @Test fun `the Small shortens five digits to thousands, the Wide and Large keep them all`() {
+        assertEquals("9,999", model(steps = 9_999).smallText)
+        val m = model(steps = 10_000)
+        assertEquals("10k", m.smallText)
+        assertEquals("10,000", m.stepsText)
+        assertEquals("12.3k", model(steps = 12_345).smallText)
+        // Cut down, never up: 12,999 hasn't reached 13,000.
+        assertEquals("12.9k", model(steps = 12_999).smallText)
+        assertEquals("99.9k", model(steps = 99_999).smallText)
+        assertEquals("100k", model(steps = 100_000).smallText)
+        assertEquals("123k", model(steps = 123_999).smallText)
+        assertEquals("0", model(steps = 0).smallText)
+        // TalkBack still reads every step.
+        assertTrue(model(steps = 12_345).description.startsWith("12,345 steps today"))
+    }
+
+    @Test fun `the Small drops a decimal of 0, whole thousands read 10k`() {
+        assertEquals("10k", model(steps = 10_099).smallText)
+        assertEquals("10.1k", model(steps = 10_100).smallText)
+        assertEquals("11k", model(steps = 11_050).smallText)
+        assertEquals("20k", model(steps = 20_000).smallText)
+        assertEquals("99k", model(steps = 99_000).smallText)
+    }
+
+    @Test fun `in German a decimal of 0 drops its comma too`() {
+        assertEquals("10k", StepsWidgetModel.short(10_000, Locale.GERMANY))
+        assertEquals("10k", StepsWidgetModel.short(10_099, Locale.GERMANY))
+        assertEquals("11k", StepsWidgetModel.short(11_050, Locale.GERMANY))
+        assertEquals("10,1k", StepsWidgetModel.short(10_100, Locale.GERMANY))
+        assertEquals("12,9k", StepsWidgetModel.short(12_999, Locale.GERMANY))
+        assertEquals("100k", StepsWidgetModel.short(100_000, Locale.GERMANY))
+    }
+
+    @Test fun `the Small's decimal mark follows the locale, in the dot font's digits`() {
+        assertEquals("12,3k", StepsWidgetModel.short(12_345, Locale.GERMANY))
+        assertEquals("9,999", StepsWidgetModel.short(9_999, Locale.GERMANY))
+        assertEquals("12.3k", StepsWidgetModel.short(12_345, Locale.US))
+        // Arabic digits and mark are not in the dot font: ASCII digits, and its mark only when it is a comma.
+        for (l in listOf(Locale.GERMANY, Locale.US, Locale.forLanguageTag("ar-EG"), Locale.forLanguageTag("fa-IR"))) {
+            val text = StepsWidgetModel.short(12_345, l)
+            assertTrue("$l: $text", text.all(org.openstrap.app.ui.glow.draw.DotFont::has))
+        }
+    }
+
+    @Test fun `the week starts on the locale's first day`() {
+        // Saturday the 24th: Monday the 19th first in the UK, Sunday the 18th in the US.
+        assertEquals(monday, model().week.first().date)
+        val us = StepsWidgetModel.from(today, 8_432, hourly, 14, 10_000, past, Locale.US)
+        assertEquals(LocalDate.of(2026, 10, 18), us.week.first().date)
+        assertEquals(today, us.week.last().date)
     }
 
     @Test fun `past the goal, Goal met replaces what's to go and the bar stays full`() {

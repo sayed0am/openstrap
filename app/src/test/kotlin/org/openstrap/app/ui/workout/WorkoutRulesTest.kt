@@ -9,6 +9,7 @@ import org.junit.Test
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.glow.pickedType
 import java.io.File
+import org.openstrap.app.presentation.WorkoutCopy
 
 /**
  * The workout pages' rules (spec 6.3, design step 9): twelve everyday sports and More sports, outdoor or indoor as a
@@ -119,25 +120,24 @@ class WorkoutRulesTest {
         assertEquals(emptyList<Int>(), Workouts.recentSports(listOf(Workouts.GENERIC_ACTIVITY)))
     }
 
-    @Test fun `Start names the sport and the end page says it was saved`() {
+    @Test fun `Start names the sport`() {
         assertEquals("Start run", WorkoutCopy.startLabel(2))
         assertEquals("Start HIIT", WorkoutCopy.startLabel(49))
         assertEquals("Start workout", WorkoutCopy.startLabel(5))
         assertEquals("Start tennis", WorkoutCopy.startLabel(17))
-        assertEquals("Run saved", SummaryCopy.savedTitle(1))
-        assertEquals("Run saved", SummaryCopy.savedTitle(2))
-        assertEquals("Workout saved", SummaryCopy.savedTitle(null))
     }
 
     @Test fun `no workout text uses an interpunct, semicolon or em dash`() {
         val strings = Workouts.SIDES.flatMap { listOf(it.outdoorName, it.indoorName) } + Workouts.EVERYDAY.map(Workouts::shortName) +
-            SummaryCopy.DROP_MEANING + WorkoutCopy.READY_MEANING + WorkoutCopy.readyRows(true).flatMap { listOf(it.first, it.second) }
+            SummaryCopy.DROP_MEANING
         strings.forEach { s -> assertFalse("\"$s\"", s.any { it == '·' || it == ';' || it == '—' }) }
     }
 
     @Test fun `the workout pages use the type roles and no Material parts`() {
         val root = listOf(File("src/main"), File("app/src/main")).first { it.isDirectory }
-        val files = listOf("GlowWorkoutMode.kt", "GlowWorkoutSummary.kt", "GlowWorkoutScreen.kt").map { File(root, "kotlin/org/openstrap/app/ui/glow/$it") }
+        val glow = File(root, "kotlin/org/openstrap/app/ui/glow")
+        val files = listOf("GlowWorkoutMode.kt", "ChooseScreen.kt", "ReadyScreen.kt", "WorkoutCapsule.kt", "GlowWorkoutSummary.kt", "GlowWorkoutScreen.kt").map { File(glow, it) } +
+            File(glow, "live").listFiles().orEmpty().filter { it.extension == "kt" }.sortedBy { it.name }
         val banned = Regex("""MaterialTheme\.typography|GlowType\.(headline|title|label)\b|OutlinedTextField|\bIconButton\b|headline\.fontSize""")
         val found = files.flatMap { f ->
             f.readLines().mapIndexedNotNull { i, line ->

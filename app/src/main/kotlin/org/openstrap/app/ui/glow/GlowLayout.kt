@@ -8,10 +8,8 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -26,10 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
@@ -67,8 +67,6 @@ object GlowLayout {
 
     /** Title row to the hero number. */
     val TitleGap = 14.dp
-    /** Hero number (or the last line of text) to the chart. */
-    val ChartGap = 20.dp
     /** Every chart in a card has the same height, axis labels included. */
     val ChartHeight = 116.dp
     /** From this width (an unfolded foldable, a tablet, a phone on its side) the dashboards use two columns. */
@@ -160,23 +158,43 @@ val LocalPageColumn = compositionLocalOf { GlowLayout.PageMaxWidth }
 /** Where a dashboard block goes when there's room for two columns. On a phone every block stacks in the order given. */
 enum class Pane { Full, Left, Right }
 
-/** The blocks of a dashboard, in phone order, each with the column it takes on a wide screen. */
+/**
+ * The blocks of a dashboard, in phone order, each with the column it takes on a wide screen and the [key] its lazy
+ * item goes by. A card's key is its card (the cards of its grid row, [cardsKey]), so hiding or pinning one in Edit Today
+ * moves the saved state inside the others with them and keeps the scroll anchor on the same card (audit K5).
+ */
 class GlowBlocks internal constructor(
     /** On two columns too narrow for Smalls ([GlowLayout.smallsAcross]): a row of Smalls is a full block. */
     val smallsAcross: Boolean = false,
 ) {
-    internal val blocks = mutableListOf<Pair<Pane, @Composable () -> Unit>>()
+    internal val blocks = mutableListOf<Block>()
 
     /** The block [GlowScreenList] scrolls to when asked ([focus]), or -1. */
     internal var focusBlock = -1
 
     /** Marks the next block as the one to scroll to. */
     fun focusNext() { focusBlock = blocks.size }
-    fun full(content: @Composable () -> Unit) = add(Pane.Full, content)
-    fun left(content: @Composable () -> Unit) = add(Pane.Left, content)
-    fun right(content: @Composable () -> Unit) = add(Pane.Right, content)
-    private fun add(pane: Pane, content: @Composable () -> Unit) {
-        blocks += pane to content
+    fun full(content: @Composable () -> Unit) = add(Pane.Full, null, content)
+    fun left(content: @Composable () -> Unit) = add(Pane.Left, null, content)
+    fun right(content: @Composable () -> Unit) = add(Pane.Right, null, content)
+
+    /**
+     * Adds [content] to [pane], its lazy item keyed on [key]. Without one it goes by its place, as an item with no key
+     * does, so a block added before it moves its state to another block.
+     */
+    fun add(pane: Pane, key: String?, content: @Composable () -> Unit) {
+        blocks += Block(pane, key ?: "#${blocks.size}", content)
+    }
+
+    /** One block: its [pane], the [key] its lazy item goes by, and what it draws. */
+    internal class Block(val pane: Pane, val key: String, val content: @Composable () -> Unit)
+
+    internal companion object {
+        /** The key of a dashboard's header block. */
+        const val HEADER = "header"
+
+        /** The key of a grid row holding [cards]: their names, in order. */
+        fun cardsKey(cards: List<Any>): String = cards.joinToString("+")
     }
 }
 
@@ -200,19 +218,23 @@ fun GlowScreenList(
         val gutter = GlowLayout.dashboardGutter(maxWidth)
         val built = GlowBlocks(smallsAcross = GlowLayout.smallsAcross(maxWidth)).apply(content)
         val blocks = built.blocks
+        val keys = uniqueKeys(blocks.map { it.key })
         // The lazy item the marked block lands in: its own on a phone; on a wide screen a two-column run is one item.
         val target = built.focusBlock.takeIf { it >= 0 }?.let { if (wide) itemOf(blocks, it) else it }
         androidx.compose.runtime.LaunchedEffect(focus, target) {
             if (focus && target != null) { state.animateScrollToItem(target); onFocused() }
         }
         androidx.compose.runtime.CompositionLocalProvider(LocalPageColumn provides Dp.Unspecified) { ScreenList(contentPadding, state, gutter = gutter) {
-            if (!wide) blocks.forEach { (_, block) -> item { block() } }
-            else sections(blocks).forEach { section ->
-                val left = section.filter { it.first == Pane.Left }.map { it.second }
-                val right = section.filter { it.first == Pane.Right }.map { it.second }
+            if (!wide) blocks.forEachIndexed { i, block -> item(keys[i]) { block.content() } }
+            else sections(blocks.indices.toList()) { blocks[it].pane }.forEach { section ->
+                val left = section.filter { blocks[it].pane == Pane.Left }
+                val right = section.filter { blocks[it].pane == Pane.Right }
                 // A full block, or a run with nothing on one side, takes the whole width rather than leave a hole.
-                if (left.isEmpty() || right.isEmpty()) section.forEach { (_, block) -> item { block() } }
-                else item { BalancedColumns(left, right) }
+                if (left.isEmpty() || right.isEmpty()) section.forEach { i -> item(keys[i]) { blocks[i].content() } }
+                // Two columns are one item, keyed on every block in them.
+                else item(section.joinToString("|") { keys[it] }) {
+                    BalancedColumns(left.map { blocks[it].content }, right.map { blocks[it].content })
+                }
             }
         } }
     }
@@ -243,11 +265,11 @@ private fun BalancedColumns(left: List<@Composable () -> Unit>, right: List<@Com
 }
 
 /** The lazy item that block [index] lands in on a wide screen, following [GlowScreenList]'s layout. */
-private fun itemOf(blocks: List<Pair<Pane, @Composable () -> Unit>>, index: Int): Int {
+private fun itemOf(blocks: List<GlowBlocks.Block>, index: Int): Int {
     var item = 0
     var seen = 0
-    for (section in sections(blocks)) {
-        val split = section.any { it.first == Pane.Left } && section.any { it.first == Pane.Right }
+    for (section in sections(blocks) { it.pane }) {
+        val split = section.any { it.pane == Pane.Left } && section.any { it.pane == Pane.Right }
         if (index < seen + section.size) return if (split) item else item + (index - seen)
         item += if (split) 1 else section.size
         seen += section.size
@@ -256,13 +278,26 @@ private fun itemOf(blocks: List<Pair<Pane, @Composable () -> Unit>>, index: Int)
 }
 
 /** Splits the blocks into runs: each full block on its own, and each unbroken stretch of left and right blocks together. */
-private fun sections(blocks: List<Pair<Pane, @Composable () -> Unit>>): List<List<Pair<Pane, @Composable () -> Unit>>> {
-    val out = mutableListOf<MutableList<Pair<Pane, @Composable () -> Unit>>>()
+private fun <T> sections(blocks: List<T>, pane: (T) -> Pane): List<List<T>> {
+    val out = mutableListOf<MutableList<T>>()
     blocks.forEach { b ->
         val last = out.lastOrNull()
-        if (b.first != Pane.Full && last != null && last.first().first != Pane.Full) last += b else out += mutableListOf(b)
+        if (pane(b) != Pane.Full && last != null && pane(last.first()) != Pane.Full) last += b else out += mutableListOf(b)
     }
     return out
+}
+
+/**
+ * [keys] made unique for a lazy list, which throws on a repeat: a key seen before gets its count after it. A dashboard
+ * never repeats a card, so this only guards against a crash.
+ */
+internal fun uniqueKeys(keys: List<String>): List<String> {
+    val seen = mutableMapOf<String, Int>()
+    return keys.map { k ->
+        val n = seen.getOrElse(k) { 0 }
+        seen[k] = n + 1
+        if (n == 0) k else "$k#$n"
+    }
 }
 
 /**
@@ -283,13 +318,10 @@ internal val CaretSize = 14.dp
  * row. The same on every card that has an explanation; it opens that card's info sheet.
  */
 @Composable
-internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.layout.Box(
-        modifier.size(InfoButtonSize).clip(androidx.compose.foundation.shape.CircleShape).background(Color.White.copy(alpha = 0.10f))
-            .clickable(onClickLabel = label, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick),
-        contentAlignment = Alignment.Center,
-    ) { Icon(AppIcons.Info, label, Modifier.size(16.dp), tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)) }
-}
+internal fun InfoButton(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) = RoundIconButton(
+    AppIcons.Info, label, onClick, modifier, size = InfoButtonSize, iconSize = 16.dp,
+    tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+)
 
 internal val InfoButtonSize = 32.dp
 /** A card's caret, right after its title. */
@@ -434,27 +466,6 @@ internal fun NoteText(text: String) =
     Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
 
 /**
- * The hero number of a card in dot-matrix, its unit beside it, and up to two short facts on the right
- * (text, or [side] for anything richer). Sits [GlowLayout.TitleGap] under the title.
- */
-@Composable
-fun GlowHeroNumber(value: String, unit: String, facts: List<String> = emptyList(), side: (@Composable () -> Unit)? = null) {
-    Row(Modifier.fillMaxWidth().padding(top = GlowLayout.TitleGap), verticalAlignment = Alignment.Bottom) {
-        DotMatrixText(value, dot = DotSize.Hero)
-        // The word after a number (spec 2.3).
-        Text(unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp).weight(1f))
-        if (facts.isNotEmpty()) Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            facts.forEach { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary) }
-        }
-        side?.invoke()
-    }
-}
-
-/** The gap above a card's chart. */
-@Composable
-fun GlowChartGap() = Spacer(Modifier.padding(top = GlowLayout.ChartGap))
-
-/**
  * A small sync marker next to a card's title, "Up to 09:40" (spec 4.3): amber, as the strap chip, since it's about
  * the sync and not the body.
  */
@@ -467,21 +478,29 @@ internal fun StateMarker(text: String, modifier: Modifier = Modifier) {
  * A neutral tag next to a card's title (spec 4.3, E4): "Partial day", "First score". About the data, not the sync,
  * so white and not amber (spec 2.1). With [onClick], tapping it explains it (spec 7.1, one caveat per card).
  */
-class TitleTag(val text: String, val onClick: (() -> Unit)? = null)
+@androidx.compose.runtime.Immutable
+data class TitleTag(val text: String, val onClick: (() -> Unit)? = null)
 
 /** What sits next to a card's title: the sync [marker] when there's one, else the [tag]. One mark per card. */
 @Composable
 internal fun TitleMark(marker: String?, tag: TitleTag?, modifier: Modifier = Modifier) {
     if (marker != null) StateMarker(marker, modifier)
-    else if (tag != null) {
-        val shape = RoundedCornerShape(50)
-        val onClick = tag.onClick
-        Text(
-            tag.text,
-            modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
-                .let { if (onClick != null) it.clickable(onClickLabel = "About ${tag.text.lowercase()}", onClick = onClick) else it }
-                .padding(horizontal = 8.dp, vertical = 2.dp),
-            color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
-        )
-    }
+    else if (tag != null) OutlineTag(tag.text, modifier, tag.onClick)
+}
+
+/**
+ * A quiet outlined label in Caption, fully round: a card title's [TitleTag], "Auto-detected" beside a workout's sport.
+ * With [onClick], tapping it explains it.
+ */
+@Composable
+internal fun OutlineTag(text: String, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val shape = RoundedCornerShape(50)
+    val about = stringResource(R.string.glow_tag_about, text.lowercase())
+    Text(
+        text,
+        modifier.clip(shape).border(1.dp, Color.White.copy(alpha = 0.22f), shape)
+            .let { if (onClick != null) it.clickable(onClickLabel = about, onClick = onClick) else it }
+            .padding(horizontal = 8.dp, vertical = 2.dp),
+        color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, maxLines = 1,
+    )
 }

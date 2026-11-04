@@ -11,6 +11,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.openstrap.app.MainActivity
+import org.openstrap.app.R
 import org.openstrap.app.OpenStrapApp
 import org.openstrap.app.data.Workouts
 
@@ -31,13 +32,11 @@ class WorkoutTileService : TileService() {
                     val tile = qsTile ?: return@collect
                     val r = state as? WorkoutState.Recording
                     tile.state = if (r != null) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
-                    tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else "Start workout"
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        tile.subtitle = when {
-                            r?.paused == true -> "Paused"
-                            r != null -> "Recording"
-                            else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
-                        }
+                    tile.label = if (r != null) Workouts.sportName(r.workout.sportType) else getString(R.string.tile_workout)
+                    tile.subtitle = when {
+                        r?.paused == true -> getString(R.string.system_tile_paused)
+                        r != null -> getString(R.string.system_tile_recording)
+                        else -> Workouts.sportName(last?.sportType ?: Workouts.DEFAULT_SPORTS.first())
                     }
                     tile.updateTile()
                 }

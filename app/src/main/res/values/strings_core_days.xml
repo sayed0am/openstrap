@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  When a day was, in words (presentation/DayWords.kt). The weekday and month names come from the phone's language and
+  aren't here.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A heading or label for the current day. -->
+    <string name="core_day_today">Today</string>
+    <!-- A heading or label for the day before. -->
+    <string name="core_day_yesterday">Yesterday</string>
+    <!-- The current day after other words, as in "Synced today". Lower case in English. -->
+    <string name="core_day_today_in_sentence">today</string>
+    <!-- The day before after other words, as in "Synced yesterday at 10:42". Lower case in English. -->
+    <string name="core_day_yesterday_in_sentence">yesterday</string>
+    <!--
+      A moment on an earlier day with its time, after other words. The day is "yesterday", a weekday ("Tuesday") or a
+      date ("Tue 21 Oct").
+    -->
+    <string name="core_day_at"><xliff:g id="day" example="yesterday">%1$s</xliff:g> at <xliff:g id="time" example="10:42">%2$s</xliff:g></string>
+    <!-- When something last happened (a backup, an update check), after other words such as "Checked". -->
+    <string name="core_day_done_today">today at <xliff:g id="time" example="10:42">%1$s</xliff:g></string>
+    <!-- When something last happened, the day before. -->
+    <string name="core_day_done_yesterday">yesterday at <xliff:g id="time" example="10:42">%1$s</xliff:g></string>
+    <!-- When something last happened, further back: the date alone. -->
+    <string name="core_day_done_on">on <xliff:g id="date" example="Tue 21 Oct">%1$s</xliff:g></string>
+</resources>

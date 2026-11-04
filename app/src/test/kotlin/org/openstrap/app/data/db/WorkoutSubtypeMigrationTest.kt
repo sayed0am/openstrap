@@ -39,7 +39,7 @@ class WorkoutSubtypeMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val old = room.healthDao().workout(100).first()!!
             assertEquals(700L, old.end)

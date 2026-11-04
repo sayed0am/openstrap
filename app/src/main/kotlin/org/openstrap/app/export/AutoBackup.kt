@@ -1,7 +1,10 @@
 package org.openstrap.app.export
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
+import android.util.Log
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -12,27 +15,39 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import org.openstrap.app.AppContainer
 import org.openstrap.app.OpenStrapApp
+import org.openstrap.app.data.BackupRepository
+import org.openstrap.app.data.catching
+import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.WorkoutState
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.concurrent.TimeUnit
+import org.openstrap.app.data.settings.BackupFailure
 
 /**
  * Automatic backup: once a day, while the phone charges, the same zip as Save a copy (every table and the settings)
  * goes into a folder the user chose, which Google Drive, Nextcloud or Syncthing may keep somewhere else too. Written
  * under a temporary name and renamed when complete ([BackupFiles]), the [BackupFiles.KEEP] newest kept. Never while a
  * workout records: the run waits and tries again. A failure is kept for the You page to say, never a notification.
+ * [restored] and [workout] are the workout session's, so a backup never runs beside a recording.
  */
-class AutoBackup(private val context: Context, private val container: AppContainer, private val zone: ZoneId = ZoneId.systemDefault()) {
+class AutoBackup(
+    private val context: Context,
+    private val settings: SettingsStore,
+    private val restored: Flow<Boolean>,
+    private val workout: StateFlow<WorkoutState>,
+    private val backups: BackupRepository,
+    private val zone: ZoneId = ZoneId.systemDefault(),
+) {
 
     sealed interface Outcome {
         /** Written, as [name]. */
@@ -41,52 +56,80 @@ class AutoBackup(private val context: Context, private val container: AppContain
         data object Recording : Outcome
         /** Automatic backup is off. */
         data object Off : Outcome
-        data class Failed(val failure: BackupFiles.Failure) : Outcome
+        data class Failed(val failure: BackupFailure) : Outcome
     }
 
     suspend fun run(): Outcome = lock.withLock {
-        val folder = container.settings.backup.first().folder ?: return@withLock Outcome.Off
+        val folder = settings.backup.first().folder ?: return@withLock Outcome.Off
         // Until the session has looked for a workout left recording, Idle doesn't mean none.
-        withTimeoutOrNull(10_000) { container.workout.restored.first { it } }
-        if (container.workout.state.value is WorkoutState.Recording) return@withLock Outcome.Recording
+        withTimeoutOrNull(10_000) { restored.first { it } }
+        if (workout.value is WorkoutState.Recording) return@withLock Outcome.Recording
         val now = System.currentTimeMillis() / 1000
-        try {
+        catching {
             val name = withContext(Dispatchers.IO) { write(Uri.parse(folder)) }
-            container.settings.setBackupDone(now)
+            settings.setBackupDone(now)
             Outcome.Done(name)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
+        }.getOrElse { e ->
             val failure = (e as? Failed)?.failure ?: BackupFiles.classify(e)
-            container.settings.setBackupFailed(failure, now)
+            if (e !is Failed) Log.w("OpenStrap", "backup: failed ($failure): $e")
+            settings.setBackupFailed(failure, now)
             Outcome.Failed(failure)
         }
     }
 
-    private class Failed(val failure: BackupFiles.Failure) : Exception(failure.name)
+    /** One backup now, the daily one's way. During a workout it waits for the end instead, through WorkManager. */
+    suspend fun runNow(): Outcome = run().also { if (it == Outcome.Recording) afterWorkout(context) }
+
+    /**
+     * Automatic backup into the folder [uri] the user just picked: keeps the right to write there across restarts, lets
+     * go of the folder before and starts the daily backup. False, with nothing changed, when Android won't keep the right.
+     */
+    suspend fun chooseFolder(uri: Uri): Boolean {
+        val kept = runCatching { context.contentResolver.takePersistableUriPermission(uri, FOLDER_ACCESS) }
+        kept.onFailure { Log.w("OpenStrap", "backup: folder permission not kept: $it") }
+        if (kept.isFailure) return false
+        val before = settings.backup.first().folder
+        if (before != null && before != uri.toString()) releaseFolder(before)
+        val name = withContext(Dispatchers.IO) { runCatching { DocumentFile.fromTreeUri(context, uri)?.name }.getOrNull() }
+        settings.setBackupFolder(uri.toString(), name)
+        schedule(context)
+        return true
+    }
+
+    /** Stops automatic backup and lets go of its folder. The backups already there stay. */
+    suspend fun turnOff() {
+        cancel(context)
+        settings.backup.first().folder?.let(::releaseFolder)
+        settings.clearBackup()
+    }
+
+    private fun releaseFolder(folder: String) {
+        runCatching { context.contentResolver.releasePersistableUriPermission(folder.toUri(), FOLDER_ACCESS) }
+    }
+
+    private class Failed(val failure: BackupFailure) : Exception(failure.name)
 
     private suspend fun write(folder: Uri): String {
         val resolver = context.contentResolver
-        if (resolver.persistedUriPermissions.none { it.uri == folder && it.isWritePermission }) throw Failed(BackupFiles.Failure.PermissionLost)
+        if (resolver.persistedUriPermissions.none { it.uri == folder && it.isWritePermission }) throw Failed(BackupFailure.PermissionLost)
         val dir = DocumentFile.fromTreeUri(context, folder)
-        if (dir == null || !dir.exists() || !dir.isDirectory) throw Failed(BackupFiles.Failure.FolderGone)
+        if (dir == null || !dir.exists() || !dir.isDirectory) throw Failed(BackupFailure.FolderGone)
         val today = LocalDate.now(zone)
         val name = BackupFiles.name(today)
         // What a run that died part way left.
         dir.listFiles().filter { it.name?.let(BackupFiles::isTemp) == true }.forEach { it.delete() }
 
-        val temp = dir.createFile(TEMP_MIME, BackupFiles.tempName(today)) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        val temp = dir.createFile(TEMP_MIME, BackupFiles.tempName(today)) ?: throw Failed(BackupFailure.CantWrite)
+        var written = false
         try {
-            val settings = SettingsBackup.toJson(container.settings.backupValues())
-            (resolver.openOutputStream(temp.uri, "w") ?: throw Failed(BackupFiles.Failure.CantWrite)).use {
-                container.csv.exportZip(it, settings = settings)
-            }
+            (resolver.openOutputStream(temp.uri, "w") ?: throw Failed(BackupFailure.CantWrite)).use { backups.writeZip(it) }
             // A second run on the same day replaces the first.
             dir.findFile(name)?.delete()
             if (!temp.renameTo(name)) copyAs(dir, temp, name)
-        } catch (e: Throwable) {
-            runCatching { temp.delete() }
-            throw e
+            written = true
+        } finally {
+            // Failed or cancelled part way: the temp copy goes, and the failure itself is what's reported.
+            if (!written) deleteQuietly(temp)
         }
 
         for (old in BackupFiles.toDelete(dir.listFiles().mapNotNull { it.name })) dir.findFile(old)?.delete()
@@ -96,14 +139,25 @@ class AutoBackup(private val context: Context, private val container: AppContain
     /** For a provider that can't rename: the complete temp copied to [name], then deleted. A failed copy leaves nothing. */
     private fun copyAs(dir: DocumentFile, temp: DocumentFile, name: String) {
         val resolver = context.contentResolver
-        val target = dir.createFile(ZIP_MIME, name) ?: throw Failed(BackupFiles.Failure.CantWrite)
+        val target = dir.createFile(ZIP_MIME, name) ?: throw Failed(BackupFailure.CantWrite)
+        var copied = false
         try {
-            resolver.openInputStream(temp.uri)!!.use { input -> resolver.openOutputStream(target.uri, "w")!!.use { input.copyTo(it) } }
-        } catch (e: Throwable) {
-            runCatching { target.delete() }
-            throw e
+            val input = resolver.openInputStream(temp.uri)
+            val output = input?.let { resolver.openOutputStream(target.uri, "w") }
+            if (input == null || output == null) {
+                input?.close()
+                throw Failed(BackupFailure.CantWrite)
+            }
+            input.use { i -> output.use { i.copyTo(it) } }
+            copied = true
+        } finally {
+            if (!copied) deleteQuietly(target)
         }
         temp.delete()
+    }
+
+    private fun deleteQuietly(file: DocumentFile) {
+        runCatching { file.delete() }.onFailure { Log.w("OpenStrap", "backup: ${file.name} not deleted: $it") }
     }
 
     companion object {
@@ -114,6 +168,7 @@ class AutoBackup(private val context: Context, private val container: AppContain
         private const val AFTER_WORKOUT = "auto-backup-retry"
         private const val TEMP_MIME = "application/octet-stream"
         private const val ZIP_MIME = "application/zip"
+        private const val FOLDER_ACCESS = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
 
         /** Starts the daily backup; a no-op when it's already scheduled. */
         fun schedule(context: Context) {
@@ -143,8 +198,11 @@ class AutoBackup(private val context: Context, private val container: AppContain
 class BackupWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
         val container = (applicationContext as OpenStrapApp).container
+        val backup = AutoBackup(
+            applicationContext, container.settings, container.workout.restored, container.workout.state, container.backups,
+        )
         // A failure is kept for the You page, and tomorrow's run tries again.
-        return when (AutoBackup(applicationContext, container).run()) {
+        return when (backup.run()) {
             AutoBackup.Outcome.Recording -> Result.retry()
             else -> Result.success()
         }

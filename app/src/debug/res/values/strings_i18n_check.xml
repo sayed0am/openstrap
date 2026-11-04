@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Never shown. Strings with every kind of escape, quote, tag and placeholder aapt rewrites, so StringsParityTest proves
+  the unit tests' strings double reads them as Android does even before the real text has each case. Debug only, so a
+  release never carries them, and not translatable, so a translation never has to.
+-->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2"
+    tools:ignore="UnusedResources,MissingQuantity,PluralsCandidate">
+    <string name="i18n_check_apostrophes" translatable="false">Today\'s \"best\" and isn\'t</string>
+    <string name="i18n_check_escapes" translatable="false">Line one\nLine\ttwo \@home \?attr back\\slash été \#5 \q</string>
+    <string name="i18n_check_quoted" translatable="false">"  Kept   spaces, it's fine  "</string>
+    <string name="i18n_check_part_quoted" translatable="false">Before "  kept  " after</string>
+    <string name="i18n_check_whitespace" translatable="false">
+        Folded
+        over    lines	with a tab
+    </string>
+    <string name="i18n_check_entities" translatable="false">&lt;b&gt; isn&#8217;t bold &amp; this &#8230; &quot;quoted&quot;</string>
+    <string name="i18n_check_cdata" translatable="false"><![CDATA[<i>not a tag</i>]]> and \'escaped\'</string>
+    <string name="i18n_check_styled" translatable="false">A <b>bold</b> and <i>italic</i> word</string>
+    <string name="i18n_check_xliff" translatable="false">Ran <xliff:g id="distance" example="5.2 km">%1$s</xliff:g> in <xliff:g id="time" example="31 min">%2$s</xliff:g>, <xliff:g id="pace" example="5:58">%3$s</xliff:g> a km</string>
+    <string name="i18n_check_numbers" translatable="false"><xliff:g id="size" example="19.3">%1$.1f</xliff:g> MB, <xliff:g id="percent" example="45">%2$d</xliff:g>%%, <xliff:g id="steps" example="12,345">%3$,d</xliff:g> steps</string>
+    <string name="i18n_check_percent" translatable="false">100%% done</string>
+    <!-- A comment inside the text is dropped. -->
+    <string name="i18n_check_comment" translatable="false">Before<!-- gone --> after</string>
+    <plurals name="i18n_check_days" translatable="false">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> day</item>
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> days</item>
+    </plurals>
+    <plurals name="i18n_check_nights" translatable="false">
+        <item quantity="one">Last night\'s sleep</item>
+        <item quantity="other">The last <xliff:g id="count" example="5">%1$d</xliff:g> nights\' sleep, <xliff:g id="hours" example="7.5">%2$.1f</xliff:g> h a night</item>
+    </plurals>
+    <!-- Only "other": Android falls back to it for one too. -->
+    <plurals name="i18n_check_only_other" translatable="false">
+        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> sets</item>
+    </plurals>
+</resources>

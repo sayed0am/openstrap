@@ -15,18 +15,19 @@ import org.openstrap.app.data.Moment
 import org.openstrap.app.data.MomentInputs
 import org.openstrap.app.data.MomentLead
 import org.openstrap.app.data.Recovery
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.device.WidgetUpdater
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.glow.AFTER_RIM
-import org.openstrap.app.ui.glow.EVENING_BODY
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.LightAngle
-import org.openstrap.app.ui.glow.WINDOW_RIM
+import org.openstrap.app.presentation.ChartPoint
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
+import org.openstrap.app.presentation.LoadBand
+import org.openstrap.app.ui.glow.draw.AFTER_RIM
+import org.openstrap.app.ui.glow.draw.EVENING_BODY
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.LightAngle
+import org.openstrap.app.ui.glow.draw.WINDOW_RIM
 import org.openstrap.app.ui.theme.MetricColors
 
 /**
@@ -110,7 +111,7 @@ class MomentWidgetModelTest {
         firstNights = firstNights,
         energy = energy,
         load = 42.3f,
-        loadStatus = TodayCopy.LoadStatus.SoFar,
+        loadStatus = LoadBand.SoFar,
         night = night,
         usualSport = 1,
         lastWorkout = last,
@@ -179,7 +180,7 @@ class MomentWidgetModelTest {
         assertEquals(listOf("left"), m.shortWords)
         assertEquals("Drained 60, recharged 38", m.figures.first())
         assertEquals(TodayCopy.charge(62, 60, true, 13), m.sentences.first())
-        assertEquals("The day so far drained 60. Plenty left for this evening.", m.sentences.first())
+        assertEquals("The day has drained 60 so far. Plenty left for this evening.", m.sentences.first())
         // Lit from below up to the value, as Today's Charge hero.
         assertEquals(0.62f, m.light.level!!, 1e-4f)
         val chart = m.chart!!
@@ -249,7 +250,7 @@ class MomentWidgetModelTest {
         assertEquals("Evening", m.name)
         assertEquals("62", m.number)
         assertEquals(listOf("Bedtime in 2 h 10"), m.figures)
-        assertEquals(TodayCopy.evening(listOf("run"), 8432, 10_000, TodayCopy.LoadStatus.SoFar), m.sentences.first())
+        assertEquals(TodayCopy.evening(listOf(1), 8432, 10_000, LoadBand.SoFar), m.sentences.first())
         assertEquals(GlowMood.Evening, m.mood)
         assertEquals(MomentLight(MetricColors.evening, LightAngle.LowerRight, bodyLightness = EVENING_BODY), m.light)
         assertEquals("the day's heart rate", MomentChartKind.Line, m.chart?.kind)
@@ -391,7 +392,8 @@ class MomentWidgetModelTest {
         val i = input(midday)
         val m = model(midday, i)
         val next = i.inputs.nextChange(midday, zone)
-        assertEquals(at(19, 40), next)
+        // Three hours before the 22:40 bedtime would be 19:40, and evening starts at 18:00 at the latest.
+        assertEquals(at(18, 0), next)
         assertEquals(next, WidgetUpdater.momentAlarm(true, next, m.tick))
         assertEquals(Moment.Evening, i.inputs.resolve(next!!, zone))
     }
@@ -551,7 +553,7 @@ class MomentWidgetModelTest {
         val fit = MomentLayout.wide(middayModel(), 313f, 180f, 1f)
         assertEquals("left", fit.row!!.word!!.text)
         assertEquals("Drained 60, recharged 38", fit.row.figure!!.text)
-        assertEquals("The day so far drained 60. Plenty left for this evening.", fit.sentence!!.text)
+        assertEquals("The day has drained 60 so far. Plenty left for this evening.", fit.sentence!!.text)
     }
 
     @Test fun `a tall cell grows the parts before the gaps, a short one shrinks them`() {

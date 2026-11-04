@@ -1,19 +1,14 @@
 package org.openstrap.app.widget
 
-import org.openstrap.app.ui.dashboard.clockText
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.StrapBands
+import org.openstrap.app.presentation.TimeOfDay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.time.format.TextStyle
-import java.time.temporal.ChronoUnit
 import java.util.Locale
-
-/** At or under this battery level, while not charging, every widget says so (widgets spec 5). */
-const val STRAP_LOW_PERCENT = 15
-
-/** A last sync older than this takes the status line, and a tap syncs. */
-const val SYNC_STALE_SECONDS = 3 * 3600L
 
 /** The strap status line a widget shows in its top row (widgets spec 5); none while all is well. */
 sealed interface StrapStatus {
@@ -31,56 +26,50 @@ sealed interface StrapStatus {
 }
 
 /**
- * The status line, first match wins: not [paired], then [battery] at [STRAP_LOW_PERCENT] or less and not [charging],
- * then [lastSync] (epoch seconds) more than [SYNC_STALE_SECONDS] before [now]. While [syncing] the stale line reads
+ * The status line, first match wins: not [paired], then [battery] at [StrapBands.LOW_BATTERY] or less and not [charging],
+ * then [lastSync] (epoch seconds) more than [StrapBands.STALE_AFTER_S] before [now]. While [syncing] the stale line reads
  * Syncing instead; a sync while all is well shows nothing, so the background syncs don't flash a line. Before the
  * first sync is known there's no time to give, so no line.
  */
 fun strapStatus(paired: Boolean, battery: Int?, charging: Boolean, lastSync: Long?, now: Long, syncing: Boolean = false): StrapStatus? = when {
     !paired -> StrapStatus.NotPaired
-    battery != null && battery <= STRAP_LOW_PERCENT && !charging -> StrapStatus.LowBattery(battery)
+    battery != null && StrapBands.lowBattery(battery, charging) -> StrapStatus.LowBattery(battery)
     syncStale(lastSync, now) -> if (syncing) StrapStatus.Syncing else StrapStatus.StaleSync(lastSync!!)
     else -> null
 }
 
-/** True when the last sync ended more than [SYNC_STALE_SECONDS] before [now]. */
-fun syncStale(lastSync: Long?, now: Long): Boolean = lastSync != null && now - lastSync > SYNC_STALE_SECONDS
+/** True when the last sync ended more than [StrapBands.STALE_AFTER_S] before [now] ([StrapBands.stale]). */
+fun syncStale(lastSync: Long?, now: Long): Boolean = StrapBands.stale(lastSync, now)
 
 /** True when the line for the strap's state could read otherwise: pairing, the low battery edge or charging changed. */
 fun strapStateChanged(paired: Boolean, battery: Int?, charging: Boolean, wasPaired: Boolean, wasBattery: Int?, wasCharging: Boolean): Boolean {
-    fun low(b: Int?) = b != null && b <= STRAP_LOW_PERCENT
+    fun low(b: Int?) = b != null && b <= StrapBands.LOW_BATTERY
     return paired != wasPaired || charging != wasCharging || low(battery) != low(wasBattery)
 }
 
 /**
- * The line's words: "Pair your strap", "Strap at 12%", "Syncing", and "Synced 09:10" today, "Synced yesterday", the
- * weekday within the week ("Synced Tuesday") and the date before that ("Synced 21 Oct").
+ * The line's words: "Pair your strap", "Strap at 12%", "Syncing", and "Synced 09:10" today, then by [DayWords]
+ * "Synced yesterday", the weekday within the week ("Synced Tuesday") and the date before that ("Synced Tue 21 Oct").
  */
-fun strapStatusLine(status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault()): String = when (status) {
-    StrapStatus.NotPaired -> "Pair your strap"
-    is StrapStatus.LowBattery -> "Strap at ${status.percent}%"
-    StrapStatus.Syncing -> "Syncing"
-    is StrapStatus.StaleSync -> {
-        val then = Instant.ofEpochSecond(status.at).atZone(zone).toLocalDate()
-        val days = ChronoUnit.DAYS.between(then, Instant.ofEpochSecond(now).atZone(zone).toLocalDate())
-        "Synced " + when {
-            days <= 0 -> clockText(status.at, zone)
-            days == 1L -> recentDay(then, then.plusDays(1), locale).lowercase(locale)
-            else -> recentDay(then, then.plusDays(days), locale)
-        }
-    }
+fun strapStatusLine(
+    status: StrapStatus, now: Long, zone: ZoneId, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+): String = when (status) {
+    StrapStatus.NotPaired -> strings.get(R.string.system_widget_status_not_paired)
+    is StrapStatus.LowBattery -> strings.format(R.string.system_widget_status_low_battery, status.percent)
+    StrapStatus.Syncing -> strings.get(R.string.system_widget_status_syncing)
+    is StrapStatus.StaleSync -> strings.format(R.string.system_widget_status_synced, syncedWhen(status.at, now, zone, locale))
+}
+
+/** When the last sync was, as the stale line says it after "Synced": "09:10" today, else by [DayWords.inSentence]. */
+internal fun syncedWhen(at: Long, now: Long, zone: ZoneId, locale: Locale): String {
+    val then = Instant.ofEpochSecond(at).atZone(zone).toLocalDate()
+    val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
+    return if (then >= today) TimeOfDay.format(at, zone, locale = locale) else DayWords.inSentence(then, today, locale)
 }
 
 /**
- * [date] as a widget says when something was, seen from [today]: "Today", "Yesterday", the weekday within the week
- * ("Tuesday") and the date before that ("21 Oct").
+ * [date] as a widget says when something was, seen from [today], by [DayWords]: "Today", "Yesterday", the weekday
+ * within the week ("Tuesday") and the date before that ("Tue 21 Oct"). A day after [today] reads "Today".
  */
-fun recentDay(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String {
-    val days = ChronoUnit.DAYS.between(date, today)
-    return when {
-        days <= 0 -> "Today"
-        days == 1L -> "Yesterday"
-        days < 7 -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
-        else -> date.format(DateTimeFormatter.ofPattern("d MMM", locale))
-    }
-}
+fun recentDay(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault()): String =
+    DayWords.relative(minOf(date, today), today, locale)

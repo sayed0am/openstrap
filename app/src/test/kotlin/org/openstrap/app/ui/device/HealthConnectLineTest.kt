@@ -3,6 +3,7 @@ package org.openstrap.app.ui.device
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.openstrap.app.data.settings.HealthConnectAuto
+import org.openstrap.app.health.HcAvailability
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.Locale
@@ -23,9 +24,10 @@ class HealthConnectLineTest {
     }
 
     @Test fun `on says when it last synced`() {
-        assertEquals("On. Last synced 10:42", line(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
-        assertEquals("On. Last synced yesterday 22:10", line(HealthConnectAuto(on = true, lastSynced = at(28, 22, 10))))
-        assertEquals("On. Last synced 12 Oct", line(HealthConnectAuto(on = true, lastSynced = at(12, 9, 0))))
+        assertEquals("On. Last copied 10:42", line(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
+        assertEquals("On. Last copied yesterday at 22:10", line(HealthConnectAuto(on = true, lastSynced = at(28, 22, 10))))
+        assertEquals("On. Last copied Tuesday at 09:00", line(HealthConnectAuto(on = true, lastSynced = at(27, 9, 0))))
+        assertEquals("On. Last copied Mon 12 Oct at 09:00", line(HealthConnectAuto(on = true, lastSynced = at(12, 9, 0))))
     }
 
     @Test fun `stopped says why`() {
@@ -40,8 +42,22 @@ class HealthConnectLineTest {
         fun summary(auto: HealthConnectAuto) = healthConnectSummary(auto, now, zone, Locale.UK)
         assertEquals("Off", summary(HealthConnectAuto()))
         assertEquals("On", summary(HealthConnectAuto(on = true)))
-        assertEquals("On. Last synced 10:42", summary(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
+        assertEquals("On. Last copied 10:42", summary(HealthConnectAuto(on = true, lastSynced = at(29, 10, 42))))
         assertEquals("Stopped. Permissions were turned off", summary(HealthConnectAuto(stopped = HealthConnectAuto.Stopped.PERMISSIONS)))
         assertEquals("Stopped. Not available on this phone", summary(HealthConnectAuto(stopped = HealthConnectAuto.Stopped.UNAVAILABLE)))
+    }
+
+    @Test fun `stopped with Health Connect missing says to install it where the Play Store has it`() {
+        val stopped = HealthConnectAuto(stopped = HealthConnectAuto.Stopped.UNAVAILABLE)
+        assertEquals(
+            "Stopped. Install Health Connect to turn it back on",
+            healthConnectLine(stopped, now, zone, Locale.UK, HcAvailability.INSTALLABLE),
+        )
+        assertEquals("Stopped. Install Health Connect", healthConnectSummary(stopped, now, zone, Locale.UK, HcAvailability.INSTALLABLE))
+        assertEquals(
+            "Stopped. Health Connect isn't available on this phone",
+            healthConnectLine(stopped, now, zone, Locale.UK, HcAvailability.UNAVAILABLE),
+        )
+        assertEquals("Stopped. Not available on this phone", healthConnectSummary(stopped, now, zone, Locale.UK, HcAvailability.UNAVAILABLE))
     }
 }

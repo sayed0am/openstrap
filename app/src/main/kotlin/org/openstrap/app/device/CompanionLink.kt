@@ -16,18 +16,21 @@ import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
+import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.settings.SettingsStore
 
 /**
  * Registers the paired strap with Android's companion device manager (a plain association, no watch profile).
  * Associated, the app may run and start its service from the background, is left out of battery optimization,
- * and on Android 12+ is woken through [StrapPresenceService] when the strap comes into range.
+ * and is woken through [StrapPresenceService] when the strap comes into range.
  */
 class CompanionLink(private val context: Context, private val settings: SettingsStore) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -70,7 +73,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
      * which [launch] starts; pass the activity result to [onResult]. [onError] gets a message to show.
      */
     fun associate(activity: Activity, address: String, launch: (IntentSender) -> Unit, onError: (String) -> Unit) {
-        val cdm = cdm ?: return onError("This phone doesn't support companion devices.")
+        val cdm = cdm ?: return onError(Strings.app.get(R.string.system_companion_unsupported))
         // The strap is a BLE device; the classic filter also matches it once Android knows it from a connection.
         val request = AssociationRequest.Builder()
             .addDeviceFilter(BluetoothLeDeviceFilter.Builder().setScanFilter(ScanFilter.Builder().setDeviceAddress(address).build()).build())
@@ -83,13 +86,16 @@ class CompanionLink(private val context: Context, private val settings: Settings
             @Deprecated("Android 12 and older")
             override fun onDeviceFound(intentSender: IntentSender) = launch(intentSender)
 
+            // Android calls it from 13 on. Before that the association only shows in onResult.
+            @RequiresApi(Build.VERSION_CODES.TIRAMISU)
             override fun onAssociationCreated(associationInfo: AssociationInfo) {
                 scope.launch { saved(associationInfo.id) }
             }
 
             override fun onFailure(error: CharSequence?) {
                 Log.w(TAG, "association failed: $error")
-                onError("Android couldn't find the strap (${error ?: "no reason given"}). Keep it on its charger near the phone and try again.")
+                val reason = error ?: Strings.app.get(R.string.system_companion_no_reason)
+                onError(Strings.app.format(R.string.system_companion_not_found, reason))
             }
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) cdm.associate(request, activity.mainExecutor, callback)
@@ -98,7 +104,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
 
     /**
      * The result of the confirmation [associate] launched. On Android 13+ the association arrives through the
-     * callback; older versions only report it here. Returns false when the user turned it down.
+     * callback. Older versions only report it here. Returns false when the user turned it down.
      */
     fun onResult(resultCode: Int): Boolean {
         if (resultCode != Activity.RESULT_OK) {
@@ -116,7 +122,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
         refresh()
     }
 
-    /** Has Android bind [StrapPresenceService] when the strap is in range (Android 12+). Android keeps this across reboots. */
+    /** Has Android bind [StrapPresenceService] when the strap is in range. Android keeps this across reboots. */
     private fun observePresence(address: String) {
         val cdm = cdm ?: return
         runCatching {
@@ -125,7 +131,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
                     val id = myAssociationId(address) ?: return
                     cdm.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(id).build())
                 }
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
+                else -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
             }
         }.onFailure { Log.w(TAG, "presence observing failed: $it") }
     }

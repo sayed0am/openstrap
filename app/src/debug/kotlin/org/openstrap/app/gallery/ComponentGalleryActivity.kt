@@ -28,31 +28,54 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.CoreShape
+import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DotMatrixText
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.glow.EdgeCard
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowGrid
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowGridColumn
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowMotion
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.glow.GlowGridRow
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.GlowMotion
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.GridCard
-import org.openstrap.app.ui.glow.LightAngle
+import org.openstrap.app.ui.glow.packGrid
+import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.ListPanel
 import org.openstrap.app.ui.glow.ListRow
 import org.openstrap.app.ui.glow.LocalGlowMood
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.OpenStrapTheme
+import androidx.compose.foundation.layout.Box
+import org.openstrap.app.data.Phase
+import org.openstrap.app.data.db.AppWorkout
+import org.openstrap.app.device.WorkoutState
+import org.openstrap.app.presentation.WorkoutWords
+import org.openstrap.app.ui.glow.LineDots
+import org.openstrap.app.ui.glow.PeakBars
+import org.openstrap.app.ui.glow.PlainLine
+import org.openstrap.app.ui.glow.StatusDot
+import org.openstrap.app.ui.glow.TrendBad
+import org.openstrap.app.ui.glow.TrendGood
+import org.openstrap.app.ui.glow.live.EffortBar
+import org.openstrap.app.ui.glow.live.MindRing
+import org.openstrap.app.ui.glow.live.MovingTime
+import org.openstrap.app.ui.glow.live.RestRing
+import org.openstrap.app.ui.glow.live.RoundBar
+import org.openstrap.app.ui.glow.live.WorkoutHeartCard
+import org.openstrap.app.ui.glow.live.ZoneTimeBar
+import org.openstrap.app.ui.workout.IntervalMoment
+import org.openstrap.app.ui.workout.ZoneSeconds
 
 /**
- * Debug builds only: every design v2 foundation piece on one scrolling screen, to check them on a phone.
- * `adb shell am start -n org.openstrap.app/.gallery.ComponentGalleryActivity`
+ * Debug builds only: every design v2 foundation piece on one scrolling screen, to check them on a phone, then the live
+ * workout's parts with fixed numbers, which an emulator can't show otherwise (no strap, no workout).
+ * `adb shell am start -n org.openstrap.app.dev/org.openstrap.app.gallery.ComponentGalleryActivity` (the dev build), with
+ * `--es section live` for the live parts alone.
  */
 class ComponentGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,7 +84,8 @@ class ComponentGalleryActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
-        setContent { OpenStrapTheme { Gallery() } }
+        val liveOnly = intent.getStringExtra("section") == "live"
+        setContent { OpenStrapTheme { Gallery(liveOnly) } }
     }
 }
 
@@ -79,7 +103,7 @@ private val Charge = GlowStyle.Ember
 private val SmallPadding = GlowLayout.CardPadding
 
 @Composable
-private fun Gallery() {
+private fun Gallery(liveOnly: Boolean) {
     Column(
         Modifier
             .fillMaxSize()
@@ -90,6 +114,10 @@ private fun Gallery() {
             .padding(horizontal = GlowGrid.Gutter, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap),
     ) {
+        if (liveOnly) {
+            LiveParts()
+            return@Column
+        }
         Heading("Glow cards, light angle")
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
             AngleCard("Waking up", "Lower left", MetricColors.readiness, LightAngle.LowerLeft, Modifier.weight(1f))
@@ -194,7 +222,88 @@ private fun Gallery() {
                 }
             }
         }
+        LiveParts()
         Spacer(Modifier.height(24.dp))
+    }
+}
+
+/** A run 25 minutes in, recording on the phone, for the live parts. */
+private val LiveRun = WorkoutState.Recording(AppWorkout(start = LIVE_START, end = null, sportType = 1), maxHeartRate = 190)
+
+private const val LIVE_START = 1_792_000_000L
+private const val LIVE_ACTIVE = 1534L
+
+/** The last ten minutes of [LiveRun] every five seconds, climbing into zone 3 with a little wave. */
+private val LiveRecent = (0 until 120).map { i ->
+    val t = LIVE_START + LIVE_ACTIVE - 600 + i * 5L
+    t to (128 + i / 6 + (i % 9) - 4)
+}
+
+private val LiveZones = ZoneSeconds(listOf(120, 420, 780, 180, 34))
+
+/** A calm session's heart rate settling from the high 80s, as the mind screen draws it. */
+private val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
+
+/**
+ * The live workout's parts (workouts spec 2.3) with fixed numbers: the heart card, the bars, rings and lines the kinds'
+ * screens are built from, the top bar's status dots and the moving time.
+ */
+// The parts' numbers are fixed sample readings, picked to show each part mid workout, not tuning values.
+@Suppress("MagicNumber")
+@Composable
+private fun LiveParts(modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
+        Heading("Live parts")
+        Label("Live heart card, with the zone time bar")
+        WorkoutHeartCard(
+            LiveRun, 148, LiveRecent, LiveZones, connected = true, active = { LIVE_ACTIVE }, Modifier.fillMaxWidth(), zoneBar = true,
+        )
+        Label("Live heart card, paused")
+        val paused = LiveRun.copy(workout = LiveRun.workout.copy(pausedAt = LIVE_START + LIVE_ACTIVE))
+        WorkoutHeartCard(paused, 148, LiveRecent, LiveZones, connected = true, active = { LIVE_ACTIVE }, Modifier.fillMaxWidth())
+        Label("Zone time bar, in zone 3")
+        ZoneTimeBar(LiveZones, current = 2)
+        Label("Effort bar, a game at 3 of 5")
+        EffortBar(3)
+        Label("Round bar, round 3 of 8 under way")
+        RoundBar(IntervalMoment(Phase.Work(round = 3, start = 0, endsAt = 20), round = 3, rounds = 8, left = 8), workLength = 20)
+        Label("Peak bars, five rounds of eight")
+        PeakBars(
+            listOf(158, 166, 171, null, 169), { MetricColors.heart }, Modifier.fillMaxWidth(), height = 56.dp, rounds = 8, corner = 3.dp,
+        )
+        Label("Rest ring, 45 s of 90 left")
+        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { RestRing({ 45L }, 90L) }
+        Label("Mind ring, 10 min of 30")
+        MindRing({ 600L }, 1800L)
+        Label("Mind heart line")
+        PlainLine(MindLine, MetricColors.evening.copy(alpha = 0.7f), 64.dp, smooth = false, dots = LineDots.Last, stroke = 2.dp)
+        Label("Status dots")
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+            StatusDot("GPS good", TrendGood, dotAfter = true)
+            StatusDot("Strap 82%", TrendGood, dotAfter = true)
+            StatusDot(WorkoutWords.STRAP_GONE, TrendBad, dotAfter = true)
+        }
+        Label("Moving time")
+        MovingTime { LIVE_ACTIVE }
+    }
+}
+
+/** What the part under it is, small. */
+@Composable
+private fun Label(text: String) {
+    Text(
+        text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+        modifier = Modifier.padding(top = 8.dp),
+    )
+}
+
+/** Packs [cards] with [packGrid] and lays the rows out one under the other, [GlowGrid.Gap] apart. */
+// The gallery builds its card lists once and never changes them in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+@Composable
+private fun GlowGridColumn(cards: List<GridCard>, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
+        packGrid(cards.map { it.size to it }).forEach { GlowGridRow(it) }
     }
 }
 

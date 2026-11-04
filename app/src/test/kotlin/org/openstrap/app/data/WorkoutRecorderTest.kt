@@ -45,7 +45,7 @@ class WorkoutRecorderTest {
     fun historyMinuteCountsAsAWholeMinuteOfZoneTime() {
         val w = AppWorkout(start, start + 120, 1)
         val hr = (0L until 60L).map { AppWorkoutHeartRate(start, start + it, 140) } + AppWorkoutHeartRate(start, start + 60, 140, fromHistory = true)
-        val a = WorkoutRecorder.analyse(w, hr, maxHeartRate = 190)
+        val a = WorkoutRecorder.analyse(w, hr, maxHeartRate = 190, zones = HeartZones.STANDARD)
         // 140/190 = 73 %: zone 3. Live samples give 59 s between them, the history minute 55 s of 5-second steps plus the join.
         assertTrue(a.zoneSeconds[2] in 115..120)
         assertEquals(1, a.historyMinutes)
@@ -122,12 +122,12 @@ class WorkoutRecorderTest {
     fun anEarlyEndLeavesTheRestRecordedButOutOfTheFigures() {
         val hr = (0L until 600L).map { AppWorkoutHeartRate(start, start + it, if (it < 300) 150 else 80) }
         val w = AppWorkout(start, start + 300, 1, recordedEnd = start + 600)
-        val a = WorkoutRecorder.analyse(w, hr, 190)
+        val a = WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD)
         assertEquals(300, a.durationSeconds)
         assertEquals(150, a.workout.averageHeartRate)
         assertEquals(start + 600, a.recordedEnd)
         // Trimming the start too.
-        val t = WorkoutRecorder.analyse(w.copy(shownStart = start + 100), hr, 190)
+        val t = WorkoutRecorder.analyse(w.copy(shownStart = start + 100), hr, 190, HeartZones.STANDARD)
         assertEquals(200, t.durationSeconds)
         assertEquals(200L, t.workout.exerciseSeconds!!.toLong())
         assertEquals(start + 100, t.shownStart)
@@ -136,7 +136,7 @@ class WorkoutRecorderTest {
     @Test
     fun usualAveragesTheLastFiveSimilarWorkouts() {
         fun workout(at: Long, sport: Int, length: Long, bpm: Int) =
-            WorkoutRecorder.analyse(AppWorkout(at, at + length, sport), (0L until length).map { AppWorkoutHeartRate(at, at + it, bpm) }, 190)
+            WorkoutRecorder.analyse(AppWorkout(at, at + length, sport), (0L until length).map { AppWorkoutHeartRate(at, at + it, bpm) }, 190, HeartZones.STANDARD)
         val now = workout(start + 100_000, 1, 1800, 140)
         val others = listOf(
             workout(start, 1, 1800, 130),
@@ -147,14 +147,14 @@ class WorkoutRecorderTest {
         )
         val similar = WorkoutRecorder.similar(now, others)
         assertEquals(listOf(start + 10_000, start), similar.map { it.workout.start })
-        val u = WorkoutRecorder.usual(similar)!!
+        val u = WorkoutRecorder.usual(similar, HeartZones.STANDARD)!!
         assertEquals(2, u.count)
         assertEquals(140, u.averageHeartRate)
         assertEquals(1650L, u.activeSeconds)
         // 130/190 = 68 %: zone 2; 150/190 = 79 %: zone 3; half each.
         assertEquals(0.5f, u.zoneShares[1], 0.01f)
         assertEquals(0.5f, u.zoneShares[2], 0.01f)
-        assertNull(WorkoutRecorder.usual(emptyList()))
+        assertNull(WorkoutRecorder.usual(emptyList(), HeartZones.STANDARD))
     }
 
     @Test
@@ -172,7 +172,7 @@ class WorkoutRecorderTest {
     @Test
     fun aListRowCarriesThePhoneWorkoutsDistance() {
         val start = 1_000_000L
-        val a = WorkoutRecorder.analyse(AppWorkout(start, start + 1800, 3, distanceMeters = 3400f, distanceFromSteps = true), emptyList(), 190)
+        val a = WorkoutRecorder.analyse(AppWorkout(start, start + 1800, 3, distanceMeters = 3400f, distanceFromSteps = true), emptyList(), 190, HeartZones.STANDARD)
         assertEquals(3400f, a.distanceMeters!!, 0.01f)
         assertTrue(a.distanceFromSteps)
         assertNull(a.sets)
@@ -311,8 +311,8 @@ class WorkoutRecorderTest {
         val w = AppWorkout(start, start + 3000, 1, target = "k:300", targetReachedAt = start + 1700).withPause(start + 600, start + 900)
         // 1700 s in, 300 of them paused.
         assertEquals(1400L, WorkoutRecorder.reachedSeconds(w))
-        assertEquals(1400L, WorkoutRecorder.analyse(w, emptyList(), 190).targetReachedSeconds)
-        assertEquals("k:300", WorkoutRecorder.analyse(w, emptyList(), 190).target)
+        assertEquals(1400L, WorkoutRecorder.analyse(w, emptyList(), 190, HeartZones.STANDARD).targetReachedSeconds)
+        assertEquals("k:300", WorkoutRecorder.analyse(w, emptyList(), 190, HeartZones.STANDARD).target)
         // Trimmed so it starts later: counted from the new start.
         assertEquals(700L, WorkoutRecorder.reachedSeconds(w.copy(shownStart = start + 1000)))
         // Trimmed to end before it was reached, or never reached: no time.

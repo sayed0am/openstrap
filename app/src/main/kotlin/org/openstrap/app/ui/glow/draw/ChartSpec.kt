@@ -9,6 +9,7 @@ import kotlin.math.sign
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowStage
+import org.openstrap.app.ui.theme.MetricColors
 
 /*
  * The charts widgets share with their cards (widgets spec 6.2), as plain geometry: the points of a line and its end
@@ -45,7 +46,7 @@ fun polylineOps(pts: List<Offset>): List<PathOp> =
     pts.mapIndexed { i, p -> if (i == 0) PathOp.Move(p.x, p.y) else PathOp.Line(p.x, p.y) }
 
 /**
- * A smooth path through [pts] using monotone cubic interpolation (Fritsch–Carlson): curves like a spline but never
+ * A smooth path through [pts] using monotone cubic interpolation (Fritsch-Carlson): curves like a spline but never
  * overshoots the data, so a smoothed heart rate can't show a peak or dip that didn't happen.
  */
 fun smoothOps(pts: List<Offset>): List<PathOp> {
@@ -462,7 +463,7 @@ data class StageStripSegment(val stage: Int, val x0: Float, val x1: Float)
  * across [width] px from the first stage's start to the last's end, each stretch its stage's. The ends sit half the
  * thickness in, so the round caps stay inside. Empty without stages.
  */
-fun stageStripSegments(spans: List<org.openstrap.app.ui.components.StageSpan>, width: Float, height: Float): List<StageStripSegment> {
+fun stageStripSegments(spans: List<org.openstrap.app.presentation.StageSpan>, width: Float, height: Float): List<StageStripSegment> {
     if (spans.isEmpty()) return emptyList()
     val start = spans.minOf { it.start }
     val end = spans.maxOf { it.end }.coerceAtLeast(start + 1)
@@ -471,4 +472,12 @@ fun stageStripSegments(spans: List<org.openstrap.app.ui.components.StageSpan>, w
         val x1 = height / 2 + (width - height) * (s.end - start) / (end - start)
         StageStripSegment(s.stage, x0, x1.coerceAtLeast(x0 + 0.5f))
     }
+}
+
+/** A sleep stage's colour, as on the strap's own charts. */
+internal fun stageColor(stage: Int): Color = when (stage) {
+    org.openstrap.app.data.db.SleepStage.DEEP -> MetricColors.sleepDeep
+    org.openstrap.app.data.db.SleepStage.REM -> MetricColors.sleepRem
+    org.openstrap.app.data.db.SleepStage.AWAKE -> MetricColors.sleepAwake
+    else -> MetricColors.sleepLight
 }

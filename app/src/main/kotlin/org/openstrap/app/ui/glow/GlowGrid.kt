@@ -50,9 +50,6 @@ object GlowGrid {
 
     val StripHeight = 68.dp
 
-    /** One unit's width on a screen [screenWidth] wide: (width minus both gutters minus the gap) / 2. */
-    fun unitWidth(screenWidth: Dp): Dp = (screenWidth - Gutter * 2 - Gap) / 2
-
     /** One unit's width inside a column already [width] wide (the gutters already taken off). */
     fun unitWidthIn(width: Dp): Dp = (width - Gap) / 2
 
@@ -108,14 +105,6 @@ fun <T> packGrid(cards: List<kotlin.Pair<CardSize, T>>): List<GridRow<T>> {
 
 /** A card on the grid: its size, and how to draw it given a modifier that sets its exact size. */
 class GridCard(val size: CardSize, val content: @Composable (Modifier) -> Unit)
-
-/** Packs [cards] with [packGrid] and lays the rows out one under the other, [GlowGrid.Gap] apart. */
-@Composable
-fun GlowGridColumn(cards: List<GridCard>, modifier: Modifier = Modifier) {
-    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-        packGrid(cards.map { it.size to it }).forEach { GlowGridRow(it) }
-    }
-}
 
 /** One packed row, filling the width it's given. */
 @Composable

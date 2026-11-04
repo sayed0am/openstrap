@@ -1,17 +1,19 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.DayWords
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Ranges
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -21,88 +23,100 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.theme.AppIcons
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.presentation.TabCopy
 
 /** The Healthspan card's orchid, used for the glow: warm enough to stay clear of Sleep's blue. */
 private val Orchid = MetricColors.habitAge
 
-/** The same recipe as the Heart rate and Activity cards, in orchid. */
-internal val HealthspanGlow = GlowStyle.chart(Orchid)
-
-/** "3 years younger", "1 year older" or "Right on your age" for an [estimate] against [age], in whole years. */
-internal fun healthspanVerdict(age: Int, estimate: Float): String {
-    val years = age - estimate.roundToInt()
-    return when {
-        years > 0 -> "$years ${if (years == 1) "year" else "years"} younger"
-        years < 0 -> "${-years} ${if (-years == 1) "year" else "years"} older"
-        else -> "Right on your age"
-    }
-}
-
 /** "Steady" at 1x, "Slower" below, "Faster" above; "Learning" until there's enough history. */
-internal fun paceLabel(pace: Float?): String = when {
-    pace == null -> "Learning"
-    pace < 1f -> "Slower"
-    pace > 1f -> "Faster"
-    else -> "Steady"
-}
+internal fun paceLabel(pace: Float?, strings: Strings = Strings.app): String = strings.get(
+    when {
+        pace == null -> R.string.glow_healthspan_pace_learning
+        pace < 1f -> R.string.glow_healthspan_pace_slower
+        pace > 1f -> R.string.glow_healthspan_pace_faster
+        else -> R.string.glow_healthspan_pace_steady
+    },
+)
 
 /** "1x", "0.5x", "-1x". */
-internal fun paceText(pace: Float): String = if (pace % 1f == 0f) "${pace.toInt()}x" else "${pace}x"
+internal fun paceText(pace: Float, strings: Strings = Strings.app): String =
+    strings.format(R.string.glow_healthspan_pace_times, if (pace % 1f == 0f) pace.toInt().toString() else pace.toString())
 
 /** "takes off about 1 year", "adds about ½ year", "takes off a few months" or "no change". */
-internal fun effectText(years: Float): String {
+internal fun effectText(years: Float, strings: Strings = Strings.app): String {
     val y = abs(years)
-    val verb = if (years < 0) "takes off" else "adds"
+    val off = years < 0
     return when {
-        y < 0.05f -> "no change"
-        y < 0.375f -> "$verb a few months"
-        y < 0.75f -> "$verb about ½ year"
-        else -> y.roundToInt().let { "$verb about $it ${if (it == 1) "year" else "years"}" }
+        y < 0.05f -> strings.get(R.string.glow_healthspan_effect_none)
+        y < 0.375f -> strings.get(if (off) R.string.glow_healthspan_effect_off_months else R.string.glow_healthspan_effect_adds_months)
+        y < 0.75f -> strings.get(if (off) R.string.glow_healthspan_effect_off_half else R.string.glow_healthspan_effect_adds_half)
+        else -> y.roundToInt().let {
+            strings.plural(if (off) R.plurals.glow_healthspan_effect_off_years else R.plurals.glow_healthspan_effect_adds_years, it, it)
+        }
     }
 }
 
+/** The steps a day the Steps habit's line aims for. */
+private const val STEPS_AIM_LOW = 8000
+private const val STEPS_AIM_HIGH = 10_000
+
 /** The line under a habit: your value, the typical one it's scored against, and a target where there is one. */
-internal fun termDetail(t: Healthspan.Term, age: Int): String {
+internal fun termDetail(t: Healthspan.Term, age: Int, strings: Strings = Strings.app): String {
     val v = t.value
-    val ref = t.reference
-    if (v == null) return if (t.habit == Healthspan.Habit.Vo2max) "No VO2 max from workouts yet, counted as typical" else "Not enough data yet, counted as typical"
+    val ref = t.reference?.roundToInt().toString()
+    if (v == null) {
+        return strings.get(if (t.habit == Healthspan.Habit.Vo2max) R.string.glow_healthspan_no_vo2max else R.string.glow_healthspan_no_data)
+    }
     return when (t.habit) {
         Healthspan.Habit.Strength -> {
             val m = v.roundToInt()
-            (if (m == 0) "None recorded" else "$m min a week") + ", most people your age do none" +
-                (if (m < Healthspan.STRENGTH_TARGET_MINUTES) ", aim for ${Healthspan.STRENGTH_TARGET_MINUTES}" else "")
+            val aim = m < Healthspan.STRENGTH_TARGET_MINUTES
+            when {
+                m == 0 && aim -> strings.format(R.string.glow_healthspan_strength_none_aim, Healthspan.STRENGTH_TARGET_MINUTES)
+                m == 0 -> strings.get(R.string.glow_healthspan_strength_none)
+                aim -> strings.format(R.string.glow_healthspan_strength_minutes_aim, m, Healthspan.STRENGTH_TARGET_MINUTES)
+                else -> strings.format(R.string.glow_healthspan_strength_minutes, m)
+            }
         }
-        Healthspan.Habit.Vo2max -> "${v.roundToInt()} ml/kg/min, typical at $age: ${ref?.roundToInt()}"
-        Healthspan.Habit.Steps -> "${"%,d".format(v.roundToInt())} a day, typical: ${"%,d".format(((ref ?: 0f) / 100).roundToInt() * 100)}" +
-            (if (v < 8000f) ", aim for 8,000–10,000" else "")
-        Healthspan.Habit.Regularity -> "${v.roundToInt()}, typical: ${ref?.roundToInt()}"
-        Healthspan.Habit.RestingHr -> "${v.roundToInt()} bpm asleep, typical: about ${ref?.roundToInt()}"
-        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m -> "${m / 60} h ${m % 60} m, counts only below 6 h 30 m" }
+        Healthspan.Habit.Vo2max -> strings.format(R.string.glow_healthspan_vo2max, v.roundToInt(), age, ref)
+        Healthspan.Habit.Steps -> {
+            val steps = Units.count(v.roundToInt())
+            val typical = Units.count(((t.reference ?: 0f) / 100).roundToInt() * 100)
+            val aim = Ranges.numbers(STEPS_AIM_LOW, STEPS_AIM_HIGH)
+            if (v < STEPS_AIM_LOW) strings.format(R.string.glow_healthspan_steps_aim, steps, typical, aim)
+            else strings.format(R.string.glow_healthspan_steps, steps, typical)
+        }
+        Healthspan.Habit.Regularity -> strings.format(R.string.glow_healthspan_regularity, v.roundToInt(), ref)
+        Healthspan.Habit.RestingHr -> strings.format(R.string.glow_healthspan_resting_hr, v.roundToInt(), ref)
+        Healthspan.Habit.TimeAsleep -> v.roundToInt().let { m ->
+            strings.format(
+                R.string.glow_healthspan_time_asleep, Units.duration(m * MINUTE_S),
+                Units.duration(Healthspan.SLEEP_COUNTS_BELOW_MINUTES * MINUTE_S),
+            )
+        }
     }
 }
 
+/** Seconds in a minute, for the sleep habit's minutes. */
+private const val MINUTE_S = 60L
+
 /** "Sunday 22 Nov" for local midnight [day] (epoch seconds), with no-break spaces so it never wraps inside the date. */
-internal fun sundayText(day: Long): String = java.time.Instant.ofEpochSecond(day).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-    .format(java.time.format.DateTimeFormatter.ofPattern("EEEE d MMM")).replace(' ', '\u00A0')
+internal fun sundayText(day: Long): String = DayWords.weekdayDayMonth(dateOf(day)).replace(' ', '\u00A0')
 
-/** What to add to the profile: "Add your birth year and sex in your profile to see your Habit Age." */
-internal fun profileReminder(missing: List<String>): String =
-    "Add your ${missing.joinToString(" and ")} in your profile to see your Habit Age."
-
-/** The starting state's line under your age: when a first estimate is due, or what it's still waiting for. */
-internal fun learningText(o: Healthspan.Outcome): String = when {
-    // The date's line is kept whole, so "First estimate:" never ends up apart from its date.
-    o.firstEstimate != null -> "Starts at your age.\nFirst\u00A0estimate:\u00A0${sundayText(o.firstEstimate)}."
-    o.withheld == Healthspan.Withheld.Learning -> "Starts at your age. Wear the strap for 30 days for a first estimate."
-    else -> "Starts at your age. ${o.withheld?.reason.orEmpty()}"
-}
+/** What to add to the profile: "Add your birth year and sex to your profile to see your Habit Age." */
+internal fun profileReminder(missing: List<Healthspan.ProfileGap>, strings: Strings = Strings.app): String = strings.get(
+    when {
+        missing.size > 1 -> R.string.glow_healthspan_profile_both
+        missing.firstOrNull() == Healthspan.ProfileGap.Sex -> R.string.glow_healthspan_profile_sex
+        else -> R.string.glow_healthspan_profile_birth_year
+    },
+)
 
 /** The local date of [epoch] (a local midnight). */
 private fun dateOf(epoch: Long) = java.time.Instant.ofEpochSecond(epoch).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
@@ -130,27 +144,27 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
         onClick = if (needsProfile) onOpenProfile else onClick,
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            CardTitle("Habit Age", Modifier.weight(1f))
-            InfoButton("About Habit Age", { info = true })
+            CardTitle(stringResource(R.string.glow_healthspan_title), Modifier.weight(1f))
+            InfoButton(stringResource(R.string.glow_healthspan_about), { info = true })
         }
         r?.let {
             Text(
-                org.openstrap.app.ui.dashboard.TabCopy.habitAgeUpdated(dateOf(it.asOf)), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                TabCopy.habitAgeUpdated(dateOf(it.asOf)), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
                 style = GlowType.secondary, maxLines = 1,
             )
         }
-        val line = r?.let { org.openstrap.app.ui.dashboard.TabCopy.habitAgeLine(it.estimate, state.lastWeek, it.low, it.high) }
+        val line = r?.let { TabCopy.habitAgeLine(it.estimate, state.lastWeek, it.low, it.high) }
         val waiting = when {
             r != null -> null
             needsProfile -> profileReminder(state.missing)
-            state.firstEstimate != null -> org.openstrap.app.ui.dashboard.TabCopy.firstEstimate(dateOf(state.firstEstimate))
+            state.firstEstimate != null -> TabCopy.firstEstimate(dateOf(state.firstEstimate))
             else -> withheld?.reason
         }
         // The estimate once there is one; until then your own age stands in. Without a birth year, no number.
         val shown = r?.estimate?.roundToInt() ?: state.age
         EdgeValue(
-            shown?.toString(), shown?.let { "years" },
-            line?.text ?: if (shown != null) org.openstrap.app.ui.dashboard.TabCopy.habitAgeForNow(waiting) else waiting,
+            shown?.toString(), shown?.let { stringResource(R.string.glow_healthspan_years) },
+            line?.text ?: if (shown != null) TabCopy.habitAgeForNow(waiting) else waiting,
             if (line?.moved == true) Orchid else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
             waiting = shown != null,
         )
@@ -185,7 +199,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
         val label = Color.White.copy(alpha = 0.6f)
         Column {
             // Your age over its hairline, the range under its band, as in the kit, so the two never overlap.
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(org.openstrap.app.ui.dashboard.TabCopy.yourAge(age), x(age.toFloat()), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.yourAge(age), x(age.toFloat()) / w, label) }
             Canvas(Modifier.fillMaxWidth().height(30.dp)) {
                 val y = size.height / 2
                 fun px(a: Float) = x(a).toPx()
@@ -194,15 +208,7 @@ internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
                 drawLine(Color.White.copy(alpha = 0.6f), Offset(px(age.toFloat()), 0f), Offset(px(age.toFloat()), size.height), 1.dp.toPx())
                 drawCircle(Color.White, 7.dp.toPx(), Offset(px(estimate), y))
             }
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(org.openstrap.app.ui.dashboard.TabCopy.ageRange(low, high), x((low + high) / 2f), w, label) }
+            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.ageRange(low, high), x((low + high) / 2f) / w, label) }
         }
     }
-}
-
-/** A label centred on [at] across a scale [width] wide, kept inside it. */
-@Composable
-private fun androidx.compose.foundation.layout.BoxScope.ScaleLabel(text: String, at: androidx.compose.ui.unit.Dp, width: androidx.compose.ui.unit.Dp, color: Color) {
-    // Centred on its point by aligning a share of the way across, as BiasAlignment does.
-    val bias = ((at / width) * 2f - 1f).coerceIn(-1f, 1f)
-    Text(text, color = color, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(androidx.compose.ui.BiasAlignment(bias, 0f)))
 }

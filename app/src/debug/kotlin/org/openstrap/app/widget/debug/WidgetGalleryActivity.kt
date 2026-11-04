@@ -5,7 +5,6 @@ import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.SizeF
@@ -22,11 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.device.WidgetUpdater
-import org.openstrap.app.widget.WidgetKind
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.data.WidgetKind
+import org.openstrap.app.data.catching
 import org.openstrap.app.widget.WidgetRefresh
 import org.openstrap.app.widget.WidgetSizes
+import org.openstrap.app.widget.widgets
 
 /**
  * Debug builds only: a real widget hosted at exactly its three sizes (Small, Wide, Large) on black, for checking on
@@ -112,14 +112,14 @@ class WidgetGalleryActivity : ComponentActivity() {
             WidgetRefresh.debugMoment = null
             WidgetRefresh.debugPlaced = null
             WidgetRefresh.debugStrap = null
-            WidgetUpdater.changedAll(applicationContext)
+            widgets.changedAll()
         }
         super.onDestroy()
     }
 
     /** The kind named [name] ("steps", "recovery", "sleep", "start") that has a widget yet; null for none. */
     private fun kindOf(name: String?): WidgetKind? =
-        WidgetKind.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }?.takeIf { WidgetUpdater.registration(it) != null }
+        WidgetKind.entries.firstOrNull { it.name.equals(name, ignoreCase = true) }?.takeIf { widgets.registration(it) != null }
 
     /** Hosts [next] in place of the kind shown. */
     private fun show(next: WidgetKind) {
@@ -137,7 +137,7 @@ class WidgetGalleryActivity : ComponentActivity() {
     /** Binds an id per size and hosts its view at that size exactly. */
     private fun bindAll() {
         val manager = AppWidgetManager.getInstance(this)
-        val registration = WidgetUpdater.registration(kind) ?: run { note("No $kind widget yet."); return }
+        val registration = widgets.registration(kind) ?: run { note("No $kind widget yet."); return }
         val provider = ComponentName(this, registration.receiver)
         val info: AppWidgetProviderInfo? = manager.getInstalledProvidersForPackage(packageName, null).firstOrNull { it.provider == provider }
         if (info == null) { note("The $kind widget's provider isn't installed."); return }
@@ -157,7 +157,7 @@ class WidgetGalleryActivity : ComponentActivity() {
         refresh()
     }
 
-    /** The size bundle Glance reads to pick its layout: Android 12's size list, and the min and max before it. */
+    /** The size bundle Glance reads to pick its layout: the size list, and the min and max for launchers without it. */
     private fun sizeOptions(size: DpSize): Bundle = Bundle().apply {
         val w = size.width.value.toInt()
         val h = size.height.value.toInt()
@@ -165,24 +165,20 @@ class WidgetGalleryActivity : ComponentActivity() {
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, w)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, h)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, h)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
-        }
+        putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
     }
 
     /** Loads the widget again and renders every bound id. */
     private fun refresh() {
         val ids = bound.toList()
         val shown = kind
-        val widget = WidgetUpdater.registration(shown)?.widget ?: return
+        val widget = widgets.registration(shown)?.widget ?: return
         lifecycleScope.launch {
-            try {
+            catching {
                 WidgetRefresh.bump(shown)
                 val glance = GlanceAppWidgetManager(applicationContext)
                 ids.forEach { widget().update(applicationContext, glance.getGlanceIdBy(it)) }
-            } catch (e: Exception) {
-                Log.w(TAG, "widget gallery: update failed: $e")
-            }
+            }.onFailure { Log.w(TAG, "widget gallery: update failed: $it") }
         }
     }
 
@@ -228,7 +224,7 @@ class WidgetGalleryActivity : ComponentActivity() {
     /** Asks the launcher to pin a widget of [pin] to the home screen. */
     private fun requestPin(pin: WidgetKind) {
         val manager = AppWidgetManager.getInstance(this)
-        val registration = WidgetUpdater.registration(pin) ?: return
+        val registration = widgets.registration(pin) ?: return
         if (!manager.isRequestPinAppWidgetSupported) {
             Toast.makeText(this, "This launcher can't pin widgets", Toast.LENGTH_SHORT).show()
             return
@@ -241,7 +237,7 @@ class WidgetGalleryActivity : ComponentActivity() {
         orientation = LinearLayout.VERTICAL
         addView(LinearLayout(this@WidgetGalleryActivity).apply {
             orientation = LinearLayout.HORIZONTAL
-            WidgetKind.entries.filter { WidgetUpdater.registration(it) != null }.forEach { k ->
+            WidgetKind.entries.filter { widgets.registration(it) != null }.forEach { k ->
                 addView(Button(this@WidgetGalleryActivity).apply {
                     text = k.name
                     setOnClickListener { if (k != kind) show(k) }

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Notifications, their channels, the Quick Settings tile and the workout toast (device/). Channel names and
+  descriptions show in Android's notification settings for OpenStrap. A notification's title has one line, its text
+  two lines before it is expanded, and an action button a word or two.
+  OpenStrap is the app's name and Helio Strap the strap's. Keep both as they are.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Channel name: notifications for workouts the strap noticed and recorded by itself. -->
+    <string name="system_channel_auto_detected">Auto-detected workouts</string>
+    <!-- Channel name: the strap's alerts for a high or low heart rate, high stress, low blood oxygen or an irregular rhythm. -->
+    <string name="system_channel_health">Health alerts</string>
+    <!-- Channel name: the notice asking to open OpenStrap so Android doesn't stop a workout. -->
+    <string name="system_channel_keep_recording">Keep recording</string>
+    <!-- Channel description, under its name in the notification settings. -->
+    <string name="system_channel_keep_recording_description">Asks you to open OpenStrap when Android may stop a workout.</string>
+    <!-- Channel name: the ongoing notification about the strap's connection, battery and sync. -->
+    <string name="system_channel_strap">Strap connection</string>
+    <!-- Channel name: the summary shown once a workout is saved. -->
+    <string name="system_channel_saved">Workout saved</string>
+    <!-- Channel name: the question when the strap's readings look like a workout that isn't being recorded. -->
+    <string name="system_channel_offer">Workout noticed</string>
+    <!-- Channel name: the ongoing notification of the workout being recorded. -->
+    <string name="system_channel_workout">Workout</string>
+    <!-- Channel name: the reminder when the strap is taken off. -->
+    <string name="system_channel_wear">Wear reminders</string>
+    <!-- Channel name: the summary of last week, on Monday. -->
+    <string name="system_channel_recap">Weekly recap</string>
+
+    <!-- A workout the strap noticed by itself. The sport is "Outdoor run" or "Yoga", the times "10:02 to 10:40". -->
+    <string name="system_auto_detected_title"><xliff:g id="sport" example="Outdoor run">%1$s</xliff:g> detected, <xliff:g id="times" example="10:02 to 10:40">%2$s</xliff:g></string>
+    <!-- Its text. -->
+    <string name="system_auto_detected_text">The strap noticed it and recorded it for you.</string>
+
+    <!-- The strap's health alerts: a title and a text each. -->
+    <string name="system_alert_high_heart_rate_title">High heart rate</string>
+    <string name="system_alert_high_heart_rate_text">Your heart rate reached <xliff:g id="bpm" example="165">%1$d</xliff:g> bpm.</string>
+    <string name="system_alert_low_heart_rate_title">Low heart rate</string>
+    <string name="system_alert_low_heart_rate_text">Your heart rate dropped to <xliff:g id="bpm" example="38">%1$d</xliff:g> bpm.</string>
+    <string name="system_alert_high_stress_title">High stress</string>
+    <!-- Stress is a score from 1 to 100. -->
+    <string name="system_alert_high_stress_text">Your stress is at <xliff:g id="stress" example="82">%1$d</xliff:g>.</string>
+    <string name="system_alert_low_spo2_title">Low blood oxygen</string>
+    <string name="system_alert_low_spo2_text">Your blood oxygen was <xliff:g id="percent" example="88">%1$d</xliff:g>%%.</string>
+    <string name="system_alert_irregular_rhythm_title">Irregular heart rhythm</string>
+    <!-- The time is the phone's clock, "14:05" or "2:05 PM". -->
+    <string name="system_alert_irregular_rhythm_text">The strap noticed an irregular heart rhythm at <xliff:g id="time" example="14:05">%1$s</xliff:g>.</string>
+
+    <!-- Heads-up when Android may stop a workout. The sport is lower case in the sentence, "outdoor run" or "HIIT". -->
+    <string name="system_keep_recording_title">Keep recording your <xliff:g id="sport" example="outdoor run">%1$s</xliff:g></string>
+    <!-- Its text. A tap opens the app. -->
+    <string name="system_keep_recording_text">Android may stop it while OpenStrap is closed. Tap to keep it going.</string>
+
+    <!-- The strap's ongoing notification. Its title before there's anything of your day to show: the strap's name. -->
+    <string name="system_strap_title" translatable="false">Helio Strap</string>
+    <!-- Its title: today's Recovery and Energy scores, from 0 to 100. Energy is the body's energy score, 0 to 100, not the strap battery. -->
+    <string name="system_strap_title_both">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g>, Energy <xliff:g id="energy" example="58">%2$d</xliff:g></string>
+    <string name="system_strap_title_recovery">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g></string>
+    <string name="system_strap_title_energy">Energy <xliff:g id="energy" example="58">%1$d</xliff:g></string>
+    <!-- Its text while the app connects to the strap. -->
+    <string name="system_strap_connecting">Connecting…</string>
+    <!-- Its text while the strap checks the app's key. -->
+    <string name="system_strap_authenticating">Checking the key…</string>
+    <!-- Its text when connecting failed. A Retry button is beside it. -->
+    <string name="system_strap_failed">Couldn\'t reach the strap</string>
+    <string name="system_strap_not_connected">Strap not connected</string>
+    <!-- Its text during a sync. The step is "Preparing…" or "Syncing heart rate (3/12)". -->
+    <string name="system_strap_syncing"><xliff:g id="step" example="Syncing heart rate (3/12)">%1$s</xliff:g></string>
+    <!-- Its text when the strap's battery is low and it isn't charging. -->
+    <string name="system_strap_low_battery">Strap battery <xliff:g id="percent" example="12">%1$d</xliff:g>%%. Charge it tonight.</string>
+    <string name="system_strap_connected">Strap connected</string>
+    <string name="system_strap_charging">Strap charging</string>
+    <!-- The strap's battery is named, so it's never taken for Energy. -->
+    <string name="system_strap_connected_battery">Strap connected, battery <xliff:g id="percent" example="80">%1$d</xliff:g>%%</string>
+    <string name="system_strap_charging_battery">Strap charging, battery <xliff:g id="percent" example="80">%1$d</xliff:g>%%</string>
+    <!-- In the notification's header, before how long ago the last sync was ("Synced 5m"). One word. -->
+    <string name="system_strap_synced">Synced</string>
+    <!-- Action buttons. -->
+    <string name="system_strap_action_retry">Retry</string>
+    <string name="system_strap_action_start_workout">Start workout</string>
+    <string name="system_strap_action_sync">Sync now</string>
+
+    <!-- The workout's notification: a short word in the status bar chip while the workout is paused. -->
+    <string name="system_workout_paused_chip">Paused</string>
+    <!-- In the workout notification's header when the last save failed, so some of the workout could be lost. -->
+    <string name="system_workout_not_saved">Not saved yet</string>
+    <!-- The workout notification's buttons. -->
+    <string name="system_workout_action_pause">Pause</string>
+    <string name="system_workout_action_resume">Resume</string>
+    <string name="system_workout_action_lap">Lap</string>
+    <string name="system_workout_action_end">End</string>
+    <!-- The End button asks first: these two answer "End workout?". -->
+    <string name="system_workout_action_end_yes">Yes, end</string>
+    <string name="system_workout_action_end_cancel">Cancel</string>
+
+    <!-- A saved workout's figures: the heart rate's average, after the time and distance. -->
+    <string name="system_saved_average_bpm"><xliff:g id="bpm" example="142">%1$d</xliff:g> bpm avg</string>
+    <!--
+      The saved workout's text when it ended where you stopped and the time after was left out. The figures are
+      "42:10, 5.2 km, 142 bpm avg", the time "18:50".
+    -->
+    <string name="system_saved_cut">"<xliff:g id="figures" example="42:10, 5.2 km, 142 bpm avg">%1$s</xliff:g>\nEnded at <xliff:g id="time" example="18:50">%2$s</xliff:g>, when you\'d stopped. The <xliff:g id="minutes" example="12">%3$d</xliff:g> min after were left out."</string>
+    <!-- The saved workout's title. The sport is "Outdoor run" or "Yoga". -->
+    <string name="system_saved_title"><xliff:g id="sport" example="Outdoor run">%1$s</xliff:g> saved</string>
+    <string name="system_saved_action_view">View</string>
+    <!-- Puts back the time after where it ended. -->
+    <string name="system_saved_action_undo">Undo</string>
+
+    <!-- A strength workout's notification title during a set. -->
+    <string name="system_strength_set">Set <xliff:g id="set" example="3">%1$d</xliff:g></string>
+    <string name="system_strength_resting">Resting after set <xliff:g id="set" example="2">%1$d</xliff:g></string>
+    <!-- Before the first set. The sport is "Strength" or "HIIT". -->
+    <string name="system_strength_ready">"<xliff:g id="sport" example="Strength">%1$s</xliff:g>, ready for set 1"</string>
+    <string name="system_strength_rest_over">Rest over, set <xliff:g id="set" example="3">%1$d</xliff:g> next</string>
+    <!-- The text when the strap is out of reach. The first part is "Waiting for the strap". -->
+    <string name="system_strength_strap_gone"><xliff:g id="waiting" example="Waiting for the strap">%1$s</xliff:g>. Still recording.</string>
+    <string name="system_strength_bpm"><xliff:g id="bpm" example="128">%1$d</xliff:g> bpm</string>
+    <!-- Sets done of the sets planned. -->
+    <string name="system_strength_sets"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> sets</string>
+    <!-- Buttons. -->
+    <string name="system_strength_action_start_set">Start set <xliff:g id="set" example="3">%1$d</xliff:g></string>
+    <!-- Makes the rest 30 seconds longer. -->
+    <string name="system_strength_action_extend">+30 s</string>
+    <string name="system_strength_action_set_done">Set done</string>
+
+    <!-- The question when the heart rate settled during a workout. The sport is lower case, "run", the time "18:50". -->
+    <string name="system_stopped_title">Looks like you\'ve stopped</string>
+    <string name="system_stopped_text">Your heart rate has been back near resting since <xliff:g id="time" example="18:50">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> at <xliff:g id="time" example="18:50">%1$s</xliff:g>?</string>
+    <!-- The same question when the phone is moving like a car. -->
+    <string name="system_stopped_car_title">Looks like you\'re in a car</string>
+    <string name="system_stopped_car_text">You last moved at <xliff:g id="time" example="18:50">%1$s</xliff:g>. End the <xliff:g id="sport" example="run">%2$s</xliff:g> there, so the drive isn\'t counted?</string>
+    <!-- A short word in the status bar chip. -->
+    <string name="system_stopped_chip">End?</string>
+    <string name="system_stopped_action_end_at">End at <xliff:g id="time" example="18:50">%1$s</xliff:g></string>
+    <string name="system_stopped_action_keep">Keep going</string>
+
+    <!-- When the heart rate looks like a workout that isn't being recorded. The sport is lower case, "run". -->
+    <string name="system_offer_title">Looks like a workout</string>
+    <string name="system_offer_text">Your heart rate has been up since <xliff:g id="time" example="17:40">%1$s</xliff:g>, <xliff:g id="bpm" example="138">%2$d</xliff:g> bpm on average. Record a <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time" example="17:40">%1$s</xliff:g>?</string>
+    <string name="system_offer_action_record">Record</string>
+    <!-- Swiping it away means the same. -->
+    <string name="system_offer_action_decline">Not now</string>
+
+    <!-- When the strap is taken off. -->
+    <string name="system_wear_title">Strap is off</string>
+    <string name="system_wear_text">Heart rate and sleep tracking are paused until you put it back on.</string>
+
+    <!-- Last week's recap. The range is "20 to 26 Oct". -->
+    <string name="system_recap_title">Your week, <xliff:g id="range" example="20 to 26 Oct">%1$s</xliff:g></string>
+
+    <!-- The Quick Settings tile's second line during a workout. One short word. -->
+    <string name="system_tile_recording">Recording</string>
+    <string name="system_tile_paused">Paused</string>
+
+    <!-- A toast when a workout ended under a minute after it started. -->
+    <string name="system_workout_too_short">Under a minute, so not saved</string>
+</resources>

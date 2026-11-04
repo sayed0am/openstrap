@@ -1,8 +1,11 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.db.AppWorkout
 import org.openstrap.app.data.db.AppWorkoutHeartRate
 import org.openstrap.app.data.db.HealthDao
+import org.openstrap.app.data.db.restingHrIn
 import org.openstrap.app.data.settings.UserProfile
 import java.time.Instant
 import java.time.ZoneId
@@ -45,7 +48,8 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
             restingHr, maxHr, load28, trend, carriedMinutes(w),
         )
         // kcal from scratch over the range as it now stands, so the saved total isn't fitted to the old one.
-        val kcal = runCatching { engine.phoneWorkoutKcal(w.copy(totalKcal = null), profile, profile.age(date), restingHr, maxHr, engine.vo2max(profile, date, zone), end, hr) }
+        val kcal = catching { engine.phoneWorkoutKcal(w.copy(totalKcal = null), profile, profile.age(date), restingHr, maxHr, engine.vo2max(profile, date, zone), end, hr) }
+            .onFailure { android.util.Log.w(TAG, "workout effect: kcal for ${w.start} not worked out: $it") }
             .getOrNull()
         val modelled = WorkoutRecorder.withKcal(w, kcal).copy(
             epoc = r.epoc, aerobicTrainingEffect = r.aerobicTe, recoveryMinutes = r.recoveryMinutes,
@@ -70,14 +74,23 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
     /**
      * After a sync: each phone workout that ended since [since] takes the strap's figures when the strap's record of it
      * has come in ([strapEffect]). Only the effect and heart rate columns are written, and only when they change.
+     *
+     * Each workout under [lock], the app's workout lock (`WorkoutSession.LOCK`), read again inside it, so a trim, an
+     * end or a discard made since the list was read stands. Taken a workout at a time, never across the whole list, and
+     * never by a caller that holds it already.
      */
-    suspend fun takeStrapEffects(since: Long) {
-        for (w in dao.appWorkoutsOnce(since, Long.MAX_VALUE)) {
-            if (w.end == null) continue
-            val s = strapEffect(w) ?: continue
-            if (s == w) continue
-            dao.updateAppWorkoutEffect(w.start, s.epoc, s.aerobicTrainingEffect, s.recoveryMinutes, s.vo2max, s.anaerobicTrainingEffect, fromStrap = true, ownRecoveryMinutes = null)
-            dao.updateAppWorkoutHeartRateStats(w.start, s.averageHeartRate, s.maxHeartRate)
+    suspend fun takeStrapEffects(since: Long, lock: Mutex) {
+        for (listed in dao.appWorkoutsOnce(since, Long.MAX_VALUE)) {
+            if (listed.end == null) continue
+            lock.withLock {
+                val w = dao.appWorkoutOnce(listed.start)?.takeIf { it.end != null } ?: return@withLock
+                val s = strapEffect(w)?.takeIf { it != w } ?: return@withLock
+                dao.updateAppWorkoutEffect(
+                    w.start, s.epoc, s.aerobicTrainingEffect, s.recoveryMinutes, s.vo2max, s.anaerobicTrainingEffect, fromStrap = true,
+                    ownRecoveryMinutes = null,
+                )
+                dao.updateAppWorkoutHeartRateStats(w.start, s.averageHeartRate, s.maxHeartRate)
+            }
         }
     }
 
@@ -100,22 +113,33 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
 
     /** Daytime resting HR at [t]: the strap's daily values over [Recovery.RHR_DAYS], else [DEFAULT_RESTING_HR]. */
     suspend fun restingHr(t: Long, zone: ZoneId = ZoneId.systemDefault()): Float = Recovery.daytimeRestingHr(
-        dao.restingHrOnce(t - Recovery.RHR_DAYS * DAY, t).associate { it.day to it.bpm.toFloat() }, emptyMap(), dayStart(t, zone),
+        dao.restingHrIn(t - Recovery.RHR_DAYS * DAY, t, zone).associate { Days.start(it.day, zone) to it.bpm.toFloat() },
+        emptyMap(), dayStart(t, zone),
     ) ?: DEFAULT_RESTING_HR
 
     /**
      * Works out and saves every finished phone workout's figures again, oldest first so each one's activity class and
      * load trend read the earlier ones as now worked out. The workouts done.
+     *
+     * Each workout under [lock], as in [takeStrapEffects]: read again inside it and worked out from the row as it
+     * stands, so a trim made meanwhile isn't written over with figures for its old range.
      */
-    suspend fun recomputeAll(profile: UserProfile): Int {
+    suspend fun recomputeAll(profile: UserProfile, lock: Mutex): Int {
         var n = 0
-        for (w in dao.appWorkoutsAll().filter { it.end != null }.sortedBy { it.start }) {
-            val hr = dao.appWorkoutHeartRateOnce(w.start)
-            if (hr.isEmpty()) continue
-            val e = runCatching { withEffect(w, hr, profile) }.getOrNull() ?: continue
-            if (e.epoc == null) continue
-            dao.updateAppWorkoutEffect(w.start, e.epoc, e.aerobicTrainingEffect, e.recoveryMinutes, e.vo2max, e.anaerobicTrainingEffect, e.effectFromStrap, e.ownRecoveryMinutes)
-            n++
+        for (listed in dao.appWorkoutsAll().sortedBy { it.start }) {
+            val done = lock.withLock {
+                val w = dao.appWorkoutOnce(listed.start)?.takeIf { it.end != null } ?: return@withLock false
+                val hr = dao.appWorkoutHeartRateOnce(w.start).takeIf { it.isNotEmpty() } ?: return@withLock false
+                val e = catching { withEffect(w, hr, profile) }
+                    .onFailure { android.util.Log.w(TAG, "workout effect: ${w.start} not worked out again: $it") }
+                    .getOrNull()?.takeIf { it.epoc != null } ?: return@withLock false
+                dao.updateAppWorkoutEffect(
+                    w.start, e.epoc, e.aerobicTrainingEffect, e.recoveryMinutes, e.vo2max, e.anaerobicTrainingEffect, e.effectFromStrap,
+                    e.ownRecoveryMinutes,
+                )
+                true
+            }
+            if (done) n++
         }
         return n
     }
@@ -139,7 +163,8 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         val since = dayStart(w.from, zone) - (TREND_DAYS - 1) * DAY
         val phone = dao.appWorkoutsOnce(since, w.from).filter { it.start != w.start && it.end != null && it.from < w.from }
         val strap = dao.workoutsOnce(since, w.from).filter { s ->
-            s.start < w.from && !Workouts.sameWorkout(s.start..s.end, w.from..w.end!!) && phone.none { p -> Workouts.sameWorkout(s.start..s.end, p.from..p.end!!) }
+            s.start < w.from && !Workouts.sameWorkout(s.start..s.end, Workouts.phoneRange(w, w.end!!)) &&
+                phone.none { p -> Workouts.sameWorkout(s.start..s.end, Workouts.phoneRange(p, p.end!!)) }
         }
         return phone.mapNotNull { p -> p.epoc?.let { p.from to it } } + strap.mapNotNull { s -> s.trainingLoad?.let { s.start to it.toFloat() } }
     }
@@ -153,12 +178,13 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         return (phone + strap).maxOfOrNull { (end, minutes) -> minutes - ((w.from - end) / 60).toInt() }?.coerceAtLeast(0) ?: 0
     }
 
-    private fun dayStart(t: Long, zone: ZoneId) = Instant.ofEpochSecond(t).atZone(zone).toLocalDate().atStartOfDay(zone).toEpochSecond()
+    private fun dayStart(t: Long, zone: ZoneId) = Days.start(t, zone)
 
     private companion object {
         const val DAY = 86_400L
         /** Fitness takes 42 days to build (Recovery.CTL_DAYS); the activity class uses the last 28 of them. */
         const val TREND_DAYS = Recovery.CTL_DAYS
         const val DEFAULT_RESTING_HR = 60f
+        const val TAG = "OpenStrap"
     }
 }

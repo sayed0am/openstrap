@@ -21,15 +21,16 @@ object WorkoutSuggestions {
      * Stretches in [minuteHr] (minute starts, ascending, one value a minute) that qualify, newest first. Minutes in
      * [busy] (sleep, workouts already saved, stretches answered "Not a workout") never count and split a stretch.
      */
-    fun find(minuteHr: List<Pair<Long, Int>>, restingHr: Int, maxHr: Int, busy: List<LongRange>): List<Suggestion> {
+    fun find(minuteHr: List<Pair<Long, Int>>, restingHr: Int, maxHr: Int, busy: List<LongRange>, zones: HeartZones): List<Suggestion> {
         val threshold = restingHr + MIN_HRR * (maxHr - restingHr)
         fun isBusy(t: Long) = busy.any { t + 59 >= it.first && t <= it.last }
         val out = mutableListOf<Suggestion>()
         var run = mutableListOf<Pair<Long, Int>>()
         fun close() {
             if (run.size >= MIN_MINUTES) {
-                val zones = run.groupingBy { WorkoutRecorder.liveZone(it.second, maxHr)!! }.eachCount()
-                out += Suggestion(run.first().first, run.last().first + 60, Math.round(run.map { it.second }.average()).toInt(), zones.maxBy { it.value }.key)
+                val byZone = run.groupingBy { WorkoutRecorder.liveZoneOf(it.second, maxHr, zones) }.eachCount()
+                val average = Math.round(run.map { it.second }.average()).toInt()
+                out += Suggestion(run.first().first, run.last().first + 60, average, byZone.maxBy { it.value }.key)
             }
             run = mutableListOf()
         }

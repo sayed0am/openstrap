@@ -1,8 +1,11 @@
 package org.openstrap.app.data
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.db.SportEffectRow
 import org.openstrap.app.data.db.Workout
 import org.openstrap.app.data.db.WorkoutHeartRate
+import org.openstrap.app.i18n.Strings
 
 /** A workout with what the strap recorded around it, worked out for display. */
 data class WorkoutAnalysis(
@@ -16,7 +19,7 @@ data class WorkoutAnalysis(
     val recovery120: Int?,
     /** HR when the workout ended, the starting point of the recovery figures. */
     val endHeartRate: Int?,
-    /** Seconds in each of the five zones (50–60 … 90–100 % of [maxHeartRate]) during the workout. */
+    /** Seconds in each of the five zones (50 to 60 … 90 to 100 % of [maxHeartRate]) during the workout. */
     val zoneSeconds: List<Int>,
     val maxHeartRate: Int,
     /** Recorded by OpenStrap from live heart rate rather than by the strap ([WorkoutRecorder]). */
@@ -86,18 +89,18 @@ object Workouts {
 
     /**
      * Ties a workout to its HR stream and sport effect. [maxHeartRate] comes from the strap's effect when it
-     * has one, then [fallbackMaxHr] (the app's usual max HR, [RecoveryEngine.maxHeartRate]).
+     * has one, then [fallbackMaxHr] (the app's usual max HR, [RecoveryEngine.maxHeartRate]). Zone time is in your [zones].
      */
-    fun analyse(w: Workout, hr: List<WorkoutHeartRate>, effects: List<SportEffectRow>, fallbackMaxHr: Int): WorkoutAnalysis {
+    fun analyse(w: Workout, hr: List<WorkoutHeartRate>, effects: List<SportEffectRow>, fallbackMaxHr: Int, zones: HeartZones): WorkoutAnalysis {
         val effect = effectOf(w, effects)
         val lastSample = hr.maxOfOrNull { it.timestamp }
         val end = endOf(w, lastSample, effect)
         val maxHr = effect?.maximalHeartRate ?: fallbackMaxHr
         val during = hr.filter { it.timestamp in w.start..end }
-        val zones = IntArray(ZONES)
+        val seconds = IntArray(ZONES)
         during.zipWithNext().forEach { (a, b) ->
-            val z = zoneOf(a.bpm, maxHr) ?: return@forEach
-            zones[z] += (b.timestamp - a.timestamp).coerceAtMost(5).toInt()
+            val z = zoneOf(a.bpm, maxHr, zones) ?: return@forEach
+            seconds[z] += (b.timestamp - a.timestamp).coerceAtMost(5).toInt()
         }
         val hasTail = lastSample != null && lastSample >= end + 60
         return WorkoutAnalysis(
@@ -105,7 +108,7 @@ object Workouts {
             recovery60 = if (hasTail) recovery(hr, end, 60) else null,
             recovery120 = if (lastSample != null && lastSample >= end + 120) recovery(hr, end, 120) else null,
             endHeartRate = medianAt(hr, end),
-            zoneSeconds = zones.toList(),
+            zoneSeconds = seconds.toList(),
             maxHeartRate = maxHr,
         )
     }
@@ -114,8 +117,12 @@ object Workouts {
     const val SAME_WORKOUT_OUTSIDE_S = 600L
     const val SAME_WORKOUT_OUTSIDE_SHARE = 0.25f
 
-    /** A phone workout's time as [sameWorkout] reads it: its shown start to its end, [now] while it records. */
-    fun phoneRange(p: org.openstrap.app.data.db.AppWorkout, now: Long): LongRange = p.from..(p.end ?: now)
+    /**
+     * A phone workout's time as [sameWorkout] reads it: as recorded, from its start to where recording stopped ([now]
+     * while it records). The strap's session runs over that time, so a trim or an End at, which change only what is
+     * shown, don't turn the strap's copy into a second workout.
+     */
+    fun phoneRange(p: org.openstrap.app.data.db.AppWorkout, now: Long): LongRange = p.start..(p.recordedEnd ?: p.end ?: now)
 
     /**
      * Whether the strap workout over [strap] is the strap's own record of the phone workout over [phone], so the two
@@ -173,8 +180,12 @@ object Workouts {
         sets: Map<Long, Int>, maxHr: Int, now: Long = System.currentTimeMillis() / 1000,
     ): List<WorkoutAnalysis> {
         val lastByWorkout = last.associateBy { it.workoutStart }
-        val strap = ws.filter { phoneTwin(it, phone, now) == null }.map { w -> analyse(w, listOfNotNull(lastByWorkout[w.start]), effects, maxHr) }
-        return (strap + phone.map { WorkoutRecorder.analyse(it, emptyList(), maxHr).copy(sets = sets[it.start]) }).sortedByDescending { it.workout.start }
+        // A row has at most one HR sample, so no zone time to read zones for: the standard ones stand in.
+        val zones = HeartZones.STANDARD
+        val strap = ws.filter { phoneTwin(it, phone, now) == null }
+            .map { w -> analyse(w, listOfNotNull(lastByWorkout[w.start]), effects, maxHr, zones) }
+        val phoneRows = phone.map { WorkoutRecorder.analyse(it, emptyList(), maxHr, zones).copy(sets = sets[it.start]) }
+        return (strap + phoneRows).sortedByDescending { it.workout.start }
     }
 
     /** The sport effect shown with [w]: the first that ends after its start, within [EFFECT_WINDOW_S]. */
@@ -195,11 +206,8 @@ object Workouts {
         return e.takeIf { otherStarts.none { s -> s > w.start && s < e.end } }
     }
 
-    /** Zone 0..4 for 50–60, 60–70, 70–80, 80–90 and 90+ % of max; null below 50 %. */
-    fun zoneOf(bpm: Int, maxHr: Int): Int? {
-        val pct = bpm * 100 / maxHr
-        return if (pct < 50) null else ((pct - 50) / 10).coerceAtMost(ZONES - 1)
-    }
+    /** Zone 0..4 in [zones], by default 50 to 60, 60 to 70, 70 to 80, 80 to 90 and 90+ % of max, null below zone 1. */
+    fun zoneOf(bpm: Int, maxHr: Int, zones: HeartZones): Int? = zones.zoneOf(bpm, maxHr)
 
     /** HR drop from the end to [after] seconds later, each taken as a 5-second median to ride out noise. */
     private fun recovery(hr: List<WorkoutHeartRate>, end: Long, after: Long): Int? {
@@ -220,14 +228,15 @@ object Workouts {
     private fun asSamples(readings: List<Pair<Long, Int>>) = readings.map { (t, bpm) -> WorkoutHeartRate(0, t, bpm) }
 
     private fun medianAt(hr: List<WorkoutHeartRate>, t: Long): Int? =
-        hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm }.sorted().let { if (it.isEmpty()) null else it[it.size / 2] }
+        Stats.upperMiddle(hr.filter { it.timestamp in t - 2..t + 2 }.map { it.bpm })
 
     /** Zepp's sport type ids (Type.type in the summary) for the sports a strap is likely to record. */
-    fun sportName(type: Int): String = SPORT_NAMES[type] ?: "Workout"
+    fun sportName(type: Int, strings: Strings = Strings.app): String =
+        strings.get(SPORT_NAMES[type] ?: R.string.core_workouts_sport_workout)
 
     /**
      * [a]'s active kcal, rounded: a phone workout's saved figure; a strap workout's kcal less [bmrPerMinute] for each
-     * minute from its start to its stored end, as the day counts its minutes ([RecoveryEngine.energy]), never below
+     * minute from its start to its stored end, as the day counts its minutes ([RecoveryEngine.calories]), never below
      * zero. Without a profile ([bmrPerMinute] null) the strap's own figure stands. Null when there's no kcal at all.
      */
     fun activeKcal(a: WorkoutAnalysis, bmrPerMinute: Float?): Int? {
@@ -239,15 +248,15 @@ object Workouts {
     }
 
     /** Every sport a workout can be started as, by name, one id per name (Zepp has two "Free training"). */
-    val sports: List<Pair<Int, String>> by lazy {
-        SPORT_NAMES.entries.filter { it.key !in HIDDEN }.distinctBy { it.value }.map { it.key to it.value }.sortedBy { it.second }
-    }
+    val sports: List<Pair<Int, String>>
+        get() = SPORT_NAMES.entries.filter { it.key !in HIDDEN }.distinctBy { it.value }.map { it.key to Strings.app.get(it.value) }
+            .sortedBy { it.second }
 
     /**
      * Sports kept for naming workouts already recorded (by the strap, Zepp or an import) but not offered for new ones:
      * each is another one under a second name, or the strap's own generic "Activity".
      */
-    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223)
+    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223, 215)
 
     /**
      * A sport offered once with an outdoor and an indoor kind (spec 6.3): Ready's switch picks one, and the workout is
@@ -255,17 +264,27 @@ object Workouts {
      * shows. [outdoor] is the sport's key, the type its tile starts. [indoorByDefault] is the side
      * shown before you've picked one.
      */
-    data class Sides(val outdoor: Int, val indoor: Int, val outdoorName: String, val indoorName: String, val indoorByDefault: Boolean = false) {
+    data class Sides(
+        val outdoor: Int,
+        val indoor: Int,
+        @StringRes private val outdoorNameId: Int,
+        @StringRes private val indoorNameId: Int,
+        val indoorByDefault: Boolean = false,
+    ) {
+        /** The switch's words for each side: "Outdoor", "Treadmill". */
+        val outdoorName: String get() = Strings.app.get(outdoorNameId)
+        val indoorName: String get() = Strings.app.get(indoorNameId)
+
         /** The sport type for the [indoor] side. */
         fun type(indoor: Boolean): Int = if (indoor) this.indoor else outdoor
     }
 
     val SIDES = listOf(
-        Sides(1, 2, "Outdoor", "Treadmill"),
-        Sides(4, 8, "Outdoor", "Indoor"),
+        Sides(1, 2, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_treadmill),
+        Sides(4, 8, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
         // Most swims are in a pool.
-        Sides(7, 6, "Open water", "Pool", indoorByDefault = true),
-        Sides(3, 40, "Outdoor", "Indoor"),
+        Sides(7, 6, R.string.core_workouts_side_open_water, R.string.core_workouts_side_pool, indoorByDefault = true),
+        Sides(3, 40, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
     )
 
     /** The [Sides] [type] is one of, or null for a sport with one kind. */
@@ -301,21 +320,26 @@ object Workouts {
 
     /** The tiles' short names; a sport with two kinds has one name for both. */
     private val SHORT_NAMES = mapOf(
-        1 to "Run", 2 to "Run", 3 to "Walk", 40 to "Walk", 15 to "Hike", 4 to "Cycling", 8 to "Cycling", 7 to "Swim", 6 to "Swim",
-        52 to "Strength", 49 to "HIIT", 60 to "Yoga", 61 to "Pilates", 23 to "Rowing", 9 to "Elliptical", 5 to "Other",
+        1 to R.string.core_workouts_short_run, 2 to R.string.core_workouts_short_run, 3 to R.string.core_workouts_short_walk,
+        40 to R.string.core_workouts_short_walk, 15 to R.string.core_workouts_short_hike, 4 to R.string.core_workouts_short_cycling,
+        8 to R.string.core_workouts_short_cycling, 7 to R.string.core_workouts_short_swim, 6 to R.string.core_workouts_short_swim,
+        52 to R.string.core_workouts_short_strength, 49 to R.string.core_workouts_short_hiit, 60 to R.string.core_workouts_short_yoga,
+        61 to R.string.core_workouts_short_pilates, 23 to R.string.core_workouts_short_rowing, 9 to R.string.core_workouts_short_elliptical,
+        5 to R.string.core_workouts_short_other,
     )
 
     /** "Run" for an outdoor run or a treadmill: the picker's name, else the sport's full name. */
-    fun shortName(type: Int): String = SHORT_NAMES[type] ?: sportName(type)
+    fun shortName(type: Int, strings: Strings = Strings.app): String = SHORT_NAMES[type]?.let(strings::get) ?: sportName(type, strings)
 
     /** The type a sport's tile stands for: a sport with two kinds by its key, any other as itself. */
     fun tileType(type: Int): Int = sidesOf(type)?.outdoor ?: type
 
     /** More sports: every sport offered that isn't an everyday tile or behind one's switch, A to Z. */
-    val MORE: List<Int> by lazy {
-        val behindTiles = EVERYDAY.toSet() + SIDES.flatMap { listOf(it.outdoor, it.indoor) }
-        sports.map { it.first }.filter { it !in behindTiles }
-    }
+    val MORE: List<Int>
+        get() {
+            val behindTiles = EVERYDAY.toSet() + SIDES.flatMap { listOf(it.outdoor, it.indoor) }
+            return sports.map { it.first }.filter { it !in behindTiles }
+        }
 
     /**
      * What a search for [query] finds, as tiles: everyday sports by their short name, then every other sport, both
@@ -342,18 +366,6 @@ object Workouts {
     /** Sports done only outdoors, whose tile carries the location mark: no indoor side to choose. */
     val OUTDOOR_ONLY: Set<Int> get() = OUTDOOR - SIDES.map { it.outdoor }.toSet()
 
-    /**
-     * Sports done on your feet, where steps times a stride make a distance (≈) without GPS: runs, walks, hikes. On a
-     * bike, in water or on a mat, steps say nothing about distance, so those show none.
-     */
-    val ON_FOOT = setOf(1, 2, 3, 11, 15, 40, 215, 224, 225)
-
-    /** Runs, where distance comes with a pace. */
-    val RUNS = setOf(1, 2, 11)
-
-    /** On foot but not running: walks and hikes, where distance alone says it. */
-    val WALKS = ON_FOOT - RUNS
-
     /** A workout's effort glow never goes below this, so a light one, or one with no Load, still shows a trace. */
     const val EFFORT_MIN = 0.12f
     /** Workouts with a Load before your usual counts: fewer and the fixed [EFFORT_FULL_LOAD] scale is used. */
@@ -369,10 +381,9 @@ object Workouts {
      * Not the day's Load: that is TRIMP over every minute, on another scale.
      */
     fun usualLoad(loads: List<Int?>): Float? {
-        val recent = loads.filterNotNull().filter { it > 0 }.take(USUAL_LOAD_OF).sorted()
+        val recent = loads.filterNotNull().filter { it > 0 }.take(USUAL_LOAD_OF)
         if (recent.size < USUAL_LOAD_MIN) return null
-        val mid = recent.size / 2
-        return if (recent.size % 2 == 1) recent[mid].toFloat() else (recent[mid - 1] + recent[mid]) / 2f
+        return Stats.median(recent)
     }
 
     /**
@@ -385,6 +396,39 @@ object Workouts {
         return (load / full).coerceIn(EFFORT_MIN, 1f)
     }
 
+    /**
+     * How a sport is recorded and shown (workouts spec 1): which live screen, which choice on Ready and which summary.
+     * Internal only: the app says the sport, never its family.
+     */
+    enum class Family { Distance, IndoorCardio, Strength, Intervals, MindBody, Games }
+
+    /** The outdoor sides and sports done outdoors, with GPS: runs, walks, hikes, rides, skiing. */
+    private val DISTANCE = setOf(1, 3, 4, 11, 12, 15, 215, 224, 225)
+
+    /** Machines and indoor sides, and the open sports whose live screen is the heart rate. */
+    private val INDOOR_CARDIO = setOf(2, 5, 8, 9, 16, 21, 23, 40, 51, 57, 58, 76, 97, 108, 109, 130, 143, GENERIC_ACTIVITY)
+
+    private val MIND_BODY = setOf(53, 55, 60, 61)
+
+    /** HIIT. Run intervals keep the run's family, with rounds as their structure. */
+    private val INTERVALS = setOf(49)
+
+    /**
+     * [type]'s family. A sport not listed is Indoor cardio when it has an indoor side ([sidesOf], the swims), else
+     * Games and sports: tennis, padel, climbing and the rest are played with the phone in a bag.
+     */
+    fun family(type: Int): Family = when (type) {
+        in SportTypes.STRENGTH -> Family.Strength
+        in INTERVALS -> Family.Intervals
+        in MIND_BODY -> Family.MindBody
+        in DISTANCE -> Family.Distance
+        in INDOOR_CARDIO -> Family.IndoorCardio
+        else -> if (sidesOf(type) != null) Family.IndoorCardio else Family.Games
+    }
+
+    /** Every sport id with a name, kept or hidden, for tests that must cover them all. */
+    internal val SPORT_IDS: Set<Int> get() = SPORT_NAMES.keys
+
     /** Offered before any workout has been recorded: outdoor run, walk, strength training. */
     val DEFAULT_SPORTS = listOf(1, 3, 52)
 
@@ -392,15 +436,30 @@ object Workouts {
     const val GENERIC_ACTIVITY = 223
 
     private val SPORT_NAMES = mapOf(
-        1 to "Outdoor run", 2 to "Treadmill", 3 to "Walk", 4 to "Outdoor cycling", 5 to "Free training",
-        6 to "Pool swim", 7 to "Open water swim", 8 to "Indoor cycling", 9 to "Elliptical", 10 to "Climbing",
-        11 to "Trail run", 12 to "Skiing", 15 to "Hiking", 16 to "Free training", 17 to "Tennis", 18 to "Soccer",
-        21 to "Jump rope", 23 to "Rowing machine", 24 to "Indoor fitness", 40 to "Indoor walk", 49 to "HIIT",
-        50 to "Core training", 51 to "Mixed aerobic", 52 to "Strength training", 53 to "Stretching",
-        55 to "Flexibility", 57 to "Step training", 58 to "Stair stepper", 60 to "Yoga", 61 to "Pilates",
-        70 to "Rock climbing", 76 to "Dance", 83 to "Golf", 85 to "Basketball", 88 to "Volleyball",
-        89 to "Table tennis", 92 to "Badminton", 97 to "Boxing", 108 to "Stair climbing", 109 to "Aerobics",
-        130 to "Cross-training", 143 to "Spinning", 204 to "Pickleball", 205 to "Padel", 215 to "Dog walking",
-        222 to "HYROX training", 223 to "Activity", 224 to "Mountain hike", 225 to "Rucking", 226 to "Hybrid training",
+        1 to R.string.core_workouts_sport_outdoor_run, 2 to R.string.core_workouts_sport_treadmill,
+        3 to R.string.core_workouts_sport_walk, 4 to R.string.core_workouts_sport_outdoor_cycling,
+        5 to R.string.core_workouts_sport_free_training, 6 to R.string.core_workouts_sport_pool_swim,
+        7 to R.string.core_workouts_sport_open_water_swim, 8 to R.string.core_workouts_sport_indoor_cycling,
+        9 to R.string.core_workouts_sport_elliptical, 10 to R.string.core_workouts_sport_climbing,
+        11 to R.string.core_workouts_sport_trail_run, 12 to R.string.core_workouts_sport_skiing,
+        15 to R.string.core_workouts_sport_hiking, 16 to R.string.core_workouts_sport_free_training,
+        17 to R.string.core_workouts_sport_tennis, 18 to R.string.core_workouts_sport_soccer,
+        21 to R.string.core_workouts_sport_jump_rope, 23 to R.string.core_workouts_sport_rowing_machine,
+        24 to R.string.core_workouts_sport_indoor_fitness, 40 to R.string.core_workouts_sport_indoor_walk,
+        49 to R.string.core_workouts_sport_hiit, 50 to R.string.core_workouts_sport_core_training,
+        51 to R.string.core_workouts_sport_mixed_aerobic, 52 to R.string.core_workouts_sport_strength_training,
+        53 to R.string.core_workouts_sport_stretching, 55 to R.string.core_workouts_sport_flexibility,
+        57 to R.string.core_workouts_sport_step_training, 58 to R.string.core_workouts_sport_stair_stepper,
+        60 to R.string.core_workouts_sport_yoga, 61 to R.string.core_workouts_sport_pilates,
+        70 to R.string.core_workouts_sport_rock_climbing, 76 to R.string.core_workouts_sport_dance,
+        83 to R.string.core_workouts_sport_golf, 85 to R.string.core_workouts_sport_basketball,
+        88 to R.string.core_workouts_sport_volleyball, 89 to R.string.core_workouts_sport_table_tennis,
+        92 to R.string.core_workouts_sport_badminton, 97 to R.string.core_workouts_sport_boxing,
+        108 to R.string.core_workouts_sport_stair_climbing, 109 to R.string.core_workouts_sport_aerobics,
+        130 to R.string.core_workouts_sport_cross_training, 143 to R.string.core_workouts_sport_spinning,
+        204 to R.string.core_workouts_sport_pickleball, 205 to R.string.core_workouts_sport_padel,
+        215 to R.string.core_workouts_sport_dog_walking, 222 to R.string.core_workouts_sport_hyrox_training,
+        223 to R.string.core_workouts_sport_activity, 224 to R.string.core_workouts_sport_mountain_hike,
+        225 to R.string.core_workouts_sport_rucking, 226 to R.string.core_workouts_sport_hybrid_training,
     )
 }

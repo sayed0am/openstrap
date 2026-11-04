@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Recovery's own notes (data/Recovery.kt, data/RecoveryEngine.kt) and the sleep regularity bands
+  (data/SleepRegularity.kt). HRV is heart rate variability, keep it as is.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A data quality note when OpenStrap's HRV and the strap's own disagree. Numbers are milliseconds. -->
+    <string name="core_recovery_quality_hrv">HRV <xliff:g id="ours" example="48">%1$d</xliff:g> ms here, <xliff:g id="strap" example="61">%2$d</xliff:g> ms from the strap</string>
+    <!-- A data quality note when OpenStrap's resting heart rate and the strap's own disagree. Numbers are beats a minute. -->
+    <string name="core_recovery_quality_rhr">Resting heart rate <xliff:g id="ours" example="52">%1$d</xliff:g> bpm here, <xliff:g id="strap" example="56">%2$d</xliff:g> bpm from the strap</string>
+    <!-- A likely cause noted beside a body-signal alert, lower case: a hard workout the day before. -->
+    <string name="core_recovery_cause_hard_day">a hard training day</string>
+
+    <!-- Sleep regularity's band, the lowest fifth of people, beside the score. One or two words. -->
+    <string name="core_regularity_irregular">Irregular</string>
+    <!-- Sleep regularity's band, the second fifth. -->
+    <string name="core_regularity_fair">Fair</string>
+    <!-- Sleep regularity's band, the middle. -->
+    <string name="core_regularity_regular">Regular</string>
+    <!-- Sleep regularity's band, the top fifth. -->
+    <string name="core_regularity_very_regular">Very regular</string>
+</resources>

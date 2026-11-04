@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.Bitmap
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.SizeF
@@ -61,26 +60,21 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.first
-import org.openstrap.app.AppContainer
 import org.openstrap.app.MainActivity
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.device.SyncState
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.glow.ControlSurface
-import org.openstrap.app.device.WidgetUpdater
-import org.openstrap.app.ui.dashboard.momentMood
-import org.openstrap.app.ui.glow.EdgeLight
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.ui.glow.draw.momentMood
+import org.openstrap.app.ui.glow.draw.EdgeLight
+import org.openstrap.app.ui.glow.draw.GlowMood
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.drawGlow
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
@@ -88,10 +82,8 @@ import org.openstrap.app.ui.glow.draw.dotLayout
 import org.openstrap.app.ui.glow.draw.edgePaint
 import org.openstrap.app.ui.glow.draw.renderDots
 import org.openstrap.app.ui.glow.draw.renderEdge
-import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.ZoneId
 
 /*
  * What every widget shares (widgets spec 6): loading and reloading in provideGlance, the receiver's placed callbacks,
@@ -109,8 +101,8 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
     /** The picker's generated preview (spec 6.4, Android 15 and later) has the three sizes too. */
     override val previewSizeMode = SizeMode.Responsive(WidgetSizes.all)
 
-    /** What the widget shows now. */
-    protected abstract suspend fun loadShown(context: Context): T
+    /** What the widget shows from [data], a read for its kind ([WidgetSnapshot.gather]). */
+    protected abstract fun shown(data: WidgetData, context: Context): T
 
     /** The mockups' sample ([WidgetSamples]) for the picker's preview, lit by day. */
     protected abstract fun sample(): T
@@ -126,13 +118,16 @@ abstract class LoadingWidget<T>(internal val kind: WidgetKind) : GlanceAppWidget
     protected abstract fun Content(data: T)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) = coroutineScope {
-        val shown = MutableStateFlow(loadShown(context))
-        val status = MutableStateFlow(loadStatusLine(context))
+        val widgets = context.widgets
+        val first = widgets.data(kind)
+        val shown = MutableStateFlow(shown(first, context))
+        val status = MutableStateFlow(statusLine(first))
         val resized = WidgetRefresh.resized(kind)
         launch {
             WidgetRefresh.version(kind).drop(1).collectLatest {
-                shown.value = loadShown(context)
-                status.value = loadStatusLine(context)
+                val data = widgets.data(kind)
+                shown.value = shown(data, context)
+                status.value = statusLine(data)
             }
         }
         provideContent {
@@ -154,22 +149,15 @@ internal val LocalResized = staticCompositionLocalOf { 0 }
 internal val LocalStatusLine = staticCompositionLocalOf<StatusLine?> { null }
 
 /**
- * The strap status line now (spec 5), from what settings keep of the strap so it reads with the strap away, and
- * whether a sync is running; or the debug gallery's ([WidgetRefresh.statusOverride]). Null while all is well.
+ * The strap status line (spec 5) as [data] read it, from what settings keep of the strap so it reads with the strap
+ * away, and whether a sync is running, or the debug gallery's ([WidgetRefresh.statusOverride]). Null while all is well.
  */
-internal suspend fun loadStatusLine(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): StatusLine? = try {
-    val t = now.epochSecond
+internal fun statusLine(data: WidgetData): StatusLine? {
+    val t = data.now.epochSecond
     val status = if (WidgetRefresh.statusOverride != null) WidgetRefresh.debugStatus(t) else {
-        val container = (context.applicationContext as OpenStrapApp).container
-        val s = container.settings.strapSnapshot.first()
-        strapStatus(s.paired, s.battery, s.charging, s.lastSyncDone, t, syncing = container.strap.sync.value is SyncState.Running)
+        data.strap?.let { s -> strapStatus(s.paired, s.battery, s.charging, s.lastSyncDone, t, syncing = data.syncing) }
     }
-    status?.let { StatusLine.of(it, t, zone) }
-} catch (e: CancellationException) {
-    throw e
-} catch (e: Exception) {
-    Log.w(WIDGET_TAG, "widgets: strap status not read: $e")
-    null
+    return status?.let { StatusLine.of(it, t, data.zone) }
 }
 
 /**
@@ -203,28 +191,26 @@ abstract class PlacedWidgetReceiver : GlanceAppWidgetReceiver() {
         (glanceAppWidget as? LoadingWidget<*>)?.let { WidgetRefresh.resize(it.kind) }
     }
 
-    private fun placedChanged(context: Context) = WidgetUpdater.placedChanged(context)
+    private fun placedChanged(context: Context) = context.widgets.placedChanged()
 }
 
 /**
- * The mood to light a widget in (spec 2.2): the moment's now, from the same inputs Today reads ([widgetMomentInputs])
- * with [usualBedtime] from Recovery, or the debug gallery's. Day when the moment can't be worked out.
+ * The mood to light a widget in (spec 2.2): the moment at [data]'s time, from the same inputs Today reads
+ * ([WidgetData.moment]) with [usualBedtime] from Recovery, or the debug gallery's. Day when the moment can't be worked out.
  */
-internal suspend fun widgetMood(container: AppContainer, usualBedtime: LocalTime?, now: Instant, zone: ZoneId): GlowMood =
-    WidgetRefresh.moodOverride ?: try {
-        momentMood(widgetMomentInputs(container, usualBedtime, now, zone).resolve(now, zone))
-    } catch (e: CancellationException) {
-        throw e
-    } catch (e: Exception) {
+internal fun widgetMood(data: WidgetData, usualBedtime: LocalTime?): GlowMood =
+    WidgetRefresh.moodOverride ?: runCatching {
+        momentMood(checkNotNull(data.momentInputs(usualBedtime)) { "no moment inputs" }.resolve(data.now, data.zone))
+    }.getOrElse { e ->
         Log.w(WIDGET_TAG, "widgets: moment for the mood not worked out: $e")
         GlowMood.Day
     }
 
 /** The Strap page (spec 5): the status line's tap while the strap isn't paired or its battery is low. */
-internal fun openStrap(context: Context): Intent =
+private fun openStrap(context: Context): Intent =
     Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_OPEN_STRAP, true).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-/** Opens the detail at [route] (`open_metric`, [org.openstrap.app.ui.dashboard.Detail.fromRoute]) for [day]. */
+/** Opens the detail at [route] (`open_metric`, one of [org.openstrap.app.data.DetailRoutes]) for [day]. */
 internal fun openMetric(context: Context, route: String, day: LocalDate?): Intent =
     Intent(context, MainActivity::class.java)
         .putExtra(MainActivity.EXTRA_OPEN_METRIC, route)
@@ -374,7 +360,7 @@ private fun statusAction(status: StrapStatus): Action? {
 }
 
 /** A glow card's light ([style], its mood set) for a widget [w] by [h] dp with [corner] dp corners, at [density] px per dp. */
-internal fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float, density: Float): Bitmap {
+private fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float, density: Float): Bitmap {
     val pw = w * density
     val ph = h * density
     return renderToBitmap(pw, ph) { drawGlow(it, style.copy(radius = corner.dp), pw, ph, density) }
@@ -384,15 +370,14 @@ internal fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float,
  * An edge card's light ([light] in [ink] at [mood]) for a widget [w] by [h] dp, with [corner] dp corners, at
  * [density] px per dp: the same [edgePaint] the app's edge cards draw.
  */
-internal fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Float, h: Float, corner: Float, density: Float): Bitmap {
+private fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Float, h: Float, corner: Float, density: Float): Bitmap {
     val paint = edgePaint(light, ink, null, mood, w * density, h * density, density)
     return renderEdge(paint.copy(radius = corner * density))
 }
 
-/** The launcher's widget corner, dp, on Android 12 and later; null before. */
-private fun systemCorner(context: Context): Float? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+/** The launcher's widget corner, dp, or null when the system doesn't say. */
+private fun systemCorner(context: Context): Float? =
     runCatching { context.resources.getDimension(android.R.dimen.system_app_widget_background_radius) / context.resources.displayMetrics.density }.getOrNull()
-} else null
 
 /**
  * The cell sizes the launcher gave the widget, dp ([reportedSizes]): the launcher's own now, or the session's
@@ -409,18 +394,16 @@ private fun cellSizes(options: Bundle, id: GlanceId, context: Context): List<Pai
 }
 
 /**
- * The sizes the launcher says the widget has, dp, the one for the current orientation first: Android 12's list, or
- * the portrait (min width, max height) and landscape (max width, min height) pair before it.
+ * The sizes the launcher says the widget has, dp, the one for the current orientation first: its list, or the
+ * portrait (min width, max height) and landscape (max width, min height) pair when it gives none.
  */
 private fun reportedSizes(options: Bundle, context: Context): List<Pair<Float, Float>> {
     val portrait = context.resources.configuration.orientation != Configuration.ORIENTATION_LANDSCAPE
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        @Suppress("DEPRECATION")
-        val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
-        if (!sizes.isNullOrEmpty()) {
-            val all = sizes.map { it.width to it.height }
-            return if (portrait) all.sortedByDescending { it.second / it.first } else all.sortedBy { it.second / it.first }
-        }
+    @Suppress("DEPRECATION")
+    val sizes = options.getParcelableArrayList<SizeF>(AppWidgetManager.OPTION_APPWIDGET_SIZES)
+    if (!sizes.isNullOrEmpty()) {
+        val all = sizes.map { it.width to it.height }
+        return if (portrait) all.sortedByDescending { it.second / it.first } else all.sortedBy { it.second / it.first }
     }
     val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH).toFloat()
     val maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH).toFloat()
@@ -472,7 +455,7 @@ internal fun TopRowView(title: String, note: String?, top: TopRow, f: WidgetFram
 }
 
 /** The status words: Secondary in amber, the strap and sync colour (v2 spec: amber is for those only). */
-internal val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), fontSize = StatusButton.WORDS_SP.sp)
+private val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), fontSize = StatusButton.WORDS_SP.sp)
 
 /**
  * The status button (spec 5): a [StatusButton.SIZE_DP] circle in the Control surface Start's tiles wear, the state's
@@ -480,7 +463,7 @@ internal val StatusWords = TextStyle(color = ColorProvider(MetricColors.warn), f
  * battery in amber. Its tap, read out as the whole line, is [StatusTapTarget]'s (while it syncs, the spinner reads it).
  */
 @Composable
-internal fun StatusButtonView(line: StatusLine, f: WidgetFrame) {
+private fun StatusButtonView(line: StatusLine, f: WidgetFrame) {
     val status = line.status
     val size = GlanceModifier.size(StatusButton.SIZE_DP.dp)
     if (status == StrapStatus.Syncing) {
@@ -519,6 +502,27 @@ private fun statusButtonBitmap(icon: ImageVector?, color: Color, density: Float)
 internal fun iconBitmap(icon: ImageVector, color: Color, sizeDp: Float, density: Float): Bitmap {
     val s = sizeDp * density
     return renderToBitmap(s, s) { c -> drawIcon(c, icon, color, 0f, 0f, s) }
+}
+
+/** The weighted gap between blocks: every gap in a column shares what the blocks leave. */
+@Composable
+internal fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
+
+/** The half gap above the first block or below the last, at the cell's real height. */
+@Composable
+internal fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
+
+/** Between a figure's Caption and its Body. */
+internal const val FIGURE_LINE_GAP_DP = 2f
+
+/** A figure: its [label] in Caption over its [value] in Body. */
+@Composable
+internal fun FigureCell(label: String, value: String, modifier: GlanceModifier = GlanceModifier) {
+    Column(modifier) {
+        Text(label, style = WidgetType.caption, maxLines = 1)
+        Spacer(GlanceModifier.height(FIGURE_LINE_GAP_DP.dp))
+        Text(value, style = WidgetType.body, maxLines = 1)
+    }
 }
 
 /**

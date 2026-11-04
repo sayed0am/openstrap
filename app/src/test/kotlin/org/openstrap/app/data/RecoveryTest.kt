@@ -769,7 +769,7 @@ class RecoveryTest {
     @Test
     fun bodySignalsPushFollowsTheWellnessCopy() {
         assertEquals(
-            "Several of your overnight signals (resting heart rate, skin temperature) are outside your usual range for the second night. " +
+            "Several of your overnight signals (resting heart rate, skin temperature) have been outside your normal range for two nights or more. " +
                 "This can happen with heavy training, alcohol, travel, poor sleep, or when your body is fighting something off. " +
                 "An easier day may help. If you feel unwell, checking in with a healthcare professional may be helpful. " +
                 "This is a wellness estimate, not a medical assessment.",

@@ -3,19 +3,20 @@ package org.openstrap.app.widget
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.SleepHistory
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.ClockSetting
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.glow.draw.SleepStageOrder
 import org.openstrap.app.ui.glow.draw.stageBarSegments
 
@@ -56,7 +57,7 @@ class SleepWidgetModelTest {
     @Test fun `last night as the Sleep tab's hero tells it`() {
         val m = model()
         assertEquals("Last night", m.title)
-        assertEquals("22:58–06:56", m.note)
+        assertEquals("22:58 to 06:56", m.note)
         assertFalse(m.stale)
         assertEquals(today, m.date)
         assertEquals("82", m.score)
@@ -80,7 +81,7 @@ class SleepWidgetModelTest {
         assertEquals(SleepStageOrder, m.legend.map { it.stage })
         val asleep = m.totals.filter { it.first != SleepStage.AWAKE }.sumOf { it.second }
         assertEquals(night().asleepSeconds, asleep)
-        assertEquals("7 h 40", TodayCopy.duration(asleep))
+        assertEquals("7 h 40", Units.duration(asleep))
         assertEquals(18 * 60L, m.totals.single { it.first == SleepStage.AWAKE }.second)
     }
 
@@ -113,16 +114,16 @@ class SleepWidgetModelTest {
 
     @Test fun `with no night at all after the first, the Sleep tab's no-night line`() {
         assertEquals("No sleep recorded last night. Was the strap on?", SleepWidgetModel.from(null, null, false, false, zone).waiting)
-        assertEquals("No night sleep recorded, only naps.", SleepWidgetModel.from(null, null, false, true, zone).waiting)
+        assertEquals("No night's sleep recorded, only naps.", SleepWidgetModel.from(null, null, false, true, zone).waiting)
     }
 
-    @Test fun `before this morning's night is synced, yesterday's with Last synced night`() {
+    @Test fun `before this morning's night is synced, yesterday's with Earlier night`() {
         val y = today.minusDays(1)
         val ys = SleepSession(at(y.minusDays(1), 23, 10), at(y, 6, 40), score = 74, wakeCount = 1)
         val m = SleepWidgetModel.from(null, night(ys, stages(ys), y), firstNight = false, napsToday = false, zone = zone)
         assertTrue(m.stale)
         assertEquals("Sleep", m.title)
-        assertEquals("Last synced night", m.note)
+        assertEquals("Earlier night", m.note)
         assertEquals(y, m.date)
         assertEquals("74", m.score)
         assertEquals("Fair", m.word)
@@ -150,9 +151,9 @@ class SleepWidgetModelTest {
     @Test fun `the main sleep and the week are the hero's`() {
         val nap = SleepSession(at(today, 14, 0), at(today, 14, 40), nap = true)
         val short = SleepSession(at(today, 3, 0), at(today, 4, 0))
-        val main = SleepHistory.mainSleep(listOf(nap, short, session), DayWindow.nightEndingOn(today, zone))
+        val main = SleepHistory.mainSleep(listOf(nap, short, session), SleepHistory.endingOn(today, zone))
         assertEquals(session, main)
-        assertNull(SleepHistory.mainSleep(listOf(nap), DayWindow.nightEndingOn(today, zone)))
+        assertNull(SleepHistory.mainSleep(listOf(nap), SleepHistory.endingOn(today, zone)))
         // The six nights before, with a sleep: not this one.
         assertEquals(listOf(26_400L, 25_200L, 22_200L).sorted(), SleepHistory.weekOthers(week + (today to session), today).sorted())
     }
@@ -209,13 +210,14 @@ class SleepWidgetModelTest {
                 f.lines.forEach { assertTrue(WidgetText.width(it.text, WidgetText.SECONDARY_SP, s) <= small.first * it.lines) }
             }
         }
-        // Yesterday's: "Last synced night" stays (on two lines at the minimum's width), time asleep and then the bar go.
+        // Yesterday's: "Earlier night" stays on one line with the bar at the minimum's width, time asleep goes.
         val stale = SleepLayout.small(SleepWidgetModel.from(null, night(), false, false, zone), small.first, small.second, 1f)
-        assertEquals(listOf(SleepLayout.SmallLine("Last synced night", 2)), stale.lines)
+        assertEquals(listOf(SleepLayout.SmallLine("Earlier night")), stale.lines)
+        assertTrue(stale.bar)
         // On One UI's real 2 x 2 (167 by 201 dp), one line, then time asleep and the bar.
         val real = SleepLayout.small(SleepWidgetModel.from(null, night(), false, false, zone), 167.6f - 40f, 201.1f - 40f, 1f)
         assertTrue(real.bar)
-        assertEquals(listOf(SleepLayout.SmallLine("Last synced night"), SleepLayout.SmallLine("7 h 40 asleep")), real.lines)
+        assertEquals(listOf(SleepLayout.SmallLine("Earlier night"), SleepLayout.SmallLine("7 h 40 asleep")), real.lines)
         // A score of 100 shrinks the dots to keep the word, and at 1.3 drops the word before the dots get too small.
         val hundred = SleepLayout.small(m.copy(score = "100", word = "Great"), small.first, small.second, 1f)
         assertEquals("Great", hundred.row.word)
@@ -247,6 +249,25 @@ class SleepWidgetModelTest {
         assertEquals(WidgetHero.dot(WidgetSizes.Wide, 161f), SleepLayout.wide(m, 353f - 40f, 161f, 1f).row.dot, 0f)
         // At 1.3 on the minimum, no room for the legend: it goes, the bar stays.
         assertEquals(0, SleepLayout.wide(m, wide.first, wide.second, 1.3f).legendRows)
+    }
+
+    @Test fun `bedtime to waking in words still fits beside the title on a real 4 x 2, on a 12 hour phone too`() {
+        val was = ClockSetting.use24Hour
+        val language = Locale.getDefault()
+        try {
+            ClockSetting.use24Hour = false
+            Locale.setDefault(Locale.US)
+            val m = model()
+            assertEquals("10:58 PM to 6:56 AM", m.note)
+            // One UI's 4 x 2 (353 dp, content 313) keeps it up to the phones' 1.08.
+            assertTrue(SleepLayout.wide(m, 353f - 40f, 161f, 1f).note)
+            assertTrue(SleepLayout.wide(m, 353f - 40f, 161f, 1.08f).note)
+            // The bucket's 280 dp minimum has no room for it beside the title: it goes, the title stays whole.
+            assertFalse(SleepLayout.wide(m, wide.first, wide.second, 1f).note)
+        } finally {
+            ClockSetting.use24Hour = was
+            Locale.setDefault(language)
+        }
     }
 
     @Test fun `the Large fits its width and height at every size, the sentence going first, then the rows`() {

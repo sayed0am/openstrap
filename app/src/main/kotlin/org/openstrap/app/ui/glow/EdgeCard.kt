@@ -3,15 +3,12 @@ package org.openstrap.app.ui.glow
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.ui.draw.clip
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -29,6 +26,10 @@ import org.openstrap.app.ui.glow.draw.brush
 import org.openstrap.app.ui.glow.draw.drawEdge
 import org.openstrap.app.ui.glow.draw.edgeLevel
 import org.openstrap.app.ui.glow.draw.edgePaint
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.edgeLight
+import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The middle tier of the glow language: a near-black card with a soft glow coming in from one edge in the metric's
@@ -36,61 +37,6 @@ import org.openstrap.app.ui.glow.draw.edgePaint
  * plain hairline, the same on every card: off your normal shows in the stronger glow and the coloured value and
  * status. Static: the edge only changes when the data does.
  */
-
-/** Which edge of an [EdgeCard] the light comes in from. */
-enum class Edge { Top, Bottom, Left, Right }
-
-/** A value against your normal. */
-enum class EdgeStatus { Usual, Above, Below }
-
-/** What an edge card is about; with its [EdgeStatus] it decides where the light sits. */
-enum class EdgeKind {
-    /** A value read against your normal: resting heart rate, HRV, skin temperature. */
-    Value,
-
-    /** Progress toward a goal or your usual by now: steps, Load so far. Gets a progress bar. */
-    Progress,
-
-    /** Live, now: heart rate today. */
-    Live,
-
-    /** About earlier: Recovery after the morning, Habit Age. */
-    Earlier,
-
-    /** Sleep: last night, regularity, breathing disturbances. Lit from the top, like a night sky. */
-    Sleep,
-
-    /** A level, like Charge: the light fills from the left across to the value, in place of a progress bar. */
-    Level,
-}
-
-/** Where an edge card's light sits and how it's drawn. */
-@Immutable
-data class EdgeLight(
-    val edge: Edge,
-    /** Off your normal: a deeper, stronger glow. */
-    val strong: Boolean,
-    /** A 4 dp progress bar inside the card. */
-    val progressBar: Boolean,
-)
-
-/**
- * Where the light sits for a card of [kind] whose value is [status] (spec 2.4). A plain value lights the bottom when
- * usual or below your normal and the top when above. The other kinds keep their own edge (progress bottom, live
- * right, earlier left, sleep top). Off your normal, any of them glows stronger.
- */
-fun edgeLight(status: EdgeStatus, kind: EdgeKind = EdgeKind.Value): EdgeLight {
-    val off = status != EdgeStatus.Usual
-    val edge = when (kind) {
-        EdgeKind.Value -> if (status == EdgeStatus.Above) Edge.Top else Edge.Bottom
-        EdgeKind.Progress -> Edge.Bottom
-        EdgeKind.Live -> Edge.Right
-        EdgeKind.Earlier -> Edge.Left
-        EdgeKind.Sleep -> Edge.Top
-        EdgeKind.Level -> Edge.Left
-    }
-    return EdgeLight(edge, strong = off, progressBar = kind == EdgeKind.Progress)
-}
 
 /** The neutral edge light, hsl 220 10% 55%: a cool soft white for cards that speak for no one metric. */
 val EdgeNeutral = Color.hsl(220f, 0.10f, 0.55f)
@@ -150,22 +96,13 @@ fun EdgeCard(
         CompositionLocalProvider(LocalCardNumbers provides opening?.numbers, LocalCardOpens provides (onClick != null)) { content() }
         if (light.progressBar && progress != null) {
             Spacer(Modifier.weight(1f, fill = false).padding(top = 12.dp))
-            ProgressBar(progress, tint)
+            FillBar(progress, tint)
         }
     }
 }
 
 /** How far past its level a level card's light fades out. */
 internal val LevelFade = 40.dp
-
-/** The 4 dp bar inside a progress edge card. */
-@Composable
-private fun ProgressBar(progress: Float, color: Color) {
-    val shape = RoundedCornerShape(2.dp)
-    Box(Modifier.fillMaxWidth().height(4.dp).background(Color.White.copy(alpha = 0.08f), shape)) {
-        Box(Modifier.fillMaxWidth(progress.coerceIn(0f, 1f)).height(4.dp).background(color, shape))
-    }
-}
 
 /**
  * An edge glow, after the CSS `box-shadow: inset` it was designed with: [alpha] of the colour, its hard edge [shift]

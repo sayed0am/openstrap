@@ -113,9 +113,6 @@ val FunnelSans = FontFamily(
     variable(R.font.funnel_sans, 700),
 )
 
-/** MuseoModerno for the OpenStrap wordmark only. SIL OFL 1.1 (see licenses/). */
-val MuseoModerno = FontFamily(variable(R.font.museo_moderno, 600))
-
 private val Base = Typography()
 
 /** Big numerals use tabular figures so values don't jitter as they update (e.g. live HR). */

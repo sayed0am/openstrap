@@ -11,6 +11,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
+import java.time.LocalDate
 
 /** A version 17 database opens at 18 with its data intact and an empty Habit Age table that keeps each Sunday's estimate. */
 @RunWith(RobolectricTestRunner::class)
@@ -37,17 +38,19 @@ class HabitAgeWeekMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val dao = room.healthDao()
             assertEquals(1, room.openHelper.readableDatabase.query("SELECT * FROM health_alert").use { it.count })
-            assertEquals(emptyList<HabitAgeWeekRow>(), dao.habitAgeWeeksOnce(0, Long.MAX_VALUE))
-            dao.insertHabitAgeWeek(HabitAgeWeekRow(1000, 30.1f, 28, 32, 1))
-            dao.insertHabitAgeWeek(HabitAgeWeekRow(2000, 29.2f, 27, 31, 2))
+            assertEquals(emptyList<HabitAgeWeekRow>(), dao.habitAgeWeeksAll())
+            val first = LocalDate.of(2026, 1, 4)
+            val second = first.plusWeeks(1)
+            dao.insertHabitAgeWeek(HabitAgeWeekRow(first, 30.1f, 28, 32, 1))
+            dao.insertHabitAgeWeek(HabitAgeWeekRow(second, 29.2f, 27, 31, 2))
             // The same Sunday again replaces it.
-            dao.insertHabitAgeWeek(HabitAgeWeekRow(2000, 29.4f, 27, 31, 3))
-            assertEquals(listOf(30.1f, 29.4f), dao.habitAgeWeeksOnce(0, 3000).map { it.estimate })
-            assertEquals(listOf(1000L), dao.habitAgeWeeksOnce(0, 1999).map { it.asOf })
+            dao.insertHabitAgeWeek(HabitAgeWeekRow(second, 29.4f, 27, 31, 3))
+            assertEquals(listOf(30.1f, 29.4f), dao.habitAgeWeeksOnce(first, second).map { it.estimate })
+            assertEquals(listOf(first), dao.habitAgeWeeksOnce(first, second.minusDays(1)).map { it.asOf })
         } finally {
             room.close()
             listOf("", "-wal", "-shm", "-journal").forEach { File(file.path + it).delete() }

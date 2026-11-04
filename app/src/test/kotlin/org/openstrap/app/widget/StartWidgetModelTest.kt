@@ -14,6 +14,7 @@ import org.junit.Test
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.data.db.Workout
+import org.openstrap.app.data.HeartZones
 
 /** Widgets spec 3.5: what the Start widget offers from your workouts, this week's line, recording, and how it fits. */
 class StartWidgetModelTest {
@@ -26,7 +27,7 @@ class StartWidgetModelTest {
     private fun workout(day: Int, hour: Int, type: Int, minutes: Int, meters: Float? = null, sets: Int? = null): WorkoutAnalysis {
         val start = at(day, hour, 0).epochSecond
         val w = Workout(start, start + minutes * 60L, type, minutes * 60, null, null, null, null, null, null, null, null, null)
-        return Workouts.analyse(w, emptyList(), emptyList(), 190).copy(distanceMeters = meters, sets = sets)
+        return Workouts.analyse(w, emptyList(), emptyList(), 190, HeartZones.STANDARD).copy(distanceMeters = meters, sets = sets)
     }
 
     /**
@@ -109,6 +110,15 @@ class StartWidgetModelTest {
         assertEquals("No workouts yet", StartWidgetModel.weekLine(0, 0L))
     }
 
+    @Test fun `this week starts on the locale's first day`() {
+        // In the US the week began on Sunday the 18th, so that day's strength session counts too.
+        val us = StartWidgetModel.from(history, emptyMap(), true, null, now, zone, Locale.US)
+        assertEquals("3 workouts, 2 h 15", us.weekLine)
+        // The last run's distance in the locale's own decimal mark.
+        val german = StartWidgetModel.from(history.filter { it.workout.sportType != 2 }, emptyMap(), true, null, now, zone, Locale.GERMANY)
+        assertEquals("Dienstag, 5,2 km", german.lastLine)
+    }
+
     @Test fun `the usual sport's last, by its tile, with its distance, sets or length`() {
         // The treadmill on Friday is a run too.
         assertEquals("Last run", model().lastLabel)
@@ -122,7 +132,7 @@ class StartWidgetModelTest {
         assertEquals("Last workout", StartWidgetModel.lastLabel(5))
         assertEquals("Last walk", StartWidgetModel.lastLabel(40))
         assertEquals("Today, 35 min", "${recentDay(now.atZone(zone).toLocalDate(), now.atZone(zone).toLocalDate())}, 35 min")
-        assertEquals("10 Oct", recentDay(java.time.LocalDate.of(2026, 10, 10), java.time.LocalDate.of(2026, 10, 24), Locale.UK))
+        assertEquals("Sat 10 Oct", recentDay(java.time.LocalDate.of(2026, 10, 10), java.time.LocalDate.of(2026, 10, 24), Locale.UK))
     }
 
     @Test fun `while recording, the sport, since when and the active time`() {

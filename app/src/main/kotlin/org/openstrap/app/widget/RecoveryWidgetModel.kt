@@ -1,11 +1,13 @@
 package org.openstrap.app.widget
 
+import org.openstrap.app.R
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.RecoveryResult
-import org.openstrap.app.ui.dashboard.AFTER_FIRST_NIGHT
-import org.openstrap.app.ui.dashboard.Metric
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.AFTER_FIRST_NIGHT
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import java.time.LocalDate
 import java.time.format.TextStyle
 import java.util.Locale
@@ -82,56 +84,72 @@ data class RecoveryWidgetModel(
     val week: List<RecoveryWeekDay>,
 ) {
     /** What TalkBack reads for the dotted number: "78, Ready". */
-    val scoreDescription: String? get() = score?.let { s -> word?.let { "$s, $it" } ?: s }
+    val scoreDescription: String?
+        get() = score?.let { s -> word?.let { Strings.app.format(R.string.system_widget_score_word, s, it) } ?: s }
 
     companion object {
-        const val TITLE = "Recovery"
-        const val THIS_MORNING = "This morning"
-        const val YESTERDAY = "Yesterday"
+        val TITLE: String get() = Strings.app.get(R.string.widget_recovery_name)
+        val THIS_MORNING: String get() = Strings.app.get(R.string.system_widget_recovery_this_morning)
+        val YESTERDAY: String get() = Strings.app.get(R.string.system_widget_recovery_yesterday)
 
         /** A figure the night didn't give. */
-        const val NO_READING = "No reading"
+        val NO_READING: String get() = Strings.app.get(R.string.system_widget_recovery_no_reading)
 
         /**
          * The widget for [today], or [yesterday] with "Yesterday" as the note while this morning's score isn't in.
          * Before any: the title and why, "After your first night" before the strap has seen one. Null days are ones
          * not worked out (or that failed), which wait like a day with no night yet.
          */
-        fun from(today: RecoveryDay?, yesterday: RecoveryDay?, locale: Locale = Locale.getDefault()): RecoveryWidgetModel {
-            today?.takeIf { it.shown.value != null }?.let { return scored(it, THIS_MORNING, locale) }
-            yesterday?.takeIf { it.shown.value != null }?.let { return scored(it, YESTERDAY, locale) }
+        fun from(
+            today: RecoveryDay?, yesterday: RecoveryDay?, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app,
+        ): RecoveryWidgetModel {
+            today?.takeIf { it.shown.value != null }
+                ?.let { return scored(it, strings.get(R.string.system_widget_recovery_this_morning), locale, strings) }
+            yesterday?.takeIf { it.shown.value != null }
+                ?.let { return scored(it, strings.get(R.string.system_widget_recovery_yesterday), locale, strings) }
             val line = when {
                 today == null -> TabCopy.RECOVERY_WAITING
                 today.firstNights -> AFTER_FIRST_NIGHT
                 else -> today.shown.line
             }
-            return RecoveryWidgetModel(null, TITLE, null, null, null, line, null, emptyList(), emptyList())
+            val title = strings.get(R.string.widget_recovery_name)
+            return RecoveryWidgetModel(null, title, null, null, null, line, null, emptyList(), emptyList())
         }
 
-        private fun scored(d: RecoveryDay, note: String, locale: Locale): RecoveryWidgetModel {
+        private fun scored(d: RecoveryDay, note: String, locale: Locale, strings: Strings): RecoveryWidgetModel {
             val week = d.week.takeIf { w -> w.count { it.second != null } >= 2 }.orEmpty().mapIndexed { i, (day, score) ->
                 RecoveryWeekDay(day.dayOfWeek.getDisplayName(TextStyle.NARROW, locale), score, i == d.week.lastIndex)
             }
             return RecoveryWidgetModel(
                 date = d.date,
-                title = TITLE,
+                title = strings.get(R.string.widget_recovery_name),
                 note = note,
                 score = d.shown.value.toString(),
                 word = d.shown.word,
                 waiting = null,
                 // The strap's estimate has no sentence of its own: its line says why OpenStrap's score isn't ready.
                 sentence = d.sentence ?: d.shown.line,
-                figures = figures(d),
+                figures = figures(d, strings),
                 week = week,
             )
         }
 
         /** Resting HR "52 bpm", HRV "64 ms", Sleep "82". */
-        fun figures(d: RecoveryDay): List<RecoveryFigure> = listOf(
-            RecoveryFigure("Resting HR", d.restingHr?.let { "${Metric.RestingHr.format(it)} ${Metric.RestingHr.unit}" } ?: NO_READING),
-            RecoveryFigure("HRV", d.hrv?.let { "${Metric.Hrv.format(it)} ${Metric.Hrv.unit}" } ?: NO_READING),
-            RecoveryFigure("Sleep", d.sleep?.toString() ?: NO_READING),
-        )
+        fun figures(d: RecoveryDay, strings: Strings = Strings.app): List<RecoveryFigure> {
+            val none = strings.get(R.string.system_widget_recovery_no_reading)
+            fun value(v: String, unit: String) = strings.format(R.string.system_widget_recovery_figure, v, unit)
+            return listOf(
+                RecoveryFigure(
+                    strings.get(R.string.system_widget_recovery_resting_hr),
+                    d.restingHr?.let { value(Metric.RestingHr.format(it), Metric.RestingHr.unit) } ?: none,
+                ),
+                RecoveryFigure(
+                    strings.get(R.string.system_widget_recovery_hrv),
+                    d.hrv?.let { value(Metric.Hrv.format(it), Metric.Hrv.unit) } ?: none,
+                ),
+                RecoveryFigure(strings.get(R.string.system_widget_recovery_sleep), d.sleep?.toString() ?: none),
+            )
+        }
     }
 }
 

@@ -9,6 +9,9 @@ import org.openstrap.app.data.Activity
 import org.openstrap.app.data.UsualSteps
 import java.time.LocalDate
 import java.util.Locale
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Range
 
 /** The Activity details' words (spec 5.3, 6.1 and 7). */
 class ActivityCopyTest {
@@ -27,7 +30,7 @@ class ActivityCopyTest {
                 ActivityCopy.usualBandLabel(30f..50f), ActivityCopy.strapRange(120, 300),
                 ActivityCopy.vo2(true), ActivityCopy.vo2(false),
                 ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", LocalDate.of(2026, 10, 24), Locale.UK)),
-                ActivityCopy.energy(1650), ActivityCopy.distanceSource(true), ActivityCopy.distanceSource(false),
+                ActivityCopy.caloriesAtRest(1650), ActivityCopy.distanceSource(true), ActivityCopy.distanceSource(false),
                 ActivityCopy.distance(6420, false), ActivityCopy.activeWeek(150),
             ) + listOfNotNull(
                 ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK), ActivityCopy.heartPointsWord(100),
@@ -58,7 +61,7 @@ class ActivityCopyTest {
     @Test fun `heart points say how far to the aim and what drops off`() {
         assertEquals("36 to go for 100.", ActivityCopy.heartPointsWeek(64))
         assertNull(ActivityCopy.heartPointsWord(99))
-        assertEquals("Tomorrow Thursday's 12 points drop off.", ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK))
+        assertEquals("Tomorrow, the 12 points from Thursday drop off.", ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 12, Locale.UK))
         assertNull(ActivityCopy.dropsOff(LocalDate.of(2026, 10, 15), 0, Locale.UK))
         assertEquals("At 100 or more on 1 of 2 days in the last 30.", ActivityCopy.heartPointsMonth(listOf(40, null, 110)))
     }
@@ -85,6 +88,21 @@ class ActivityCopyTest {
         val today = LocalDate.of(2026, 10, 24)
         assertEquals("today at 18:30", ActivityCopy.ended(today, "18:30", today))
         assertEquals("yesterday at 07:10", ActivityCopy.ended(today.minusDays(1), "07:10", today))
-        assertEquals("Counted from your run, which ended Tue 20 Oct at 18:30.", ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK)))
+        assertEquals("Counted from your run, which ended Tuesday at 18:30.", ActivityCopy.recover("Run", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK)))
+    }
+
+    @Test fun `time to recover names the day as every other line does`() {
+        val today = LocalDate.of(2026, 10, 24)
+        assertEquals("today at 18:30", ActivityCopy.ended(today, "18:30", today, Locale.UK))
+        assertEquals("yesterday at 07:10", ActivityCopy.ended(today.minusDays(1), "07:10", today, Locale.UK))
+        assertEquals("Tuesday at 18:30", ActivityCopy.ended(LocalDate.of(2026, 10, 20), "18:30", today, Locale.UK))
+        assertEquals("Tue 13 Oct at 18:30", ActivityCopy.ended(LocalDate.of(2026, 10, 13), "18:30", today, Locale.UK))
+    }
+
+    @Test fun `Load's bar and band are Today's rule`() {
+        assertEquals(null, ActivityCopy.loadBar(40f, null))
+        assertEquals(listOf(0, 1, 1, 2), listOf(29f, 30f, 50f, 51f).map { ActivityCopy.loadBar(it, 40f) })
+        assertEquals(30f..50f, ActivityCopy.usualBand(40f))
+        assertEquals(listOf("Below your usual", "Usual", "Above your usual"), ActivityCopy.LOAD_SCALE)
     }
 }

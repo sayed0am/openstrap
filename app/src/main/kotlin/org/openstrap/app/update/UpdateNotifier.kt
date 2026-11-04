@@ -8,14 +8,17 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import org.openstrap.app.MainActivity
 import org.openstrap.app.R
-import org.openstrap.app.ui.device.UpdateCopy
 
-/** Says a new OpenStrap is out, or that it was just installed. Either opens the Updates page. */
+/**
+ * Says a new OpenStrap is out, or that it was just installed. Either opens the Updates page. Its words come from
+ * [UpdateCopy] in the app's language, the channel's name too: Android shows it in the app's notification settings and
+ * takes the new name each time the channel is created again, so it follows a change of language.
+ */
 class UpdateNotifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "App updates", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, UpdateCopy.channelName(), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     fun available(release: Release) = show(UpdateCopy.availableTitle(release), ReleaseNotes.lead(release.notes) ?: UpdateCopy.AVAILABLE_TEXT)

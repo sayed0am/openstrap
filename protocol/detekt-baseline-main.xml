@@ -1,0 +1,268 @@
+<?xml version="1.0" ?>
+<SmellBaseline>
+  <ManuallySuppressedIssues/>
+  <CurrentIssues>
+    <ID>AbstractClassCanBeInterface:FetchAssembler.kt:FetchAssembler.Error$Error</ID>
+    <ID>AbstractClassCanBeInterface:FetchAssembler.kt:FetchAssembler.Result$Result</ID>
+    <ID>AbstractClassCanBeInterface:FetchAssembler.kt:FetchAssembler.State$State</ID>
+    <ID>AbstractClassCanBeInterface:FetchCodec.kt:GdspMessage$GdspMessage</ID>
+    <ID>AbstractClassCanBeInterface:RecordParsers.kt:ParseResult$ParseResult</ID>
+    <ID>ComplexCondition:SportSession.kt:SportSession$reply.size &lt; 4 || reply.u8(0) != REPLY || reply.u8(1) != VERSION || reply.u8(2) != 1</ID>
+    <ID>CyclomaticComplexMethod:Settings.kt:SettingsCodec$fun parse: SettingsGroup?</ID>
+    <ID>EmptyElseBlock:Services.kt:RealtimeSteps$if (r.remaining &lt; 4) return StepTotals(steps, null, null)</ID>
+    <ID>EmptyWhileBlock:GdspClient.kt:GdspClient${}</ID>
+    <ID>EmptyWhileBlock:Settings.kt:SettingsCodec${}</ID>
+    <ID>ImplicitDefaultLocale:Auth.kt:Auth$"status 0x%02x".format(status)</ID>
+    <ID>ImplicitDefaultLocale:Bytes.kt:"%02x".format(it)</ID>
+    <ID>ImplicitDefaultLocale:ChannelSession.kt:ChannelSession$"%04x".format(endpoint)</ID>
+    <ID>ImplicitDefaultLocale:ChannelSession.kt:ChannelSession$"%04x%s".format(it.key, if (it.value) "*" else "")</ID>
+    <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X failed: %s".format(cmd, DfuCode.describe(reply.code))</ID>
+    <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X failed: %s".format(command, DfuCode.describe(r.code))</ID>
+    <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Step %02X took too long".format(command)</ID>
+    <ID>ImplicitDefaultLocale:DfuSession.kt:DfuSession$"Unexpected reply to %02X".format(cmd)</ID>
+    <ID>ImplicitDefaultLocale:GdspClient.kt:GdspClient$"%02x %s".format(it.opcode, it.status)</ID>
+    <ID>ImplicitDefaultLocale:GdspClient.kt:GdspTimeoutException$"no reply to GDSP command %02x".format(op)</ID>
+    <ID>MagicNumber:ActivityLayout.kt:ActivityLayout$0xFF</ID>
+    <ID>MagicNumber:ActivityLayout.kt:ActivityLayout$4</ID>
+    <ID>MagicNumber:ActivityLayout.kt:ActivityLayout$8</ID>
+    <ID>MagicNumber:ActivityLayout.kt:ActivityLayout$9</ID>
+    <ID>MagicNumber:Alarms.kt:Alarm$0x7F</ID>
+    <ID>MagicNumber:Alarms.kt:Alarm$23</ID>
+    <ID>MagicNumber:Alarms.kt:Alarm$59</ID>
+    <ID>MagicNumber:Alarms.kt:AlarmCodec$3</ID>
+    <ID>MagicNumber:Alarms.kt:AlarmCodec$4</ID>
+    <ID>MagicNumber:Auth.kt:Auth$0x10</ID>
+    <ID>MagicNumber:Auth.kt:Auth$3</ID>
+    <ID>MagicNumber:Auth.kt:AuthHandshake$16</ID>
+    <ID>MagicNumber:Bytes.kt:0xFF</ID>
+    <ID>MagicNumber:Bytes.kt:16</ID>
+    <ID>MagicNumber:Bytes.kt:8</ID>
+    <ID>MagicNumber:Bytes.kt:ByteReader$4</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$0xFF</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$0xFFFF</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$0xFFFFFFFFL</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$16</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$32</ID>
+    <ID>MagicNumber:Bytes.kt:ByteWriter$8</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:Aes$16</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher$16</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher$24</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher$4</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher.Companion$15</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher.Companion$16</ID>
+    <ID>MagicNumber:ChannelCrypto.kt:ChannelCipher.Companion$8</ID>
+    <ID>MagicNumber:ChannelSession.kt:ChannelSession$0x04</ID>
+    <ID>MagicNumber:ChannelSession.kt:ChannelSession$0xFF</ID>
+    <ID>MagicNumber:Chunks.kt:0xFF</ID>
+    <ID>MagicNumber:Chunks.kt:3</ID>
+    <ID>MagicNumber:Chunks.kt:4</ID>
+    <ID>MagicNumber:Chunks.kt:Reassembler$0xFF</ID>
+    <ID>MagicNumber:Chunks.kt:Reassembler$5</ID>
+    <ID>MagicNumber:Chunks.kt:Reassembler$9</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.AF_ACC$30</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.AF_PPG$11</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.AF_RESULT$17</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BLOOD_PRESSURE_52$52</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BLOOD_PRESSURE_53$53</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BLOOD_PRESSURE_54$54</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BLOOD_PRESSURE_55$55</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BLOOD_PRESSURE_62$62</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BODY_TEMPERATURE_80S$48</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BODY_TEMPERATURE_ALL_DAY$46</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.BODY_TEMPERATURE_SINGLE$47</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.DAILY_MAX_EXERCISE_HR$61</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.DEVICE_STATISTIC$44</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.ECG$3</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.EDA_RAW_DATA$84</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.HLD$71</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.HLD_COMPOSITION$82</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.HRV_RMSSD$73</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.HRV_SDNN$78</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.JS_WEIGHT_V1$75</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.JS_WEIGHT_V2$77</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.LIFELOAD_AUDIO$96</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.LOG$7</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.OSA_RESULT$74</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.PAI$13</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.PPG_RR$8</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.RECOVERY_HEART_RATE$70</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.RESTING_HEART_RATE$58</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.REST_HR$86</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SEC_HR$76</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SEC_HR_V2$87</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SLEEP_BREATH_RATE$56</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SLEEP_PLAN$66</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SLEEP_RESPIRATORY_RATE_EVENT$57</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SLEEP_RESULT$72</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SOLAR_INTENSITY$89</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPO2_OSA$38</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPO2_OSA_EVENT$39</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPO2_OSA_EVENT_ALT$43</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPO2_SINGLE$37</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPORT_DETAIL$6</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPORT_EFFECT$59</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPORT_SUMMARY$5</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPORT_SUMMARY_ALT$14</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.SPORT_VOICE_RECORD$79</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.STRESS_ALL_DAY$19</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.STRESS_SINGLE$18</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.TEMPERATURE_LEGACY$4</ID>
+    <ID>MagicNumber:DataTypes.kt:HistoryDataType.TODAY_ACTIVITY_EXTENDED$88</ID>
+    <ID>MagicNumber:DeviceFeatures.kt:DeviceFeatures.Companion$8</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$10</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$1_000</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$2_000</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$4</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$5</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$6</ID>
+    <ID>MagicNumber:DfuSession.kt:DfuSession$600</ID>
+    <ID>MagicNumber:FetchAssembler.kt:FetchAssembler$0xFF</ID>
+    <ID>MagicNumber:FetchCodec.kt:FetchCodec$0xFF</ID>
+    <ID>MagicNumber:FetchCodec.kt:FetchCodec$3</ID>
+    <ID>MagicNumber:FetchCodec.kt:FetchCodec$4</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspMessage.VersionReply$4</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.BUSY$7</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.CANCELLED_BY_APP$9</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.COMPRESS_FAILED$12</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.CONTENT_PARSE_ERROR$10</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.CRC_MISMATCH$8</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.DATA_SIZE_MISMATCH$14</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.DECOMPRESS_FAILED$13</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.FAST_RECHARGE_MODE$51</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.INVALID_PARAMETER$3</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.INVALID_STATE$5</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.MUSIC_RUNNING$48</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.OPERATION_FAILED$4</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.PACKET_INDEX_ERROR$6</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.SPEECH_RUNNING$49</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.TIMEOUT$50</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspStatus.UNAUTHORIZED$11</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspTime$900L</ID>
+    <ID>MagicNumber:FetchCodec.kt:GdspTime.Companion$900</ID>
+    <ID>MagicNumber:FindDevice.kt:FindDevice$0x04</ID>
+    <ID>MagicNumber:FindDevice.kt:MotorVibrate$0xFFFF</ID>
+    <ID>MagicNumber:Firmware.kt:DfuCommands$0xFF</ID>
+    <ID>MagicNumber:Firmware.kt:DfuReply.Companion$0x10</ID>
+    <ID>MagicNumber:Firmware.kt:DfuReply.Companion$3</ID>
+    <ID>MagicNumber:Firmware.kt:DfuReply.Companion$8</ID>
+    <ID>MagicNumber:Firmware.kt:HmfwTrailer.Companion$96</ID>
+    <ID>MagicNumber:Firmware.kt:UihhContainer$0x0004</ID>
+    <ID>MagicNumber:Firmware.kt:UihhContainer$5</ID>
+    <ID>MagicNumber:Firmware.kt:UihhContainer$6</ID>
+    <ID>MagicNumber:GdspClient.kt:0xFF</ID>
+    <ID>MagicNumber:GdspClient.kt:256</ID>
+    <ID>MagicNumber:GdspClient.kt:31</ID>
+    <ID>MagicNumber:GdspClient.kt:8</ID>
+    <ID>MagicNumber:GdspClient.kt:GdspClient$0xFF</ID>
+    <ID>MagicNumber:GdspClient.kt:GdspClient$300</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$100</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$22</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$220</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$25</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$254</ID>
+    <ID>MagicNumber:Readiness.kt:ReadinessCodec$3</ID>
+    <ID>MagicNumber:RecordParsers.kt:0xFF</ID>
+    <ID>MagicNumber:RecordParsers.kt:5</ID>
+    <ID>MagicNumber:Records.kt:SleepResult$1440</ID>
+    <ID>MagicNumber:Records.kt:SleepResult$3600</ID>
+    <ID>MagicNumber:Records.kt:SleepResult$60L</ID>
+    <ID>MagicNumber:Services.kt:BatteryInfo.Companion$0x04</ID>
+    <ID>MagicNumber:Services.kt:BatteryInfo.Companion$0x05</ID>
+    <ID>MagicNumber:Services.kt:BatteryInfo.Companion$3</ID>
+    <ID>MagicNumber:Services.kt:ChannelVersion.Companion$3</ID>
+    <ID>MagicNumber:Services.kt:HealthAlert.Companion$10</ID>
+    <ID>MagicNumber:Services.kt:HealthAlert.Type.HIGH_STRESS$3</ID>
+    <ID>MagicNumber:Services.kt:HealthAlert.Type.IRREGULAR_RHYTHM$5</ID>
+    <ID>MagicNumber:Services.kt:HealthAlert.Type.LOW_SPO2$4</ID>
+    <ID>MagicNumber:Services.kt:LiveHeartRate$0x05</ID>
+    <ID>MagicNumber:Services.kt:LiveHeartRate$250</ID>
+    <ID>MagicNumber:Services.kt:LiveHeartRate$3</ID>
+    <ID>MagicNumber:Services.kt:LiveHeartRate$8</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$0x04</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$0x06</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$0x0C</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$4</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$5</ID>
+    <ID>MagicNumber:Services.kt:RealtimeSteps$8</ID>
+    <ID>MagicNumber:Services.kt:ServiceList$4</ID>
+    <ID>MagicNumber:Services.kt:ServiceList.Companion$0x04</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$0x05</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$0x08</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$0xFFFF</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$15</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$1_000_000</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$4</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$60</ID>
+    <ID>MagicNumber:Services.kt:TimeSync$7</ID>
+    <ID>MagicNumber:Services.kt:UserProfile$0x04</ID>
+    <ID>MagicNumber:Services.kt:UserProfile$0x08</ID>
+    <ID>MagicNumber:Services.kt:UserProfile$0x4F</ID>
+    <ID>MagicNumber:Settings.kt:SettingsCodec$10</ID>
+    <ID>MagicNumber:Settings.kt:SettingsCodec$3</ID>
+    <ID>MagicNumber:Settings.kt:SettingsCodec$4</ID>
+    <ID>MagicNumber:Settings.kt:SettingsCodec$6</ID>
+    <ID>MagicNumber:Settings.kt:SettingsCodec$8</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$240</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$255</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$3</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$30</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$4</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$5</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession$6</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession.State.ABANDON$5</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession.State.RESUME$3</ID>
+    <ID>MagicNumber:SportSession.kt:SportSession.State.STOP$4</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$0x7F</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$0x80</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$4</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$5</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$64</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$7</ID>
+    <ID>MagicNumber:Workouts.kt:Proto$8</ID>
+    <ID>MaxLineLength:Alarms.kt:Alarm$*</ID>
+    <ID>MaxLineLength:ChannelSession.kt:ChannelSession$if (v.version != 2 || v.encryptEnable == null) throw ProtocolException("Unsupported channel (v${v.version}, encryption ${v.encryptEnable})")</ID>
+    <ID>MaxLineLength:ChannelSession.kt:ChannelSession$services = ServiceList.parse(request(Endpoints.SERVICES, ServiceList.REQUEST, timeoutMs = 5_000, wantReply = false) { it.u8(0) == 0x04 })</ID>
+    <ID>MaxLineLength:DeviceFeatures.kt:DeviceFeatures$listOf(version, mask, algorithm, group1?.contentHashCode(), group2?.contentHashCode(), group4?.contentHashCode(), group16?.contentHashCode()).hashCode()</ID>
+    <ID>MaxLineLength:FindDevice.kt:FindDevice$/** Zepp's continuous find. Not answered, and on fw 3.25 the strap doesn't vibrate for it (retested alone 2026-10-21); OpenStrap uses [BUZZ]. */</ID>
+    <ID>MaxLineLength:Firmware.kt:DfuReply$Protocol : DfuReply</ID>
+    <ID>MaxLineLength:GdspClient.kt:GdspClient$* One workout (04 §3.16, `xyk.java:60-150`): START(5, cursor) for the summary, then START(6, same cursor) for its detail. The next cursor is the summary's time + 1 s.</ID>
+    <ID>MaxLineLength:GdspClient.kt:WorkoutFetch.Workout$data</ID>
+    <ID>MaxLineLength:Readiness.kt:ReadinessCodec$val score = r.u8()</ID>
+    <ID>MaxLineLength:Settings.kt:Setting$if (type == SettingsCodec.TYPE_STRING || type == SettingsCodec.TYPE_STRING_ENUM) raw.toString(Charsets.UTF_8).substringBefore('\u0000') else null</ID>
+    <ID>MaxLineLength:Settings.kt:SettingsCodec$/** GENERAL key 45 `resetSwitch`: writing true restarts the strap. Zepp offers Restart only when the strap reports it (07 §0, 03 §5.2). */</ID>
+    <ID>MaxLineLength:SportSession.kt:SportSession$DEVICE_STATE -&gt; p.takeIf { it.size &gt;= 2 }?.let { s -&gt; State.entries.firstOrNull { it.code == s.u8(1) }?.let(Push::StateChanged) }</ID>
+    <ID>MaxLineLength:SportSession.kt:SportSession.Capabilities$data</ID>
+    <ID>MaxLineLength:Workouts.kt:WorkoutParsers$TAG_HEART_RATE -&gt; if (len &gt;= 3) base?.let { b -&gt; val off = v.u16(); HeartRateSentinel.valid(v.u8())?.let { hr += (b + off) to it } }</ID>
+    <ID>NoNameShadowing:Alarms.kt:AlarmCodec${ if (it and 0xFF == Alarm.WORKDAYS) Alarm.WORKDAYS else it and 0x7F }</ID>
+    <ID>NoNameShadowing:Readiness.kt:ReadinessCodec${ it in 1..254 }</ID>
+    <ID>NoNameShadowing:Readiness.kt:ReadinessCodec${ it in 25..220 }</ID>
+    <ID>ReturnCount:B163.kt:B163$fun isOnCurve: Boolean</ID>
+    <ID>ReturnCount:B163.kt:B163$fun pointAdd: Point</ID>
+    <ID>ReturnCount:Chunks.kt:Reassembler$fun accept: ByteArray?</ID>
+    <ID>ReturnCount:FetchAssembler.kt:FetchAssembler$fun accept: State</ID>
+    <ID>ReturnCount:FetchCodec.kt:GdspMessage.VersionReply$fun supportedTypes: Set&lt;Int&gt;?</ID>
+    <ID>ReturnCount:Firmware.kt:DfuReply.Companion$fun parse: DfuReply?</ID>
+    <ID>ReturnCount:Firmware.kt:HmfwTrailer.Companion$fun read: HmfwTrailer?</ID>
+    <ID>ReturnCount:GdspClient.kt:GdspClient$suspend fun fetch: GdspFetch</ID>
+    <ID>ReturnCount:GdspClient.kt:GdspClient$suspend fun fetchWorkout: WorkoutFetch</ID>
+    <ID>ReturnCount:GdspClient.kt:GdspClient$suspend fun transfer: Pair&lt;ByteArray, Long?&gt;?</ID>
+    <ID>ReturnCount:Readiness.kt:ReadinessCodec$fun parseScores: List&lt;StrapReadiness&gt;?</ID>
+    <ID>ReturnCount:RecordParsers.kt:private fun isSpo2Versioned: Boolean</ID>
+    <ID>ReturnCount:Services.kt:HealthAlert.Companion$fun parse: HealthAlert?</ID>
+    <ID>ReturnCount:Services.kt:RealtimeSteps$fun parseRecord: StepTotals?</ID>
+    <ID>ReturnCount:Settings.kt:SettingsCodec$fun calorieTargetFor: ByteArray?</ID>
+    <ID>ReturnCount:Settings.kt:SettingsCodec$fun parse: SettingsGroup?</ID>
+    <ID>ReturnCount:Settings.kt:SettingsCodec$fun parseVersion: SettingsProtocol?</ID>
+    <ID>ReturnCount:Settings.kt:SettingsCodec$fun versionFlag: Pair&lt;Int, Int&gt;?</ID>
+    <ID>ReturnCount:SportSession.kt:SportSession$fun parseVersion: Capabilities?</ID>
+    <ID>ThrowingExceptionsWithoutMessageOrCause:DeviceFeatures.kt:DeviceFeatures.Companion$IndexOutOfBoundsException()</ID>
+    <ID>ThrowsCount:ChannelCrypto.kt:ChannelCipher$fun decrypt: ByteArray</ID>
+    <ID>ThrowsCount:ChannelSession.kt:ChannelSession$suspend fun handshake</ID>
+    <ID>ThrowsCount:DfuSession.kt:DfuSession$private suspend fun awaitFinal</ID>
+    <ID>TooManyFunctions:B163.kt:B163</ID>
+    <ID>TooManyFunctions:Settings.kt:SettingsCodec</ID>
+    <ID>UnsafeCallOnNullableType:ChannelSession.kt:ChannelSession$Auth.stripReply(command, reply)!!</ID>
+    <ID>UnsafeCallOnNullableType:Services.kt:UserProfile$weightUnits!!</ID>
+    <ID>UseOrEmpty:Alarms.kt:AlarmCodec$a.title ?: ""</ID>
+  </CurrentIssues>
+</SmellBaseline>

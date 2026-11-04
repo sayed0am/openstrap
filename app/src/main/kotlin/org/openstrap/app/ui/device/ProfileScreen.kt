@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,8 +28,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.settings.Units
 import org.openstrap.app.data.settings.UserProfile
 import androidx.compose.foundation.layout.height
@@ -38,19 +39,27 @@ import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.PageButton
 import org.openstrap.app.ui.glow.PageConfirm
-import org.openstrap.app.ui.glow.PageField
+import org.openstrap.app.ui.glow.PageNumberField
 import org.openstrap.app.ui.glow.PageHeader
 import org.openstrap.app.ui.glow.PageNote
 import org.openstrap.app.ui.glow.PagePanel
+import org.openstrap.app.ui.glow.PageRow
 import org.openstrap.app.ui.glow.PageSwitchRow
 import java.time.LocalDate
 
 /** One line for the settings row: "34 years, male, 72 kg, 178 cm", or a prompt when empty. */
-fun UserProfile.summary(): String =
-    if (isEmpty) "Add age and sex for accurate effort and recovery"
+fun UserProfile.summary(strings: Strings = Strings.app): String =
+    if (isEmpty) strings.get(R.string.you_profile_empty)
     else listOfNotNull(
-        age()?.let { "$it years" },
-        sex?.name?.lowercase(),
+        age()?.let { strings.plural(R.plurals.you_profile_age, it, it) },
+        sex?.let {
+            strings.get(
+                when (it) {
+                    UserProfile.Sex.Female -> R.string.you_profile_summary_female
+                    UserProfile.Sex.Male -> R.string.you_profile_summary_male
+                },
+            )
+        },
         weightKg?.let { Units.formatWeight(it, usesImperial) },
         heightCm?.let { Units.formatHeight(it, usesImperial) },
     ).joinToString(", ")
@@ -61,7 +70,7 @@ fun UserProfile.summary(): String =
  * wide); back leaves without saving, asking first if anything was changed.
  */
 @Composable
-fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (UserProfile) -> Unit, onBack: () -> Unit) {
+fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (UserProfile) -> Unit, onBack: () -> Unit, onHeartZones: () -> Unit = {}) {
     var age by rememberSaveable { mutableStateOf(profile.age()?.toString().orEmpty()) }
     var sex by rememberSaveable { mutableIntStateOf(when (profile.sex) { UserProfile.Sex.Female -> 0; UserProfile.Sex.Male -> 1; null -> 2 }) }
     var imperial by rememberSaveable { mutableStateOf(profile.usesImperial) }
@@ -74,7 +83,6 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
     var activity by rememberSaveable { mutableIntStateOf(profile.activityLevel ?: -1) }
     var betaBlocker by rememberSaveable { mutableStateOf(profile.betaBlocker) }
     var pregnant by rememberSaveable { mutableStateOf(profile.pregnant) }
-    var maxHr by rememberSaveable { mutableStateOf(profile.maxHeartRate?.toString().orEmpty()) }
     var sleepNeed by rememberSaveable { mutableStateOf(profile.sleepNeedMinutes?.let { formatNumber(it / 60f) }.orEmpty()) }
 
     val ageValue = age.trim().toIntOrNull()?.takeIf { it in 10..100 }
@@ -86,12 +94,11 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         if (f != null && i != null) Units.feetInchesToCm(f, i).takeIf { it in 100..250 } else null
     } else heightCm.trim().toIntOrNull()?.takeIf { it in 100..250 }
     val heightBlank = if (imperial) feet.isBlank() && inches.isBlank() else heightCm.isBlank()
-    val maxHrValue = maxHr.trim().toIntOrNull()?.takeIf { it in 120..230 }
     // Hours, so "7.5" is 450 min; only 7-9 h is accepted (Recovery.SLEEP_NEED_MIN..MAX).
     val sleepNeedValue = sleepNeed.trim().replace(',', '.').toFloatOrNull()?.let { Math.round(it * 60) }
         ?.takeIf { it in org.openstrap.app.data.Recovery.SLEEP_NEED_MIN..org.openstrap.app.data.Recovery.SLEEP_NEED_MAX }
     val valid = (age.isBlank() || ageValue != null) && (weight.isBlank() || weightValue != null) && (heightBlank || heightValue != null) &&
-        (sleepNeed.isBlank() || sleepNeedValue != null) && (maxHr.isBlank() || maxHrValue != null)
+        (sleepNeed.isBlank() || sleepNeedValue != null)
 
     fun switchUnits(toImperial: Boolean) {
         if (toImperial == imperial) return
@@ -105,16 +112,17 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
     }
 
     // What the fields held when the page opened, so back knows whether there is anything to lose.
-    val initial = rememberSaveable { listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, maxHr, sleepNeed).joinToString("\u0000") }
-    val dirty = listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, maxHr, sleepNeed).joinToString("\u0000") != initial
+    val initial = rememberSaveable { listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") }
+    val dirty = listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") != initial
     var confirmDiscard by rememberSaveable { mutableStateOf(false) }
     val back: () -> Unit = { if (dirty) confirmDiscard = true else onBack() }
     BackHandler(onBack = back)
     if (confirmDiscard) {
         PageConfirm(
-            "Discard changes?", "Your profile changes haven't been saved.",
-            confirm = "Discard", onConfirm = { confirmDiscard = false; onBack() }, onDismiss = { confirmDiscard = false },
-            dismiss = "Keep editing",
+            stringResource(R.string.you_profile_discard_title), stringResource(R.string.you_profile_discard_text),
+            confirm = stringResource(R.string.you_profile_discard), onConfirm = { confirmDiscard = false; onBack() },
+            onDismiss = { confirmDiscard = false },
+            dismiss = stringResource(R.string.you_profile_keep_editing),
         )
     }
     val save: () -> Unit = {
@@ -127,7 +135,6 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
                 heightCm = heightValue,
                 imperial = imperial,
                 sleepNeedMinutes = sleepNeedValue,
-                maxHeartRate = maxHrValue,
                 activityLevel = activity.takeIf { it in 0..4 },
                 // Saving confirms the answers, so the fitness estimate's freshness checks restart.
                 activityAnsweredAt = if (activity in 0..4) System.currentTimeMillis() / 1000 else null,
@@ -149,80 +156,97 @@ fun ProfileScreen(profile: UserProfile, contentPadding: PaddingValues, onSave: (
         val side = GlowLayout.pageSide(maxWidth, LocalPageColumn.current, GlowLayout.Gutter)
         // The list ends clear of Save and the fade behind it (ScreenList adds its own 24 dp).
         ScreenList(PaddingValues(bottom = PinnedFade.listClearance(bottom + 12.dp + SaveHeight, listEnd = 24.dp)), gutter = GlowLayout.Gutter) {
-            item { PageHeader("Your profile", back) }
+            item { PageHeader(stringResource(R.string.you_profile_title), back) }
             item {
                 PagePanel {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        PageNote(
-                            "Age sets your maximum heart rate, which every effort and recovery number depends on. " +
-                                "All fields are optional and stay on this phone.",
+                        PageNote(stringResource(R.string.you_profile_note))
+                        PageNumberField(
+                            age, { age = it }, stringResource(R.string.you_profile_age), stringResource(R.string.you_profile_age_unit),
+                            age.isNotBlank() && ageValue == null,
                         )
-                        NumberField(age, { age = it }, "Age", "years", age.isNotBlank() && ageValue == null)
                         // Sex as labelled segments like Units, not two bare symbols beside Age. Tapping the chosen one
                         // again clears it.
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Sex, for energy, Load, fitness and Habit Age")
-                            org.openstrap.app.ui.glow.GlowSegments(listOf("Female", "Male"), if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i })
+                            PageNote(stringResource(R.string.you_profile_sex_note))
+                            org.openstrap.app.ui.glow.GlowSegments(
+                                listOf(stringResource(R.string.you_profile_sex_female), stringResource(R.string.you_profile_sex_male)),
+                                if (sex in 0..1) sex else -1, { i -> sex = if (sex == i) 2 else i },
+                            )
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Units")
-                            org.openstrap.app.ui.glow.GlowSegments(listOf("Metric", "Imperial"), if (imperial) 1 else 0, { switchUnits(it == 1) })
+                            PageNote(stringResource(R.string.you_profile_units))
+                            org.openstrap.app.ui.glow.GlowSegments(
+                                listOf(
+                                    stringResource(R.string.you_profile_units_metric), stringResource(R.string.you_profile_units_imperial),
+                                ),
+                                if (imperial) 1 else 0, { switchUnits(it == 1) },
+                            )
                         }
-                        NumberField(
-                            weight, { weight = it }, "Weight", if (imperial) "lb" else "kg",
+                        PageNumberField(
+                            weight, { weight = it }, stringResource(R.string.you_profile_weight),
+                            stringResource(if (imperial) R.string.you_profile_unit_lb else R.string.you_profile_unit_kg),
                             weight.isNotBlank() && weightValue == null, decimal = true,
                         )
                         if (imperial) {
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                NumberField(feet, { feet = it.take(1) }, "Feet", "ft", !heightBlank && heightValue == null, Modifier.weight(1f))
-                                NumberField(inches, { inches = it.take(2) }, "Inches", "in", !heightBlank && heightValue == null, Modifier.weight(1f))
+                                val wrong = !heightBlank && heightValue == null
+                                PageNumberField(
+                                    feet, { feet = it.take(1) }, stringResource(R.string.you_profile_feet),
+                                    stringResource(R.string.you_profile_unit_ft), wrong,
+                                    Modifier.weight(1f),
+                                )
+                                PageNumberField(
+                                    inches, { inches = it.take(2) }, stringResource(R.string.you_profile_inches),
+                                    stringResource(R.string.you_profile_unit_in), wrong,
+                                    Modifier.weight(1f),
+                                )
                             }
                         } else {
-                            NumberField(heightCm, { heightCm = it }, "Height", "cm", !heightBlank && heightValue == null)
+                            PageNumberField(
+                                heightCm, { heightCm = it }, stringResource(R.string.you_profile_height),
+                                stringResource(R.string.you_profile_unit_cm),
+                                !heightBlank && heightValue == null,
+                            )
                         }
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            FieldLabel("Usual activity, for the fitness estimate")
+                            PageNote(stringResource(R.string.you_profile_activity_note))
                             // Tapping the chosen level again clears it.
                             org.openstrap.app.ui.glow.GlowSegments((1..5).map { "$it" }, activity, { i -> activity = if (activity == i) -1 else i })
-                            PageNote(if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity] else "Pick the level that best matches a usual week.")
+                            PageNote(
+                                if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity]
+                                else stringResource(R.string.you_profile_activity_pick),
+                            )
                         }
-                        PageSwitchRow("Taking beta-blockers", null, betaBlocker, { betaBlocker = it }, divider = false)
-                        PageSwitchRow("Pregnant", null, pregnant, { pregnant = it }, divider = false)
-                        NumberField(maxHr, { maxHr = it }, "Max heart rate from a test (optional)", "bpm", maxHr.isNotBlank() && maxHrValue == null)
-                        NumberField(sleepNeed, { sleepNeed = it }, "Sleep need (7–9, blank for your age's default)", "h", sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true)
+                        PageSwitchRow(
+                            stringResource(R.string.you_profile_beta_blockers), null, betaBlocker, { betaBlocker = it }, divider = false,
+                        )
+                        PageSwitchRow(stringResource(R.string.you_profile_pregnant), null, pregnant, { pregnant = it }, divider = false)
+                        // Your max is set on the Heart rate zones page, with the zones that follow it.
+                        PageRow(
+                            org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW, org.openstrap.app.ui.workout.HeartZonesCopy.profileLine(profile.maxHeartRate),
+                            onClick = onHeartZones, below = true, divider = false,
+                        )
+                        PageNumberField(
+                            sleepNeed, { sleepNeed = it }, stringResource(R.string.you_profile_sleep_need),
+                            stringResource(R.string.you_unit_h),
+                            sleepNeed.isNotBlank() && sleepNeedValue == null, decimal = true,
+                        )
                     }
                 }
             }
         }
         // Black from the bottom of the screen up to Save, fading out above it, so the page scrolls away under it.
         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().pinnedFade().padding(start = side, end = side, bottom = bottom + 12.dp)) {
-            PageButton("Save", save, Modifier.fillMaxWidth().height(SaveHeight), enabled = valid, primary = true)
+            PageButton(
+                stringResource(R.string.you_action_save), save, Modifier.fillMaxWidth().height(SaveHeight), enabled = valid, primary = true,
+            )
         }
     }
 }
 
 /** The pinned Save button's height, as Start on Ready. */
 private val SaveHeight = 56.dp
-
-@Composable
-internal fun NumberField(
-    value: String,
-    onChange: (String) -> Unit,
-    label: String,
-    unit: String,
-    error: Boolean,
-    modifier: Modifier = Modifier.fillMaxWidth(),
-    decimal: Boolean = false,
-) {
-    PageField(
-        value, { v -> onChange(v.filter { it.isDigit() || (decimal && (it == '.' || it == ',')) }.take(5)) },
-        label.ifEmpty { null }, modifier, unit = unit, error = error,
-        keyboardOptions = KeyboardOptions(keyboardType = if (decimal) KeyboardType.Decimal else KeyboardType.Number),
-    )
-}
-
-@Composable
-private fun FieldLabel(text: String) = Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary)
 
 /** 72.0 -> "72", 158.7 -> "158.7". */
 private fun formatNumber(v: Float): String = "%.1f".format(java.util.Locale.ROOT, v).removeSuffix(".0")

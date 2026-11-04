@@ -1,5 +1,6 @@
 package org.openstrap.app.export
 
+import org.openstrap.app.data.settings.BackupFailure
 import java.io.IOException
 import java.time.LocalDate
 
@@ -32,19 +33,18 @@ object BackupFiles {
     fun toDelete(names: List<String>, keep: Int = KEEP): List<String> =
         names.mapNotNull { n -> dateOf(n)?.let { n to it } }.sortedByDescending { it.second }.drop(keep).map { it.first }
 
-    /** Why a backup failed, kept so the You page can say it. */
-    enum class Failure { FolderGone, PermissionLost, NoSpace, CantWrite, Other }
-
     /** What an exception thrown while writing means for the user. */
-    fun classify(e: Throwable): Failure {
+    // An early return per cause reads as the list of causes it is.
+    @Suppress("ReturnCount")
+    fun classify(e: Throwable): BackupFailure {
         var t: Throwable? = e
         while (t != null) {
-            if (t is SecurityException) return Failure.PermissionLost
+            if (t is SecurityException) return BackupFailure.PermissionLost
             val m = t.message.orEmpty()
-            if ("ENOSPC" in m || "No space" in m || "EDQUOT" in m) return Failure.NoSpace
-            if (t is java.io.FileNotFoundException) return Failure.FolderGone
+            if ("ENOSPC" in m || "No space" in m || "EDQUOT" in m) return BackupFailure.NoSpace
+            if (t is java.io.FileNotFoundException) return BackupFailure.FolderGone
             t = t.cause
         }
-        return if (e is IOException) Failure.CantWrite else Failure.Other
+        return if (e is IOException) BackupFailure.CantWrite else BackupFailure.Other
     }
 }

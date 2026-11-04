@@ -7,6 +7,7 @@ import org.junit.Test
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.data.db.SleepSession
 import org.openstrap.app.data.db.SleepStage
+import org.openstrap.app.presentation.TimeOfDay
 import java.time.LocalDate
 import java.time.ZoneOffset
 
@@ -37,8 +38,8 @@ class SleepWeekTest {
         // The method is in the info sheet now, with how much wear the week compares.
         assertTrue(InfoCopy.regularityNotes(result).single().startsWith("This week compares"))
         // Usual times still come from the nights.
-        assertEquals("23:30", minutesClock(w.usual!!.bedtime))
-        assertEquals("07:00", minutesClock(w.usual.wake))
+        assertEquals("23:30", TimeOfDay.minutes(w.usual!!.bedtime))
+        assertEquals("07:00", TimeOfDay.minutes(w.usual.wake))
     }
 
     @Test fun `withheld SRI shows no score and says why`() {

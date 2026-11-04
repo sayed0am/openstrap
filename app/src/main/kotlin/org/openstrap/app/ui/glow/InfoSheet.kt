@@ -12,13 +12,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,13 +30,14 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.R
 import org.openstrap.app.ui.dashboard.Info
 import org.openstrap.app.ui.theme.AppIcons
 
@@ -61,12 +58,9 @@ fun InfoSheet(
     info: Info, color: Color, here: Int?, hereLine: String?, onDismiss: () -> Unit, notes: List<String> = emptyList(),
     rows: List<Pair<String, String>>? = null,
 ) {
-    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.85f).dp
-    org.openstrap.app.ui.components.GlassSheet(onDismiss) {
-        Column(
-            Modifier.heightIn(max = maxHeight).verticalScroll(rememberScrollState())
-                .padding(horizontal = 22.dp).navigationBarsPadding().padding(bottom = 20.dp),
-        ) {
+    PageSheet(onDismiss) {
+        // One block, so the sheet's gap between blocks leaves this one's own spacing alone.
+        Column {
             Text(info.name, color = Color.White.copy(alpha = 0.5f), style = GlowType.secondary)
             Text(
                 info.meaning, color = Color.White, modifier = Modifier.padding(top = 6.dp),
@@ -82,9 +76,9 @@ fun InfoSheet(
                 Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowLayout.CardShape).padding(horizontal = 18.dp),
             ) {
                 val folds = rows ?: listOf(
-                    "How it's worked out" to info.how,
-                    "What moves it" to info.moves,
-                    "Why it might be off" to (listOf(info.off) + notes).joinToString("\n\n"),
+                    stringResource(R.string.glow_info_how) to info.how,
+                    stringResource(R.string.glow_info_moves) to info.moves,
+                    stringResource(R.string.glow_info_off) to (listOf(info.off) + notes).joinToString("\n\n"),
                 )
                 folds.forEachIndexed { i, (title, text) -> Fold(title, text, divider = i > 0) }
             }
@@ -139,12 +133,13 @@ private fun fitWords(labels: List<String>, roles: List<TextStyle>, width: Int, m
 private fun Fold(title: String, text: String, divider: Boolean = true) {
     var open by rememberSaveable(title) { mutableStateOf(false) }
     val turn by animateFloatAsState(if (open) 180f else 0f, label = "fold caret")
+    val clickLabel = stringResource(if (open) R.string.glow_info_fold else R.string.glow_info_open)
     Column(
         Modifier.fillMaxWidth()
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+            .topHairline(divider, RowHairline),
     ) {
         Row(
-            Modifier.fillMaxWidth().clickable(onClickLabel = if (open) "Fold" else "Open") { open = !open }.padding(vertical = 16.dp),
+            Modifier.fillMaxWidth().clickable(onClickLabel = clickLabel) { open = !open }.padding(vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(title, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))

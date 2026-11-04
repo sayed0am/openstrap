@@ -16,7 +16,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
-import java.time.ZoneId
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -41,7 +40,7 @@ class BackupZipTest {
     private suspend fun fill() = old.healthDao().insertHeartRate((0 until 48).map { HeartRateSample(day - 2 * 86_400L + it * 3600L, 60 + it % 10) })
     private suspend fun backup(settings: String?) =
         ByteArrayOutputStream().also { CsvExporter(old.healthDao()).exportZip(it, settings = settings) }.toByteArray()
-    private suspend fun restore(zip: ByteArray) = CsvImporter(phone, ZoneId.of("UTC")).importZip(ByteArrayInputStream(zip))
+    private suspend fun restore(zip: ByteArray) = CsvImporter(phone).importZip(ByteArrayInputStream(zip))
 
     @Test fun `a backup carries its settings to the restore, beside the same records`() = runTest {
         fill()

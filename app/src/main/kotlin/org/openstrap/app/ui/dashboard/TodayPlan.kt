@@ -1,6 +1,9 @@
 package org.openstrap.app.ui.dashboard
 
+import androidx.annotation.StringRes
+import org.openstrap.app.R
 import org.openstrap.app.data.Moment
+import org.openstrap.app.i18n.Strings
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.CardSize
 
@@ -10,31 +13,38 @@ import org.openstrap.app.ui.glow.CardSize
  */
 
 /**
- * A card on Today. [label] names it in Edit Today. Only [editable] cards can be hidden, only [pinnable] ones pinned
- * under the hero: those that make sense at any time of day.
+ * A card on Today. [label] names it in Edit Today (empty for the cards it doesn't list). Only [editable] cards can be
+ * hidden, only [pinnable] ones pinned under the hero: those that make sense at any time of day.
  */
-enum class TodayCard(val label: String, val editable: Boolean = true, val pinnable: Boolean = false) {
-    Hero("", editable = false),
-    Offer("Workout under way", editable = false),
-    Suggestion("Workout to save", editable = false),
-    Alerts("From your strap", editable = false),
-    CheckIn("How do you feel"),
-    BodyMorning("Your body this morning"),
-    RightNow("Right now", pinnable = true),
-    LastNight("Last night", pinnable = true),
-    HeartRate("Heart rate", pinnable = true),
-    Activity("Steps", pinnable = true),
-    Recovery("Recovery", pinnable = true),
-    Charge("Energy", pinnable = true),
-    LoadToday("Load and time to recover", pinnable = true),
+enum class TodayCard(@StringRes private val labelRes: Int?, val editable: Boolean = true, val pinnable: Boolean = false) {
+    Hero(null, editable = false),
+    Offer(R.string.day_card_offer, editable = false),
+    Suggestion(R.string.day_card_suggestion, editable = false),
+    Alerts(R.string.day_card_alerts, editable = false),
+    CheckIn(R.string.day_card_check_in),
+    BodyMorning(R.string.day_card_body_morning),
+    RightNow(R.string.day_card_right_now, pinnable = true),
+    LastNight(R.string.day_card_last_night, pinnable = true),
+    HeartRate(R.string.day_card_heart_rate, pinnable = true),
+    Activity(R.string.day_card_activity, pinnable = true),
+    Recovery(R.string.day_card_recovery, pinnable = true),
+    Charge(R.string.day_card_charge, pinnable = true),
+    LoadToday(R.string.day_card_load, pinnable = true),
     /** Time to recover as a Small beside Load's after a workout: part of [LoadToday], hidden and pinned with it. */
-    Recover("", editable = false),
-    Workout("The workout"),
-    Week("Your week", pinnable = true),
-    HabitAge("Habit Age", pinnable = true),
+    Recover(null, editable = false),
+    Workout(R.string.day_card_workout),
+    Week(R.string.day_card_week, pinnable = true),
+    HabitAge(R.string.day_card_habit_age, pinnable = true),
     /** Start a workout (spec 4.2): a strip above Edit Today, opening Ready with your usual sport. */
-    StartWorkout("Start a workout"),
-    EditToday("", editable = false),
+    StartWorkout(R.string.day_card_start_workout),
+    EditToday(null, editable = false),
+    ;
+
+    /** The card's name in Edit Today, in the app's language. */
+    val label: String get() = label()
+
+    /** [label] in [strings]. */
+    fun label(strings: Strings = Strings.app): String = labelRes?.let(strings::get).orEmpty()
 }
 
 /**
@@ -188,12 +198,3 @@ fun applyEdits(slots: List<TodaySlot>, edits: TodayEdits, moment: Moment?, unava
     val at = rest.indexOfFirst { it.card !in urgent }.let { if (it < 0) rest.size else it }
     return rest.take(at) + pinned + rest.drop(at)
 }
-
-/**
- * The sport you usually do: the most frequent in [workouts] (sport, start), ties to the latest. Null without any.
- * Callers pass workouts you started, so a walk the strap noticed doesn't count.
- */
-fun usualSport(workouts: List<Pair<Int, Long>>): Int? =
-    workouts.groupBy { it.first }
-        .maxWithOrNull(compareBy<Map.Entry<Int, List<Pair<Int, Long>>>> { it.value.size }.thenBy { e -> e.value.maxOf { it.second } })
-        ?.key

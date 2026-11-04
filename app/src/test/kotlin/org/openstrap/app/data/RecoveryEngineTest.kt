@@ -1,5 +1,6 @@
 package org.openstrap.app.data
 
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -11,6 +12,7 @@ import org.openstrap.app.data.settings.UserProfile
 import java.lang.reflect.Proxy
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlin.math.roundToInt
 
 class RecoveryEngineTest {
     private val date = LocalDate.of(2026, 10, 1)
@@ -45,8 +47,26 @@ class RecoveryEngineTest {
     }
 
     @Test
+    fun sharedMaxHrIsTheWorkoutRule() = runBlocking {
+        // Efforts near today, so the shared one (always as of now) has peaks to learn from.
+        fun near(daysBack: Long, bpm: Int) = (0 until 10).map { i ->
+            HeartRateSample(LocalDate.now().minusDays(daysBack).atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toEpochSecond() + i * 60, bpm)
+        }
+        val d = dao(near(3, 188) + near(10, 186))
+        for (p in listOf(forty, forty.copy(maxHeartRate = 183), forty.copy(maxHeartRate = 250), UserProfile())) {
+            val shared = MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(p))
+            val once = shared.now()
+            assertEquals(RecoveryEngine(d).maxHeartRate(p).roundToInt(), once.bpm)
+            assertEquals(once, kotlinx.coroutines.withTimeout(5_000) { shared.current.first { it != null } })
+        }
+        // A tested value wins and says so; one out of range is ignored.
+        assertEquals(MaxHeartRate(183, MaxHeartRate.Source.Set), MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(forty.copy(maxHeartRate = 183))).now())
+        assertEquals(MaxHeartRate.Source.Learned, MaxHeartRates(d, kotlinx.coroutines.flow.flowOf(forty.copy(maxHeartRate = 250))).now().source)
+    }
+
+    @Test
     fun strapDailyMaxSpikesDontRaiseMaxHr() {
-        val days = listOf(3L, 10L).map { date.minusDays(it).atStartOfDay(zone).toEpochSecond() }
+        val days = listOf(3L, 10L).map { date.minusDays(it) }
         val minutes = effort(3, 175) + effort(10, 176)
         // The strap's 205 on two days isn't backed by the minutes (175-176), so Tanaka stands.
         assertEquals(180f, maxHr(dao(minutes, days.map { DailyMaxHr(it, 205) })), 0.01f)
@@ -77,6 +97,39 @@ class RecoveryEngineTest {
         // Asleep 08:00 to 16:00 after night shifts: the range runs through noon instead of coming out empty.
         val days = RecoveryEngine.usualSleep(sleeps(5, java.time.LocalTime.of(8, 0), java.time.LocalTime.of(16, 0)), date, zone)
         assertEquals(date.atTime(8, 0).toEpochSecond(zone)..date.atTime(16, 0).toEpochSecond(zone), days.first())
+    }
+
+    @Test
+    fun usualSleepWithBedtimesEitherSideOfNoon() {
+        // Asleep at 11:50 one day and 12:10 the next, 8 hours each: the usual sleep is 12:00 to 20:00 on each day. Counted
+        // from noon, the two bedtimes sat at its two ends and their median came out at midnight.
+        val sleeps = (0 until 6).map { back ->
+            val d = date.minusDays(back.toLong())
+            val start = d.atTime(if (back % 2 == 0) java.time.LocalTime.of(11, 50) else java.time.LocalTime.of(12, 10)).toEpochSecond(zone)
+            SleepSession(start = start, end = start + 8 * 3600)
+        }
+        val days = RecoveryEngine.usualSleep(sleeps, date, zone)
+        assertEquals(Recovery.WAKE_HISTORY + 2, days.size)
+        days.forEachIndexed { back, range ->
+            val d = date.minusDays(back.toLong())
+            assertEquals(d.atTime(12, 0).toEpochSecond(zone)..d.atTime(20, 0).toEpochSecond(zone), range)
+        }
+        assertEquals(java.time.LocalTime.NOON, RecoveryEngine.usualBedtime(sleeps, date, zone))
+        // Bedtimes either side of midnight likewise average to midnight.
+        val late = (0 until 6).map { back ->
+            val d = date.minusDays(back.toLong())
+            val start = if (back % 2 == 0) d.minusDays(1).atTime(23, 50).toEpochSecond(zone) else d.atTime(0, 10).toEpochSecond(zone)
+            SleepSession(start = start, end = d.atTime(7, 0).toEpochSecond(zone))
+        }
+        assertEquals(date.atStartOfDay(zone).toEpochSecond()..date.atTime(7, 0).toEpochSecond(zone), RecoveryEngine.usualSleep(late, date, zone).first())
+    }
+
+    @Test
+    fun circularMeanWrapsRoundTheClock() {
+        assertEquals(0, RecoveryEngine.circularMean(listOf(23 * 3600 + 50 * 60, 10 * 60)))
+        assertEquals(12 * 3600, RecoveryEngine.circularMean(listOf(11 * 3600 + 50 * 60, 12 * 3600 + 10 * 60)))
+        assertEquals(null, RecoveryEngine.circularMean(emptyList()))
+        assertEquals(null, RecoveryEngine.circularMean(listOf(0, 12 * 3600)))
     }
 
     @Test

@@ -56,14 +56,14 @@ object DemoData {
                 }
             }
             fun mins(s: Int) = (stages.filter { it.stage == s }.sumOf { it.end - it.start } / 60).toInt()
-            val day = midnight
+            val day = org.openstrap.app.data.DayKey.of(date)
             dao.insertSleepSessions(listOf(SleepSession(
                 sleepStart, sleepEnd, day, nap = false, score = 72 + rnd.nextInt(0, 18), averageHeartRate = 56 + rnd.nextInt(0, 5),
                 deepMinutes = mins(SleepStage.DEEP), lightMinutes = mins(SleepStage.LIGHT), remMinutes = mins(SleepStage.REM),
                 awakeMinutes = mins(SleepStage.AWAKE), wakeCount = stages.count { it.stage == SleepStage.AWAKE },
             )))
             dao.insertSleepStages(stages)
-            dao.insertRestingHr(listOf(RestingHeartRate(midnight, 56 + rnd.nextInt(0, 6))))
+            dao.insertRestingHr(listOf(RestingHeartRate(date, 56 + rnd.nextInt(0, 6))))
             dao.insertBreathRate((0 until 14).map { BreathRate(sleepStart + it * 1800L, 13 + rnd.nextInt(0, 3)) })
             dao.insertHrv((0 until 8).map { HrvSample(sleepStart + it * 3600L, (if (back % 2 == 0) 40 else 48) + rnd.nextInt(0, 12)) })
 
@@ -123,7 +123,7 @@ object DemoData {
                     weeklyLoad = 380f + (20 - back) * 6, monthlyLoad = 1400f, optimalLoadMin = 300, optimalLoadMax = 600, maximalHeartRate = 192,
                 )))
                 dao.insertRecoveryHeartRate(listOf(RecoveryHeartRateRow(runStart, ByteArray(180) { (150 - it / 3).toByte() })))
-                dao.insertDailyMaxHr(listOf(DailyMaxHr(midnight, hr.maxOf { it.bpm })))
+                dao.insertDailyMaxHr(listOf(DailyMaxHr(date, hr.maxOf { it.bpm })))
             }
             // Through the night: blood oxygen every five minutes and HRV (SDNN) every couple of hours, day and night.
             dao.insertSleepSpo2((sleepStart until sleepEnd step 300L).map { SleepSpo2Sample(it, 94 + rnd.nextInt(0, 5)) })

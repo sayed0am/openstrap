@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The home screen widgets (widget/): Moment, Recovery, Steps, Sleep and Start a workout. Room is tight. A widget's
+  smallest cell is about 140 dp across, and no text wraps: a title, a word or a figure has one short line, and where a
+  wording doesn't fit the widget takes a shorter one or leaves it out. Keep each as short as the English, or shorter.
+  Lines marked TalkBack are only read out, never shown, so they can be longer.
+  The widgets' own names, as the widget picker lists them, are in strings.xml.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The strap status line, at the right of a widget's title row, in small amber words beside a round button. -->
+    <string name="system_widget_status_not_paired">Pair your strap</string>
+    <!-- Shorter, where the line above doesn't fit. -->
+    <string name="system_widget_status_not_paired_short">Pair strap</string>
+    <string name="system_widget_status_low_battery">Strap at <xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
+    <!-- Shortest, the battery alone. -->
+    <string name="system_widget_status_percent"><xliff:g id="percent" example="12">%1$d</xliff:g>%%</string>
+    <string name="system_widget_status_syncing">Syncing…</string>
+    <!-- When the last sync was a while ago: "Synced 09:10", "Synced yesterday", "Synced Tuesday", "Synced Tue 21 Oct" or "Synced Tue". -->
+    <string name="system_widget_status_synced">Synced <xliff:g id="when" example="yesterday">%1$s</xliff:g></string>
+
+    <!-- A button on a widget during a workout, opening the live screen. One short word. -->
+    <string name="system_widget_open">Open</string>
+    <!-- A small heading over the week's figure: Steps' days at the goal, Start's workouts. -->
+    <string name="system_widget_this_week">This week</string>
+    <!-- When a workout began, beside its timer: "Since 11:58". -->
+    <string name="system_widget_since">Since <xliff:g id="time" example="11:58">%1$s</xliff:g></string>
+
+    <!-- Steps: the word beside the number of steps, "8,432 today". One short word, lower case. -->
+    <string name="system_widget_steps_today">today</string>
+    <!-- Steps: the goal, at the top right. -->
+    <string name="system_widget_steps_goal">Goal <xliff:g id="goal" example="10,000">%1$s</xliff:g></string>
+    <!-- Steps: how many are left to the goal, "1,568 to go". -->
+    <string name="system_widget_steps_to_go"><xliff:g id="steps" example="1,568">%1$s</xliff:g> to go</string>
+    <!-- Steps: past the goal, in place of what's to go. -->
+    <string name="system_widget_steps_goal_met">Goal met</string>
+    <!-- Steps: the week's line, "Goal met 2 of 6 days". The days are system_widget_steps_days. One line beside "This week". -->
+    <string name="system_widget_steps_week">Goal met <xliff:g id="met" example="2">%1$d</xliff:g> of <xliff:g id="days" example="6 days">%2$s</xliff:g></string>
+    <!-- The days in the week's line above. -->
+    <plurals name="system_widget_steps_days">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> day</item>
+        <item quantity="other"><xliff:g id="count" example="6">%1$d</xliff:g> days</item>
+    </plurals>
+    <!-- TalkBack, for the number of steps: "8,432 steps today, 84% of your goal". The share is "84% of your goal" or "goal met". -->
+    <plurals name="system_widget_steps_description">
+        <item quantity="one"><xliff:g id="steps" example="1">%1$s</xliff:g> step today, <xliff:g id="share" example="84 percent of your goal">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="steps" example="8,432">%1$s</xliff:g> steps today, <xliff:g id="share" example="84 percent of your goal">%2$s</xliff:g></item>
+    </plurals>
+    <!-- TalkBack, for the line of the day's steps. The share is "84% of your goal". -->
+    <string name="system_widget_steps_line_description">Steps so far today, <xliff:g id="share" example="84 percent of your goal">%1$s</xliff:g></string>
+    <!-- TalkBack, for the week's bars. -->
+    <string name="system_widget_steps_week_description">Steps each day this week</string>
+
+    <!-- Recovery: the note at the top right, which morning the score is for. -->
+    <string name="system_widget_recovery_this_morning">This morning</string>
+    <string name="system_widget_recovery_yesterday">Yesterday</string>
+    <!-- Recovery: a figure the night didn't give, in place of its value. -->
+    <string name="system_widget_recovery_no_reading">No reading</string>
+    <!-- Recovery: the three figures' labels, one short line each. Resting is the resting heart rate. HRV is heart rate variability. -->
+    <string name="system_widget_recovery_resting_hr">Resting</string>
+    <string name="system_widget_recovery_hrv">HRV</string>
+    <string name="system_widget_recovery_sleep">Sleep</string>
+    <!-- Recovery: a figure's value and its unit, "52 bpm", "64 ms". -->
+    <string name="system_widget_recovery_figure"><xliff:g id="value" example="52">%1$s</xliff:g> <xliff:g id="unit" example="bpm">%2$s</xliff:g></string>
+    <!-- TalkBack, for the score and its word: "78, Ready". -->
+    <string name="system_widget_score_word"><xliff:g id="score" example="78">%1$s</xliff:g>, <xliff:g id="word" example="Ready">%2$s</xliff:g></string>
+    <!-- TalkBack, for the week's bars. -->
+    <string name="system_widget_recovery_week_description">Recovery each day for the last seven days</string>
+
+    <!-- Sleep: the title. -->
+    <string name="system_widget_sleep_title">Last night</string>
+    <!-- Sleep: the note at the top right while this morning's night isn't synced and the night before shows. -->
+    <string name="system_widget_sleep_last_synced">Earlier night</string>
+    <!-- TalkBack, for the sleep score: "Sleep score 82, good". The word is lower case. -->
+    <string name="system_widget_sleep_score_word">Sleep score <xliff:g id="score" example="82">%1$s</xliff:g>, <xliff:g id="word" example="good">%2$s</xliff:g></string>
+    <!-- TalkBack, for the sleep score with no word. -->
+    <string name="system_widget_sleep_score">Sleep score <xliff:g id="score" example="82">%1$s</xliff:g></string>
+    <!-- TalkBack, for a stage's bar: "Deep 1 h 32". -->
+    <string name="system_widget_sleep_stage_description"><xliff:g id="stage" example="Deep">%1$s</xliff:g> <xliff:g id="time" example="1 h 32">%2$s</xliff:g></string>
+
+    <!-- Start: the line under the usual sport. GPS is on or off for it on the Ready screen. -->
+    <string name="system_widget_start_usual">Your usual</string>
+    <string name="system_widget_start_usual_gps_on">Your usual, GPS on</string>
+    <string name="system_widget_start_usual_gps_off">Your usual, GPS off</string>
+    <!-- Start: the last tile's caption, which opens the sports list. One short line under a 44 dp tile. -->
+    <string name="system_widget_start_all_sports">All sports</string>
+    <!-- TalkBack, for that tile. -->
+    <string name="system_widget_start_all_sports_action">Choose a sport</string>
+    <!-- Start: its title when the strap status needs room and the full title doesn't fit. One word. -->
+    <string name="system_widget_start_short_title">Start</string>
+    <!-- Start: this week's workouts and how long they took, "2 workouts, 1 h 35". -->
+    <plurals name="system_widget_start_week">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> workout, <xliff:g id="time" example="40 min">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> workouts, <xliff:g id="time" example="1 h 35">%2$s</xliff:g></item>
+    </plurals>
+    <string name="system_widget_start_no_workouts">No workouts yet</string>
+    <!-- Start: the label over the usual sport's last workout. The sport is lower case, "run", or "HIIT". -->
+    <string name="system_widget_start_last">Last <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- The same label for the sport Other. -->
+    <string name="system_widget_start_last_workout">Last workout</string>
+    <!-- Start: when that last workout was and its one figure, "Tuesday, 5.2 km", "Yesterday, 4 sets". -->
+    <string name="system_widget_start_last_line"><xliff:g id="day" example="Tuesday">%1$s</xliff:g>, <xliff:g id="figure" example="5.2 km">%2$s</xliff:g></string>
+    <!-- Start: in place of that line before there's a last one. -->
+    <string name="system_widget_start_none_yet">None yet</string>
+    <!-- Start: a strength workout's sets, as its one figure. -->
+    <plurals name="system_widget_start_sets">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> sets</item>
+    </plurals>
+    <!-- Start and Moment, during a workout: beside a red dot. One short word. -->
+    <string name="system_widget_recording">Recording</string>
+    <string name="system_widget_paused">Paused</string>
+
+    <!-- Moment: under or beside the Energy number. Energy is the body's energy score, 0 to 100, not the strap battery. -->
+    <string name="system_widget_moment_energy_left">Energy left</string>
+    <!-- The same, shorter, beside the number: "62 left". -->
+    <string name="system_widget_moment_left">left</string>
+    <!-- Moment: the figure at the right of the number. -->
+    <string name="system_widget_moment_energy_at_waking">Energy at waking <xliff:g id="energy" example="84">%1$d</xliff:g></string>
+    <string name="system_widget_moment_drained">Drained <xliff:g id="drained" example="60">%1$s</xliff:g>, recharged <xliff:g id="recharged" example="38">%2$d</xliff:g></string>
+    <!-- Shorter, where the line above doesn't fit. -->
+    <string name="system_widget_moment_drained_short">Drained <xliff:g id="drained" example="60">%1$s</xliff:g></string>
+    <!-- TalkBack, for the Recovery score: "Recovery 78, Ready" or "Recovery 78". -->
+    <string name="system_widget_moment_recovery_word">Recovery <xliff:g id="score" example="78">%1$d</xliff:g>, <xliff:g id="word" example="Ready">%2$s</xliff:g></string>
+    <string name="system_widget_moment_recovery">Recovery <xliff:g id="score" example="78">%1$d</xliff:g></string>
+    <!-- TalkBack, for the Energy number: "Energy 62 left". -->
+    <string name="system_widget_moment_energy">Energy <xliff:g id="energy" example="62">%1$d</xliff:g> left</string>
+    <!-- Moment: the hero sentence, two sentences of the Today page joined: "Ready for effort. You usually run around now." -->
+    <string name="system_widget_moment_two_sentences"><xliff:g id="first" example="Ready for effort">%1$s</xliff:g>. <xliff:g id="second" example="You usually run around now.">%2$s</xliff:g></string>
+    <!-- The first of them alone, as a sentence. -->
+    <string name="system_widget_moment_sentence"><xliff:g id="sentence" example="Ready for effort">%1$s</xliff:g>.</string>
+    <!-- TalkBack, for the Start button. The sport is lower case, "run", "strength". -->
+    <string name="system_widget_moment_start">Start <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- Moment, during a workout: beside a red dot, "Recording since 17:42". -->
+    <string name="system_widget_moment_recording_since">Recording since <xliff:g id="time" example="17:42">%1$s</xliff:g></string>
+    <!-- Moment, after a workout, in the lines below: the workout when it has no noun of its own. -->
+    <string name="system_widget_moment_workout">workout</string>
+    <!-- Beside the minutes since a workout, longest first: "25 min since your run". The sport is lower case. -->
+    <string name="system_widget_moment_min_since_your">min since your <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <string name="system_widget_moment_min_since">min since</string>
+    <!-- The shortest, minutes alone. -->
+    <string name="system_widget_moment_min">min</string>
+    <!-- TalkBack, for the minutes since a workout. -->
+    <plurals name="system_widget_moment_minutes_since">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> minute since your <xliff:g id="sport" example="run">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="minutes" example="25">%1$d</xliff:g> minutes since your <xliff:g id="sport" example="run">%2$s</xliff:g></item>
+    </plurals>
+    <!-- After a workout: the training load today, then shorter. -->
+    <string name="system_widget_moment_load_today">Load today <xliff:g id="load" example="120">%1$d</xliff:g></string>
+    <string name="system_widget_moment_load">Load <xliff:g id="load" example="120">%1$d</xliff:g></string>
+    <!-- TalkBack, for the heart rate chart after a workout. -->
+    <string name="system_widget_moment_heart_since">Heart rate since your <xliff:g id="sport" example="run">%1$s</xliff:g></string>
+    <!-- At night, beside the minutes to your usual bedtime: "45 min to bedtime". -->
+    <string name="system_widget_moment_min_to_bedtime">min to bedtime</string>
+    <!-- TalkBack, for the minutes to bedtime. -->
+    <plurals name="system_widget_moment_minutes_to_bedtime">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> minute to bedtime</item>
+        <item quantity="other"><xliff:g id="minutes" example="45">%1$d</xliff:g> minutes to bedtime</item>
+    </plurals>
+    <!-- At night: your usual bedtime, "Bedtime 22:45". -->
+    <string name="system_widget_moment_bedtime">Bedtime <xliff:g id="time" example="22:45">%1$s</xliff:g></string>
+    <!-- TalkBack, for the chart of last night's stages. The times are "22:58 to 06:56". -->
+    <string name="system_widget_moment_stages_description">Last night\'s stages, <xliff:g id="times" example="22:58 to 06:56">%1$s</xliff:g></string>
+    <!-- TalkBack, for the Energy chart: "Energy since 07:10" or "Energy since 07:10, 62 now". -->
+    <string name="system_widget_moment_energy_since">Energy since <xliff:g id="time" example="07:10">%1$s</xliff:g></string>
+    <string name="system_widget_moment_energy_since_now">Energy since <xliff:g id="time" example="07:10">%1$s</xliff:g>, <xliff:g id="energy" example="62">%2$d</xliff:g> now</string>
+    <!-- TalkBack, for the day's heart rate chart. -->
+    <string name="system_widget_moment_heart_today">Your heart rate today</string>
+</resources>

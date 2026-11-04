@@ -39,7 +39,7 @@ class PageRulesTest {
     @Test fun `pages use no Material parts`() {
         // TimePicker stays: the alarm sheet recolours Material's clock rather than drawing one of its own.
         val material = Regex(
-            """\b(OutlinedTextField|TextField|TextButton|OutlinedButton|Button|IconButton|AlertDialog|GlassAlertDialog|Checkbox|Switch|""" +
+            """\b(OutlinedTextField|TextField|TextButton|OutlinedButton|Button|IconButton|AlertDialog|Checkbox|Switch|""" +
                 """FilterChip|LinearProgressIndicator|CircularProgressIndicator|Surface|Panel|PanelHeader)\(""",
         )
         val found = scan(material)
@@ -66,7 +66,9 @@ class PageRulesTest {
         // Audit section 5: two unlabelled round icons beside Age read as a bulb and a magnifier. Words, like Units.
         val profile = File(uiRoot, "device/ProfileScreen.kt").readText()
         assertTrue("no round sex buttons", "SexToggle" !in profile && "GenderFemale" !in profile && "GenderMale" !in profile)
-        assertTrue("Female and Male as segments", "GlowSegments(listOf(\"Female\", \"Male\")" in profile)
+        // The words are in res/values (i18n), so the segments read them from there.
+        val segments = Regex("""GlowSegments\(\s*listOf\(stringResource\(R\.string\.you_profile_sex_female\), stringResource\(R\.string\.you_profile_sex_male\)\)""")
+        assertTrue("Female and Male as segments", segments.containsMatchIn(profile))
     }
 
     @Test fun `the strap hero is lit at full`() {

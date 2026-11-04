@@ -1,13 +1,16 @@
 package org.openstrap.app.export
 
 import org.json.JSONObject
+import org.openstrap.app.data.settings.SettingsKeys
 
 /**
  * The settings a backup carries, as settings.json beside the CSV files: what the user chose about themselves and the
  * app. Left out on purpose: the strap's address and auth key, the Zepp sign-in, the companion association, the strap's
- * battery and sync cursors (a restored cursor would skip history), call and notification buzzing (each needs a
- * permission granted on this phone), the experimental strap sessions, and the backup folder itself (its permission
- * belongs to one phone). Keys are the DataStore names in [org.openstrap.app.data.settings.SettingsStore].
+ * battery and sync cursors (a restored cursor would skip history), call and notification buzzing and Health Connect
+ * auto sync (each needs a permission granted on this phone), the experimental strap sessions, the backup folder itself
+ * (its permission belongs to one phone), and what the app keeps for itself, such as the weeks a recap or goal moment
+ * last showed and the update checks. Keys are [SettingsKeys], as [org.openstrap.app.data.settings.SettingsStore]
+ * stores them.
  */
 object SettingsBackup {
     const val FILE = "settings.json"
@@ -15,44 +18,62 @@ object SettingsBackup {
 
     enum class Type { INT, LONG, FLOAT, BOOLEAN, STRING }
 
-    val KEYS: Map<String, Type> = linkedMapOf(
-        "profile_birth_year" to Type.INT,
-        "profile_sex" to Type.STRING,
-        "profile_weight_kg" to Type.FLOAT,
-        "profile_height_cm" to Type.INT,
-        "profile_imperial" to Type.BOOLEAN,
-        "profile_sleep_need_minutes" to Type.INT,
-        "profile_max_hr" to Type.INT,
-        "profile_activity_level" to Type.INT,
-        "profile_activity_answered_at" to Type.LONG,
-        "profile_body_measured_at" to Type.LONG,
-        "profile_beta_blocker" to Type.BOOLEAN,
-        "profile_pregnant" to Type.BOOLEAN,
-        "goal_steps" to Type.INT,
-        "goal_sleep_minutes" to Type.INT,
-        "goal_active_hours" to Type.INT,
-        "today_hidden" to Type.STRING,
-        "today_pinned" to Type.STRING,
-        "first_score_day" to Type.LONG,
-        "live_hr" to Type.BOOLEAN,
-        "auto_start_workouts" to Type.BOOLEAN,
-        "wear_reminder" to Type.BOOLEAN,
-        "workout_live_view" to Type.INT,
-        "workout_sides" to Type.STRING,
-        "buzz_pattern" to Type.STRING,
-        "call_buzz" to Type.STRING,
-        "update_auto" to Type.BOOLEAN,
-        "quiet_hours" to Type.BOOLEAN,
-        "quiet_from_minutes" to Type.INT,
-        "quiet_to_minutes" to Type.INT,
-        "quiet_calls" to Type.BOOLEAN,
-    )
+    val KEYS: Map<String, Type> = with(SettingsKeys) {
+        linkedMapOf(
+            PROFILE_BIRTH_YEAR to Type.INT,
+            PROFILE_SEX to Type.STRING,
+            PROFILE_WEIGHT_KG to Type.FLOAT,
+            PROFILE_HEIGHT_CM to Type.INT,
+            PROFILE_IMPERIAL to Type.BOOLEAN,
+            PROFILE_SLEEP_NEED_MINUTES to Type.INT,
+            PROFILE_MAX_HR to Type.INT,
+            PROFILE_HR_ZONES to Type.STRING,
+            PROFILE_ACTIVITY_LEVEL to Type.INT,
+            PROFILE_ACTIVITY_ANSWERED_AT to Type.LONG,
+            PROFILE_BODY_MEASURED_AT to Type.LONG,
+            PROFILE_BETA_BLOCKER to Type.BOOLEAN,
+            PROFILE_PREGNANT to Type.BOOLEAN,
+            GOAL_STEPS to Type.INT,
+            GOAL_SLEEP_MINUTES to Type.INT,
+            GOAL_ACTIVE_HOURS to Type.INT,
+            GOAL_CALORIES to Type.INT,
+            GOAL_WORKOUTS_WEEK to Type.INT,
+            TODAY_HIDDEN to Type.STRING,
+            TODAY_PINNED to Type.STRING,
+            CELEBRATE_GOAL to Type.BOOLEAN,
+            WEEKLY_RECAP to Type.BOOLEAN,
+            FIRST_SCORE_DAY to Type.LONG,
+            LIVE_HR to Type.BOOLEAN,
+            AUTO_START_WORKOUTS to Type.BOOLEAN,
+            WEAR_REMINDER to Type.BOOLEAN,
+            WORKOUT_LIVE_VIEW to Type.INT,
+            WORKOUT_SIDES to Type.STRING,
+            BUZZ_PATTERN to Type.STRING,
+            CALL_BUZZ to Type.STRING,
+            UPDATE_AUTO to Type.BOOLEAN,
+            QUIET_HOURS to Type.BOOLEAN,
+            QUIET_FROM_MINUTES to Type.INT,
+            QUIET_TO_MINUTES to Type.INT,
+            QUIET_CALLS to Type.BOOLEAN,
+        )
+    }
+
+    /** Keys made of a prefix and a sport's id, one per sport: what Ready was last set to for it. */
+    private val prefixes: Map<String, Type> = mapOf(SettingsKeys.SPORT_SETTINGS_PREFIX to Type.STRING)
+
+    /** The type [key] is backed up as, or null when it isn't backed up. */
+    fun typeOf(key: String): Type? = KEYS[key] ?: prefixes.entries.firstOrNull { (prefix, _) ->
+        key.startsWith(prefix) && key.removePrefix(prefix).toIntOrNull() != null
+    }?.value
+
+    /** Whether a backup carries [key]. */
+    fun carries(key: String): Boolean = typeOf(key) != null
 
     /** The backed-up keys of [values] as JSON; anything else in it is left out. */
     fun toJson(values: Map<String, Any>): String {
         val settings = JSONObject()
-        for ((key, type) in KEYS) {
-            val v = values[key] ?: continue
+        for ((key, v) in values) {
+            val type = typeOf(key) ?: continue
             if (convert(v, type) != null) settings.put(key, v)
         }
         return JSONObject().put("version", VERSION).put("settings", settings).toString(2)
@@ -65,8 +86,8 @@ object SettingsBackup {
     fun fromJson(json: String): Map<String, Any> {
         val settings = JSONObject(json).optJSONObject("settings") ?: return emptyMap()
         return buildMap {
-            for ((key, type) in KEYS) {
-                if (!settings.has(key)) continue
+            for (key in settings.keys()) {
+                val type = typeOf(key) ?: continue
                 convert(settings.get(key), type)?.let { put(key, it) }
             }
         }

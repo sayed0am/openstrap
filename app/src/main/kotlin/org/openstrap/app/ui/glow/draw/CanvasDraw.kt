@@ -23,11 +23,6 @@ import androidx.compose.ui.graphics.toArgb
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.random.Random
-import org.openstrap.app.ui.glow.CoreShape
-import org.openstrap.app.ui.glow.DotSize
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.stageColor
-
 /*
  * The shared drawing on an android.graphics.Canvas: the same light, dots and charts the app's cards draw, for places
  * Compose can't draw, the home screen widgets (widgets spec 6.2). GlowCard renders its cached layers with these very
@@ -224,32 +219,6 @@ fun androidPath(ops: List<PathOp>): Path = Path().apply {
     }
 }
 
-/**
- * A day's line (GlowLineChart without its text): grid rows, your normal's band, the line with its halo and soft fill,
- * the dot on the latest reading, in [color]. [showAverage] adds the solid average line.
- */
-fun drawLineChart(canvas: Canvas, g: LineChartGeometry, color: Color, density: Float, showAverage: Boolean = false) {
-    val hair = ChartInk.HAIRLINE_DP * density
-    g.grid.forEach { y -> canvas.drawLine(0f, y, g.width, y, stroke(ChartInk.Grid, hair)) }
-    if (g.bandTopLeft != null && g.bandSize != null) {
-        val t = g.bandTopLeft
-        canvas.drawRect(t.x, t.y, t.x + g.bandSize.width, t.y + g.bandSize.height, fill(color.copy(alpha = ChartInk.NORMAL_BAND_ALPHA)))
-    }
-    g.dots.forEach { canvas.drawCircle(it.x, it.y, LineChartLook.LONE_DOT_DP * density, fill(color)) }
-    g.runs.forEach { pts ->
-        val line = androidPath(smoothOps(pts))
-        val area = Path().apply { addPath(line); lineTo(pts.last().x, g.plotBottom); lineTo(pts.first().x, g.plotBottom); close() }
-        canvas.drawPath(area, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            shader = LinearGradient(0f, g.top, 0f, g.plotBottom, color.copy(alpha = LineChartLook.FILL_ALPHA).toArgb(), Color.Transparent.toArgb(), Shader.TileMode.CLAMP)
-        })
-        canvas.drawPath(line, roundStroke(color.copy(alpha = LineChartLook.HALO_ALPHA), LineChartLook.HALO_DP * density))
-        canvas.drawPath(line, roundStroke(color, LineChartLook.LINE_DP * density))
-    }
-    if (showAverage) canvas.drawLine(0f, g.averageY, g.width, g.averageY, stroke(ChartInk.Target, hair))
-    canvas.drawCircle(g.last.x, g.last.y, LineChartLook.END_HALO_DP * density, fill(color.copy(alpha = LineChartLook.END_HALO_ALPHA)))
-    canvas.drawCircle(g.last.x, g.last.y, LineChartLook.END_DOT_DP * density, fill(color))
-}
-
 /** The ghost line (steps or Energy so far): your usual by now in white at 35%, today in [color] ending in a dot. */
 fun drawGhostLine(canvas: Canvas, g: GhostLineGeometry, color: Color, density: Float) {
     g.usual?.let { canvas.drawPath(androidPath(polylineOps(it)), roundStroke(Color.White.copy(alpha = GhostLineLook.USUAL_ALPHA), GhostLineLook.USUAL_DP * density)) }
@@ -257,20 +226,6 @@ fun drawGhostLine(canvas: Canvas, g: GhostLineGeometry, color: Color, density: F
     if (g.today.size >= 2) canvas.drawPath(androidPath(polylineOps(g.today)), roundStroke(color, GhostLineLook.LINE_DP * density))
     val end = g.today.last()
     canvas.drawCircle(end.x, end.y, g.endDot, fill(color))
-}
-
-/**
- * The hypnogram without its names and times: a hairline per row and the stages as round bands, each in its row's
- * colour from [rowColors] (Awake at row 0), or white brighter the deeper, joined by thin lines, when it's null.
- */
-fun drawHypnogram(canvas: Canvas, g: HypnogramGeometry, density: Float, rowColors: List<Color>? = null) {
-    val hair = ChartInk.HAIRLINE_DP * density
-    g.rowY.forEach { y -> canvas.drawLine(g.gridX0, y, g.width, y, stroke(ChartInk.Grid, hair)) }
-    if (rowColors == null) g.joins.forEach { j -> canvas.drawLine(j.from.x, j.from.y, j.to.x, j.to.y, stroke(Color.White.copy(alpha = HypnogramLook.JOIN_ALPHA), hair)) }
-    g.bands.forEach { b ->
-        val color = rowColors?.getOrNull(b.stage.row) ?: Color.White.copy(alpha = b.whiteAlpha)
-        canvas.drawRoundRect(b.topLeft.x, b.topLeft.y, b.topLeft.x + b.size.width, b.topLeft.y + b.size.height, b.corner, b.corner, fill(color))
-    }
 }
 
 /**
@@ -286,7 +241,7 @@ fun drawStageBar(canvas: Canvas, totals: List<Pair<Int, Long>>, left: Float, top
 }
 
 /** The stage strip ([stageStripSegments]) [height] px thick across the canvas's top, [width] px wide. */
-fun drawStageStrip(canvas: Canvas, spans: List<org.openstrap.app.ui.components.StageSpan>, width: Float, height: Float) {
+fun drawStageStrip(canvas: Canvas, spans: List<org.openstrap.app.presentation.StageSpan>, width: Float, height: Float) {
     stageStripSegments(spans, width, height).forEach { s ->
         canvas.drawLine(s.x0, height / 2, s.x1, height / 2, roundStroke(stageColor(s.stage), height).apply { strokeJoin = Paint.Join.ROUND })
     }
@@ -373,10 +328,6 @@ fun renderToBitmap(width: Float, height: Float, draw: (Canvas) -> Unit): Bitmap 
     draw(Canvas(bmp))
     return bmp
 }
-
-/** A whole glow card's background as a bitmap, [width] by [height] px. */
-fun renderGlow(style: GlowStyle, width: Int, height: Int, density: Float, grainSeed: Int = 0): Bitmap =
-    renderToBitmap(width.toFloat(), height.toFloat()) { drawGlow(it, style, width.toFloat(), height.toFloat(), density, grainSeed) }
 
 /** A whole edge card's background as a bitmap. */
 fun renderEdge(paint: EdgePaint): Bitmap = renderToBitmap(paint.width, paint.height) { drawEdge(it, paint) }

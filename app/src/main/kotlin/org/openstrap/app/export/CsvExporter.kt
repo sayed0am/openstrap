@@ -8,7 +8,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 /**
- * Writes every table as a CSV file inside one zip ([CSV_TABLES]). Timestamps are ISO-8601 UTC plus raw epoch seconds.
+ * Writes each table of user data ([CSV_TABLES]) as a CSV file inside one zip. Timestamps are ISO-8601 UTC plus raw epoch seconds.
  * [settings], when given, goes in beside them as [SettingsBackup.FILE]. [CsvImporter] reads the zip back.
  */
 class CsvExporter(private val dao: HealthDao) {
@@ -18,7 +18,7 @@ class CsvExporter(private val dao: HealthDao) {
             val w = zip.writer()
             for (table in CSV_TABLES) {
                 zip.putNextEntry(ZipEntry(table.file))
-                w.writeCsv(table.header, table.rows(dao, from, to))
+                table.writeTo(w, from, to)
                 w.flush()
                 zip.closeEntry()
             }
@@ -31,7 +31,11 @@ class CsvExporter(private val dao: HealthDao) {
         }
     }
 
-    private suspend fun <T> CsvTable<T>.rows(dao: HealthDao, from: Long, to: Long) = read(dao, from, to).map(row)
+    /** The table's file, written a page at a time as the rows are read ([CsvTable.forEachPage]). */
+    private suspend fun <T> CsvTable<T>.writeTo(w: Writer, from: Long, to: Long) {
+        w.append(header).append('\n')
+        forEachPage(dao, from, to) { page -> w.writeRows(page.map(row)) }
+    }
 
     companion object {
         fun iso(epochSeconds: Long): String = Instant.ofEpochSecond(epochSeconds).toString()
@@ -42,13 +46,21 @@ class CsvExporter(private val dao: HealthDao) {
 
         internal fun Writer.writeCsv(header: String, rows: List<List<Any?>>) {
             append(header).append('\n')
+            writeRows(rows)
+        }
+
+        private fun Writer.writeRows(rows: List<List<Any?>>) {
             for (row in rows) {
                 row.joinTo(this, ",") { v -> v?.toString()?.let(::escape) ?: "" }
                 append('\n')
             }
         }
 
+        /** Quotes a cell that holds a comma, a quote or a line break, as [CsvReader] reads it back. */
         private fun escape(s: String): String =
-            if (s.any { it == ',' || it == '"' || it == '\n' }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+            if (s.any { it in SPECIAL }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+
+        /** The characters that make a cell need quotes. */
+        private const val SPECIAL = ",\"\n\r"
     }
 }

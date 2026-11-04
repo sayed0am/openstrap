@@ -1,6 +1,8 @@
 package org.openstrap.app.data
 
+import org.openstrap.app.R
 import org.openstrap.app.data.settings.UserProfile
+import org.openstrap.app.i18n.Strings
 
 /**
  * A non-exercise VO2max estimate (docs/algorithms/evidence-review.md, "VO2max and fitness age"): Jurca et al. 2005
@@ -27,13 +29,11 @@ object Vo2max {
     const val ML_PER_MET = 3.5f
 
     /** The worksheet's question, Jurca 2005 Figure 1 (shortened): the user's usual pattern of physical activity. */
-    val ACTIVITY_LEVELS = listOf(
-        "Inactive, or little activity beyond usual daily activities",
-        "Light activity, at least 10 minutes at a time, 5 or more days a week",
-        "Aerobic exercise 20–60 minutes a week",
-        "Aerobic exercise 1–3 hours a week",
-        "Aerobic exercise over 3 hours a week",
-    )
+    val ACTIVITY_LEVELS: List<String>
+        get() = listOf(
+            R.string.core_vo2_activity_inactive, R.string.core_vo2_activity_light, R.string.core_vo2_activity_aerobic_low,
+            R.string.core_vo2_activity_aerobic_mid, R.string.core_vo2_activity_aerobic_high,
+        ).map(Strings.app::get)
 
     /** Withholding rules. */
     const val MIN_RHR_NIGHTS = 5
@@ -65,13 +65,8 @@ object Vo2max {
     )
 
     /** Why there is no estimate, in the order checked. */
-    enum class Withheld(val reason: String) {
-        Age("Needs an age between 20 and 79."),
-        Sex("Needs your sex: the equation differs for women and men."),
-        Body("Needs a weight and height entered in the last 90 days."),
-        Activity("Answer the activity question (asked every 6 months)."),
-        Medication("Not shown while taking beta-blockers or during pregnancy: resting heart rate doesn't reflect fitness then."),
-        RestingHr("Needs at least 5 nights of resting heart rate in the last 2 weeks."),
+    enum class Withheld {
+        Age, Sex, Body, Activity, Medication, RestingHr
     }
 
     /**
@@ -115,13 +110,7 @@ object Vo2max {
      * interpolation or a distribution assumption.
      */
     object Friend {
-        enum class Band(val label: String) {
-            Below30("Below the 30th percentile"),
-            P30to50("30th–50th percentile"),
-            P50to70("50th–70th percentile"),
-            P70to90("70th–90th percentile"),
-            Top10("Top 10 %"),
-        }
+        enum class Band { Below30, P30to50, P50to70, P70to90, Top10 }
 
         /** The percentiles in each row, ascending. */
         val PERCENTILES = intArrayOf(10, 20, 30, 40, 50, 60, 70, 80, 90)
@@ -186,10 +175,6 @@ object Vo2max {
             val centre = Math.round(age).coerceIn(FITNESS_AGE_MIN, FITNESS_AGE_MAX)
             return (centre - FITNESS_AGE_SPREAD).coerceAtLeast(FITNESS_AGE_MIN)..(centre + FITNESS_AGE_SPREAD).coerceAtMost(FITNESS_AGE_MAX)
         }
-
-        /** "typical of a woman aged about 35–55". */
-        fun fitnessAgeText(range: IntRange, sex: UserProfile.Sex): String =
-            "typical of a ${if (sex == UserProfile.Sex.Male) "man" else "woman"} aged about ${range.first}–${range.last}"
 
         const val FITNESS_AGE_SPREAD = 10
         const val FITNESS_AGE_MIN = 20

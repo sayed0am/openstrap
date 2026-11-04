@@ -1,7 +1,5 @@
 package org.openstrap.app.ui.workout
 
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -12,6 +10,9 @@ import org.openstrap.app.data.Route
 
 /** The summary right after a workout: the heart rate drop, Load, splits and a personal best (spec 6.3). */
 class SummaryCopyTest {
+    // English figures: the German and Arabic ones are WorkoutWordsTest's and the presentation tests'.
+    @get:org.junit.Rule val localeRule = org.openstrap.app.testing.LocaleRule()
+
     private val end = 1_000_000L
     private val maxHr = 190
 
@@ -81,7 +82,7 @@ class SummaryCopyTest {
         assertEquals("≈ 820 m.", SummaryCopy.workoutLine(820f, true, null, 30))
         assertEquals("Average 120 bpm.", SummaryCopy.workoutLine(null, false, 120, 0))
         assertNull(SummaryCopy.workoutLine(null, false, null, 0))
-        assertEquals("18:02–18:40, 38:12", SummaryCopy.trimHeader("18:02", "18:40", 38 * 60 + 12))
+        assertEquals("18:02 to 18:40, 38:12", SummaryCopy.trimHeader("18:02", "18:40", 38 * 60 + 12))
         assertEquals("1.02 km, average 150 bpm", SummaryCopy.lapLine(1020.0, 150))
         assertEquals("Average 150 bpm", SummaryCopy.lapLine(null, 150))
         assertNull(SummaryCopy.lapLine(null, null))
@@ -97,46 +98,14 @@ class SummaryCopyTest {
         val rows = SummaryCopy.splitRows(splits, hr, firstT = 100L)
         assertEquals(listOf("Km 1", "Km 2", "Last 430 m"), rows.map { it.name })
         assertEquals("5:42", rows[0].time)
+        // The seconds and the kind travel with each row, for the fastest mark and the bars.
+        assertEquals(listOf(342L, 358L, 150L), rows.map { it.seconds })
+        assertEquals(listOf(SplitRow.Kind.Whole, SplitRow.Kind.Whole, SplitRow.Kind.Last), rows.map { it.kind })
         assertEquals(150, rows[0].averageBpm)
         assertEquals(160, rows[1].averageBpm)
         // A last bit under 100 m is left out.
         assertEquals(2, SummaryCopy.splitRows(splits.dropLast(1) + Route.Split(2, 900, 20, 60.0), hr, 100L).size)
         assertNull(SummaryCopy.splitRows(splits, emptyList(), 100L)[0].averageBpm)
-    }
-
-    private fun day(y: Int, m: Int, d: Int) = LocalDate.of(y, m, d).atStartOfDay(ZoneOffset.UTC).toEpochSecond()
-    private fun run(at: Long, km: Float?, minutes: Long = 30) = BestCandidate(at, 1, minutes * 60, km?.times(1000f))
-    private fun best(w: BestCandidate, others: List<BestCandidate>) = SummaryCopy.personalBest(w, others, ZoneOffset.UTC, Locale.UK)
-
-    @Test fun `personal best, farthest since the last farther one`() {
-        val now = day(2026, 10, 20)
-        val others = listOf(run(day(2026, 3, 5), 8f), run(day(2026, 6, 1), 5f), run(day(2026, 8, 1), 6f), run(day(2026, 10, 1), 5f))
-        assertEquals("Farthest run since March.", best(run(now, 7f), others))
-        // Beating only two since then is too little to call.
-        assertNull(best(run(now, 7f, minutes = 20), others.filter { it.start != day(2026, 8, 1) }))
-        // A farther one under a month ago: nothing to say.
-        assertNull(best(run(now, 4.9f, minutes = 20), others + run(day(2026, 10, 10), 6f, minutes = 25)))
-        // From another year, the year shows.
-        val lastYear = listOf(run(day(2025, 3, 5), 8f)) + List(3) { run(day(2025, 11, 1 + it), 5f) }
-        assertEquals("Farthest run since March 2025.", best(run(day(2026, 1, 20), 7f), lastYear))
-    }
-
-    @Test fun `personal best yet only with enough before`() {
-        val now = day(2026, 10, 20)
-        val few = List(3) { run(day(2026, 9, 1 + it), 5f) }
-        assertNull(best(run(now, 7f), few))
-        val many = List(5) { run(day(2026, 9, 1 + it), 5f) }
-        assertEquals("Your farthest run yet.", best(run(now, 7f), many))
-    }
-
-    @Test fun `personal best falls back to the longest by time`() {
-        val now = day(2026, 10, 20)
-        val walks = listOf(BestCandidate(day(2026, 2, 1), 3, 90 * 60, null)) + List(3) { BestCandidate(day(2026, 9, 1 + 7 * it), 3, 40 * 60, null) }
-        assertEquals("Longest walk since February.", best(BestCandidate(now, 3, 60 * 60, null), walks))
-        // Other sports never count.
-        assertNull(best(BestCandidate(now, 3, 60 * 60, null), walks.map { it.copy(sportType = 1) }))
-        // Too short to be a best.
-        assertNull(best(BestCandidate(now, 3, 5 * 60, null), emptyList()))
     }
 
     @Test
@@ -145,13 +114,6 @@ class SummaryCopyTest {
         val splits = listOf(Route.Split(0, 300, 300, 1000.0), Route.Split(1, 600, 300, 1000.0), Route.Split(2, 640, 40, 185.0))
         assertEquals("Last 176 m", SummaryCopy.splitRows(splits, emptyList(), 0L, totalMeters = 2176f).last().name)
         assertEquals("Last 185 m", SummaryCopy.splitRows(splits, emptyList(), 0L).last().name)
-    }
-
-    @Test fun `the workout card says its calories, active first`() {
-        assertEquals("486 active kcal, total 1,612", SummaryCopy.kcalLine(486, 1612, Locale.UK))
-        assertEquals("612 kcal", SummaryCopy.kcalLine(null, 612, Locale.UK))
-        assertNull(SummaryCopy.kcalLine(null, null))
-        assertNull(SummaryCopy.kcalLine(0, 0))
     }
 
     @Test fun `the workout card says whether its kcal target was reached`() {

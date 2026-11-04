@@ -83,10 +83,15 @@ object Route {
      * §5.1); a stretch of standing still ([still]) is left as its first fix, so a phone's wander adds nothing.
      */
     fun track(points: List<Point>): List<Point> {
+        // A live workout's route is one list per fix, read by the screen, the map, the splits and the glance alike:
+        // the last one's track is kept, so a fix is smoothed once, not once for each of them.
+        lastTrack?.let { (from, track) -> if (from === points) return track }
         val smoothed = smooth(clean(points))
         val still = still(smoothed)
-        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }
+        return smoothed.filterIndexed { i, _ -> !still[i] || i == 0 || !still[i - 1] }.also { lastTrack = points to it }
     }
+
+    @Volatile private var lastTrack: Pair<List<Point>, List<Point>>? = null
 
     /**
      * Process noise (white acceleration, m/s^1.5) when fixes carry Doppler velocity: Zepp's q (native 02 §3.7), free
@@ -98,7 +103,7 @@ object Route {
      * walks (RouteTest): higher follows the wander at walking pace, lower rounds off a runner's corners.
      */
     private const val Q_POSITION = 0.5
-    /** Floor on a fix's claimed accuracy: phones claim 1–2 m that GPS doesn't deliver. */
+    /** Floor on a fix's claimed accuracy: phones claim 1 to 2 m that GPS doesn't deliver. */
     private const val MIN_SIGMA_M = 3.0
     /** Doppler velocity σ when the phone gives no speed accuracy, as Zepp assumes (native 02 §3.7). */
     private const val DOPPLER_SIGMA_MS = 2.0
@@ -295,6 +300,13 @@ object Route {
     /** How far two fixes can lie apart from GPS error alone. */
     private fun noise(a: Point, b: Point): Double = maxOf(MIN_MOVE_M, (a.accuracy + b.accuracy).toDouble())
 
+    /** Least spread for a route to be worth a map: standing still gives a dot, and the map would zoom out to the world. */
+    const val MAPPABLE_M = 25.0
+
+    /** Whether [points] spread at least [MAPPABLE_M] from the first one, so a map of them shows somewhere. */
+    fun mappable(points: List<Point>): Boolean =
+        points.size >= 2 && points.any { meters(points[0], it) >= MAPPABLE_M }
+
     /** Metres covered by [points] along [track], leaving out stretches that overlap [pauses]. */
     fun distance(points: List<Point>, pauses: List<LongRange> = emptyList()): Double =
         track(points).zipWithNext().sumOf { (a, b) -> if (paused(a, b, pauses)) 0.0 else meters(a, b) }
@@ -330,28 +342,50 @@ object Route {
         return out
     }
 
+    /** A rise counts toward the climb only once it is this many metres above the last low: GPS height is noisy. */
+    const val CLIMB_STEP_M = 4.0
+
+    /**
+     * Metres climbed along [points]: the rises in GPS altitude, each counted once it clears [CLIMB_STEP_M] above the
+     * last low, from fixes good enough to count ([MAX_ACCURACY_M]). Null without heights.
+     */
+    fun climb(points: List<Point>): Double? {
+        val heights = points.filter { it.accuracy <= MAX_ACCURACY_M }.mapNotNull { it.altitude }
+        if (heights.size < 2) return null
+        var total = 0.0
+        var low = heights.first()
+        var high = low
+        for (h in heights) {
+            if (h > high) high = h
+            if (high - low >= CLIMB_STEP_M && h <= high - CLIMB_STEP_M) {
+                // Past a peak: the rise to it is climbed, and the next one starts from here.
+                total += high - low
+                low = h
+                high = h
+            } else if (h < low) {
+                low = h
+                high = h
+            }
+        }
+        if (high - low >= CLIMB_STEP_M) total += high - low
+        return total
+    }
+
     /** Seconds per kilometre over the last [windowS] seconds of [points], or null with too little to say. */
     fun currentPace(points: List<Point>, windowS: Long = 30): Double? {
         val clean = track(points)
         val last = clean.lastOrNull() ?: return null
-        val recent = clean.filter { it.t >= last.t - windowS }
+        val recent = clean.takeLastWhile { it.t >= last.t - windowS }
         val m = recent.zipWithNext().sumOf { (a, b) -> meters(a, b) }
         val s = recent.last().t - recent.first().t
         return if (m < 10 || s <= 0) null else s / (m / 1000)
-    }
-
-    /** "5′42″" per kilometre, or null with no pace to show. */
-    fun formatPace(secondsPerKm: Double?): String? {
-        if (secondsPerKm == null || secondsPerKm <= 0 || secondsPerKm > 3600) return null
-        val s = Math.round(secondsPerKm)
-        return "%d′%02d″".format(s / 60, s % 60)
     }
 
     /**
      * The route cut into stretches of one zone each, for drawing it in zone colours: each fix takes the zone of the
      * nearest heart rate within [MAX_HR_GAP_S] (time, bpm, ascending), else none (−1, drawn grey).
      */
-    fun byZone(points: List<Point>, hr: List<Pair<Long, Int>>, maxHr: Int): List<Pair<List<Point>, Int>> {
+    fun byZone(points: List<Point>, hr: List<Pair<Long, Int>>, maxHr: Int, zones: HeartZones): List<Pair<List<Point>, Int>> {
         val clean = track(points)
         if (clean.size < 2) return emptyList()
         val times = hr.map { it.first }
@@ -359,7 +393,7 @@ object Route {
             var i = times.binarySearch(t).let { if (it < 0) -it - 1 else it }
             val near = listOf(i - 1, i).filter { it in hr.indices }.minByOrNull { kotlin.math.abs(hr[it].first - t) } ?: return -1
             if (kotlin.math.abs(hr[near].first - t) > MAX_HR_GAP_S) return -1
-            return WorkoutRecorder.liveZone(hr[near].second, maxHr) ?: -1
+            return WorkoutRecorder.liveZone(hr[near].second, maxHr, zones) ?: -1
         }
         val out = mutableListOf<Pair<MutableList<Point>, Int>>()
         clean.forEach { p ->

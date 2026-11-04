@@ -1,7 +1,11 @@
+import java.util.Locale
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.ktlint)
 }
 
 fun env(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
@@ -21,7 +25,7 @@ android {
 
     defaultConfig {
         applicationId = "org.openstrap.app"
-        minSdk = 28
+        minSdk = 31
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
@@ -47,6 +51,9 @@ android {
         // `-PdevApp` builds a debug app that also installs beside it (org.openstrap.app.dev), named with its version,
         // to try a branch on a phone with its own data while the release stays as it is.
         debug {
+            // en-XA (accented and longer, so text still in Kotlin or text that clips stands out) and ar-XB (right to
+            // left) can be picked as the phone's language on a debug build (docs/audits/2026-11-04-i18n-plan.md).
+            isPseudoLocalesEnabled = true
             if (providers.gradleProperty("demoApp").isPresent) applicationIdSuffix = ".demo"
             if (providers.gradleProperty("devApp").isPresent) {
                 applicationIdSuffix = ".dev"
@@ -71,6 +78,72 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // The languages under res/ become the app's locale config, so Android 13 and up list OpenStrap under App languages
+    // in system settings. res/resources.properties says the unqualified values/ folder is English.
+    androidResources {
+        generateLocaleConfig = true
+    }
+
+    // The unit tests get the merged resources and manifest, so a Robolectric test reads real strings
+    // (i18n/StringsParityTest). robolectric.properties keeps a plain Application, not OpenStrapApp and its container.
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
+    // Android lint. Old findings live in the baseline (refresh with ./gradlew :app:updateLintBaseline), new ones fail
+    // the build. SARIF reports are always written on AGP 9. The extra error ids are the Compose and dead resource checks from the November 2026 audit.
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+        checkDependencies = true
+        error += listOf(
+            "StateFlowValueCalledInComposition", "FlowOperatorInvokedInComposition",
+            "CoroutineCreationDuringComposition", "ComposeModifierMissing",
+            "ComposeParameterOrder", "ComposeUnstableCollections", "UnusedResources",
+        )
+        // LogNotTimber comes in with a dependency's lint checks, but the app logs with android.util.Log on purpose
+        // and has no Timber. NewerVersionAvailable asks the network, so its answer changes from run to run.
+        disable += listOf("LogNotTimber", "NewerVersionAvailable")
+    }
+}
+
+// Stability reports, so recomposition problems are visible rather than guessed (build/compose_compiler).
+composeCompiler {
+    reportsDestination = layout.buildDirectory.dir("compose_compiler")
+    metricsDestination = layout.buildDirectory.dir("compose_compiler")
+}
+
+// detekt with the Compose rules. Old findings live in detekt-baseline-debug.xml and detekt-baseline-release.xml
+// (./gradlew :app:detektBaselineMain). detektMain is the type resolved run the coroutine rules need.
+detekt {
+    buildUponDefaultConfig = true
+    config.setFrom(rootProject.file("config/detekt.yml"))
+    baseline = file("detekt-baseline.xml")
+}
+
+// BuildConfig is generated Java, which the Kotlin analysis only sees as a compiled class on the classpath. Without it
+// detekt reports "25 compiler errors" (unresolved BuildConfig) and type resolved rules miss findings in those files.
+// The plugin sets its classpath as a convention (Kotlin classes plus the Kotlin task's libraries), and adding to it
+// replaces that convention, so the same two parts are restated here next to the javac output.
+listOf("Debug", "Release").forEach { variant ->
+    tasks.withType<dev.detekt.gradle.Detekt>().matching { it.name == "detekt$variant" }.configureEach {
+        val kotlinCompile = tasks.named("compile${variant}Kotlin", org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java)
+        val javac = tasks.named("compile${variant}JavaWithJavac", JavaCompile::class.java)
+        classpath.setFrom(
+            kotlinCompile.flatMap { it.destinationDirectory },
+            kotlinCompile.map { it.libraries },
+            javac.flatMap { it.destinationDirectory },
+        )
+    }
+}
+
+// Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.
+ktlint {
+    version = libs.versions.ktlint.get()
+    baseline = file("ktlint-baseline.xml")
 }
 
 ksp {
@@ -79,7 +152,24 @@ ksp {
 
 // The backtest harness (BacktestReplay, docs/algorithms/readiness-calibration.md):
 // ./gradlew testDebugUnitTest --tests '*BacktestReplay*' -Pbacktest=/path/openstrap.db [-PbacktestProfile=1990,Male]
+// Source scan tests read app/src/main from here, so they do not depend on the working directory.
+// `-PtestLocale=de-DE` runs the suite under that locale and a zone with a non whole hour offset, which flushes out
+// formatting that ignores the locale and dates that assume a whole hour offset.
+val appSrcMain = layout.projectDirectory.dir("src/main").asFile.absolutePath
+val testLocale = providers.gradleProperty("testLocale").orNull
 tasks.withType<Test>().configureEach {
+    systemProperty("openstrap.srcRoot", appSrcMain)
+    // A failure prints its message and the assertion's values, so a CI only failure can be read from the log.
+    testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+    // Robolectric's SQLite is native: its 'localtime' follows the process's TZ, not Java's default zone or a test's
+    // ZoneRule. UTC on every machine, so a day grouped in SQL is the same day on a Mac in Dubai and on CI.
+    environment("TZ", "UTC")
+    testLocale?.let { tag ->
+        val locale = Locale.forLanguageTag(tag)
+        systemProperty("user.language", locale.language)
+        systemProperty("user.country", locale.country)
+        systemProperty("user.timezone", "Asia/Kathmandu")
+    }
     listOf("backtest", "backtestOut", "backtestProfile").forEach { name ->
         providers.gradleProperty(name).orNull?.let { systemProperty("openstrap.$name", it) }
     }
@@ -125,4 +215,11 @@ dependencies {
     // A real Room database in unit tests (CSV restore).
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    // Compose UI tests under Robolectric, for saved state across a recreate (StateRestorationTester).
+    testImplementation(libs.compose.ui.test.junit4)
+    // Migration tests (MigrationTestHelper).
+    testImplementation(libs.room.testing)
+
+    lintChecks(libs.slack.compose.lint)
+    detektPlugins(libs.compose.rules.detekt)
 }

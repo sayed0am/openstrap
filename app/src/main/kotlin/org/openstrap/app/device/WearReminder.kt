@@ -6,11 +6,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import org.openstrap.app.MainActivity
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.WearEventRow
 
 /**
@@ -40,7 +42,9 @@ class WearNotifier(private val context: Context) {
         private set
 
     init {
-        manager.createNotificationChannel(NotificationChannel(CHANNEL, "Wear reminders", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, Strings.app.get(R.string.system_channel_wear), NotificationManager.IMPORTANCE_DEFAULT),
+        )
         // Left from before the app was stopped: whether the strap is still off isn't known now.
         manager.cancel(NOTIFICATION_ID)
     }
@@ -68,8 +72,8 @@ class WearNotifier(private val context: Context) {
     }
 
     companion object {
-        const val TITLE = "Strap is off your body"
-        const val TEXT = "Heart rate and sleep tracking are paused until you put it back on."
+        val TITLE: String get() = Strings.app.get(R.string.system_wear_title)
+        val TEXT: String get() = Strings.app.get(R.string.system_wear_text)
         private const val CHANNEL = "wear"
         /** Zepp's id for this notification. */
         private const val NOTIFICATION_ID = 17
@@ -92,7 +96,7 @@ internal class WearEventLog(
     init {
         scope.launch {
             for (work in queue) {
-                try { work() } catch (e: CancellationException) { throw e } catch (e: Exception) { onError(e) }
+                catching { work() }.onFailure(onError)
             }
         }
     }

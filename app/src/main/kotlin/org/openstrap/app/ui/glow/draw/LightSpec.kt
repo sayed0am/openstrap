@@ -6,21 +6,10 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import kotlin.math.abs
-import org.openstrap.app.ui.glow.CoreShape
-import org.openstrap.app.ui.glow.Edge
-import org.openstrap.app.ui.glow.EdgeLight
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowMood
-import org.openstrap.app.ui.glow.GlowPalette
-import org.openstrap.app.ui.glow.GlowStyle
-import org.openstrap.app.ui.glow.LEVEL_STEP
 import org.openstrap.app.ui.glow.LevelFade
 import org.openstrap.app.ui.glow.SoftGlow
 import org.openstrap.app.ui.glow.StrongGlow
-import org.openstrap.app.ui.glow.levelEdge
-import org.openstrap.app.ui.glow.light
-import org.openstrap.app.ui.glow.lightVector
-
 /*
  * The light of the glow and edge cards as plain numbers: where each gradient runs, its colours and stops, the rim
  * shadows, the core and the hairline. Nothing here draws. A card in the app and a widget's bitmap both read these, so
@@ -122,7 +111,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
     val rims = mutableListOf<InsetShadow>()
     if (light.rim > 0f) {
         light.level?.let { level ->
-            val dark = levelEdge(level) * (if (light.across) w else h) - LEVEL_STEP.value * density
+            val dark = levelEdge(level) * (if (light.across) w else h) - levelStep(if (light.across) w else h, density)
             rimClip = when {
                 light.across -> Rect(0f, 0f, w - dark, h)
                 light.fromAbove -> Rect(0f, 0f, w, h - dark)
@@ -156,7 +145,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
         // unlit part and there's never a hard edge.
         // Measured from the unlit side: the top, the bottom when lit from above, the right when lit from the left.
         val edge = levelEdge(level) * (if (light.across) w else h)
-        val step = LEVEL_STEP.value * density
+        val step = levelStep(if (light.across) w else h, density)
         val (y0, y1) = when {
             light.across -> w + margin to -margin
             light.fromAbove -> h + margin to -margin
@@ -229,11 +218,20 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
 }
 
 /**
+ * How far a level card's light fades into the dark, px, along a card [length] px long: [LEVEL_STEP], or on a tall card
+ * (half a folded phone) a share of it, so the fade stays soft instead of reading as a line.
+ */
+internal fun levelStep(length: Float, density: Float): Float = maxOf(LEVEL_STEP.value * density, length * LEVEL_STEP_SHARE)
+
+/** The least share of a level card's length its light fades over. */
+private const val LEVEL_STEP_SHARE = 0.08f
+
+/**
  * The card's base fill: the light colour at the lit edge melting into the mid (body) colour along the light's angle,
  * linearly through the level's fill stops (spec 2.1): on L4 the light holds for the first part of the card and reaches
  * the body by 45%, on L3 it starts at 70% and is gone by 28%. Light all the way round: the body alone.
  */
-private fun glowFill(light: org.openstrap.app.ui.glow.GlowLight, p: GlowPalette, w: Float, h: Float): LinearGradientSpec {
+private fun glowFill(light: org.openstrap.app.ui.glow.draw.GlowLight, p: GlowPalette, w: Float, h: Float): LinearGradientSpec {
     val angle = light.angle ?: return LinearGradientSpec(0f, 0f, 0f, h, listOf(p.mid, p.mid), null)
     val points = light.fillStops.map { it.at.coerceIn(0f, 1f) to it.light.coerceIn(0f, 1f) }
     val colors = points.map { (_, k) -> lerp(p.mid, p.light, k) } + p.mid
@@ -248,7 +246,7 @@ private fun glowFill(light: org.openstrap.app.ui.glow.GlowLight, p: GlowPalette,
 /* Edge light                                                                                        */
 /* ------------------------------------------------------------------------------------------------ */
 
-/** The edge card's surface, under its light. */
+/** The edge card's surface, under its light, and the one near-black every lit card and share card sits on. */
 val EdgeSurface = Color(0xFF0A0A0B)
 
 /** A level edge card's lowest light, so an empty one still shows where it fills from. */

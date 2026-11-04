@@ -11,29 +11,40 @@ import java.time.temporal.TemporalAdjusters
 /**
  * Loads six months of daily inputs for [Healthspan] and runs it. The estimate is weekly: as of local midnight of the
  * latest Sunday, over the [Healthspan.WINDOW_DAYS] before it, so it holds still for the week. Heavy; call off the main
- * thread. The last result is kept until a sync adds data to its window.
+ * thread. The last result is kept until the data in its window changes ([HealthDao.dataFingerprint]).
  */
 class HealthspanEngine(private val dao: HealthDao) {
-    private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: Long)
+    /** Sleep as shown, with the user's edits ([SleepEdits]). */
+    private val sleepSource = SleepSource(dao)
+    private data class Key(val asOf: Long, val profile: UserProfile, val fingerprint: String)
     private var cached: Pair<Key, Healthspan.Outcome>? = null
 
-    /** The Sunday on or before [date]: the day the estimate it shows was made. */
+    /**
+     * The Sunday on or before [date]: the day the estimate it shows was made. Sunday whatever the locale, not
+     * [Weeks], because the weekly schedule follows WHOOP's.
+     */
     fun sundayOf(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY))
 
     suspend fun compute(date: LocalDate, profile: UserProfile, zone: ZoneId = ZoneId.systemDefault()): Healthspan.Outcome {
         val sunday = sundayOf(date)
         val asOf = DayWindow.of(sunday, zone).from
         val from = DayWindow.of(sunday.minusDays(Healthspan.WINDOW_DAYS.toLong()), zone).from
-        val key = Key(asOf, profile, dao.dataFingerprint(from, asOf - 1))
+        val days = DayKey.datesIn(from, asOf - 1, zone)
+        val key = Key(asOf, profile, dao.dataFingerprint(from, asOf - 1, days.start, days.endInclusive))
         cached?.let { (k, v) -> if (k == key) return v }
         val age = profile.age(sunday)
         val d = daily(sunday, from, asOf, zone)
         val (result, withheld) = Healthspan.estimate(profile, age, d)
-        val missing = listOfNotNull("birth year".takeIf { profile.birthYear == null }, "sex".takeIf { profile.sex == null })
+        val missing = listOfNotNull(
+            Healthspan.ProfileGap.BirthYear.takeIf { profile.birthYear == null },
+            Healthspan.ProfileGap.Sex.takeIf { profile.sex == null },
+        )
         // This week's result is kept as shown, so next week can compare with it. A past week is never written again:
         // looking back at a day must not replace what that Sunday showed.
-        result?.takeIf { sunday == sundayOf(LocalDate.now(zone)) }?.let { dao.insertHabitAgeWeek(HabitAgeWeekRow(asOf, it.estimate, it.low, it.high, System.currentTimeMillis() / 1000)) }
-        val weeks = dao.habitAgeWeeksOnce(asOf - 8 * 86_400L, asOf - 1).map { it.asOf to it.estimate }
+        result?.takeIf { sunday == sundayOf(LocalDate.now(zone)) }?.let {
+            dao.insertHabitAgeWeek(HabitAgeWeekRow(sunday, it.estimate, it.low, it.high, System.currentTimeMillis() / 1000))
+        }
+        val weeks = dao.habitAgeWeeksOnce(sunday.minusDays(8), sunday.minusDays(1)).map { Days.start(it.asOf, zone) to it.estimate }
         val outcome = Healthspan.Outcome(
             result, withheld, age, missing, d.firstDay?.let { firstEstimate(it, zone) }?.takeIf { withheld == Healthspan.Withheld.Learning },
             lastWeek = Healthspan.lastWeek(weeks, asOf),
@@ -48,6 +59,32 @@ class HealthspanEngine(private val dao: HealthDao) {
         var d = java.time.Instant.ofEpochSecond(t).atZone(zone).toLocalDate()
         if (DayWindow.of(d, zone).from < t) d = d.plusDays(1)
         return DayWindow.of(d.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY)), zone).from
+    }
+
+    /**
+     * Each of [nights]' heart rate by the minute, by its start: read a week of nights at a time and sliced, rather than
+     * two reads a night, while no read holds more than a week of minutes.
+     */
+    private suspend fun nightHeartRates(nights: Collection<org.openstrap.app.data.db.SleepSession>): Map<Long, List<Pair<Long, Int>>> {
+        val out = HashMap<Long, List<Pair<Long, Int>>>()
+        val sorted = nights.sortedBy { it.start }
+        var i = 0
+        while (i < sorted.size) {
+            val first = sorted[i].start
+            var j = i
+            while (j + 1 < sorted.size && sorted[j + 1].end - first <= HR_READ_SPAN_S) j++
+            val group = sorted.subList(i, j + 1)
+            val to = group.maxOf { it.end }
+            val hr = dao.heartRateOnce(first, to)
+            val activity = dao.activityOnce(first, to)
+            for (s in group) {
+                val night = hr.within(s.start, s.end) { it.timestamp }
+                val series = Summaries.heartRateSeries(night, activity.within(s.start, s.end) { it.timestamp })
+                out[s.start] = Summaries.bucketAverage(series, 60)
+            }
+            i = j + 1
+        }
+        return out
     }
 
     /** Every input over [from, asOf), keyed as [Healthspan.Daily] wants. */
@@ -75,29 +112,30 @@ class HealthspanEngine(private val dao: HealthDao) {
             stepsByDate[days[i]]?.takeIf { wornPerDay[i] >= Healthspan.STEP_DAY_WORN_MINUTES }?.let { starts[i] to it }
         }.toMap()
 
-        // Main sleeps: the longest non-nap session per morning, as Recovery picks them.
-        val sessions = dao.sleepSessionsOnce(from, to)
-        val mains = sessions.filter { !it.nap }
-            .groupBy { RecoveryEngine.morningOf(it, zone) }
-            .filterKeys { it in from until asOf }
-            .mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+        // Main sleeps: the longest non-nap session of each day it ended on, as Recovery picks them.
+        val resolved = sleepSource.resolvedOnce(from, to)
+        val sessions = sleepSource.shown(resolved)
+        val mains = RecoveryEngine.mainsByMorning(sessions, zone).filterKeys { it in from until asOf }
         val asleep = mains.mapValues { RecoveryEngine.asleepMinutes(it.value) }
 
         // Resting HR: the logged lowest 30-minute mean, else worked out from the night's heart rate the same way.
-        val logged = dao.nightMetricsOnce(from, to).associateBy { it.day }
-        val restingHr = mains.mapNotNull { (morning, s) ->
-            if (s.end - s.start < Recovery.MIN_VALID_SLEEP_MINUTES * 60L) return@mapNotNull null
+        val logged = DayKey.datesIn(from, to, zone).let { dao.nightMetricsOnce(it.start, it.endInclusive) }
+            .associateBy { Days.start(it.day, zone) }
+        val valid = mains.filterValues { s -> s.end - s.start >= Recovery.MIN_VALID_SLEEP_MINUTES * 60L }
+        val nightHr = nightHeartRates(valid.filterKeys { logged[it]?.rhrLowest30 == null }.values)
+        val restingHr = valid.mapNotNull { (morning, s) ->
             val row = logged[morning]
             val rhr = if (row?.rhrLowest30 != null) row.rhrLowest30.takeIf { row.hrMinutes >= Recovery.MIN_HR_MINUTES } else {
-                val hr = Summaries.bucketAverage(Summaries.heartRateSeries(dao.heartRateOnce(s.start, s.end), dao.activityOnce(s.start, s.end)), 60)
-                    .filter { it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
+                val hr = nightHr[s.start].orEmpty().filter { it.second in Recovery.HR_MIN_BPM..Recovery.HR_MAX_BPM }
                 if (hr.size < Recovery.MIN_HR_MINUTES) null else Recovery.lowestAverage(hr, 30, Recovery.RHR_WINDOW_MIN_MINUTES)?.second
             }
             rhr?.let { morning to it }
         }.toMap()
 
         // Sleep regularity: one SRI per week, each over 8 noon-to-noon grid days ending at a Saturday noon.
-        val stages = sessions.flatMap { s -> dao.sleepStagesOnce(s.start).map { Triple(it.start, it.end, it.stage) } }
+        // Each session's stages from its resolved edit, which is at hand, so finding its edit again isn't a read per night.
+        val stages = resolved.filter { it.shown != null }
+            .flatMap { r -> sleepSource.stagesOnce(r).map { Triple(it.start, it.end, it.stage) } }
         val weeks = (Healthspan.WINDOW_DAYS - 1) / 7
         val weeklySri = (0 until weeks).mapNotNull { k ->
             val end = sunday.minusDays(7L * k + 1)
@@ -114,7 +152,7 @@ class HealthspanEngine(private val dao: HealthDao) {
         val strength = workouts.filter { it.sportType in Healthspan.STRENGTH_SPORTS }
             .associate { w -> w.start to ((w.exerciseSeconds ?: (w.end - w.start).toInt()) / 60f) }
         val vo2 = workouts.mapNotNull { w ->
-            val effect = Workouts.analyse(w, emptyList(), effects, 0).effect
+            val effect = Workouts.analyse(w, emptyList(), effects, 0, HeartZones.STANDARD).effect
             (w.vo2max?.toFloat() ?: effect?.vo2max)?.takeIf { it > 0f }?.let { w.start to it }
         }.toMap()
 
@@ -122,5 +160,10 @@ class HealthspanEngine(private val dao: HealthDao) {
             asOf = asOf, restingHr = restingHr, steps = steps, weeklySri = weeklySri, asleepMinutes = asleep,
             strength = strength, vo2max = vo2, firstDay = worn.firstOrNull()?.let { it * 60 } ?: mains.keys.minOrNull(),
         )
+    }
+
+    private companion object {
+        /** The most a heart rate read for the nights spans: a week. */
+        const val HR_READ_SPAN_S = 7 * 86_400L
     }
 }

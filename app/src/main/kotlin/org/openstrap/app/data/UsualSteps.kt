@@ -21,7 +21,7 @@ object UsualSteps {
     /** By this time of day you've usually walked fewer steps than this, too few for a comparison to mean much. */
     const val MIN_USUAL = 500f
 
-    /** Within this share of your usual counts as about usual: the band Today uses for Load ([org.openstrap.app.ui.dashboard.TodayCopy.LOAD_BAND]). */
+    /** Within this share of your usual counts as about usual: the band Today uses for Load (`TodayCopy.LOAD_BAND`). */
     const val BAND = 0.25f
 
     /**
@@ -56,9 +56,5 @@ object UsualSteps {
         else -> Pace.About
     }
 
-    private fun median(values: List<Float>): Float {
-        val s = values.sorted()
-        val n = s.size
-        return if (n % 2 == 1) s[n / 2] else (s[n / 2 - 1] + s[n / 2]) / 2f
-    }
+    private fun median(values: List<Float>): Float = Stats.median(values) ?: 0f
 }

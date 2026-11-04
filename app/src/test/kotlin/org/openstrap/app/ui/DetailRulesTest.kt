@@ -7,7 +7,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.openstrap.app.ui.glow.BackButtonSize
-import org.openstrap.app.ui.glow.ControlSurface
+import org.openstrap.app.ui.theme.ControlSurface
 import java.io.File
 
 /**
@@ -62,7 +62,7 @@ class DetailRulesTest {
         val progress = charts.substringAfter("fun rememberGaugeProgress(").substringBefore("\n}\n")
         assertTrue("a gauge starts at its value, not at zero", "Animatable(target)" in progress)
         val template = sources.getValue("glow/GlowMetricDetail.kt").substringAfter("fun DetailTemplate(").substringBefore("\n}\n")
-        assertTrue("the gauge block is centred", Regex("""if \(heroValue != null\) Column\([^\n]*CenterHorizontally""").containsMatchIn(template))
+        assertTrue("the gauge block is centred", Regex("""if \(gauge != null\) Column\(\s*[^\n]*CenterHorizontally""").containsMatchIn(template))
     }
 
     @Test fun `every detail's header ends in the (i)`() {

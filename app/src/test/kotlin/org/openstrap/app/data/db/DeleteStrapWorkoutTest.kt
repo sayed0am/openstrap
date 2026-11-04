@@ -1,7 +1,5 @@
 package org.openstrap.app.data.db
 
-import androidx.room.Room
-import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -10,6 +8,8 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.openstrap.app.testing.inMemoryDb
+import org.openstrap.app.testing.workout
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -23,12 +23,12 @@ class DeleteStrapWorkoutTest {
     private val junk = 1_760_000_000L
     private val real = junk + 4 * 3600
 
-    private fun workout(start: Long, minutes: Int) =
-        Workout(start, start + minutes * 60, 16, minutes * 60, null, 110, 130, 80, null, null, 10, null, null, subtype = 0)
+    private fun strapWorkout(start: Long, minutes: Int) =
+        workout(start, minutes, sportType = 16, averageHeartRate = 110, maxHeartRate = 130, minHeartRate = 80, trainingLoad = 10, subtype = 0)
 
     @Before
     fun setUp() {
-        db = Room.inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java).allowMainThreadQueries().build()
+        db = inMemoryDb()
         dao = db.healthDao()
     }
 
@@ -36,7 +36,7 @@ class DeleteStrapWorkoutTest {
     fun tearDown() = db.close()
 
     private suspend fun seed(junkEffect: Boolean) {
-        dao.insertWorkouts(listOf(workout(junk, 30), workout(real, 40)))
+        dao.insertWorkouts(listOf(strapWorkout(junk, 30), strapWorkout(real, 40)))
         dao.insertWorkoutHeartRate((0L..2000L step 10).map { WorkoutHeartRate(junk, junk + it, 100) })
         dao.insertWorkoutHeartRate((0L..2400L step 10).map { WorkoutHeartRate(real, real + it, 140) })
         dao.insertRecoveryHeartRate(listOf(RecoveryHeartRateRow(junk, byteArrayOf(100, 90)), RecoveryHeartRateRow(real, byteArrayOf(120, 100))))

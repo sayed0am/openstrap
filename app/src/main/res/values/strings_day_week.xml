@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The week story (ui/dashboard/WeekStory.kt), opened from Your week on Today: last week day by day, its steps, active
+  minutes, workouts and sleep, against the week before where that week is kept.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Part of a day's row under its steps, beside the day's workouts and sleep: its active minutes. Lower case, the row's first letter is made upper case. -->
+    <plurals name="day_week_active_minutes">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> active minute</item>
+        <item quantity="other"><xliff:g id="minutes" example="42">%1$d</xliff:g> active minutes</item>
+    </plurals>
+    <!-- Part of a day's row: the night after it, time asleep. -->
+    <string name="day_week_asleep"><xliff:g id="time" example="7 h 40">%1$s</xliff:g> asleep</string>
+    <!-- Under the chart: the day of the week with the most steps, and its steps written out ("12,400"). -->
+    <plurals name="day_week_busiest">
+        <item quantity="one">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="1">%1$s</xliff:g> step.</item>
+        <item quantity="other">Busiest on <xliff:g id="day" example="Thursday">%2$s</xliff:g>, <xliff:g id="steps" example="12,400">%1$s</xliff:g> steps.</item>
+    </plurals>
+    <!-- Under the chart: no workouts this week or the week before. -->
+    <string name="day_week_workouts_none">No workouts this week or the week before.</string>
+    <!-- Under the chart: the week's workouts, as many as the week before. -->
+    <plurals name="day_week_workouts_same">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, as many as the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="2">%1$d</xliff:g> workouts, as many as the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's workouts, and how many more than the week before. The form follows the week's workouts. -->
+    <plurals name="day_week_workouts_more">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, <xliff:g id="more" example="1">%2$d</xliff:g> more than the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="3">%1$d</xliff:g> workouts, <xliff:g id="more" example="2">%2$d</xliff:g> more than the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's workouts, and how many fewer than the week before. The form follows the week's workouts. -->
+    <plurals name="day_week_workouts_fewer">
+        <item quantity="one"><xliff:g id="workouts" example="1">%1$d</xliff:g> workout, <xliff:g id="fewer" example="1">%2$d</xliff:g> fewer than the week before.</item>
+        <item quantity="other"><xliff:g id="workouts" example="2">%1$d</xliff:g> workouts, <xliff:g id="fewer" example="3">%2$d</xliff:g> fewer than the week before.</item>
+    </plurals>
+    <!-- Under the chart: the week's steps a day up on the week before. The percent is a whole number. -->
+    <string name="day_week_steps_up">Steps up <xliff:g id="percent" example="12">%1$d</xliff:g>%% on the week before.</string>
+    <!-- Under the chart: the week's steps a day down on the week before. The percent is a whole number. -->
+    <string name="day_week_steps_down">Steps down <xliff:g id="percent" example="3">%1$d</xliff:g>%% on the week before.</string>
+    <!-- Under the chart: the week's steps a day about the same as the week before. -->
+    <string name="day_week_steps_steady">Steps held steady on the week before.</string>
+    <!-- The label under the week's big number, its steps a day. Lower case, it reads on from the number. The dates are "12 to 18 Oct". -->
+    <string name="day_week_label">steps a day, <xliff:g id="dates" example="12 to 18 Oct">%1$s</xliff:g></string>
+    <!-- Day by day: a day, or a run of days ("Monday to Thursday"), with nothing recorded. -->
+    <string name="day_week_nothing">Nothing recorded</string>
+</resources>

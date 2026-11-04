@@ -116,7 +116,7 @@ object EnergyExpenditure {
     }
 
     /**
-     * Energy for one day of [minutes] (ascending; only minutes with data — no row is missing, never zero). Null without
+     * Energy for one day of [minutes] (ascending, only minutes with data, no row is missing, never zero). Null without
      * weight, height and age. No thermic effect of food is added. [hourOf] gives a minute's local hour for [Day.hourly].
      */
     fun day(

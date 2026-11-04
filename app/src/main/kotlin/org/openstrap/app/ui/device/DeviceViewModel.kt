@@ -1,10 +1,13 @@
 package org.openstrap.app.ui.device
 
+import android.app.Activity
+import android.content.IntentSender
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,10 +17,24 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.openstrap.app.AppContainer
+import org.openstrap.app.R
 import org.openstrap.app.ble.FoundDevice
+import org.openstrap.app.data.BackupRepository
+import org.openstrap.app.data.BackupResult
+import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.PairedDevice
+import org.openstrap.app.data.settings.SettingsStore
+import org.openstrap.app.device.CompanionLink
+import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.StrapController
+import org.openstrap.app.device.StrapInfo
+import org.openstrap.app.device.StrapManager
+import org.openstrap.app.device.SyncState
+import org.openstrap.app.export.AutoBackup
+import org.openstrap.app.health.HealthConnectAutoSync
+import org.openstrap.app.health.HealthConnectExporter
+import org.openstrap.app.i18n.Strings
+import org.openstrap.app.presentation.Units
 import org.openstrap.app.zepp.BoundDevice
 import org.openstrap.app.zepp.DeviceListing
 
@@ -27,16 +44,52 @@ data class ScanUiState(
     val error: String? = null,
 )
 
-class DeviceViewModel(private val container: AppContainer) : ViewModel() {
-    val strap: StrapController get() = container.strap
-    val companion: org.openstrap.app.device.CompanionLink get() = container.companion
+/**
+ * The Strap page and the You page's data rows: pairing, the strap's commands, its phone settings, backup and Health
+ * Connect. The screens only read state and call functions here, so nothing they start dies with the composition
+ * (audit A2), and the strap itself stays private.
+ */
+// Each parameter is one area of the two pages. Wave 5 splits the pages' view models, and with them this list.
+@Suppress("LongParameterList")
+class DeviceViewModel(
+    private val settings: SettingsStore,
+    private val strap: StrapController,
+    private val companion: CompanionLink,
+    private val scanStraps: () -> Flow<FoundDevice>,
+    private val backups: BackupRepository,
+    private val autoBackup: AutoBackup,
+    private val healthConnect: HealthConnectExporter,
+    private val autoHealthConnect: HealthConnectAutoSync,
+    private val sampleData: suspend () -> Unit,
+) : ViewModel() {
+    /** The words of its messages, in res/values/strings_you_*.xml. Read on each use, so they follow the app's language. */
+    private val strings: Strings get() = Strings.app
+
     val paired: StateFlow<PairedDevice?> =
-        container.settings.pairedDevice.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+        settings.pairedDevice.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val profile: StateFlow<org.openstrap.app.data.settings.UserProfile> =
-        container.settings.profile.stateIn(viewModelScope, SharingStarted.Eagerly, org.openstrap.app.data.settings.UserProfile())
+        settings.profile.stateIn(viewModelScope, SharingStarted.Eagerly, org.openstrap.app.data.settings.UserProfile())
 
-    fun saveProfile(p: org.openstrap.app.data.settings.UserProfile) = viewModelScope.launch { container.settings.saveProfile(p) }
+    fun saveProfile(p: org.openstrap.app.data.settings.UserProfile) = viewModelScope.launch { settings.saveProfile(p) }
+
+    val connection: StateFlow<ConnectionState> get() = strap.connection
+    val sync: StateFlow<SyncState> get() = strap.sync
+    val info: StateFlow<StrapInfo?> get() = strap.info
+    val findingStrap: StateFlow<Boolean> get() = strap.findingStrap
+
+    fun connect() = strap.connect()
+    fun disconnect() = strap.disconnect()
+    fun syncNow() = strap.syncNow()
+
+    /** The strap's settings kept on the phone, as the Strap page's rows show them. */
+    val buzzOnCalls: StateFlow<Boolean> = settings.buzzOnCalls.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val buzzOnNotifications: StateFlow<Boolean> = settings.buzzOnNotifications.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    val wearReminder: StateFlow<Boolean> = settings.wearReminder.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    val autoStartWorkouts: StateFlow<Boolean> = settings.autoStartWorkouts.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+
+    fun setWearReminder(on: Boolean) = viewModelScope.launch { settings.setWearReminder(on) }
+    fun setAutoStartWorkouts(on: Boolean) = viewModelScope.launch { settings.setAutoStartWorkouts(on) }
 
     private val _scan = MutableStateFlow(ScanUiState())
     val scan = _scan.asStateFlow()
@@ -51,7 +104,7 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         scanJob?.cancel()
         _scan.value = ScanUiState(scanning = true)
         scanJob = viewModelScope.launch {
-            container.scanner.scan()
+            scanStraps()
                 .catch { e -> _scan.update { it.copy(scanning = false, error = e.message) } }
                 .collect { d -> _scan.update { s -> s.copy(found = (s.found.filter { it.address != d.address } + d).sortedByDescending { it.rssi }) } }
         }
@@ -66,33 +119,35 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
         val key = normalizeAuthKey(authKey)
         if (key == null) {
             val n = authKey.trim().removePrefix("0x").removePrefix("0X").count { it.isLetterOrDigit() }
-            _message.value = "The auth key must be 32 characters of 0–9 and a–f. You entered $n."
+            _message.value = strings.format(R.string.you_pair_key_invalid, n)
             return
         }
-        if (!MAC.matches(address.uppercase())) {
-            _message.value = "The Bluetooth address should look like C8:0F:10:AB:CD:EF. Scan to fill it in."
+        // Trimmed once, as the sheet's own check does, so a pasted address with a trailing space pairs (audit E7).
+        val mac = pairAddress(address)
+        if (mac == null) {
+            _message.value = strings.get(R.string.you_pair_address_invalid)
             return
         }
         stopScan()
         viewModelScope.launch {
-            container.settings.savePairedDevice(PairedDevice(address.uppercase(), key, name))
-            container.strap.connect()
-            container.companion.refresh().join()
-            if (container.companion.supported && !container.companion.associated.value) _offerBackground.value = true
+            settings.savePairedDevice(PairedDevice(mac, key, name))
+            strap.connect()
+            companion.refresh().join()
+            if (companion.supported && !companion.associated.value) _offerBackground.value = true
         }
     }
 
     /** Keeps the Zepp sign-in for firmware checks and, when Zepp returned the strap's key, pairs with it straight away. */
     fun signInAndPair(listing: DeviceListing, strap: BoundDevice?) = viewModelScope.launch {
-        container.settings.saveZeppAccount(listing.session.toAccount(listing.apiBase, strap?.china == true, System.currentTimeMillis()))
+        settings.saveZeppAccount(listing.session.toAccount(listing.apiBase, strap?.china == true, System.currentTimeMillis()))
         val key = strap?.authKey
         if (strap != null && key != null) pair(strap.macAddress, DEFAULT_NAME, key)
-        else _message.value = "Zepp sign-in saved, but no auth key came with it. Get the key on a computer and enter it by hand."
+        else _message.value = strings.get(R.string.you_pair_no_key)
     }
 
     fun loadSampleData() = viewModelScope.launch {
-        org.openstrap.app.data.SampleData.load(container.database.healthDao())
-        _message.value = "Loaded a week of sample data."
+        sampleData()
+        _message.value = strings.get(R.string.you_strap_sample_loaded)
     }
 
     /** Set at the end of pairing: the strap page then asks Android to associate the strap, once. */
@@ -101,59 +156,70 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
     fun backgroundOffered() { _offerBackground.value = false }
 
     val companionDeclined: StateFlow<Boolean> =
-        container.settings.companionDeclined.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+        settings.companionDeclined.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    /** "Stay connected in background": whether Android can associate the strap, and whether it is, or battery optimization is off. */
+    val companionSupported: Boolean get() = companion.supported
+    val companionAssociated: StateFlow<Boolean> get() = companion.associated
+    val ignoringBatteryOptimizations: StateFlow<Boolean> get() = companion.ignoringBatteryOptimizations
+
+    /** Asks Android to associate the strap at [address]. [launch] shows its prompt from [activity]. */
+    fun associate(activity: Activity, address: String, launch: (IntentSender) -> Unit) =
+        companion.associate(activity, address, launch, onError = ::showMessage)
+
+    /** The association prompt's answer. Turned down, the page says what else keeps the strap connected. */
+    fun associationResult(resultCode: Int) {
+        if (!companion.onResult(resultCode)) showMessage(strings.get(R.string.you_strap_not_linked))
+    }
 
     fun showMessage(text: String) { _message.value = text }
 
     /** Find strap: buzzes it until stopped or Zepp's 60 s are up. */
     fun findStrap() = viewModelScope.launch {
-        runCatching { container.strap.findStrap() }.onFailure { _message.value = it.message ?: "Couldn't buzz the strap" }
+        catching { strap.findStrap() }
+            .onFailure { failed("find strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_buzz_failed))) }
     }
 
     fun stopFindingStrap() = viewModelScope.launch {
-        runCatching { container.strap.stopFindingStrap() }.onFailure { _message.value = it.message ?: "Couldn't stop the strap buzzing" }
+        catching { strap.stopFindingStrap() }
+            .onFailure { failed("stop finding strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_stop_buzz_failed))) }
     }
 
     /** Restarts the strap; the link drops and the usual reconnect brings it back. */
     fun restartStrap() = viewModelScope.launch {
-        _message.value = runCatching { container.strap.restartStrap(); "Restarting the strap. OpenStrap reconnects when it's back." }
-            .getOrElse { it.message ?: "Couldn't restart the strap" }
+        _message.value = catching {
+            strap.restartStrap()
+            strings.get(R.string.you_strap_restarting)
+        }
+            .getOrElse { failed("restart strap", it, ErrorCopy.strap(it, strings.get(R.string.you_strap_restart_failed))) }
     }
 
     fun forget() = viewModelScope.launch {
-        container.strap.disconnect()
-        paired.value?.let { container.companion.disassociate(it.address) }
-        container.settings.forgetDevice()
+        strap.disconnect()
+        paired.value?.let { companion.disassociate(it.address) }
+        settings.forgetDevice()
     }
 
     fun exportCsv(uri: Uri) = viewModelScope.launch {
-        _message.value = runCatching {
-            withContext(Dispatchers.IO) {
-                val settings = org.openstrap.app.export.SettingsBackup.toJson(container.settings.backupValues())
-                container.app.contentResolver.openOutputStream(uri)!!.use { container.csv.exportZip(it, settings = settings) }
-            }
-            "Saved a copy."
-        }.getOrElse { "Couldn't save the copy: ${it.message}" }
+        _message.value = when (val result = backups.exportCsv(uri)) {
+            is BackupResult.Failed -> failed("save a copy", result.error, ErrorCopy.saveCopy(result.error))
+            else -> strings.get(R.string.you_backup_saved_copy)
+        }
     }
 
     /**
-     * Restores a zip from [exportCsv] or automatic backup into what this phone is missing ([CsvImporter]), and the settings in
-     * it that this phone hasn't set. Safe to run twice.
+     * Restores a zip from [exportCsv] or automatic backup into what this phone is missing, and the settings in it that
+     * this phone hasn't set. Safe to run twice.
      */
     fun importCsv(uri: Uri) = viewModelScope.launch {
-        _message.value = runCatching {
-            val result = withContext(Dispatchers.IO) {
-                container.app.contentResolver.openInputStream(uri)!!.use { org.openstrap.app.export.CsvImporter(container.database).importZip(it) }
-            }
-            // A damaged settings file costs the settings only, not the records already restored.
-            val settings = result.settings?.let { json ->
-                runCatching { container.settings.restoreValues(org.openstrap.app.export.SettingsBackup.fromJson(json)) }.getOrDefault(0)
-            } ?: 0
-            BackupCopy.restored(result.total, settings > 0, result.skipped)
-        }.getOrElse { "Couldn't restore the copy: ${it.message}" }
+        _message.value = when (val result = backups.importCsv(uri)) {
+            is BackupResult.Restored -> BackupCopy.restored(result.total, result.settings, result.skipped)
+            is BackupResult.Failed -> failed("restore a copy", result.error, ErrorCopy.restoreCopy(result.error))
+            BackupResult.Saved -> null
+        }
     }
 
-    val backup: StateFlow<org.openstrap.app.data.settings.BackupState> = container.settings.backup
+    val backup: StateFlow<org.openstrap.app.data.settings.BackupState> = settings.backup
         .stateIn(viewModelScope, SharingStarted.Eagerly, org.openstrap.app.data.settings.BackupState(null, null, null, null, null))
 
     /** True while Back up now runs. */
@@ -165,41 +231,23 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
      * go of the folder before, starts the daily backup and makes the first one now.
      */
     fun chooseBackupFolder(uri: Uri) = viewModelScope.launch {
-        val resolver = container.app.contentResolver
-        val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        val kept = runCatching { resolver.takePersistableUriPermission(uri, flags) }
-        if (kept.isFailure) {
-            _message.value = "OpenStrap can't keep writing to that folder. Choose another one."
+        if (!autoBackup.chooseFolder(uri)) {
+            _message.value = strings.get(R.string.you_backup_folder_refused)
             return@launch
         }
-        val before = backup.value.folder
-        if (before != null && before != uri.toString()) releaseFolder(before)
-        val name = withContext(Dispatchers.IO) { runCatching { androidx.documentfile.provider.DocumentFile.fromTreeUri(container.app, uri)?.name }.getOrNull() }
-        container.settings.setBackupFolder(uri.toString(), name)
-        org.openstrap.app.export.AutoBackup.schedule(container.app)
         backUpNow(quiet = true)
     }
 
     /** Stops automatic backup and lets go of its folder. The backups already there stay. */
-    fun turnOffBackup() = viewModelScope.launch {
-        org.openstrap.app.export.AutoBackup.cancel(container.app)
-        backup.value.folder?.let(::releaseFolder)
-        container.settings.clearBackup()
-    }
-
-    private fun releaseFolder(folder: String) {
-        val flags = android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-        runCatching { container.app.contentResolver.releasePersistableUriPermission(Uri.parse(folder), flags) }
-    }
+    fun turnOffBackup() = viewModelScope.launch { autoBackup.turnOff() }
 
     /** One backup now, the daily one's way. During a workout it waits for the end instead. [quiet] says only a failure. */
     fun backUpNow(quiet: Boolean = false) = viewModelScope.launch {
         if (_backingUp.value) return@launch
         _backingUp.value = true
         try {
-            val outcome = org.openstrap.app.export.AutoBackup(container.app, container).run()
-            if (outcome == org.openstrap.app.export.AutoBackup.Outcome.Recording) org.openstrap.app.export.AutoBackup.afterWorkout(container.app)
-            if (!quiet || outcome !is org.openstrap.app.export.AutoBackup.Outcome.Done) _message.value = BackupCopy.outcome(outcome)
+            val outcome = autoBackup.runNow()
+            if (!quiet || outcome !is AutoBackup.Outcome.Done) _message.value = BackupCopy.outcome(outcome)
         } finally {
             _backingUp.value = false
         }
@@ -207,44 +255,61 @@ class DeviceViewModel(private val container: AppContainer) : ViewModel() {
 
     /** Brings back what OpenStrap exported to Health Connect, filling gaps only. */
     fun importHealthConnect() = viewModelScope.launch {
-        _message.value = runCatching {
-            val n = withContext(Dispatchers.IO) { container.healthConnect.import() }
-            if (n == 0) "Health Connect has no OpenStrap data to restore." else "Restored %,d records from Health Connect.".format(n)
-        }.getOrElse { "Couldn't restore from Health Connect: ${it.message}" }
+        _message.value = catching {
+            val n = withContext(Dispatchers.IO) { healthConnect.import() }
+            if (n == 0) strings.get(R.string.you_hc_restored_none)
+            else strings.plural(R.plurals.you_hc_restored, n, Units.count(n.toLong()))
+        }.getOrElse { failed("health connect import", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_restore_failed), it)) }
     }
 
     fun exportHealthConnect() = viewModelScope.launch {
-        _message.value = runCatching {
+        _message.value = catching {
             val now = System.currentTimeMillis() / 1000
-            val n = container.healthConnect.export(now - 30L * 24 * 3600, now)
-            container.settings.setHealthConnectSynced(now)
-            "Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Couldn't write to Health Connect: ${it.message}" }
+            val n = healthConnect.export(now - 30L * 24 * 3600, now)
+            settings.setHealthConnectSynced(now)
+            strings.plural(R.plurals.you_hc_wrote, n, n)
+        }.getOrElse { failed("health connect export", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_write_failed), it)) }
     }
 
     /** Auto sync to Health Connect, for the You page's row. */
     val healthConnectAuto: StateFlow<org.openstrap.app.data.settings.HealthConnectAuto> =
-        container.settings.healthConnectAuto.stateIn(viewModelScope, SharingStarted.Eagerly, org.openstrap.app.data.settings.HealthConnectAuto())
+        settings.healthConnectAuto.stateIn(viewModelScope, SharingStarted.Eagerly, org.openstrap.app.data.settings.HealthConnectAuto())
 
     /** The auto sync switch. On is called once the write permissions are granted, and writes the last 30 days at once. */
     fun setAutoHealthConnect(on: Boolean) = viewModelScope.launch {
-        if (!on) { container.settings.setHealthConnectAuto(false); return@launch }
-        _message.value = runCatching {
-            val n = container.autoHealthConnect.turnOn()
-            "Auto sync is on. Wrote $n records to Health Connect (last 30 days)."
-        }.getOrElse { "Auto sync is on, but the first copy didn't work: ${it.message}" }
+        if (!on) { settings.setHealthConnectAuto(false); return@launch }
+        _message.value = catching {
+            val n = autoHealthConnect.turnOn()
+            strings.plural(R.plurals.you_hc_auto_wrote, n, n)
+        }.getOrElse {
+            failed("health connect auto sync", it, ErrorCopy.healthConnect(strings.get(R.string.you_hc_auto_failed), it))
+        }
     }
 
     /** The You page opened: auto sync turns off, saying why, if Health Connect or its permissions went away. */
     fun checkAutoHealthConnect() = viewModelScope.launch {
-        runCatching { container.autoHealthConnect.check() }
+        catching { autoHealthConnect.check() }.onFailure { log("health connect: auto sync check failed: $it") }
+    }
+
+    /** The raw failure goes to Diagnostics, and [copy], what the screen says, comes back. */
+    private fun failed(what: String, e: Throwable, copy: String): String {
+        log("$what failed: $e")
+        return copy
+    }
+
+    private fun log(message: String) {
+        android.util.Log.w("OpenStrap", message)
+        (strap as? StrapManager)?.log(message)
     }
 
     companion object {
         const val DEFAULT_NAME = "Amazfit Helio Strap"
         private val MAC = Regex("^([0-9A-F]{2}:){5}[0-9A-F]{2}$")
 
-        fun isAddress(input: String) = MAC.matches(input.trim().uppercase())
+        fun isAddress(input: String) = pairAddress(input) != null
+
+        /** [input] as the address to pair with, trimmed and upper case, or null when it isn't a Bluetooth address. */
+        fun pairAddress(input: String): String? = input.trim().uppercase().takeIf { MAC.matches(it) }
 
         /** Accepts "0x…", spaces or colons; returns 32 lowercase hex chars or null. */
         fun normalizeAuthKey(input: String): String? {

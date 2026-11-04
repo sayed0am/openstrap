@@ -32,7 +32,8 @@ object AutoStart {
      */
     fun offer(readings: List<Pair<Long, Int>>, restingHr: Int, maxHr: Int, stepsPerMinute: Int?, now: Long, notBefore: Long = 0): Offer? {
         val shown = readings.filter { it.first >= notBefore }
-        val s = WorkoutSuggestions.find(minutes(shown), restingHr, maxHr, emptyList()).firstOrNull() ?: return null
+        // The offer reads only the stretch's times and average, never its zone, so the standard zones do.
+        val s = WorkoutSuggestions.find(minutes(shown), restingHr, maxHr, emptyList(), HeartZones.STANDARD).firstOrNull() ?: return null
         if (now - s.end > ONGOING_S) return null
         return Offer(s.start, s.averageHeartRate, sport(stepsPerMinute))
     }

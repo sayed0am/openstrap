@@ -8,11 +8,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
 import org.openstrap.app.ui.glow.BarMaxWidth
-import org.openstrap.app.ui.glow.DotSize
+import org.openstrap.app.ui.glow.draw.DotSize
 import androidx.compose.ui.graphics.luminance
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.GlowPalette
-import org.openstrap.app.ui.glow.GlowStyle
+import org.openstrap.app.ui.glow.draw.GlowPalette
+import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.theme.MetricColors
 import java.io.File
 
@@ -113,14 +113,14 @@ class DesignTokenTest {
         // Spec 2.3 and audit 2.8: one number in dots a card; the rest is text. Each card is a function of its own. A
         // call that passes no number (EdgeValue(null, ...)) draws none.
         val found = mutableListOf<String>()
-        val dotted = Regex("""\b(HeroNumber|HeroFigure|DotMatrixText|EdgeValue|FigureRow|GlowHeroNumber)\((?!\s*null\b)""")
+        val dotted = Regex("""\b(HeroNumber|HeroFigure|DotMatrixText|EdgeValue|FigureRow)\((?!\s*null\b)""")
         fun cards(vararg names: String) = Regex("""fun (${names.joinToString("|")})\(""")
         listOf(
             "glow/GlowTodayScreen.kt" to Regex("""private fun (\w+Hero)\("""),
             "glow/TodayCards.kt" to cards("WeekCard"),
             "glow/GlowRecoveryScreen.kt" to cards("RecoveryHero", "RecoveryFailedHero", "ChargeTall", "ChargeSmall"),
             "glow/GlowSleepScreen.kt" to cards("NightHero", "RegularityCard", "BreathingCard"),
-            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "LoadCard"),
+            "glow/GlowActivityScreen.kt" to cards("StartCard", "StepsGlow", "DayLoadCard"),
             "glow/GlowHealthspan.kt" to cards("HabitAgeEdgeCard"),
         ).forEach { (path, fn) ->
             val code = sources.getValue(path).joinToString("\n")
@@ -190,6 +190,14 @@ class DesignTokenTest {
         if (found.isNotEmpty()) fail("Dot sizes come from DotSize (spec 2.3):\n" + found.joinToString("\n"))
     }
 
+    @Test fun `a workout hero's glow and a lit panel are each built in one place`() {
+        // The summary, the past workout and the heart rate drop light by effortGlow, Ready's heart and the max heart
+        // rate's hero are LitPanel (component consolidation, 2026-11-04). The share cards light a whole image, not a panel.
+        val found = find(Regex("""lightAngle\s*=\s*LightAngle\.Below,\s*lightLevel"""), except = setOf("glow/CardLight.kt")) +
+            find(Regex("""\bdrawCardLight\("""), except = setOf("glow/CardLight.kt", "glow/ShareCards.kt"))
+        if (found.isNotEmpty()) fail("Use effortGlow and LitPanel:\n" + found.joinToString("\n"))
+    }
+
     /** Card-sized corners: anything this round is a card, a panel or a sheet, and takes [GlowLayout.CardShape]. */
     @Test fun `cards take their corners from GlowLayout`() {
         val found = mutableListOf<String>()
@@ -227,7 +235,21 @@ class DesignTokenTest {
         assertTrue("type allowlist is higher than the code, lower it: $stale (now ${stale.keys.associateWith { counts[it] ?: 0 }})", stale.isEmpty())
     }
 
+    @Test fun `the glow screens and the app's frame take no type or colour from Material`() {
+        // Material's roles are another product's type (spec 2.3). The theme glue in components/Glass.kt and the
+        // colorScheme.background blacks behind whole screens stay, as does PageMenuRow's DropdownMenu.
+        val frame = setOf("dashboard/DayCalendar.kt", "components/PullToSync.kt", "components/Insights.kt")
+        val found = find(
+            Regex("""MaterialTheme\.(typography|colorScheme)|\b(IconButton|TextButton|Surface)\(|material3\.Surface\b"""),
+            except = sources.keys.filterNot { (it.startsWith("glow/") || it in frame) && it !in materialNotMigrated }.toSet(),
+        )
+        if (found.isNotEmpty()) fail("Text takes a GlowType role, controls come from PageParts (spec 2.3, 2.4):\n" + found.joinToString("\n"))
+    }
+
     private companion object {
+        /** Glow files still on Material type. Empty since the charts moved ScaleLabel onto ScaleLabels. */
+        val materialNotMigrated = emptySet<String>()
+
         /** From this radius up a corner is a card's. Tiles, chips, bars and pills stay under it. */
         const val CARD_SIZED = 20f
 
@@ -245,12 +267,10 @@ class DesignTokenTest {
          * (audit section 4). The list shrinks with each step and never grows.
          */
         val typeNotMigrated = mapOf(
-            "components/Charts.kt" to 2,
             "dashboard/SleepPanels.kt" to 1,
-            "glow/AllMetricsScreen.kt" to 1,
-            "glow/GlowActivityScreen.kt" to 2,
-            "glow/GlowCharts.kt" to 5,
-            "glow/GlowWorkoutMode.kt" to 2,
+            "glow/GlowActivityScreen.kt" to 1,
+            "glow/GlowCharts.kt" to 4,
+            "glow/live/LiveFrame.kt" to 2,
             "glow/TabParts.kt" to 1,
         )
     }

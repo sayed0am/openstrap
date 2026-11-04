@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Celebrations: the personal best card, the weekly goal moment, the badges history earned and the Celebrations
+  settings sheet (ui/glow/Celebrations.kt).
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- The small label at the top of the full screen personal best card. -->
+    <string name="glow_celebrate_personal_best">Personal best</string>
+    <!-- A text button under Continue on the goal moment that opens the Celebrations sheet. -->
+    <string name="glow_celebrate_settings">Celebrations</string>
+    <!-- The goal moment's title, under "4/4" in large dots. -->
+    <string name="glow_celebrate_goal_met">Weekly goal met</string>
+    <!-- The note under the week's days on the goal moment. -->
+    <string name="glow_celebrate_goal_note">Shown once a week, when you reach your goal.</string>
+    <!-- Title of the Celebrations settings sheet. -->
+    <string name="glow_celebrate_title">Celebrations</string>
+    <!-- The note under the Celebrations sheet's title. -->
+    <string name="glow_celebrate_sheet_note">No streaks to keep and no nudges. Just these two.</string>
+    <!-- A switch in the Celebrations sheet. -->
+    <string name="glow_celebrate_goal_moment">Weekly goal moment</string>
+    <!-- Under the Weekly goal moment switch. -->
+    <string name="glow_celebrate_goal_moment_line">A full screen once a week, when you reach your goal</string>
+    <!-- A switch in the Celebrations sheet. -->
+    <string name="glow_celebrate_recap">Weekly recap</string>
+    <!-- Under the Weekly recap switch. -->
+    <string name="glow_celebrate_recap_line">One notification on Monday morning about your week</string>
+    <!-- Title of the screen with the badges past workouts earned, shown once. -->
+    <string name="glow_celebrate_history_title">From your workouts so far</string>
+    <!-- Under its title on the history badges screen: how many badges past workouts earned. -->
+    <plurals name="glow_celebrate_history_badges">
+        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> badge already earned. New ones show on the summary after a workout.</item>
+        <item quantity="other"><xliff:g id="count" example="5">%d</xliff:g> badges already earned. New ones show on the summary after a workout.</item>
+    </plurals>
+</resources>

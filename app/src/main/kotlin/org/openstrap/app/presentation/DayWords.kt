@@ -1,0 +1,105 @@
+package org.openstrap.app.presentation
+
+import org.openstrap.app.R
+import org.openstrap.app.i18n.Strings
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
+import java.util.Locale
+
+/**
+ * When a day was, in words (decision 6 in [Units]): "Today", "Yesterday", the weekday for the rest of the last 7 days
+ * ("Tuesday"), then the date ("Tue 21 Oct"), with the year when it's from an earlier one ("Tue 21 Oct 2025"). The
+ * words follow the app's language (res/values/strings_core_days.xml), the weekday and month names the phone's.
+ */
+object DayWords {
+    val TODAY: String get() = Strings.app.get(R.string.core_day_today)
+    val YESTERDAY: String get() = Strings.app.get(R.string.core_day_yesterday)
+
+    /** A day this many days back or fewer, past yesterday, goes by its weekday. A week back would repeat today's. */
+    private const val WEEKDAY_WITHIN_DAYS = 6L
+
+    private const val SHORT = "EEE d MMM"
+    private const val SHORT_WITH_YEAR = "EEE d MMM yyyy"
+
+    /**
+     * [date] seen from [today], for a heading: "Today", "Yesterday", "Tuesday", "Tue 21 Oct", "Tue 21 Oct 2025". A
+     * day after [today] has no word for it, so it takes its date.
+     */
+    fun relative(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String {
+        val days = ChronoUnit.DAYS.between(date, today)
+        return when {
+            days == 0L -> strings.get(R.string.core_day_today)
+            days == 1L -> strings.get(R.string.core_day_yesterday)
+            days in 2..WEEKDAY_WITHIN_DAYS -> date.dayOfWeek.getDisplayName(TextStyle.FULL, locale)
+            date.year == today.year -> date.format(Formatters.of(SHORT, locale))
+            else -> date.format(Formatters.of(SHORT_WITH_YEAR, locale))
+        }
+    }
+
+    /** [relative] after other words: "today" and "yesterday" in lowercase, a weekday or date as it is. */
+    fun inSentence(date: LocalDate, today: LocalDate, locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
+        when (ChronoUnit.DAYS.between(date, today)) {
+            0L -> strings.get(R.string.core_day_today_in_sentence)
+            1L -> strings.get(R.string.core_day_yesterday_in_sentence)
+            else -> relative(date, today, locale, strings)
+        }
+
+    /**
+     * A moment joined with its time, after other words: "10:42" today, "yesterday 10:42", "Tuesday 10:42",
+     * "Tue 21 Oct 10:42". [now] and [epoch] in epoch seconds.
+     */
+    fun at(
+        epoch: Long, now: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String {
+        val clock = TimeOfDay.format(epoch, zone, use24Hour, locale)
+        val date = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate()
+        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
+        return if (date == today) clock else strings.format(R.string.core_day_at, inSentence(date, today, locale, strings), clock)
+    }
+
+    /**
+     * When something last happened, after other words: "today at 10:42", "yesterday at 10:42", or further back the
+     * date alone, "on Tue 21 Oct". For a backup or an update check, where an older time no longer matters.
+     */
+    fun whenDone(
+        epoch: Long, now: Long, zone: ZoneId, use24Hour: Boolean = ClockSetting.use24Hour, locale: Locale = Locale.getDefault(),
+        strings: Strings = Strings.app,
+    ): String {
+        val date = Instant.ofEpochSecond(epoch).atZone(zone).toLocalDate()
+        val today = Instant.ofEpochSecond(now).atZone(zone).toLocalDate()
+        val clock = TimeOfDay.format(epoch, zone, use24Hour, locale)
+        return when (date) {
+            today -> strings.format(R.string.core_day_done_today, clock)
+            today.minusDays(1) -> strings.format(R.string.core_day_done_yesterday, clock)
+            else -> strings.format(R.string.core_day_done_on, short(date, locale))
+        }
+    }
+
+    /** A day for a chart or a short label, always dated: "Tue 21 Oct". */
+    fun short(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of(SHORT, locale))
+
+    /** A weekday's short name, for a week's strip of bars: "Tue". */
+    fun weekdayShort(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.dayOfWeek.getDisplayName(TextStyle.SHORT, locale)
+
+    /** The weekday in full with the day and month, for a date further out: "Sunday 22 Nov". */
+    fun weekdayDayMonth(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.format(Formatters.of("EEEE d MMM", locale))
+
+    /** A day and month with no weekday, for chart axes, ranges and widgets: "21 Oct". */
+    fun dayMonth(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("d MMM", locale))
+
+    /** [dayMonth] with its year, for a date that may be from any year: "21 Oct 2025". */
+    fun dayMonthYear(date: LocalDate, locale: Locale = Locale.getDefault()): String =
+        date.format(Formatters.of("d MMM yyyy", locale))
+
+    /** The month first, as a share card's corner reads: "Oct 21". */
+    fun monthDay(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("MMM d", locale))
+
+    /** A month's short name, for a year's chart axis: "Oct". */
+    fun monthShort(date: LocalDate, locale: Locale = Locale.getDefault()): String = date.format(Formatters.of("MMM", locale))
+}

@@ -39,7 +39,7 @@ class RouteMigrationTest {
         }
 
         val room = Room.databaseBuilder(ApplicationProvider.getApplicationContext(), OpenStrapDatabase::class.java, file.absolutePath)
-            .allowMainThreadQueries().build()
+            .addMigrations(*OpenStrapDatabase.MIGRATIONS).allowMainThreadQueries().build()
         try {
             val rows = room.healthDao().routeOnce(100)
             assertEquals(listOf(Route.Point(105, 51.5, -0.1, 4.5f)), rows.map { it.point })

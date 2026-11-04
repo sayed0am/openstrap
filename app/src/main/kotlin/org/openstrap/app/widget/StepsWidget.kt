@@ -3,7 +3,6 @@ package org.openstrap.app.widget
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Paint
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -23,16 +22,14 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.data.DailyMetric
+import org.openstrap.app.R
 import org.openstrap.app.data.DayWindow
-import org.openstrap.app.data.LiveSteps
+import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.Summaries
-import org.openstrap.app.ui.glow.EdgeKind
-import org.openstrap.app.ui.glow.EdgeStatus
-import org.openstrap.app.ui.glow.GlowMood
+import org.openstrap.app.data.WidgetKind
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawGhostLine
 import org.openstrap.app.ui.glow.draw.drawPillBar
@@ -40,13 +37,8 @@ import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
-import org.openstrap.app.ui.glow.edgeLight
+import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
-import java.time.DayOfWeek
-import java.time.Instant
-import java.time.ZoneId
-import java.time.temporal.TemporalAdjusters
-import kotlin.math.roundToInt
 
 /**
  * The Steps widget (widgets spec 3.3): today's steps against the goal, glanceable all day. The Wide adds what's to go
@@ -54,7 +46,7 @@ import kotlin.math.roundToInt
  * value, in Steps' lime and the moment's mood, as Today's Steps card. The whole widget opens the Steps detail.
  */
 class StepsWidget : LoadingWidget<StepsWidget.Shown>(WidgetKind.Steps) {
-    override suspend fun loadShown(context: Context): Shown = load(context)
+    override fun shown(data: WidgetData, context: Context): Shown = load(data)
 
     override fun sample(): Shown = Shown(WidgetSamples.steps(java.time.LocalDate.now()), GlowMood.Day)
 
@@ -67,38 +59,20 @@ class StepsWidget : LoadingWidget<StepsWidget.Shown>(WidgetKind.Steps) {
     companion object {
         /**
          * Today's steps as Today's Steps card counts them: the synced minutes with the strap's live total on top
-         * ([LiveSteps]), the day's line from the minutes hour by hour, the goal from settings, and this week's earlier
-         * days from the daily totals the app's week shows. The mood from the moment now ([widgetMood]).
+         * ([org.openstrap.app.data.LiveSteps]), the day's line from the minutes hour by hour, the goal from settings,
+         * and this week's earlier days from the daily totals the app's week shows. The mood from the moment now
+         * ([widgetMood]).
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): Shown {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val at = now.atZone(zone)
+        internal fun load(data: WidgetData): Shown {
+            val read = checkNotNull(data.steps) { "not read for Steps" }
+            val at = data.now.atZone(data.zone)
             val today = at.toLocalDate()
-            val goal = container.settings.goals.first().steps
-            val model = try {
-                val day = DayWindow.of(today, zone)
-                val minutes = container.database.healthDao().activityOnce(day.from, day.to)
-                val steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value)
-                val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val past = if (monday < today) {
-                    container.health.daily(DailyMetric.Steps, monday, today.minusDays(1), zone).first()
-                        .filter { it.date < today }.associate { it.date to it.value.roundToInt() }
-                } else emptyMap()
-                StepsWidgetModel.from(today, steps, Summaries.hourlySteps(minutes, day.from), at.hour, goal, past)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(WIDGET_TAG, "widgets: steps for $today not read: $e")
-                StepsWidgetModel.from(today, 0, List(24) { 0f }, at.hour, goal, emptyMap())
-            }
-            val bedtime = try {
-                container.health.usualBedtime(today)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                null
-            }
-            return Shown(model, widgetMood(container, bedtime, now, zone))
+            val goal = read.goal.getOrThrow()
+            val model = read.day?.let { d ->
+                val hourly = Summaries.hourlySteps(d.minutes, DayWindow.of(today, data.zone).from)
+                StepsWidgetModel.from(today, d.steps, hourly, at.hour, goal, d.past)
+            } ?: StepsWidgetModel.from(today, 0, List(24) { 0f }, at.hour, goal, emptyMap())
+            return Shown(model, widgetMood(data, data.usualBedtime))
         }
     }
 }
@@ -122,7 +96,7 @@ private const val TRACK_ALPHA = 0.10f
 @Composable
 private fun StepsContent(data: StepsWidget.Shown) {
     val m = data.model
-    val open = openMetric(LocalContext.current, STEPS_ROUTE, m.date)
+    val open = openMetric(LocalContext.current, DetailRoutes.STEPS, m.date)
     EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Progress), Ink, data.mood, open, BITMAP_EXTRA) { frame ->
         when (frame.bucket) {
             WidgetSizes.Small -> SmallContent(m, frame)
@@ -132,24 +106,16 @@ private fun StepsContent(data: StepsWidget.Shown) {
     }
 }
 
-/** A gap between blocks: they share the spare height alike, with half a gap above and below. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
-
-/** The half gap above the first block or below the last, at the cell's real height. */
-@Composable
-private fun Edge(spread: Spread, f: WidgetFrame) = Spacer(GlanceModifier.height(spread.edge(f.drawContentHeight).dp))
-
 /** Small: the top row, then the steps with "today", then the goal bar and the share of the goal. */
 @Composable
 private fun ColumnScope.SmallContent(m: StepsWidgetModel, f: WidgetFrame) {
-    val fit = StepsLayout.small(m.stepsText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status)
+    val fit = StepsLayout.small(m.smallText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status)
     Edge(fit.spread, f)
     TopRowView(m.title, null, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
     // Each block one child of the column: Glance drops a column's children past ten.
     Column(GlanceModifier.fillMaxWidth()) {
-        DotNumber(m.stepsText, fit.dot, f.density, m.description)
+        DotNumber(m.smallText, fit.dot, f.density, m.description)
         if (fit.word) {
             Spacer(GlanceModifier.height(StepsLayout.SMALL_WORD_GAP_DP.dp))
             Text(m.word, style = WidgetType.word, maxLines = 1)
@@ -226,7 +192,7 @@ private fun StepsLine(m: StepsWidgetModel, height: Float?, f: WidgetFrame) {
     }
     Image(
         ImageProvider(bitmap),
-        contentDescription = "Steps so far today, ${m.share}",
+        contentDescription = LocalContext.current.getString(R.string.system_widget_steps_line_description, m.share),
         modifier = GlanceModifier.fillMaxWidth().height(height.dp),
         contentScale = ContentScale.FillBounds,
     )
@@ -243,7 +209,7 @@ private fun GoalBar(progress: Float, f: WidgetFrame) {
     )
 }
 
-/** "This week" and how many days met the goal on one line, then a bar a day Monday to Sunday under it. */
+/** "This week" and how many days met the goal on one line, then a bar a day under it, from the week's first day. */
 @Composable
 private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float) {
     // One child of the Large's column: Glance drops a column's children past ten.
@@ -256,16 +222,15 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
             Text(m.weekLine, style = WidgetType.secondary, maxLines = 1)
         }
         Spacer(GlanceModifier.height(StepsLayout.WEEK_LINE_GAP_DP.dp))
-        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), "Steps each day this week", m.week.map { it.letter to (it.state == StepsDay.Today) }, week.column)
+        val description = LocalContext.current.getString(R.string.system_widget_steps_week_description)
+        val today = m.week.map { it.letter to (it.state == StepsDay.Today) }
+        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), description, today, week.column)
     }
 }
 
 /* ------------------------------------------------------------------------------------------------ */
 /* Bitmaps                                                                                           */
 /* ------------------------------------------------------------------------------------------------ */
-
-/** The route `open_metric` takes for the Steps detail ([org.openstrap.app.ui.dashboard.Detail.fromRoute]). */
-internal const val STEPS_ROUTE = "Steps"
 
 /** Room for the dots, the line, the bar and the week beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.35

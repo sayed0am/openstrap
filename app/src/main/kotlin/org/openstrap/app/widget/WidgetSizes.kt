@@ -2,6 +2,8 @@ package org.openstrap.app.widget
 
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
+import org.openstrap.app.ui.glow.draw.DotFont
+import org.openstrap.app.ui.glow.draw.DotSize
 
 /**
  * The three sizes every widget has (widgets spec 2.1), so a stack that gives all its widgets one size fits each of
@@ -177,9 +179,9 @@ object WidgetText {
 object WidgetDots {
     /** [text]'s dots at [dot] dp, wide and high. */
     fun width(text: String, dot: Float): Float =
-        dot * ((1 + org.openstrap.app.ui.glow.DotSize.DOT_GAP) * org.openstrap.app.ui.glow.draw.DotFont.columns(text) - org.openstrap.app.ui.glow.DotSize.DOT_GAP)
+        dot * ((1 + DotSize.DOT_GAP) * DotFont.columns(text) - DotSize.DOT_GAP)
     fun height(dot: Float): Float =
-        dot * ((1 + org.openstrap.app.ui.glow.DotSize.DOT_GAP) * org.openstrap.app.ui.glow.draw.DotFont.ROWS - org.openstrap.app.ui.glow.DotSize.DOT_GAP)
+        dot * ((1 + DotSize.DOT_GAP) * DotFont.ROWS - DotSize.DOT_GAP)
 
     /** The dot that fits [text] into [room] dp, at most [dot]. */
     fun fit(text: String, room: Float, dot: Float): Float = minOf(dot, room / width(text, 1f)).coerceAtLeast(0.5f)

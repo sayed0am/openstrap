@@ -2,7 +2,6 @@ package org.openstrap.app.widget
 
 import android.content.Context
 import android.content.Intent
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -29,31 +28,14 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.unit.ColorProvider
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.flow.first
 import org.openstrap.app.MainActivity
-import org.openstrap.app.OpenStrapApp
-import org.openstrap.app.data.DayWindow
-import org.openstrap.app.data.MomentResolver
-import org.openstrap.app.data.SleepHistory
-import org.openstrap.app.data.Summaries
-import org.openstrap.app.data.LiveSteps
-import org.openstrap.app.data.Workouts
-import org.openstrap.app.device.WidgetUpdater
-import org.openstrap.app.device.WorkoutState
-import org.openstrap.app.ui.components.ChartPoint
-import org.openstrap.app.ui.dashboard.SLEEP_NIGHTS
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
-import org.openstrap.app.ui.dashboard.usualSport
+import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.drawGhostLine
 import org.openstrap.app.ui.glow.draw.drawStageStrip
 import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
-import java.time.Instant
-import java.time.ZoneId
+import org.openstrap.app.ui.theme.SportIcons
 
 /**
  * The Moment widget (widgets spec 3.1): what matters now, following the day as Today's hero does, from the same
@@ -63,7 +45,7 @@ import java.time.ZoneId
  * five ([WidgetUpdater.scheduleMoment]).
  */
 class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
-    override suspend fun loadShown(context: Context): MomentWidgetModel = load(context)
+    override fun shown(data: WidgetData, context: Context): MomentWidgetModel = load(data, context.widgets)
 
     override fun sample(): MomentWidgetModel = java.time.ZoneId.systemDefault().let { WidgetSamples.moment(java.time.LocalDate.now(it), it) }
 
@@ -72,88 +54,18 @@ class MomentWidget : LoadingWidget<MomentWidgetModel>(WidgetKind.Moment) {
 
     companion object {
         /**
-         * Everything Today's hero reads, from the database and the app's own sums: the moment's inputs
-         * ([widgetMomentInputs]), today's Recovery and Energy ([org.openstrap.app.data.HealthRepository.recovery]),
-         * last night as the Sleep tab reads it, the workouts, the day's heart rate and steps. Then the alarm for the
-         * next change, from the same inputs.
+         * Everything Today's hero reads, as one refresh read it ([WidgetSnapshot.gather]): the moment's inputs, today's
+         * Recovery and Energy, last night as the Sleep tab reads it, the workouts, the day's heart rate and steps. Then
+         * the alarm for the next change, from the same inputs.
          */
-        internal suspend fun load(context: Context, now: Instant = Instant.now(), zone: ZoneId = ZoneId.systemDefault()): MomentWidgetModel {
-            val container = (context.applicationContext as OpenStrapApp).container
-            val today = now.atZone(zone).toLocalDate()
-            val t = now.epochSecond
-            val dao = container.database.healthDao()
-            suspend fun <T> read(what: String, default: T, block: suspend () -> T): T = try {
-                block()
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
-                Log.w(WIDGET_TAG, "widgets: $what for Moment not read: $e")
-                default
-            }
-            val profile = container.settings.profile.first()
-            val rec = read("Recovery", null) { container.health.recovery(today, profile) }
-            val bedtime = rec?.usualBedtime ?: read("bedtime", null) { container.health.usualBedtime(today) }
-            val inputs = widgetMomentInputs(container, bedtime, now, zone)
-            val dayStart = DayWindow.of(today, zone).from
-            val strapScore = read("the strap's score", null) { dao.strapReadinessOnce(dayStart, dayStart).firstOrNull()?.score }
-            val night = read("last night", null) {
-                val span = DayWindow(DayWindow.nightEndingOn(today.minusDays(SLEEP_NIGHTS - 1L), zone).from, DayWindow.nightEndingOn(today, zone).to)
-                val sessions = dao.sleepSessionsOnce(span.from, span.to)
-                SleepHistory.mainSleep(sessions, DayWindow.nightEndingOn(today, zone))?.let { main ->
-                    SleepWidgetNight.of(today, main, dao.sleepStagesOnce(main.start), SleepHistory.mainSleeps(sessions, zone))
-                }
-            }
-            // Workouts over the usual workout time's look-back, as Today's usual sport reads them.
-            val from = t - MomentResolver.USUAL_WORKOUT_DAYS * 86_400L
-            val phone = read("phone workouts", emptyList()) { dao.appWorkoutsOnce(from, t) }
-            // The strap's record of a phone workout is that workout, as in the lists ([Workouts.sameWorkout]).
-            val strap = read("workouts", emptyList()) { dao.workoutsOnce(from, t) }.filter { Workouts.phoneTwin(it, phone, t) == null }
-            val yours = strap.filter { it.subtype != Workouts.SUBTYPE_AUTO_DETECTED && it.sportType != Workouts.GENERIC_ACTIVITY }.map { it.sportType to it.start } +
-                phone.filter { it.sportType != Workouts.GENERIC_ACTIVITY }.map { it.sportType to it.start }
-            val all = strap.map { it.sportType to it.start } + phone.map { it.sportType to it.start }
-            val usual = usualSport(yours) ?: usualSport(all.filter { it.first != Workouts.GENERIC_ACTIVITY }) ?: Workouts.DEFAULT_SPORTS.first()
-            val ended = strap.map { MomentWorkout(it.sportType, it.end) } + phone.mapNotNull { w -> w.end?.let { MomentWorkout(w.sportType, it) } }
-            val last = ended.filter { it.end <= t }.maxByOrNull { it.end }
-            val day = DayWindow.of(today, zone)
-            val dayWorkouts = (strap.map { it.start to it.sportType } + phone.map { it.start to it.sportType })
-                .filter { (start, sport) -> start in day.from..day.to && sport != Workouts.GENERIC_ACTIVITY }.sortedBy { it.first }.map { it.second }
-            val recording = (container.workout.state.value as? WorkoutState.Recording)?.let { MomentRecordingInput(it.workout.sportType, it.workout.start) }
-            val minutes = read("steps", emptyList()) { dao.activityOnce(day.from, day.to) }
-            val hr = read("heart rate", emptyList()) { dao.heartRateOnce(day.from, day.to) }
-            val series = Summaries.heartRateSeries(hr, minutes)
-            val heart = Summaries.bucketAverage(series).map { ChartPoint(it.first, it.second.toFloat()) }
-            val resting = read("resting heart rate", null) { dao.restingHrOnce(day.from, day.to).firstOrNull()?.bpm }
-                ?: if (series.size >= RESTING_ESTIMATE_MINUTES) Summaries.estimateRestingHr(series) else null
-            val input = MomentWidgetInput(
-                inputs = inputs,
-                placed = WidgetRefresh.placedOverride ?: WidgetUpdater.placed(context),
-                recovery = rec?.let { TodayCopy.recoveryShown(it.readiness, strapScore, TabCopy.RECOVERY_WAITING) },
-                score = rec?.readiness?.score,
-                alert = rec?.readiness?.strainAlert == true,
-                noScore = TodayCopy.noScore(rec?.readiness),
-                firstNights = rec?.charge?.anchored != true,
-                energy = rec?.charge?.let(MomentEnergy::of),
-                load = rec?.load,
-                loadStatus = rec?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = false) },
-                night = night,
-                usualSport = usual,
-                lastWorkout = last,
-                recording = recording,
-                dayWorkouts = dayWorkouts,
-                heartRate = heart,
-                restingHr = resting,
-                steps = LiveSteps().today(Summaries.totalSteps(minutes), container.strap.todaySteps.value),
-                stepGoal = container.settings.goals.first().steps,
-            )
+        internal fun load(data: WidgetData, widgets: WidgetUpdater): MomentWidgetModel {
+            val input = checkNotNull(data.momentWidget) { "not read for Moment" }.getOrThrow()
             val forced = WidgetRefresh.momentOverride
-            val model = MomentWidgetModel.from(input, now, zone, forced)
+            val model = MomentWidgetModel.from(input, data.now, data.zone, forced)
             // The debug gallery's forced moment has no end of its own.
-            if (forced == null) WidgetUpdater.scheduleMoment(context, inputs, model.tick, now, zone)
+            if (forced == null) widgets.scheduleMoment(input.inputs, model.tick, data.now, data.zone)
             return WidgetRefresh.moodOverride?.let { model.copy(mood = it) } ?: model
         }
-
-        /** Our own resting estimate needs most of a day's minutes, as Today's ([org.openstrap.app.ui.dashboard.DayViewModel]). */
-        private const val RESTING_ESTIMATE_MINUTES = 6 * 60
     }
 }
 
@@ -257,10 +169,6 @@ private fun ColumnScope.WideContent(m: MomentWidgetModel, fit: MomentLayout.Fit,
     }
     Spacer(GlanceModifier.height(edge.dp))
 }
-
-/** A gap between blocks: they all share the spare height alike. */
-@Composable
-private fun ColumnScope.Gap() = Spacer(GlanceModifier.defaultWeight())
 
 @Composable
 private fun Name(name: MomentLayout.Line) = Text(name.text, style = NameStyle.copy(fontSize = name.sp.sp), maxLines = 1)

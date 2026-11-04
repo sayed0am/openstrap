@@ -1,5 +1,11 @@
 package org.openstrap.app.ui.glow
 
+import org.openstrap.app.R
+import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.presentation.LoadBand
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.presentation.Vo2maxCopy
+import org.openstrap.app.presentation.TimeOfDay
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,6 +43,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -49,35 +56,41 @@ import androidx.compose.ui.unit.sp
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
-import kotlinx.coroutines.flow.Flow
 import org.openstrap.app.data.Activity
 import org.openstrap.app.data.RecoveryResult
 import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.data.Workouts
-import org.openstrap.app.data.db.DailyPai
 import org.openstrap.app.ui.dashboard.ActivityCard
-import org.openstrap.app.ui.dashboard.ActivityCopy
+import org.openstrap.app.presentation.ActivityCopy
+import org.openstrap.app.ui.dashboard.ActivityHistory
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Score
 import org.openstrap.app.ui.dashboard.ActivityFacts
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.LocalGoals
 import org.openstrap.app.ui.dashboard.CaloriesCopy
-import org.openstrap.app.ui.dashboard.Metric
+import org.openstrap.app.presentation.Metric
 import org.openstrap.app.ui.dashboard.PARTIAL_DAY
 import org.openstrap.app.ui.dashboard.Wear
-import org.openstrap.app.ui.dashboard.TabCopy
-import org.openstrap.app.ui.dashboard.TodayCopy
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.dashboard.activityCards
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.workout.SportIcons
+import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
+import androidx.compose.foundation.layout.BoxWithConstraints
+import org.openstrap.app.ui.glow.draw.GlowStyle
+import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.EdgeKind
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.draw.level
+import org.openstrap.app.ui.theme.ControlSurface
+import org.openstrap.app.presentation.topSports
 
 /** Heart points' weekly aim: 100 or more over the last seven days. */
 private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
@@ -85,16 +98,10 @@ private const val HEART_POINTS_TARGET = ActivityCopy.HEART_POINTS_TARGET
 /** Workouts the list shows, the day's first, before "All workouts". */
 private const val LISTED_WORKOUTS = 5
 
-/** Each day's Heart points (the strap's PAI) between two dates, keyed by date. */
-typealias PaiHistory = (LocalDate, LocalDate) -> Flow<Map<LocalDate, DailyPai>>
-
-/** Each day's stored energy ([org.openstrap.app.data.DailyEnergyHistory]) between two dates, keyed by date. */
-typealias EnergyHistory = (LocalDate, LocalDate) -> Flow<Map<LocalDate, org.openstrap.app.data.db.DailyEnergyRow>>
-
 /*
  * The Activity tab (spec 5.3): "how much did I move and train". A card to start a sport today, steps glowing, Load
  * against your usual, this week's facts and the workouts ([activityCards]). Every card and row opens its detail; the
- * method behind each number (energy, active minutes, VO2 max, Load's parts) is in their info sheets. Workouts under
+ * method behind each number (calories, active minutes, VO2 max, Load's parts) is in their info sheets. Workouts under
  * way and the morning check-in live on Today.
  */
 @Composable
@@ -102,7 +109,8 @@ fun GlowActivityScreen(
     state: DayUiState,
     recovery: RecoveryResult?,
     workouts: List<WorkoutAnalysis>,
-    paiHistory: PaiHistory,
+    /** Each day's Heart points, for today's total until the strap's own comes. */
+    activity: ActivityHistory,
     header: @Composable () -> Unit,
     contentPadding: PaddingValues,
     onOpenMetric: (Metric) -> Unit,
@@ -129,8 +137,16 @@ fun GlowActivityScreen(
     val open = { s: Score -> onOpen(Detail.OfScore(s)) }
     val list = rememberLazyListState()
     val isToday = state.date == LocalDate.now()
-    val sports = remember(workouts) { topSports(workouts) }
-    val stored = remember(state.date) { paiHistory(state.date, state.date) }.collectAsState(emptyMap()).value
+    // Your three most used first, as on a phone; a wider card goes on with the rest you use, then the everyday sports,
+    // one tile per sport whichever kind.
+    val sports = remember(workouts) {
+        val shown = topSports(workouts).map { it.sportType }.toMutableList()
+        (topSports(workouts, MORE_BY_USE).map { it.sportType } + Workouts.EVERYDAY).forEach { t ->
+            if (shown.none { Workouts.tileType(it) == Workouts.tileType(t) }) shown += t
+        }
+        shown.toList()
+    }
+    val stored = activity.heartPointsOn(state.date)
     val heartPoints = state.pai?.total ?: stored[state.date]?.total
     val r = recovery?.takeIf { it.date == state.date }
     val live = liveHeartRate?.takeIf { isToday }
@@ -138,30 +154,33 @@ fun GlowActivityScreen(
     val restingRange = rememberNormal(Metric.RestingHr, state.date, history)
     // A partial day lowers the steps and the day's totals: those two cards carry the tag (spec 4.3).
     var partialInfo by rememberSaveable { mutableStateOf(false) }
-    val partial = wear?.takeIf { it.partial }?.let { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    // Built once, so the cards given it can skip (audit K11).
+    val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
+    val partial = partialTag.takeIf { wear?.partial == true }
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         GlowScreenList(contentPadding, list) {
-            full { header() }
+            add(Pane.Full, GlowBlocks.HEADER) { header() }
             tabCards(slots) { card, m ->
                 when (card) {
                     ActivityCard.Start -> StartCard(sports, onStartWorkout, onAllSports)
                     ActivityCard.Steps -> StepsGlow(state, usualSteps, partial) { onOpenMetric(Metric.Steps) }
                     ActivityCard.ActiveMinutes -> r?.activity.let { a ->
                         SmallCard(
-                            MetricColors.steps, "Active minutes", a?.weekEquivalent?.toString(), null,
-                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: "No reading yet", m,
+                            MetricColors.steps, stringResource(R.string.glow_activity_active_minutes), a?.weekEquivalent?.toString(), null,
+                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: NO_READING, m,
                             onClick = { open(Score.ActiveMinutes) },
                         )
                     }
                     ActivityCard.HeartPoints -> SmallCard(
-                        MetricColors.heart, "Heart points", heartPoints?.roundToInt()?.toString(), null,
-                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: "After the strap's next sync", m,
+                        MetricColors.heart, stringResource(R.string.glow_activity_heart_points),
+                        heartPoints?.roundToInt()?.toString(), null,
+                        heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
                         onClick = { open(Score.HeartPoints) },
                     )
-                    ActivityCard.Load -> LoadCard(r) { open(Score.Load) }
+                    ActivityCard.Load -> DayLoadCard(r) { open(Score.Load) }
                     ActivityCard.HeartRate -> HeartCard(state, live, { onOpenMetric(Metric.HeartRate) }, restingRange = restingRange)
-                    ActivityCard.Facts -> FactsList(state, r, workouts, isToday, onEditProfile, open, partial)
+                    ActivityCard.Facts -> DayFactsList(state, r, workouts, isToday, onEditProfile, open, partial)
                     ActivityCard.Workouts -> WorkoutsList(
                         state.date, workouts, suggestion?.takeIf { isToday }, onOpenWorkout, onAllWorkouts, onAddWorkout,
                         onSaveSuggestion, onDismissSuggestion,
@@ -177,59 +196,45 @@ fun GlowActivityScreen(
 /**
  * Start a workout (spec 5.3): a Wide edge card in the neutral light from below, its title, then your three most used
  * sports as 64 dp tiles with their names under them and All sports after them. Words with the icons, since an icon
- * alone doesn't say "start". A sport opens Ready with it chosen ([onStart]); All sports opens Choose a sport. The
- * tiles are the buttons, so the card itself opens nothing and has no caret. Today only.
+ * alone doesn't say "start". On a wider card (unfolded) as many more tiles as fit at a phone's spacing, your other
+ * sports and then the everyday ones ([sports] in that order). A sport opens Ready with it chosen ([onStart]); All
+ * sports opens Choose with every sport. The tiles are the buttons, so the card itself opens nothing and has no caret.
+ * Today only.
  */
 @Composable
-private fun StartCard(sports: List<SportUse>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
+private fun StartCard(sports: List<Int>, onStart: (Int) -> Unit, onAllSports: () -> Unit) {
     // Unlit (its look), with the heart-red light travelling round its border, as on Today.
     EdgeCard(EdgeNeutral, Modifier.fillMaxWidth().movingBorder(MetricColors.heart), kind = EdgeKind.Value) {
-        EdgeTitle("Start a workout", null)
+        EdgeTitle(stringResource(R.string.glow_activity_start_workout), null)
         Spacer(Modifier.height(GlowLayout.TitleGap))
-        // Four even columns up to the phone's width, so the tiles keep together on an unfolded screen.
-        Row(Modifier.widthIn(max = StartTilesWidth).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            sports.take(3).forEach { s ->
-                SportTile(SportIcons.of(s.sportType), Workouts.sportName(s.sportType), outdoor = s.sportType in Workouts.OUTDOOR, Modifier.weight(1f)) {
-                    onStart(s.sportType)
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+            // Four on a phone; wider, as many as fit at a phone's column, so the tiles never spread apart, centred.
+            val columns = maxOf(4, ((maxWidth + StartTileGap) / (StartTileColumn + StartTileGap)).toInt())
+            Row(
+                Modifier.widthIn(max = StartTileColumn * columns + StartTileGap * (columns - 1)).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(StartTileGap),
+            ) {
+                sports.take(columns - 1).forEach { type ->
+                    SportTile(SportIcons.of(type), Workouts.sportName(type), Modifier.weight(1f), outdoor = type in Workouts.OUTDOOR) {
+                        onStart(type)
+                    }
                 }
+                SportTile(
+                    AppIcons.MoreHorizontalCircle01, stringResource(R.string.glow_activity_all_sports), Modifier.weight(1f),
+                    outdoor = false, onClick = onAllSports,
+                )
             }
-            SportTile(AppIcons.MoreHorizontalCircle01, "All sports", outdoor = false, Modifier.weight(1f), onClick = onAllSports)
         }
     }
 }
 
-/** Four tiles and their gaps at most: a phone's width inside the card. */
-private val StartTilesWidth = 344.dp
+/** A tile's column on a phone: four tiles and their gaps in 344 dp. */
+private val StartTileColumn = 80.dp
+private val StartTileGap = 8.dp
 
-private val SportTileSize = 64.dp
-private val SportTileShape = RoundedCornerShape(GlowLayout.TileCorner)
+/** How many sports by use a wide Start card offers before the everyday ones pad it. */
+private const val MORE_BY_USE = 8
 
-/**
- * A sport as a tile: its icon on a 64 dp Control tile, its name in Secondary under it, up to two lines. An [outdoor]
- * sport carries a small location mark in the tile's corner.
- */
-@Composable
-private fun SportTile(
-    icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, outdoor: Boolean, modifier: Modifier, onClick: () -> Unit,
-) {
-    Column(
-        modifier.pressClickable(onClick, SportTileShape).semantics(mergeDescendants = true) { role = Role.Button },
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box(Modifier.size(SportTileSize).background(ControlSurface, SportTileShape), contentAlignment = Alignment.Center) {
-            Icon(icon, null, tint = Color.White, modifier = Modifier.size(24.dp))
-            if (outdoor) Icon(
-                AppIcons.Location01, null, tint = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                modifier = Modifier.align(Alignment.TopEnd).padding(7.dp).size(12.dp),
-            )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
-            textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis,
-        )
-    }
-}
 
 /* ----------------------------------------------- Steps ---------------------------------------------- */
 
@@ -250,7 +255,10 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, on
     var hour by remember(state.date, state.hourlySteps) { mutableStateOf<Int?>(null) }
     GlowCard(GlowStyle.level(MetricColors.steps, share), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
         Column {
-            GlowHeader("Steps", trailing = "Goal %,d".format(goal), tag = tag)
+            GlowHeader(
+                stringResource(R.string.glow_activity_steps), trailing = stringResource(R.string.glow_activity_goal, Units.count(goal)),
+                tag = tag,
+            )
             Spacer(Modifier.height(GlowLayout.TitleGap))
             HourPills(state.hourlySteps, hour) { hour = it }
             Spacer(Modifier.height(16.dp))
@@ -259,7 +267,7 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, tag: TitleTag?, on
             val h = hour
             val picked = h?.let { state.hourlySteps.getOrNull(it) }
             HeroFigure(
-                "%,d".format(if (h != null && picked != null) Math.round(picked) else state.steps),
+                Units.count(if (h != null && picked != null) Math.round(picked) else state.steps, Units.DOT_LOCALE),
                 if (h != null && picked != null) ActivityCopy.hourLabel(h) else ActivityCopy.activityLine(state.steps, goal, pace, isToday),
                 big = true, dot = DotSize.Second, labelLines = 2,
             )
@@ -307,73 +315,83 @@ private val HourPillsHeight = 56.dp
  * of your usual Load by this time needs past days' Load hour by hour. The engine keeps each past day's Load only as a
  * total ([org.openstrap.app.data.Recovery.dailyLoad]); hours would mean re-running it 24 times for each of 30 days in
  * every recompute, with nothing to cache them in.
+ * As high as its title and number, not the grid's Wide height, which left a band of empty light under them (user, 2026-11-04).
  */
 @Composable
-private fun LoadCard(r: RecoveryResult?, onClick: () -> Unit) {
+private fun DayLoadCard(r: RecoveryResult?, onClick: () -> Unit) {
     val usual = r?.chronicLoad?.takeIf { it > 0f }
     val status = r?.let { TodayCopy.loadStatus(it.load, it.chronicLoad, endOfDay = it.date != LocalDate.now()) }
     EdgeCard(
-        MetricColors.load, Modifier.fillMaxWidth().gridSize(CardSize.Wide),
-        status = if (status == TodayCopy.LoadStatus.Above) EdgeStatus.Above else EdgeStatus.Usual,
+        MetricColors.load, Modifier.fillMaxWidth(),
+        status = if (status == LoadBand.Above) EdgeStatus.Above else EdgeStatus.Usual,
         kind = EdgeKind.Level, progress = r?.let { l -> usual?.let { l.load / it } } ?: 0f, onClick = onClick,
     ) {
-        EdgeTitle("Load", TabCopy.loadBalance(r?.loadTrend))
-        EdgeValue(r?.load?.roundToInt()?.toString(), "today", if (r == null) "No reading yet" else TabCopy.loadUsual(usual))
+        EdgeTitle(stringResource(R.string.glow_activity_load), TabCopy.loadBalance(r?.loadTrend))
+        EdgeValue(
+            r?.load?.roundToInt()?.toString(), stringResource(R.string.glow_activity_load_today),
+            if (r == null) NO_READING else TabCopy.loadUsual(usual),
+        )
     }
 }
 
 /* ------------------------------------------------ Facts --------------------------------------------- */
 
 /**
- * The day's smaller facts: VO2 max, time to recover, energy and distance, each opening its detail. Active minutes and
+ * The day's smaller facts: VO2 max, time to recover, calories and distance, each opening its detail. Active minutes and
  * Heart points are the Small pair above.
  */
+// One branch per fact and its missing case, as flat as the list reads. It was FactsList before the rename.
+@Suppress("CyclomaticComplexMethod")
 @Composable
-private fun FactsList(
+private fun DayFactsList(
     state: DayUiState, r: RecoveryResult?, workouts: List<WorkoutAnalysis>, isToday: Boolean, onEditProfile: () -> Unit, open: (Score) -> Unit,
-    /** The Partial day tag: energy and distance are the day's totals. */
+    /** The Partial day tag: calories and distance are the day's totals. */
     tag: TitleTag? = null,
 ) {
-    val waiting = "No reading yet"
-    ListPanel(title = "Today", note = if (isToday) "So far" else null, tag = tag) {
+    val waiting = NO_READING
+    val note = if (isToday) stringResource(R.string.glow_activity_so_far) else null
+    ListPanel(title = stringResource(R.string.glow_activity_today), note = note, tag = tag) {
         val a = r?.activity
         // The latest workout the strap read VO2 max from; the estimate from your profile otherwise.
         val fromWorkouts = workouts.sortedByDescending { it.workout.start }
             .firstNotNullOfOrNull { w -> (w.workout.vo2max ?: w.effect?.vo2max?.roundToInt())?.takeIf { it > 0 } }
         val est = r?.vo2max
         ListRow(
-            "VO2 max", MetricColors.heart,
-            fromWorkouts?.toString() ?: est?.let { "${it.low}-${it.high}" },
+            stringResource(R.string.glow_activity_vo2max), MetricColors.heart,
+            fromWorkouts?.toString() ?: est?.let { Vo2maxCopy.estimate(it.low, it.high) },
             when {
-                fromWorkouts != null -> "From your workouts"
-                est != null -> est.band?.let { "${it.label} for your age" } ?: "Estimated from your profile"
-                else -> "After a workout the strap can read it from"
+                fromWorkouts != null -> stringResource(R.string.glow_activity_vo2max_from_workouts)
+                est != null -> est.band?.let { stringResource(R.string.glow_activity_vo2max_band, Vo2maxCopy.band(it)) }
+                    ?: stringResource(R.string.glow_activity_vo2max_estimated)
+                else -> stringResource(R.string.glow_activity_vo2max_after_workout)
             },
             divider = false, onClick = { open(Score.Vo2Max) }, icon = Score.Vo2Max.rowIcon(),
         )
-        val recover = workouts.filter { it.recoveryMinutes != null }.maxByOrNull { it.end }?.let { w ->
+        val recover = latestRecoveryEstimate(workouts)?.let { w ->
             val now = System.currentTimeMillis() / 1000
             TodayCopy.recoverText(TodayCopy.recoverLeft(w.end, w.recoveryMinutes ?: 0, now), now, ZoneId.systemDefault())
         }
         // Recovered is the whole answer: no number, no dash.
         ListRow(
-            "Time to recover", MetricColors.load, recover?.first, recover?.second ?: "No recent workout", dash = recover?.first != null,
+            stringResource(R.string.glow_activity_time_to_recover), MetricColors.load, recover?.first,
+            recover?.second ?: stringResource(R.string.glow_activity_no_recent_workout), dash = recover?.first != null,
             onClick = { open(Score.Recover) }, icon = Score.Recover.rowIcon(),
         )
         // Active kcal leads, the total under it; the ring in the icon's place fills to the goal (calories spec 4.4).
-        val e = r?.energy
+        val e = r?.calories
         val goal = LocalGoals.current.calories
         val active = e?.activeKcal?.roundToInt()
         ListRow(
-            "Calories", MetricColors.calories, active?.let { "%,d".format(it) },
-            e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) } ?: "Add age, weight and height to see it",
-            onClick = if (e == null && r != null) onEditProfile else { { open(Score.Energy) } }, dash = e != null,
-            icon = Score.Energy.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
+            stringResource(R.string.glow_activity_calories), MetricColors.calories, active?.let { Units.count(it) },
+            e?.let { CaloriesCopy.rowLine(active ?: 0, goal, it.totalKcal.roundToInt()) }
+                ?: stringResource(R.string.glow_activity_add_profile_to_see),
+            onClick = if (e == null && r != null) onEditProfile else { { open(Score.Calories) } }, dash = e != null,
+            icon = Score.Calories.rowIcon(), ring = active?.let { CaloriesCopy.share(it, goal) },
         )
         // Ours from step length and height when we can; the strap's own figure otherwise. Always approximate.
         val distance = a?.distanceMeters ?: state.distanceMeters?.toFloat()
         ListRow(
-            "Distance", MetricColors.steps, distance?.let { "%.1f".format(it / 1000f) },
+            stringResource(R.string.glow_activity_distance), MetricColors.steps, distance?.let { Units.km(it, Units.Precision.Day) },
             if (distance == null) waiting else ActivityCopy.distanceSource(a?.distanceMeters != null),
             onClick = { open(Score.Distance) }, icon = Score.Distance.rowIcon(),
         )
@@ -400,11 +418,15 @@ private fun WorkoutsList(
     val shown = today + before.take((LISTED_WORKOUTS - today.size).coerceAtLeast(0))
     // From every workout (newest first), so a row glows the same here and in All workouts.
     val usual = remember(workouts) { Workouts.usualLoad(workouts.map { it.workout.trainingLoad }) }
-    ListPanel(title = "Workouts", note = if (today.isNotEmpty()) "${today.size} this day" else null) {
+    val note = if (today.isNotEmpty()) pluralStringResource(R.plurals.glow_activity_this_day, today.size, today.size) else null
+    ListPanel(title = stringResource(R.string.glow_activity_workouts), note = note) {
         var first = true
         fun divider() = !first.also { first = false }
         suggestion?.let { SuggestionRow(it, onSave, onDismiss, divider()) }
-        if (shown.isEmpty()) ListRow("No workouts yet", MetricColors.heart, null, "Workouts you record show up here", dash = false, divider = divider())
+        if (shown.isEmpty()) ListRow(
+            stringResource(R.string.glow_activity_no_workouts), MetricColors.heart, null,
+            stringResource(R.string.glow_activity_no_workouts_note), dash = false, divider = divider(),
+        )
         var day: LocalDate? = null
         shown.forEach { a ->
             if (dayOf(a) != day) {
@@ -415,8 +437,8 @@ private fun WorkoutsList(
             }
             WorkoutRow(a, usual, divider()) { onOpen(a.workout.start) }
         }
-        LinkRow("Add a workout you didn't record", onAdd, divider = divider())
-        LinkRow("All workouts", onAll)
+        PageRow(stringResource(R.string.glow_activity_add_workout), onClick = onAdd, divider = divider())
+        PageRow(stringResource(R.string.glow_activity_all_workouts), onClick = onAll)
     }
 }
 
@@ -452,7 +474,7 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
         Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it },
+            .topHairline(divider, RowHairline),
     ) {
         Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             EffortLight(SportIcons.of(a.workout.sportType), Workouts.effort(a.workout.trainingLoad, usual))
@@ -465,11 +487,12 @@ internal fun WorkoutRow(a: WorkoutAnalysis, usual: Float?, divider: Boolean, onC
                     )
                     if (!a.startedByYou) {
                         Spacer(Modifier.width(6.dp))
-                        FoundTag()
+                        OutlineTag(TabCopy.AUTO_DETECTED)
                     }
                 }
                 Text(
-                    TabCopy.workoutLine(fact, start.format(CLOCK)), color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
+                    TabCopy.workoutLine(fact, TimeOfDay.format(start.toLocalTime())),
+                    color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary,
                     maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
@@ -510,30 +533,18 @@ private fun EffortLight(icon: androidx.compose.ui.graphics.vector.ImageVector, e
     }
 }
 
-/** "Auto-detected": a quiet outlined label beside the sport's name. */
-@Composable
-internal fun FoundTag() {
-    Text(
-        TabCopy.AUTO_DETECTED, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary.copy(fontSize = 11.sp, lineHeight = 14.sp),
-        maxLines = 1,
-        modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.19f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp),
-    )
-}
-
-private val CLOCK = DateTimeFormatter.ofPattern("HH:mm")
-
 /** A stretch nobody started, as a row with Save: when it was and how hard. */
 @Composable
 private fun SuggestionRow(s: org.openstrap.app.data.WorkoutSuggestions.Suggestion, onSave: () -> Unit, onDismiss: () -> Unit, divider: Boolean) {
     Column {
         ListRow(
-            "Looks like a workout", ZONE_COLORS[s.zone], null,
-            "${clockAt(s.start)}–${clockAt(s.end)}, mostly zone ${s.zone + 1}, ${s.averageHeartRate} bpm on average",
+            stringResource(R.string.glow_activity_suggestion), ZONE_COLORS[s.zone], null,
+            stringResource(R.string.glow_activity_suggestion_line, Ranges.times(s.start, s.end), s.zone + 1, s.averageHeartRate),
             dash = false, divider = divider, icon = AppIcons.Heartbeat,
         )
         Row(Modifier.fillMaxWidth().padding(start = 20.dp, bottom = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            RowPill("Save", onSave, primary = true)
-            RowPill("Not a workout", onDismiss)
+            PageButton(stringResource(R.string.glow_save), onSave, primary = true, size = ButtonSize.Row)
+            PageButton(stringResource(R.string.glow_activity_not_a_workout), onDismiss, size = ButtonSize.Row, onCard = true)
             Box(Modifier.weight(1f))
         }
     }

@@ -2,9 +2,15 @@ package org.openstrap.app.data.settings
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
+import org.openstrap.app.presentation.GoalCopy
+import org.openstrap.app.testing.LocaleRule
 
+/** In English: the German words are in [org.openstrap.app.presentation.DataCopyTest]. */
 class CalorieGoalTest {
+    @get:Rule val locale = LocaleRule()
+
     @Test fun `the buttons step by 10 and stop at the strap's range`() {
         assertEquals(460, CalorieGoal.step(450, Goals.CALORIES_STEP))
         assertEquals(440, CalorieGoal.step(450, -Goals.CALORIES_STEP))
@@ -23,7 +29,7 @@ class CalorieGoalTest {
         assertNull(CalorieGoal.parse("3001"))
         assertNull(CalorieGoal.parse(""))
         assertNull(CalorieGoal.parse("abc"))
-        assertEquals("Pick a number from 200 to 3,000", CalorieGoal.OUT_OF_RANGE)
+        assertEquals("Pick a number from 200 to 3,000", GoalCopy.outOfRange(Goals.CALORIES))
     }
 
     @Test fun `the suggestion is the median of the full days plus a tenth, rounded to 10`() {
@@ -43,7 +49,7 @@ class CalorieGoalTest {
     }
 
     @Test fun `the summary names the calorie goal`() {
-        assertEquals("8,000 steps, 450 active kcal, 8 h sleep, 10 active hours", Goals(calories = 450).summary())
+        assertEquals("8,000 steps, 450 active kcal, 8 h sleep, 10 active hours", GoalCopy.summary(Goals(calories = 450)))
         assertEquals(300, Goals().calories)
     }
 }

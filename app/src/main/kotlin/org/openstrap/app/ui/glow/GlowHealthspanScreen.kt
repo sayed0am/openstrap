@@ -1,19 +1,25 @@
 package org.openstrap.app.ui.glow
 
+import androidx.compose.runtime.ReadOnlyComposable
+import org.openstrap.app.R
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import org.openstrap.app.data.Healthspan
@@ -26,13 +32,15 @@ import org.openstrap.app.ui.theme.MetricColors
 private const val BAR_FULL_YEARS = 1.5f
 
 /** "Updated Sunday, next in 5 days", from the Sunday the estimate was made. */
+@Composable
+@ReadOnlyComposable
 private fun updatedText(asOf: Long): String {
     val made = java.time.Instant.ofEpochSecond(asOf).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
     val next = 7 - java.time.temporal.ChronoUnit.DAYS.between(made, java.time.LocalDate.now()).toInt().coerceIn(0, 7)
     return when (next) {
-        7 -> "Updated today, next on Sunday"
-        1 -> "Updated Sunday, next tomorrow"
-        else -> "Updated Sunday, next in $next days"
+        7 -> stringResource(R.string.glow_healthspan_updated_today)
+        1 -> stringResource(R.string.glow_healthspan_updated_tomorrow)
+        else -> pluralStringResource(R.plurals.glow_healthspan_updated_next, next, next)
     }
 }
 
@@ -45,7 +53,10 @@ fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValu
     BackHandler(onBack = onBack)
     val r = state?.result
     ScreenList(contentPadding, gutter = GlowLayout.Gutter) {
-        item { PageHeader("Habit Age", onBack, subtitle = r?.let { updatedText(it.asOf) } ?: "Updated weekly, on Sunday") }
+        item { PageHeader(
+                stringResource(R.string.glow_healthspan_title), onBack,
+                subtitle = r?.let { updatedText(it.asOf) } ?: stringResource(R.string.glow_healthspan_updated_weekly),
+            ) }
         // The page is what the card opens, so here it opens nothing: no caret.
         item { HabitAgeEdgeCard(state, onClick = null, onOpenProfile = null) }
         if (r != null) {
@@ -61,41 +72,54 @@ fun GlowHealthspanScreen(state: Healthspan.Outcome?, contentPadding: PaddingValu
  */
 @Composable
 private fun PacePanel(pace: Float?) {
-    ListPanel(title = "Pace of aging", note = pace?.let { "${paceLabel(it)}, ${paceText(it)}" } ?: paceLabel(null)) {
+    ListPanel(
+        title = stringResource(R.string.glow_healthspan_pace_title),
+        note = pace?.let { stringResource(R.string.glow_healthspan_pace_note, paceLabel(it), paceText(it)) } ?: paceLabel(null),
+    ) {
         ListRow(
-            "Last 30 days", MetricColors.habitAge, null,
-            when {
-                pace == null -> "Needs 30 days with enough data, and 3 months before them to tell a real change from day-to-day noise."
-                pace < 1f -> "Your last 30 days beat your 6-month habits. Kept up, the estimate will come down."
-                pace > 1f -> "Your last 30 days fall behind your 6-month habits. Kept up, the estimate will go up."
-                else -> "Your last 30 days match your 6-month habits, so the estimate is moving in step with the calendar."
-            },
+            stringResource(R.string.glow_healthspan_last_30_days), MetricColors.habitAge, null,
+            stringResource(
+                when {
+                    pace == null -> R.string.glow_healthspan_pace_needs
+                    pace < 1f -> R.string.glow_healthspan_pace_beat
+                    pace > 1f -> R.string.glow_healthspan_pace_behind
+                    else -> R.string.glow_healthspan_pace_match
+                },
+            ),
             divider = false, dash = false, icon = org.openstrap.app.ui.dashboard.Detail.Healthspan.rowIcon(),
         )
         if (pace != null) PaceScale(marker = (pace + 1f) / 4f, color = MetricColors.habitAge, Modifier.padding(start = RowIcon + RowIconGap, bottom = GlowLayout.RowPadding))
     }
 }
 
-/** A track from -1x to 3x with a dot at the pace, in the quiet panels' bar style (see [GlowBar]). */
+/** A track from -1x to 3x with a dot at the pace, in the quiet panels' bar style: a faint track and a [glowDot]. */
 @Composable
 private fun PaceScale(marker: Float, color: Color, modifier: Modifier = Modifier) {
     Column(modifier) {
-        Canvas(Modifier.fillMaxWidth().height(12.dp)) {
-            val y = size.height / 2
-            val r = 5.dp.toPx()
-            val x0 = r
-            val x1 = size.width - r
-            drawLine(Color.White.copy(alpha = 0.10f), Offset(x0, y), Offset(x1, y), 2.dp.toPx(), StrokeCap.Round)
-            glowDot(Offset(x0 + (x1 - x0) * marker.coerceIn(0f, 1f), y), color)
-        }
-        Box(Modifier.fillMaxWidth()) {
-            ScaleLabels("−1x slower", "1x", "3x faster")
-        }
+        ScaleTrack { x0, x1, y -> glowDot(Offset(x0 + (x1 - x0) * marker.coerceIn(0f, 1f), y), color) }
+        ScaleLabels(
+            stringResource(R.string.glow_healthspan_scale_slower), stringResource(R.string.glow_healthspan_scale_steady),
+            stringResource(R.string.glow_healthspan_scale_faster),
+        )
     }
 }
 
-/** [GlowBar]'s dot: a halo, the solid dot, and a white pip. */
-private fun androidx.compose.ui.graphics.drawscope.DrawScope.glowDot(at: Offset, color: Color) {
+/**
+ * The quiet panels' scale, which the pace and each habit's effect are drawn on: a faint 2 dp track 12 dp tall, in from
+ * each end by a [glowDot]'s halo so a dot at the end shows whole. [marks] draws on it from the track's ends and middle.
+ */
+@Composable
+private fun ScaleTrack(modifier: Modifier = Modifier, marks: DrawScope.(x0: Float, x1: Float, y: Float) -> Unit) {
+    Canvas(modifier.fillMaxWidth().height(12.dp)) {
+        val y = size.height / 2
+        val r = 5.dp.toPx()
+        drawLine(Color.White.copy(alpha = 0.10f), Offset(r, y), Offset(size.width - r, y), 2.dp.toPx(), StrokeCap.Round)
+        marks(r, size.width - r, y)
+    }
+}
+
+/** The quiet panels' bar dot: a halo, the solid dot, and a white pip. */
+private fun DrawScope.glowDot(at: Offset, color: Color) {
     drawCircle(color.copy(alpha = 0.30f), 5.dp.toPx(), at)
     drawCircle(color, 3.dp.toPx(), at)
     drawCircle(Color.White, 1.2.dp.toPx(), at)
@@ -107,9 +131,12 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.glowDot(at: Offset,
  */
 @Composable
 private fun TermsPanel(r: Healthspan.Result) {
-    ListPanel(title = "What moves it", note = "Over 6 months") {
+    ListPanel(title = stringResource(R.string.glow_healthspan_terms_title), note = stringResource(R.string.glow_healthspan_terms_note)) {
         // One scale for every bar below: a habit at either end takes off, or adds, BAR_FULL_YEARS or more.
-        ScaleLabels("−1½ y younger", "0", "older +1½ y", Modifier.padding(start = RowIcon + RowIconGap, top = 4.dp, bottom = 2.dp))
+        ScaleLabels(
+            stringResource(R.string.glow_healthspan_scale_younger), "0", stringResource(R.string.glow_healthspan_scale_older),
+            Modifier.padding(start = RowIcon + RowIconGap, top = 4.dp, bottom = 2.dp),
+        )
         r.terms.forEachIndexed { i, t ->
             val (icon, ink) = habitIcon(t.habit)
             ListRow(
@@ -119,7 +146,7 @@ private fun TermsPanel(r: Healthspan.Result) {
             EffectBar(t.years, Modifier.padding(start = RowIcon + RowIconGap, bottom = GlowLayout.RowPadding))
         }
         if (r.fitnessCapped) Text(
-            "Fitness terms capped: resting heart rate, steps and VO2 max together count for at most 3 years either way.",
+            stringResource(R.string.glow_healthspan_fitness_capped),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
             modifier = Modifier.padding(bottom = GlowLayout.RowPadding),
         )
@@ -139,29 +166,30 @@ private fun habitIcon(h: Healthspan.Habit): Pair<androidx.compose.ui.graphics.ve
 @Composable
 private fun ScaleLabels(start: String, middle: String, end: String, modifier: Modifier = Modifier) {
     Box(modifier.fillMaxWidth()) {
-        val label = Color.White.copy(alpha = GlowType.CAPTION_ALPHA)
-        Text(start, color = label, style = GlowType.caption, modifier = Modifier.align(Alignment.CenterStart))
-        Text(middle, color = Color.White, style = GlowType.caption, modifier = Modifier.align(Alignment.Center))
-        Text(end, color = label, style = GlowType.caption, modifier = Modifier.align(Alignment.CenterEnd))
+        ScaleLabel(start, 0f)
+        ScaleLabel(middle, at = 0.5f, color = Color.White)
+        ScaleLabel(end, 1f)
     }
 }
 
+/** A scale's label in Caption, centred on [at] (0 to 1) across the scale and kept inside it. */
+@Composable
+internal fun BoxScope.ScaleLabel(text: String, at: Float, color: Color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA)) {
+    // Centred on its point by aligning a share of the way across, as BiasAlignment does.
+    Text(text, color = color, style = GlowType.caption, modifier = Modifier.align(BiasAlignment((at * 2f - 1f).coerceIn(-1f, 1f), 0f)))
+}
+
 /**
- * One habit's effect as a bar out from the middle: left takes years off, right adds them. Drawn like [GlowBar], the quiet
- * panels' bar: a faint track, a glowing line and a dot at its end, green for years off and amber for years added. A habit
+ * One habit's effect as a bar out from the middle: left takes years off, right adds them. Drawn in the quiet
+ * panels' bar style: a faint track, a glowing line and a dot at its end, green for years off and amber for years added. A habit
  * with no effect shows only the track and the middle mark.
  */
 @Composable
 private fun EffectBar(years: Float, modifier: Modifier = Modifier) {
-    Canvas(modifier.fillMaxWidth().height(12.dp)) {
-        val y = size.height / 2
-        val r = 5.dp.toPx()
-        val x0 = r
-        val x1 = size.width - r
+    ScaleTrack(modifier) { x0, _, y ->
         val mid = size.width / 2
-        drawLine(Color.White.copy(alpha = 0.10f), Offset(x0, y), Offset(x1, y), 2.dp.toPx(), StrokeCap.Round)
         drawLine(Color.White.copy(alpha = 0.35f), Offset(mid, y - 5.dp.toPx()), Offset(mid, y + 5.dp.toPx()), 1.5.dp.toPx(), StrokeCap.Round)
-        if (abs(years) < 0.05f) return@Canvas
+        if (abs(years) < 0.05f) return@ScaleTrack
         // Habit Age's own ink either way: the side of the centre says better or worse, never green or amber.
         val color = MetricColors.habitAge
         val end = Offset(mid + (years / BAR_FULL_YEARS).coerceIn(-1f, 1f) * (mid - x0), y)

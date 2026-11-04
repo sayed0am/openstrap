@@ -9,9 +9,16 @@ import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.Recovery
 import org.openstrap.app.data.SleepRegularity
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.ui.components.ChartPoint
+import org.openstrap.app.presentation.ChartPoint
 import java.time.LocalDate
 import java.time.ZoneOffset
+import org.openstrap.app.presentation.DaySource
+import org.openstrap.app.presentation.DetailCopy
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.Range
+import org.openstrap.app.presentation.Ranges
+import org.openstrap.app.presentation.TabCopy
+import org.openstrap.app.presentation.TodayCopy
 
 /** The Sleep tab's details (spec 5.2 and 6.1): night-scoped values come from the sleep, and say so. */
 class SleepCopyTest {
@@ -108,16 +115,16 @@ class SleepCopyTest {
 
     @Test fun `regularity's night sits against your usual bedtime`() {
         assertEquals(
-            "Last night you fell asleep at 23:40 and woke at 07:05, 35 min later than usual.",
+            "Last night you fell asleep at 23:40, 35 min later than usual, and woke at 07:05.",
             SleepCopy.regularityNight(23 * 60 + 40, 7 * 60 + 5, usualBed = 23 * 60 + 5, today = true),
         )
         // Usual bedtime past midnight, kept past 24 h by SleepHistory.
         assertEquals(
-            "That night you fell asleep at 23:50 and woke at 07:00, 25 min earlier than usual.",
+            "That night you fell asleep at 23:50, 25 min earlier than usual, and woke at 07:00.",
             SleepCopy.regularityNight(23 * 60 + 50, 7 * 60, usualBed = 24 * 60 + 15, today = false),
         )
         assertEquals(
-            "Last night you fell asleep at 00:10 and woke at 07:00, close to your usual.",
+            "Last night you fell asleep at 00:10, close to your usual, and woke at 07:00.",
             SleepCopy.regularityNight(10, 7 * 60, usualBed = 24 * 60, today = true),
         )
         assertTrue(SleepCopy.regularity(SleepRegularity.Result(90f, 9000, null)).startsWith("Very regular"))
@@ -150,5 +157,58 @@ class SleepCopyTest {
             nightVitals(s).flatMap { listOfNotNull(it.label, it.value, it.status) } +
             listOf(InfoCopy.breathingLine(Recovery.BreathingDisturbances(2.4f, null, 3), true), InfoCopy.breathingLine(Recovery.BreathingDisturbances(2.4f, 2.1f, 9), false))
         lines.forEach { l -> listOf("·", ";", "—").forEach { assertFalse("$l has $it", l.contains(it)) } }
+    }
+
+    @Test fun `times past what the strap saw say the stages cover only the strap's part`() {
+        val strapStart = midnight + 7 * 3600
+        val strapEnd = strapStart + 25 * 60
+        // A nap extended to 3 h 40: its stages are still the strap's 25 min.
+        assertEquals(
+            "The stages cover the 25 min the strap saw.",
+            SleepCopy.stagesCover(strapStart - 3 * 3600, strapEnd + 15 * 60, strapStart, strapEnd),
+        )
+        // Extended at one end and trimmed at the other: what's left of the strap's.
+        assertEquals("The stages cover the 15 min the strap saw.", SleepCopy.stagesCover(strapStart + 600, strapEnd + 600, strapStart, strapEnd))
+        // Inside the strap's times, or missing them, says nothing.
+        assertNull(SleepCopy.stagesCover(strapStart + 60, strapEnd, strapStart, strapEnd))
+        assertNull(SleepCopy.stagesCover(strapStart, strapEnd, strapStart, strapEnd))
+        assertNull(SleepCopy.stagesCover(strapEnd + 60, strapEnd + 3600, strapStart, strapEnd))
+    }
+
+    @Test fun `the times sheet and the edited note say the times with to, never a dash`() {
+        assertEquals("Sleep times", SleepCopy.timesTitle(false))
+        assertEquals("Nap times", SleepCopy.timesTitle(true))
+        assertEquals("The strap saw 23:20 to 07:21.", SleepCopy.strapSaw("23:20", "07:21"))
+        assertEquals("Your times. The strap saw 23:20 to 07:21.", SleepCopy.yourTimes("23:20", "07:21"))
+        assertEquals("23:05 to 08:16, 9 h 11 in bed", SleepCopy.trimLine(false, "23:05", "08:16", 9 * 3600L + 11 * 60))
+        assertEquals("07:17 to 10:57, 3 h 40", SleepCopy.trimLine(true, "07:17", "10:57", 3 * 3600L + 40 * 60))
+        assertEquals("Delete last night's sleep?", SleepCopy.deleteTitle(nap = false, today = true))
+        assertEquals("Delete this nap?", SleepCopy.deleteTitle(nap = true, today = true))
+        assertEquals("Last night's sleep deleted", SleepCopy.deleted(nap = false, today = true, start = "23:20"))
+        assertEquals("Nap at 10:40 deleted", SleepCopy.deleted(nap = true, today = true, start = "10:40"))
+        assertEquals(
+            "You deleted 23:20 to 07:21. This morning's Recovery leaves it out, as if the strap was off.",
+            SleepCopy.deletedNight("23:20", "07:21", today = true),
+        )
+        assertEquals("Night of Wed 29 Oct", SleepCopy.deletedName(false, "Wed 29 Oct"))
+        assertEquals("Nap, Thu 30 Oct", SleepCopy.deletedName(true, "Thu 30 Oct"))
+        assertEquals("23:20 to 07:21\n7 days left", SleepCopy.deletedLine("23:20", "07:21", 7))
+        assertEquals("10:40 to 11:05\n1 day left", SleepCopy.deletedLine("10:40", "11:05", 1))
+        listOf(
+            SleepCopy.yourTimes("23:20", "07:21"), Ranges.of("14:05", "14:47"), SleepCopy.TIMES_HINT, SleepCopy.DELETE_WHAT,
+            SleepCopy.DELETE_RESTORE, SleepCopy.DELETED_INTRO, SleepCopy.DELETED_FOOT, SleepCopy.deletedNight("23:20", "07:21", false),
+        ).forEach { l ->
+            listOf("·", ";", "—", "–").forEach { assertFalse("$l has $it", l.contains(it)) }
+        }
+    }
+
+    @Test fun `a deleted night says the user deleted it, never asks whether the strap was on`() {
+        assertEquals("For 7 days you can bring it back from Deleted sleep, in You, Your data.", SleepCopy.DELETE_RESTORE)
+        assertEquals("Nothing deleted in the last 7 days.", SleepCopy.DELETED_NONE)
+        assertEquals("You deleted last night's sleep.", TabCopy.noNight(naps = true, isToday = true, deleted = true))
+        assertEquals("You deleted that night's sleep.", TabCopy.noNight(naps = false, isToday = false, deleted = true))
+        assertEquals(TodayCopy.NO_SLEEP, TabCopy.noNight(naps = false, isToday = true))
+        assertEquals("You deleted last night's sleep.", TodayCopy.waking(null, null, false, null, firstNights = false, isToday = true, deleted = true))
+        listOf(TabCopy.noNight(false, true, deleted = true), TabCopy.DELETED_SLEEP_SCORE).forEach { assertFalse(it, "strap on" in it) }
     }
 }

@@ -11,42 +11,84 @@ import kotlin.math.roundToInt
  * is the Sleep Regularity Index ([SleepRegularity]), which compares the nights minute by minute rather than only their
  * bedtimes and wake times.
  */
+// The one day rule for sleep and every pick that goes by it, kept together so no screen counts a night another way.
+@Suppress("TooManyFunctions")
 object SleepHistory {
     /** Nights the Sleep screen's week looks back over. */
     const val WEEK_NIGHTS = 7
 
-    /** The night a sleep belongs to: the day it ended on, counting until 18:00 (see DayWindow.nightEndingOn). */
-    fun nightOf(end: Long, zone: ZoneId): LocalDate = Instant.ofEpochSecond(end + 6 * 3600).atZone(zone).toLocalDate()
+    /** Nights of sleep loaded for the week view and the in-sleep vitals' usual values. */
+    const val NIGHTS = 14
 
-    /** The main sleep of each night: the longest session that isn't a nap. */
-    fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =
-        sessions.filter { !it.nap }
-            .groupBy { nightOf(it.end, zone) }
-            .mapValues { (_, s) -> s.maxBy { it.end - it.start } }
+    /** Where [readingsOf] starts, on the evening before. */
+    private const val READINGS_FROM_HOUR = 18
 
     /**
-     * The main sleep of the night in [night] (a [DayWindow.nightEndingOn]): the longest session that isn't a nap and
-     * ended in it. What the Sleep tab's hero and the Sleep widget show.
+     * The day a sleep ending at [end] belongs to: the day it ended on, the day you woke up (user, 2026-11-04). The one
+     * rule for every screen, widget and model, naps and Health Connect imports included, by the times shown, so a night
+     * edited to end after midnight moves to the new day. It wins over the strap's own day for the session
+     * ([strapDay]), which only keys the strap's nightly rows.
+     */
+    fun nightOf(end: Long, zone: ZoneId): LocalDate = Days.date(end, zone)
+
+    /** The day [s] belongs to, by its end as shown ([nightOf]). */
+    fun nightOf(s: SleepSession, zone: ZoneId): LocalDate = nightOf(s.end, zone)
+
+    /** Where the end of every sleep that belongs to [date] ([nightOf]) falls: that day, midnight to midnight. */
+    fun endingOn(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow = DayWindow.of(date, zone)
+
+    /**
+     * The span the night readings of [date]'s sleep are read over (heart rate, breathing, blood oxygen): from
+     * [READINGS_FROM_HOUR] the evening before, by the clock, to the end of [date], so a night that began the evening
+     * before is read whole and one that ended late that evening too. Readings outside the sleep are for the screens to
+     * leave out.
+     */
+    fun readingsOf(date: LocalDate, zone: ZoneId = ZoneId.systemDefault()): DayWindow =
+        // By the clock, not hours back from midnight, which is an hour off when the clocks change.
+        DayWindow(date.minusDays(1).atTime(READINGS_FROM_HOUR, 0).atZone(zone).toEpochSecond(), endingOn(date, zone).to)
+
+    /**
+     * The strap's own day for [s], kept through an edit: what the strap's nightly rows (its readiness with the night's
+     * HRV and resting heart rate, and the sleep-apnea summary) are keyed by, so they go with the night from that strap
+     * session whichever day it ends on. A session from before v2 has none and takes the day it ended on.
+     */
+    fun strapDay(s: SleepSession, zone: ZoneId): LocalDate = s.strapDate ?: Days.date(s.end, zone)
+
+    /** The main sleep of each day ([nightOf]): the longest session that ended on it and isn't a nap. */
+    fun mainSleeps(sessions: List<SleepSession>, zone: ZoneId): Map<LocalDate, SleepSession> =
+        sessions.filter { !it.nap }.groupBy { nightOf(it, zone) }.mapValues { (_, v) -> v.maxBy { it.end - it.start } }
+
+    /**
+     * The main sleep of the day whose [endingOn] window is [night]: the longest session that isn't a nap and ended in
+     * it. What the Sleep tab's hero and the Sleep widget show.
      */
     fun mainSleep(sessions: List<SleepSession>, night: DayWindow): SleepSession? =
         sessions.filter { !it.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
 
     /**
-     * Time asleep on the week's other nights, for the longest or shortest rule ([org.openstrap.app.ui.dashboard.TabCopy.night]):
+     * [mainSleep] over the strap's sessions with their edits, by the times shown, so Today and the widgets pick the
+     * same night. The deleted ones are left out, unless [deleted] asks for the main sleep among them instead, which is
+     * what the No sleep recorded card offers to restore.
+     */
+    fun mainSleep(resolved: List<SleepEdits.Resolved>, night: DayWindow, deleted: Boolean = false): SleepEdits.Resolved? =
+        resolved.filter { it.deleted == deleted && !it.strap.nap && it.end in night.from..night.to }.maxByOrNull { it.end - it.start }
+
+    /**
+     * Time asleep on the week's other nights, for the longest or shortest rule (`TabCopy.night`):
      * the [WEEK_NIGHTS] nights ending on [date] ([nights] by [mainSleeps]) without [date] itself, those with a sleep.
      */
     fun weekOthers(nights: Map<LocalDate, SleepSession>, date: LocalDate): List<Long> =
         (WEEK_NIGHTS - 1 downTo 1).mapNotNull { nights[date.minusDays(it.toLong())] }.map(::asleepSeconds)
 
-    /** Time asleep from the strap's stage totals, or the whole session when it didn't send them. */
-    fun asleepSeconds(s: SleepSession): Long {
-        val staged = listOfNotNull(s.deepMinutes, s.lightMinutes, s.remMinutes)
-        return if (staged.isEmpty()) s.end - s.start else staged.sum() * 60L
-    }
+    /**
+     * Time asleep from the strap's stage totals, or the time in bed less awake when it didn't send them: the rule
+     * recovery counts by ([RecoveryEngine.asleepMinutes]).
+     */
+    fun asleepSeconds(s: SleepSession): Long = RecoveryEngine.asleepMinutes(s) * 60L
 
     /**
      * The average fall-asleep and wake-up time over the nights up to [end]. [bedtime] and [wake] are average minutes
-     * past midnight (bedtime can be past 24 h · 60 when it's after midnight; use [clockMinutes] to print it).
+     * past midnight (bedtime can be past 24 times 60 when it's after midnight, and [clockMinutes] prints it).
      */
     data class UsualTimes(val bedtime: Int, val wake: Int, val nights: Int)
 

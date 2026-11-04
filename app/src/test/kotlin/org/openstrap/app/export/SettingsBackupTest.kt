@@ -59,6 +59,34 @@ class SettingsBackupTest {
         assertEquals(emptyMap<String, Any>(), SettingsBackup.fromJson("{}"))
     }
 
+    @Test fun `the goals, celebrations and each sport's Ready settings go in`() {
+        val more = mapOf<String, Any>(
+            "goal_calories" to 2_400, "goal_workouts_week" to 4, "celebrate_goal" to false, "weekly_recap" to false,
+            "sport_settings_7" to "gps=1", "sport_settings_12" to "gps=0",
+        )
+        val json = SettingsBackup.toJson(more + mapOf("sport_settings_x" to "bad", "sport_settings_" to "bad"))
+        assertEquals(more, SettingsBackup.fromJson(json))
+    }
+
+    @Test fun `every setting is either backed up or left out on purpose`() {
+        // Left out: the strap and Zepp sign-in, what needs a permission on this phone, the backup folder, and what the
+        // app keeps for itself rather than what the user chose.
+        val leftOut = setOf(
+            "device_address", "device_auth_key", "device_name",
+            "zepp_app_token", "zepp_user_id", "zepp_api_base", "zepp_china", "zepp_login_token", "zepp_app_token_at", "zepp_app_ttl",
+            "companion_association_id", "companion_declined", "held_disconnected",
+            "strap_battery", "strap_charging", "strap_last_sync_done", "strap_sessions",
+            "buzz_calls", "buzz_notifications", "health_connect_auto", "health_connect_synced", "health_connect_auto_stopped",
+            "backup_folder", "backup_folder_name", "backup_last_done", "backup_failed", "backup_failed_at",
+            "goal_moment_week", "recap_week", "rewards_started", "history_badges_waiting", "habit_age_seen", "habit_age_seen_day",
+            "update_checked_at", "update_notified_tag", "update_installing_tag", "update_seen_tag",
+        )
+        val keys = org.openstrap.app.data.settings.SettingsKeys::class.java.declaredFields
+            .filter { java.lang.reflect.Modifier.isStatic(it.modifiers) && it.type == String::class.java && !it.name.endsWith("_PREFIX") }
+            .map { it.get(null) as String }
+        for (key in keys) assertTrue("$key is neither backed up nor left out", SettingsBackup.carries(key) != (key in leftOut))
+    }
+
     @Test fun `a restore writes only what this phone has never set`() {
         val missing = SettingsBackup.missing(settings, present = setOf("goal_steps", "profile_sex", "device_auth_key"))
         assertFalse("goal_steps" in missing)

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Sports (data/Workouts.kt): every sport a workout can be, by its full name, on the sport picker, the workout list, the
+  summary, the notification and the widgets. Then the picker's short tile names and the outdoor and indoor switch.
+  HYROX is a brand, keep it as is. HIIT is high intensity interval training.
+-->
+<resources>
+    <!-- The name of a workout whose sport the app doesn't know. -->
+    <string name="core_workouts_sport_workout">Workout</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_outdoor_run">Outdoor run</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_treadmill">Treadmill</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_walk">Walk</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_outdoor_cycling">Outdoor cycling</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_free_training">Free training</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_pool_swim">Pool swim</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_open_water_swim">Open water swim</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_indoor_cycling">Indoor cycling</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_elliptical">Elliptical</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_climbing">Climbing</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_trail_run">Trail run</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_skiing">Skiing</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_hiking">Hike</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_tennis">Tennis</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_soccer">Soccer</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_jump_rope">Jump rope</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_rowing_machine">Rowing machine</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_indoor_fitness">Indoor fitness</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_indoor_walk">Indoor walk</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_hiit">HIIT</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_core_training">Core training</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_mixed_aerobic">Mixed aerobic</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_strength_training">Strength training</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_stretching">Stretching</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_flexibility">Flexibility</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_step_training">Step training</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_stair_stepper">Stair stepper</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_yoga">Yoga</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_pilates">Pilates</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_rock_climbing">Rock climbing</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_dance">Dance</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_golf">Golf</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_basketball">Basketball</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_volleyball">Volleyball</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_table_tennis">Table tennis</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_badminton">Badminton</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_boxing">Boxing</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_stair_climbing">Stair climbing</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_aerobics">Aerobics</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_cross_training">Cross-training</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_spinning">Spinning</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_pickleball">Pickleball</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_padel">Padel</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_dog_walking">Dog walking</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_hyrox_training">HYROX training</string>
+    <!-- The strap's own name for movement it logged by itself, not a sport anyone starts. -->
+    <string name="core_workouts_sport_activity">Activity</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_mountain_hike">Mountain hike</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_rucking">Rucking</string>
+    <!-- A sport's full name. One line in lists. -->
+    <string name="core_workouts_sport_hybrid_training">Hybrid training</string>
+
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_run">Run</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_walk">Walk</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_hike">Hike</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_cycling">Cycling</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_swim">Swim</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_strength">Strength</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_hiit">HIIT</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_yoga">Yoga</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_pilates">Pilates</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_rowing">Rowing</string>
+    <!-- A sport tile's short name on the sport picker, standing for both its kinds (a run outdoors or on a treadmill). One or two words. -->
+    <string name="core_workouts_short_elliptical">Elliptical</string>
+    <!-- The sport picker's tile for any other sport. One word. -->
+    <string name="core_workouts_short_other">Other</string>
+
+    <!-- The ready screen's switch between a sport's two kinds: done outside. One word. -->
+    <string name="core_workouts_side_outdoor">Outdoor</string>
+    <!-- The switch's indoor side for a run. One word. -->
+    <string name="core_workouts_side_treadmill">Treadmill</string>
+    <!-- The switch's indoor side for cycling or a walk. One word. -->
+    <string name="core_workouts_side_indoor">Indoor</string>
+    <!-- The switch's outdoor side for a swim. One or two words. -->
+    <string name="core_workouts_side_open_water">Open water</string>
+    <!-- The switch's indoor side for a swim. One word. -->
+    <string name="core_workouts_side_pool">Pool</string>
+</resources>

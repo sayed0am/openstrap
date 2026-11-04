@@ -29,6 +29,7 @@ import org.openstrap.app.data.db.WorkoutHeartRate
 import org.openstrap.app.data.settings.UserProfile
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.openstrap.app.data.HeartZones
 
 /** The workout list's zone bars come from each workout's whole HR stream, and agree with its page. */
 @RunWith(RobolectricTestRunner::class)
@@ -69,18 +70,19 @@ class WorkoutListZonesTest {
         dao.insertAppWorkouts(listOf(phone))
         dao.insertAppWorkoutHeartRate(phoneHr)
 
-        val vm = WorkoutsViewModel(dao, flowOf(UserProfile(maxHeartRate = maxHr)))
+        val profile = flowOf(UserProfile(maxHeartRate = maxHr))
+        val vm = WorkoutsViewModel(org.openstrap.app.data.RoomWorkoutRepository(dao, profile, org.openstrap.app.data.MaxHeartRates(dao, profile), flowOf(HeartZones.STANDARD)))
         val list = withTimeout(10_000) { vm.workouts.first { l -> l.size == 3 && l.count { it.zoneSeconds.sum() > 0 } == 2 } }
 
         val strapRow = list.single { !it.fromPhone && it.workout.start == hard.start }
-        val page = Workouts.analyse(hard, dao.workoutHeartRateOnce(hard.start), dao.sportEffects().first(), maxHr)
+        val page = Workouts.analyse(hard, dao.workoutHeartRateOnce(hard.start), dao.sportEffects().first(), maxHr, HeartZones.STANDARD)
         assertEquals(page.zoneSeconds, strapRow.zoneSeconds)
         assertTrue(strapRow.zoneSeconds[1] > 0 && strapRow.zoneSeconds[3] > 0)
         // The row's end still comes from the last sample, as before.
         assertEquals(Workouts.endOf(hard, hr.last().timestamp, null), strapRow.end)
 
         val phoneRow = list.single { it.fromPhone }
-        assertEquals(WorkoutRecorder.analyse(phone, phoneHr, maxHr).zoneSeconds, phoneRow.zoneSeconds)
+        assertEquals(WorkoutRecorder.analyse(phone, phoneHr, maxHr, HeartZones.STANDARD).zoneSeconds, phoneRow.zoneSeconds)
 
         assertEquals(List(Workouts.ZONES) { 0 }, list.single { it.workout.start == bare.start }.zoneSeconds)
         vm.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.cancel(); Unit

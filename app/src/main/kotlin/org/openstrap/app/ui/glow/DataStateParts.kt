@@ -5,7 +5,8 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Brush
 import kotlin.math.PI
@@ -15,6 +16,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,6 +28,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -54,9 +58,14 @@ import org.openstrap.app.ui.theme.MetricColors
  */
 @Composable
 internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
-    val t by rememberInfiniteTransition(label = "pairing").animateFloat(
-        0f, 1f, infiniteRepeatable(tween(PAIR_CYCLE_MS, easing = LinearEasing)), label = "pairing cycle",
-    )
+    // The cycle runs only for the steps that move with it, so a stage that waits or failed costs no frames. It's read
+    // only in draw, so a running cycle redraws the stage without composing it again.
+    val moving = step == PairStep.Searching || step == PairStep.Found || step == PairStep.Connecting
+    val cycle: State<Float> = if (moving) {
+        rememberInfiniteTransition(label = "pairing").animateFloat(
+            0f, 1f, infiniteRepeatable(tween(PAIR_CYCLE_MS, easing = LinearEasing)), label = "pairing cycle",
+        )
+    } else StillCycle
     // Connected: the line fills from the phone to the strap, then the pod flashes once.
     val fill = remember { Animatable(0f) }
     val flash = remember { Animatable(0f) }
@@ -72,7 +81,7 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
     // from the text's edges on both sides, so it sits inside the card's words rather than on them.
     Box(modifier.fillMaxWidth().padding(horizontal = StageInset).height(StageHeight)) {
         val strapWidth = StageHeight * 0.8f
-        Canvas(Modifier.matchParentSize()) {
+        Spacer(Modifier.matchParentSize().drawWithCache {
             val y = size.height / 2
             val gap = 8.dp.toPx()
             val hair = 1.dp.toPx()
@@ -82,13 +91,21 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
             val podX = size.width - sw + sw * POD_LEFT + sw / 2
             val end = size.width - sw * (1f - 2 * POD_LEFT) - gap
             val reach = 46.dp.toPx()
+            val sparkGlow = 9.dp.toPx()
+            // One glow for every spark, centred on the origin and moved to each: a gradient a spark a frame is garbage.
+            val sparkBrush = Brush.radialGradient(
+                listOf(StrapLight.copy(alpha = 0.55f), StrapLight.copy(alpha = 0f)), Offset.Zero, sparkGlow,
+            )
+            onDrawBehind {
+            val t = cycle.value
             fun ripple(cx: Float, phase: Float, color: Color, from: Float) {
                 val r = from + (reach - from) * phase
                 drawCircle(color.copy(alpha = color.alpha * (1f - phase) * 0.7f), r, Offset(cx, y), style = Stroke(hair))
             }
-            fun spark(x: Float, color: Color) {
-                drawCircle(Brush.radialGradient(listOf(color.copy(alpha = 0.55f), color.copy(alpha = 0f)), Offset(x, y), 9.dp.toPx()), 9.dp.toPx(), Offset(x, y))
-                drawCircle(color, 2.dp.toPx(), Offset(x, y))
+            // The glow is the same at every spark (its colour's alpha is set, not scaled). Only the dot fades.
+            fun spark(x: Float, alpha: Float = 1f) {
+                translate(x, y) { drawCircle(sparkBrush, sparkGlow, Offset.Zero) }
+                drawCircle(StrapLight.copy(alpha = alpha), 2.dp.toPx(), Offset(x, y))
             }
             when (step) {
                 PairStep.Ready -> drawLine(Color.White.copy(alpha = 0.22f), Offset(start, y), Offset(end, y), hair, StrokeCap.Round)
@@ -108,14 +125,14 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
                     for (k in 0..2) {
                         val p = (t + k / 3f) % 1f
                         val e = p * p * (3f - 2f * p)
-                        spark(start + (end - start) * e, StrapLight.copy(alpha = sin(p * PI.toFloat())))
+                        spark(start + (end - start) * e, sin(p * PI.toFloat()))
                     }
                 }
                 PairStep.Connected -> {
                     drawLine(StrapLight.copy(alpha = 0.2f), Offset(start, y), Offset(end, y), hair, StrokeCap.Round)
                     val head = start + (end - start) * fill.value
                     drawLine(StrapLight, Offset(start, y), Offset(head, y), hair, StrokeCap.Round)
-                    if (fill.value < 1f) spark(head, StrapLight)
+                    if (fill.value < 1f) spark(head)
                     if (flash.value in 0.001f..0.999f) {
                         ripple(podX, flash.value, StrapLight, 20.dp.toPx())
                         drawCircle(StrapLight.copy(alpha = 0.35f * (1f - flash.value)), 30.dp.toPx(), Offset(podX, y))
@@ -130,7 +147,8 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
                     drawLine(amber, Offset(mid + broken, y), Offset(end, y), hair, StrokeCap.Round)
                 }
             }
-        }
+            }
+        })
         PhoneDrawing(Modifier.align(Alignment.CenterStart).size(width = PhoneWidth, height = 52.dp))
         // Shifted out by the room right of the pod, so the pod sits as far from the card's edge as the phone does.
         StrapDrawing(
@@ -139,6 +157,9 @@ internal fun PairingStage(step: PairStep, modifier: Modifier = Modifier) {
         )
     }
 }
+
+/** The cycle's resting value, for the steps that don't move with it. */
+private val StillCycle: State<Float> = mutableFloatStateOf(0f)
 
 /** One turn of the pairing stage's moving parts: a ripple, a pulse, a spark's run along the line. */
 private const val PAIR_CYCLE_MS = 1600

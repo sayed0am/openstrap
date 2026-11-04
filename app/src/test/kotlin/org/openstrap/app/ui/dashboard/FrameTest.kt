@@ -9,17 +9,25 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.SyncState
+import org.openstrap.app.presentation.Metric
+import org.openstrap.app.presentation.dayTitle
+import org.openstrap.app.presentation.todayTitle
+import org.openstrap.app.ui.glow.draw.momentMood
 
 /** The header's day labels, the strap chip's words and the tab rules (spec 3.1 to 3.3). */
 class FrameTest {
     private val today = LocalDate.of(2026, 10, 23) // a Friday
     private val uk = Locale.UK
 
-    @Test fun `title says today, yesterday, then the weekday`() {
+    @Test fun `title says today, yesterday, the weekday within the week, then the date`() {
         assertEquals("Today", dayTitle(today, today, uk))
         assertEquals("Yesterday", dayTitle(today.minusDays(1), today, uk))
         assertEquals("Wednesday", dayTitle(today.minusDays(2), today, uk))
-        assertEquals("Friday", dayTitle(today.minusDays(7), today, uk))
+        assertEquals("Saturday", dayTitle(today.minusDays(6), today, uk))
+        // A week back would read as today's weekday, so it takes its date, with the year from an earlier one.
+        assertEquals("Fri 16 Oct", dayTitle(today.minusDays(7), today, uk))
+        assertEquals("Wed 31 Dec 2025", dayTitle(LocalDate.of(2025, 12, 31), today, uk))
+        assertEquals("Fri 16 Oct", dateLine(today.minusDays(7), uk))
     }
 
     @Test fun `the day under the title is short and never has an interpunct`() {
@@ -179,19 +187,34 @@ class FrameTest {
     @Test fun `Recovery and Charge details survive process death`() {
         // Every route there is, the score details among them, deepest last.
         val stack = listOf(
-            Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Charge), Detail.OfMetric(Metric.HeartRate), Detail.AllWorkouts,
+            Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Energy), Detail.OfMetric(Metric.HeartRate), Detail.AllWorkouts,
             Detail.Healthspan, Detail.Recovery, Detail.Sleep, Detail.Workout(1792227300),
         ) + Metric.entries.map(Detail::OfMetric) + Score.entries.map(Detail::OfScore)
         val saved = with(Detail.StackSaver) { androidx.compose.runtime.saveable.SaverScope { true }.save(stack) }!!
         assertEquals(stack, Detail.StackSaver.restore(saved))
         // A score this build doesn't know is dropped, the rest kept.
-        assertEquals(listOf(Detail.OfScore(Score.Charge)), Detail.StackSaver.restore("c:Sleepscore|c:Charge"))
+        assertEquals(listOf(Detail.OfScore(Score.Energy)), Detail.StackSaver.restore("c:Sleepscore|c:Charge"))
+    }
+
+    @Test fun `stacks saved before Energy and Calories were renamed open the same details`() {
+        // Before the rename, Energy (the Charge model) was Score.Charge and Calories was Score.Energy, saved by name.
+        assertEquals(listOf(Detail.OfScore(Score.Calories)), Detail.StackSaver.restore("c:Energy"))
+        assertEquals(listOf(Detail.OfScore(Score.Energy)), Detail.StackSaver.restore("c:Charge"))
+        assertEquals(
+            listOf(Detail.Recovery, Detail.OfScore(Score.Energy), Detail.OfScore(Score.Calories)),
+            Detail.StackSaver.restore("r:|c:Charge|c:Energy"),
+        )
+        // They are still saved that way, so a saved "Energy" only ever means Calories, and card motion keys match.
+        assertEquals("c:Charge", Detail.keyOf(Detail.OfScore(Score.Energy)))
+        assertEquals("c:Energy", Detail.keyOf(Detail.OfScore(Score.Calories)))
+        assertEquals(Score.entries.size, Score.entries.map { it.key }.toSet().size)
+        Score.entries.filter { it != Score.Energy && it != Score.Calories }.forEach { assertEquals(it.name, it.key) }
     }
 
     @Test fun `every detail switches within one group of siblings`() {
         val all = Metric.entries.map(Detail::OfMetric) + Score.entries.map(Detail::OfScore)
         all.forEach { d -> assertEquals(d.toString(), 1, DETAIL_GROUPS.count { d in it }) }
-        assertEquals(listOf(Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Charge)), siblingsOf(Detail.OfScore(Score.Charge)))
+        assertEquals(listOf(Detail.OfScore(Score.Recovery), Detail.OfScore(Score.Energy)), siblingsOf(Detail.OfScore(Score.Energy)))
         assertEquals(listOf(Detail.Healthspan), siblingsOf(Detail.Healthspan))
     }
 
@@ -220,7 +243,7 @@ class FrameTest {
         assertEquals(
             listOf(
                 Detail.OfMetric(Metric.Steps), Detail.OfScore(Score.ActiveMinutes), Detail.OfScore(Score.HeartPoints), Detail.OfScore(Score.Load),
-                Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Energy),
+                Detail.OfMetric(Metric.HeartRate), Detail.OfScore(Score.Vo2Max), Detail.OfScore(Score.Recover), Detail.OfScore(Score.Calories),
                 Detail.OfScore(Score.Distance),
             ),
             ACTIVITY_GROUP,
@@ -276,9 +299,9 @@ class FrameTest {
     @Test fun `evening dims, night is almost unlit, the rest is day`() {
         for (m in org.openstrap.app.data.Moment.entries) {
             val want = when (m) {
-                org.openstrap.app.data.Moment.Evening -> org.openstrap.app.ui.glow.GlowMood.Evening
-                org.openstrap.app.data.Moment.Night -> org.openstrap.app.ui.glow.GlowMood.Night
-                else -> org.openstrap.app.ui.glow.GlowMood.Day
+                org.openstrap.app.data.Moment.Evening -> org.openstrap.app.ui.glow.draw.GlowMood.Evening
+                org.openstrap.app.data.Moment.Night -> org.openstrap.app.ui.glow.draw.GlowMood.Night
+                else -> org.openstrap.app.ui.glow.draw.GlowMood.Day
             }
             assertEquals(m.name, want, momentMood(m))
         }

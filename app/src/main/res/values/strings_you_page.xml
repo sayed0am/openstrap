@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The You page and what it opens for you: Profile, the goals sheet, the Updates page and Diagnostics
+  (ui/device/YouPage.kt, ProfileScreen.kt, GoalsSheet.kt, UpdatesPage.kt, DeviceScreen.kt), and the buttons and values
+  every You and Strap page shares. OpenStrap is the app's name, GitHub is where its releases are and Health Connect is
+  Android's health store. Keep all three as they are.
+-->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- A button that closes a sheet or dialog without saving. -->
+    <string name="you_action_cancel">Cancel</string>
+    <!-- A button that keeps what was entered. -->
+    <string name="you_action_save">Save</string>
+    <!-- A button or row that brings back data: a backup, Health Connect's copy or a deleted night. -->
+    <string name="you_action_restore">Restore</string>
+    <!-- Reveals a hidden auth key. -->
+    <string name="you_action_show">Show</string>
+    <!-- Hides the auth key again. -->
+    <string name="you_action_hide">Hide</string>
+    <!-- A setting's value under its row title: it is on. -->
+    <string name="you_value_on">On</string>
+    <!-- A setting's value under its row title: it is off. -->
+    <string name="you_value_off">Off</string>
+
+    <!-- The You page's title. -->
+    <string name="you_title">You</string>
+    <!-- Row titles on the You page, one line each. -->
+    <string name="you_row_profile">Profile</string>
+    <string name="you_row_goals">Goals</string>
+    <string name="you_row_sleep_goal">Sleep goal</string>
+    <string name="you_row_goals_and_bests">Goals and bests</string>
+    <string name="you_row_health_connect">Health Connect</string>
+    <string name="you_row_backup">Backup</string>
+    <string name="you_row_deleted_sleep">Deleted sleep</string>
+    <string name="you_row_updates">Updates</string>
+    <string name="you_row_diagnostics">Diagnostics</string>
+    <!-- A debug build's row that fills the app with made up data. -->
+    <string name="you_row_sample_data">Add sample data</string>
+    <!-- Under the sample data row. -->
+    <string name="you_row_sample_data_note">Debug builds only</string>
+    <!-- Section labels over the You page's panels, a few words in capitals' style. -->
+    <string name="you_section_your_data">Your data</string>
+    <string name="you_section_help">Help</string>
+    <!-- Under the Goals and bests row: the weekly workout goal, then what else the page holds. -->
+    <plurals name="you_goals_and_bests_line">
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> workout a week, personal bests and badges</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> workouts a week, personal bests and badges</item>
+    </plurals>
+    <!-- Under the Diagnostics row: how many lines the log holds. -->
+    <plurals name="you_diagnostics_line">
+        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> line, for bug reports</item>
+        <item quantity="other"><xliff:g id="count" example="250">%1$d</xliff:g> lines, for bug reports</item>
+    </plurals>
+    <!-- Centred at the foot of the You page: the version running. -->
+    <string name="you_footer">OpenStrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>. Everything stays on this phone.</string>
+
+    <!-- The Goals row, one line: the three daily goals joined, "8,000 steps, 450 active kcal, 8 active hours". -->
+    <string name="you_goals_line"><xliff:g id="steps" example="8,000 steps">%1$s</xliff:g>, <xliff:g id="calories" example="450 active kcal">%2$s</xliff:g>, <xliff:g id="hours" example="8 active hours">%3$s</xliff:g></string>
+    <!-- The steps goal in the Goals row. The number is already formatted, "8,000". -->
+    <plurals name="you_goals_steps">
+        <item quantity="one"><xliff:g id="steps" example="8,000">%1$s</xliff:g> step</item>
+        <item quantity="other"><xliff:g id="steps" example="8,000">%1$s</xliff:g> steps</item>
+    </plurals>
+    <!-- The calorie goal, in the Goals row and the goals sheet. The number is already formatted, "450". -->
+    <string name="you_goals_active_kcal"><xliff:g id="calories" example="450">%1$s</xliff:g> active kcal</string>
+    <!-- The active hours goal in the Goals row. -->
+    <plurals name="you_goals_active_hours">
+        <item quantity="one"><xliff:g id="hours" example="8">%1$d</xliff:g> active hour</item>
+        <item quantity="other"><xliff:g id="hours" example="8">%1$d</xliff:g> active hours</item>
+    </plurals>
+    <!-- The Sleep goal row: the goal, then the sleep need Recovery uses. Both are lengths of time, "7 h 30" and "8 h". -->
+    <string name="you_sleep_goal_line"><xliff:g id="goal" example="7 h 30">%1$s</xliff:g>. Your sleep need is <xliff:g id="need" example="8 h">%2$s</xliff:g></string>
+
+    <!-- The Profile row when nothing is filled in. One line. -->
+    <string name="you_profile_empty">Add age and sex for accurate Load and Recovery</string>
+    <!-- The age in the Profile row, "34 years, male, 72 kg, 178 cm". -->
+    <plurals name="you_profile_age">
+        <item quantity="one"><xliff:g id="age" example="34">%1$d</xliff:g> year</item>
+        <item quantity="other"><xliff:g id="age" example="34">%1$d</xliff:g> years</item>
+    </plurals>
+    <!-- The sex in the Profile row, in the middle of the line, so lower case in English. -->
+    <string name="you_profile_summary_female">female</string>
+    <string name="you_profile_summary_male">male</string>
+    <!-- The Profile page's title. -->
+    <string name="you_profile_title">Your profile</string>
+    <!-- Asked on Back when the profile was changed and not saved. -->
+    <string name="you_profile_discard_title">Discard changes?</string>
+    <string name="you_profile_discard_text">Your profile changes haven\'t been saved.</string>
+    <string name="you_profile_discard">Discard</string>
+    <string name="you_profile_keep_editing">Keep editing</string>
+    <!-- At the top of the Profile page. -->
+    <string name="you_profile_note">Age sets your maximum heart rate, which every effort and recovery number depends on. All fields are optional and stay on this phone.</string>
+    <!-- A field's label, then the unit shown inside it, short. -->
+    <string name="you_profile_age">Age</string>
+    <string name="you_profile_age_unit">years</string>
+    <!-- Over the Female and Male segments. Calories, Load and Habit Age are names of OpenStrap's pages and scores. -->
+    <string name="you_profile_sex_note">Sex, for Calories, Load, fitness and Habit Age</string>
+    <!-- Two segments side by side, a word each. -->
+    <string name="you_profile_sex_female">Female</string>
+    <string name="you_profile_sex_male">Male</string>
+    <!-- Over the Metric and Imperial segments. -->
+    <string name="you_profile_units">Units</string>
+    <string name="you_profile_units_metric">Metric</string>
+    <string name="you_profile_units_imperial">Imperial</string>
+    <string name="you_profile_weight">Weight</string>
+    <string name="you_profile_unit_lb">lb</string>
+    <string name="you_profile_unit_kg">kg</string>
+    <string name="you_profile_feet">Feet</string>
+    <string name="you_profile_unit_ft">ft</string>
+    <string name="you_profile_inches">Inches</string>
+    <string name="you_profile_unit_in">in</string>
+    <string name="you_profile_height">Height</string>
+    <string name="you_profile_unit_cm">cm</string>
+    <!-- Over five numbered segments, 1 to 5. -->
+    <string name="you_profile_activity_note">Usual activity, for the fitness estimate</string>
+    <!-- Under the activity segments while none is picked. -->
+    <string name="you_profile_activity_pick">Pick the level that best matches a usual week.</string>
+    <!-- Switch rows. -->
+    <string name="you_profile_beta_blockers">Taking beta-blockers</string>
+    <string name="you_profile_pregnant">Pregnant</string>
+    <!-- The sleep need field's label: hours, 7 to 9, or empty for the default for the user's age. -->
+    <string name="you_profile_sleep_need">Sleep need in hours (7 to 9, or blank)</string>
+    <!-- The unit for hours, short. -->
+    <string name="you_unit_h">h</string>
+
+    <!-- The goals sheet's title and its note. -->
+    <string name="you_goals_title">Your goals</string>
+    <string name="you_goals_note">What you aim for each day and week. Change them whenever they stop fitting.</string>
+    <!-- The steps field's label, then its unit. -->
+    <string name="you_goals_steps_label">Steps</string>
+    <string name="you_goals_steps_unit">steps</string>
+    <string name="you_goals_sleep_label">Sleep</string>
+    <!-- The unit for minutes, short. -->
+    <string name="you_unit_min">min</string>
+    <string name="you_goals_active_label">Active hours</string>
+    <!-- The active hours field's unit: hours out of the day's 24. -->
+    <string name="you_goals_active_unit">of 24</string>
+    <string name="you_goals_active_note">An active hour is one with at least 250 steps.</string>
+    <string name="you_goals_workouts_label">Workouts</string>
+    <!-- The minus and plus buttons beside the weekly workout goal, read by screen readers. -->
+    <string name="you_goals_workouts_fewer">Fewer workouts a week</string>
+    <string name="you_goals_workouts_more">More workouts a week</string>
+    <!-- Between minus and plus: the weekly workout goal. Short. -->
+    <plurals name="you_goals_workouts_value">
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> a week</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> a week</item>
+    </plurals>
+    <string name="you_goals_workouts_note">Workouts of 10 minutes or more count, two a day at most.</string>
+    <string name="you_goals_calories_label">Calories</string>
+    <!-- The minus and plus buttons beside the calorie goal, read by screen readers. -->
+    <string name="you_goals_calories_lower">Lower the calorie goal</string>
+    <string name="you_goals_calories_raise">Raise the calorie goal</string>
+    <!-- What a tap on the calorie goal does, read by screen readers. -->
+    <string name="you_goals_calories_type">Type the calorie goal</string>
+    <!-- Under the calorie goal: the one the last four weeks suggest. The number is already formatted, "520". -->
+    <string name="you_goals_suggested">Suggested <xliff:g id="calories" example="520">%1$s</xliff:g>, from your last 4 weeks</string>
+    <!-- The same when the goal already is the suggestion. -->
+    <string name="you_goals_suggested_matched">Suggested <xliff:g id="calories" example="520">%1$s</xliff:g>, from your last 4 weeks. Your strap\'s goal is set to match.</string>
+    <!-- A short button that sets the goal to the suggestion. -->
+    <string name="you_goals_use">Use</string>
+
+    <!-- The Updates page: its title, and the row that checks GitHub now. -->
+    <string name="you_updates_title">Updates</string>
+    <string name="you_updates_check_now">Check now</string>
+    <!-- The row of the newest version, to install it. -->
+    <string name="you_updates_release">OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g></string>
+    <!-- The daily check's switch and its line. -->
+    <string name="you_updates_daily">Check every day</string>
+    <string name="you_updates_daily_note">Notifies you of new versions</string>
+    <!-- A row that opens the releases page on GitHub. -->
+    <string name="you_updates_all_releases">All releases</string>
+    <string name="you_updates_on_github">On GitHub</string>
+    <!-- The release notes panel's title: the versions newer than this one. -->
+    <string name="you_updates_whats_new">What\'s new</string>
+    <!-- The panel's title when this version is the newest. -->
+    <string name="you_updates_in_your_version">In your version</string>
+    <!-- The panel's title when this build is newer than every release, a developer's. -->
+    <string name="you_updates_latest">Latest release</string>
+    <!-- Centred at the foot of the Updates page. -->
+    <string name="you_updates_installed">You have OpenStrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>.</string>
+    <string name="you_updates_no_notes">No notes for this release.</string>
+
+    <!-- The Diagnostics page: the strap's log, for bug reports. -->
+    <string name="you_diagnostics_title">Diagnostics</string>
+    <!-- A short button that copies the whole log. -->
+    <string name="you_diagnostics_copy">Copy</string>
+    <!-- The clipboard's label for the copied log, which some phones show. -->
+    <string name="you_diagnostics_clip_label">OpenStrap log</string>
+    <string name="you_diagnostics_log">Strap log</string>
+    <!-- Beside the log's title. -->
+    <plurals name="you_diagnostics_lines">
+        <item quantity="one"><xliff:g id="count" example="250">%1$d</xliff:g> line</item>
+        <item quantity="other"><xliff:g id="count" example="250">%1$d</xliff:g> lines</item>
+    </plurals>
+    <string name="you_diagnostics_empty">No events yet.</string>
+</resources>

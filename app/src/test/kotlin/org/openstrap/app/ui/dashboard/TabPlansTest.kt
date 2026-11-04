@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.Edge
+import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.GridRow
 import org.openstrap.app.ui.glow.packGrid
 import org.openstrap.app.ui.glow.Pane

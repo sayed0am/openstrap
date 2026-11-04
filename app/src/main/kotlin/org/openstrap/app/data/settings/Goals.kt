@@ -1,5 +1,7 @@
 package org.openstrap.app.data.settings
 
+import org.openstrap.app.data.Stats
+
 /** Your daily targets. The defaults are the app's old fixed goals, and the strap's 300 for calories. */
 data class Goals(
     val steps: Int = DEFAULT_STEPS,
@@ -7,16 +9,10 @@ data class Goals(
     val activeHours: Int = DEFAULT_ACTIVE_HOURS,
     /** Active kcal a day, sent to the strap as its calorie target (HEALTH key 0x53). */
     val calories: Int = DEFAULT_CALORIES,
+    /** Workouts a week (workouts spec 3.1), [WORKOUTS_PER_WEEK]. */
+    val workoutsPerWeek: Int = org.openstrap.app.data.Rewards.DEFAULT_GOAL,
 ) {
     val sleepSeconds: Long get() = sleepMinutes * 60L
-
-    /** "8,000 steps, 300 active kcal, 8 h sleep, 10 active hours". */
-    fun summary(): String {
-        val h = sleepMinutes / 60
-        val m = sleepMinutes % 60
-        val sleep = if (m == 0) "$h h" else "$h h $m min"
-        return "%,d steps, %,d active kcal, %s sleep, %d active hours".format(steps, calories, sleep, activeHours)
-    }
 
     companion object {
         const val DEFAULT_STEPS = 8000
@@ -27,6 +23,7 @@ data class Goals(
         val STEPS = 1000..50000
         val SLEEP_MINUTES = 4 * 60..12 * 60
         val ACTIVE_HOURS = 1..18
+        val WORKOUTS_PER_WEEK = org.openstrap.app.data.Rewards.GOALS
         /** The strap's own range for its calorie target. */
         val CALORIES = 200..3000
         /** What the minus and plus buttons move the calorie goal by. */
@@ -39,9 +36,6 @@ data class Goals(
  * the last four weeks. Pure, so it's tested without the sheet.
  */
 object CalorieGoal {
-    /** Said under the field when a typed value is outside [Goals.CALORIES]. */
-    const val OUT_OF_RANGE = "Pick a number from 200 to 3,000"
-
     /** Fewer full days than this and there is no suggestion: a few days say nothing about your usual. */
     const val MIN_FULL_DAYS = 7
 
@@ -61,9 +55,6 @@ object CalorieGoal {
      */
     fun suggested(fullDays: List<Float>): Int? {
         if (fullDays.size < MIN_FULL_DAYS) return null
-        val sorted = fullDays.sorted()
-        val n = sorted.size
-        val median = if (n % 2 == 1) sorted[n / 2] else (sorted[n / 2 - 1] + sorted[n / 2]) / 2f
-        return (Math.round(median * 1.1f / 10f) * 10).coerceIn(Goals.CALORIES)
+        return Stats.median(fullDays)?.let { median -> (Math.round(median * 1.1f / 10f) * 10).coerceIn(Goals.CALORIES) }
     }
 }

@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,11 +66,8 @@ internal fun <C> GlowBlocks.tabCards(slots: List<TabSlot<C>>, focus: C? = null, 
                 CompositionLocalProvider(LocalEdgeOverride provides slot.look.edgeOverride()) { draw(slot.card, m) }
             }
         }
-        when (pane) {
-            Pane.Full -> full(block)
-            Pane.Left -> left(block)
-            Pane.Right -> right(block)
-        }
+        // Keyed on its cards, so a card keeps its saved state when one is added or hidden above it (audit K5).
+        add(pane, GlowBlocks.cardsKey(row.items().map { "${slots[it].card}" }), block)
     }
 }
 
@@ -114,7 +111,7 @@ internal fun ContributorRow(
         Modifier.fillMaxWidth()
             .then(opening?.modifier ?: Modifier)
             .let { if (onClick != null) it.clickable(onClick = opening?.onClick ?: onClick) else it }
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
+            .topHairline(divider, RowHairline)
             .padding(vertical = GlowLayout.RowPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -140,47 +137,6 @@ internal fun ContributorRow(
     }
 }
 
-/** The last rows of a list: an action or a way on, with a caret. */
-@Composable
-internal fun LinkRow(text: String, onClick: () -> Unit, divider: Boolean = true) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick)
-            .let { if (divider) it.drawBehind { drawLine(RowHairline, Offset(0f, 0f), Offset(size.width, 0f), 1.dp.toPx()) } else it }
-            .padding(vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text, color = Color.White, style = GlowType.body, modifier = Modifier.weight(1f))
-        TapCaret(ROW_CARET_ALPHA)
-    }
-}
-
-/** A small pill button inside a row: white for the main action, glass otherwise. */
-@Composable
-internal fun RowPill(text: String, onClick: () -> Unit, primary: Boolean = false) {
-    val shape = RoundedCornerShape(50)
-    Box(
-        Modifier.height(32.dp)
-            .let { if (primary) it.background(Color.White, shape).clickable(onClick = onClick) else it.glass(shape, onClick) }
-            .padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, color = if (primary) Color.Black else Color.White, style = GlowType.secondary, maxLines = 1) }
-}
-
-/**
- * A few figures side by side, each a [HeroFigure] in an equal share of the width, so four still fit a phone. Four or
- * more take smaller dots.
- */
-@Composable
-internal fun FigureRow(figures: List<Pair<String?, String>>, modifier: Modifier = Modifier) {
-    val dot = if (figures.size >= 4) DotSize.Row else DotSize.Edge
-    Row(modifier.fillMaxWidth()) {
-        figures.forEachIndexed { i, (value, label) ->
-            val end = i == figures.lastIndex && i > 0
-            HeroFigure(value, label, horizontal = if (end) Alignment.End else Alignment.Start, dot = dot, modifier = Modifier.weight(1f))
-        }
-    }
-}
-
 /** A dot in [color] and a short [text], for a caveat like "Learning, 9 of 14 nights". */
 @Composable
 internal fun CaveatLine(text: String, color: Color, modifier: Modifier = Modifier) {
@@ -197,10 +153,10 @@ internal fun CaveatLine(text: String, color: Color, modifier: Modifier = Modifie
  * rate line, from the nightly resting heart rate.
  */
 @Composable
-internal fun rememberNormal(metric: org.openstrap.app.ui.dashboard.Metric, date: java.time.LocalDate, history: org.openstrap.app.ui.dashboard.DailyHistory?): org.openstrap.app.data.History.Normal? {
+internal fun rememberNormal(metric: org.openstrap.app.presentation.Metric, date: java.time.LocalDate, history: org.openstrap.app.ui.dashboard.DailyHistory?): org.openstrap.app.data.History.Normal? {
     val from = date.minusDays(org.openstrap.app.data.History.NORMAL_DAYS - 1L)
     val stats by androidx.compose.runtime.remember(metric, date, history) {
         history?.invoke(metric.daily, from, date) ?: kotlinx.coroutines.flow.flowOf(emptyList())
-    }.collectAsState(emptyList())
+    }.collectAsStateWithLifecycle(emptyList())
     return androidx.compose.runtime.remember(stats, date) { org.openstrap.app.data.History.normal(stats, date) }
 }
