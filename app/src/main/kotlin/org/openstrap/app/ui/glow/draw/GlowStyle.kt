@@ -124,6 +124,13 @@ data class GlowStyle(
      */
     val bodyLightness: Float = 0.32f,
     /**
+     * How far the body's hue turns from [color]'s, in degrees. A small step by default, so the card reads as one colour
+     * in different light. Lime darkened to a body reads as khaki, so Steps turns its body toward green ([limeHero]).
+     */
+    val bodyHueShift: Float = -4f,
+    /** How far the dark core's hue turns from [color]'s, in degrees: none by default. */
+    val coreHueShift: Float = 0f,
+    /**
      * The second glow card on a screen, L3 (spec 2.1): the light colour at 70% at the lit edge, reaching the body by
      * 28% of the card, the rim at 70%. A level card ignores it: its light is the value, so it's always at full.
      */
@@ -325,9 +332,9 @@ internal class GlowPalette(style: GlowStyle) {
         // Same lightness looks far brighter in yellow-green than in red or blue, so the body and band
         // are darkened until their actual brightness keeps white text readable, whatever the hue.
         // Only a small hue step from the rim, so the card reads as one colour in different light.
-        val body = capped(h - 4f, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
+        val body = capped(h + style.bodyHueShift, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
         val band = capped(h + style.toneShift, s * 0.8f, style.bodyLightness - 0.04f, TONE_MAX_LUMINANCE)
-        core = hsl(h, 0.7f, style.coreLightness)
+        core = hsl(h + style.coreHueShift, 0.7f, style.coreLightness)
         // A dimmer mood darkens the whole lit area, like turning the light down.
         val k = style.light().brightness.coerceIn(0f, 1f)
         light = if (k < 1f) lerp(Color.Black, rim, k) else rim
@@ -378,6 +385,18 @@ internal fun heroStyle(color: Color, lightAngle: Float?, rim: Float = 1f) = Glow
     coreShape = CoreShape.Radial, coreX = 0.5f, coreY = 0.6f, coreWidth = 0.95f, coreHeight = 0.75f,
     coreBlur = 30.dp, toneWidth = 16.dp, toneShift = -10f, glowStrength = rim, bevel = 0f,
 )
+
+/**
+ * The hero recipe for lime (Steps): lit from the upper right, so the dark core sits low on the left behind the number
+ * and its line, which on a bright lime body weren't readable (user, 2026-11-06). Its body, band and core turn toward
+ * green, since lime darkened to a body reads as khaki.
+ */
+internal fun limeHero(color: Color) = heroStyle(color, LightAngle.UpperRight).copy(
+    bodyHueShift = LIME_BODY_HUE, toneShift = LIME_BODY_HUE, coreHueShift = LIME_BODY_HUE,
+)
+
+/** How far lime's body turns toward green, in degrees. */
+private const val LIME_BODY_HUE = 30f
 
 /** The workout window's rim, raised for effort, and the calmer one after a workout (spec 4.2). */
 internal const val WINDOW_RIM = 1.2f

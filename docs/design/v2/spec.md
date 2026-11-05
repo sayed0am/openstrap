@@ -61,12 +61,11 @@ L1, the soft edge glow on every usual card and strip (2026-10-24), is gone: ligh
 - **Locked on every glow card:** 28 dp corners, grain, the 1 dp hairline with its gloss, the black the core fades to,
   text top left. **Free per card:** hue, where the light comes from (`lightAngle`), how high it reaches (`lightLevel`).
 
-**Levels.** A glow card that shows a level (Energy, steps toward a goal on a glow) shows it as how far the light
+**Levels.** A glow card that shows a level (Energy) shows it as how far the light
 reaches. A picture card shows a level in its picture (Load's fill over your usual band, Active minutes' blocks), never
 as light.
 
-- On a glow card the light rises from the bottom, like a battery, on a Tall, a hero and every other level glow, Steps
-  on Activity included, because its bars sit in the dark above the light. Only a short wide card with just a number
+- On a glow card the light rises from the bottom, like a battery, on a Tall, a hero and every other level glow. Only a short wide card with just a number
   and a line (Energy on Today) fills across from the left. The lit edge is the light colour at full, the lit part is
   the value's share of the card, then a soft 22 dp step into the dark core. At 0 the bottom 12% still glows.
 - A level glow is always this bright, because its light is the value. Beside a hero (Energy on Recovery, Energy as the
@@ -413,7 +412,7 @@ never a "How it works" panel, a separate explanation card or an expandable secti
 |---|---|
 | Today hero | Light by moment (4.2): waking 225, midday Energy rising from below, workout window 45 with the rim at 120%, during a workout from below and pulsing, after a workout Recovery teal from below (270) with the rim at 80%, evening 315 in the Evening mood, night from below in the Night mood |
 | Energy | `lightLevel` = Energy / 100, light from below, Ember orange |
-| Steps (Activity tab) | `lightLevel` = share of the goal, from below |
+| Steps (Activity tab) | The tab's hero, no level: lit from the upper right, the core behind the number and its line, the body turned toward green. The goal share is in the words (user, 2026-11-06: the lime level under a black top read as two cards in one) |
 | Recovery (tab hero, detail header) | The number sits in a dark pool: core behind the number, light all round |
 | Workout summary | Glow size by effort: an easy walk leaves most of the card dark, a hard run floods it |
 | Live workout heart card | Light height follows the current heart rate zone. Live signal, so it may move |

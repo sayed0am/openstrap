@@ -83,9 +83,8 @@ import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.glow.draw.drawHourPills
 import org.openstrap.app.ui.glow.draw.hourPills
 import androidx.compose.foundation.layout.BoxWithConstraints
-import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.draw.level
+import org.openstrap.app.ui.glow.draw.limeHero
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.presentation.topSports
 import org.openstrap.app.presentation.LoadBands
@@ -274,9 +273,10 @@ private const val MORE_BY_USE = 8
 /* ----------------------------------------------- Steps ---------------------------------------------- */
 
 /**
- * Steps as a level glow (spec 2.1 Levels, 2.6, 5.3): the light rises from below to the share of the goal walked, the
- * dark core above it, like Charge. The title with the goal as its note, the day's steps hour by hour in the dark, then
- * the number at the foot in the light with how far toward the goal and, once there is one, against your [usual] by now
+ * Steps as the Activity tab's hero glow (spec 2.6, 5.3), lit all over like Recovery's and Sleep's, dark behind the number. It was a level
+ * glow, lime rising to the share of the goal under a black top, which read as two cards in one beside the other heroes
+ * (user, 2026-11-06); the share is in the words under the number. The title with the goal as its note, the day's steps
+ * hour by hour, then the number at the foot with how far toward the goal and, once there is one, against your [usual] by now
  * (compare by pace). Tapping an hour puts its steps in the number; tapping it again, or another card, puts the day
  * back. Opens the Steps detail.
  */
@@ -285,12 +285,11 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, history: ActivityH
     val goal = LocalGoals.current.steps
     // The goal tag after the number once met, climbing the ladder (spec 2.5, Tags), none while the history loads.
     val goalTag = history.stepsFacts(state.date, value = state.steps, goal = goal)?.let { goalTag(GoalMetric.Steps, it) }
-    val share = if (goal > 0) state.steps / goal.toFloat() else 0f
     val isToday = state.date == LocalDate.now()
     val now = java.time.LocalTime.now()
     val pace = ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
     var hour by remember(state.date, state.hourlySteps) { mutableStateOf<Int?>(null) }
-    GlowCard(GlowStyle.level(MetricColors.steps, share), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
+    GlowCard(limeHero(MetricColors.steps), Modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
         Column {
             GlowHeader(
                 stringResource(R.string.glow_activity_steps), trailing = stringResource(R.string.glow_activity_goal, Units.count(goal)),
@@ -299,8 +298,8 @@ private fun StepsGlow(state: DayUiState, usual: List<Float>?, history: ActivityH
             Spacer(Modifier.height(GlowLayout.TitleGap))
             HourPills(state.hourlySteps, hour) { hour = it }
             Spacer(Modifier.height(16.dp))
-            // A picked hour takes the number's place; one dotted number either way (spec 2.3). A level glow isn't the
-            // screen's hero, so its number is the second glow's size, as on the Charge battery.
+            // A picked hour takes the number's place; one dotted number either way (spec 2.3). Its number stays the
+            // second glow's size, so the hour pills above it keep their room.
             val h = hour
             val picked = h?.let { state.hourlySteps.getOrNull(it) }
             // The tag is the day's, so a picked hour leaves it out.
