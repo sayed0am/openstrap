@@ -40,6 +40,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.R
 import org.openstrap.app.data.Activity
+import org.openstrap.app.ui.glow.pictures.Blocks
+import org.openstrap.app.ui.glow.pictures.CountdownRing
+import org.openstrap.app.ui.glow.pictures.LevelFill
+import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.RecoveryResult
@@ -269,6 +273,13 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
     ) {
         if (a != null && range == Range.Week) {
             val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
+            // The card's picture: the week's minutes as blocks toward the 150 to aim for. It's the week's number the
+            // card shows, so the blocks belong to Week, over the days that make them.
+            item {
+                DetailPicture(height = 28.dp) { m ->
+                    Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET)
+                }
+            }
             item {
                 GlowBars(
                     values, height = 200.dp, labels = week.map { DayWords.weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
@@ -342,6 +353,8 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
     ) {
         if (r != null && range == Range.Day) {
+            // The Load card's picture: today's Load filling over your usual band, as on Today and Activity.
+            item { DetailPicture(height = 40.dp) { m -> LevelFill(r.load, band, color, PictureSize.Wide, m) } }
             item {
                 Column(Modifier.padding(top = 8.dp)) {
                     DetailFigures(
@@ -519,6 +532,10 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
         contentPadding = ctx.contentPadding, headline = headline, strip = DetailCopy.strip(ctx.state.date, ctx.today, withData), onDay = ctx.onSelectDay,
         ranges = listOf(Range.Day), range = Range.Day, onRange = {},
     ) {
+        // The card's picture: the ring filling toward Ready, full once you're clear.
+        if (last != null && left != null) item {
+            DetailPicture(height = 56.dp) { m -> CountdownRing(recoverShare(last.recoveryMinutes, left), color, PictureSize.Wide, m) }
+        }
         // Recovered says which workout under the word already.
         if (source != null && shown?.first != null && ended != null) item { DetailSentence(ActivityCopy.recover(source.sportName, ended)) }
         if (rated.isNotEmpty()) item {

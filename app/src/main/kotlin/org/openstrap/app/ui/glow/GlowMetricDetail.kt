@@ -78,6 +78,8 @@ import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.pictures.DayStrip
+import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.ui.theme.ControlSurface
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
@@ -486,6 +488,10 @@ fun GlowMetricDetailScreen(
             else DetailCopy.span(Range.Week, DetailCopy.levels(values, nightNormal), nightly = true, normalKnown = nightNormal != null, days = nightDays)
             if (sentence != null) item { DetailSentence(sentence) }
         } else if (range == Range.Day) {
+            // The Stress card's picture: the day as one strip, calm to high, over the line of the same hours.
+            if (metric == Metric.Stress && state.stressStrip.any { it != null }) item {
+                DetailPicture(height = 28.dp) { m -> DayStrip(state.stressStrip, color, PictureSize.Wide, m) }
+            }
             item { DayChart(metric, state, color, value != null, normalOf = { m -> rememberNormal(m, end, history) }) { scrub = it } }
             val sentence = when {
                 value == null -> null
@@ -757,8 +763,9 @@ internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistor
     val v = if (night) SleepCopy.nightValue(state, m) else dayValue(m, state)
     // The heart rate moves all day, so it has no word against a normal.
     val status = if (m == Metric.HeartRate) null else History.status(v, normal)
+    // A percent stays on its number, as on Recovery ("99%"): the line under it is the word, not the unit.
     ListRow(
-        m.title, colorOf(m), v?.let { m.format(it) },
+        m.title, colorOf(m), v?.let { if (m == Metric.Spo2) "${m.format(it)}%" else m.format(it) },
         when {
             v == null -> NO_VALUE
             // A night signal whose normal is still forming says so, with the count, as on every tab.

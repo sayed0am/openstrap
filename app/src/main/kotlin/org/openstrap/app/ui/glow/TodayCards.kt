@@ -674,15 +674,23 @@ internal fun LoadCard(
 internal fun RecoverCard(
     workout: org.openstrap.app.data.WorkoutAnalysis?, now: Long, zone: ZoneId, size: PictureSize, onClick: () -> Unit, modifier: Modifier = Modifier,
 ) {
-    val total = (workout?.recoveryMinutes ?: 0) * 60L
     val left = workout?.let { TodayCopy.recoverLeft(it.end, it.recoveryMinutes ?: 0, now) }
     val text = left?.let { TodayCopy.recoverShort(it, now, zone) }
-    val share = if (left == null || total <= 0) 1f else 1f - left.toFloat() / total
+    val share = recoverShare(workout?.recoveryMinutes, left)
     TodayPictureCard(
         MetricColors.load, stringResource(R.string.glow_today_to_recover), size, text?.first, stringResource(R.string.glow_today_hours_unit), null,
         text?.second ?: stringResource(R.string.glow_today_recover_no_estimate), modifier, onClick = onClick, dash = false,
         picture = if (left == null) null else { m -> CountdownRing(share, MetricColors.load, size, m) },
     )
+}
+
+/**
+ * How far Time to recover's ring has filled toward Ready: the share of the workout's [recoveryMinutes] gone, with
+ * [left] seconds still to go. Full once you're clear, or with no estimate to count down.
+ */
+internal fun recoverShare(recoveryMinutes: Int?, left: Long?): Float {
+    val total = (recoveryMinutes ?: 0) * 60L
+    return if (left == null || total <= 0) 1f else 1f - left.toFloat() / total
 }
 
 /** In place of a Recovery that failed: yesterday's score dimmed, the line, and Try again. */

@@ -43,6 +43,8 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 import java.time.LocalTime
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.WeekOfDots
 
 /*
  * Recovery's and Charge's details (spec 6.1) in the same template as a metric's, and the way to the Sleep tab's
@@ -148,6 +150,11 @@ private fun RecoveryDetail(
         },
     ) {
         if (range == Range.Day) {
+            // The Recovery card's picture: the week to this morning as dots through the band of your usual.
+            val dots = week.map { it.second?.toFloat() }
+            if (dots.any { it != null }) item {
+                DetailPicture { m -> WeekOfDots(dots, r?.readinessUsual?.let { it.low..it.high }, color, PictureSize.Wide, m) }
+            }
             item {
                 Column {
                     DetailSentence(

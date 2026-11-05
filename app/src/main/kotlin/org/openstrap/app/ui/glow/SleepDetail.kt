@@ -78,6 +78,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import org.openstrap.app.ui.glow.draw.stageColor
+import org.openstrap.app.ui.glow.pictures.Nap
+import org.openstrap.app.ui.glow.pictures.NapDay
+import org.openstrap.app.ui.glow.pictures.PictureSize
 
 /*
  * The Sleep tab's details (spec 5.2 and 6.1) in the metric template: the Sleep score with the night it came from,
@@ -575,6 +578,18 @@ internal fun NapsDetail(
                 DetailEmpty(stringResource(if (isToday) R.string.glow_sleep_no_naps_today else R.string.glow_sleep_no_naps_that_day))
             }
             else {
+                // The Naps card's picture: the day as a hairline with each nap as its stage strip at its time.
+                item {
+                    val span = org.openstrap.app.ui.dashboard.napDaySpan(state.date, naps, java.time.ZoneId.systemDefault())
+                    val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
+                    Column {
+                        DetailPicture(height = 28.dp) { m -> NapDay(pictured, span.first, span.last, color, PictureSize.Wide, m) }
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Caption(clock(span.first))
+                            Caption(clock(span.last))
+                        }
+                    }
+                }
                 item { DetailSentence(SleepCopy.naps(naps.size, total)) }
                 naps.forEachIndexed { i, nap ->
                     item(key = nap.start) {
