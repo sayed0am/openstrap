@@ -277,7 +277,18 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
             // card shows, so the blocks belong to Week, over the days that make them.
             item {
                 DetailPicture(height = 28.dp) { m ->
-                    Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET)
+                    Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET, perBlock = ACTIVE_BLOCK_MINUTES)
+                }
+                // What the blocks count, which the card leaves to its number.
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    Text(
+                        pluralStringResource(R.plurals.glow_activity_blocks_of, Activity.MVPA_WEEKLY_TARGET, a.weekEquivalent, Activity.MVPA_WEEKLY_TARGET),
+                        Modifier.weight(1f), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                    )
+                    Text(
+                        pluralStringResource(R.plurals.glow_activity_block_is, ACTIVE_BLOCK_MINUTES, ACTIVE_BLOCK_MINUTES),
+                        color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption,
+                    )
                 }
             }
             item {
@@ -533,8 +544,17 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
         ranges = listOf(Range.Day), range = Range.Day, onRange = {},
     ) {
         // The card's picture: the ring filling toward Ready, full once you're clear.
+        // Centred and large enough to carry how far back you are in it, rather than a Wide's small ring at the side.
         if (last != null && left != null) item {
-            DetailPicture(height = 56.dp) { m -> CountdownRing(recoverShare(last.recoveryMinutes, left), color, PictureSize.Wide, m) }
+            val share = recoverShare(last.recoveryMinutes, left)
+            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                CountdownRing(share, color, PictureSize.Small, Modifier.size(RECOVER_RING))
+                Text(
+                    if (share >= 1f) stringResource(R.string.glow_activity_recover_ready)
+                    else stringResource(R.string.glow_activity_recover_back, (share * 100).toInt().coerceIn(0, 99)),
+                    color = Color.White, style = GlowType.body,
+                )
+            }
         }
         // Recovered says which workout under the word already.
         if (source != null && shown?.first != null && ended != null) item { DetailSentence(ActivityCopy.recover(source.sportName, ended)) }
@@ -1008,3 +1028,9 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
     }
     if (info) InfoSheet(InfoCopy.WEEK, MetricColors.steps, null, null, onDismiss = { info = false })
 }
+
+/** Minutes a block of Active minutes' picture stands for, on its card and its page. */
+internal const val ACTIVE_BLOCK_MINUTES = 5
+
+/** Time to recover's ring on its page. */
+private val RECOVER_RING = 132.dp
