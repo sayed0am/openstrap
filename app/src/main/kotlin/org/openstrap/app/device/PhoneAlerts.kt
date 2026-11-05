@@ -8,10 +8,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.AudioManager
+import android.os.Build
 import android.os.SystemClock
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
+import android.telephony.PhoneStateListener
 import android.telephony.TelephonyCallback
 import android.telephony.TelephonyManager
 import java.time.LocalTime
@@ -65,8 +67,9 @@ class PhoneAlerts(
     val callPermission = MutableStateFlow(hasCallPermission())
     val notificationAccess = MutableStateFlow(hasNotificationAccess())
 
-    private var callListener: TelephonyCallback? = null
-    private var modeListener: AudioManager.OnModeChangedListener? = null
+    // A TelephonyCallback from Android 12, a PhoneStateListener before it. The mode listener is Android 12+ only.
+    private var callListener: Any? = null
+    private var modeListener: Any? = null
     private var ringing: Job? = null
     private var lastBuzz = 0L
     /** When a call notification last came in, from any app; Android often posts it before the ringing state. */
@@ -126,19 +129,39 @@ class PhoneAlerts(
     private fun updateCallListener() {
         val want = callsOn && hasCallPermission()
         if (want == (callListener != null)) return
-        // Callbacks are registered and removed on the main thread, so they never race each other.
+        // Callbacks are registered and removed on the main thread, which PhoneStateListener needs (it binds a Looper),
+        // so they never race each other.
         ContextCompat.getMainExecutor(context).execute {
             if (want && callListener == null) {
                 log("call listener on")
-                callListener = object : TelephonyCallback(), TelephonyCallback.CallStateListener {
-                    override fun onCallStateChanged(state: Int) = onCallState(state)
-                }.also { telephony.registerTelephonyCallback(context.mainExecutor, it) }
-                modeListener = AudioManager.OnModeChangedListener { onAudioMode(it) }
-                    .also { audio.addOnModeChangedListener(context.mainExecutor, it) }
+                callListener = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    object : TelephonyCallback(), TelephonyCallback.CallStateListener {
+                        override fun onCallStateChanged(state: Int) = onCallState(state)
+                    }.also { telephony.registerTelephonyCallback(context.mainExecutor, it) }
+                } else {
+                    @Suppress("DEPRECATION")
+                    object : PhoneStateListener() {
+                        @Deprecated("Deprecated in Java")
+                        override fun onCallStateChanged(state: Int, phoneNumber: String?) = onCallState(state)
+                    }.also { @Suppress("DEPRECATION") telephony.listen(it, PhoneStateListener.LISTEN_CALL_STATE) }
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    modeListener = AudioManager.OnModeChangedListener { onAudioMode(it) }
+                        .also { audio.addOnModeChangedListener(context.mainExecutor, it) }
+                }
             } else if (!want) {
-                callListener?.let(telephony::unregisterTelephonyCallback)
+                val l = callListener
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && l is TelephonyCallback) {
+                    telephony.unregisterTelephonyCallback(l)
+                } else {
+                    @Suppress("DEPRECATION")
+                    if (l is PhoneStateListener) telephony.listen(l, PhoneStateListener.LISTEN_NONE)
+                }
                 callListener = null
-                modeListener?.let(audio::removeOnModeChangedListener)
+                val m = modeListener
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && m is AudioManager.OnModeChangedListener) {
+                    audio.removeOnModeChangedListener(m)
+                }
                 modeListener = null
                 endAllRinging()
             }
@@ -272,10 +295,10 @@ class PhoneAlerts(
         reconnectStrap()
         val now = SystemClock.elapsedRealtime()
         val n = sbn.notification
-        // CallStyle sets its call type extra on every version the app runs on. The key and values only became public
-        // in 14, and are compiled in, so reading them on 12 and 13 works.
+        // CallStyle sets its call type extra from Android 12. The key and values only became public in 14, and are
+        // compiled in, so reading them from 12 works.
         @SuppressLint("InlinedApi")
-        val callType = n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0)
+        val callType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) n.extras.getInt(Notification.EXTRA_CALL_TYPE, 0) else 0
         // A call notification, from the dialer, Samsung's call screen or a calling app, never plays a pattern: it
         // usually comes just before the ringing state, and a motor pattern then cuts off the call's buzz (seen 2026-10-20).
         if (n.category == Notification.CATEGORY_CALL || callType != 0) {
@@ -302,11 +325,11 @@ class PhoneAlerts(
     fun onNotificationRemoved(key: String) = ringEnded(key)
 
     /**
-     * CallStyle says "incoming" outright. An app without it is taken as ringing while its call
+     * Android 12's CallStyle says "incoming" outright. An app without it is taken as ringing while its call
      * notification has a full-screen intent, the incoming call screen; once answered or ended it is removed or posted
      * again without one.
      */
-    @SuppressLint("InlinedApi") // The call type values, public from 14 but read on 12 and 13 as above.
+    @SuppressLint("InlinedApi") // The call type values, public from 14 but read from 12 as above.
     private fun isIncomingCall(n: Notification, callType: Int): Boolean = when {
         callType != 0 -> callType == Notification.CallStyle.CALL_TYPE_INCOMING
         else -> n.category == Notification.CATEGORY_CALL && n.fullScreenIntent != null
