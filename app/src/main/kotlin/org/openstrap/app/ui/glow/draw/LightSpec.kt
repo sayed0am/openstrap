@@ -111,7 +111,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
     val rims = mutableListOf<InsetShadow>()
     if (light.rim > 0f) {
         light.level?.let { level ->
-            val dark = levelEdge(level) * (if (light.across) w else h) - levelStep(if (light.across) w else h, density)
+            val dark = levelFade(level, if (light.across) w else h, density).first
             rimClip = when {
                 light.across -> Rect(0f, 0f, w - dark, h)
                 light.fromAbove -> Rect(0f, 0f, w, h - dark)
@@ -140,12 +140,11 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
     // Just enough room round the card for the core to drift and swell into view.
     val margin = maxOf(w, h) * 0.08f
     val core = light.level?.let { level ->
-        // A level card: lit at full up to the level, then the core colour fading in over LEVEL_STEP past it (a
-        // smoothstep), like light rising in a glass. Only the core's alpha changes, so nothing is ever darker than the
-        // unlit part and there's never a hard edge.
+        // A level card: the body holds up to near the value, then the core colour fades in across the value (a
+        // smoothstep), like light rising in a glass and melting into the dark (design-system.html, Levels). Only the
+        // core's alpha changes, so nothing is ever darker than the unlit part and there's never a hard edge.
         // Measured from the unlit side: the top, the bottom when lit from above, the right when lit from the left.
-        val edge = levelEdge(level) * (if (light.across) w else h)
-        val step = levelStep(if (light.across) w else h, density)
+        val (dark, clear) = levelFade(level, if (light.across) w else h, density)
         val (y0, y1) = when {
             light.across -> w + margin to -margin
             light.fromAbove -> h + margin to -margin
@@ -161,7 +160,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
             val t = i / steps.toFloat()
             val fade = t * t * (3f - 2f * t)
             colors += p.core.copy(alpha = 1f - fade)
-            stops += at(edge - step + step * t)
+            stops += at(dark + (clear - dark) * t)
         }
         colors += Color.Transparent; stops += 1f
         GlowCore.Level(
@@ -218,13 +217,15 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
 }
 
 /**
- * How far a level card's light fades into the dark, px, along a card [length] px long: [LEVEL_STEP], or on a tall card
- * (half a folded phone) a share of it, so the fade stays soft instead of reading as a line.
+ * Where a level card's light fades into the dark, px from the unlit side of a card [length] px long: fully dark
+ * [LEVEL_DARK_PAST] of the card past the value, clear where the fill reaches the body ([LEVEL_FILL_REACH] of the
+ * level). Never shorter than [LEVEL_STEP], so a small card's fade stays soft too.
  */
-internal fun levelStep(length: Float, density: Float): Float = maxOf(LEVEL_STEP.value * density, length * LEVEL_STEP_SHARE)
-
-/** The least share of a level card's length its light fades over. */
-private const val LEVEL_STEP_SHARE = 0.08f
+internal fun levelFade(level: Float, length: Float, density: Float): Pair<Float, Float> {
+    val clear = (1f - LEVEL_FILL_REACH * level) * length
+    val dark = minOf((levelEdge(level) - LEVEL_DARK_PAST) * length, clear - LEVEL_STEP.value * density)
+    return dark to clear
+}
 
 /**
  * The card's base fill: the light colour at the lit edge melting into the mid (body) colour along the light's angle,

@@ -45,13 +45,15 @@ class LightSpecTest {
         assertEquals(0.7f, p.rims[0].color.alpha, 1f / 255)
     }
 
-    @Test fun `a level's rim and core stop at the level`() {
+    @Test fun `a level's rim and core fade out across the level`() {
         val style = GlowStyle.level(MetricColors.steps, 0.3f)
         val p = glowPaint(style, w, h, density)
         val clip = p.rimClip
         assertNotNull(clip)
         clip!!
-        assertEquals(levelEdge(0.3f) * h - 22f * density, clip.top, 1e-3f)
+        // The rim stops where the card is fully dark: 11% of the card past the value, or 22 dp before the fade clears.
+        val dark = minOf((levelEdge(0.3f) - 0.11f) * h, (1f - 0.85f * 0.3f) * h - 22f * density)
+        assertEquals(dark, clip.top, 1e-3f)
         assertEquals(h, clip.bottom, 1e-3f)
         val core = p.core as GlowCore.Level
         // Dark from above the card, transparent below it, across the layer's margin.

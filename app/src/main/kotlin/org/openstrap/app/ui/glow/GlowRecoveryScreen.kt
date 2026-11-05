@@ -148,7 +148,7 @@ fun GlowRecoveryScreen(
                     RecoveryCard.Drivers -> DriversList(r?.readiness, onAll = { onOpenScore(Score.Recovery) })
                     // Charge is worked out with Recovery, so a failure there says so here too, not "after your first night".
                     RecoveryCard.Charge -> ChargeTall(
-                        r?.charge, state.dayStart..state.dayEnd, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Energy) },
+                        r?.charge, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Energy) },
                     )
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
@@ -338,33 +338,23 @@ private fun DriverRow(name: String, word: String, fraction: Float, tag: NewsTag?
 /* ---------------------------------------------- Charge ---------------------------------------------- */
 
 /**
- * Charge as a Tall battery (spec 2.3): the light rises to its level from below, the day's Charge curve at the top,
- * and the number now with Charge at waking at the foot.
+ * Charge as a Tall battery (spec 2.3): the light rises to its level from below, with the number now and Charge at
+ * waking at the foot, nothing else in the light (design-system.html, Levels).
  */
 @Composable
 private fun ChargeTall(
-    c: Recovery.ChargeDay?, day: LongRange, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,
+    c: Recovery.ChargeDay?, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,
 ) {
     // Before the first night the number would only be the simulation's starting guess: a dash until then.
     val now = c?.takeIf { it.anchored }?.latest?.let(::chargeShown)
     val atWake = c?.atWake?.toInt()
-    val step = 15 * 60L
-    val values = remember(c?.points, day) { c?.points?.let { bucket(it, day, step) }.orEmpty() }
-    var picked by remember(values) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clock(day.first + i * step) } }
     GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, second = true), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
             GlowHeader(stringResource(R.string.glow_recovery_energy), tag = tag)
-            if (c != null && now != null && c.points.size >= 2) {
-                Spacer(Modifier.height(10.dp))
-                // The Charge curve (chart kit): sleep fills it, the day drains it. Scrubbing moves the number.
-                GlowLineChart(values, height = 64.dp, showAverage = false, yRange = 0f..100f, onScrub = { picked = it })
-            }
             Spacer(Modifier.weight(1f))
             HeroFigure(
-                scrubbed?.first?.toString() ?: now?.toString(),
+                now?.toString(),
                 when {
-                    scrubbed != null -> stringResource(R.string.glow_recovery_charge_at, scrubbed.second)
                     failed -> FAILED_SHORT
                     c == null || !c.anchored -> AFTER_FIRST_NIGHT
                     atWake == null -> stringResource(R.string.glow_recovery_now)

@@ -223,8 +223,11 @@ internal fun angleCore(angle: Float, width: Float, height: Float): CoreBox {
  */
 fun levelEdge(level: Float): Float = 1f - level
 
-/** The soft step from the lit part of a level card into the dark, past the value (spec 2.1, Levels). */
+/** The least soft step from the lit part of a level card into the dark (spec 2.1, Levels). */
 val LEVEL_STEP = 22.dp
+
+/** How far past the value a level card is fully dark, as a share of the card: the fade crosses the value. */
+internal const val LEVEL_DARK_PAST = 0.11f
 
 /** How far up a level card the fill reaches the body colour, as a share of the level: the light holds below it. */
 internal const val LEVEL_FILL_REACH = 0.85f
@@ -303,7 +306,8 @@ internal fun GlowStyle.light(): GlowLight {
         level = level,
         fromAbove = fromAbove,
         across = across,
-        brightness = mood.glow,
+        // A level's light is the value, so a softer mood doesn't dim it: dimmed, its orange goes muddy (user, 2026-11-05).
+        brightness = if (level != null) 1f else mood.glow,
     )
 }
 
@@ -332,7 +336,10 @@ internal class GlowPalette(style: GlowStyle) {
         // Same lightness looks far brighter in yellow-green than in red or blue, so the body and band
         // are darkened until their actual brightness keeps white text readable, whatever the hue.
         // Only a small hue step from the rim, so the card reads as one colour in different light.
-        val body = capped(h + style.bodyHueShift, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
+        // A level card's body is a deep shade of its colour, so the light reads as rising from the bottom edge rather
+        // than as a flat slab of colour (design-system.html, Levels).
+        val bodyL = if (style.lightLevel != null) LEVEL_BODY_LIGHTNESS else style.bodyLightness
+        val body = capped(h + style.bodyHueShift, s * (if (style.lightLevel != null) 0.8f else 0.85f), bodyL, MID_MAX_LUMINANCE)
         val band = capped(h + style.toneShift, s * 0.8f, style.bodyLightness - 0.04f, TONE_MAX_LUMINANCE)
         core = hsl(h + style.coreHueShift, 0.7f, style.coreLightness)
         // A dimmer mood darkens the whole lit area, like turning the light down.
@@ -345,6 +352,8 @@ internal class GlowPalette(style: GlowStyle) {
     companion object {
         /** Relative luminance; white on it has a contrast of at least 1.05 / (0.18 + 0.05) = 4.5:1 (spec 2.1). */
         const val MID_MAX_LUMINANCE = 0.18f
+        /** A level card's body lightness: deep, so only the bottom edge is bright. */
+        const val LEVEL_BODY_LIGHTNESS = 0.16f
         /** The band round the core stays a step darker than the body. */
         const val TONE_MAX_LUMINANCE = 0.14f
     }

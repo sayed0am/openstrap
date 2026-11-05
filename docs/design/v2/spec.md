@@ -67,8 +67,10 @@ as light.
 
 - On a glow card the light rises from the bottom, like a battery, on a Tall, a hero and every other level glow. Only a short wide card with just a number
   and a line (Energy on Today) fills across from the left. The lit edge is the light colour at full, the lit part is
-  the value's share of the card, then a soft 22 dp step into the dark core. At 0 the bottom 12% still glows.
-- A level glow is always this bright, because its light is the value. Beside a hero (Energy on Recovery, Energy as the
+  the value's share of the card. The body above the lit edge is a deep shade of the colour (16% lightness), and the
+  dark core fades in across the value, from 85% of the level to 11% of the card past it (at least 22 dp), like the
+  Levels section of design-system.html. At 0 the bottom 12% still glows.
+- A level glow is always this bright, because its light is the value, in every mood (Evening and Night don't dim it). Beside a hero (Energy on Recovery, Energy as the
   wide card under the hero on Today, in every moment that has it) it still counts as the screen's second glow, so no
   third glow joins it. L3 is for a second glow that isn't a level. Energy is always a level, wherever it shows.
 - When the value changes after a sync, the light moves from the old level to the new over 600 ms with the number (3.5).
@@ -441,7 +443,7 @@ Every chart kind in the app, drawn with the rules above:
 |---|---|---|---|
 | Line with scrub | Picture, detail | Heart rate day, night heart rate and breathing | Hold to scrub |
 | Ghost line of your usual | Picture | Steps, Load and Energy so far today, in details | Read only |
-| Energy curve | Glow | Energy card and detail | Hold to scrub |
+| Energy curve | Glow | Energy detail | Hold to scrub |
 | Hourly pill bars | Glow | Steps card | Tap an hour |
 | Trend dots | Picture, detail, Recovery hero | Recovery over the last 7 days beside the hero score, Habit Age over days | Tap a day |
 | Arc gauge | Detail | Recovery detail header only: a half circle open at the foot, centred, 124 dp radius and a 13 dp stroke with round caps. A track of white at 11% the whole way over, the value from the left end clockwise in a near white tint of the metric's colour (16% of the way from white). The score in dots centred inside, its foot a little above the arc's ends. Fills only to the new value after a sync, never from zero on open | None |
@@ -775,8 +777,8 @@ card of each column under it.
    score (step 6).
 2. List "What drove it": the three contributors that weigh most, as contributor bars (name, bar, word, the off tag
    in place of the word when off usual). "Top 3 of 9" in the title until the Recovery detail exists to open (step 6).
-3. TallPair: Energy as a Tall glow battery (`lightLevel`, the light rising to the value), the Energy curve (hold to
-   scrub, the number follows), the number and "Down 28 since you woke". Beside it, Recharged ("+38", a fill bar from
+3. TallPair: Energy as a Tall glow battery (`lightLevel`, the light rising to the value) with only the number and
+   "92 at waking" in the light, no curve (user, 2026-11-05). Beside it, Recharged ("+38", a fill bar from
    34 to 72, "Overnight, 34 to 72") over Drained ("−28", a split bar of what took it, "Half of it the run"). Both
    plain: unlit, no tag, no caret (2.5).
 4. Short Wide: Skin temperature, the deviation in dots with the dial beside it, centred on your normal. Rimmed at the

@@ -23,7 +23,6 @@
     <!-- Title of the Energy battery card: the Energy score's name. -->
     <string name="glow_recovery_energy">Energy</string>
     <!-- Under the Energy battery's number while its curve is scrubbed: the time picked. -->
-    <string name="glow_recovery_charge_at">At <xliff:g id="time" example="14:30">%1$s</xliff:g></string>
     <!-- Under the Energy battery's number before the day has a start: the value is Energy now. One word. -->
     <string name="glow_recovery_now">Now</string>
     <!-- Under the Energy battery's number: Energy when the day began, estimated because the strap was off overnight. -->
