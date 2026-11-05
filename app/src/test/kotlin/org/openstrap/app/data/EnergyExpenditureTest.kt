@@ -11,6 +11,8 @@ import org.openstrap.app.data.settings.UserProfile
 class EnergyExpenditureTest {
     private val man = UserProfile(sex = UserProfile.Sex.Male, weightKg = 70f, heightCm = 175)
     private val age = 30
+    /** The cadence MET for [man] at [age]: Moore 2021 with BMI 70 / 1.75². */
+    private fun walkMet(cadence: Int) = EnergyExpenditure.cadenceMet(cadence, age, 70f / (1.75f * 1.75f), 175)
     /** 10·70 + 6.25·175 − 5·30 + 5 = 1648.75 kcal/day. */
     private val bmr = 1648.75f
     private val b = bmr / 1440f
@@ -24,13 +26,15 @@ class EnergyExpenditureTest {
     }
 
     @Test fun `cadence mets`() {
-        assertEquals(2f, EnergyExpenditure.cadenceMet(60, 30), 1e-5f)
-        assertEquals(3f, EnergyExpenditure.cadenceMet(100, 30), 1e-5f)
-        assertEquals(4.5f, EnergyExpenditure.cadenceMet(115, 30), 1e-5f)
-        assertEquals(6f, EnergyExpenditure.cadenceMet(130, 30), 1e-5f)
-        assertEquals(6f, EnergyExpenditure.cadenceMet(140, 30), 1e-5f)
-        assertEquals(4f, EnergyExpenditure.cadenceMet(110, 70), 1e-5f)
-        assertEquals(5f, EnergyExpenditure.cadenceMet(120, 70), 1e-5f)
+        // Moore 2021's worked rows: 30 years, BMI 23, 175 cm, then 70 years, BMI 28, 165 cm.
+        assertEquals(1.60f, EnergyExpenditure.cadenceMet(60, 30, 23f, 175), 0.01f)
+        assertEquals(3.33f, EnergyExpenditure.cadenceMet(100, 30, 23f, 175), 0.01f)
+        assertEquals(5.37f, EnergyExpenditure.cadenceMet(130, 30, 23f, 175), 0.01f)
+        assertEquals(3.41f, EnergyExpenditure.cadenceMet(110, 70, 28f, 165), 0.01f)
+        assertEquals(3.90f, EnergyExpenditure.cadenceMet(120, 70, 28f, 165), 0.01f)
+        // Ages outside 21-84 are held at the nearest end.
+        assertEquals(EnergyExpenditure.cadenceMet(100, 21, 23f, 175), EnergyExpenditure.cadenceMet(100, 16, 23f, 175), 1e-6f)
+        assertEquals(EnergyExpenditure.cadenceMet(100, 84, 23f, 175), EnergyExpenditure.cadenceMet(100, 90, 23f, 175), 1e-6f)
         // Running: 160 spm × 0.45·1.75 m = 126 m/min → VO2 28.7 → 8.2 METs.
         assertEquals((3.5f + 0.2f * 160 * 0.45f * 1.75f) / 3.5f, EnergyExpenditure.runningMet(160, 175), 1e-3f)
     }
@@ -40,7 +44,7 @@ class EnergyExpenditureTest {
         assertEquals(0.95f * b, one(Minute(0, null, null, asleep = true)), 1e-4f)
         assertEquals(1.15f * b, one(Minute(0, 0, 0.1f, asleep = false)), 1e-4f)
         assertEquals(1.3f * b, one(Minute(0, 20, null, asleep = false)), 1e-4f)
-        assertEquals(b + EnergyExpenditure.net(3f, 70f), one(Minute(0, 100, null, asleep = false)), 1e-4f)
+        assertEquals(b + EnergyExpenditure.net(walkMet(100), 70f), one(Minute(0, 100, null, asleep = false)), 1e-4f)
         assertEquals(9f, one(Minute(0, 0, null, asleep = false, workoutKcal = 9f)), 1e-4f)
         // A still minute next to a stepping one is light activity.
         val pair = EnergyExpenditure.day(listOf(Minute(0, 0, null, false), Minute(60, 30, null, false)), man, age)!!
@@ -48,15 +52,15 @@ class EnergyExpenditureTest {
         assertNull(EnergyExpenditure.day(listOf(Minute(0, 0, null, false)), man.copy(weightKg = null), age))
     }
 
-    @Test fun `hr branch only for ten still minutes at 40 percent and up`() {
+    @Test fun `hr branch only for five still minutes at 40 percent and up`() {
         val cycling = (0 until 12).map { Minute(it * 60L, 0, 0.5f, false) }
         val d = EnergyExpenditure.day(cycling, man, age, vo2max = 42f)!!
         val met = 1f + 0.5f * (42f / 3.5f - 1f) // 6.5, capped at 6
         assertEquals(12, d.hrAssistedMinutes)
         assertEquals(12 * (b + EnergyExpenditure.net(minOf(6f, met), 70f)), d.totalKcal, 1e-3f)
-        val short = EnergyExpenditure.day(cycling.take(9), man, age, vo2max = 42f)!!
+        val short = EnergyExpenditure.day(cycling.take(4), man, age, vo2max = 42f)!!
         assertEquals(0, short.hrAssistedMinutes)
-        assertEquals(9 * 1.15f * b, short.totalKcal, 1e-3f)
+        assertEquals(4 * 1.15f * b, short.totalKcal, 1e-3f)
     }
 
     @Test fun `partial days and pal`() {
@@ -81,7 +85,7 @@ class EnergyExpenditureTest {
             ),
             man, age,
         )!!
-        val walk = EnergyExpenditure.net(3f, 70f) // 100 spm is 3 METs: 2·3.5·70/200 = 2.45 kcal above rest
+        val walk = EnergyExpenditure.net(walkMet(100), 70f) // 100 spm is about 3.3 METs: about 2.86 kcal above rest
         // Sleep (0.95 b) is held at zero rather than taking anything off.
         assertEquals(0.95f * b + 1.15f * b + (b + walk) + 9f, d.totalKcal, 1e-4f)
         assertEquals(0.15f * b + walk + (9f - b), d.activeKcal, 1e-4f)
@@ -121,9 +125,9 @@ class EnergyExpenditureTest {
     }
 
     @Test fun `a walk at a low heart rate keeps its cadence MET`() {
-        // 120 spm is 5 METs; x = 0.1 at the default VO2max 35 (10 METs) is 1.9 METs.
+        // 120 spm is about 4.6 METs; x = 0.1 at the default VO2max 35 (10 METs) is 1.9 METs.
         val walk = EnergyExpenditure.workoutMinutes(listOf(0L), (0L until 60L).map { it to 0.1f }, mapOf(0L to 120), man, age)!!.single()
-        assertEquals(b + EnergyExpenditure.net(5f, 70f), walk.kcal, 1e-4f)
+        assertEquals(b + EnergyExpenditure.net(walkMet(120), 70f), walk.kcal, 1e-4f)
         assertFalse(walk.hrLed)
         // A minute without heart rate or steps is sitting, still above rest.
         val still = EnergyExpenditure.workoutMinutes(listOf(0L), emptyList(), emptyMap(), man, age)!!.single()

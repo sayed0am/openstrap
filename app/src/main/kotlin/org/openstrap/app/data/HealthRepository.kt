@@ -231,11 +231,12 @@ class HealthRepository(
     fun stress(w: DayWindow): Flow<List<StressSample>> =
         combine(dao.stress(w.from, w.to), stressExcluded(w.from, w.to)) { s, excluded -> s.filter { Recovery.stressCounts(it.timestamp, excluded) } }
 
-    /** The stress exclusion for workouts touching [from]..[to]; one that ended up to 20 minutes before [from] reaches in. */
+    /** The stress exclusion for workouts touching [from]..[to]; a hard one that ended up to 90 minutes before [from] reaches in. */
     private fun stressExcluded(from: Long, to: Long): Flow<List<LongRange>> {
-        val since = from - Recovery.STRESS_AFTER_WORKOUT_SECONDS
+        val since = from - Recovery.STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS
         return combine(dao.appWorkoutsIn(since, to), dao.workoutsIn(since, to)) { phone, strap ->
-            Recovery.stressExcluded(Recovery.workoutRanges(phone, strap, System.currentTimeMillis() / 1000))
+            val ranges = Recovery.workoutRanges(phone, strap, System.currentTimeMillis() / 1000)
+            Recovery.stressExcluded(ranges, Recovery.stressTails(phone, strap))
         }
     }
     fun hrv(w: DayWindow): Flow<List<HrvSample>> = dao.hrv(w.from, w.to)

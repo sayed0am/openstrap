@@ -352,6 +352,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                         ),
                     )
                     DetailSentence(ActivityCopy.loadDay(r.strainPercentile, ctx.isToday))
+                    r.longRun?.let { DetailSentence(ActivityCopy.longRun(it, ctx.isToday)) }
                 }
             }
         } else if (r != null) {

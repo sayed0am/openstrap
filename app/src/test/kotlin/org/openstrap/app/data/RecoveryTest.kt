@@ -253,13 +253,6 @@ class RecoveryTest {
     }
 
     @Test
-    fun ewmaOfConstantLoadIsBalanced() {
-        val (a, c) = Recovery.ewmaLoads(List(28) { 60f })
-        assertEquals(60f, a, 0.01f)
-        assertEquals(60f, c, 0.01f)
-    }
-
-    @Test
     fun loadSpikeIsPenalised() {
         val loads = List(27) { 40f } + 200f
         val r = Recovery.readiness(night(31), history(), loads)
@@ -275,7 +268,9 @@ class RecoveryTest {
         assertEquals(0.52f, w.getValue(Factor.HrvBalance) + w.getValue(Factor.RestingHr), 1e-5f)
         assertEquals(0.28f, w.getValue(Factor.Sleep) + w.getValue(Factor.SleepBalance), 1e-5f)
         assertEquals(0.13f, w.getValue(Factor.Temperature) + w.getValue(Factor.Breathing) + w.getValue(Factor.BloodOxygen), 1e-5f)
-        assertEquals(1f, w.values.sum(), 1e-5f)
+        // The recovery index is shown, never scored.
+        assertEquals(0f, w.getValue(Factor.RecoveryIndex), 0f)
+        assertEquals(0.97f, w.values.sum(), 1e-5f)
     }
 
     // --- Charge ------------------------------------------------------------------------------------
@@ -744,6 +739,10 @@ class RecoveryTest {
         assertTrue(low.alertSignals.isEmpty())
         assertFalse(low.strainAlert)
         assertTrue(low.score!! < normal.score!!)
+        // A collapsed SpO2 reading (score 0) doesn't trigger the red-flag cap: wrist SpO2 is too noisy for it.
+        val collapsed = Recovery.readiness(night(31).copy(spo2 = 88f), past)
+        assertEquals(0, collapsed.contributors.first { it.factor == Factor.BloodOxygen }.score)
+        assertFalse(collapsed.capped)
     }
 
     @Test

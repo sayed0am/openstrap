@@ -14,8 +14,11 @@ import kotlin.math.sqrt
  * HR-only model holds up for short efforts, where heart rate lags the work by tens of seconds.
  */
 object WorkoutEffect {
-    /** Raised when [epoc] or recovery changes, so saved workouts are worked out again once (StrapManager.updateEffectModel). */
-    const val MODEL = 4
+    /**
+     * Raised when [epoc], recovery or [vo2max] changes, so saved workouts are worked out again once
+     * (SyncCoordinator.updateEffectModel). 5: VO2max over %VO2R ([Recovery.vo2Reserve]).
+     */
+    const val MODEL = 5
 
     /** Zepp works in 5-sample epochs of 1 Hz data, each read as its median HR (native 04 §3.1). */
     const val EPOCH_S = 5L
@@ -168,7 +171,7 @@ object WorkoutEffect {
     /** Steady: the four 30-second speeds within this SD (Zepp's 0.3 m/s, native 04 §5.2) and HR within this SD. */
     const val MAX_SPEED_SD = 0.3
     const val MAX_HR_SD = 4.0
-    /** Swain's %HRR ≈ %VO2R holds over roughly 40 to 90 %. Below half the reserve the extrapolation magnifies noise. */
+    /** The heart-rate reserve a window must be run at. Below half the reserve the extrapolation magnifies noise. */
     const val MIN_HRR = 0.5f
     const val MAX_HRR = 0.95f
     /** A window climbing or falling more than this is skipped: GPS height can't grade-adjust (Zepp's dead band, native 04 §5.4). */
@@ -187,8 +190,8 @@ object WorkoutEffect {
 
     /**
      * VO2max (ml/kg/min) from an outdoor run's steady stretches: the ACSM running equation on the level, VO2 = 3.5 +
-     * 0.2·v (v in m/min; ACSM's Guidelines, 11th ed.), at a heart-rate reserve i gives VO2max = 3.5 + (VO2 − 3.5)/i
-     * (%HRR ≈ %VO2R, Swain & Leutholtz 1997). Gated as Zepp gates its own (native 04 §5.2): outdoor runs only, ten
+     * 0.2·v (v in m/min; ACSM's Guidelines, 11th ed.), at an oxygen-uptake reserve r gives VO2max = 3.5 + (VO2 − 3.5)/r,
+     * with r from the heart-rate reserve by [Recovery.vo2Reserve]. Gated as Zepp gates its own (native 04 §5.2): outdoor runs only, ten
      * minutes of qualifying epochs, steady windows only, after a warm-up; then the median of the windows. Null with
      * too little or too noisy data. Speed is from [Route.track], which already folds in the Doppler speed.
      */
@@ -253,7 +256,7 @@ object WorkoutEffect {
         val end = heights.filter { it.t in s + WINDOW_S - 10 until s + WINDOW_S }.mapNotNull { it.altitude }
         if (start.isNotEmpty() && end.isNotEmpty() && kotlin.math.abs(end.average() - start.average()) > MAX_GRADE * v * WINDOW_S) return Double.NaN
         val vo2 = 3.5 + 0.2 * v * 60
-        return 3.5 + (vo2 - 3.5) / i
+        return 3.5 + (vo2 - 3.5) / Recovery.vo2Reserve(i.toDouble())
     }
 
     /** Metres along [track] up to each point, adding nothing across a pause. */
