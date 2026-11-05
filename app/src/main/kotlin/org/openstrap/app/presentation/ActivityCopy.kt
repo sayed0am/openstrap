@@ -177,6 +177,11 @@ internal object ActivityCopy {
         )
     }
 
+    /** A run much longer than the month's longest ([org.openstrap.app.data.Recovery.longRun]), in a sentence. */
+    fun longRun(run: org.openstrap.app.data.LongRun, today: Boolean, strings: Strings = Strings.app): String = strings.format(
+        if (today) R.string.core_activity_load_long_run_today else R.string.core_activity_load_long_run_day, run.percentLonger,
+    )
+
     /**
      * The week's balance in a sentence, from its word ([TabCopy.loadBalance]). The word is matched against the same
      * strings, not against English, so it matches in every language.

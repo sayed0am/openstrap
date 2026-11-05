@@ -114,9 +114,9 @@ class WorkoutEffectTest {
         }
     }
 
-    /** ACSM on the level at 3 m/s: VO2 = 3.5 + 0.2·180 = 39.5; at this reserve VO2max = 3.5 + 36 / HRR. */
+    /** ACSM on the level at 3 m/s: VO2 = 3.5 + 0.2·180 = 39.5; VO2max = 3.5 + 36 / %VO2R, %VO2R = (HRR − 0.0886) / 0.972. */
     private val steadyHrr = 0.87
-    private val expectedVo2 = 3.5 + 36 / ((bpm(steadyHrr) - rest) / (max - rest).toDouble())
+    private val expectedVo2 = 3.5 + 36 / (((bpm(steadyHrr) - rest) / (max - rest).toDouble() - 0.0886) / 0.972)
 
     @Test
     fun steadyRunGivesTheAcsmValue() {

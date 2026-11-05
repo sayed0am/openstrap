@@ -465,6 +465,17 @@ object Recovery {
 
     const val HARD_DAY_RATIO = 1.5f
 
+    /**
+     * A run more than this many times the longest in the [LONG_RUN_DAYS] before it is named on the Load screen. In
+     * 5,205 runners a single run more than 10 % longer than the longest of the last 30 days raised the injury hazard
+     * 1.5 to 2.3 times, while the acute:chronic ratio didn't predict it (Frandsen 2025). The study counted distance;
+     * we count active time, which every run has. At least [LONG_RUN_MIN_EARLIER] earlier runs, so a first week of
+     * use doesn't flag every run.
+     */
+    const val LONG_RUN_RATIO = 1.1f
+    const val LONG_RUN_DAYS = 30
+    const val LONG_RUN_MIN_EARLIER = 2
+
     /** Fitness (CTL), fatigue (ATL) and form for one day of [fitnessFatigue]. */
     data class LoadTrend(val ctl: Float, val atl: Float, val form: Float)
 

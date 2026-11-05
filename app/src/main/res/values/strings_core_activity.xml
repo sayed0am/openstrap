@@ -79,6 +79,9 @@
 
     <!-- Load detail, the label of the band on the chart that marks your usual daily Load. -->
     <string name="core_activity_usual_band">Your usual, <xliff:g id="low" example="30">%1$d</xliff:g> to <xliff:g id="high" example="50">%2$d</xliff:g></string>
+    <!-- Load detail, under the day's sentence: a run more than 10 % longer than the longest in the 30 days before it. -->
+    <string name="core_activity_load_long_run_today">Your run today was <xliff:g id="percent" example="25">%1$d</xliff:g>%% longer than your longest in the month before. Runners who stretch one run by more than 10%% at a time are more likely to pick up an injury, so build up a little at a time.</string>
+    <string name="core_activity_load_long_run_day">Your run that day was <xliff:g id="percent" example="25">%1$d</xliff:g>%% longer than your longest in the month before. Runners who stretch one run by more than 10%% at a time are more likely to pick up an injury, so build up a little at a time.</string>
     <!-- Load detail, the day's sentence before a week of wear. -->
     <string name="core_activity_load_learning">Your usual shows after a week of wear.</string>
     <!-- Load detail, the day's sentence: the share of your days in the last 3 months with this Load or less. -->

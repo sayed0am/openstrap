@@ -71,6 +71,8 @@ data class RecoveryResult(
      * ([SleepHistory.strapDay]), so a night moved to another day keeps it. Null without one.
      */
     val strapScore: Int? = null,
+    /** A run on [date] much longer than any in the month before it ([Recovery.longRun]), for the Load screen. */
+    val longRun: LongRun? = null,
 )
 
 /** Loads what [Recovery] needs from the database and runs it. All work happens off the main thread by the caller. */
@@ -152,6 +154,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             dailyLoads = base.loadDays.map { span.dayOf(it.first) to it.second }
                 .filter { it.first >= date.minusDays(RECENT_LOAD_DAYS.toLong()) },
             strapScore = tonight?.strapDay?.let(reads.strapNights::get)?.score,
+            longRun = Recovery.longRun(Recovery.runs(reads.phoneWorkouts, reads.strapWorkouts), span.day.from, span.day.to),
         )
     }
 
@@ -195,6 +198,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         val heartRate: List<org.openstrap.app.data.db.HeartRateSample>,
         val stress: List<org.openstrap.app.data.db.StressSample>,
         val strapWorkouts: List<org.openstrap.app.data.db.Workout>,
+        val phoneWorkouts: List<org.openstrap.app.data.db.AppWorkout>,
         /** Every workout's own heart rate ([workoutHeartRates]). */
         val workoutHr: List<Pair<LongRange, Map<Long, Int>>>,
         /** Hard workouts' longer stress exclusion ([Recovery.stressTails]). */
@@ -241,6 +245,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             heartRate = dao.heartRateOnce(span.loadFrom, span.readTo),
             stress = dao.stressOnce(minOf(span.simFrom, span.calmFrom), span.readTo),
             strapWorkouts = strapWorkouts,
+            phoneWorkouts = phoneWorkouts,
             workoutHr = workoutHeartRates(span.now, phoneWorkouts, strapWorkouts),
             stressTails = Recovery.stressTails(phoneWorkouts, strapWorkouts),
             sessions = sleepSource.shown(resolved),

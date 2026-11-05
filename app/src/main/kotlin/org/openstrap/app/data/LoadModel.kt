@@ -30,6 +30,40 @@ fun Recovery.workoutRanges(
     now: Long,
 ): List<LongRange> = (phone.flatMap { activeRanges(it, now) } + strap.map { it.start until it.end }).filter { !it.isEmpty() }
 
+/** One finished run (phone or strap, [SportTypes.RUNS]) for [longRun]: when it started and ended, and its active seconds. */
+data class Run(val start: Long, val end: Long, val seconds: Long)
+
+/** A run longer than [Recovery.LONG_RUN_RATIO]× the longest ([longestBefore], seconds) in the 30 days before it. */
+data class LongRun(val start: Long, val seconds: Long, val longestBefore: Long) {
+    val percentLonger: Int get() = Math.round(100f * (seconds - longestBefore) / longestBefore)
+}
+
+/**
+ * Every finished run in [phone] and [strap]: a phone run's active time less its pauses, a strap run's exercise time.
+ * A strap run that overlaps a phone run is the same run, so only the phone's counts.
+ */
+fun Recovery.runs(
+    phone: List<org.openstrap.app.data.db.AppWorkout>,
+    strap: List<org.openstrap.app.data.db.Workout>,
+): List<Run> {
+    val own = phone.filter { it.sportType in SportTypes.RUNS }.mapNotNull { w ->
+        w.end?.let { end -> Run(w.from, end, activeRanges(w, end).sumOf { it.last - it.first + 1 }) }
+    }
+    val strapOnly = strap.filter { w -> w.sportType in SportTypes.RUNS && own.none { it.start < w.end && w.start < it.end } }
+        .map { w -> Run(w.start, w.end, (w.exerciseSeconds?.toLong() ?: (w.end - w.start))) }
+    return (own + strapOnly).filter { it.seconds > 0 }.sortedBy { it.start }
+}
+
+/**
+ * The run started in [from]..[to] that most exceeds [LONG_RUN_RATIO]× the longest of [runs] in the [LONG_RUN_DAYS]
+ * before it, with at least [LONG_RUN_MIN_EARLIER] runs there to compare with; null when none does.
+ */
+fun Recovery.longRun(runs: List<Run>, from: Long, to: Long): LongRun? = runs.filter { it.start in from..to }.mapNotNull { r ->
+    val earlier = runs.filter { it.end <= r.start && it.start >= r.start - LONG_RUN_DAYS * DAY }
+    val longest = earlier.maxOfOrNull { it.seconds } ?: return@mapNotNull null
+    if (earlier.size < LONG_RUN_MIN_EARLIER || r.seconds <= LONG_RUN_RATIO * longest) null else LongRun(r.start, r.seconds, longest)
+}.maxByOrNull { it.seconds.toFloat() / it.longestBefore }
+
 /**
  * The longer stress exclusion after hard workouts: from each finished phone or strap workout's end, the time its
  * aerobic training effect asks for ([STRESS_AFTER_HARD_WORKOUT_SECONDS] from TE [HARD_WORKOUT_TE],
@@ -69,6 +103,16 @@ fun Recovery.ewma(daily: List<Float>, days: Int): Float {
     for (x in daily.drop(1)) v = l * x + (1 - l) * v
     return v
 }
+
+/**
+ * %VO2R from a heart-rate reserve [hrr]: (x − 0.0886) / 0.972, inverting Ferri Marini 2021's HERITAGE fit (451 adults,
+ * %HRR = 0.972·%VO2R + 8.855). %HRR ran 6 to 8 points above %VO2R from 30 to 90 % VO2R, so taking them as equal read
+ * the run VO2max ([WorkoutEffect.vo2max]) 9 to 14 % low. Fitted on a cycle ergometer, so for running it's an
+ * extrapolation.
+ */
+fun Recovery.vo2Reserve(hrr: Double): Double = (hrr - VO2R_OFFSET) / VO2R_SLOPE
+private const val VO2R_OFFSET = 0.0886
+private const val VO2R_SLOPE = 0.972
 
 /** Heart-rate reserve fraction: 0 at resting, 1 at maximum. */
 fun Recovery.hrr(hr: Int, rest: Float, maxHr: Float): Float = ((hr - rest) / (maxHr - rest)).coerceIn(0f, 1.2f)

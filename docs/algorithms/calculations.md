@@ -399,6 +399,10 @@ Classic 42-day / 7-day model, over worn days only (an unworn day holds rather th
 * Ratio = acute ÷ chronic, with the chronic value floored at 20 to avoid dividing by almost nothing.
 * Needs 21 days. It's descriptive only and never enters Readiness.
 
+### Long run (Load screen, Day view)
+
+A run (outdoor, treadmill or trail; phone or strap) that is more than **10 % longer** than the longest run in the 30 days before it gets a sentence under the day's Load. It needs at least 2 earlier runs in those 30 days. Time is the active time, pauses left out; a strap run under a phone run counts once. In 5,205 runners a single run more than 10 % longer than the month's longest raised the injury hazard 1.5 to 2.3 times, while the acute:chronic ratio didn't predict injury (Frandsen 2025). The study measured distance; we use time, which every run has.
+
 ---
 
 ## 9. Sleep screen
@@ -658,7 +662,7 @@ EPOC ← EPOC + 0.077 × (e^(4.5x) − 1) × minutes
 * Never less than what an earlier workout (phone or strap) still has to run, as Zepp's own rule. Never more than 72 h.
 * A design choice, not a fitted model: Zepp switches its own off for app workouts (`native/04` §6.2), so only its shape is kept.
 
-**VO2max (outdoor runs with GPS).** The ACSM running equation on the level, VO2 = 3.5 + 0.2 × speed (m/min), at reserve x gives VO2max = 3.5 + (VO2 − 3.5) ÷ x (%HRR ≈ %VO2R, Swain & Leutholtz 1997). Gated as Zepp gates its own (`native/04` §5.2):
+**VO2max (outdoor runs with GPS).** The ACSM running equation on the level, VO2 = 3.5 + 0.2 × speed (m/min), at heart-rate reserve x gives VO2max = 3.5 + (VO2 − 3.5) ÷ r, with oxygen reserve r = (x − 0.0886) ÷ 0.972. Heart-rate reserve runs 6 to 8 points above oxygen reserve (Ferri Marini 2021, 451 HERITAGE adults), so dividing by x itself read VO2max 9 to 14 % low. Gated as Zepp gates its own (`native/04` §5.2):
 
 * Outdoor run only, with GPS (the route in memory at the end, or a kept one).
 * At least 120 qualifying epochs (about 10 minutes): ≥ 1.5 m/s and ≥ half of max HR.
