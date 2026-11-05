@@ -14,4 +14,4 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "OpenStrap"
-include(":app", ":protocol")
+include(":app", ":protocol", ":baselineprofile")
