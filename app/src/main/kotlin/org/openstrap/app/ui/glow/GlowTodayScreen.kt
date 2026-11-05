@@ -7,6 +7,9 @@ import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.data.Stats
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import org.openstrap.app.ui.components.Motion
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -239,6 +242,18 @@ fun GlowTodayScreen(
     val live = liveHeartRate != null
     // The moment the cards are laid out for, with no moment yet resolved as todayCards does.
     val looksFor = moment ?: if (morning) Moment.Waking else Moment.Midday
+    // Until today's moment is known (its Recovery loading, about a second and a half on a cold start) the cards wait
+    // under the header, then fade in: laid out for a guessed moment with nothing loaded, they showed another Today
+    // for a moment before the real one (user, 2026-11-06). Never longer than CARDS_WAIT_MS, so a Recovery that
+    // never comes still leaves the fallback layout. The pairing hero needs no moment.
+    var waitedEnough by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(CARDS_WAIT_MS)
+        waitedEnough = true
+    }
+    val waiting = moment == null && isToday && pairing == null && !waitedEnough
+    val cardsAlpha = remember { Animatable(if (waiting) 0f else 1f) }
+    LaunchedEffect(waiting) { if (!waiting) cardsAlpha.animateTo(1f, tween(Motion.SWIFT, easing = Motion.easing)) }
 
     // The glow holds still while the list scrolls, so scrolling stays as smooth as on other screens.
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
@@ -251,6 +266,7 @@ fun GlowTodayScreen(
             val panes = todayPanes(slots, across)
             GlowScreenList(contentPadding, list) {
                 add(Pane.Full, GlowBlocks.HEADER) { header() }
+                if (waiting) return@GlowScreenList
                 // One block per grid row: a Small pair stays side by side, and on a wide screen in one column. Each is
                 // keyed on its cards, so its state stays with them when Edit Today hides or pins one above (audit K5).
                 packGrid(slots.indices.map { slots[it].size to it }).forEach { row ->
@@ -263,7 +279,7 @@ fun GlowTodayScreen(
                             // An unlit card drawn as a picture card skips its light.
                             val override = CardOverride(plain = look.tier == Tier.List)
                             CompositionLocalProvider(LocalCardOverride provides override) {
-                                Column(m.then(dim)) {
+                                Column(m.then(dim).graphicsLayer { alpha = cardsAlpha.value }) {
                                     when (slot.card) {
                                         TodayCard.Hero -> Hero(
                                             ctx, strap, pairing, heroLightAngle, usualBedtime,
@@ -858,3 +874,6 @@ internal fun chargeSoFar(points: List<Recovery.ChargePoint>, day: LongRange, now
     val step = 15 * 60L
     return org.openstrap.app.data.Summaries.evenly(points.filter { it.t <= now }, day, step, { it.t }, { it.value })
 }
+
+/** The longest Today's cards wait for the moment before showing the fallback layout. */
+private const val CARDS_WAIT_MS = 4_000L
