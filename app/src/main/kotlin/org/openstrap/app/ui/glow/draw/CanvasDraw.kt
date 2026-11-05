@@ -8,6 +8,7 @@ import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.compose.ui.graphics.Color
@@ -184,6 +185,54 @@ fun drawEdge(canvas: Canvas, paint: EdgePaint) {
     val s = paint.hairlineWidth
     canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, stroke(paint.hairline, s))
 }
+
+/* ------------------------------------------------------------------------------------------------ */
+/* Picture card                                                                                      */
+/* ------------------------------------------------------------------------------------------------ */
+
+/**
+ * A picture card's background on [canvas] (spec 2.5), [w] by [h] px with [r] px corners: the near-black surface, the
+ * L2 [rim] in [ink] when the card is off your normal, the hairline. [strength] is the mood's ([GlowMood.edge]); [wash]
+ * false leaves out the faint ink inside the rim, for a light that only marks the edge (the Start widget's corner).
+ * The same rim the app's PictureCard draws in Compose.
+ */
+fun drawPictureCard(
+    canvas: Canvas, w: Float, h: Float, r: Float, density: Float,
+    ink: Color, rim: Rim?, strength: Float = 1f, wash: Boolean = true,
+) {
+    canvas.drawRoundRect(0f, 0f, w, h, r, r, fill(EdgeSurface))
+    if (rim != null) {
+        val cx = rim.x * w
+        val cy = rim.y * h
+        val rx = (rim.reachX * w).coerceAtLeast(1f)
+        val ry = (rim.reachY * h).coerceAtLeast(1f)
+        fun ellipse(rx: Float, ry: Float, colors: List<Color>, stops: List<Float>) =
+            RadialGradient(cx, cy, rx, colors.map { it.toArgb() }.toIntArray(), stops.toFloatArray(), Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(Matrix().apply { setScale(1f, ry / rx, cx, cy) })
+            }
+        if (wash) {
+            val inside = ellipse(rx * RIM_WASH_REACH_X, ry * RIM_WASH_REACH_Y, listOf(ink.copy(alpha = RIM_WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f))
+            canvas.drawRoundRect(0f, 0f, w, h, r, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = inside })
+        }
+        val edge = ellipse(rx, ry, listOf(ink.copy(alpha = strength), ink.copy(alpha = RIM_HALF_ALPHA * strength), Color.Transparent), listOf(0f, RIM_HALF_AT, 1f))
+        val s = RIM_WIDTH_DP * density
+        canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = s
+            shader = edge
+        })
+    }
+    val s = density
+    canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, stroke(Color.White.copy(alpha = org.openstrap.app.ui.glow.GlowLayout.CardEdgeAlpha), s))
+}
+
+/** The rim as the app's PictureCard draws it: 2 dp, the ink at 35% halfway out, a 13% wash inside. */
+private const val RIM_WIDTH_DP = 2f
+private const val RIM_HALF_ALPHA = 0.35f
+private const val RIM_HALF_AT = 0.55f
+private const val RIM_WASH_ALPHA = 0.13f
+private const val RIM_WASH_REACH_X = 0.8f
+private const val RIM_WASH_REACH_Y = 0.7f
 
 /* ------------------------------------------------------------------------------------------------ */
 /* Dots                                                                                              */

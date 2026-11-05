@@ -30,6 +30,8 @@ data class RecoveryDay(
     val sleep: Int?,
     /** The 7 days ending on [date], oldest first, null where there was no score. */
     val week: List<Pair<LocalDate, Int?>>,
+    /** Off your usual (Above or Below), as Today's Recovery card lights its rim; never for the strap's estimate. */
+    val off: Boolean = false,
 ) {
     companion object {
         /**
@@ -50,6 +52,8 @@ data class RecoveryDay(
                 hrv = night?.hrv?.takeIf { night.hrvLn != null } ?: ready.fallbackHrv,
                 sleep = ready.contributors.firstOrNull { it.factor == Recovery.Factor.Sleep }?.score ?: night?.strapScore,
                 week = r.readinessTrend,
+                // Above or Below your usual, the rule Today's Recovery card lights its rim by (recoveryOffStatus).
+                off = score != null && org.openstrap.app.data.History.status(score.toFloat(), r.readinessUsual).let { it != null && it != 0 },
             )
         }
     }
@@ -82,6 +86,8 @@ data class RecoveryWidgetModel(
     val figures: List<RecoveryFigure>,
     /** Seven days, the shown one last; empty when fewer than two have a score, as the Recovery tab's trend. */
     val week: List<RecoveryWeekDay>,
+    /** Off your usual: the card's rim lights (spec 2.5). */
+    val off: Boolean = false,
 ) {
     /** What TalkBack reads for the dotted number: "78, Ready". */
     val scoreDescription: String?
@@ -131,6 +137,7 @@ data class RecoveryWidgetModel(
                 sentence = d.sentence ?: d.shown.line,
                 figures = figures(d, strings),
                 week = week,
+                off = d.off,
             )
         }
 

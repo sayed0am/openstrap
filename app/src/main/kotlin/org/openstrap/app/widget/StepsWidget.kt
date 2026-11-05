@@ -28,7 +28,6 @@ import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawGhostLine
@@ -37,7 +36,6 @@ import org.openstrap.app.ui.glow.draw.ghostLineGeometry
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
-import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
 
 /**
@@ -97,7 +95,7 @@ private const val TRACK_ALPHA = 0.10f
 private fun StepsContent(data: StepsWidget.Shown) {
     val m = data.model
     val open = openMetric(LocalContext.current, DetailRoutes.STEPS, m.date)
-    EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Progress), Ink, data.mood, open, BITMAP_EXTRA) { frame ->
+    PictureWidget(Ink, null, data.mood, open, BITMAP_EXTRA) { frame ->
         when (frame.bucket) {
             WidgetSizes.Small -> SmallContent(m, frame)
             WidgetSizes.Wide -> WideContent(m, frame)

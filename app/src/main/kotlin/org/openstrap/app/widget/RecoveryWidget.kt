@@ -20,14 +20,12 @@ import androidx.glance.layout.height
 import androidx.glance.layout.width
 import androidx.glance.text.Text
 import org.openstrap.app.data.WidgetKind
-import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.Rim
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawWeekBars
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.weekBars
-import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 
@@ -81,7 +79,8 @@ private val Ink = MetricColors.readiness
 private fun RecoveryContent(data: RecoveryWidget.Shown) {
     val model = data.model
     val open = openMetric(LocalContext.current, DetailRoutes.RECOVERY, model.date)
-    EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Earlier), Ink, data.mood, open, BITMAP_EXTRA) { frame ->
+    // Off your usual, the rim lights by the latest day, at the bottom right as on Today's Recovery card.
+    PictureWidget(Ink, Rim.Corner.takeIf { model.off }, data.mood, open, BITMAP_EXTRA) { frame ->
         when {
             model.score == null -> WaitingContent(model.title, model.waiting, frame)
             frame.bucket == WidgetSizes.Small -> SmallContent(model, RecoveryLayout.small(model, frame.contentWidth, frame.contentHeight, frame.fontScale, frame.status), frame)
