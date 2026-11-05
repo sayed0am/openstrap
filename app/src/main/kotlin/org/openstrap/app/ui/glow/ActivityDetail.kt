@@ -364,10 +364,12 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
         Score.Load.title, color, siblings(Detail.OfScore(Score.Load), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx, DailyMetric.HeartRate), onDay = ctx.onSelectDay,
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
+        // The Load card's picture: today's Load filling over your usual band, as on Today and Activity.
+        heroPicture = if (r != null && range == Range.Day) {
+            { DetailPicture(height = 40.dp) { m -> LevelFill(r.load, band, color, PictureSize.Wide, m) } }
+        } else null,
     ) {
         if (r != null && range == Range.Day) {
-            // The Load card's picture: today's Load filling over your usual band, as on Today and Activity.
-            item { DetailPicture(height = 40.dp) { m -> LevelFill(r.load, band, color, PictureSize.Wide, m) } }
             item {
                 Column(Modifier.padding(top = 8.dp)) {
                     DetailFigures(

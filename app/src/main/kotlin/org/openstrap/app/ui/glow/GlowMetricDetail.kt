@@ -453,6 +453,10 @@ fun GlowMetricDetailScreen(
                 )
             }
         } else null,
+        // The Stress card's picture: the day as one strip, calm to high.
+        heroPicture = if (!night && range == Range.Day && metric == Metric.Stress && state.stressStrip.any { it != null }) {
+            { DetailPicture(height = 28.dp) { m -> DayStrip(state.stressStrip, color, PictureSize.Wide, m) } }
+        } else null,
     ) {
         if (night && range == Range.Day) {
             item { NightChart(metric, state, color) { scrub = it } }
@@ -491,10 +495,6 @@ fun GlowMetricDetailScreen(
             else DetailCopy.span(Range.Week, DetailCopy.levels(values, nightNormal), nightly = true, normalKnown = nightNormal != null, days = nightDays)
             if (sentence != null) item { DetailSentence(sentence) }
         } else if (range == Range.Day) {
-            // The Stress card's picture: the day as one strip, calm to high, over the line of the same hours.
-            if (metric == Metric.Stress && state.stressStrip.any { it != null }) item {
-                DetailPicture(height = 28.dp) { m -> DayStrip(state.stressStrip, color, PictureSize.Wide, m) }
-            }
             item { DayChart(metric, state, color, value != null, normalOf = { m -> rememberNormal(m, end, history) }) { scrub = it } }
             val sentence = when {
                 value == null -> null

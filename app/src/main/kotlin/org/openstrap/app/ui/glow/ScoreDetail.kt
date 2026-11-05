@@ -148,13 +148,12 @@ private fun RecoveryDetail(
         heroValue = (score ?: estimate)?.takeIf { range == Range.Day }?.let { shown ->
             { ArcGauge(shown / 100f, color, key = state.date) { DetailScoreNumber(shown) } }
         },
+        // The Recovery card's picture under the gauge: the week to this morning as dots through the band of your usual.
+        heroPicture = week.map { it.second?.toFloat() }.takeIf { range == Range.Day && it.any { v -> v != null } }?.let { dots ->
+            { DetailPicture { m -> WeekOfDots(dots, r?.readinessUsual?.let { it.low..it.high }, color, PictureSize.Wide, m) } }
+        },
     ) {
         if (range == Range.Day) {
-            // The Recovery card's picture: the week to this morning as dots through the band of your usual.
-            val dots = week.map { it.second?.toFloat() }
-            if (dots.any { it != null }) item {
-                DetailPicture { m -> WeekOfDots(dots, r?.readinessUsual?.let { it.low..it.high }, color, PictureSize.Wide, m) }
-            }
             item {
                 Column {
                     DetailSentence(

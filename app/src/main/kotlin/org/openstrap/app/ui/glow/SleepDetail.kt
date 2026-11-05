@@ -573,23 +573,23 @@ internal fun NapsDetail(
             contentPadding = contentPadding, headline = headline,
             strip = DetailCopy.strip(state.date, today, if (naps.isEmpty()) emptySet() else setOf(state.date)), onDay = onSelectDay,
             ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
+            // The Naps card's picture: the day as a hairline with each nap as its stage strip at its time.
+            heroPicture = if (naps.isNotEmpty()) {
+                {
+                    val span = org.openstrap.app.ui.dashboard.napDaySpan(state.date, naps, java.time.ZoneId.systemDefault())
+                    val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
+                    DetailPicture(height = 28.dp) { m -> NapDay(pictured, span.first, span.last, color, PictureSize.Wide, m) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Caption(clock(span.first))
+                        Caption(clock(span.last))
+                    }
+                }
+            } else null,
         ) {
             if (naps.isEmpty()) item {
                 DetailEmpty(stringResource(if (isToday) R.string.glow_sleep_no_naps_today else R.string.glow_sleep_no_naps_that_day))
             }
             else {
-                // The Naps card's picture: the day as a hairline with each nap as its stage strip at its time.
-                item {
-                    val span = org.openstrap.app.ui.dashboard.napDaySpan(state.date, naps, java.time.ZoneId.systemDefault())
-                    val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
-                    Column {
-                        DetailPicture(height = 28.dp) { m -> NapDay(pictured, span.first, span.last, color, PictureSize.Wide, m) }
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            Caption(clock(span.first))
-                            Caption(clock(span.last))
-                        }
-                    }
-                }
                 item { DetailSentence(SleepCopy.naps(naps.size, total)) }
                 naps.forEachIndexed { i, nap ->
                     item(key = nap.start) {
