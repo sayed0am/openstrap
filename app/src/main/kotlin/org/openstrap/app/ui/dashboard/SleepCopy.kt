@@ -118,7 +118,7 @@ internal object SleepCopy {
     }
 
     /**
-     * The per-day series a night-scoped detail's Month and Year draw: blood oxygen's own night table, and for the rest
+     * The per-day series a night-scoped detail's Month and Year draw: blood oxygen inside each main sleep, and for the rest
      * the metric's usual per-day one.
      */
     fun nightDaily(metric: Metric): DailyMetric = if (metric == Metric.Spo2) DailyMetric.SleepSpo2 else metric.daily

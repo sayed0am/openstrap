@@ -222,10 +222,8 @@
 
     <!-- The week story's title. -->
     <string name="glow_activity_your_week">Your week</string>
-    <!-- Headline in the number's place when last week has no steps. -->
+    <!-- Headline in the number's place when the week has no steps yet. -->
     <string name="glow_activity_no_steps">No steps</string>
-    <!-- Under No steps: which week it is. -->
-    <string name="glow_activity_monday_to_sunday">Monday to Sunday last week</string>
     <!-- Beside a held day's steps. The day is "Wed 21" or "Today". -->
     <string name="glow_activity_steps_on">steps, <xliff:g id="day" example="Wed 21">%1$s</xliff:g></string>
     <!-- Under a number: the hours asleep a night on average. Short, a third of the width. -->

@@ -244,7 +244,8 @@ class RecoveryEngine(private val dao: HealthDao) {
         val breath: List<org.openstrap.app.data.db.BreathRate>,
         val strapResting: List<org.openstrap.app.data.db.RestingHeartRate>,
         val pai: org.openstrap.app.data.db.PaiSample?,
-        val sleepSpo2: List<org.openstrap.app.data.db.SleepSpo2Sample>,
+        /** Blood oxygen over the nights, from the all-day readings: the strap's sleep table reads a flat 100%. */
+        val sleepSpo2: List<org.openstrap.app.data.db.Spo2Sample>,
         val osa: List<org.openstrap.app.data.db.OsaResultRow>,
         val strapNights: Map<LocalDate, org.openstrap.app.data.db.StrapReadinessRow>,
         val wear: List<org.openstrap.app.data.db.WearEventRow>,
@@ -283,7 +284,7 @@ class RecoveryEngine(private val dao: HealthDao) {
             breath = dao.breathRateOnce(span.from, span.to),
             strapResting = dao.restingHrIn(span.from, span.to, span.zone),
             pai = dao.paiOnce(span.from, span.to).lastOrNull(),
-            sleepSpo2 = dao.sleepSpo2Once(span.from, span.to),
+            sleepSpo2 = dao.spo2Once(span.from, span.to),
             // The strap's nightly rows are keyed by its own day, which can be a day either side of the night's ([basis]).
             osa = dao.osaResultsOnce(span.osaFrom, span.to + STRAP_DAY_SLACK),
             strapNights = dao.strapReadinessIn(span.from - STRAP_DAY_SLACK, span.to + STRAP_DAY_SLACK, span.zone).associateBy { it.day },
@@ -740,7 +741,7 @@ class RecoveryEngine(private val dao: HealthDao) {
         hrv: List<org.openstrap.app.data.db.HrvSample>,
         skin: List<org.openstrap.app.data.db.SkinTemperature>,
         breath: List<org.openstrap.app.data.db.BreathRate>,
-        spo2: List<org.openstrap.app.data.db.SleepSpo2Sample>,
+        spo2: List<org.openstrap.app.data.db.Spo2Sample>,
         osa: org.openstrap.app.data.db.OsaResultRow?,
     ): Recovery.Night {
         val inSleep = { t: Long -> t in s.start..s.end }

@@ -17,7 +17,6 @@ import org.openstrap.app.data.db.HealthAlertRow
 import org.openstrap.app.data.db.HrvSdnnSample
 import org.openstrap.app.data.db.OsaEventRow
 import org.openstrap.app.data.db.OsaResultRow
-import org.openstrap.app.data.db.SleepSpo2Sample
 import org.openstrap.app.data.db.BreathRate
 import org.openstrap.app.data.db.CheckInRow
 import org.openstrap.app.data.db.HealthDao
@@ -245,7 +244,6 @@ class HealthRepository(
     fun breathRate(w: DayWindow): Flow<List<BreathRate>> = dao.breathRate(w.from, w.to)
     fun latestPai(before: Long): Flow<PaiSample?> = dao.latestPai(before)
 
-    fun sleepSpo2(w: DayWindow): Flow<List<SleepSpo2Sample>> = dao.sleepSpo2(w.from, w.to)
     fun hrvSdnn(w: DayWindow): Flow<List<HrvSdnnSample>> = dao.hrvSdnn(w.from, w.to)
     fun osaEvents(w: DayWindow): Flow<List<OsaEventRow>> = dao.osaEvents(w.from, w.to)
     fun activityExtended(w: DayWindow): Flow<List<ActivityExtendedMinute>> = dao.activityExtended(w.from, w.to)
@@ -355,7 +353,7 @@ class HealthRepository(
          */
         val RECOVERY_TABLES = arrayOf(
             "activity_minute", "heart_rate", "stress", "hrv", "skin_temperature", "breath_rate", "resting_hr", "pai",
-            "sleep_spo2", "osa_result", "strap_readiness", "wear_event", "daily_max_hr", "workout", "workout_hr",
+            "spo2", "osa_result", "strap_readiness", "wear_event", "daily_max_hr", "workout", "workout_hr",
             "app_workout", "app_workout_hr", "sleep_session", "sleep_edit", "sleep_stage",
         )
 

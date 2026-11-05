@@ -906,17 +906,19 @@ private fun ActivityRelated(current: Score, ctx: ActivityDetailContext, heartPoi
 /* ----------------------------------------------- Week ----------------------------------------------- */
 
 /**
- * The week story, opened from Your week on Today: last Monday to Sunday, steps a day as dot bars to scrub, the week in
- * a few numbers, a sentence comparing with the week before where it's kept, and each day's line. No strip: tapping a
- * day there would move the day shown, and with it the week.
+ * The week story, opened from Your week on Today: the card's own week (the phone's first day to its last, up to the day
+ * shown), steps a day as dot bars to scrub, the week in a few numbers, a sentence comparing with the week before where
+ * it's kept, and each day's line. No strip: tapping a day there would move the day shown, and with it the week.
  */
 @Composable
 internal fun WeekDetail(ctx: ActivityDetailContext) {
     val color = EdgeNeutral
     var info by rememberSaveable { mutableStateOf(false) }
-    val week = TodayCopy.lastWeek(ctx.state.date)
-    val start = week.start
-    val end = week.endInclusive
+    val whole = TodayCopy.thisWeek(ctx.state.date)
+    val start = whole.start
+    // The days still to come have nothing to say yet.
+    val end = minOf(whole.endInclusive, maxOf(ctx.state.date, LocalDate.now()))
+    val week = start..end
     var scrub by remember(start) { mutableStateOf<DetailHeadline?>(null) }
     val steps by remember(start, ctx.history) { ctx.history(DailyMetric.Steps, start.minusDays(7), end) }.collectAsStateWithLifecycle(null)
     val zone = ZoneId.systemDefault()
@@ -938,11 +940,11 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
         dayOf(it) in before..start.minusDays(1) && it.workout.sportType != org.openstrap.app.data.Workouts.GENERIC_ACTIVITY
     } else null
     val headline = when {
-        totals.stepsADay != null -> DetailHeadline(Units.count(totals.stepsADay, Units.DOT_LOCALE), WeekStory.label(week), change)
+        totals.stepsADay != null -> DetailHeadline(Units.count(totals.stepsADay, Units.DOT_LOCALE), WeekStory.label(whole), change)
         steps == null ->
-            DetailHeadline.none(stringResource(R.string.glow_loading), WeekStory.label(week).replaceFirstChar { it.uppercase() })
+            DetailHeadline.none(stringResource(R.string.glow_loading), WeekStory.label(whole).replaceFirstChar { it.uppercase() })
         else -> DetailHeadline.none(
-            stringResource(R.string.glow_activity_no_steps), stringResource(R.string.glow_activity_monday_to_sunday),
+            stringResource(R.string.glow_activity_no_steps), WeekStory.label(whole).replaceFirstChar { it.uppercase() },
         )
     }
     DetailTemplate(

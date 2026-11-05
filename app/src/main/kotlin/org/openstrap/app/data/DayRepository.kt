@@ -14,7 +14,6 @@ import org.openstrap.app.data.db.OsaResultRow
 import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.SkinTemperature
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.data.db.SleepSpo2Sample
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.db.Spo2Sample
 import org.openstrap.app.data.db.StressSample
@@ -154,7 +153,8 @@ data class DayData(
     val breath: List<BreathRate> = emptyList(),
     val pai: PaiSample? = null,
     val baselines: Baselines = Baselines(),
-    val sleepSpo2: List<SleepSpo2Sample> = emptyList(),
+    /** Blood oxygen over the night, from the all-day readings ([spo2]'s table), for the night's chart. */
+    val sleepSpo2: List<Spo2Sample> = emptyList(),
     val hrvSdnn: List<HrvSdnnSample> = emptyList(),
     val osaResult: OsaResultRow? = null,
     val osaEvents: List<OsaEventRow> = emptyList(),

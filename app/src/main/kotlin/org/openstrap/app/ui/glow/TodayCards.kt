@@ -390,7 +390,8 @@ private fun noNight(firstNights: Boolean, stuck: Boolean): String =
 
 /**
  * Last night (spec 4.2): its stage bar in the stage colours, and Short or Long as its tag when the time asleep is off
- * your usual, with the rim in the corner. A Small has the time asleep in dots. A Wide, the card the morning is about,
+ * your usual, with the rim in the corner. A Small has the sleep score in dots and the time asleep under it, as the page
+ * it opens leads, or the time asleep in dots for a night without a score. A Wide, the card the morning is about,
  * has the sleep score in dots with its word and the time asleep under it, as the Sleep tab's hero does, then the
  * stage bar. [stuck]: it's still on the strap, so it waits rather than saying there was none.
  */
@@ -418,8 +419,13 @@ internal fun LastNightCard(
     val title = stringResource(R.string.glow_today_last_night)
     if (size == PictureSize.Small) {
         TodayPictureCard(
-            MetricColors.sleepDeep, title, size, asleep?.let(::clockDuration), stringResource(R.string.glow_today_hours_unit), tag,
-            if (asleep == null) noNight(firstNights, stuck) else score?.let { org.openstrap.app.presentation.TabCopy.sleepScoreWord(it) },
+            MetricColors.sleepDeep, title, size, score?.toString() ?: asleep?.let(::clockDuration),
+            stringResource(if (score != null) R.string.glow_today_score_unit else R.string.glow_today_hours_unit), tag,
+            when {
+                asleep == null -> noNight(firstNights, stuck)
+                score != null -> Units.duration(asleep)
+                else -> null
+            },
             modifier, rim = rim, onClick = onClick, picture = picture,
         )
         return
@@ -769,7 +775,9 @@ internal fun WeekCard(
 ) {
     val goal = org.openstrap.app.ui.dashboard.LocalGoals.current.steps
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
-    val start = org.openstrap.app.data.Weeks.start(state.date, java.time.DayOfWeek.MONDAY)
+    // The phone's own week, as everywhere else and on the page it opens ([TodayCopy.thisWeek]).
+    val firstDay = remember { org.openstrap.app.data.Weeks.firstDay() }
+    val start = org.openstrap.app.data.Weeks.start(state.date, firstDay)
     val end = start.plusDays(org.openstrap.app.data.Weeks.DAYS - 1L)
     val stored by remember(start, history) {
         history?.invoke(Metric.Steps.daily, start, end) ?: kotlinx.coroutines.flow.flowOf(emptyList())
@@ -777,7 +785,7 @@ internal fun WeekCard(
     val today = java.time.LocalDate.now()
     val week = remember(stored, state.date, state.steps, goal, today) {
         org.openstrap.app.ui.dashboard.stepsWeek(
-            state.date, state.steps, goal, stored.associate { it.date to it.value.roundToInt() }, today, java.time.DayOfWeek.MONDAY,
+            state.date, state.steps, goal, stored.associate { it.date to it.value.roundToInt() }, today, firstDay,
         )
     }
     val shares = week.days.map { (_, steps) -> steps?.let { if (goal > 0) it.toFloat() / goal else 0f } }
