@@ -45,6 +45,7 @@ import org.openstrap.app.data.SportTypes
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutLocation
+import org.openstrap.app.ui.components.PushContent
 import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.components.rememberHaptics
@@ -190,94 +191,98 @@ fun GlowWorkoutReadyScreen(
         onDispose { location.stop() }
     }
     val haptics = rememberHaptics()
-    if (picking) {
-        SportPicker(type, recentSports, contentPadding, onPick = { onSport(it); picking = false }, onBack = { if (pickSport) onBack() else picking = false })
-        return
-    }
-    BackHandler(onBack = onBack)
-    val focusManager = LocalFocusManager.current
-    // Back while typing puts the keyboard and the caret away first. The keyboard takes that Back itself when it's up,
-    // so its going ends typing too, and Start comes back with it.
-    BackHandler(enabled = typing) { focusManager.clearFocus() }
-    val ime = WindowInsets.ime
-    val density = LocalDensity.current
-    EndTypingWithKeyboard(typing, { ime.getBottom(density) > 0 }) { focusManager.clearFocus() }
-    val start = {
-        haptics.perform(HapticEvent.WorkoutStart)
-        val rest = Strength.Rest(restSeconds, restBelow)
-        onStart(
-            WorkoutPlan(
-                type, askToEnd, goal.takeIf { !strength }, useGps, useGps && keepRoute,
-                rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log, structure = rounds?.code,
-            ),
-            settings.copy(
-                goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = true, keepRoute = keepRoute,
-                rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
-                log = if (strength) log else settings.log, structure = rounds?.code,
-            ),
-        )
-    }
-    WorkoutPage(
-        Color.Transparent, contentPadding,
-        // While a goal is typed the keyboard has the bottom of the screen.
-        pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
-    ) {
-        Box(Modifier.fillMaxWidth()) {
-            RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack, Modifier.align(Alignment.CenterStart))
-            Box(Modifier.align(Alignment.Center)) { IconPill(Workouts.shortName(type), { picking = true }, caret = true) }
+    // The sport picker opens like a deeper screen and a pick slides Ready back in on the new sport (user, 2026-11-06:
+    // the swap was a cut both ways).
+    PushContent(picking, { if (it) 1 else 0 }) { showPicker ->
+        if (showPicker) {
+            SportPicker(type, recentSports, contentPadding, onPick = { onSport(it); picking = false }, onBack = { if (pickSport) onBack() else picking = false })
+            return@PushContent
         }
-        if (cardio) {
-            ReadyHeartCard(connection, liveHeartRate)
-            ReadyWhere(
-                type, pair, indoor == true, outdoor, locationOn, StartCopy.gpsStatus(accuracy),
-                onSwitch = {
-                    val next = indoor != true
-                    chosenIndoor = next
-                    onSide(pair!!.outdoor, next)
-                },
-                onTurnOnLocation = {
-                    if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
-                    else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
-                },
-                askToEnd = askToEnd, onAskToEnd = { askToEnd = it },
-                keepRoute = keepRoute.takeIf { useGps }, onKeepRoute = { keepRoute = it },
+        BackHandler(onBack = onBack)
+        val focusManager = LocalFocusManager.current
+        // Back while typing puts the keyboard and the caret away first. The keyboard takes that Back itself when it's up,
+        // so its going ends typing too, and Start comes back with it.
+        BackHandler(enabled = typing) { focusManager.clearFocus() }
+        val ime = WindowInsets.ime
+        val density = LocalDensity.current
+        EndTypingWithKeyboard(typing, { ime.getBottom(density) > 0 }) { focusManager.clearFocus() }
+        val start = {
+            haptics.perform(HapticEvent.WorkoutStart)
+            val rest = Strength.Rest(restSeconds, restBelow)
+            onStart(
+                WorkoutPlan(
+                    type, askToEnd, goal.takeIf { !strength }, useGps, useGps && keepRoute,
+                    rest.takeIf { strength }, sets.takeIf { strength }, logSets = strength && log, structure = rounds?.code,
+                ),
+                settings.copy(
+                    goal = if (strength) settings.goal else goal?.code, askToEnd = askToEnd, gps = true, keepRoute = keepRoute,
+                    rest = if (strength) rest.code else settings.rest, sets = if (strength) sets else settings.sets,
+                    log = if (strength) log else settings.log, structure = rounds?.code,
+                ),
             )
-            val zones = LocalHeartZones.current
-            ReadyGoal(
-                type, kinds, hasDistance, draft.copy(kind = kind), { draft = it }, typing, { typing = it }, zones, maxHeartRate, onYourZones,
-                saved.filter { Workouts.tileType(it.sport) == key },
-                onSave = { name, reps -> onSaveIntervals(name, reps.code) },
-            )
-            return@WorkoutPage
         }
-        ReadyHeartCard(connection, liveHeartRate, familyColor(family))
-        when (family) {
-            Workouts.Family.Strength -> StrengthPlanCard(
-                type, sets, { sets = it; if (it != null) planSets = it }, planSets, restSeconds, { restSeconds = it }, typing, { typing = it },
-            )
-            Workouts.Family.Intervals -> HiitPlanCard(type, rounds, { structureCode = it?.code }, typing, { typing = it })
-            Workouts.Family.MindBody -> MindPlanCard(
-                type, draft.seconds.takeIf { draft.kind == WorkoutSetup.GoalKind.Time },
-                { draft = if (it == null) draft.copy(kind = WorkoutSetup.GoalKind.None) else draft.copy(kind = WorkoutSetup.GoalKind.Time, seconds = it) },
-                draft.seconds, typing, { typing = it },
-            )
-            else -> GamePlanCard(type, rounds as? Structure.Periods, { structureCode = it?.code }, typing, { typing = it })
-        }
-        ReadyRows {
-            var divider = false
-            if (strength) {
-                PageSwitchRow(
-                    StartCopy.END_REST_EARLY, StartCopy.endRestNote(restBelow ?: belowLevel), restBelow != null,
-                    { restBelow = if (it) belowLevel else null }, divider = false,
+        WorkoutPage(
+            Color.Transparent, contentPadding,
+            // While a goal is typed the keyboard has the bottom of the screen.
+            pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) }),
+        ) {
+            Box(Modifier.fillMaxWidth()) {
+                RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack, Modifier.align(Alignment.CenterStart))
+                Box(Modifier.align(Alignment.Center)) { IconPill(Workouts.shortName(type), { picking = true }, caret = true) }
+            }
+            if (cardio) {
+                ReadyHeartCard(connection, liveHeartRate)
+                ReadyWhere(
+                    type, pair, indoor == true, outdoor, locationOn, StartCopy.gpsStatus(accuracy),
+                    onSwitch = {
+                        val next = indoor != true
+                        chosenIndoor = next
+                        onSide(pair!!.outdoor, next)
+                    },
+                    onTurnOnLocation = {
+                        if (!WorkoutLocation.granted(context)) onTurnOnLocation { locationOn = locationAvailable(context) }
+                        else context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                    },
+                    askToEnd = askToEnd, onAskToEnd = { askToEnd = it },
+                    keepRoute = keepRoute.takeIf { useGps }, onKeepRoute = { keepRoute = it },
                 )
-                PageSwitchRow(StartCopy.LOG_SETS, StartCopy.LOG_SETS_NOTE, log, { log = it })
-                divider = true
+                val zones = LocalHeartZones.current
+                ReadyGoal(
+                    type, kinds, hasDistance, draft.copy(kind = kind), { draft = it }, typing, { typing = it }, zones, maxHeartRate, onYourZones,
+                    saved.filter { Workouts.tileType(it.sport) == key },
+                    onSave = { name, reps -> onSaveIntervals(name, reps.code) },
+                )
+                return@WorkoutPage
             }
-            if (rounds != null && family == Workouts.Family.Intervals) {
-                PageSwitchRow(StartCopy.WARM_UP, StartCopy.WARM_UP_NOTE, rounds.warmUp, { structureCode = rounds.warm(it).code }, divider = false)
-                divider = true
+            ReadyHeartCard(connection, liveHeartRate, familyColor(family))
+            when (family) {
+                Workouts.Family.Strength -> StrengthPlanCard(
+                    type, sets, { sets = it; if (it != null) planSets = it }, planSets, restSeconds, { restSeconds = it }, typing, { typing = it },
+                )
+                Workouts.Family.Intervals -> HiitPlanCard(type, rounds, { structureCode = it?.code }, typing, { typing = it })
+                Workouts.Family.MindBody -> MindPlanCard(
+                    type, draft.seconds.takeIf { draft.kind == WorkoutSetup.GoalKind.Time },
+                    { draft = if (it == null) draft.copy(kind = WorkoutSetup.GoalKind.None) else draft.copy(kind = WorkoutSetup.GoalKind.Time, seconds = it) },
+                    draft.seconds, typing, { typing = it },
+                )
+                else -> GamePlanCard(type, rounds as? Structure.Periods, { structureCode = it?.code }, typing, { typing = it })
             }
-            PageSwitchRow(StartCopy.ASK_TO_END, StartCopy.ASK_TO_END_NOTE, askToEnd, { askToEnd = it }, divider = divider)
+            ReadyRows {
+                var divider = false
+                if (strength) {
+                    PageSwitchRow(
+                        StartCopy.END_REST_EARLY, StartCopy.endRestNote(restBelow ?: belowLevel), restBelow != null,
+                        { restBelow = if (it) belowLevel else null }, divider = false,
+                    )
+                    PageSwitchRow(StartCopy.LOG_SETS, StartCopy.LOG_SETS_NOTE, log, { log = it })
+                    divider = true
+                }
+                if (rounds != null && family == Workouts.Family.Intervals) {
+                    PageSwitchRow(StartCopy.WARM_UP, StartCopy.WARM_UP_NOTE, rounds.warmUp, { structureCode = rounds.warm(it).code }, divider = false)
+                    divider = true
+                }
+                PageSwitchRow(StartCopy.ASK_TO_END, StartCopy.ASK_TO_END_NOTE, askToEnd, { askToEnd = it }, divider = divider)
+            }
         }
     }
 }
