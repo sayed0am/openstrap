@@ -270,12 +270,10 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
         Score.ActiveMinutes.title, color, siblings(Detail.OfScore(Score.ActiveMinutes), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx), onDay = ctx.onSelectDay,
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
-    ) {
-        if (a != null && range == Range.Week) {
-            val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
-            // The card's picture: the week's minutes as blocks toward the 150 to aim for. It's the week's number the
-            // card shows, so the blocks belong to Week, over the days that make them.
-            item {
+        // The card's picture: the week's minutes as blocks toward the 150 to aim for. It's the week's number the card
+        // shows, so the blocks belong to Week, over the days that make them.
+        heroPicture = if (a != null && range == Range.Week) {
+            {
                 DetailPicture(height = 28.dp) { m ->
                     Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET, perBlock = ACTIVE_BLOCK_MINUTES)
                 }
@@ -291,6 +289,10 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
                     )
                 }
             }
+        } else null,
+    ) {
+        if (a != null && range == Range.Week) {
+            val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
             item {
                 GlowBars(
                     values, height = 200.dp, labels = week.map { DayWords.weekdayShort(it) }, accent = color, modifier = Modifier.padding(top = 8.dp),
@@ -542,20 +544,20 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
         Score.Recover.title, color, siblings(Detail.OfScore(Score.Recover), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = DetailCopy.strip(ctx.state.date, ctx.today, withData), onDay = ctx.onSelectDay,
         ranges = listOf(Range.Day), range = Range.Day, onRange = {},
-    ) {
-        // The card's picture: the ring filling toward Ready, full once you're clear.
-        // Centred and large enough to carry how far back you are in it, rather than a Wide's small ring at the side.
-        if (last != null && left != null) item {
-            val share = recoverShare(last.recoveryMinutes, left)
-            androidx.compose.foundation.layout.Box(Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                CountdownRing(share, color, PictureSize.Small, Modifier.size(RECOVER_RING))
-                Text(
-                    if (share >= 1f) stringResource(R.string.glow_activity_recover_ready)
-                    else stringResource(R.string.glow_activity_recover_back, (share * 100).toInt().coerceIn(0, 99)),
-                    color = Color.White, style = GlowType.body,
-                )
+        // The card's picture as the header's gauge, as Recovery's arc: the ring filling toward Ready, the hours to go
+        // inside it, or Ready once you're clear.
+        heroValue = if (last != null && left != null) {
+            {
+                val share = recoverShare(last.recoveryMinutes, left)
+                androidx.compose.foundation.layout.Box(Modifier.size(RECOVER_RING), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    CountdownRing(share, color, PictureSize.Small, Modifier.matchParentSize())
+                    val hours = shown?.first?.toIntOrNull()
+                    if (hours != null) DetailScoreNumber(hours)
+                    else Text(stringResource(R.string.glow_activity_recover_ready), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                }
             }
-        }
+        } else null,
+    ) {
         // Recovered says which workout under the word already.
         if (source != null && shown?.first != null && ended != null) item { DetailSentence(ActivityCopy.recover(source.sportName, ended)) }
         if (rated.isNotEmpty()) item {

@@ -121,7 +121,7 @@ internal fun siblings(detail: Detail, onSwitch: (Detail) -> Unit): List<DetailSi
  * carries back, the switcher across [siblings] ([title] on it), the (i) that opens the info sheet ([onInfo]), the
  * [headline] and the seven-day [strip] ([onDay] picks a day). Under it the [ranges] as pills when there's more than
  * one, then [body]: the chart, the sentence and the rows. [heroValue] replaces the value row with a score gauge (the
- * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroSide] sits to the right of
+ * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroPicture] is the card's picture under the value, above the days; [heroSide] sits to the right of
  * a plain value row (heart rate's Live switch). While a chart is scrubbed, [scrubbed] gives the reading under the
  * finger in the headline's place, on the value row in the gauge's place. It's read only inside the hero.
  */
@@ -141,6 +141,7 @@ internal fun DetailTemplate(
     onRange: (Range) -> Unit,
     heroValue: (@Composable () -> Unit)? = null,
     heroSide: (@Composable () -> Unit)? = null,
+    heroPicture: (@Composable () -> Unit)? = null,
     scrubbed: () -> DetailHeadline? = { null },
     body: LazyListScope.() -> Unit,
 ) {
@@ -196,6 +197,8 @@ internal fun DetailTemplate(
                     if (gauge == null && shown.word != null && shown.value != null) {
                         StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
                     }
+                    // The card's picture, under the value and above the days, as the gauges sit.
+                    if (heroPicture != null) Column(Modifier.fillMaxWidth().padding(top = 16.dp)) { heroPicture() }
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
