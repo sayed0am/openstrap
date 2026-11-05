@@ -14,7 +14,6 @@ import org.openstrap.app.data.db.OsaResultRow
 import org.openstrap.app.data.db.PaiSample
 import org.openstrap.app.data.db.SkinTemperature
 import org.openstrap.app.data.db.SleepSession
-import org.openstrap.app.data.db.SleepSpo2Sample
 import org.openstrap.app.data.db.SleepStage
 import org.openstrap.app.data.db.Spo2Sample
 import org.openstrap.app.data.db.StressSample
@@ -51,6 +50,15 @@ interface DayRepository {
 
     /** Each day's stored calories from [from] to [to], keyed by local date. */
     fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>>
+
+    /** Each local day's steps from [from] to [to] ([DailyMetric.Steps]), keyed by date, days without steps absent. */
+    fun dailySteps(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, Int>> = kotlinx.coroutines.flow.flowOf(emptyMap())
+
+    /** The stored personal best of [kind] ([Rewards.Kind]) as it changes, null without one. */
+    fun personalBest(kind: String): Flow<org.openstrap.app.data.db.PersonalBest?> = kotlinx.coroutines.flow.flowOf(null)
+
+    /** The most steps of any day before [date], over all the history, read once, null without any. */
+    suspend fun mostStepsBefore(date: LocalDate): Int? = null
 
     /** Sleep and naps deleted in the last [SleepEdits.KEEP_DAYS], newest first. */
     fun deletedSleep(): Flow<List<SleepEdits.Resolved>>
@@ -145,7 +153,8 @@ data class DayData(
     val breath: List<BreathRate> = emptyList(),
     val pai: PaiSample? = null,
     val baselines: Baselines = Baselines(),
-    val sleepSpo2: List<SleepSpo2Sample> = emptyList(),
+    /** Blood oxygen over the night, from the all-day readings ([spo2]'s table), for the night's chart. */
+    val sleepSpo2: List<Spo2Sample> = emptyList(),
     val hrvSdnn: List<HrvSdnnSample> = emptyList(),
     val osaResult: OsaResultRow? = null,
     val osaEvents: List<OsaEventRow> = emptyList(),

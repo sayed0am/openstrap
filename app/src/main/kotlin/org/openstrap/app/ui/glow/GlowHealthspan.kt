@@ -6,32 +6,38 @@ import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.presentation.Ranges
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.text.style.TextOverflow
+import org.openstrap.app.ui.components.cardNumber
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.habitAgeOffStatus
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.pictures.AgeScalePicture
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.ageScaleRim
+import org.openstrap.app.ui.glow.pictures.ageScaleX
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import org.openstrap.app.data.Healthspan
 import org.openstrap.app.ui.theme.MetricColors
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.presentation.TabCopy
 
-/** The Healthspan card's orchid, used for the glow: warm enough to stay clear of Sleep's blue. */
+/** Habit Age's ink, orchid: warm enough to stay clear of Sleep's blue. */
 private val Orchid = MetricColors.habitAge
 
 /** "Steady" at 1x, "Slower" below, "Faster" above; "Learning" until there's enough history. */
@@ -123,13 +129,14 @@ private fun dateOf(epoch: Long) = java.time.Instant.ofEpochSecond(epoch).atZone(
 
 /**
  * Habit Age, one design wherever it shows (Recovery's foot, Today when there's a new estimate, the top of its page):
- * an edge card lit from the left, since it's about the weeks behind you. The title with its caret when it opens
- * something and (i) at the right of the title row (spec 5.4), "Updated Sun 18 Oct" under it, the age in dots, one
- * status line against last week (the range until there's a last week, orchid only when the number moved) and the age
- * scale. The method, the pace of aging and what moves it are in its info sheet, behind the (i). Before the first
- * estimate your own age from your birth year stands in, "Your age for now" and when the first estimate comes under it;
- * without a birth year it says so, with no number. With no birth year or sex it opens the profile ([onOpenProfile])
- * instead of the Habit Age page ([onClick], null on the page itself). Nothing shows until it has been worked out.
+ * a Wide picture card (spec 5.4). The title with its caret when it opens something and (i) at the right of the title
+ * row, "Updated Sun 18 Oct" under it, the age in dots, one status line against last week (the range until there's a
+ * last week) and the age scale. When the estimate's whole range is past your own age it carries the Older or Younger
+ * tag and the rim at the band's end ([habitAgeOffStatus]). The method, the pace of aging and what moves it are in its
+ * info sheet, behind the (i). Before the first estimate your own age from your birth year stands in, "Your age for
+ * now" and when the first estimate comes under it. Without a birth year it says so, with no number. With no birth year
+ * or sex it opens the profile ([onOpenProfile]) instead of the Habit Age page ([onClick], null on the page itself).
+ * Nothing shows until it has been worked out.
  */
 @Composable
 fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenProfile: (() -> Unit)?, modifier: Modifier = Modifier) {
@@ -138,9 +145,13 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
     val withheld = state.withheld
     val needsProfile = r == null && state.missing.isNotEmpty() && withheld?.profile == true
     var info by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    EdgeCard(
+    val off = habitAgeOffStatus(state)
+    val tag = offTag(OffWords.Age, off)
+    val rim = r?.takeIf { tag != null }?.let { ageScaleRim(it.low.toFloat(), it.high.toFloat(), it.age.toFloat(), PictureSize.Wide) }
+    PictureCard(
         // Without a number it's one line, so it's only as high as that line.
-        Orchid, modifier.fillMaxWidth().let { if (r != null || state.age != null) it.gridSize(CardSize.Wide) else it }, kind = EdgeKind.Earlier,
+        Orchid, modifier.fillMaxWidth().let { if (r != null || state.age != null) it.gridSize(CardSize.Wide) else it },
+        rim = rim,
         onClick = if (needsProfile) onOpenProfile else onClick,
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -160,13 +171,23 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
             state.firstEstimate != null -> TabCopy.firstEstimate(dateOf(state.firstEstimate))
             else -> withheld?.reason
         }
-        // The estimate once there is one; until then your own age stands in. Without a birth year, no number.
+        // The estimate once there is one, and until then your own age stands in. Without a birth year, no number.
         val shown = r?.estimate?.roundToInt() ?: state.age
-        EdgeValue(
-            shown?.toString(), shown?.let { stringResource(R.string.glow_healthspan_years) },
-            line?.text ?: if (shown != null) TabCopy.habitAgeForNow(waiting) else waiting,
-            if (line?.moved == true) Orchid else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-            waiting = shown != null,
+        val status = line?.text ?: if (shown != null) TabCopy.habitAgeForNow(waiting) else waiting
+        if (shown != null) {
+            NumberWithTag(tag, Modifier.padding(top = 14.dp)) {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    DotMatrixText(shown.toString(), Modifier.cardNumber(shown.toString()), dot = DotSize.Edge)
+                    Text(
+                        stringResource(R.string.glow_healthspan_years), color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+            }
+        }
+        if (status != null) Text(
+            status, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+            modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
         if (r != null) {
             Spacer(Modifier.height(10.dp))
@@ -182,33 +203,36 @@ fun HabitAgeEdgeCard(state: Healthspan.Outcome?, onClick: (() -> Unit)?, onOpenP
     }
 }
 
+/** The dot at the estimate's radius in [AgeScalePicture]: the scale runs this far in from each end. */
+private val AgeScaleInset = 6.dp
+
 /**
- * The age scale (chart kit): a line of ages, seven years either side of yours, the estimate's range as an orchid band
- * with a white dot at the [estimate], and a hairline at your [age]. Labelled with the range under the band and you at
- * the hairline. An early estimate's range can run past the ends; it's drawn to them.
+ * The age scale (spec 2.7, Age scale): [AgeScalePicture] with "You, 34" over the hairline at your [age] and "27 to 31"
+ * under the band, each placed with [ageScaleX] and kept inside the card.
  */
 @Composable
-internal fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
-    val from = age - 7
-    val to = age + 7
-    androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxWidth()) {
-        val w = maxWidth
-        val pad = 8.dp
-        fun f(a: Float) = (a.coerceIn(from.toFloat(), to.toFloat()) - from) / (to - from)
-        fun x(a: Float) = pad + (w - pad * 2) * f(a)
-        val label = Color.White.copy(alpha = 0.6f)
-        Column {
-            // Your age over its hairline, the range under its band, as in the kit, so the two never overlap.
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.yourAge(age), x(age.toFloat()) / w, label) }
-            Canvas(Modifier.fillMaxWidth().height(30.dp)) {
-                val y = size.height / 2
-                fun px(a: Float) = x(a).toPx()
-                drawLine(Color.White.copy(alpha = 0.15f), Offset(px(from.toFloat()), y), Offset(px(to.toFloat()), y), 6.dp.toPx(), StrokeCap.Round)
-                drawLine(Orchid.copy(alpha = 0.5f), Offset(px(low.toFloat()), y), Offset(px(high.toFloat()), y), 12.dp.toPx(), StrokeCap.Round)
-                drawLine(Color.White.copy(alpha = 0.6f), Offset(px(age.toFloat()), 0f), Offset(px(age.toFloat()), size.height), 1.dp.toPx())
-                drawCircle(Color.White, 7.dp.toPx(), Offset(px(estimate), y))
-            }
-            Box(Modifier.fillMaxWidth().height(16.dp)) { ScaleLabel(TabCopy.ageRange(low, high), x((low + high) / 2f) / w, label) }
+private fun AgeScale(age: Int, low: Int, high: Int, estimate: Float) {
+    val label = Color.White.copy(alpha = GlowType.CAPTION_ALPHA)
+    fun at(a: Float) = ageScaleX(a, low.toFloat(), high.toFloat(), age.toFloat())
+    Column(Modifier.fillMaxWidth()) {
+        LabelAt(TabCopy.yourAge(age), at(age.toFloat()), label)
+        AgeScalePicture(
+            low.toFloat(), high.toFloat(), estimate, age.toFloat(), Orchid, PictureSize.Wide, Modifier.fillMaxWidth().height(28.dp),
+        )
+        LabelAt(TabCopy.ageRange(low, high), at((low + high) / 2f), label)
+    }
+}
+
+/** [text] in Caption centred on [share] of the scale (0 to 1, inside [AgeScaleInset] at each end), kept inside the row. */
+@Composable
+private fun LabelAt(text: String, share: Float, color: Color) {
+    Layout(content = { Text(text, color = color, style = GlowType.caption, maxLines = 1) }, modifier = Modifier.fillMaxWidth()) { measurables, cs ->
+        val p = measurables.first().measure(cs.copy(minWidth = 0))
+        val width = cs.maxWidth
+        val inset = AgeScaleInset.roundToPx()
+        val centre = inset + share * (width - 2 * inset)
+        layout(width, p.height) {
+            p.place((centre - p.width / 2f).roundToInt().coerceIn(0, (width - p.width).coerceAtLeast(0)), 0)
         }
     }
 }

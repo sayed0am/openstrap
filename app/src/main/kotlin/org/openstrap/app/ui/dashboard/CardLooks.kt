@@ -2,7 +2,6 @@ package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.ui.glow.CardSize
 import org.openstrap.app.ui.glow.GridRow
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.Pane
 import org.openstrap.app.ui.glow.packGrid
 
@@ -13,41 +12,92 @@ import org.openstrap.app.ui.glow.packGrid
  */
 
 /**
- * A card's tier (spec 2.4), with strips and plain pieces (Edit Today) told apart from edge cards. [Level] is an edge
- * card whose light fills from the left across to the value, like Charge: a fill, not an edge, so it reads as its own
- * design.
+ * A card's tier (spec 2.5): a [Glow] card (the hero, the second glow, a tab's level glow), a [Picture] card (every
+ * metric with a shape of its own, Smalls included), a grouped [List], a [Strip] (a state or an action, 68 dp, unlit)
+ * and [Plain] pieces with no picture (Edit Today, Activity's Start a workout card).
  */
-enum class Tier { Glow, Edge, Level, List, Strip, Plain }
+enum class Tier { Glow, Picture, List, Strip, Plain }
 
-/** The colour a card is lit in: its metric's, or [Neutral], the cool grey of hsl 220 10% 55%. */
-enum class Hue { Recovery, Charge, Sleep, Heart, Steps, Load, HabitAge, Neutral, /** The evening hero's violet: a moment, not a metric. */ Evening }
+/** The colour a card's picture is drawn in: its metric's, or [Neutral] for cards about no one metric. */
+enum class Hue { Recovery, Charge, Sleep, Heart, Steps, Load, Stress, SkinTemp, HabitAge, Neutral, /** The evening hero's violet: a moment, not a metric. */ Evening }
 
 /**
- * A card's shape where it counts for its design (spec 2.3, 2.4): a [Small] or a [Tall] reads as its own design whatever
- * its tier and edge. Every other size (Large, Wide, Strip, List) is a [Card]: a full-width card, told apart by its
- * tier and edge alone.
+ * A card's shape where it counts for its design (spec 2.4, 2.5): a [Small], a [Tall] and a [Strip] each read as a
+ * design of their own whatever their tier and picture. Every other size (Large, Wide, List) is a [Card].
  */
 enum class Shape {
-    /** An unlit strip ([Tier.List] at [CardSize.Strip]): with no light to tell them apart, its height does. */
     Card, Small, Tall, Strip;
 
     companion object {
         fun of(size: CardSize): Shape = when (size) {
             CardSize.Small -> Small
             CardSize.Tall -> Tall
+            CardSize.Strip -> Strip
             else -> Card
         }
     }
 }
 
 /**
- * What a card looks like at a glance: its [tier], its [hue], for edge cards and strips the [edge] its light comes in
- * from, and its [shape]. Two cards look the same when tier, edge and shape match ([sameDesign]): a colour alone doesn't
- * tell two cards apart, so two glows in a row, or two edge cards lit from one side, look the same whatever their
- * colours. Two Smalls side by side are neighbours too, so they need different edges.
+ * What a card looks like at a glance (spec 2.5): its [tier], its [hue], its [shape] and the [picture] it draws (2.7),
+ * null for a glow hero, a list and a plain piece. Colour doesn't count ([sameDesign]).
  */
-data class CardLook(val tier: Tier, val hue: Hue, val edge: Edge? = null, val shape: Shape = Shape.Card) {
-    fun sameDesign(other: CardLook?): Boolean = other != null && tier == other.tier && edge == other.edge && shape == other.shape
+data class CardLook(val tier: Tier, val hue: Hue, val shape: Shape = Shape.Card, val picture: PictureKind? = null) {
+    /**
+     * Whether [other] looks the same (spec 2.5): the same tier, shape and picture, whatever the colours. Two cards
+     * drawing the same kind of picture look alike whatever their tier too, so no picture kind sits by itself.
+     */
+    fun sameDesign(other: CardLook?): Boolean = other != null && (
+        (tier == other.tier && shape == other.shape && picture == other.picture) ||
+            (picture != null && picture != PictureKind.None && picture == other.picture)
+        )
+}
+
+/**
+ * Every picture a card draws (spec 2.7). Each metric draws its own, and two neighbours never draw the same kind
+ * ([CardLook.sameDesign]). [None] is a card with words alone: a strip, Start a workout.
+ */
+enum class PictureKind {
+    /** Heart rate: the day's line through your resting range. */
+    Line,
+    /** Steps: the day's hourly bars. */
+    HourlyBars,
+    /** Recovery's Small and breathing disturbances: a dot a night through the band of your usual. */
+    WeekDots,
+    /** Last night: one bar split by stage. */
+    StageBar,
+    /** Last night on the Sleep tab: the hypnogram. */
+    Hypnogram,
+    /** Sleep regularity: the week's bed and wake bars against your usual times. */
+    BedWakeBars,
+    /** Habit Age: the range as a band on a scale of ages, your age a hairline. */
+    AgeScale,
+    /** Stress: the day as one strip, calm to high. */
+    DayStrip,
+    /** Skin temperature: a half dial centred on your normal. */
+    Dial,
+    /** Load: a level filling over the band of your usual. */
+    LevelFill,
+    /** Time to recover: a ring filling toward Ready. */
+    CountdownRing,
+    /** Active minutes: a block per stretch toward the week's target. */
+    Blocks,
+    /** Heart points: the last 7 days as bars (the zone split isn't stored). */
+    DayBars,
+    /** Naps: the day as a hairline, the nap as its stage strip at its time. */
+    NapDay,
+    /** Recharged: a fill from where the night began to where it ended. */
+    FillBar,
+    /** Drained: one bar split by what took it. */
+    SplitBar,
+    /** Your week: a ring a day. */
+    WeekRings,
+    /** A workout: its zone bar. */
+    ZoneBar,
+    /** Energy, as a glow: its curve so far. */
+    Curve,
+    /** Words alone. */
+    None,
 }
 
 /**

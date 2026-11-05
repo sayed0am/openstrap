@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,9 +41,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.level
-import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The Goals and bests page from You (workouts spec 3.5, board AchievementsV1), All badges, and the weekly recap the
@@ -189,20 +186,17 @@ fun GoalsAndBestsPage(
             ) { PageButton(stringResource(R.string.glow_goals_goal_button, view.goal), onGoal, icon = AppIcons.PencilEdit) }
         }
         item {
-            // Lit from the left in gold, so it doesn't sit as a list right under the badges' panel's look.
-            CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left, color = BestColor)) {
-                ListPanel(title = stringResource(R.string.glow_goals_personal_bests)) {
-                    val shown = view.bests.sortedBy { order(it.kind) }
-                    if (shown.isEmpty()) Text(
-                        stringResource(R.string.glow_goals_no_bests), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                        style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp),
+            ListPanel(title = stringResource(R.string.glow_goals_personal_bests)) {
+                val shown = view.bests.sortedBy { order(it.kind) }
+                if (shown.isEmpty()) Text(
+                    stringResource(R.string.glow_goals_no_bests), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp),
+                )
+                shown.forEachIndexed { i, b ->
+                    ListRow(
+                        RewardsCopy.bestTitle(b.kind), BestColor, RewardsCopy.bestValue(b.kind, b.value), shortDate(b.date), divider = i > 0,
+                        icon = AppIcons.FlagCheckered,
                     )
-                    shown.forEachIndexed { i, b ->
-                        ListRow(
-                            RewardsCopy.bestTitle(b.kind), BestColor, RewardsCopy.bestValue(b.kind, b.value), shortDate(b.date), divider = i > 0,
-                            icon = AppIcons.FlagCheckered,
-                        )
-                    }
                 }
             }
         }
@@ -339,7 +333,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val seconds = mine.sumOf { it.activeSeconds }
             val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
-            EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+            PictureCard(GoalColor, Modifier.fillMaxWidth()) {
                 EdgeTitle(
                     stringResource(R.string.glow_goals_in_all),
                     pluralStringResource(R.plurals.glow_goals_workouts_count, mine.size, mine.size),

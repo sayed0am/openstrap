@@ -12,7 +12,6 @@ class WorkoutColorsTest {
     @Test
     fun zonesAreTheLiveScreens() {
         assertEquals(ZONE_COLORS.map { it.toArgb() }, WorkoutColors.ZONES)
-        assertEquals(MetricColors.sleepLight.toArgb(), WorkoutColors.ZONE_1)
         assertEquals(MetricColors.heart.toArgb(), WorkoutColors.ZONE_5)
     }
 

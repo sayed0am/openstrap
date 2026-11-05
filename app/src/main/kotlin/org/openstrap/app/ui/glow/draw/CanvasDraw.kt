@@ -8,6 +8,7 @@ import android.graphics.LinearGradient
 import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
 import androidx.compose.ui.graphics.Color
@@ -186,6 +187,54 @@ fun drawEdge(canvas: Canvas, paint: EdgePaint) {
 }
 
 /* ------------------------------------------------------------------------------------------------ */
+/* Picture card                                                                                      */
+/* ------------------------------------------------------------------------------------------------ */
+
+/**
+ * A picture card's background on [canvas] (spec 2.5), [w] by [h] px with [r] px corners: the near-black surface, the
+ * L2 [rim] in [ink] when the card is off your normal, the hairline. [strength] is the mood's ([GlowMood.edge]); [wash]
+ * false leaves out the faint ink inside the rim, for a light that only marks the edge (the Start widget's corner).
+ * The same rim the app's PictureCard draws in Compose.
+ */
+fun drawPictureCard(
+    canvas: Canvas, w: Float, h: Float, r: Float, density: Float,
+    ink: Color, rim: Rim?, strength: Float = 1f, wash: Boolean = true,
+) {
+    canvas.drawRoundRect(0f, 0f, w, h, r, r, fill(EdgeSurface))
+    if (rim != null) {
+        val cx = rim.x * w
+        val cy = rim.y * h
+        val rx = (rim.reachX * w).coerceAtLeast(1f)
+        val ry = (rim.reachY * h).coerceAtLeast(1f)
+        fun ellipse(rx: Float, ry: Float, colors: List<Color>, stops: List<Float>) =
+            RadialGradient(cx, cy, rx, colors.map { it.toArgb() }.toIntArray(), stops.toFloatArray(), Shader.TileMode.CLAMP).apply {
+                setLocalMatrix(Matrix().apply { setScale(1f, ry / rx, cx, cy) })
+            }
+        if (wash) {
+            val inside = ellipse(rx * RIM_WASH_REACH_X, ry * RIM_WASH_REACH_Y, listOf(ink.copy(alpha = RIM_WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f))
+            canvas.drawRoundRect(0f, 0f, w, h, r, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { shader = inside })
+        }
+        val edge = ellipse(rx, ry, listOf(ink.copy(alpha = strength), ink.copy(alpha = RIM_HALF_ALPHA * strength), Color.Transparent), listOf(0f, RIM_HALF_AT, 1f))
+        val s = RIM_WIDTH_DP * density
+        canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.STROKE
+            strokeWidth = s
+            shader = edge
+        })
+    }
+    val s = density
+    canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, stroke(Color.White.copy(alpha = org.openstrap.app.ui.glow.GlowLayout.CardEdgeAlpha), s))
+}
+
+/** The rim as the app's PictureCard draws it: 2 dp, the ink at 35% halfway out, a 13% wash inside. */
+private const val RIM_WIDTH_DP = 2f
+private const val RIM_HALF_ALPHA = 0.35f
+private const val RIM_HALF_AT = 0.55f
+private const val RIM_WASH_ALPHA = 0.13f
+private const val RIM_WASH_REACH_X = 0.8f
+private const val RIM_WASH_REACH_Y = 0.7f
+
+/* ------------------------------------------------------------------------------------------------ */
 /* Dots                                                                                              */
 /* ------------------------------------------------------------------------------------------------ */
 
@@ -257,6 +306,48 @@ fun drawHourPills(canvas: Canvas, g: HourPillsGeometry, width: Float, density: F
 fun drawWeekBars(canvas: Canvas, bars: List<PillBar?>, shown: Int, color: Color) {
     bars.forEachIndexed { i, bar -> bar?.let { drawPillBar(canvas, it, if (i == shown) color else Color.White.copy(alpha = WeekBarsLook.DIM_ALPHA)) } }
 }
+
+/**
+ * A week of dots through your band, as the app's Recovery card draws it (spec 2.7), for the widgets: [values] oldest
+ * first, one per [column] px wide column with [gap] px between, in [height] px. [usual] is a band of the ink at 12%;
+ * dots inside it are dimmer, outside it full ink, the latest larger. The scale spans the values and the band with 15%
+ * room, the dots a radius clear of top and foot.
+ */
+fun drawWeekDots(canvas: Canvas, values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, ink: Color, column: Float, gap: Float, height: Float) {
+    val known = values.filterNotNull() + listOfNotNull(usual?.start, usual?.endInclusive)
+    if (known.isEmpty()) return
+    var lo = known.min()
+    var hi = known.max()
+    if (hi - lo < 1e-3f) {
+        lo -= 1f
+        hi += 1f
+    }
+    val room = (hi - lo) * WEEK_DOTS_ROOM
+    lo -= room
+    hi += room
+    val big = WEEK_DOTS_LATEST_R * height
+    fun y(v: Float) = big + (1f - ((v - lo) / (hi - lo)).coerceIn(0f, 1f)) * (height - 2 * big)
+    val width = values.size * column + (values.size - 1).coerceAtLeast(0) * gap
+    if (usual != null) {
+        val top = y(usual.endInclusive)
+        val bottom = maxOf(y(usual.start), top + 2f)
+        canvas.drawRoundRect(0f, top, width, bottom, column / 6, column / 6, fill(ink.copy(alpha = WEEK_DOTS_BAND_ALPHA)))
+    }
+    val last = values.lastIndex
+    values.forEachIndexed { i, v ->
+        v ?: return@forEachIndexed
+        val inBand = usual == null || v in usual
+        val alpha = if (i == last || !inBand) 1f else WEEK_DOTS_DIM_ALPHA
+        canvas.drawCircle(i * (column + gap) + column / 2, y(v), if (i == last) big else WEEK_DOTS_R * height, fill(ink.copy(alpha = alpha)))
+    }
+}
+
+/** As the app's week of dots, 3.5 and 5 dp across a 28 dp row: a dot's radius and the latest's as shares of the height. */
+private const val WEEK_DOTS_R = 3.5f / 28f
+private const val WEEK_DOTS_LATEST_R = 5f / 28f
+private const val WEEK_DOTS_BAND_ALPHA = 0.12f
+private const val WEEK_DOTS_DIM_ALPHA = 0.55f
+private const val WEEK_DOTS_ROOM = 0.15f
 
 /** One pill bar in [color]. */
 fun drawPillBar(canvas: Canvas, bar: PillBar, color: Color) {

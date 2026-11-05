@@ -9,8 +9,11 @@ import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.EdgeLight
 import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.glow.draw.Edge
+import org.openstrap.app.ui.glow.draw.LevelFade
+import org.openstrap.app.ui.glow.draw.SoftGlow
+import org.openstrap.app.ui.glow.draw.StrongGlow
 
-/** Every row of the edge placement table (spec 2.4). */
+/** The widgets' edge light, which the app's cards dropped on 2026-11-04 (spec 2.10). */
 class EdgeLightTest {
     @Test fun `usual value lights the bottom, soft`() {
         assertEquals(EdgeLight(Edge.Bottom, strong = false, progressBar = false), edgeLight(EdgeStatus.Usual, EdgeKind.Value))

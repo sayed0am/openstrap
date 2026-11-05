@@ -66,7 +66,21 @@ android {
             // Without the release key, signed with the debug key so a release build still installs locally.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+        // A release build the :baselineprofile module drives to record app/src/main/baseline-prof.txt: not shrunk, so
+        // the profile names the real classes (R8 renames them for the release), and not debuggable, so it runs like
+        // the release. It installs as the dev app, beside the real one and never over it.
+        create("benchmark") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "OpenStrap ${appVersionName.removeSuffix(".0")}"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
+    // The benchmark build is a release build: the release stubs of the debug tools.
+    sourceSets.getByName("benchmark").kotlin.directories += "src/release/kotlin"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -202,6 +216,8 @@ dependencies {
     implementation(libs.work.runtime.ktx)
     // Automatic backup writes into a folder the user picks (export/AutoBackup.kt).
     implementation(libs.documentfile)
+    // Hands the baseline profile to ART on phones that install the APK outside the Play Store.
+    implementation(libs.profileinstaller)
 
     testImplementation(libs.junit)
     // Android's org.json is a stub in plain JVM unit tests.

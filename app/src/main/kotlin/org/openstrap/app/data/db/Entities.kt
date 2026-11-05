@@ -470,11 +470,26 @@ data class StrapReadinessRow(
     val algorithmVersion: String,
 )
 
-/** Blood oxygen measured during sleep (type 38). Separate from daytime spot readings ([Spo2Sample]). */
+/**
+ * Blood oxygen measured during sleep (type 38), kept as the strap sends it. Separate from daytime spot readings
+ * ([Spo2Sample]). Nothing reads it for a number yet: [percent] is nearly always 100, so the night's blood oxygen comes
+ * from [Spo2Sample]s inside the sleep. The version 2 extras are stored so they can be decoded later: their meaning is
+ * unknown (Zepp uploads them raw and its server makes the number).
+ */
 @Entity(tableName = "sleep_spo2")
-data class SleepSpo2Sample(
+class SleepSpo2Sample(
     @PrimaryKey val timestamp: Long,
     val percent: Int,
+    /** The record's second byte, as sent; probably the seconds measured. */
+    val time: Int? = null,
+    /** Six bytes, as sent. */
+    val high: ByteArray? = null,
+    /** Six bytes, as sent. */
+    val low: ByteArray? = null,
+    /** Eight bytes, as sent. */
+    val signalQuality: ByteArray? = null,
+    /** Four bytes, as sent. */
+    val extend: ByteArray? = null,
 )
 
 /**

@@ -61,9 +61,28 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.glow.draw.LightAngle
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeStatus
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.dashboard.FAILED_SHORT
+import org.openstrap.app.ui.dashboard.GoalFacts
+import org.openstrap.app.ui.dashboard.GoalMetric
+import org.openstrap.app.ui.dashboard.NewsTag
+import org.openstrap.app.ui.dashboard.OffStatus
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.bodyOffStatus
+import org.openstrap.app.ui.dashboard.goalTag
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.dashboard.rimLit
+import org.openstrap.app.ui.glow.pictures.CountdownRing
+import org.openstrap.app.ui.glow.pictures.DayLine
+import org.openstrap.app.ui.glow.pictures.DayStrip
+import org.openstrap.app.ui.glow.pictures.LevelFill
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.WeekOfDots
+import org.openstrap.app.ui.glow.pictures.WeekRings
+import org.openstrap.app.ui.glow.pictures.dayLineRim
+import org.openstrap.app.ui.glow.pictures.dayStripRim
+import org.openstrap.app.ui.glow.pictures.levelFillRim
+import org.openstrap.app.ui.glow.pictures.weekOfDotsRim
 
 /*
  * The pieces Today is built from (spec 4.2): the hero's parts, strips, edge cards and lists. Each card has one home
@@ -125,10 +144,10 @@ private val StripPadding = PaddingValues(horizontal = GlowLayout.CardInset, vert
 /** A full-width strip: a state or an action, [GlowGrid.StripHeight] high unless its words need more. */
 @Composable
 internal fun TodayStrip(
-    color: Color, kind: EdgeKind, modifier: Modifier = Modifier, status: EdgeStatus = EdgeStatus.Usual,
+    color: Color, modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null, content: @Composable ColumnScope.() -> Unit,
-) = EdgeCard(
-    color, modifier.fillMaxWidth().gridSize(CardSize.Strip), status = status, kind = kind, onClick = onClick,
+) = PictureCard(
+    color, modifier.fillMaxWidth().gridSize(CardSize.Strip), onClick = onClick,
     contentPadding = StripPadding, content = { Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.Center, content = content) },
 )
 
@@ -146,7 +165,7 @@ internal fun StripLine(title: String, detail: String?) {
  */
 @Composable
 internal fun LastNightStrip(state: DayUiState, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false, firstNights: Boolean = false) =
-    TodayStrip(MetricColors.sleepDeep, EdgeKind.Sleep, modifier, onClick = onClick) {
+    TodayStrip(MetricColors.sleepDeep, modifier, onClick = onClick) {
         StripLine(
             stringResource(R.string.glow_today_last_night),
             TodayCopy.lastNight(state.asleepSeconds, state.sleep?.score) ?: when {
@@ -163,7 +182,7 @@ internal fun LastNightStrip(state: DayUiState, onClick: () -> Unit, modifier: Mo
  */
 @Composable
 internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Modifier = Modifier) =
-    TodayStrip(EdgeNeutral, EdgeKind.Value, modifier) {
+    TodayStrip(EdgeNeutral, modifier) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(R.string.glow_today_check_in_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
@@ -178,7 +197,7 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
     }
 
 /**
- * Start a workout (spec 4.2): unlit, with a heart-red light travelling round its border ([movingBorder]), the title
+ * Start a workout (spec 4.2): unlit, with a rainbow light travelling round its border ([movingBorder]), the title
  * with your usual sport under it ("Outdoor run, your usual") and a white play button. One thing to do, so the whole
  * strip is the button and has no caret; it opens Ready with that sport.
  */
@@ -186,7 +205,7 @@ internal fun CheckInStrip(feeling: Int?, onCheckIn: (Int?) -> Unit, modifier: Mo
 internal fun StartWorkoutStrip(sport: Int, onStart: (Int) -> Unit, modifier: Modifier = Modifier) {
     val name = Workouts.sportName(sport)
     // A strip that does one thing is a button: its title is plain text, with no caret (spec 2.5, Tappable says so).
-    TodayStrip(MetricColors.heart, EdgeKind.Value, modifier.movingBorder(MetricColors.heart), onClick = { onStart(sport) }) {
+    TodayStrip(MetricColors.heart, modifier.movingBorder(), onClick = { onStart(sport) }) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(stringResource(R.string.glow_today_start_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
@@ -219,7 +238,7 @@ private fun alertMetric(a: HealthAlertRow) = when (a.type) { 3 -> Metric.Stress;
 @Composable
 internal fun AlertsStrip(alerts: List<HealthAlertRow>, onOpenMetric: (Metric) -> Unit, modifier: Modifier = Modifier) {
     val newest = alerts.maxByOrNull { it.timestamp } ?: return
-    TodayStrip(MetricColors.heart, EdgeKind.Value, modifier, status = EdgeStatus.Above, onClick = { onOpenMetric(alertMetric(newest)) }) {
+    TodayStrip(MetricColors.heart, modifier, onClick = { onOpenMetric(alertMetric(newest)) }) {
         StripLine(
             stringResource(R.string.glow_today_alerts_title),
             if (alerts.size > 1) {
@@ -291,37 +310,142 @@ internal fun EdgeValue(
 /** A length of time as dot-matrix digits, the clock look the big figures have: "7:40". Text uses [Units.duration]. */
 internal fun clockDuration(seconds: Long): String = Units.clockDuration(seconds, Units.DOT_LOCALE)
 
+/* ------------------------------------------ Picture cards ------------------------------------------- */
+
+/** How high a Wide's picture is on Today, between its title row and its number. */
+private val WidePictureHeight = 52.dp
+
 /**
- * Last night in full, on waking: the score in dots with its word and time asleep under it, as the Sleep tab's hero has
- * them, then the stages, lit from the top like a night sky. [stuck]: it's still on the strap, so it waits rather than
- * saying there was none.
+ * A picture card's number (spec 2.5, Picture card): white dots with the unit after them, then the news [tag] 8 dp on
+ * ([NumberWithTag]), dropping under the number where a Small can't hold both. A dim dash while there's no [value].
  */
 @Composable
-internal fun LastNightCard(state: DayUiState, firstNights: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false) {
-    val s = state.sleep
-    EdgeCard(MetricColors.sleepDeep, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Sleep, onClick = onClick) {
-        EdgeTitle(stringResource(R.string.glow_today_last_night), s?.let { Ranges.times(it.start, it.end) })
-        val asleep = state.asleepSeconds
-        val score = s?.score
-        // A night the strap gave no score says so in words, with no dash where the score would be.
-        EdgeValue(
-            score?.toString(), stringResource(R.string.glow_today_score_unit),
-            when {
-                asleep == null ->
-                    if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else stringResource(R.string.glow_today_no_sleep)
-                score != null -> stringResource(
-                    R.string.glow_today_last_night_scored,
-                    org.openstrap.app.presentation.TabCopy.sleepScoreWord(score), Units.duration(asleep),
-                )
-                else -> stringResource(R.string.glow_today_last_night_unscored, Units.duration(asleep))
-            },
-            waiting = asleep == null,
+internal fun PictureNumber(value: String?, unit: String?, tag: NewsTag?, modifier: Modifier = Modifier) {
+    if (value == null) WaitingDash(modifier.padding(vertical = 8.dp))
+    else NumberWithTag(tag, modifier) {
+        DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge)
+        // Its own item, so on a Small too narrow for both the unit drops under the number whole, never split.
+        if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, maxLines = 1, softWrap = false)
+    }
+}
+
+/**
+ * One of Today's picture cards (spec 2.5, 4.2) at its [size]: the title row, the metric's [picture] in its [ink], the
+ * number in white with its news [tag], and the [status] in Secondary. Colour never says how it's going: the ink draws
+ * only the picture, and off your normal the [rim] lights beside the part that's off. A Small fills the [modifier] its
+ * row gives it, picture in the middle and the number at the foot. On a Small a tag stands in for the status line, as
+ * a list row's does. A Wide keeps both. A Wide puts its picture under the title row, or under the number with
+ * [pictureLast] (Last night's stage bar). [dash] says whether a missing [value] shows the waiting dash, false where
+ * the status says all there is.
+ */
+@Composable
+internal fun TodayPictureCard(
+    ink: Color, title: String, size: PictureSize, value: String?, unit: String?, tag: NewsTag?, status: String?,
+    modifier: Modifier = Modifier, note: String? = null, rim: Rim? = null, onClick: (() -> Unit)? = null,
+    marker: String? = null, titleTag: TitleTag? = null, pictureLast: Boolean = false, dash: Boolean = true,
+    picture: (@Composable (Modifier) -> Unit)? = null,
+) {
+    val small = size == PictureSize.Small
+    val m = if (small) modifier else modifier.fillMaxWidth().gridSize(CardSize.Wide)
+    PictureCard(ink, m, rim = rim, onClick = onClick) {
+        EdgeTitle(title, note.takeIf { !small }, marker = marker, tag = titleTag)
+        if (small) {
+            if (picture != null) {
+                Spacer(Modifier.height(12.dp))
+                picture(Modifier.fillMaxWidth().weight(1f))
+                // As much room under the picture as over it, so a picture standing on a baseline (Steps' bars) doesn't
+                // touch the number.
+                Spacer(Modifier.height(12.dp))
+            } else Spacer(Modifier.weight(1f))
+            if (value != null || dash) PictureNumber(value, unit, tag)
+            val line = status.takeIf { tag == null || value == null }
+            if (line != null) Text(
+                line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                modifier = Modifier.padding(top = 4.dp), maxLines = if (value == null) 2 else 1, overflow = TextOverflow.Ellipsis,
+            )
+            return@PictureCard
+        }
+        if (picture != null && !pictureLast) {
+            Spacer(Modifier.height(12.dp))
+            picture(Modifier.fillMaxWidth().height(WidePictureHeight))
+        }
+        if (value != null || dash) PictureNumber(value, unit, tag, Modifier.padding(top = 12.dp))
+        if (status != null) Text(
+            status, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+            modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
-        if (state.sleepStages.isNotEmpty()) {
-            Spacer(Modifier.height(10.dp))
-            GlowSleepStages(state.sleepStages, 44.dp, compact = true)
+        if (picture != null && pictureLast) {
+            Spacer(Modifier.height(12.dp))
+            picture(Modifier.fillMaxWidth())
         }
     }
+}
+
+/** The size a Today picture card draws at, from its grid [size]: Smalls small, everything else wide. */
+internal fun pictureSize(size: CardSize): PictureSize = if (size == CardSize.Small) PictureSize.Small else PictureSize.Wide
+
+/** Waiting, still on the strap, or no sleep recorded: what Last night says without a night. */
+@Composable
+@ReadOnlyComposable
+private fun noNight(firstNights: Boolean, stuck: Boolean): String =
+    if (firstNights) AFTER_FIRST_NIGHT else if (stuck) WAITING_LAST_NIGHT else stringResource(R.string.glow_today_no_sleep)
+
+/**
+ * Last night (spec 4.2): its stage bar in the stage colours, and Short or Long as its tag when the time asleep is off
+ * your usual, with the rim in the corner. A Small has the sleep score in dots and the time asleep under it, as the page
+ * it opens leads, or the time asleep in dots for a night without a score. A Wide, the card the morning is about,
+ * has the sleep score in dots with its word and the time asleep under it, as the Sleep tab's hero does, then the
+ * stage bar. [stuck]: it's still on the strap, so it waits rather than saying there was none.
+ */
+@Composable
+internal fun LastNightCard(
+    state: DayUiState, firstNights: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier, stuck: Boolean = false,
+    size: PictureSize = PictureSize.Wide,
+) {
+    val s = state.sleep
+    val asleep = state.asleepSeconds
+    val score = s?.score
+    val off = org.openstrap.app.ui.dashboard.sleepLengthOffStatus(state)
+    val tag = offTag(OffWords.Length, off)
+    val totals = state.sleepBreakdown?.let { org.openstrap.app.ui.glow.draw.stageTotals(it.byStage) }.orEmpty()
+    val picture: (@Composable (Modifier) -> Unit)? = if (totals.isEmpty()) null else { m ->
+        Box(m, contentAlignment = Alignment.Center) {
+            SegmentBar(
+                totals.map { (stage, seconds) -> Segment(seconds.toFloat(), org.openstrap.app.ui.glow.draw.stageColor(stage)) },
+                height = org.openstrap.app.ui.glow.draw.StageBarLook.HEIGHT_DP.dp, gap = org.openstrap.app.ui.glow.draw.StageBarLook.GAP_DP.dp,
+                corner = org.openstrap.app.ui.glow.draw.StageBarLook.CORNER_DP.dp,
+            )
+        }
+    }
+    val rim = Rim.Corner.takeIf { rimLit(OffWords.Length, off) }
+    val title = stringResource(R.string.glow_today_last_night)
+    if (size == PictureSize.Small) {
+        TodayPictureCard(
+            MetricColors.sleepDeep, title, size, score?.toString() ?: asleep?.let(::clockDuration),
+            stringResource(if (score != null) R.string.glow_today_score_unit else R.string.glow_today_hours_unit), tag,
+            when {
+                asleep == null -> noNight(firstNights, stuck)
+                score != null -> Units.duration(asleep)
+                else -> null
+            },
+            modifier, rim = rim, onClick = onClick, picture = picture,
+        )
+        return
+    }
+    // A night the strap gave no score shows the time asleep in its place, so its tag still has a number to sit by.
+    TodayPictureCard(
+        MetricColors.sleepDeep, title, size, score?.toString() ?: asleep?.let(::clockDuration),
+        stringResource(if (score != null) R.string.glow_today_score_unit else R.string.glow_today_hours_unit), tag,
+        when {
+            asleep == null -> noNight(firstNights, stuck)
+            score != null -> stringResource(
+                R.string.glow_today_last_night_scored, org.openstrap.app.presentation.TabCopy.sleepScoreWord(score), Units.duration(asleep),
+            )
+            else -> null
+        },
+        modifier, note = s?.let { Ranges.times(it.start, it.end) }, rim = rim, onClick = onClick, pictureLast = true,
+        dash = asleep == null, picture = picture,
+    )
 }
 
 /**
@@ -343,9 +467,8 @@ internal fun HeartCard(
     var picked by remember(values) { mutableStateOf<Int?>(null) }
     val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.roundToInt() to state.dayStart + i * step } }
     val now = scrubbed?.first ?: live ?: state.latestHeartRate
-    EdgeCard(
-        MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide),
-        kind = if (live != null) EdgeKind.Live else EdgeKind.Value, onClick = onClick,
+    PictureCard(
+        MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick,
     ) {
         EdgeTitle(
             stringResource(R.string.glow_today_heart_rate), state.restingHeartRate?.let { stringResource(R.string.glow_today_resting, it) },
@@ -370,65 +493,211 @@ internal fun HeartCard(
 }
 
 /**
- * Steps toward the day's goal, with the day's steps so far as a line (ghost line, chart kit) on an axis up to the goal,
- * and your [usual] by the end of each hour as the faint solid ghost behind it, with "about usual by now" beside the
- * goal (spec 2.7, compare by pace). Without a usual yet only today's line shows. The share of the goal is the card's
- * progress bar. Titled Steps, as the Activity tab and the detail it opens are.
+ * Heart rate on Today (spec 4.2): the day's line through your resting range ([restingRange], your normal resting
+ * heart rate) as a dim band, the latest reading or the [live] one in dots. Off your [normal] heart rate for a day, the
+ * day so far running high or low, the card rims at the line's end and says Above or Below normal. One high reading
+ * isn't news, a day running high is. No scrub here: that lives on Activity's Wide and in the detail.
+ */
+@Composable
+internal fun HeartDayCard(
+    state: DayUiState, live: Int?, size: PictureSize, onClick: () -> Unit, modifier: Modifier = Modifier,
+    restingRange: org.openstrap.app.data.History.Normal? = null, normal: org.openstrap.app.data.History.Normal? = null,
+    upTo: String? = null,
+) {
+    val values = remember(state.heartRate, state.dayStart, state.dayEnd) { bucket(state.heartRate, state.dayStart..state.dayEnd, HEART_STEP) }
+    val mean = remember(values) { values.filterNotNull().takeIf { it.isNotEmpty() }?.average()?.toFloat() }
+    val now = live ?: state.latestHeartRate
+    val off = bodyOffStatus(mean, normal)
+    val at = TodayCopy.heartAt(live != null, state.heartRate.lastOrNull()?.x?.let(::clock))
+    TodayPictureCard(
+        MetricColors.heart, stringResource(R.string.glow_today_heart_rate), size, now?.toString(), stringResource(R.string.glow_unit_bpm),
+        offTag(OffWords.Normal, off),
+        // A Small says where the day sits against your normal once there is one, a Wide when the reading was taken.
+        if (size == PictureSize.Small && normal != null && mean != null && !off.off) TodayCopy.normalWord(0) else at,
+        modifier, note = state.restingHeartRate?.let { stringResource(R.string.glow_today_resting, it) },
+        rim = if (rimLit(OffWords.Normal, off)) dayLineRim(values, off == OffStatus.Above, size) else null,
+        onClick = onClick, marker = upTo,
+        picture = if (state.heartRate.size < 2) null else { m -> DayLine(values, restingRange?.let { it.low..it.high }, MetricColors.heart, size, m) },
+    )
+}
+
+/** Heart rate's line on Today: a point every ten minutes. */
+private const val HEART_STEP = 10 * 60L
+
+/**
+ * Stress on Today (spec 4.2): the day as one strip, calm to high ([DayStrip], [DayUiState.stressStrip]), the latest
+ * reading in dots. The day so far against your [normal] stress says Above or Below usual, with the rim over the
+ * stretch that's off.
+ */
+@Composable
+internal fun StressDayCard(
+    state: DayUiState, size: PictureSize, normal: org.openstrap.app.data.History.Normal?, waiting: String, onClick: () -> Unit,
+    modifier: Modifier = Modifier, upTo: String? = null,
+) {
+    val off = org.openstrap.app.ui.dashboard.stressOffStatus(state.stress, normal)
+    val levels = state.stressStrip
+    val now = state.stress.lastOrNull()
+    TodayPictureCard(
+        MetricColors.stress, stringResource(R.string.glow_today_stress), size, now?.y?.roundToInt()?.toString(), null,
+        offTag(OffWords.Usual, off),
+        when {
+            now == null -> waiting
+            // Off, the tag says how it's going and the line when it was read.
+            off.off -> TodayCopy.heartAt(false, clock(now.x))
+            normal == null -> TodayCopy.normalWord(null)
+            else -> TodayCopy.normalWord(0)
+        },
+        modifier, rim = if (rimLit(OffWords.Usual, off)) dayStripRim(levels, size) else null, onClick = onClick, marker = upTo,
+        picture = if (levels.none { it != null }) null else { m -> DayStrip(levels, MetricColors.stress, size, m) },
+    )
+}
+
+/**
+ * Steps on Today (spec 4.2): today's hourly bars in lime, the count in dots with its goal tag after it ([goalTag]:
+ * Goal met and up the ladder), and the pace in words under it. A Wide has "Goal 8,000" as the title row's note. No
+ * progress bar: the bars and the tag say how far. [facts] are the day's goal facts ([org.openstrap.app.ui.dashboard
+ * .ActivityHistory.stepsFacts]). Without them the tag climbs only as far as the goal itself tells.
  */
 @Composable
 internal fun ActivityCard(
     state: DayUiState, onClick: () -> Unit, modifier: Modifier = Modifier, usual: List<Float>? = null, upTo: String? = null,
     /** The Partial day tag when the strap was worn for part of the day ([TitleTag]). */
     tag: TitleTag? = null,
-    /** The day's count in dots; false leads with the sentence, where the hero above already has the count. */
-    count: Boolean = true,
+    size: PictureSize = PictureSize.Wide,
+    facts: GoalFacts? = null,
 ) {
     val goal = org.openstrap.app.ui.dashboard.LocalGoals.current.steps
     val isToday = state.date == java.time.LocalDate.now()
-    val hour = java.time.LocalTime.now().hour
-    val line = remember(state.hourlySteps, isToday, hour) { org.openstrap.app.data.Summaries.runningSteps(state.hourlySteps, if (isToday) hour else null) }
     val now = java.time.LocalTime.now()
     val pace = org.openstrap.app.presentation.ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
-    val ghost = usual?.takeIf { it.size == 24 }
-    val chart = state.steps > 0 && line.size >= 2
-    EdgeCard(
-        MetricColors.steps, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Progress,
-        // The goal bar only without the day's line: under it, a short bar read as the start of the line. The line
-        // already climbs toward the goal, and the sentence gives the share.
-        progress = if (chart || goal <= 0) null else state.steps / goal.toFloat(), onClick = onClick,
-    ) {
-        EdgeTitle(
-            stringResource(R.string.glow_today_steps_title), stringResource(R.string.glow_today_steps_goal, Units.count(goal)),
-            marker = upTo, tag = tag,
+    // A Small is half a row: a count in the thousands leaves no room for "steps" beside it, and the unit dropping to a
+    // line of its own squeezed the bars to a sliver. The title already says Steps, so a Small has the number alone and
+    // only the goal share under it, one line like Heart rate's beside it; the pace waits on the Wide and the page.
+    val small = size == PictureSize.Small
+    TodayPictureCard(
+        MetricColors.steps, stringResource(R.string.glow_today_steps_title), size, Units.count(state.steps, Units.DOT_LOCALE),
+        if (small) null else stringResource(R.string.glow_today_steps), goalTag(GoalMetric.Steps, facts ?: GoalFacts(state.steps, goal)),
+        if (small) org.openstrap.app.presentation.ActivityCopy.goalShare(state.steps, goal)
+        else org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday),
+        modifier, note = stringResource(R.string.glow_today_steps_goal, Units.count(goal)), onClick = onClick, marker = upTo, titleTag = tag,
+        picture = if (state.steps <= 0) null else { m -> HourBars(state.hourlySteps, MetricColors.steps, m) },
+    )
+}
+
+/**
+ * The day's steps hour by hour as solid pill bars in [ink] on a hairline (spec 2.7): hours with no steps and hours to
+ * come aren't drawn, the latest hour with steps in full ink and the rest a little dimmer.
+ */
+@Composable
+// The hours arrive whole with each update and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+private fun HourBars(hourly: List<Float>, ink: Color, modifier: Modifier = Modifier) {
+    androidx.compose.foundation.Canvas(modifier) {
+        if (hourly.isEmpty()) return@Canvas
+        val line = org.openstrap.app.ui.glow.draw.ChartInk.HAIRLINE_DP.dp.toPx()
+        val base = size.height - line / 2
+        drawLine(
+            org.openstrap.app.ui.glow.draw.ChartInk.Grid, androidx.compose.ui.geometry.Offset(0f, base),
+            androidx.compose.ui.geometry.Offset(size.width, base), line,
         )
-        val sentence = org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday)
-        if (count) EdgeValue(Units.count(state.steps, Units.DOT_LOCALE), stringResource(R.string.glow_today_steps), sentence)
-        else Text(sentence, color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 10.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)
-        if (chart) {
-            Spacer(Modifier.height(10.dp))
-            GhostLine(
-                line, MetricColors.steps, maxOf(goal.toFloat(), state.steps.toFloat(), line.filterNotNull().maxOrNull() ?: 0f, ghost?.maxOrNull() ?: 0f),
-                height = 56.dp, usual = ghost,
-            )
+        val max = hourly.max().coerceAtLeast(1f)
+        val pitch = size.width / hourly.size
+        val latest = hourly.indexOfLast { it > 0f }
+        val room = base - 2.dp.toPx()
+        hourly.forEachIndexed { i, v ->
+            if (v > 0f) pillBar(if (i == latest) ink else ink.copy(alpha = HOUR_BAR_ALPHA), pitch * i, pitch, base - line, room * v / max)
         }
     }
 }
 
+/** The hours before the latest, a little dimmer than it. */
+private const val HOUR_BAR_ALPHA = 0.6f
+
 /**
- * This morning's Recovery, later in the day: about earlier, so lit from the left. The same as the waking hero shows:
- * OpenStrap's score, the strap's estimate labelled as such, or why there's none yet.
+ * This morning's Recovery, later in the day (spec 4.2): a week of dots through the band of your usual
+ * ([org.openstrap.app.data.RecoveryResult.readinessTrend], [org.openstrap.app.data.RecoveryResult.readinessUsual]),
+ * the score in dots, and Above or Below usual with the rim by the latest dot when it's off. The same score the waking
+ * hero shows: OpenStrap's, the strap's estimate labelled as such, or why there's none yet.
  */
 @Composable
 internal fun RecoveryEarlierCard(
     shown: TodayCopy.RecoveryShown, onClick: () -> Unit, modifier: Modifier = Modifier,
     /** Today's score failed to work out: yesterday's stays, dimmed, with a way to try again (spec 4.3). */
     failure: RecoveryFailure? = null, onRetry: () -> Unit = {},
+    size: PictureSize = PictureSize.Wide,
+    /** The day's Recovery, for its week of dots and its usual. Null draws the score alone. */
+    recovery: org.openstrap.app.data.RecoveryResult? = null,
 ) {
-    EdgeCard(MetricColors.readiness, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Earlier, onClick = onClick) {
-        EdgeTitle(stringResource(R.string.glow_today_recovery_title), stringResource(R.string.glow_today_this_morning))
-        if (failure != null) RecoveryFailed(failure, onRetry)
-        else EdgeValue(shown.value?.toString(), shown.word, shown.line)
+    val title = stringResource(R.string.glow_today_recovery_title)
+    if (failure != null) {
+        // A Small has no room for Try again: it says it failed and opens Recovery, where Try again is.
+        if (size == PictureSize.Small) TodayPictureCard(
+            MetricColors.readiness, title, size, null, null, null, FAILED_SHORT, modifier, onClick = onClick, dash = false,
+        )
+        else PictureCard(MetricColors.readiness, modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
+            EdgeTitle(title, stringResource(R.string.glow_today_this_morning))
+            RecoveryFailed(failure, onRetry)
+        }
+        return
     }
+    val week = remember(recovery) { recovery?.readinessTrend?.map { it.second?.toFloat() }.orEmpty() }
+    val usual = recovery?.readinessUsual?.let { it.low..it.high }
+    val off = org.openstrap.app.ui.dashboard.recoveryOffStatus(recovery)
+    TodayPictureCard(
+        MetricColors.readiness, title, size, shown.value?.toString(), shown.word.takeIf { size == PictureSize.Wide },
+        // The strap's estimate isn't OpenStrap's score, so it's never said against your usual.
+        offTag(OffWords.Usual, off).takeIf { !shown.estimate },
+        if (size == PictureSize.Small && shown.value != null) shown.word else shown.line,
+        modifier, note = stringResource(R.string.glow_today_this_morning),
+        rim = if (rimLit(OffWords.Usual, off) && !shown.estimate) weekOfDotsRim(week, usual, size) else null, onClick = onClick,
+        picture = if (week.none { it != null }) null else { m -> WeekOfDots(week, usual, MetricColors.readiness, size, m) },
+    )
+}
+
+/**
+ * Load on Today (spec 4.2): a level filling to today's Load over a dim band of your usual ([LoadBands.usualRange]),
+ * the Load in dots, and Above or Below usual with the rim past the band when it's off. A low Load is only so far until
+ * the day is over ([org.openstrap.app.ui.dashboard.loadOffStatus]), so it's never news before then.
+ */
+@Composable
+internal fun LoadCard(
+    load: Float?, usual: Float?, endOfDay: Boolean, status: String, size: PictureSize, onClick: () -> Unit, modifier: Modifier = Modifier,
+) {
+    val off = org.openstrap.app.ui.dashboard.loadOffStatus(load, usual, endOfDay)
+    val band = org.openstrap.app.presentation.LoadBands.usualRange(usual)
+    TodayPictureCard(
+        MetricColors.load, stringResource(R.string.glow_today_load), size, load?.roundToInt()?.toString(), null, offTag(OffWords.Usual, off), status,
+        modifier, rim = if (load != null && rimLit(OffWords.Usual, off)) levelFillRim(load, band, size) else null, onClick = onClick,
+        picture = if (load == null) null else { m -> LevelFill(load, band, MetricColors.load, size, m) },
+    )
+}
+
+/**
+ * Time to recover on Today (spec 4.2): a ring filling toward Ready from the end of the [workout] that says how long it
+ * needs, full once you're clear. The hours left in dots and when you're ready under them. A countdown, not a reading,
+ * so never a tag or a rim.
+ */
+@Composable
+internal fun RecoverCard(
+    workout: org.openstrap.app.data.WorkoutAnalysis?, now: Long, zone: ZoneId, size: PictureSize, onClick: () -> Unit, modifier: Modifier = Modifier,
+) {
+    val left = workout?.let { TodayCopy.recoverLeft(it.end, it.recoveryMinutes ?: 0, now) }
+    val text = left?.let { TodayCopy.recoverShort(it, now, zone) }
+    val share = recoverShare(workout?.recoveryMinutes, left)
+    TodayPictureCard(
+        MetricColors.load, stringResource(R.string.glow_today_to_recover), size, text?.first, stringResource(R.string.glow_today_hours_unit), null,
+        text?.second ?: stringResource(R.string.glow_today_recover_no_estimate), modifier, onClick = onClick, dash = false,
+        picture = if (left == null) null else { m -> CountdownRing(share, MetricColors.load, size, m) },
+    )
+}
+
+/**
+ * How far Time to recover's ring has filled toward Ready: the share of the workout's [recoveryMinutes] gone, with
+ * [left] seconds still to go. Full once you're clear, or with no estimate to count down.
+ */
+internal fun recoverShare(recoveryMinutes: Int?, left: Long?): Float {
+    val total = (recoveryMinutes ?: 0) * 60L
+    return if (left == null || total <= 0) 1f else 1f - left.toFloat() / total
 }
 
 /** In place of a Recovery that failed: yesterday's score dimmed, the line, and Try again. */
@@ -471,7 +740,7 @@ internal fun ChargeWideCard(
                 }
             }
         }
-    } else EdgeCard(MetricColors.charge, modifier.fillMaxWidth(), kind = EdgeKind.Level, progress = (now ?: 0) / 100f, onClick = onClick) {
+    } else PictureCard(MetricColors.charge, modifier.fillMaxWidth(), onClick = onClick) {
         EdgeTitle(stringResource(R.string.glow_today_energy_title), null, marker = upTo, tag = tag)
         if (soFar == null || soFar.count { it != null } < 2) EdgeValue(now?.toString(), null, status)
         else Row(verticalAlignment = Alignment.Bottom) {
@@ -485,7 +754,7 @@ internal fun ChargeWideCard(
 /** The workout just done, after it: how long it was, the average heart rate and the zone it mostly sat in. Lit from the left, about earlier. */
 @Composable
 internal fun WorkoutCard(w: org.openstrap.app.data.WorkoutAnalysis, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    EdgeCard(MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Earlier, onClick = onClick) {
+    PictureCard(MetricColors.heart, modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
         EdgeTitle(Workouts.sportName(w.workout.sportType), Ranges.times(w.shownStart, w.end))
         val mostly = w.zoneSeconds.withIndex().filter { it.value > 0 }.maxByOrNull { it.value }?.index
         EdgeValue(
@@ -508,45 +777,50 @@ private fun workoutLine(average: Int?, zone: Int?): String? = when {
 }
 
 /**
- * Your week (spec 4.2): last Monday to Sunday against the week before, every day of this week. Steps a day in dots,
- * time asleep a night and the workouts done as text under them (one dotted number a card, spec 2.3). A summary of three
- * metrics borrows none of their colours: a neutral edge from the bottom, soft, like any value at its usual.
+ * Your week (spec 4.2): Monday to Sunday as a ring a day in Steps' lime ([WeekRings]), full for a day at the goal, a
+ * day to come its faint track alone, and "4 of 7 days at goal" as the title row's note. Unlit, with no number: the
+ * rings are the card. Today's steps are the live count, the days before come from Steps' daily [history]. It opens the
+ * week story.
  */
 @Composable
 internal fun WeekCard(
-    state: DayUiState, workouts: List<org.openstrap.app.data.WorkoutAnalysis>, history: DailyHistory?, modifier: Modifier = Modifier,
+    state: DayUiState, history: DailyHistory?, modifier: Modifier = Modifier,
     /** Opens the week story. */
     onClick: (() -> Unit)? = null,
 ) {
-    val week = TodayCopy.lastWeek(state.date)
-    val start = week.start
-    val end = week.endInclusive
-    val steps by remember(end, history) {
-        history?.invoke(Metric.Steps.daily, start.minusDays(7), end) ?: kotlinx.coroutines.flow.flowOf(emptyList())
+    val goal = org.openstrap.app.ui.dashboard.LocalGoals.current.steps
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    // The phone's own week, as everywhere else and on the page it opens ([TodayCopy.thisWeek]).
+    val firstDay = remember { org.openstrap.app.data.Weeks.firstDay() }
+    val start = org.openstrap.app.data.Weeks.start(state.date, firstDay)
+    val end = start.plusDays(org.openstrap.app.data.Weeks.DAYS - 1L)
+    val stored by remember(start, history) {
+        history?.invoke(Metric.Steps.daily, start, end) ?: kotlinx.coroutines.flow.flowOf(emptyList())
     }.collectAsStateWithLifecycle(emptyList())
-    fun stepsAvg(from: java.time.LocalDate, to: java.time.LocalDate) =
-        steps.filter { it.date in from..to }.map { it.value.toDouble() }.takeIf { it.isNotEmpty() }?.average()
-    val stepsNow = stepsAvg(start, end)
-    // A night belongs to the morning it ended, so the week's nights end Tuesday through the Monday after.
-    val asleep = state.nights.filter { it.date in start.plusDays(1)..end.plusDays(1) }.mapNotNull { it.asleepSeconds }
-    val zone = ZoneId.systemDefault()
-    val done = workouts.count { Instant.ofEpochSecond(it.workout.start).atZone(zone).toLocalDate() in start..end }
-    EdgeCard(EdgeNeutral, modifier.fillMaxWidth().gridSize(CardSize.Wide), kind = EdgeKind.Value, onClick = onClick) {
-        EdgeTitle(stringResource(R.string.glow_today_week_title), Ranges.of(DayWords.dayMonth(start), DayWords.dayMonth(end)))
-        EdgeValue(
-            stepsNow?.let { Units.count(it.roundToInt(), Units.DOT_LOCALE) }, stringResource(R.string.glow_today_week_steps_unit), null,
+    val today = java.time.LocalDate.now()
+    val week = remember(stored, state.date, state.steps, goal, today) {
+        org.openstrap.app.ui.dashboard.stepsWeek(
+            state.date, state.steps, goal, stored.associate { it.date to it.value.roundToInt() }, today, firstDay,
         )
-        val night = asleep.takeIf { it.isNotEmpty() }?.average()?.toLong()?.let { Units.duration(it) }
-        val workoutsDone = pluralStringResource(R.plurals.glow_today_week_workouts, done, done)
-        Text(
-            if (night != null) stringResource(R.string.glow_today_week_line, night, workoutsDone) else workoutsDone,
-            color = Color.White, style = GlowType.body, modifier = Modifier.padding(top = 8.dp),
+    }
+    val shares = week.days.map { (_, steps) -> steps?.let { if (goal > 0) it.toFloat() / goal else 0f } }
+    val atGoal = week.days.count { (_, steps) -> steps != null && goal > 0 && steps >= goal }
+    PictureCard(MetricColors.steps, modifier.fillMaxWidth().gridSize(CardSize.Wide), onClick = onClick) {
+        EdgeTitle(
+            stringResource(R.string.glow_today_week_title),
+            pluralStringResource(R.plurals.glow_today_week_at_goal, week.days.size, atGoal, week.days.size),
         )
-        val stepsBefore = stepsAvg(start.minusDays(7), start.minusDays(1))
-        Text(
-            TodayCopy.weekStepsLine(stepsNow, stepsBefore) ?: TodayCopy.WEEK_FIRST,
-            color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 10.dp),
-        )
+        Spacer(Modifier.height(14.dp))
+        WeekRings(shares, MetricColors.steps, PictureSize.Wide, Modifier.fillMaxWidth().height(WidePictureHeight))
+        Row(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            week.days.forEach { (day, _) ->
+                Text(
+                    day.dayOfWeek.getDisplayName(java.time.format.TextStyle.NARROW, locale),
+                    Modifier.weight(1f), color = Color.White.copy(alpha = if (day == state.date) 1f else GlowType.CAPTION_ALPHA),
+                    style = GlowType.caption, textAlign = androidx.compose.ui.text.style.TextAlign.Center, maxLines = 1,
+                )
+            }
+        }
     }
 }
 
@@ -559,22 +833,20 @@ internal fun WeekCard(
 @Composable
 internal fun SmallCard(
     color: Color, title: String, value: String?, unit: String?, status: String?, modifier: Modifier = Modifier,
-    kind: EdgeKind = EdgeKind.Value, edgeStatus: EdgeStatus = EdgeStatus.Usual, statusColor: Color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+    rim: Rim? = null, statusColor: Color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
     onClick: (() -> Unit)? = null, extra: (@Composable () -> Unit)? = null,
     /** Waiting for its first value: the dim dash with [status] under it, rather than the word in its place. */
     waiting: Boolean = false,
-    /** How far toward its goal or usual, 0..1, for a [EdgeKind.Progress] Small's bar ([EdgeCard]). */
-    progress: Float? = null,
     /** The number as plain text ([GlowType.smallValue]), for a Small that breaks down the card beside it. */
     plain: Boolean = false,
 ) {
-    EdgeCard(color, modifier, status = edgeStatus, kind = kind, progress = progress, onClick = onClick) {
+    PictureCard(color, modifier, rim = rim, onClick = onClick) {
         CardTitle(title)
         Spacer(Modifier.weight(1f))
         if (value == null && status != null && !waiting) {
             extra?.invoke()
             Text(status, color = Color.White, style = GlowType.body, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            return@EdgeCard
+            return@PictureCard
         }
         Row(verticalAlignment = Alignment.Bottom) {
             when {
@@ -594,6 +866,8 @@ internal fun SmallCard(
 /** A row of a body list: a value against your [normal] ([org.openstrap.app.ui.glow.rememberNormal]). */
 internal class BodyRow(
     val name: String, val color: Color, val value: Float?, val normal: org.openstrap.app.data.History.Normal?, val unit: String, val metric: Metric,
+    /** What the row says while its normal is forming, "Learning, 5 of 7 nights"; null for the plain word. */
+    val learning: String? = null,
 )
 
 /**
@@ -609,31 +883,15 @@ internal fun BodyList(
             val direction = org.openstrap.app.data.History.status(r.value, r.normal)
             ListRow(
                 r.name, r.color, r.value?.let { r.metric.format(it) + r.unit },
-                if (r.value == null) waiting else TodayCopy.normalWord(direction),
-                offNormal = direction != null && direction != 0, onClick = { onOpenMetric(r.metric) }, divider = i > 0,
+                when {
+                    r.value == null -> waiting
+                    r.normal == null && r.learning != null -> r.learning
+                    else -> TodayCopy.normalWord(direction)
+                },
+                tag = org.openstrap.app.ui.dashboard.bodyTag(r.metric, direction), onClick = { onOpenMetric(r.metric) }, divider = i > 0,
                 icon = r.metric.rowIcon(),
             )
         }
-    }
-}
-
-/** Load today and time to recover, before or after a workout, each opening its detail. */
-@Composable
-internal fun LoadList(
-    title: String, load: Float?, loadLine: String, recover: Pair<String?, String>?, modifier: Modifier = Modifier,
-    onLoad: (() -> Unit)? = null, onRecover: (() -> Unit)? = null,
-) {
-    ListPanel(modifier, title = title) {
-        ListRow(
-            stringResource(R.string.glow_today_load_today), MetricColors.load, load?.roundToInt()?.toString(), loadLine, divider = false,
-            onClick = onLoad, icon = Score.Load.rowIcon(),
-        )
-        // Recovered is the whole answer: no number, no dash.
-        if (recover != null) ListRow(
-            stringResource(R.string.glow_today_time_to_recover), MetricColors.load, recover.first, recover.second,
-            dash = recover.first != null, onClick = onRecover,
-            icon = Score.Recover.rowIcon(),
-        )
     }
 }
 

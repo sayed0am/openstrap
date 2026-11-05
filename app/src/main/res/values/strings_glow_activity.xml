@@ -169,6 +169,18 @@
     <string name="glow_activity_recovered">Recovered</string>
     <!-- Under Recovered: the workout it counted from, in lower case, and when it ended ("yesterday at 18:40"). The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
     <string name="glow_activity_recovered_after">After your <xliff:g id="sport" example="run">%1$s</xliff:g>, <xliff:g id="ended" example="yesterday at 18:40">%2$s</xliff:g></string>
+    <!-- Inside Time to recover's ring on its page once you're clear. -->
+    <string name="glow_activity_recover_ready">Ready</string>
+    <!-- Under Active minutes' blocks: this week's minutes of the 150 to aim for. -->
+    <plurals name="glow_activity_blocks_of">
+        <item quantity="one"><xliff:g id="minutes" example="1">%1$d</xliff:g> of <xliff:g id="target" example="150">%2$d</xliff:g> minutes</item>
+        <item quantity="other"><xliff:g id="minutes" example="56">%1$d</xliff:g> of <xliff:g id="target" example="150">%2$d</xliff:g> minutes</item>
+    </plurals>
+    <!-- Under Active minutes' blocks, at the end: what one block stands for. -->
+    <plurals name="glow_activity_block_is">
+        <item quantity="one">A block is <xliff:g id="minutes" example="1">%1$d</xliff:g> minute</item>
+        <item quantity="other">A block is <xliff:g id="minutes" example="5">%1$d</xliff:g> minutes</item>
+    </plurals>
     <!-- Beside the big number of hours left to recover. The number itself is drawn apart, so the text has none. -->
     <plurals name="glow_activity_hours_to_go">
         <item quantity="one">hour to go</item>
@@ -222,10 +234,8 @@
 
     <!-- The week story's title. -->
     <string name="glow_activity_your_week">Your week</string>
-    <!-- Headline in the number's place when last week has no steps. -->
+    <!-- Headline in the number's place when the week has no steps yet. -->
     <string name="glow_activity_no_steps">No steps</string>
-    <!-- Under No steps: which week it is. -->
-    <string name="glow_activity_monday_to_sunday">Monday to Sunday last week</string>
     <!-- Beside a held day's steps. The day is "Wed 21" or "Today". -->
     <string name="glow_activity_steps_on">steps, <xliff:g id="day" example="Wed 21">%1$s</xliff:g></string>
     <!-- Under a number: the hours asleep a night on average. Short, a third of the width. -->

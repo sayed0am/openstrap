@@ -54,6 +54,7 @@
     <string name="glow_metrics_for_the_day">For the day</string>
     <!-- Under HRV, blood oxygen, skin temperature, breathing and stress: the number is the day's average. -->
     <string name="glow_metrics_day_average">Day average</string>
+    <string name="glow_metrics_night_average">Average asleep</string>
     <!-- Under Workouts: the number counts the last week. -->
     <string name="glow_metrics_last_7_days">Last 7 days</string>
     <!-- Under Habit Age once there's an estimate. -->

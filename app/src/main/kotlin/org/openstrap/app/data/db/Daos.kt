@@ -697,7 +697,11 @@ interface HealthDao : RangedReads {
     @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(percent) AS value, MIN(percent) AS min, MAX(percent) AS max, COUNT(*) AS count FROM spo2 WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
     fun dailySpo2(from: Long, to: Long): Flow<List<DailyAggregate>>
 
-    @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(percent) AS value, MIN(percent) AS min, MAX(percent) AS max, COUNT(*) AS count FROM sleep_spo2 WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
+    /**
+     * Blood oxygen while asleep, per night: the all-day readings inside each main sleep, on the day the sleep ended.
+     * The strap's own sleep table ([sleepSpo2]) reads a flat 100% with a handful of readings a night.
+     */
+    @Query("SELECT date(s.`end`, 'unixepoch', 'localtime') AS day, AVG(o.percent) AS value, MIN(o.percent) AS min, MAX(o.percent) AS max, COUNT(*) AS count FROM spo2 o JOIN sleep_session s ON s.nap = 0 AND o.timestamp BETWEEN s.start AND s.`end` WHERE o.timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")
     fun dailySleepSpo2(from: Long, to: Long): Flow<List<DailyAggregate>>
 
     @Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(celsius) AS value, MIN(celsius) AS min, MAX(celsius) AS max, COUNT(*) AS count FROM skin_temperature WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")

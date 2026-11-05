@@ -276,10 +276,17 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
         Key("spo2", "timestamp", "epoch"),
         byTime(HealthDao::spo2Page) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
         { Spo2Sample(it.long("epoch"), it.int("percent")) }, { d, r -> d.insertSpo2(r) }),
-    CsvTable("sleep_spo2.csv", "time,epoch,percent",
+    CsvTable("sleep_spo2.csv", "time,epoch,percent,seconds,high_hex,low_hex,quality_hex,extend_hex",
         Key("sleep_spo2", "timestamp", "epoch"),
-        byTime(HealthDao::sleepSpo2Page) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.percent) },
-        { SleepSpo2Sample(it.long("epoch"), it.int("percent")) }, { d, r -> d.insertSleepSpo2(r) }),
+        byTime(HealthDao::sleepSpo2Page) { it.timestamp },
+        { listOf(iso(it.timestamp), it.timestamp, it.percent, it.time, hex(it.high), hex(it.low), hex(it.signalQuality), hex(it.extend)) },
+        {
+            SleepSpo2Sample(
+                it.long("epoch"), it.int("percent"), it.intOrNull("seconds"),
+                it.bytes("high_hex"), it.bytes("low_hex"), it.bytes("quality_hex"), it.bytes("extend_hex"),
+            )
+        },
+        { d, r -> d.insertSleepSpo2(r) }),
     CsvTable("stress.csv", "time,epoch,value",
         Key("stress", "timestamp", "epoch"),
         byTime(HealthDao::stressPage) { it.timestamp }, { listOf(iso(it.timestamp), it.timestamp, it.value) },

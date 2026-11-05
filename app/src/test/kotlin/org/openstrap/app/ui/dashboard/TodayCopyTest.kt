@@ -145,23 +145,23 @@ class TodayCopyTest {
         assertEquals("14" to "Hours left, ready tomorrow", TodayCopy.recoverText(14 * 3600L, at(18), zone))
     }
 
-    @Test fun `your week is the last full week, monday to sunday where the week starts on monday`() {
+    @Test fun `your week is the day's own week, monday to sunday where the week starts on monday`() {
         // 23 Oct 2026 is a Friday.
         val monday = java.time.DayOfWeek.MONDAY
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23), monday))
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 19), monday))
-        assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 25), monday))
+        assertEquals(LocalDate.of(2026, 10, 19)..LocalDate.of(2026, 10, 25), TodayCopy.thisWeek(LocalDate.of(2026, 10, 23), monday))
+        assertEquals(LocalDate.of(2026, 10, 19)..LocalDate.of(2026, 10, 25), TodayCopy.thisWeek(LocalDate.of(2026, 10, 19), monday))
+        assertEquals(LocalDate.of(2026, 10, 19)..LocalDate.of(2026, 10, 25), TodayCopy.thisWeek(LocalDate.of(2026, 10, 25), monday))
     }
 
     @Test fun `your week follows the locale's first day`() {
         val was = Locale.getDefault()
         try {
             Locale.setDefault(Locale.US)
-            // In the US the week starts on Sunday: the week before Friday 23 Oct is Sunday 11 to Saturday 17.
-            assertEquals(LocalDate.of(2026, 10, 11)..LocalDate.of(2026, 10, 17), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
+            // In the US the week starts on Sunday: Friday 23 Oct's week is Sunday 18 to Saturday 24.
+            assertEquals(LocalDate.of(2026, 10, 18)..LocalDate.of(2026, 10, 24), TodayCopy.thisWeek(LocalDate.of(2026, 10, 23)))
             assertEquals("Week-on-week comparisons start next Sunday.", TodayCopy.WEEK_FIRST)
             Locale.setDefault(Locale.UK)
-            assertEquals(LocalDate.of(2026, 10, 12)..LocalDate.of(2026, 10, 18), TodayCopy.lastWeek(LocalDate.of(2026, 10, 23)))
+            assertEquals(LocalDate.of(2026, 10, 19)..LocalDate.of(2026, 10, 25), TodayCopy.thisWeek(LocalDate.of(2026, 10, 23)))
             assertEquals("Week-on-week comparisons start next Monday.", TodayCopy.WEEK_FIRST)
         } finally {
             Locale.setDefault(was)
@@ -187,7 +187,7 @@ class TodayCopyTest {
         assertEquals("3% fewer steps than the week before.", TodayCopy.weekStepsLine(970.0, 1000.0))
         assertEquals("About the same steps as the week before.", TodayCopy.weekStepsLine(1001.0, 1000.0))
         assertNull(TodayCopy.weekStepsLine(null, 1000.0))
-        assertEquals("7 h 40, score 83", TodayCopy.lastNight((7 * 60 + 40) * 60L, 83))
+        assertEquals("Score 83, 7 h 40", TodayCopy.lastNight((7 * 60 + 40) * 60L, 83))
         assertEquals("6 h", TodayCopy.lastNight(6 * 3600L, null))
         assertNull(TodayCopy.lastNight(null, 83))
     }

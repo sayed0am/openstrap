@@ -52,14 +52,13 @@ import org.openstrap.app.ui.workout.EffectFigures
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.mainZoneColor
 import org.openstrap.app.ui.workout.WorkoutDetailCopy
 import org.openstrap.app.ui.workout.WorkoutFact
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
-import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
@@ -130,7 +129,7 @@ fun GlowWorkoutDetailScreen(
                 // The summary's hero with the length in dots: a strap workout has no kind of its own to show.
                 val sentence = WorkoutDetailCopy.sentence(w.sportType, shown.activeSeconds, w.trainingLoad, usual, zones)
                 val hero = SummaryHero(dotClock(shown.activeSeconds), "", sentence = sentence)
-                SummaryHeroCard(hero, MetricColors.heart, Workouts.effort(w.trainingLoad, usual))
+                SummaryHeroCard(hero, mainZoneColor(zones, MetricColors.heart), Workouts.effort(w.trainingLoad, usual))
             }
             if (shown.heartRate.isNotEmpty() || w.averageHeartRate != null) item { HeartRateCard(shown) }
             val activeKcal = Workouts.activeKcal(shown, bmrPerMinute)
@@ -151,16 +150,7 @@ fun GlowWorkoutDetailScreen(
             val drop = WorkoutDetailCopy.dropLine(shown.recovery60, shown.recoveryIsMeaningful, usualDrop)
             val loadShown = w.trainingLoad != null || (shown.recoveryMinutes ?: 0) > 0 || drop != null
             if (loadShown) item { WorkoutLoadCard(shown, usual, drop = drop, onInfo = { info = true }) }
-            // A list right under another would look the same, so the later one sits on a neutral edge card (spec 2.4):
-            // the zones when the facts are right above them, else the splits under a plain list.
-            val zonesShown = zones.sum() > 0
-            val factsRightAbove = factsShown && inDay == null && !loadShown
-            val zonesOnEdge = zonesShown && factsRightAbove
-            if (zonesShown) item {
-                CompositionLocalProvider(LocalEdgeOverride provides if (zonesOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-                    ZonesList(remember(zones) { ZoneSeconds(zones) }, shown.maxHeartRate)
-                }
-            }
+            if (zones.sum() > 0) item { ZonesList(remember(zones) { ZoneSeconds(zones) }, shown.maxHeartRate) }
             item { DeleteWorkout(stringResource(R.string.glow_workout_delete_strap), onDelete) }
         }
     }
@@ -219,12 +209,10 @@ private fun PastSummary(
                         if (h.sentence != null) h
                         else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
                     }
-                    SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual))
-                    val sectionOnEdge = FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
-                    // The heart rate card is lit from the left; under the section's own edge card it takes the bottom.
+                    SummaryHeroCard(hero, mainZoneColor(zones, familyColor(family)), Workouts.effort(w.trainingLoad, usual))
+                    FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
                     // Always there, even before any heart rate, since it holds Trim.
-                    val heartEdge = if (sectionOnEdge) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()
-                    CompositionLocalProvider(LocalEdgeOverride provides heartEdge) { HeartRateCard(a, trim) }
+                    HeartRateCard(a, trim)
                     val facts = WorkoutDetailCopy.facts(
                         a.distanceMeters, a.distanceFromSteps, (a.durationSeconds - a.activeSeconds).coerceAtLeast(0), w.steps, w.calories,
                         activeKcal = Workouts.activeKcal(a, null),
@@ -245,11 +233,7 @@ private fun PastSummary(
                     // Zones and splits for the kinds whose section doesn't already show them.
                     val zonesShown = zones.sum() > 0 && family !in setOf(Workouts.Family.IndoorCardio, Workouts.Family.Games)
                     if (zonesShown) ZoneStripPanel(zones)
-                    if (family != Workouts.Family.Distance && family != Workouts.Family.Strength) {
-                        CompositionLocalProvider(LocalEdgeOverride provides if (zonesShown) EdgeOverride(edge = Edge.Bottom) else EdgeOverride()) {
-                            SplitsList(summary, liveRoute = emptyList())
-                        }
-                    }
+                    if (family != Workouts.Family.Distance && family != Workouts.Family.Strength) SplitsList(summary, liveRoute = emptyList())
                     SummaryActions(justEnded = false, onDone = onBack, onDelete = onDelete)
                 }
             }
@@ -276,7 +260,7 @@ private fun HeartRateCard(a: WorkoutAnalysis, trim: WorkoutTrim? = null) {
     }
     var scrubbed by remember { mutableStateOf<Int?>(null) }
     val at = scrubbed?.let { i -> values.getOrNull(i)?.let { v -> first + i * HeartStep to v.roundToInt() } }
-    EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+    PictureCard(MetricColors.heart, Modifier.fillMaxWidth()) {
         val byZone = if (a.heartRate.isNotEmpty()) stringResource(R.string.glow_workout_heart_by_zone) else null
         EdgeTitle(
             stringResource(R.string.glow_summary_heart_rate), byZone,
@@ -369,12 +353,12 @@ private fun ZoneHeartLine(
 }
 
 /**
- * In your day: what share of its day's active kcal the workout is ([CaloriesCopy.inYourDay]), lit from the left in
+ * In your day: what share of its day's active kcal the workout is ([CaloriesCopy.inYourDay]), unlit with its title in
  * Calories' Gold (about the day it's part of). Opens that day's Calories.
  */
 @Composable
 private fun InYourDayCard(text: String, onOpen: (() -> Unit)?) {
-    EdgeCard(MetricColors.calories, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier, onClick = onOpen) {
+    PictureCard(MetricColors.calories, Modifier.fillMaxWidth(), onClick = onOpen) {
         EdgeTitle(stringResource(R.string.glow_workout_in_your_day), null)
         Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))
     }

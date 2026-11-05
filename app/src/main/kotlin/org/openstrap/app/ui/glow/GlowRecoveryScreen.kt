@@ -2,7 +2,31 @@ package org.openstrap.app.ui.glow
 
 import org.openstrap.app.R
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.style.TextOverflow
+import kotlin.math.roundToInt
+import org.openstrap.app.presentation.Units
+import org.openstrap.app.ui.components.cardNumber
+import org.openstrap.app.ui.dashboard.SleepCopy
+import org.openstrap.app.ui.dashboard.NewsTag
+import org.openstrap.app.ui.dashboard.OffStatus
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.bodyOffStatus
+import org.openstrap.app.ui.dashboard.bodyTag
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.dashboard.stressMean
+import org.openstrap.app.ui.dashboard.stressOffStatus
+import org.openstrap.app.ui.glow.pictures.PictureSize
+import org.openstrap.app.ui.glow.pictures.RangeFill
+import org.openstrap.app.ui.glow.pictures.SplitBar
+import org.openstrap.app.ui.glow.pictures.TempDial
+import org.openstrap.app.ui.glow.pictures.tempDialRim
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -54,14 +78,14 @@ import org.openstrap.app.ui.glow.draw.DotSize
 
 /*
  * The Recovery tab (spec 5.1): "can I push today, and why". The score glows with the last 7 days beside it, what
- * drove it as contributor bars, then Charge as a Tall battery with Recharged and Drained as Smalls, the body signals
- * and Habit Age ([recoveryCards]). How the score is
+ * drove it as contributor bars, then Charge as a Tall battery with Recharged and Drained as Smalls, skin temperature
+ * with its dial, the body signals and Habit Age ([recoveryCards]). How the score is
  * worked out, the strap's own score and why it might be off are in the Recovery info sheet, behind the hero's (i).
  * The hero, the contributors and the Charge battery open their details on this tab's stack.
  */
 
 // A whole tab, filling the pane like the other tab screens: nothing outside places it.
-@Suppress("ModifierMissing")
+@Suppress("ModifierMissing", "ComposeModifierMissing")
 @Composable
 fun GlowRecoveryScreen(
     state: DayUiState,
@@ -124,11 +148,14 @@ fun GlowRecoveryScreen(
                     RecoveryCard.Drivers -> DriversList(r?.readiness, onAll = { onOpenScore(Score.Recovery) })
                     // Charge is worked out with Recovery, so a failure there says so here too, not "after your first night".
                     RecoveryCard.Charge -> ChargeTall(
-                        r?.charge, state.dayStart..state.dayEnd, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Energy) },
+                        r?.charge, m, failed = failure != null, tag = partial, onOpen = { onOpenScore(Score.Energy) },
                     )
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
-                    RecoveryCard.BodySignals -> SignalsList(signals, waiting, onOpenMetric)
+                    RecoveryCard.SkinTemp -> SkinTempCard(
+                        signals.skin, signals.skinNormal, signals.skinLearning, waiting, onOpen = { onOpenMetric(Metric.SkinTemperature) }, modifier = m,
+                    )
+                    RecoveryCard.BodySignals -> SignalsList(signals.rows, waiting, onOpenMetric)
                     RecoveryCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
                 }
             }
@@ -242,7 +269,10 @@ internal fun RecoveryFailedHero(
     }
 }
 
-/** What drove the score: the three that weigh most, each with its bar and word. */
+/**
+ * What drove the score: the three that weigh most, each as a contributor bar with its word, the off tag in the word's
+ * place when it's off usual (spec 5.1). Bars and words stay white: colour never says how it's going (spec 2.2).
+ */
 @Composable
 private fun DriversList(ready: Recovery.Readiness?, onAll: () -> Unit) {
     val all = ready?.contributors.orEmpty()
@@ -258,44 +288,73 @@ private fun DriversList(ready: Recovery.Readiness?, onAll: () -> Unit) {
             stringResource(R.string.glow_recovery_drivers_waiting), dash = false, divider = false,
         )
         top.forEachIndexed { i, c ->
-            ContributorRow(
-                TabCopy.factorName(c.factor), MetricColors.readiness, TabCopy.contributorWord(c.score),
-                c.score / 100f, offNormal = TabCopy.contributorOff(c.score), divider = i > 0, onClick = onAll,
+            DriverRow(
+                TabCopy.factorName(c.factor), TabCopy.contributorWord(c.score), c.score / 100f,
+                offTag(OffWords.Usual, contributorOffStatus(c.score)), divider = i > 0, onClick = onAll,
             )
         }
+    }
+}
+
+/** A contributor against usual: Above from Ready for more, Below under Ready, by the score's own bands. */
+internal fun contributorOffStatus(score: Int): OffStatus = when {
+    !TabCopy.contributorOff(score) -> OffStatus.Usual
+    score >= org.openstrap.app.presentation.RecoveryBands.READY_FOR_MORE_FROM -> OffStatus.Above
+    else -> OffStatus.Below
+}
+
+/**
+ * A contributor bar (chart kit): the [name] on its own line, then a white bar filled to [fraction] (0..1) with the
+ * [word] after it, or the off [tag] in the word's place. [onClick] opens the Recovery detail, with the row's caret.
+ */
+@Composable
+private fun DriverRow(name: String, word: String, fraction: Float, tag: NewsTag?, divider: Boolean, onClick: () -> Unit) {
+    val opening = org.openstrap.app.ui.components.cardOpening(onClick)
+    androidx.compose.foundation.layout.Row(
+        Modifier.fillMaxWidth()
+            .then(opening?.modifier ?: Modifier)
+            .clickable(onClick = opening?.onClick ?: onClick)
+            .topHairline(divider, RowHairline)
+            .padding(vertical = GlowLayout.RowPadding),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(name, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                val shape = RoundedCornerShape(3.dp)
+                Box(Modifier.weight(1f).height(6.dp).background(Color.White.copy(alpha = 0.07f), shape)) {
+                    Box(Modifier.fillMaxWidth(fraction.coerceIn(0f, 1f)).height(6.dp).background(Color.White.copy(alpha = 0.7f), shape))
+                }
+                Spacer(Modifier.width(12.dp))
+                if (tag != null) NewsPill(tag)
+                else Text(word, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
+            }
+        }
+        Spacer(Modifier.width(RowCaretGap))
+        TapCaret(ROW_CARET_ALPHA)
     }
 }
 
 /* ---------------------------------------------- Charge ---------------------------------------------- */
 
 /**
- * Charge as a Tall battery (spec 2.3): the light rises to its level from below, the day's Charge curve at the top,
- * and the number now with Charge at waking at the foot.
+ * Charge as a Tall battery (spec 2.3): the light rises to its level from below, with the number now and Charge at
+ * waking at the foot, nothing else in the light (design-system.html, Levels).
  */
 @Composable
 private fun ChargeTall(
-    c: Recovery.ChargeDay?, day: LongRange, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,
+    c: Recovery.ChargeDay?, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,
 ) {
     // Before the first night the number would only be the simulation's starting guess: a dash until then.
     val now = c?.takeIf { it.anchored }?.latest?.let(::chargeShown)
     val atWake = c?.atWake?.toInt()
-    val step = 15 * 60L
-    val values = remember(c?.points, day) { c?.points?.let { bucket(it, day, step) }.orEmpty() }
-    var picked by remember(values) { androidx.compose.runtime.mutableStateOf<Int?>(null) }
-    val scrubbed = picked?.let { i -> values.getOrNull(i)?.let { it.toInt() to clock(day.first + i * step) } }
     GlowCard(GlowStyle.Ember.copy(lightLevel = (now ?: 0) / 100f, second = true), modifier, onClick = onOpen) {
         Column(Modifier.fillMaxHeight()) {
             GlowHeader(stringResource(R.string.glow_recovery_energy), tag = tag)
-            if (c != null && now != null && c.points.size >= 2) {
-                Spacer(Modifier.height(10.dp))
-                // The Charge curve (chart kit): sleep fills it, the day drains it. Scrubbing moves the number.
-                GlowLineChart(values, height = 64.dp, showAverage = false, yRange = 0f..100f, onScrub = { picked = it })
-            }
             Spacer(Modifier.weight(1f))
             HeroFigure(
-                scrubbed?.first?.toString() ?: now?.toString(),
+                now?.toString(),
                 when {
-                    scrubbed != null -> stringResource(R.string.glow_recovery_charge_at, scrubbed.second)
                     failed -> FAILED_SHORT
                     c == null || !c.anchored -> AFTER_FIRST_NIGHT
                     atWake == null -> stringResource(R.string.glow_recovery_now)
@@ -308,89 +367,180 @@ private fun ChargeTall(
     }
 }
 
-/** Recharged or Drained beside the Charge battery: a number and a word. */
+/**
+ * Recharged or Drained beside the Charge battery (spec 5.1), plain: unlit, no tag, no caret, opening nothing, since no
+ * Energy history is kept. Recharged draws its night as a fill from Energy at bedtime to Energy at waking, "Overnight,
+ * 34 to 72". Drained draws a split bar of what took it: exercise, stress and the rest of living.
+ */
 @Composable
 private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier = Modifier, failed: Boolean = false) {
     val ready = c != null && c.anchored && c.latest != null
     val value = c?.takeIf { ready }?.let {
         if (recharged) TabCopy.chargeAmount(it.recharged, +1)
-        else TabCopy.drainedAmount(it.drainedExercise + it.drainedStress + it.drainedLiving)
+        else TabCopy.chargeAmount(it.drainedExercise + it.drainedStress + it.drainedLiving, -1)
     }
+    // Recharged's night: from bedtime, or where the card's own figure says it started, to waking.
+    val night = c?.takeIf { ready && recharged }?.atWake?.let { wake -> (c.atBedtime ?: (wake - c.recharged)).coerceIn(0f, 100f) to wake }
+    val parts = c?.takeIf { ready && !recharged }?.let { listOf(it.drainedExercise, it.drainedStress, it.drainedLiving) }
     val status = when {
         failed -> FAILED_SHORT
         !ready -> AFTER_FIRST_NIGHT
+        night != null -> stringResource(R.string.glow_recovery_overnight, night.first.roundToInt(), night.second.roundToInt())
         recharged -> TabCopy.RECHARGED
         else -> TabCopy.drainedMostly(c.drainedExercise, c.drainedStress, c.drainedLiving)
     }
     val title = stringResource(if (recharged) R.string.glow_recovery_recharged else R.string.glow_recovery_drained)
-    SmallCard(MetricColors.charge, title, value, null, status, modifier, plain = true)
-}
-
-/* ------------------------------------------- Body signals ------------------------------------------- */
-
-/** A body signal for the list: today's value and how it compares with your normal. */
-private class BodySignal(
-    val metric: Metric,
-    val label: String,
-    val accent: Color,
-    val today: Float?,
-    val normal: History.Normal?,
-    /** Show the value as a change from your normal (skin temperature), not as a level. */
-    val asDeviation: Boolean = false,
-    val unit: String = "",
-)
-
-/**
- * Loads the last 30 days of each body signal, enough for its normal ([rememberNormal], keyed on the day and the
- * history, each normal worked out once per load), and the signals once per day state (audit K8).
- */
-@Composable
-private fun rememberSignals(state: DayUiState, history: DailyHistory): List<BodySignal> {
-    val rhr = rememberNormal(Metric.RestingHr, state.date, history)
-    val hrv = rememberNormal(Metric.Hrv, state.date, history)
-    val skin = rememberNormal(Metric.SkinTemperature, state.date, history)
-    val breath = rememberNormal(Metric.Breathing, state.date, history)
-    val spo2 = rememberNormal(Metric.Spo2, state.date, history)
-    val stress = rememberNormal(Metric.Stress, state.date, history)
-    val rhrName = stringResource(R.string.glow_recovery_resting_hr)
-    val hrvName = stringResource(R.string.glow_recovery_hrv)
-    val skinName = stringResource(R.string.glow_recovery_skin_temperature)
-    val breathName = stringResource(R.string.glow_recovery_breathing_rate)
-    val spo2Name = stringResource(R.string.glow_recovery_blood_oxygen)
-    val stressName = stringResource(R.string.glow_recovery_stress)
-    return remember(state, rhr, hrv, skin, breath, spo2, stress) {
-        listOf(
-            BodySignal(Metric.RestingHr, rhrName, MetricColors.heart, state.restingHeartRate?.toFloat(), rhr),
-            BodySignal(Metric.Hrv, hrvName, MetricColors.hrv, state.hrv.avg()?.toFloat(), hrv),
-            BodySignal(
-                Metric.SkinTemperature, skinName, MetricColors.temperature,
-                state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), skin, asDeviation = true,
-            ),
-            BodySignal(Metric.Breathing, breathName, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), breath),
-            BodySignal(Metric.Spo2, spo2Name, MetricColors.spo2, state.spo2.avg()?.toFloat(), spo2, unit = "%"),
-            BodySignal(Metric.Stress, stressName, MetricColors.stress, state.stress.avg()?.toFloat(), stress),
+    PictureCard(MetricColors.charge, modifier) {
+        CardTitle(title)
+        Spacer(Modifier.height(10.dp))
+        val picture = Modifier.fillMaxWidth().weight(1f)
+        when {
+            night != null -> RangeFill(night.first, night.second, MetricColors.charge, PictureSize.Small, picture)
+            parts != null && parts.any { it > 0f } -> SplitBar(parts, MetricColors.charge, PictureSize.Small, picture)
+            else -> Spacer(picture)
+        }
+        // A plain number, not dots: it breaks down the battery beside it.
+        if (value != null) Text(value, Modifier.cardNumber(value), color = Color.White, style = GlowType.smallValue, maxLines = 1)
+        else WaitingDash(Modifier.padding(vertical = 8.dp))
+        Text(
+            status, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+            modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
         )
     }
 }
 
+/* ------------------------------------------ Skin temperature ------------------------------------------ */
+
+/** The share of a Wide's width the dial's box takes at the right, after the number, so it centres where [tempDialRim] lights. */
+private const val DIAL_SHARE = 0.44f
+
 /**
- * Body signals against your normal, each opening its metric. Skin temperature shows as its change from your normal,
- * since the level depends on fit and room. [waiting] is what a row with no reading says.
+ * Skin temperature as a short Wide (spec 5.1): the change from your normal in dots with °C and its off tag at the
+ * left, the dial at the right centred on your normal. Off your normal the rim lights at the dial's top when above, its
+ * foot when below. Before there's a normal it waits for one. Opens the skin temperature detail.
  */
+@Composable
+private fun SkinTempCard(
+    today: Float?,
+    normal: History.Normal?,
+    learning: String?,
+    waiting: String,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val deviation = if (today != null && normal != null) today - normal.mean else null
+    val band = normal?.let { (it.low - it.mean)..(it.high - it.mean) }
+    val status = bodyOffStatus(today, normal)
+    val tag = offTag(OffWords.Normal, status)
+    val rim = if (tag != null) tempDialRim(high = status == OffStatus.Above, PictureSize.Wide) else null
+    PictureCard(MetricColors.temperature, modifier.fillMaxWidth(), rim = rim, onClick = onOpen) {
+        androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                CardTitle(stringResource(R.string.glow_recovery_skin_temperature))
+                Spacer(Modifier.height(12.dp))
+                NumberWithTag(tag) {
+                    androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.Bottom) {
+                        // Against your normal once there is one; until then last night's reading, as the Sleep tab shows it.
+                        val shown = deviation?.let { Metric.SkinTemperature.formatChange(it, Units.DOT_LOCALE) }
+                            ?: today?.let { Metric.SkinTemperature.format(it, Units.DOT_LOCALE) }
+                        if (shown != null) DotMatrixText(shown, Modifier.cardNumber(shown), dot = DotSize.Edge)
+                        else WaitingDash(Modifier.padding(vertical = 8.dp))
+                        if (shown != null) Text(
+                            Metric.SkinTemperature.unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary,
+                            modifier = Modifier.padding(start = 6.dp),
+                        )
+                    }
+                }
+                Text(
+                    when {
+                        today == null -> waiting
+                        normal == null -> learning ?: TodayCopy.normalWord(null)
+                        else -> stringResource(R.string.glow_recovery_against_normal)
+                    },
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                    modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TempDial(deviation, band, MetricColors.temperature, PictureSize.Wide, Modifier.fillMaxWidth(DIAL_SHARE).height(84.dp))
+        }
+    }
+}
+
+/* ------------------------------------------- Body signals ------------------------------------------- */
+
+/** A body signal row: today's value as shown, how it compares with your normal, and its off tag when off. */
+private class BodySignal(
+    val metric: Metric,
+    val label: String,
+    val accent: Color,
+    val value: String?,
+    val direction: Int?,
+    val tag: NewsTag?,
+    /** What the row says while its normal is forming, "Learning, 5 of 7 nights"; null for the plain word. */
+    val learning: String? = null,
+)
+
+/** The Recovery tab's body signals: the rows of the list and skin temperature for its own card. */
+private class Signals(val rows: List<BodySignal>, val skin: Float?, val skinNormal: History.Normal?, val skinLearning: String?)
+
+/**
+ * Loads the last 30 days of each body signal, enough for its normal ([rememberNormal], keyed on the day and the
+ * history, each normal worked out once per load), and the signals once per day state (audit K8). Breathing rate,
+ * blood oxygen and stress make the list (spec 5.1): HRV and resting heart rate are in What drove it already.
+ */
+@Composable
+private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
+    val stress = rememberNormal(Metric.Stress, state.date, history)
+    val breathName = stringResource(R.string.glow_recovery_breathing_rate)
+    val spo2Name = stringResource(R.string.glow_recovery_blood_oxygen)
+    val stressName = stringResource(R.string.glow_recovery_stress)
+    return remember(state, stress) {
+        fun body(metric: Metric, name: String, accent: Color, today: Float?, normal: History.Normal?, unit: String = ""): BodySignal {
+            val direction = History.status(today, normal)
+            return BodySignal(
+                metric, name, accent, today?.let { metric.format(it) + unit }, direction, bodyTag(metric, direction),
+                SleepCopy.learning(state, metric),
+            )
+        }
+        val stressToday = stressMean(state.stress)
+        Signals(
+            listOf(
+                // Night signals: last night's against the nights before, as the Sleep tab and their details read them.
+                body(
+                    Metric.Breathing, breathName, MetricColors.sleepLight, SleepCopy.nightValue(state, Metric.Breathing),
+                    SleepCopy.nightNormal(state, Metric.Breathing),
+                ),
+                body(
+                    Metric.Spo2, spo2Name, MetricColors.spo2, SleepCopy.nightValue(state, Metric.Spo2),
+                    SleepCopy.nightNormal(state, Metric.Spo2), unit = "%",
+                ),
+                BodySignal(
+                    Metric.Stress, stressName, MetricColors.stress, stressToday?.let { Metric.Stress.format(it) },
+                    History.status(stressToday, stress), offTag(OffWords.Usual, stressOffStatus(state.stress, stress)),
+                ),
+            ),
+            // Tonight's against the nights before (spec 2.7, Dial): the day's mean counts hours off the wrist, which
+            // read several degrees low, so a day with no sleep has no reading here.
+            skin = SleepCopy.nightValue(state, Metric.SkinTemperature),
+            skinNormal = SleepCopy.nightNormal(state, Metric.SkinTemperature),
+            skinLearning = SleepCopy.learning(state, Metric.SkinTemperature),
+        )
+    }
+}
+
+/** Body signals against your normal, each opening its metric, its off tag in place of its word. [waiting] is what a row with no reading says. */
 @Composable
 private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Metric) -> Unit) {
     ListPanel(title = stringResource(R.string.glow_recovery_body_signals), note = stringResource(R.string.glow_recovery_against_normal)) {
         signals.forEachIndexed { i, s ->
-            val direction = History.status(s.today, s.normal)
-            val value = s.today?.let { v ->
-                if (s.asDeviation && s.normal != null) s.metric.formatChange(v - s.normal.mean)
-                else s.metric.format(v) + s.unit
-            }
             ListRow(
-                s.label, s.accent, value,
-                if (s.today == null) waiting else TodayCopy.normalWord(direction),
-                offNormal = direction != null && direction != 0, onClick = { onOpen(s.metric) }, divider = i > 0,
-                icon = s.metric.rowIcon(),
+                s.label, s.accent, s.value,
+                when {
+                    s.value == null -> waiting
+                    s.learning != null -> s.learning
+                    else -> TodayCopy.normalWord(s.direction)
+                },
+                tag = s.tag, onClick = { onOpen(s.metric) }, divider = i > 0, icon = s.metric.rowIcon(),
             )
         }
     }

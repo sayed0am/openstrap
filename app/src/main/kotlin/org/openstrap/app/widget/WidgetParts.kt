@@ -73,16 +73,15 @@ import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.draw.momentMood
-import org.openstrap.app.ui.glow.draw.EdgeLight
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.GlowStyle
 import org.openstrap.app.ui.glow.draw.drawGlow
+import org.openstrap.app.ui.glow.draw.drawPictureCard
+import org.openstrap.app.ui.glow.draw.Rim
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.dotLayout
-import org.openstrap.app.ui.glow.draw.edgePaint
 import org.openstrap.app.ui.glow.draw.renderDots
-import org.openstrap.app.ui.glow.draw.renderEdge
 import java.time.LocalDate
 import java.time.LocalTime
 
@@ -269,31 +268,32 @@ class StatusSpot {
 }
 
 /**
- * An edge card widget at the size Glance lays out ([LocalSize]): [light] in [ink] at [mood] behind, drawn at the
- * cell's real size, the whole widget opening [open], the content inside the padding. [bitmapExtra] is the room the
- * content's bitmaps take beside the backgrounds in the budget (spec 6.2): every size's bitmaps go to the launcher at
- * once and are scaled down together if they'd pass the limit. [sidePadding] narrower than the card's 20 dp lets a row
- * reach into the padding (Start's centred captions); the content then pads itself back to 20 dp, and [WidgetFrame]'s
- * content sizes stay those inside the full padding.
+ * A picture card widget (spec 2.5), like its metric's card in the app: dark, with a hairline, lit only by the L2 [rim]
+ * in [ink] when it's off your normal, softened by [mood]. [wash] false leaves the faint ink inside the rim out. The
+ * whole widget opens [open]; [sidePadding] narrower than the card's 20 dp lets a row reach into the padding (Start's
+ * centred captions). [bitmapExtra] is the room the content's bitmaps take beside the backgrounds in the budget (spec 6.2).
  */
 @Composable
-internal fun EdgeWidget(
-    light: EdgeLight, ink: Color, mood: GlowMood, open: Intent, bitmapExtra: Double,
+internal fun PictureWidget(
+    ink: Color, rim: Rim?, mood: GlowMood, open: Intent, bitmapExtra: Double,
     sidePadding: Float = WidgetSizes.PADDING_DP,
     showStatus: Boolean = true,
+    wash: Boolean = true,
     content: @Composable ColumnScope.(WidgetFrame) -> Unit,
-) = CardWidget(open, bitmapExtra, sidePadding, showStatus, { w, h, corner, density -> edgeBackground(light, ink, mood, w, h, corner, density) }, content)
+) = CardWidget(open, bitmapExtra, sidePadding, showStatus, { w, h, corner, density ->
+    renderToBitmap(w * density, h * density) { drawPictureCard(it, w * density, h * density, corner * density, density, ink, rim, mood.edge, wash) }
+}, content)
 
 /**
  * A glow card widget (Moment, spec 2.2): [style] behind, its mood already set, drawn at the cell's real size as the
- * app's GlowCard draws it ([drawGlow]), the rest as [EdgeWidget].
+ * app's GlowCard draws it ([drawGlow]), the rest as [PictureWidget].
  */
 @Composable
 internal fun GlowWidget(style: GlowStyle, open: Intent, bitmapExtra: Double, showStatus: Boolean = true, content: @Composable ColumnScope.(WidgetFrame) -> Unit) =
     CardWidget(open, bitmapExtra, WidgetSizes.PADDING_DP, showStatus, { w, h, corner, density -> glowBackground(style, w, h, corner, density) }, content)
 
 /**
- * A widget card with [background] (dp width, dp height, dp corner, px per dp) behind: what [EdgeWidget] and [GlowWidget]
+ * A widget card with [background] (dp width, dp height, dp corner, px per dp) behind: what [PictureWidget] and [GlowWidget]
  * share. The frame carries the strap status line ([LocalStatusLine]) unless [showStatus] is false (while a workout
  * records, spec 5).
  */
@@ -365,15 +365,6 @@ private fun glowBackground(style: GlowStyle, w: Float, h: Float, corner: Float, 
     val pw = w * density
     val ph = h * density
     return renderToBitmap(pw, ph) { drawGlow(it, style.copy(radius = corner.dp), pw, ph, density) }
-}
-
-/**
- * An edge card's light ([light] in [ink] at [mood]) for a widget [w] by [h] dp, with [corner] dp corners, at
- * [density] px per dp: the same [edgePaint] the app's edge cards draw.
- */
-private fun edgeBackground(light: EdgeLight, ink: Color, mood: GlowMood, w: Float, h: Float, corner: Float, density: Float): Bitmap {
-    val paint = edgePaint(light, ink, null, mood, w * density, h * density, density)
-    return renderEdge(paint.copy(radius = corner * density))
 }
 
 /** The launcher's widget corner, dp, on Android 12 and later, and null before or when the system doesn't say. */

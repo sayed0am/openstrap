@@ -258,7 +258,7 @@ private fun TabRoot(
             GlowTodayScreen(
                 day, live.bpm, header = { TabHeader(Tab.Today, header) }, contentPadding = padding, moment = today.moment,
                 onOpenMetric = { openStack(Tab.Today, Detail.OfMetric(it)) },
-                onOpen = { openStack(Tab.Today, it) }, usualSteps = usualSteps,
+                onOpen = { openStack(Tab.Today, it) }, usualSteps = usualSteps, activity = activity,
                 recovery = shown.recovery,
                 strapScore = shown.strapScore,
                 checkIn = shown.checkIn,

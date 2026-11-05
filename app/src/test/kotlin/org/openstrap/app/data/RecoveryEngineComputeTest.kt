@@ -119,6 +119,13 @@ class RecoveryEngineComputeTest {
         assertTrue(r.maxHrFromAge)
 
         assertEquals(SNAPSHOT, snapshot(r))
+        // Recovery's usual: the 13 scored mornings of the last 30 days, each at 83 (today's is withheld).
+        assertEquals(History.Normal(83f, 83f, 83f, 13), r.readinessUsual)
+        // No sleep-apnea summaries are stored, so a week without disturbances and no band.
+        assertEquals((6 downTo 0).map { date.minusDays(it.toLong()) to null }, r.disturbancesWeek)
+        assertNull(r.disturbancesUsual)
+        // Charge as last night began, at 23:00.
+        assertEquals(47.57f, requireNotNull(r.charge.atBedtime), 0.01f)
     }
 
     /** The figures the engine works out, so reading its inputs another way can't change them. */

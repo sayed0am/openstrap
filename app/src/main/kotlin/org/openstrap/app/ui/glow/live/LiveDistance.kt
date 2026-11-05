@@ -58,7 +58,7 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
+import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.TrendBad
@@ -364,7 +364,7 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
  */
 @Composable
 private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
-    EdgeCard(MetricColors.steps, modifier.fillMaxWidth()) {
+    PictureCard(MetricColors.steps, modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(
                 stringResource(if (speed) R.string.workout_live_speed_title else R.string.workout_live_pace_title), color = Color.White,

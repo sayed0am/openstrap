@@ -33,6 +33,9 @@ class RoomDayRepository(
     override fun changes(): Flow<Unit> = health.changes()
     override fun dailyPai(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyPai>> = health.dailyPai(from, to)
     override fun dailyCalories(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, DailyCaloriesRow>> = health.dailyCalories(from, to)
+    override fun dailySteps(from: LocalDate, to: LocalDate): Flow<Map<LocalDate, Int>> = health.dailySteps(from, to)
+    override fun personalBest(kind: String): Flow<org.openstrap.app.data.db.PersonalBest?> = health.personalBest(kind)
+    override suspend fun mostStepsBefore(date: LocalDate): Int? = health.mostStepsBefore(date)
     override fun deletedSleep(): Flow<List<SleepEdits.Resolved>> = health.deletedSleep()
     override suspend fun setSleepTimes(strap: SleepSession, start: Long, end: Long) = health.setSleepTimes(strap, start, end)
     override suspend fun deleteSleep(strap: SleepSession) = health.deleteSleep(strap)
@@ -96,7 +99,7 @@ class RoomDayRepository(
      * apnea summary comes with its sleep ([sleep]).
      */
     private fun more(date: LocalDate, day: DayWindow, night: DayWindow): Flow<DayData> = combine(
-        combine(health.sleepSpo2(night), health.hrvSdnn(day), health.osaEvents(night)) { a, b, c -> Triple(a, b, c) },
+        combine(health.spo2(night), health.hrvSdnn(day), health.osaEvents(night)) { a, b, c -> Triple(a, b, c) },
         health.dailyMaxHr(date),
         health.activityExtended(day),
         health.healthAlerts(day),
@@ -120,7 +123,7 @@ class RoomDayRepository(
     private fun nights(date: LocalDate, night: DayWindow, span: DayWindow, zone: ZoneId): Flow<DayData> = combine(
         sleep(date, span, zone),
         combine(health.hrv(span), health.skinTemperature(span)) { h, s -> h to s },
-        combine(health.sleepSpo2(span), health.breathRate(span)) { o, b -> o to b },
+        combine(health.spo2(span), health.breathRate(span)) { o, b -> o to b },
         health.heartRate(night),
     ) { sleepParts, (hrv, skin), (spo2, breath), hr ->
         val (parts, sessions, osa) = sleepParts

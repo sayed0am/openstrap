@@ -4,7 +4,6 @@ import org.openstrap.app.R
 import org.openstrap.app.presentation.Units
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import org.openstrap.app.presentation.LoadBand
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
@@ -24,7 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import org.openstrap.app.ui.dashboard.Info
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
+import org.openstrap.app.ui.glow.draw.DotSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,7 +46,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
 import org.openstrap.app.ui.workout.ZoneSeconds
+import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.mainZoneColor
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
@@ -58,7 +59,6 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberAnimationsOn
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.dashboard.Score
-import org.openstrap.app.presentation.TodayCopy
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.workout.CalmDownLine
@@ -69,8 +69,12 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.SummaryCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.ZONE_NAMES
-import org.openstrap.app.ui.glow.draw.EdgeStatus
-import org.openstrap.app.ui.glow.draw.Edge
+import org.openstrap.app.ui.dashboard.OffWords
+import org.openstrap.app.ui.dashboard.loadOffStatus
+import org.openstrap.app.ui.dashboard.offTag
+import org.openstrap.app.ui.dashboard.rimLit
+import org.openstrap.app.ui.components.cardNumber
+import androidx.compose.ui.text.style.TextOverflow
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
@@ -202,21 +206,21 @@ fun GlowWorkoutSummaryScreen(
         }
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort) { swell.value }
+        val heartZones = LocalHeartZones.current
+        val zones = remember(a, heartZones) {
+            WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate, heartZones).toList()
+        }
+        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), mainZoneColor(zones, familyColor(family)), effort) { swell.value }
         // What was done to the times, under the hero that says them.
         TrimNote(summary, trim.undo, Modifier.padding(horizontal = 4.dp), onCard = false)
         val weekStarts = remember(workouts) { goalWeekStarts(workouts) }
-        val sectionOnEdge = FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
+        FamilySection(family, summary, liveRoute, others, weekStarts, week = rewards?.week)
         EarnedChips(earned)
         // The drop only with heart rate to show: recorded in the workout, or arriving live after it.
         val live = calmDown?.takeIf { it.start == w.start }
         val dropShown = summary.recorded.isNotEmpty() || !live?.readings.isNullOrEmpty()
         if (dropShown) CalmDownHero(summary, live, usualDrop, effort, 0f) { info = true }
-        // Load is lit from the left: what comes before it (the hero, the drop) is lit from below, so two cards in a row
-        // never look the same. Under the section's own edge card, lit from the left or right, Load takes the bottom.
-        CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = if (sectionOnEdge && !dropShown) Edge.Bottom else Edge.Left)) {
-            WorkoutLoadCard(a, usualLoad)
-        }
+        WorkoutLoadCard(a, usualLoad)
         DeleteWorkout(stringResource(R.string.glow_workout_delete_phone), onDelete)
     }
     if (info) InfoSheet(
@@ -339,20 +343,17 @@ internal fun RouteMap(summary: PhoneSummary, modifier: Modifier = Modifier) {
 }
 
 /**
- * Load from this workout against your [usual] workout Load: lit from the top when above it, stronger from the bottom
- * when below (spec 2.4). Time to recover under it, then the heart rate [drop] line when there is one.
- * [onInfo] puts an (i) beside the title, for training effect and EPOC.
+ * Load from this workout against your [usual] workout Load (spec 2.5, Picture card): unlit when usual; above or below
+ * it the rim lights at the end with an "Above usual" or "Below usual" tag after the number, which stays white. Time to
+ * recover under it, then the heart rate [drop] line when there is one. [onInfo] puts an (i) beside the title, for
+ * training effect and EPOC.
  */
 @Composable
 internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = null, onInfo: (() -> Unit)? = null) {
     val load = a.workout.trainingLoad
-    val status = load?.let { TodayCopy.loadStatus(it.toFloat(), usual, endOfDay = true) }
-    val edge = when (status) {
-        LoadBand.Above -> EdgeStatus.Above
-        LoadBand.Below -> EdgeStatus.Below
-        else -> EdgeStatus.Usual
-    }
-    EdgeCard(MetricColors.load, Modifier.fillMaxWidth(), status = edge) {
+    val status = loadOffStatus(load?.toFloat(), usual, endOfDay = true)
+    val tag = offTag(OffWords.Usual, status)
+    PictureCard(MetricColors.load, Modifier.fillMaxWidth(), rim = Rim.End.takeIf { rimLit(OffWords.Usual, status) }) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             val title = stringResource(R.string.glow_summary_load_title)
             Box(Modifier.weight(1f)) { EdgeTitle(title, SummaryCopy.loadTitle(a.workout.sportType)) }
@@ -361,10 +362,14 @@ internal fun WorkoutLoadCard(a: WorkoutAnalysis, usual: Float?, drop: String? = 
                 InfoButton(stringResource(R.string.glow_summary_load_about), onInfo)
             }
         }
-        if (load != null) EdgeValue(
-            load.toString(), null, SummaryCopy.loadLine(load, usual),
-            if (edge != EdgeStatus.Usual) MetricColors.load else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-        ) else EdgeValue(null, null, stringResource(R.string.glow_summary_load_none), waiting = false)
+        if (load != null) {
+            val value = load.toString()
+            NumberWithTag(tag, Modifier.padding(top = 14.dp)) { DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge) }
+            Text(
+                SummaryCopy.loadLine(load, usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
+            )
+        } else EdgeValue(null, null, stringResource(R.string.glow_summary_load_none), waiting = false)
         SummaryCopy.timeToRecover(a.recoveryMinutes, a.ownRecoveryMinutes, a.workout.sportType)?.let {
             Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))
         }
@@ -425,7 +430,7 @@ internal fun SplitsList(summary: PhoneSummary, liveRoute: List<Route.Point>, mar
                         r.averageBpm?.let { stringResource(R.string.glow_summary_split_fastest_bpm, it) }
                             ?: stringResource(R.string.glow_summary_split_fastest)
                     } else r.averageBpm?.let { stringResource(R.string.glow_summary_split_average, it) },
-                    divider = i > 0, icon = AppIcons.Heart, offNormal = i == fastest,
+                    divider = i > 0, icon = AppIcons.Heart,
                 )
             }
             if (rows.isNotEmpty() && laps.isNotEmpty()) WorkoutDayHeader(stringResource(R.string.glow_summary_laps))

@@ -78,6 +78,9 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
 import org.openstrap.app.ui.glow.draw.stageColor
+import org.openstrap.app.ui.glow.pictures.Nap
+import org.openstrap.app.ui.glow.pictures.NapDay
+import org.openstrap.app.ui.glow.pictures.PictureSize
 
 /*
  * The Sleep tab's details (spec 5.2 and 6.1) in the metric template: the Sleep score with the night it came from,
@@ -570,6 +573,18 @@ internal fun NapsDetail(
             contentPadding = contentPadding, headline = headline,
             strip = DetailCopy.strip(state.date, today, if (naps.isEmpty()) emptySet() else setOf(state.date)), onDay = onSelectDay,
             ranges = listOf(Range.Day), range = Range.Day, onRange = {}, scrubbed = { scrub },
+            // The Naps card's picture: the day as a hairline with each nap as its stage strip at its time.
+            heroPicture = if (naps.isNotEmpty()) {
+                {
+                    val span = org.openstrap.app.ui.dashboard.napDaySpan(state.date, naps, java.time.ZoneId.systemDefault())
+                    val pictured = naps.map { Nap(it.start, it.end, state.napStages[it.start].orEmpty()) }
+                    DetailPicture(height = 28.dp) { m -> NapDay(pictured, span.first, span.last, color, PictureSize.Wide, m) }
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Caption(clock(span.first))
+                        Caption(clock(span.last))
+                    }
+                }
+            } else null,
         ) {
             if (naps.isEmpty()) item {
                 DetailEmpty(stringResource(if (isToday) R.string.glow_sleep_no_naps_today else R.string.glow_sleep_no_naps_that_day))

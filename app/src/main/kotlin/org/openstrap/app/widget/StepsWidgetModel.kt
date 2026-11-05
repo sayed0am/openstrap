@@ -68,6 +68,8 @@ data class StepsWidgetModel(
     val week: List<StepsWeekDay>,
     /** "Goal met 2 of 6 days". */
     val weekLine: String,
+    /** Today's steps hour by hour, the Steps card's pill bars. */
+    val hourly: List<Float> = emptyList(),
 ) {
     val goalMet: Boolean get() = steps >= goal
 
@@ -116,6 +118,7 @@ data class StepsWidgetModel(
                 lineMax = maxOf(goal.toFloat(), steps.toFloat(), line.filterNotNull().maxOrNull() ?: 0f),
                 week = week,
                 weekLine = weekLine(met, counted.size, strings),
+                hourly = hourly,
             )
         }
 
@@ -196,6 +199,9 @@ object StepsLayout {
     /** The goal bar's height: the Small's, and the Wide's and Large's when a large font drops their line. */
     const val BAR_DP = 4f
 
+    /** The Small's hour pills, in the goal bar's place once there's a step. */
+    const val SMALL_PILLS_DP = 18f
+
     /**
      * The line at its tallest and shortest worth drawing. It is the Wide's and Large's only progress: its top is the
      * goal, so it fills its height as the day reaches it. It takes the mockup's line, gap and goal bar together.
@@ -235,13 +241,13 @@ object StepsLayout {
      * share only on one line. The blocks share the spare height, the dots growing from 3 dp until no gap is over
      * [Spread.TARGET_GAP_DP]; at least [SMALL_BAR_GAP_DP] between them all.
      */
-    fun small(stepsText: String, share: String, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Small {
+    fun small(stepsText: String, share: String, width: Float, height: Float, fontScale: Float, status: StatusLine? = null, pills: Boolean = false): Small {
         val top = TopRow.of(StepsWidgetModel.TITLE, null, status, width, fontScale, withWords = false)
         val shareFits = WidgetText.width(share, WidgetText.SECONDARY_SP, fontScale) <= width
         fun at(dot: Float, word: Boolean, withShare: Boolean): Small {
             val d = fitDot(stepsText, width, dot)
             val number = dotsHeight(d) + (if (word) SMALL_WORD_GAP_DP + WidgetText.line(WidgetText.BODY_SP, fontScale) else 0f)
-            val foot = BAR_DP + (if (withShare) SMALL_BAR_GAP_DP + WidgetText.line(WidgetText.SECONDARY_SP, fontScale) else 0f)
+            val foot = (if (pills) SMALL_PILLS_DP else BAR_DP) + (if (withShare) SMALL_BAR_GAP_DP + WidgetText.line(WidgetText.SECONDARY_SP, fontScale) else 0f)
             return Small(d, word, withShare, top, Spread.of(top.height, number, foot))
         }
         val gap = SMALL_BAR_GAP_DP / 2

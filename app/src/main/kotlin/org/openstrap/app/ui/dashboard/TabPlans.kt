@@ -1,13 +1,12 @@
 package org.openstrap.app.ui.dashboard
 
 import org.openstrap.app.ui.glow.CardSize
-import org.openstrap.app.ui.glow.draw.Edge
 import org.openstrap.app.ui.glow.Pane
 
 /*
  * The cards of the Recovery, Sleep and Activity tabs, in order, each with its look and the column it takes on a wide
- * screen (spec 5). Unlike Today, the tabs keep one set of cards whatever the day, so each card's edge is fixed by
- * what it means (spec 2.4) and chosen so no two neighbours ever look the same: no clash to resolve at run time.
+ * screen (spec 5). Unlike Today, the tabs keep one set of cards whatever the day, each at its ranked size with its own
+ * picture (spec 2.4, 2.7), chosen so no two neighbours ever look the same: no clash to resolve at run time.
  * The cards that come and go are only the optional ones in each tab's facts, and the tests go through all of them.
  */
 
@@ -32,16 +31,19 @@ fun tabPanes(slots: List<TabSlot<*>>, smallsAcross: Boolean = false): List<Pane>
 fun tabClashes(slots: List<TabSlot<*>>, wide: Boolean, smallsAcross: Boolean = false): List<Pair<Int, Int>> =
     lookClashes(slots.map { it.look }, tabPanes(slots, smallsAcross && wide), wide, fullTouchesColumns = true, sizes = slots.map { it.size })
 
-private fun glow(h: Hue) = CardLook(Tier.Glow, h)
-private fun edge(h: Hue, e: Edge) = CardLook(Tier.Edge, h, e)
+/** A glow at [size]: the tab's hero (Large) or its level glow. */
+private fun glow(h: Hue, p: PictureKind, size: CardSize = CardSize.Large) = CardLook(Tier.Glow, h, Shape.of(size), p)
 private val ListLook = CardLook(Tier.List, Hue.Neutral)
 
-/** A Small edge card: its own shape, so it only ever matches another Small lit from the same side. */
-private fun <C> small(card: C, h: Hue, e: Edge, pane: Pane) = TabSlot(card, CardLook(Tier.Edge, h, e, Shape.Small), pane, CardSize.Small)
+/** A picture card at [size] drawing [p] in [h]'s ink. */
+private fun <C> card(card: C, h: Hue, p: PictureKind, pane: Pane, size: CardSize = CardSize.Wide) =
+    TabSlot(card, CardLook(Tier.Picture, h, Shape.of(size), p), pane, size)
+
+private fun <C> list(card: C, pane: Pane) = TabSlot(card, ListLook, pane, CardSize.List)
 
 /* ---------------------------------------------- Recovery -------------------------------------------- */
 
-enum class RecoveryCard { Hero, Drivers, Charge, Recharged, Drained, BodySignals, HabitAge }
+enum class RecoveryCard { Hero, Drivers, Charge, Recharged, Drained, SkinTemp, BodySignals, HabitAge }
 
 /**
  * What changes the Recovery tab. Only [habitAge] adds or removes a card; [learning] and [hasRecovery] change what
@@ -50,22 +52,23 @@ enum class RecoveryCard { Hero, Drivers, Charge, Recharged, Drained, BodySignals
 data class RecoveryFacts(val habitAge: Boolean = true, val learning: Boolean = false, val hasRecovery: Boolean = true)
 
 /**
- * Recovery (spec 5.1): the score glows, what drove it as a list, then Charge as a Tall battery glowing to its level
- * with Recharged (lit from below) and Drained (from above) as Smalls beside it, so the two differ. Body signals is a
- * plain list again: the Smalls sit between it and What drove it. Habit Age is about earlier (last week), lit from the
- * left, always last.
+ * Recovery (spec 5.1): the score glows with a week of dots, what drove it as a list, then Energy as a Tall glow battery
+ * drawing its curve, with Recharged (a fill bar) over Drained (a split bar) as plain Smalls beside it. Skin
+ * temperature is a short Wide with its dial, between the battery and Body signals, a list again. Habit Age, its age
+ * scale, always last.
  *
- * Wide: the hero spans both columns; What drove it and Habit Age on the left, the Charge battery and Body signals on
- * the right, so no two lists sit side by side.
+ * Wide: the hero spans both columns; What drove it and Habit Age on the left, the Energy battery, Skin temperature and
+ * Body signals on the right, so no two lists sit side by side.
  */
 fun recoveryCards(facts: RecoveryFacts = RecoveryFacts()): List<TabSlot<RecoveryCard>> = listOfNotNull(
-    TabSlot(RecoveryCard.Hero, glow(Hue.Recovery), Pane.Full),
-    TabSlot(RecoveryCard.Drivers, ListLook, Pane.Left),
-    TabSlot(RecoveryCard.Charge, CardLook(Tier.Glow, Hue.Charge, shape = Shape.Tall), Pane.Right, CardSize.Tall),
-    small(RecoveryCard.Recharged, Hue.Charge, Edge.Bottom, Pane.Right),
-    small(RecoveryCard.Drained, Hue.Charge, Edge.Top, Pane.Right),
-    TabSlot(RecoveryCard.BodySignals, ListLook, Pane.Right),
-    TabSlot(RecoveryCard.HabitAge, edge(Hue.HabitAge, Edge.Left), Pane.Left).takeIf { facts.habitAge },
+    TabSlot(RecoveryCard.Hero, glow(Hue.Recovery, PictureKind.WeekDots), Pane.Full, CardSize.Large),
+    list(RecoveryCard.Drivers, Pane.Left),
+    TabSlot(RecoveryCard.Charge, glow(Hue.Charge, PictureKind.Curve, CardSize.Tall), Pane.Right, CardSize.Tall),
+    card(RecoveryCard.Recharged, Hue.Charge, PictureKind.FillBar, Pane.Right, CardSize.Small),
+    card(RecoveryCard.Drained, Hue.Charge, PictureKind.SplitBar, Pane.Right, CardSize.Small),
+    card(RecoveryCard.SkinTemp, Hue.SkinTemp, PictureKind.Dial, Pane.Right),
+    list(RecoveryCard.BodySignals, Pane.Right),
+    card(RecoveryCard.HabitAge, Hue.HabitAge, PictureKind.AgeScale, Pane.Left).takeIf { facts.habitAge },
 )
 
 /* ----------------------------------------------- Sleep ---------------------------------------------- */
@@ -76,23 +79,22 @@ enum class SleepCard { Hero, Vitals, Regularity, Breathing, Naps }
 data class SleepFacts(val breathing: Boolean = true, val naps: Boolean = false, val hasNight: Boolean = true)
 
 /**
- * Sleep (spec 5.2): the night glows, its vitals as a list. Regularity is lit from the top like a night sky. Breathing
- * disturbances is a value against your usual, so it's lit from below, and naps happened earlier in the day, lit from
- * the left. With both they're a Small pair; alone, either is a Wide (a lone Small becomes a Wide).
+ * Sleep (spec 5.2): the night glows with its hypnogram and stage bar, its vitals as a list. Regularity is a Wide of
+ * the week's bed and wake bars. Breathing disturbances (a week of dots through your band) and Naps (the day with the
+ * nap on it) are a Small pair; alone, either is a Wide (a lone Small becomes a Wide).
  *
- * Wide: the night spans both columns, the vitals with the pair on the left, regularity on the right. A lone
- * breathing card joins regularity on the right, a lone naps card the vitals on the left.
+ * Wide: the night spans both columns, the vitals with the pair (or a lone naps card) on the left, regularity and a
+ * lone breathing card on the right.
  */
 fun sleepCards(facts: SleepFacts = SleepFacts()): List<TabSlot<SleepCard>> {
     val pair = facts.breathing && facts.naps
+    val size = if (pair) CardSize.Small else CardSize.Wide
     return listOfNotNull(
-        TabSlot(SleepCard.Hero, glow(Hue.Sleep), Pane.Full),
-        TabSlot(SleepCard.Vitals, ListLook, Pane.Left),
-        TabSlot(SleepCard.Regularity, edge(Hue.Sleep, Edge.Top), Pane.Right),
-        (if (pair) small(SleepCard.Breathing, Hue.Sleep, Edge.Bottom, Pane.Left) else TabSlot(SleepCard.Breathing, edge(Hue.Sleep, Edge.Bottom), Pane.Right))
-            .takeIf { facts.breathing },
-        (if (pair) small(SleepCard.Naps, Hue.Sleep, Edge.Left, Pane.Left) else TabSlot(SleepCard.Naps, edge(Hue.Sleep, Edge.Left), Pane.Left))
-            .takeIf { facts.naps },
+        TabSlot(SleepCard.Hero, glow(Hue.Sleep, PictureKind.Hypnogram), Pane.Full, CardSize.Large),
+        list(SleepCard.Vitals, Pane.Left),
+        card(SleepCard.Regularity, Hue.Sleep, PictureKind.BedWakeBars, Pane.Right),
+        card(SleepCard.Breathing, Hue.Sleep, PictureKind.WeekDots, if (pair) Pane.Left else Pane.Right, size).takeIf { facts.breathing },
+        card(SleepCard.Naps, Hue.Sleep, PictureKind.NapDay, Pane.Left, size).takeIf { facts.naps },
     )
 }
 
@@ -101,29 +103,28 @@ fun sleepCards(facts: SleepFacts = SleepFacts()): List<TabSlot<SleepCard>> {
 enum class ActivityCard { Start, Steps, ActiveMinutes, HeartPoints, Load, HeartRate, Facts, Workouts }
 
 /**
- * What changes the Activity tab: the Start a workout card is [isToday] only, and heart rate is lit from the right while it's
- * [live]. A [suggestion] to save is a row in the workouts list, not a card of its own.
+ * What changes the Activity tab: the Start a workout card is [isToday] only. A [suggestion] to save is a row in the
+ * workouts list, not a card of its own. [live] heart rate changes what the card says, not how it looks.
  */
 data class ActivityFacts(val isToday: Boolean = true, val suggestion: Boolean = false, val live: Boolean = false)
 
 /**
- * Activity (spec 5.3): a Wide card to start a sport (today only, unlit with a light moving round its border), steps glowing,
- * active minutes (from below) and Heart points (from above) as a Small pair, Load filling across toward your usual,
- * the day's facts as a list, the day's heart rate (from the right while live, else from below like any usual value),
- * then the workouts list, unlit like the facts. Heart rate sits between the two lists, so they never touch and
- * neither needs a light that says nothing.
+ * Activity (spec 5.3): a Wide card to start a sport (today only, unlit with a light moving round its border), steps
+ * as the level glow with its hourly bars, Active minutes (blocks) and Heart points (day bars) as a Small pair, Load
+ * filling over your usual band, the day's facts as a list, the day's heart rate as its line, then the workouts list.
+ * The Today list sits between Load and Heart rate, so two Wides never touch, and Heart rate between the two lists.
  *
  * Wide: the Start a workout card and steps span both columns; the Small pair and Load on the left, the facts, heart
  * rate and workouts on the right.
  */
 fun activityCards(facts: ActivityFacts = ActivityFacts()): List<TabSlot<ActivityCard>> = listOfNotNull(
     // Plain, not a list: an unlit card whose border carries the moving light.
-    TabSlot(ActivityCard.Start, CardLook(Tier.Plain, Hue.Heart), Pane.Full).takeIf { facts.isToday },
-    TabSlot(ActivityCard.Steps, glow(Hue.Steps), Pane.Full),
-    small(ActivityCard.ActiveMinutes, Hue.Steps, Edge.Bottom, Pane.Left),
-    small(ActivityCard.HeartPoints, Hue.Heart, Edge.Top, Pane.Left),
-    TabSlot(ActivityCard.Load, CardLook(Tier.Level, Hue.Load, Edge.Left), Pane.Left),
-    TabSlot(ActivityCard.Facts, ListLook, Pane.Right),
-    TabSlot(ActivityCard.HeartRate, edge(Hue.Heart, if (facts.live) Edge.Right else Edge.Bottom), Pane.Right),
-    TabSlot(ActivityCard.Workouts, ListLook, Pane.Right),
+    TabSlot(ActivityCard.Start, CardLook(Tier.Plain, Hue.Heart, picture = PictureKind.None), Pane.Full).takeIf { facts.isToday },
+    TabSlot(ActivityCard.Steps, glow(Hue.Steps, PictureKind.HourlyBars), Pane.Full, CardSize.Large),
+    card(ActivityCard.ActiveMinutes, Hue.Steps, PictureKind.Blocks, Pane.Left, CardSize.Small),
+    card(ActivityCard.HeartPoints, Hue.Heart, PictureKind.DayBars, Pane.Left, CardSize.Small),
+    card(ActivityCard.Load, Hue.Load, PictureKind.LevelFill, Pane.Left),
+    list(ActivityCard.Facts, Pane.Right),
+    card(ActivityCard.HeartRate, Hue.Heart, PictureKind.Line, Pane.Right),
+    list(ActivityCard.Workouts, Pane.Right),
 )

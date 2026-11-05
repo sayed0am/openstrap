@@ -27,6 +27,8 @@ import org.openstrap.app.presentation.TimeOfDay
 import org.openstrap.app.presentation.Units
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
+import java.time.LocalTime
+import org.openstrap.app.ui.glow.pictures.BedWake
 import java.time.ZoneId
 import java.time.format.TextStyle as DayStyle
 import java.util.Locale
@@ -65,10 +67,7 @@ internal fun nightVitals(state: DayUiState, firstNights: Boolean = false, string
         val v = SleepCopy.nightValue(state, metric) ?: return NightVital(metric, label, color, null, missing)
         val n = SleepCopy.nightNormal(state, metric)
         val direction = History.status(v, n)
-        val status = if (n == null) {
-            val nights = SleepCopy.nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
-            strings.plural(R.plurals.day_sleep_vital_learning, History.MIN_NORMAL_DAYS, nights, History.MIN_NORMAL_DAYS)
-        } else TodayCopy.normalWord(direction)
+        val status = SleepCopy.learning(state, metric, strings) ?: TodayCopy.normalWord(direction)
         return NightVital(metric, label, color, show(v, n), status, direction.takeIf { n != null })
     }
     val lowest = SleepCopy.lowestHeart(state)
@@ -130,10 +129,34 @@ internal fun sleepWeek(
     )
 }
 
-internal fun bandColor(band: SleepRegularity.Band) = when (band) {
-    SleepRegularity.Band.VeryRegular, SleepRegularity.Band.Regular -> MetricColors.sleepRem
-    SleepRegularity.Band.Fair -> MetricColors.sleepLight
-    SleepRegularity.Band.Irregular -> MetricColors.sleepAwake
+/**
+ * The week's nights as Sleep regularity's bed and wake bars ([org.openstrap.app.ui.glow.pictures.BedWakeBars]): each
+ * night's falling asleep and waking as clock times, null for a night with no sleep, oldest first, and your usual
+ * times ([SleepWeek.usual]) the same way, null while there are none.
+ */
+internal fun bedWakeWeek(week: SleepWeek, zone: ZoneId): Pair<List<BedWake?>, BedWake?> {
+    fun at(epoch: Long) = Instant.ofEpochSecond(epoch).atZone(zone).toLocalTime()
+    fun clock(minutes: Int) = SleepHistory.clockMinutes(minutes).let { LocalTime.of(it / 60, it % 60) }
+    val nights = week.nights.map { n -> n.session?.let { BedWake(at(it.start), at(it.end)) } }
+    val usual = week.usual?.let { BedWake(clock(it.bedtime), clock(it.wake)) }
+    return nights to usual
+}
+
+/** The hours of the day the naps picture spans ([org.openstrap.app.ui.glow.pictures.NapDay]), from and to. */
+internal const val NAP_DAY_FROM_HOUR = 6
+internal const val NAP_DAY_TO_HOUR = 22
+
+/**
+ * The span of [date] the naps picture covers, in epoch seconds: [NAP_DAY_FROM_HOUR] to [NAP_DAY_TO_HOUR], stretched to
+ * the hour so a nap outside it still fits.
+ */
+internal fun napDaySpan(date: java.time.LocalDate, naps: List<org.openstrap.app.data.db.SleepSession>, zone: ZoneId): LongRange {
+    val from = date.atTime(NAP_DAY_FROM_HOUR, 0).atZone(zone).toEpochSecond()
+    val to = date.atTime(NAP_DAY_TO_HOUR, 0).atZone(zone).toEpochSecond()
+    val hour = 3600L
+    val start = minOf(from, naps.minOfOrNull { Math.floorDiv(it.start, hour) * hour } ?: from)
+    val end = maxOf(to, naps.maxOfOrNull { Math.floorDiv(it.end + hour - 1, hour) * hour } ?: to)
+    return start..end
 }
 
 /**

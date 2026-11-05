@@ -45,7 +45,7 @@ private fun updatedText(asOf: Long): String {
 }
 
 /**
- * The page behind the Habit Age card (spec 5.4): the same edge card at the top, its (i) holding the method, then the
+ * The page behind the Habit Age card (spec 5.4): the same picture card at the top, its (i) holding the method, then the
  * pace it's moving at and what moves it; or, before an estimate, only the card saying why it waits.
  */
 @Composable

@@ -245,8 +245,8 @@
     <!-- Your week: steps the same as the week before. -->
     <string name="core_today_steps_steady">Steps held steady</string>
 
-    <!-- The Last night strip: time asleep and the sleep score. -->
-    <string name="core_today_last_night_score"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g>, score <xliff:g id="score" example="83">%2$d</xliff:g></string>
+    <!-- The Last night strip: the sleep score first, as on its page, then the time asleep. -->
+    <string name="core_today_last_night_score">Score <xliff:g id="score" example="83">%2$d</xliff:g>, <xliff:g id="duration" example="7 h 40">%1$s</xliff:g></string>
 
     <!-- How to read the heart rate line, when your resting range is drawn behind it. -->
     <string name="core_today_heart_note_band">Touch and hold the line to read any moment. The band is your resting range.</string>

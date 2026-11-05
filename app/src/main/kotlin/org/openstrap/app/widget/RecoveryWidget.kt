@@ -8,26 +8,26 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
 import androidx.glance.ImageProvider
+import androidx.glance.Image
 import androidx.glance.LocalContext
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.ColumnScope
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
+import androidx.glance.layout.size
 import androidx.glance.layout.width
 import androidx.glance.text.Text
 import org.openstrap.app.data.WidgetKind
-import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.Rim
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
-import org.openstrap.app.ui.glow.draw.drawWeekBars
+import org.openstrap.app.ui.glow.draw.drawWeekDots
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.draw.weekBars
-import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.MetricColors
 import java.time.LocalDate
 
@@ -81,7 +81,8 @@ private val Ink = MetricColors.readiness
 private fun RecoveryContent(data: RecoveryWidget.Shown) {
     val model = data.model
     val open = openMetric(LocalContext.current, DetailRoutes.RECOVERY, model.date)
-    EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Earlier), Ink, data.mood, open, BITMAP_EXTRA) { frame ->
+    // Off your usual, the rim lights by the latest day, at the bottom right as on Today's Recovery card.
+    PictureWidget(Ink, Rim.Corner.takeIf { model.off }, data.mood, open, BITMAP_EXTRA) { frame ->
         when {
             model.score == null -> WaitingContent(model.title, model.waiting, frame)
             frame.bucket == WidgetSizes.Small -> SmallContent(model, RecoveryLayout.small(model, frame.contentWidth, frame.contentHeight, frame.fontScale, frame.status), frame)
@@ -105,13 +106,13 @@ private fun ColumnScope.SmallContent(m: RecoveryWidgetModel, fit: RecoveryLayout
     Edge(fit.spread, f)
 }
 
-/** Wide: the top row with "This morning", the score and word, the three figures. */
+/** Wide: the top row with "This morning", the score and word with the week of dots beside them, the three figures. */
 @Composable
 private fun ColumnScope.WideContent(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
     Edge(fit.spread, f)
     TopRowView(m.title, m.note, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
-    ScoreRow(m, fit.dot, f.density)
+    ScoreAndWeek(m, fit, f)
     if (fit.figures) {
         Gap()
         Figures(m.figures)
@@ -119,7 +120,19 @@ private fun ColumnScope.WideContent(m: RecoveryWidgetModel, fit: RecoveryLayout.
     Edge(fit.spread, f)
 }
 
-/** Large: the Wide plus the sentence and the last seven days beside the score. */
+/** The score with its word, and the week of dots on the right when it fits beside them. */
+@Composable
+private fun ScoreAndWeek(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
+    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
+        ScoreRow(m, fit.dot, f.density)
+        if (fit.week) {
+            Spacer(GlanceModifier.defaultWeight())
+            Week(m.week, m.usual, fit.weekColumn, f.density)
+        }
+    }
+}
+
+/** Large: the Wide plus the sentence and the last seven days as a week of dots on a row of their own. */
 @Composable
 private fun ColumnScope.LargeContent(m: RecoveryWidgetModel, fit: RecoveryLayout.Fit, f: WidgetFrame) {
     Edge(fit.spread, f)
@@ -128,14 +141,12 @@ private fun ColumnScope.LargeContent(m: RecoveryWidgetModel, fit: RecoveryLayout
         Gap()
         Text(it, style = WidgetType.hero.copy(fontSize = fit.sentenceSp.sp), maxLines = fit.sentenceLines)
     }
-    Gap()
-    Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.Bottom) {
-        ScoreRow(m, fit.dot, f.density)
-        if (fit.week) {
-            Spacer(GlanceModifier.defaultWeight())
-            Week(m.week, fit.weekColumn, f.density)
-        }
+    if (fit.week) {
+        Gap()
+        Week(m.week, m.usual, fit.weekColumn, f.density)
     }
+    Gap()
+    ScoreRow(m, fit.dot, f.density)
     if (fit.figures) {
         Gap()
         Figures(m.figures)
@@ -166,14 +177,18 @@ private fun Figures(figures: List<RecoveryFigure>) {
     }
 }
 
-/** The last seven days as solid bars, the day shown in Recovery's ink, each day's letter under its bar. */
+/** The last seven days as the Recovery card's week of dots through your usual band, the latest larger. */
 @Composable
-private fun Week(week: List<RecoveryWeekDay>, column: Float, density: Float) {
+private fun Week(week: List<RecoveryWeekDay>, usual: ClosedFloatingPointRange<Float>?, column: Float, density: Float) {
     val width = WeekBarsLook.width(week.size, column)
-    val bars = weekBars(RecoveryLayout.barValues(week), density, column)
-    val bitmap = renderToBitmap(width * density, WeekBarsLook.HEIGHT_DP * density) { drawWeekBars(it, bars, week.indexOfFirst { d -> d.shown }, Ink) }
-    val description = LocalContext.current.getString(R.string.system_widget_recovery_week_description)
-    WeekChart(ImageProvider(bitmap), description, week.map { it.letter to it.shown }, column)
+    val h = RecoveryLayout.DOTS_HEIGHT_DP
+    val bitmap = renderToBitmap(width * density, h * density) {
+        drawWeekDots(it, week.map { d -> d.score?.toFloat() }, usual, Ink, column * density, WeekBarsLook.GAP_DP * density, h * density)
+    }
+    Image(
+        ImageProvider(bitmap), contentDescription = LocalContext.current.getString(R.string.system_widget_recovery_week_description),
+        modifier = GlanceModifier.size(width.dp, h.dp), contentScale = ContentScale.FillBounds,
+    )
 }
 
 /* ------------------------------------------------------------------------------------------------ */

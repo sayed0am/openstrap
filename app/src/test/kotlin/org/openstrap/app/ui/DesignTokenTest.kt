@@ -70,6 +70,7 @@ class DesignTokenTest {
         }
         assertEquals(0.08f, GlowLayout.HairlineAlpha, 1e-6f)
         assertEquals(0.06f, GlowLayout.DividerAlpha, 1e-6f)
+        assertEquals(0.12f, GlowLayout.CardEdgeAlpha, 1e-6f)
     }
 
     @Test fun `only the digits are made of dots`() {
@@ -144,14 +145,14 @@ class DesignTokenTest {
         assertTrue(sources.getValue("glow/GlowHealthspan.kt").any { "InfoButton(" in it })
     }
 
-    @Test fun `Steps on Activity is a level glow like Charge`() {
-        // Spec 2.1 Levels and 5.3: the light rises to the share of the goal over a black core, the number at the foot
-        // in the second glow's dots, empty hours left out over the baseline.
+    @Test fun `Steps on Activity is a hero glow like Recovery and Sleep`() {
+        // Spec 2.1 and 5.3: the tab's hero, lit all over with the core behind the number, not a level over a black top.
+        // The number at the foot in the second glow's dots, under the hour bars.
         val code = sources.getValue("glow/GlowActivityScreen.kt").joinToString("\n")
         val steps = code.substringAfter("private fun StepsGlow(").substringBefore("\n}\n")
-        assertTrue("StepsGlow uses the level recipe", "GlowStyle.level(MetricColors.steps" in steps)
+        assertTrue("StepsGlow uses the hero recipe", "limeHero(MetricColors.steps" in steps)
         assertTrue("StepsGlow's number is 3.6 dp", "DotSize.Second" in steps)
-        assertTrue("the bars come before the number", steps.indexOf("HourPills(") in 0 until steps.indexOf("HeroFigure("))
+        assertTrue("the bars come before the number", steps.indexOf("HourPills(") in 0 until steps.indexOf("TaggedNumber("))
     }
 
     @Test fun `every hypnogram is drawn in the stage colours`() {

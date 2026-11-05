@@ -65,7 +65,6 @@ import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.familyColor
-import org.openstrap.app.ui.glow.draw.Edge
 
 /* ---------------------------------------------- Choose ----------------------------------------------- */
 
@@ -74,8 +73,7 @@ data class ChooseSport(val type: Int, val line: String)
 
 /**
  * Choose (workouts spec 2.1), the first screen of a workout and every sport on it, so one tap from Activity's All
- * sports reaches them all: "Start a workout" and the strap in one line; your usual as a slim row lit from its left
- * edge in the sport's colour, with Start, which starts with last time's settings and skips Ready ([onStartUsual]),
+ * sports reaches them all: "Start a workout" and the strap in one line; your usual as a slim unlit row with Start, which starts with last time's settings and skips Ready ([onStartUsual]),
  * while the row elsewhere opens Ready ([onReady]); the search over every sport; Recent as chips, saved workouts among
  * them ([onSaved]); then all sports as tiles and More sports, as the picker has them. A new user has no usual, and
  * Run, Walk and Strength as recent.
@@ -151,42 +149,40 @@ fun GlowChooseScreen(
 }
 
 /**
- * Your usual: a slim row lit from its left edge in the sport's colour (not the tall hero, lit from below), its name,
- * what you did last time, and Start at its end. The row itself opens Ready.
+ * Your usual: a slim unlit card with its name, what you did last time, and Start at its end. The row itself opens
+ * Ready.
  */
 @Composable
 private fun UsualRow(s: ChooseSport, onStart: () -> Unit, onOpen: () -> Unit) {
     val color = familyColor(Workouts.family(s.type))
     val haptics = org.openstrap.app.ui.components.rememberHaptics()
-    CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left)) {
-        EdgeCard(color, Modifier.fillMaxWidth(), onClick = onOpen, contentPadding = PaddingValues(start = 18.dp, top = 14.dp, end = 14.dp, bottom = 14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text(
-                        stringResource(R.string.glow_choose_your_usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                        style = GlowType.secondary,
-                    )
-                    Text(
-                        Workouts.sportName(s.type), color = Color.White, style = GlowType.headerDate, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                    if (s.line.isNotEmpty()) Text(
-                        s.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                }
-                Spacer(Modifier.width(12.dp))
-                PageButton(
-                    stringResource(R.string.glow_choose_start),
-                    { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
-                    primary = true, icon = AppIcons.PlayFill,
+    PictureCard(color, Modifier.fillMaxWidth(), onClick = onOpen, contentPadding = PaddingValues(start = 18.dp, top = 14.dp, end = 14.dp, bottom = 14.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(
+                    stringResource(R.string.glow_choose_your_usual), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.secondary,
+                )
+                Text(
+                    Workouts.sportName(s.type), color = Color.White, style = GlowType.headerDate, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                if (s.line.isNotEmpty()) Text(
+                    s.line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
+            Spacer(Modifier.width(12.dp))
+            PageButton(
+                stringResource(R.string.glow_choose_start),
+                { haptics.perform(org.openstrap.app.ui.components.HapticEvent.WorkoutStart); onStart() },
+                primary = true, icon = AppIcons.PlayFill,
+            )
         }
     }
 }
 
-/** Choose's quiet chips, a step off black so the usual's glow stays the one lit thing. */
+/** Choose's quiet chips, a step off black. */
 private val QuietCard = ListSurface
 
 /** A Recent chip: the sport's icon in its colour and a name, a sport's or a saved workout's, on a quiet pill. */

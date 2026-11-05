@@ -34,11 +34,9 @@ import org.openstrap.app.R
 import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawStageBar
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.glow.draw.stageColor
 import org.openstrap.app.ui.theme.MetricColors
 
@@ -92,7 +90,7 @@ private val LegendStyle = WidgetType.caption.copy(color = ColorProvider(Color.Wh
 private fun SleepContent(m: SleepWidgetModel) {
     val context = LocalContext.current
     val open = if (m.date != null) openMetric(context, DetailRoutes.SLEEP_SCORE, m.date) else openMetric(context, DetailRoutes.SLEEP, null)
-    EdgeWidget(edgeLight(EdgeStatus.Usual, EdgeKind.Sleep), Ink, GlowMood.Night, open, BITMAP_EXTRA) { frame ->
+    PictureWidget(Ink, null, GlowMood.Night, open, BITMAP_EXTRA) { frame ->
         when {
             m.waiting != null -> WaitingContent(m.title, m.waiting, frame)
             frame.bucket == WidgetSizes.Small -> SmallContent(m, frame)

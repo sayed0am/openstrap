@@ -236,7 +236,7 @@ class MomentWidgetModelTest {
         assertEquals("Load today 42", m.figures.first())
         val lastHr = heart(after).last { it.x <= after.epochSecond }.y.toInt()
         assertEquals(TodayCopy.after(lastHr, 52), m.sentences.single())
-        assertEquals(MomentLight(MetricColors.heart, LightAngle.Below, rim = AFTER_RIM), m.light)
+        assertEquals(MomentLight(MetricColors.readiness, LightAngle.Below, rim = AFTER_RIM), m.light)
         val chart = m.chart!!
         assertEquals("17:42", chart.from)
         // The count moves on: the next five minute mark.

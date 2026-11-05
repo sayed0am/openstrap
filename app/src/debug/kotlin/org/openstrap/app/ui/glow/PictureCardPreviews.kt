@@ -12,22 +12,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
+
+
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.widget.WidgetSamples
 
-/** [EdgeCard] in each light it takes: usual, off normal both ways, a progress bar, live and last night. */
+/** [PictureCard] usual and rimmed. */
 @LeafPreviews
 @Composable
-internal fun EdgeCardPreview() {
+internal fun PictureCardPreview() {
     val steps = WidgetSamples.steps(PreviewDay, previewLocale())
     PreviewPage {
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            EdgeCard(MetricColors.heart, Modifier.weight(1f).height(GlowGrid.UnitHeight)) {
+            PictureCard(MetricColors.heart, Modifier.weight(1f).height(GlowGrid.UnitHeight)) {
                 CardText(say("Resting heart rate", "نبض الراحة"), "52", say("Usual", "معتاد"))
             }
-            EdgeCard(MetricColors.temperature, Modifier.weight(1f).height(GlowGrid.UnitHeight), status = EdgeStatus.Above) {
+            PictureCard(MetricColors.temperature, Modifier.weight(1f).height(GlowGrid.UnitHeight), rim = Rim.Top) {
                 CardText(
                     title = say("Skin temperature", "حرارة الجلد"),
                     value = "34.6",
@@ -38,22 +38,20 @@ internal fun EdgeCardPreview() {
         }
         Spacer(Modifier.height(GlowGrid.Gap))
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            EdgeCard(MetricColors.hrv, Modifier.weight(1f).height(GlowGrid.UnitHeight), status = EdgeStatus.Below) {
+            PictureCard(MetricColors.hrv, Modifier.weight(1f).height(GlowGrid.UnitHeight), rim = Rim.End) {
                 CardText("HRV", "41", say("Below your normal", "أقل من معدلك"), MetricColors.hrv)
             }
-            EdgeCard(
-                color = MetricColors.steps,
+            PictureCard(
+                ink = MetricColors.steps,
                 modifier = Modifier.weight(1f).height(GlowGrid.UnitHeight),
-                kind = EdgeKind.Progress,
-                progress = steps.progress,
             ) { CardText(steps.title, steps.stepsText, steps.share) }
         }
         Spacer(Modifier.height(GlowGrid.Gap))
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            EdgeCard(MetricColors.heart, Modifier.weight(1f).height(GlowGrid.UnitHeight), kind = EdgeKind.Live) {
+            PictureCard(MetricColors.heart, Modifier.weight(1f).height(GlowGrid.UnitHeight)) {
                 CardText(say("Heart rate", "نبض القلب"), "71", say("Now", "الآن"))
             }
-            EdgeCard(MetricColors.sleepDeep, Modifier.weight(1f).height(GlowGrid.UnitHeight), kind = EdgeKind.Sleep) {
+            PictureCard(MetricColors.sleepDeep, Modifier.weight(1f).height(GlowGrid.UnitHeight)) {
                 CardText(say("Last night", "الليلة الماضية"), "7:58", say("Asleep", "نوم"))
             }
         }
