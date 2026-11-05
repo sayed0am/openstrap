@@ -3,7 +3,6 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
-    alias(libs.plugins.ktlint)
 }
 
 java {
@@ -26,12 +25,6 @@ detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.file("config/detekt.yml"))
     baseline = file("detekt-baseline.xml")
-}
-
-// Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.
-ktlint {
-    version = libs.versions.ktlint.get()
-    baseline = file("ktlint-baseline.xml")
 }
 
 dependencies {

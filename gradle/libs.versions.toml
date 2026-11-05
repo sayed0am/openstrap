@@ -28,8 +28,6 @@ documentfile = "1.1.0"
 detekt = "2.0.0-alpha.6"
 composeRulesDetekt = "0.6.8"
 slackComposeLint = "1.6.1"
-ktlintGradle = "14.2.0"
-ktlint = "1.8.0"
 
 [libraries]
 compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
@@ -73,4 +71,3 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintGradle" }
