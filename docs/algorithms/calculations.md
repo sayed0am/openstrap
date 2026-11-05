@@ -218,7 +218,7 @@ Each contributor scores 0–100. Weights are a design choice, and the evidence r
 | **Breathing rate** | 4 % | Like temperature: a change either way counts. |
 | **Previous day's load** | 4 % | Yesterday's training load ÷ your usual (fitness, section 8, up to the day before). A ratio up to 1.5 → 100, then −25 points per extra 1.0, never below 30. Needs 7 days of load. |
 | **Blood oxygen** | 3 % | Only a **drop** counts: 100 − 25 points per % below your usual, after a 1 % free band. So −2 % → 75 and −3 % → 50. Higher than usual is no better. |
-| **Recovery index** | 3 % | When the night's lowest HR came. In the first half of the night → 100. Later, it loses 1.2 points per % of the night after halfway, never below 40. |
+| **Recovery index** | 0 % (shown only) | When the night's lowest HR came. Shown with the others but not scored: no peer-reviewed study links its timing to recovery. In the first half of the night → 100. Later, it loses 1.2 points per % of the night after halfway, never below 40. |
 
 Temperature, breathing and blood-oxygen baselines use all usable past nights, not only valid ones, and need 7 of them.
 
@@ -226,7 +226,7 @@ Temperature, breathing and blood-oxygen baselines use all usable past nights, no
 
 * **No HRV and no resting HR contributor → no score.** Sleep alone isn't readiness. You see the sleep contributor and the strap's estimate instead ("withheld").
 * Otherwise: **Readiness = weighted average of the contributors present.** The weights are re-scaled over what's there, so a missing signal doesn't count as zero.
-* **Red-flag cap:** if any body signal (HRV, resting HR, temperature, breathing, blood oxygen) scored below 40, Readiness can be at most that score + 30. One very bad signal shouldn't be averaged away by a good night's sleep.
+* **Red-flag cap:** if any body signal (HRV, resting HR, temperature, breathing) scored below 40, Readiness can be at most that score + 30. One very bad signal shouldn't be averaged away by a good night's sleep. Blood oxygen doesn't count here: a wrist reading is off by 2 to 4 points, so a low night is more often the sensor.
 * **Alert cap:** during a body-signal Alert, Readiness is at most 54, so it always lands in the lowest band.
 
 ### Extras shown with Readiness
@@ -247,8 +247,8 @@ A night-by-night watch on resting HR, skin temperature and breathing rate, for "
 
 ### Baselines for this check
 
-* Earlier nights only, skipping the 2 most recent nights and any night that wasn't Normal.
-* The last 28 such nights. Resting HR and HRV use valid nights only.
+* Earlier valid nights only, skipping the 5 most recent nights and any night that wasn't Normal. Illness can lift resting HR and temperature 3 to 5 days before symptoms, so those nights stay out of the baseline they are judged against.
+* The last 28 such nights.
 * No alerts at all until resting HR has 14 nights (a 28-night window covers a whole menstrual cycle).
 * Resting HR here is the **sleep-mean HR**, not the lowest 30 minutes. Our own value is used on a valid night, else the strap's.
 
@@ -280,7 +280,7 @@ Once on, an Alert stays until **2 nights in a row without a core flag**.
 
 **Gaps:** one missing night is bridged; two or more missing nights reset the run.
 
-**Likely cause:** a hard training day the day before (more than 1.5× your 28-day average load) is named next to an alert, but never cancels it.
+**Likely cause:** a hard training day the day before (more than 1.5× your fitness, the 42-day load that Readiness compares yesterday with) is named next to an alert, but never cancels it.
 
 ---
 
@@ -328,7 +328,7 @@ Energy is always kept within 0–100.
 
 **Stress readings:** a minute uses the latest stress reading from the past 10 minutes.
 
-**Stress exclusion around workouts:** the strap's stress score comes from HRV, which exercise suppresses, so readings taken during a stored workout (phone or strap, active time only, pauses left out) or in the **20 minutes after** it ends are ignored. 20 minutes is the half-life of the after-burn tally above. A phone workout's pause counts as an end, so a pause is also covered for its first 20 minutes. In that window:
+**Stress exclusion around workouts:** the strap's stress score comes from HRV, which exercise suppresses, so readings taken during a stored workout (phone or strap, active time only, pauses left out) or in the **20 minutes after** it ends are ignored. 20 minutes is the half-life of the after-burn tally above. A phone workout's pause counts as an end, so a pause is also covered for its first 20 minutes. After a hard workout HRV stays down longer than heart rate, so a finished workout with aerobic training effect ≥ 3 keeps its stress readings out for **60 minutes** after its end, and one ≥ 4 for **90 minutes**. Only the readings are dropped there: the minutes count as ordinary minutes otherwise. In the 20-minute window:
 * Energy never enters Stress or Relax, and a reading taken there isn't carried into the minutes after it.
 * The personal stress threshold doesn't use those readings.
 * The day's stress (the Today tile, the day chart, which shows a gap, and the daily average, lowest and highest behind the week, month and year views) leaves them out.
@@ -398,6 +398,10 @@ Classic 42-day / 7-day model, over worn days only (an unworn day holds rather th
 * Chronic = 28-day EWMA of the days **before** the last 7, so this week isn't counted twice.
 * Ratio = acute ÷ chronic, with the chronic value floored at 20 to avoid dividing by almost nothing.
 * Needs 21 days. It's descriptive only and never enters Readiness.
+
+### Long run (Load screen, Day view)
+
+A run (outdoor, treadmill or trail; phone or strap) that is more than **10 % longer** than the longest run in the 30 days before it gets a sentence under the day's Load. It needs at least 2 earlier runs in those 30 days. Time is the active time, pauses left out; a strap run under a phone run counts once. In 5,205 runners a single run more than 10 % longer than the month's longest raised the injury hazard 1.5 to 2.3 times, while the acute:chronic ratio didn't predict injury (Frandsen 2025). The study measured distance; we use time, which every run has.
 
 ---
 
@@ -501,7 +505,7 @@ It's an estimate, always shown with "≈". It needs a height.
 Minutes are counted in two passes, and no minute counts twice.
 
 1. **By cadence:** awake minutes at ≥ 100 steps/min (at every age), in runs of at least 2 minutes in a row. At ≥ 130 steps/min a minute is vigorous.
-2. **By heart rate**, for effort without steps (cycling, rowing): awake runs of at least 10 minutes at HRR ≥ 40 %, with under 100 steps/min or inside a workout. At HRR ≥ 60 % a minute is vigorous. These are marked "HR-assisted".
+2. **By heart rate**, for effort without steps (cycling, rowing): awake runs of at least 5 minutes at HRR ≥ 40 %, with under 100 steps/min or inside a workout. At HRR ≥ 60 % a minute is vigorous. These are marked "HR-assisted". WHO 2020 dropped the 10-minute bout rule, so 5 minutes is only there to keep stairs and short spikes out.
 
 **Weekly target:** moderate + 2 × vigorous over the last 7 days, against 150 minutes (WHO).
 
@@ -535,13 +539,13 @@ Taken in this order:
 
 **Extra for an activity** = (MET − 1) × 3.5 × weight ÷ 200 kcal/min. Starting from BMR means rest isn't counted twice.
 
-**Walking MET by cadence:**
-* Up to 60 years: 60 steps/min → 2, 100 → 3, 130 → 6, with straight lines between, held at 6 above 130.
-* From 61: 100 → 3, 110 → 4, 120 → 5, 130 → 6.
+**Walking MET by cadence** (Moore et al. 2021, measured walking oxygen cost):
+* VO2 = −0.4367 + 0.001430·c² − 0.001455·age·c − 0.000009012·BMI·c² + 0.0008086·age·height (ml/kg/min, c in steps/min, height in cm), MET = VO2 ÷ 3.5, at least 1. Age is held to the study's 21 to 84.
+* For a 30-year-old, 175 cm, BMI 22.9: 60 steps/min → 1.6, 100 → 3.3, 130 → 5.4. Older and heavier people get a little less per step at the same cadence, taller people a little more.
 
 **Running:** 145+ steps/min in this and a neighbouring minute uses the ACSM running equation, MET = (3.5 + 0.2 × speed in m/min) ÷ 3.5. Speed is cadence × step length.
 
-**Heart-rate boost ("HR-assisted"):** for awake, non-workout minutes with under 20 steps, in runs of at least 10 minutes at HRR ≥ 40 %:
+**Heart-rate boost ("HR-assisted"):** for awake, non-workout minutes with under 20 steps, in runs of at least 5 minutes at HRR ≥ 40 % (the same run as active minutes):
 * MET = 1 + HRR × (VO2max ÷ 3.5 − 1), capped at 6.
 * VO2max is your estimate (section 12), else 35.
 * This replaces the step-based value only when it's higher.
@@ -658,7 +662,7 @@ EPOC ← EPOC + 0.077 × (e^(4.5x) − 1) × minutes
 * Never less than what an earlier workout (phone or strap) still has to run, as Zepp's own rule. Never more than 72 h.
 * A design choice, not a fitted model: Zepp switches its own off for app workouts (`native/04` §6.2), so only its shape is kept.
 
-**VO2max (outdoor runs with GPS).** The ACSM running equation on the level, VO2 = 3.5 + 0.2 × speed (m/min), at reserve x gives VO2max = 3.5 + (VO2 − 3.5) ÷ x (%HRR ≈ %VO2R, Swain & Leutholtz 1997). Gated as Zepp gates its own (`native/04` §5.2):
+**VO2max (outdoor runs with GPS).** The ACSM running equation on the level, VO2 = 3.5 + 0.2 × speed (m/min), at heart-rate reserve x gives VO2max = 3.5 + (VO2 − 3.5) ÷ r, with oxygen reserve r = (x − 0.0886) ÷ 0.972. Heart-rate reserve runs 6 to 8 points above oxygen reserve (Ferri Marini 2021, 451 HERITAGE adults), so dividing by x itself read VO2max 9 to 14 % low. Gated as Zepp gates its own (`native/04` §5.2):
 
 * Outdoor run only, with GPS (the route in memory at the end, or a kept one).
 * At least 120 qualifying epochs (about 10 minutes): ≥ 1.5 m/s and ≥ half of max HR.

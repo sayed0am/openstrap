@@ -23,13 +23,14 @@ class ActivityTest {
         assertEquals(0, m.moderateMinutes)
     }
 
-    @Test fun `heart rate counts effort without steps after ten minutes, never twice`() {
+    @Test fun `heart rate counts effort without steps after five minutes, never twice`() {
         // 12 minutes of cycling at 50 % of reserve with no steps: moderate, from HR.
         val bike = Activity.mvpa(minutes(*IntArray(12), hrr = 0.5f))
         assertEquals(12, bike.moderateMinutes)
         assertEquals(12, bike.fromHeartRate)
-        // Nine minutes is too short.
-        assertEquals(0, Activity.mvpa(minutes(*IntArray(9), hrr = 0.7f)).moderateMinutes)
+        // Four minutes is too short; five counts.
+        assertEquals(0, Activity.mvpa(minutes(*IntArray(4), hrr = 0.5f)).moderateMinutes)
+        assertEquals(5, Activity.mvpa(minutes(*IntArray(5), hrr = 0.5f)).moderateMinutes)
         // At 65 % it's vigorous.
         assertEquals(12, Activity.mvpa(minutes(*IntArray(12), hrr = 0.65f)).vigorousMinutes)
         // A brisk walk with HR up counts once, from cadence.

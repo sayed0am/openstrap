@@ -16,10 +16,14 @@ object Activity {
     const val VIGOROUS_CADENCE = 130
     /** A cadence minute counts only inside a run of this many consecutive qualifying minutes (design choice). */
     const val CADENCE_RUN_MINUTES = 2
-    /** HR-MVPA: awake, ≥ 10 consecutive minutes at ≥ 40 % of reserve (vigorous ≥ 60 %), and few steps or in a workout. */
+    /**
+     * HR-MVPA: awake, ≥ 5 consecutive minutes at ≥ 40 % of reserve (vigorous ≥ 60 %), and few steps or in a workout.
+     * WHO 2020 dropped the 10-minute bout rule, and shorter bouts carry the same benefit (Jakicic 2019). Five minutes
+     * still keeps a stairwell or a coffee spike out (evidence-review.md, "Activity").
+     */
     const val HR_MODERATE_HRR = 0.40f
     const val HR_VIGOROUS_HRR = 0.60f
-    const val HR_RUN_MINUTES = 10
+    const val HR_RUN_MINUTES = 5
     /** WHO 2020: 150 min of moderate a week, a vigorous minute counting double. */
     const val MVPA_WEEKLY_TARGET = 150
 

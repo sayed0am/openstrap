@@ -59,9 +59,13 @@ object BodySignals {
         val baselineNights: Int,
     )
 
-    /** Baseline per signal: the last [ALERT_BASELINE_NIGHTS] valid nights, excluding the [RECENT_EXCLUDED] most recent. */
+    /**
+     * Baseline per signal: the last [ALERT_BASELINE_NIGHTS] valid nights, excluding the [RECENT_EXCLUDED] most recent.
+     * Resting HR and temperature start rising 3 to 5 days before symptoms (Mishra 2020, Smarr 2020), so a 2-night gap
+     * let an illness's first nights into its own baseline. Five keeps them out.
+     */
     const val ALERT_BASELINE_NIGHTS = 28
-    const val RECENT_EXCLUDED = 2
+    const val RECENT_EXCLUDED = 5
     /** No alerts before this many valid nights; a 28-night window spans a whole menstrual cycle. */
     const val MIN_ALERT_NIGHTS = 14
     const val RHR_FLAG_BPM = 4f
@@ -98,12 +102,13 @@ object BodySignals {
         val sorted = nights.sortedBy { it.day }
         val out = ArrayList<Day>(sorted.size)
         for ((i, n) in sorted.withIndex()) {
-            // Baseline: earlier nights, not the 2 most recent, not in Watch or Alert, valid; the last 28 of those.
+            // Baseline: earlier nights, not the 5 most recent, not in Watch or Alert, valid; the last 28 of those.
             val pool = (0 until i).filter { j ->
-                nightsBetween(sorted[j].day, n.day) > RECENT_EXCLUDED && out[j].state == State.Normal
+                nightsBetween(sorted[j].day, n.day) > RECENT_EXCLUDED && out[j].state == State.Normal && sorted[j].valid
             }.map { sorted[it] }
-            val rhrBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.rhrMeanSleep }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.RHR_SD_FLOOR, MIN_ALERT_NIGHTS)
-            val baselineNights = pool.count { it.valid && it.rhrMeanSleep != null }.coerceAtMost(ALERT_BASELINE_NIGHTS)
+            fun base(values: List<Float>, floor: Float) = Recovery.baseline(values.takeLast(ALERT_BASELINE_NIGHTS), floor, MIN_ALERT_NIGHTS)
+            val rhrBase = base(pool.mapNotNull { it.rhrMeanSleep }, Recovery.RHR_SD_FLOOR)
+            val baselineNights = pool.count { it.rhrMeanSleep != null }.coerceAtMost(ALERT_BASELINE_NIGHTS)
             val flags = mutableSetOf<Flag>()
             val signals = mutableListOf<String>()
             var rrBig = false
@@ -114,7 +119,7 @@ object BodySignals {
                     if (d >= RHR_WATCH_BPM) flags += Flag.RhrWatch
                     if (d >= RHR_WATCH_BPM) signals += strings.format(R.string.core_body_signal_rhr, d.toInt())
                 }
-                val tempBase = Recovery.baseline(pool.mapNotNull { it.skinTemperature }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.TEMP_SD_FLOOR, MIN_ALERT_NIGHTS)
+                val tempBase = base(pool.mapNotNull { it.skinTemperature }, Recovery.TEMP_SD_FLOOR)
                 if (tempBase != null) n.skinTemperature?.let { t ->
                     val d = t - tempBase.centre
                     if (d >= TEMP_FLAG_C && d >= FLAG_SCALES * tempBase.scale) {
@@ -122,7 +127,7 @@ object BodySignals {
                         signals += strings.get(R.string.core_body_signal_temperature)
                     }
                 }
-                val rrBase = Recovery.baseline(pool.mapNotNull { it.breathRate }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.BREATH_SD_FLOOR, MIN_ALERT_NIGHTS)
+                val rrBase = base(pool.mapNotNull { it.breathRate }, Recovery.BREATH_SD_FLOOR)
                 if (rrBase != null) n.breathRate?.let { rr ->
                     val d = rr - rrBase.centre
                     if (d >= RR_FLAG_PER_MIN && d >= FLAG_SCALES * rrBase.scale) {
@@ -131,7 +136,7 @@ object BodySignals {
                     }
                     if (d >= RR_ALERT_PER_MIN && d >= FLAG_SCALES * rrBase.scale) rrBig = true
                 }
-                val hrvBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.hrvLn }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.HRV_LN_SD_FLOOR, MIN_ALERT_NIGHTS)
+                val hrvBase = base(pool.mapNotNull { it.hrvLn }, Recovery.HRV_LN_SD_FLOOR)
                 if (hrvBase != null) hrvOf(n)?.takeIf { hrvBase.z(it) <= HRV_SUPPORT_Z }?.let {
                     flags += Flag.HrvSupport
                     signals += strings.get(R.string.core_body_signal_hrv)

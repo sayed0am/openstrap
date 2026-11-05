@@ -79,6 +79,31 @@ class StressExclusionTest {
         assertTrue(!Recovery.stressCounts(1500, ex))
     }
 
+    @Test fun `a hard workout keeps stress out for an hour, a very hard one for 90 minutes`() {
+        val easy = AppWorkout(start = 0, end = 3600, sportType = 1, aerobicTrainingEffect = 2.9f)
+        val hard = easy.copy(aerobicTrainingEffect = 3f)
+        val veryHard = easy.copy(aerobicTrainingEffect = 4.2f)
+        val recording = easy.copy(end = null, aerobicTrainingEffect = 4.2f)
+        assertTrue(Recovery.stressTails(listOf(easy, recording), emptyList()).isEmpty())
+        val ranges = Recovery.workoutRanges(listOf(hard), emptyList(), now = 10_000)
+        val ex = Recovery.stressExcluded(ranges, Recovery.stressTails(listOf(hard), emptyList()))
+        assertTrue(!Recovery.stressCounts(3600 + 59 * 60, ex))
+        assertTrue(Recovery.stressCounts(3600 + 61 * 60, ex))
+        val strap = Workout(0, 3600, 1, 3600, null, null, null, null, aerobicTrainingEffect = 4f, null, null, null, null)
+        val exStrap = Recovery.stressExcluded(listOf(0L until 3600L), Recovery.stressTails(listOf(veryHard), listOf(strap)))
+        assertTrue(!Recovery.stressCounts(3600 + 89 * 60, exStrap))
+        assertTrue(Recovery.stressCounts(3600 + 91 * 60, exStrap))
+        // Charge drops the tail's stress readings but keeps the 20-minute workout phase.
+        val ms = Recovery.minutes(
+            0, 3 * 3600L, (0 until 180).map { it * 60L to 70 }, emptyMap(), (0 until 180).map { it * 60L to 80 }, emptyList(),
+            workouts = ranges, stressTails = Recovery.stressTails(listOf(hard), emptyList()),
+        )
+        val tail = ms.first { it.t == 3600L + 50 * 60 }
+        assertEquals(null, tail.stress)
+        assertEquals(null, tail.workout)
+        assertEquals(80, ms.first { it.t == 3600L + 70 * 60 }.stress)
+    }
+
     @Test fun `the day's stress average and high ignore in-workout readings`() {
         val zone = ZoneOffset.UTC
         val date = LocalDate.of(2026, 10, 1)
