@@ -16,6 +16,7 @@ import org.openstrap.app.data.WorkoutAnalysis
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.presentation.Metric
+import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.avg
 import org.openstrap.app.ui.theme.MetricColors
 
@@ -166,7 +167,7 @@ private fun metric(
     value: Float?,
     @StringRes status: Int = R.string.glow_metrics_day_average,
     suffix: String = "",
-) = row(strings.get(name), color, value?.let { m.format(it) + suffix }, strings.get(status), IndexTarget.Open(Detail.OfMetric(m)))
+) = row(strings.get(name), color, value?.let { m.format(it) + suffix }, strings.get(status), IndexTarget.Open(Detail.OfMetric(m, m in SleepCopy.NIGHT_SIGNALS)))
 
 /** The index's Heart and Body signals groups, a row for each of their metrics. */
 private fun signalGroups(state: DayUiState, strings: Strings): List<IndexGroup> = listOf(
@@ -181,19 +182,27 @@ private fun signalGroups(state: DayUiState, strings: Strings): List<IndexGroup> 
                 strings, Metric.RestingHr, R.string.glow_metrics_resting_heart_rate, MetricColors.heart,
                 state.restingHeartRate?.toFloat(), R.string.glow_metrics_for_the_day,
             ),
-            metric(strings, Metric.Hrv, R.string.glow_metrics_hrv, MetricColors.hrv, state.hrv.avg()?.toFloat()),
+            metric(
+                strings, Metric.Hrv, R.string.glow_metrics_hrv, MetricColors.hrv, SleepCopy.nightValue(state, Metric.Hrv),
+                R.string.glow_metrics_night_average,
+            ),
         ),
     ),
     IndexGroup(
         strings.get(R.string.glow_metrics_group_body),
         listOf(
-            metric(strings, Metric.Spo2, R.string.glow_metrics_blood_oxygen, MetricColors.spo2, state.spo2.avg()?.toFloat(), suffix = "%"),
+            // Night signals: last night's, as every tab and detail shows them (SleepCopy.NIGHT_SIGNALS).
             metric(
-                strings, Metric.SkinTemperature, R.string.glow_metrics_skin_temperature, MetricColors.temperature,
-                state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(),
+                strings, Metric.Spo2, R.string.glow_metrics_blood_oxygen, MetricColors.spo2, SleepCopy.nightValue(state, Metric.Spo2),
+                R.string.glow_metrics_night_average, suffix = "%",
             ),
             metric(
-                strings, Metric.Breathing, R.string.glow_metrics_breathing_rate, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(),
+                strings, Metric.SkinTemperature, R.string.glow_metrics_skin_temperature, MetricColors.temperature,
+                SleepCopy.nightValue(state, Metric.SkinTemperature), R.string.glow_metrics_night_average,
+            ),
+            metric(
+                strings, Metric.Breathing, R.string.glow_metrics_breathing_rate, MetricColors.sleepLight,
+                SleepCopy.nightValue(state, Metric.Breathing), R.string.glow_metrics_night_average,
             ),
             metric(strings, Metric.Stress, R.string.glow_metrics_stress, MetricColors.stress, state.stress.avg()?.toFloat()),
         ),

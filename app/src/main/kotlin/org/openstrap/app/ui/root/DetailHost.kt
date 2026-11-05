@@ -26,6 +26,7 @@ import org.openstrap.app.device.WorkoutSession
 import org.openstrap.app.ui.dashboard.DayViewModel
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.ui.dashboard.Score
+import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.glow.ActivityDetailContext
 import org.openstrap.app.ui.glow.GlowHealthspanScreen
 import org.openstrap.app.ui.glow.GlowMetricDetailScreen
@@ -67,8 +68,9 @@ internal fun DetailHost(
     val workouts by workoutsVm.workouts.collectAsStateWithLifecycle()
     val activity by dayVm.activityHistory.collectAsStateWithLifecycle()
     when (detail) {
+        // A night signal's detail is always the night's, as its rows read it (SleepCopy.NIGHT_SIGNALS).
         is Detail.OfMetric -> GlowMetricDetailScreen(
-            detail.metric, detail.night, day, histories.daily, live.bpm, live.enabled, live.canUse, live.toggle,
+            detail.metric, detail.night || detail.metric in SleepCopy.NIGHT_SIGNALS, day, histories.daily, live.bpm, live.enabled, live.canUse, live.toggle,
             push, onSwitch, dayVm::select, padding, pop,
         )
         is Detail.OfScore -> GlowScoreDetailScreen(

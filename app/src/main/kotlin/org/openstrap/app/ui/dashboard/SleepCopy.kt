@@ -58,6 +58,13 @@ internal object SleepCopy {
     fun averageHeart(state: DayUiState): Int? =
         state.sleep?.averageHeartRate ?: sleepHeart(state).takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.roundToInt()
 
+    /**
+     * The signals the strap reads in your sleep. Wherever one shows, on any tab, in its detail or a related row, it's
+     * the night's average ([nightValue]) against the nights before ([nightNormal]), so they all say the same. The
+     * calendar day would split the night at midnight and judge it against whole days, hours off the wrist included.
+     */
+    val NIGHT_SIGNALS: Set<Metric> = setOf(Metric.Hrv, Metric.Breathing, Metric.Spo2, Metric.SkinTemperature)
+
     /** The night's value of [metric], the one its night vital row shows. */
     fun nightValue(state: DayUiState, metric: Metric): Float? =
         if (metric == Metric.HeartRate) averageHeart(state)?.toFloat() else tonight(state)?.let { n -> pick(metric)?.invoke(n) }

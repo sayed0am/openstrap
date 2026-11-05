@@ -489,34 +489,36 @@ private class Signals(val rows: List<BodySignal>, val skin: Float?, val skinNorm
  */
 @Composable
 private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
-    val skin = rememberNormal(Metric.SkinTemperature, state.date, history)
-    val breath = rememberNormal(Metric.Breathing, state.date, history)
-    val spo2 = rememberNormal(Metric.Spo2, state.date, history)
     val stress = rememberNormal(Metric.Stress, state.date, history)
     val breathName = stringResource(R.string.glow_recovery_breathing_rate)
     val spo2Name = stringResource(R.string.glow_recovery_blood_oxygen)
     val stressName = stringResource(R.string.glow_recovery_stress)
-    return remember(state, skin, breath, spo2, stress) {
+    return remember(state, stress) {
         fun body(metric: Metric, name: String, accent: Color, today: Float?, normal: History.Normal?, unit: String = ""): BodySignal {
             val direction = History.status(today, normal)
             return BodySignal(metric, name, accent, today?.let { metric.format(it) + unit }, direction, bodyTag(metric, direction))
         }
         val stressToday = stressMean(state.stress)
-        val night = SleepCopy.nightValue(state, Metric.SkinTemperature)
         Signals(
             listOf(
-                body(Metric.Breathing, breathName, MetricColors.sleepLight, state.breathRate.avg()?.toFloat(), breath),
-                body(Metric.Spo2, spo2Name, MetricColors.spo2, state.spo2.avg()?.toFloat(), spo2, unit = "%"),
+                // Night signals: last night's against the nights before, as the Sleep tab and their details read them.
+                body(
+                    Metric.Breathing, breathName, MetricColors.sleepLight, SleepCopy.nightValue(state, Metric.Breathing),
+                    SleepCopy.nightNormal(state, Metric.Breathing),
+                ),
+                body(
+                    Metric.Spo2, spo2Name, MetricColors.spo2, SleepCopy.nightValue(state, Metric.Spo2),
+                    SleepCopy.nightNormal(state, Metric.Spo2), unit = "%",
+                ),
                 BodySignal(
                     Metric.Stress, stressName, MetricColors.stress, stressToday?.let { Metric.Stress.format(it) },
                     History.status(stressToday, stress), offTag(OffWords.Usual, stressOffStatus(state.stress, stress)),
                 ),
             ),
             // Tonight's against the nights before (spec 2.7, Dial): the day's mean counts hours off the wrist, which
-            // read several degrees low. The day's figures only stand in when the night has none.
-            skin = night ?: state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(),
-            // A night's value against the nights' normal only, never the day's: the two sit degrees apart.
-            skinNormal = if (night != null) SleepCopy.nightNormal(state, Metric.SkinTemperature) else skin,
+            // read several degrees low, so a day with no sleep has no reading here.
+            skin = SleepCopy.nightValue(state, Metric.SkinTemperature),
+            skinNormal = SleepCopy.nightNormal(state, Metric.SkinTemperature),
         )
     }
 }

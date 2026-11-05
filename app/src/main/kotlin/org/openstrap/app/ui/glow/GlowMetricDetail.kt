@@ -750,14 +750,17 @@ internal fun RecoveryScoreRow(ready: org.openstrap.app.data.Recovery.Readiness?,
 /** A body signal as a related row: the day's value and its word against your normal, marked when it's off normal. */
 @Composable
 internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistory, divider: Boolean, onOpen: (Detail) -> Unit) {
-    val normal = rememberNormal(m, state.date, history)
-    val v = dayValue(m, state)
+    // A night signal reads as everywhere else: last night's against the nights before (SleepCopy.NIGHT_SIGNALS).
+    val night = m in SleepCopy.NIGHT_SIGNALS
+    val dayNormal = rememberNormal(m, state.date, history)
+    val normal = if (night) SleepCopy.nightNormal(state, m) else dayNormal
+    val v = if (night) SleepCopy.nightValue(state, m) else dayValue(m, state)
     // The heart rate moves all day, so it has no word against a normal.
     val status = if (m == Metric.HeartRate) null else History.status(v, normal)
     ListRow(
         m.title, colorOf(m), v?.let { m.format(it) },
         if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-        tag = org.openstrap.app.ui.dashboard.bodyTag(m, status), onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        tag = org.openstrap.app.ui.dashboard.bodyTag(m, status), onClick = { onOpen(Detail.OfMetric(m, night)) }, divider = divider,
         icon = m.rowIcon(),
     )
 }

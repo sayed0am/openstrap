@@ -47,6 +47,7 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.dashboard.DailyHistory
 import org.openstrap.app.ui.dashboard.DayUiState
+import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.Tier
 import org.openstrap.app.ui.dashboard.lookOr
 import org.openstrap.app.ui.dashboard.todayPanes
@@ -774,16 +775,18 @@ private fun TodayRow(
                     stringResource(R.string.glow_today_resting_hr), MetricColors.heart, s.restingHeartRate?.toFloat(),
                     normal(Metric.RestingHr), "", Metric.RestingHr,
                 ),
+                // Night signals: last night's against the nights before, as the Sleep tab and their details read them.
                 BodyRow(
-                    stringResource(R.string.glow_today_hrv), MetricColors.hrv, s.hrv.avg()?.toFloat(), normal(Metric.Hrv), "", Metric.Hrv,
+                    stringResource(R.string.glow_today_hrv), MetricColors.hrv, SleepCopy.nightValue(s, Metric.Hrv),
+                    SleepCopy.nightNormal(s, Metric.Hrv), "", Metric.Hrv,
                 ),
                 BodyRow(
-                    stringResource(R.string.glow_today_blood_oxygen), MetricColors.spo2, s.spo2.avg()?.toFloat(), normal(Metric.Spo2), "%",
-                    Metric.Spo2,
+                    stringResource(R.string.glow_today_blood_oxygen), MetricColors.spo2, SleepCopy.nightValue(s, Metric.Spo2),
+                    SleepCopy.nightNormal(s, Metric.Spo2), "%", Metric.Spo2,
                 ),
                 BodyRow(
-                    stringResource(R.string.glow_today_breathing_rate), MetricColors.sleepLight, s.breathRate.avg()?.toFloat(),
-                    normal(Metric.Breathing), "", Metric.Breathing,
+                    stringResource(R.string.glow_today_breathing_rate), MetricColors.sleepLight, SleepCopy.nightValue(s, Metric.Breathing),
+                    SleepCopy.nightNormal(s, Metric.Breathing), "", Metric.Breathing,
                 ),
             ),
             ctx.waiting, onOpenMetric,

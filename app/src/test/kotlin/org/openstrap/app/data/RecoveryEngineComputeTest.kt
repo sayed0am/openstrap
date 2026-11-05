@@ -119,8 +119,8 @@ class RecoveryEngineComputeTest {
         assertTrue(r.maxHrFromAge)
 
         assertEquals(SNAPSHOT, snapshot(r))
-        // Recovery's usual: the 13 scored mornings of the last 30 days, each at 84 (today's is withheld).
-        assertEquals(History.Normal(84f, 84f, 84f, 13), r.readinessUsual)
+        // Recovery's usual: the 13 scored mornings of the last 30 days, each at 83 (today's is withheld).
+        assertEquals(History.Normal(83f, 83f, 83f, 13), r.readinessUsual)
         // No sleep-apnea summaries are stored, so a week without disturbances and no band.
         assertEquals((6 downTo 0).map { date.minusDays(it.toLong()) to null }, r.disturbancesWeek)
         assertNull(r.disturbancesUsual)
