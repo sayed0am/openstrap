@@ -18,7 +18,7 @@ object SourceTree {
     val kotlin: File get() = File(root, "kotlin/org/openstrap/app")
 
     /** The app module, the folder that holds `src` and `schemas`. */
-    val module: File get() = root.parentFile.parentFile
+    val module: File get() = checkNotNull(root.parentFile?.parentFile)
 
     /** Room's exported schemas, one `<version>.json` each. */
     val schemas: File get() = File(module, "schemas/org.openstrap.app.data.db.OpenStrapDatabase")

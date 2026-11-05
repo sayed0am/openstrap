@@ -2,7 +2,6 @@ package org.openstrap.app.ui.device
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
 import androidx.health.connect.client.HealthConnectClient
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import org.openstrap.app.R
@@ -137,10 +137,10 @@ private const val PLAY_STORE = "com.android.vending"
 internal fun healthConnectStoreIntents(callerId: String): List<Intent> {
     val details = "details?id=$HC_PACKAGE&url=healthconnect%3A%2F%2Fonboarding"
     return listOf(
-        Intent(Intent.ACTION_VIEW, Uri.parse("market://$details")).setPackage(PLAY_STORE)
+        Intent(Intent.ACTION_VIEW, "market://$details".toUri()).setPackage(PLAY_STORE)
             .putExtra("overlay", true).putExtra("callerId", callerId),
-        Intent(Intent.ACTION_VIEW, Uri.parse("market://$details")),
-        Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/$details")),
+        Intent(Intent.ACTION_VIEW, "market://$details".toUri()),
+        Intent(Intent.ACTION_VIEW, "https://play.google.com/store/apps/$details".toUri()),
     )
 }
 
