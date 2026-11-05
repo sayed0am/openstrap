@@ -4,7 +4,7 @@
   of workout has (ui/workout/FamilySummary.kt). Load is the app's name for how much a workout asked of your body. A
   sport in these lines is its short noun in lower case: "run", "walk", "ride", "swim", "hike", "row".
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Two whole sentences, one after the other, where a line has both. A language that writes no space between sentences drops it. -->
     <string name="workout_sentences"><xliff:g id="first" example="5.21 km, average 142 bpm.">%1$s</xliff:g> <xliff:g id="second" example="Paused 4 min.">%2$s</xliff:g></string>
 
@@ -99,7 +99,10 @@
     <!-- A strength set on the summary: reps and the weight in kilograms. Short, about 12 characters. -->
     <string name="workout_summary_set_reps_kg"><xliff:g id="reps" example="10">%1$d</xliff:g> × <xliff:g id="kg" example="60">%2$s</xliff:g> kg</string>
     <!-- A strength set with reps and no weight. Short. -->
-    <string name="workout_summary_set_reps"><xliff:g id="reps" example="12">%1$d</xliff:g> reps</string>
+    <plurals name="workout_summary_set_reps">
+        <item quantity="one"><xliff:g id="reps" example="12">%1$d</xliff:g> rep</item>
+        <item quantity="other"><xliff:g id="reps" example="12">%1$d</xliff:g> reps</item>
+    </plurals>
     <!-- Strength's rest line: how long the heart rate took to fall under a level after each set. The time is "41 s" or "1:05". -->
     <string name="workout_summary_rest">Your heart rate dropped under <xliff:g id="bpm" example="110">%1$d</xliff:g> in <xliff:g id="time" example="41 s">%2$s</xliff:g> on average.</string>
     <!-- As above, and how much faster than the last strength workout. -->
@@ -113,7 +116,7 @@
     <!-- As above, when the rests had no set length. -->
     <string name="workout_summary_rounds_recovered_each">Heart rate came down <xliff:g id="bpm" example="13">%1$d</xliff:g> bpm each rest, on average.</string>
     <!-- Under an interval workout's rounds: the one with the highest heart rate. -->
-    <string name="workout_summary_rounds_hardest">Round <xliff:g id="number" example="6">%1$d</xliff:g> was your hardest.</string>
+    <string name="workout_summary_rounds_hardest" tools:ignore="PluralsCandidate">Round <xliff:g id="number" example="6">%1$d</xliff:g> was your hardest.</string>
     <!-- After a calm session (yoga and the like): the heart rate at the start and at the end, in bpm. -->
     <string name="workout_summary_settled">Your heart settled from <xliff:g id="from" example="96">%1$d</xliff:g> to <xliff:g id="to" example="66">%2$d</xliff:g>.</string>
     <!-- After a calm session when the heart rate stayed about the same, in bpm. -->

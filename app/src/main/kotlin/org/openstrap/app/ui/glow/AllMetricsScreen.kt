@@ -61,10 +61,16 @@ data class IndexGroup(val title: String, val rows: List<IndexRow>)
 internal fun recoveryStatus(r: org.openstrap.app.data.Recovery.Readiness?, strings: Strings = Strings.app): String? = when {
     r == null -> null
     r.score != null && r.phase == org.openstrap.app.data.Recovery.Phase.Learning ->
-        strings.format(R.string.glow_metrics_learning_nights, r.baselineNights, org.openstrap.app.data.Recovery.SETTLED_NIGHTS)
+        strings.plural(
+            R.plurals.glow_metrics_learning_nights, org.openstrap.app.data.Recovery.SETTLED_NIGHTS,
+            r.baselineNights, org.openstrap.app.data.Recovery.SETTLED_NIGHTS,
+        )
     r.score != null -> strings.get(R.string.glow_metrics_score_for_day)
     r.withheld && r.phase == org.openstrap.app.data.Recovery.Phase.Withheld ->
-        strings.format(R.string.glow_metrics_learning_nights, r.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS)
+        strings.plural(
+            R.plurals.glow_metrics_learning_nights, org.openstrap.app.data.Recovery.SCORED_NIGHTS,
+            r.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS,
+        )
     else -> null
 }
 

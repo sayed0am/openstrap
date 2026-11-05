@@ -539,8 +539,8 @@ object Glance {
                 actionLabel = strings.get(R.string.workout_glance_start_rounds), bpm = null,
             )
             org.openstrap.app.data.Phase.Done -> start.copy(
-                line1 = strings.format(
-                    if (m.reps) R.string.workout_glance_all_reps_done else R.string.workout_glance_all_rounds_done, m.rounds,
+                line1 = strings.plural(
+                    if (m.reps) R.plurals.workout_glance_all_reps_done else R.plurals.workout_glance_all_rounds_done, m.rounds, m.rounds,
                 ),
                 line2 = listOfNotNull(base.clock, bpmText).joinToString(", "), bpm = bpm,
             )

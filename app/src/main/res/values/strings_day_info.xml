@@ -6,7 +6,7 @@
   OpenStrap is the app's name. Keep the names of methods and studies as they are: PAI, EPOC, TRIMP, Mifflin-St Jeor,
   Jurca, FRIEND, UK Biobank, Sleep Regularity Index, World Health Organization.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A scale under a value read against the user's own normal, low to high. One or two words each, side by side. -->
     <string name="day_info_scale_normal_below">Below your normal</string>
     <string name="day_info_scale_normal_usual">Usual</string>
@@ -24,9 +24,15 @@
     <string name="day_info_scale_habit_older">Older than you</string>
 
     <!-- Under the scale, before there's a normal for a value read once a night. -->
-    <string name="day_info_normal_waiting_nights">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> nights with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</string>
+    <plurals name="day_info_normal_waiting_nights">
+        <item quantity="one">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> night with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</item>
+        <item quantity="other">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> nights with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</item>
+    </plurals>
     <!-- Under the scale, before there's a normal for a value read through the day. -->
-    <string name="day_info_normal_waiting_days">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> days with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</string>
+    <plurals name="day_info_normal_waiting_days">
+        <item quantity="one">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> day with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</item>
+        <item quantity="other">Your normal shows after <xliff:g id="needed" example="7">%1$d</xliff:g> days with data. <xliff:g id="so_far" example="3">%2$d</xliff:g> so far.</item>
+    </plurals>
     <!-- Under the scale: the user's normal range of a value read once a night, and how many nights it's from. -->
     <plurals name="day_info_normal_line_nights">
         <item quantity="one">You are here. Your normal is <xliff:g id="range" example="44 to 58 ms">%2$s</xliff:g>, from <xliff:g id="nights" example="1">%1$d</xliff:g> night.</item>
@@ -102,7 +108,10 @@
     <string name="day_info_recovery_how">Each morning OpenStrap compares your night with what\'s normal for you, not with other people: HRV (heart rate variability), resting heart rate, skin temperature, breathing rate and blood oxygen, last night\'s sleep and the past few nights, and how hard yesterday was. About half the score comes from HRV and resting heart rate, about a quarter from sleep. One signal far from your normal caps it, so good sleep can\'t fully make up for it. Everything is calculated on this phone from your strap\'s data.</string>
     <string name="day_info_recovery_moves">Good sleep, easy days and nights without alcohol lift it. Hard training, short nights, late meals, stress and illness hold it down.</string>
     <!-- The nights it needs before it gives a score, then before it settles. -->
-    <string name="day_info_recovery_off">It needs <xliff:g id="start" example="7">%1$d</xliff:g> good nights to start and settles over <xliff:g id="settled" example="14">%2$d</xliff:g>. A night with the strap loose or off, or too few clean HRV readings, gives it less to go on, and the strap\'s own readings may stand in.</string>
+    <plurals name="day_info_recovery_off">
+        <item quantity="one">It needs <xliff:g id="start" example="7">%1$d</xliff:g> good night to start and settles over <xliff:g id="settled" example="14">%2$d</xliff:g>. A night with the strap loose or off, or too few clean HRV readings, gives it less to go on, and the strap\'s own readings may stand in.</item>
+        <item quantity="other">It needs <xliff:g id="start" example="7">%1$d</xliff:g> good nights to start and settles over <xliff:g id="settled" example="14">%2$d</xliff:g>. A night with the strap loose or off, or too few clean HRV readings, gives it less to go on, and the strap\'s own readings may stand in.</item>
+    </plurals>
 
     <!-- Energy's sheet: a battery that sleep fills and the day uses. -->
     <string name="day_info_energy_meaning">Your energy right now, from 0 to 100. Sleep fills it and the day uses it.</string>
@@ -139,7 +148,7 @@
     <!-- Active minutes' sheet. The target is the minutes a week health guidelines aim for. -->
     <string name="day_info_active_minutes_meaning">Minutes of brisk movement or harder over the last 7 days, against the <xliff:g id="target" example="150">%1$d</xliff:g> a week health guidelines aim for.</string>
     <!-- Steps a minute for moderate and vigorous, the minutes in a row they need, then the heart rate reserve shares. -->
-    <string name="day_info_active_minutes_how">A minute at <xliff:g id="moderate" example="100">%1$d</xliff:g> steps or more counts as moderate, and <xliff:g id="vigorous" example="130">%2$d</xliff:g> or more as vigorous, inside a run of at least <xliff:g id="run" example="2">%3$d</xliff:g> such minutes. Effort without steps, like cycling or rowing, counts from heart rate after <xliff:g id="hr_run" example="5">%4$d</xliff:g> minutes in a row at <xliff:g id="moderate_share" example="40">%5$d</xliff:g>%% of your heart rate reserve or more, vigorous from <xliff:g id="vigorous_share" example="60">%6$d</xliff:g>%%. A vigorous minute counts double, as in the World Health Organization\'s 2020 guidelines.</string>
+    <string name="day_info_active_minutes_how" tools:ignore="PluralsCandidate">A minute at <xliff:g id="moderate" example="100">%1$d</xliff:g> steps or more counts as moderate, and <xliff:g id="vigorous" example="130">%2$d</xliff:g> or more as vigorous, inside a run of at least <xliff:g id="run" example="2">%3$d</xliff:g> such minutes. Effort without steps, like cycling or rowing, counts from heart rate after <xliff:g id="hr_run" example="5">%4$d</xliff:g> minutes in a row at <xliff:g id="moderate_share" example="40">%5$d</xliff:g>%% of your heart rate reserve or more, vigorous from <xliff:g id="vigorous_share" example="60">%6$d</xliff:g>%%. A vigorous minute counts double, as in the World Health Organization\'s 2020 guidelines.</string>
     <string name="day_info_active_minutes_moves">Brisk walks of a few minutes or more, cycling, running and sport all count. Strolling and short bursts don\'t.</string>
     <string name="day_info_active_minutes_off">No study has checked a strap\'s step counts against walking pace, so brisk minutes near the line can be missed or counted wrongly. Pushing a trolley or holding a rail hides steps.</string>
 
@@ -241,7 +250,10 @@
     <!-- The same for an earlier night. -->
     <string name="day_info_disturbances_that_night">That night <xliff:g id="per_hour" example="2.4">%1$.1f</xliff:g> an hour.</string>
     <!-- After it, while the usual is still being learned: the nights so far of the nights needed. -->
-    <string name="day_info_disturbances_learning">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights.</string>
+    <plurals name="day_info_disturbances_learning">
+        <item quantity="one">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> night.</item>
+        <item quantity="other">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights.</item>
+    </plurals>
     <!-- After it, the user's usual dips an hour. -->
     <string name="day_info_disturbances_usual">Your usual is <xliff:g id="usual" example="2.1">%1$.1f</xliff:g>.</string>
 

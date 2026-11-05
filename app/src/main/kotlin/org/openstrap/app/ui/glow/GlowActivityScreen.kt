@@ -137,6 +137,7 @@ fun GlowActivityScreen(
     onOpenWorkout: (Long) -> Unit,
     onAllWorkouts: () -> Unit,
     onEditProfile: () -> Unit,
+    modifier: Modifier = Modifier,
     onStartWorkout: (Int) -> Unit = {},
     onAllSports: () -> Unit = {},
     suggestion: org.openstrap.app.data.WorkoutSuggestions.Suggestion? = null,
@@ -178,6 +179,7 @@ fun GlowActivityScreen(
     val partialTag = remember { TitleTag(PARTIAL_DAY) { partialInfo = true } }
     val partial = partialTag.takeIf { wear?.partial == true }
     if (partialInfo && wear != null) PartialDaySheet(wear, isToday, onDismiss = { partialInfo = false })
+    androidx.compose.foundation.layout.Box(modifier) {
     CompositionLocalProvider(LocalGlowPaused provides { list.isScrollInProgress }) {
         GlowScreenList(contentPadding, list) {
             add(Pane.Full, GlowBlocks.HEADER) { header() }
@@ -190,8 +192,8 @@ fun GlowActivityScreen(
                         PictureSmall(
                             MetricColors.steps, stringResource(R.string.glow_activity_active_minutes), a?.weekEquivalent?.toString(),
                             stringResource(R.string.glow_unit_min).takeIf { a != null },
-                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: NO_READING, m,
-                            onClick = { open(Score.ActiveMinutes) },
+                            a?.let { TabCopy.activeMinutes(it.weekEquivalent, Activity.MVPA_WEEKLY_TARGET) } ?: NO_READING,
+                            onClick = { open(Score.ActiveMinutes) }, modifier = m,
                             picture = a?.let { w ->
                                 { pm -> Blocks(w.weekEquivalent, MetricColors.steps, PictureSize.Small, pm, target = Activity.MVPA_WEEKLY_TARGET) }
                             },
@@ -203,8 +205,8 @@ fun GlowActivityScreen(
                         PictureSmall(
                             MetricColors.heart, stringResource(R.string.glow_activity_heart_points),
                             heartPoints?.roundToInt()?.toString(), null,
-                            heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC, m,
-                            onClick = { open(Score.HeartPoints) },
+                            heartPoints?.let { TabCopy.heartPoints(it.roundToInt(), HEART_POINTS_TARGET) } ?: AFTER_NEXT_SYNC,
+                            onClick = { open(Score.HeartPoints) }, modifier = m,
                             picture = week.takeIf { days -> days.any { it != null } }?.let { days ->
                                 { pm -> DayBars(days, MetricColors.heart, PictureSize.Small, pm) }
                             },
@@ -222,6 +224,7 @@ fun GlowActivityScreen(
                 }
             }
         }
+    }
     }
 }
 
@@ -445,8 +448,8 @@ private val LinePad = 4.dp
  */
 @Composable
 private fun PictureSmall(
-    ink: Color, title: String, value: String?, unit: String?, status: String, modifier: Modifier, onClick: () -> Unit,
-    picture: (@Composable (Modifier) -> Unit)?,
+    ink: Color, title: String, value: String?, unit: String?, status: String, onClick: () -> Unit,
+    picture: (@Composable (Modifier) -> Unit)?, modifier: Modifier = Modifier,
 ) {
     PictureCard(ink, modifier, onClick = onClick) {
         CardTitle(title)

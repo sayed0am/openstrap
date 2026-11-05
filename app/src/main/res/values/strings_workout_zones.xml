@@ -3,7 +3,7 @@
   Heart rate zones: the Heart rate zones page, its sheets, and its rows on the You and Profile pages
   (ui/workout/HeartZonesCopy.kt). Zepp is the strap maker's app, keep its name. Zones are numbered 1 to 5.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The page's title, and its row on the You page. -->
     <string name="workout_zones_title">Heart rate zones</string>
     <!-- The heading over your max heart rate on the page. -->
@@ -41,7 +41,7 @@
     <!-- A zone's heart rates on the list, in bpm. Short, beside the zone's name. -->
     <string name="workout_zones_bpm_range"><xliff:g id="from" example="115">%1$d</xliff:g> to <xliff:g id="to" example="133">%2$d</xliff:g></string>
     <!-- The top zone's heart rates on the list, in bpm: it has no end. Short. -->
-    <string name="workout_zones_bpm_up"><xliff:g id="from" example="172">%1$d</xliff:g> and up</string>
+    <string name="workout_zones_bpm_up" tools:ignore="PluralsCandidate"><xliff:g id="from" example="172">%1$d</xliff:g> and up</string>
     <!-- A stepper in the sheet that moves a zone's edges: the zone's lowest heart rate. -->
     <string name="workout_zones_starts_at">Starts at</string>
     <!-- A stepper in the sheet that moves a zone's edges: the zone's highest heart rate. -->

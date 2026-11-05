@@ -106,7 +106,7 @@ fun strapChip(
             when {
                 connection.charging && battery != null -> StrapChip(
                     strings.format(R.string.day_chip_charging, battery), StrapChip.Dot.Charging,
-                    strings.format(R.string.day_chip_charging_description, battery),
+                    strings.plural(R.plurals.day_chip_charging_description, battery, battery),
                 )
                 sync is SyncState.Failed -> StrapChip(
                     strings.get(R.string.day_chip_not_synced), StrapChip.Dot.Warn, strings.get(R.string.day_chip_not_synced_description),
@@ -114,11 +114,11 @@ fun strapChip(
                 battery == null -> StrapChip("", StrapChip.Dot.Fine, strings.get(R.string.day_chip_connected_description))
                 StrapBands.lowBattery(battery, connection.charging) -> StrapChip(
                     strings.format(R.string.day_chip_battery, battery), StrapChip.Dot.Low,
-                    strings.format(R.string.day_chip_battery_low_description, battery),
+                    strings.plural(R.plurals.day_chip_battery_low_description, battery, battery),
                 )
                 else -> StrapChip(
                     strings.format(R.string.day_chip_battery, battery), StrapChip.Dot.Fine,
-                    strings.format(R.string.day_chip_battery_description, battery),
+                    strings.plural(R.plurals.day_chip_battery_description, battery, battery),
                 )
             }
         }

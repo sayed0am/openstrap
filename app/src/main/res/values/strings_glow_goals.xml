@@ -3,7 +3,7 @@
   Goals and bests: the Goals and bests page from You, All badges, the weekly goal sheet, the weekly recap the Monday
   notification opens and its share card (ui/glow/GoalsAndBests.kt). OpenStrap is the app's name. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The Goals and bests page's title. -->
     <string name="glow_goals_title">Goals and bests</string>
     <!-- The Goals and bests page while its data loads. -->
@@ -18,7 +18,10 @@
         <item quantity="other">of <xliff:g id="goal" example="4">%d</xliff:g> workouts</item>
     </plurals>
     <!-- Read out by screen readers for the week's bar: the workouts done and the weekly goal. -->
-    <string name="glow_goals_count_of_goal"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts</string>
+    <plurals name="glow_goals_count_of_goal">
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workout</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts</item>
+    </plurals>
     <!-- The personal bests panel's title. -->
     <string name="glow_goals_personal_bests">Personal bests</string>
     <!-- The personal bests panel before there are any. -->
@@ -32,7 +35,7 @@
     <!-- A button that opens the settings for which moments get a celebration. -->
     <string name="glow_goals_celebrations">Celebrations</string>
     <!-- Under the All badges title: how many are earned out of all of them. -->
-    <string name="glow_goals_earned_count"><xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g> earned</string>
+    <string name="glow_goals_earned_count" tools:ignore="PluralsCandidate"><xliff:g id="earned" example="5">%1$d</xliff:g> of <xliff:g id="total" example="24">%2$d</xliff:g> earned</string>
     <!-- A group of badges on All badges: the first time doing something. -->
     <string name="glow_goals_group_firsts">Firsts</string>
     <!-- A group of badges on All badges: totals reached. -->

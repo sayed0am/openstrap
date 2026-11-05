@@ -61,6 +61,7 @@ import org.openstrap.app.presentation.WorkoutCopy
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import org.openstrap.app.ui.workout.intervalMoment
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
 
@@ -162,12 +163,14 @@ internal fun LiveIntervalsScreen(
                 },
             )
             Phase.WarmUp -> PhaseFigure(
-                stringResource(R.string.workout_live_warm_up), stringResource(R.string.workout_live_rounds_after, m.rounds),
+                stringResource(R.string.workout_live_warm_up),
+                pluralStringResource(R.plurals.workout_live_rounds_after, m.rounds, m.rounds),
                 stringResource(R.string.workout_live_phase_warming_up), null,
                 stringResource(R.string.workout_live_rounds_start_hint), compact,
             )
             Phase.Done -> PhaseFigure(
-                stringResource(R.string.workout_live_all_rounds_done, m.rounds), stringResource(R.string.workout_live_end_or_keep),
+                pluralStringResource(R.plurals.workout_live_all_rounds_done, m.rounds, m.rounds),
+                stringResource(R.string.workout_live_end_or_keep),
                 stringResource(R.string.workout_live_phase_done), null, "", compact,
             )
         }
@@ -242,7 +245,7 @@ internal fun RoundBar(m: IntervalMoment, workLength: Long?, underWay: Float? = n
     else if (m.phase is Phase.Work && m.left != null && workLength != null && workLength > 0) {
         (1f - m.left.toFloat() / workLength).coerceIn(0f, 1f)
     } else 0f
-    val described = stringResource(R.string.workout_live_rounds_done_description, done, m.rounds)
+    val described = pluralStringResource(R.plurals.workout_live_rounds_done_description, m.rounds, done, m.rounds)
     SegmentBar(
         List(m.rounds.coerceIn(1, MAX_ROUNDS_SHOWN)) { i ->
             Segment(1f, Color.White.copy(alpha = if (i < done) 1f else 0.25f), filled = if (i == done) under else 0f, fill = Color.White)
@@ -343,7 +346,7 @@ internal fun RepCard(r: WorkoutState.Recording, route: List<Route.Point>, readin
                     is Phase.Work -> stringResource(R.string.workout_live_rep_of, m.round, m.rounds)
                     is Phase.Rest -> stringResource(R.string.workout_live_rest_rep_next, m.round)
                     Phase.WarmUp -> stringResource(R.string.workout_live_warm_up)
-                    Phase.Done -> stringResource(R.string.workout_live_all_reps_done, m.rounds)
+                    Phase.Done -> pluralStringResource(R.plurals.workout_live_all_reps_done, m.rounds, m.rounds)
                 },
                 color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f),
             )

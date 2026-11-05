@@ -282,7 +282,7 @@ class CsvRestoreTest {
         d.insertBadges(listOf(BadgeRow("first_workout", w.end!!, workoutStart = w.start), BadgeRow("steps_10k", day - 3 * 86_400, day = 20_740)))
         d.upsertWeekResults(listOf(WeekResult(20_733, 3, 4, true), WeekResult(20_740, 5, 2, false)))
         d.upsertSavedWorkout(SavedWorkout(name = "Tuesday intervals", sport = 30, structure = "i:6x60/30", createdAt = day - 5 * 86_400))
-        d.upsertExercise(ExerciseRow("Bench press", 8, 60f, w.end!!))
+        d.upsertExercise(ExerciseRow("Bench press", 8, 60f, w.end))
         // The phone already logged the bench press since: it keeps its own last reps and weight.
         phone.healthDao().upsertExercise(ExerciseRow("Bench press", 5, 70f, day))
         val zip = backup(old)

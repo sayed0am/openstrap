@@ -636,7 +636,7 @@ class WorkoutSessionTest {
         // The app in front: the service starts from there and the notice goes.
         background.refusing = false
         s.inFront()
-        assertEquals(StrapService::class.java.name, shadowOf(context as android.app.Application).nextStartedService?.component?.className)
+        assertEquals(StrapService::class.java.name, shadowOf(context).nextStartedService?.component?.className)
         keepRecording(present = false)
     }
 

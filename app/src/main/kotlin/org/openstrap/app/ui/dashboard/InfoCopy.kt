@@ -84,8 +84,8 @@ object InfoCopy {
         normal: History.Normal?, days: Int, format: (Float) -> String, unit: String, nightly: Boolean, strings: Strings = Strings.app,
     ): String {
         if (normal == null) {
-            val waiting = if (nightly) R.string.day_info_normal_waiting_nights else R.string.day_info_normal_waiting_days
-            return strings.format(waiting, History.MIN_NORMAL_DAYS, days.coerceAtMost(History.MIN_NORMAL_DAYS))
+            val waiting = if (nightly) R.plurals.day_info_normal_waiting_nights else R.plurals.day_info_normal_waiting_days
+            return strings.plural(waiting, History.MIN_NORMAL_DAYS, History.MIN_NORMAL_DAYS, days.coerceAtMost(History.MIN_NORMAL_DAYS))
         }
         val u = if (unit.isEmpty()) "" else if (unit.startsWith("%") || unit.startsWith("°")) unit else " $unit"
         val range = Ranges.of(format(normal.low), format(normal.high)) + u
@@ -143,7 +143,7 @@ object InfoCopy {
             score.title(strings), strings.get(R.string.day_info_recovery_meaning), RECOVERY_SCALE,
             how = strings.get(R.string.day_info_recovery_how),
             moves = strings.get(R.string.day_info_recovery_moves),
-            off = strings.format(R.string.day_info_recovery_off, Recovery.SCORED_NIGHTS, Recovery.SETTLED_NIGHTS),
+            off = strings.plural(R.plurals.day_info_recovery_off, Recovery.SCORED_NIGHTS, Recovery.SCORED_NIGHTS, Recovery.SETTLED_NIGHTS),
         )
         Score.Energy -> info(
             strings, score.titleRes, R.string.day_info_energy_meaning, chargeWords(strings),
@@ -324,8 +324,9 @@ object InfoCopy {
         val nightId = if (today) R.string.day_info_disturbances_last_night else R.string.day_info_disturbances_that_night
         val night = strings.format(nightId, b.perHour)
         val then = when (val usual = b.usual) {
-            null -> strings.format(
-                R.string.day_info_disturbances_learning, b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS,
+            null -> strings.plural(
+                R.plurals.day_info_disturbances_learning, Recovery.SCORED_NIGHTS,
+                b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS,
             )
             else -> strings.format(R.string.day_info_disturbances_usual, usual)
         }

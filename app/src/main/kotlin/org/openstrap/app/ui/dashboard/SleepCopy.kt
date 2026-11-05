@@ -72,7 +72,7 @@ internal object SleepCopy {
     fun learning(state: DayUiState, metric: Metric, strings: Strings = Strings.app): String? {
         if (nightNormal(state, metric) != null) return null
         val nights = nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
-        return strings.format(R.string.day_sleep_vital_learning, nights, History.MIN_NORMAL_DAYS)
+        return strings.plural(R.plurals.day_sleep_vital_learning, History.MIN_NORMAL_DAYS, nights, History.MIN_NORMAL_DAYS)
     }
 
     /** The night's value of [metric], the one its night vital row shows. */

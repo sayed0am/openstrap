@@ -174,7 +174,7 @@ internal fun LiveStrengthScreen(
         val target = r.workout.setsTarget
         if (!compact && target != null && moment.done >= target && !r.inSet) {
             Text(
-                stringResource(R.string.workout_live_sets_all_done, target), color = Color.White.copy(alpha = 0.6f),
+                pluralStringResource(R.plurals.workout_live_sets_all_done, target, target), color = Color.White.copy(alpha = 0.6f),
                 style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
         }
@@ -362,8 +362,10 @@ private fun FallingHeart(readings: List<Pair<Long, Int>>, level: Int?) {
 private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier = Modifier) {
     val total = maxOf(target ?: 0, done + if (inSet) 1 else 0)
     if (total == 0) return
-    val described = target?.let { stringResource(R.string.workout_live_sets_dots_description_to_go, done, (it - done).coerceAtLeast(0)) }
-        ?: stringResource(R.string.workout_live_sets_dots_description, done)
+    val described = target?.let {
+        pluralStringResource(R.plurals.workout_live_sets_dots_description_to_go, done, done, (it - done).coerceAtLeast(0))
+    }
+        ?: pluralStringResource(R.plurals.workout_live_sets_dots_description, done, done)
     Row(
         modifier.semantics { contentDescription = described },
         horizontalArrangement = Arrangement.spacedBy(10.dp),
