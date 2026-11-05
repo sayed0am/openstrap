@@ -104,6 +104,9 @@
     <string name="you_pair_scan">Scan for straps</string>
     <!-- The reason is Android's, a few words. -->
     <string name="you_pair_scan_failed">Scanning stopped: <xliff:g id="reason" example="Bluetooth is off">%1$s</xliff:g>. Check that Bluetooth is on and try again.</string>
+    <!-- Android 11 only: BLE scans find nothing while Location is off in system settings. -->
+    <string name="you_pair_scan_location_off">Android 11 only finds straps while Location is on.</string>
+    <string name="you_pair_scan_location_on">Turn on Location</string>
     <string name="you_pair_scan_looking">Looking for straps nearby. Keep the strap on its charger.</string>
     <!-- A found strap's value once picked. -->
     <string name="you_pair_chosen">Chosen</string>

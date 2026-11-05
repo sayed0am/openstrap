@@ -144,11 +144,19 @@ fun GlassOverlay(host: GlassHost, haze: dev.chrisbanes.haze.HazeState) {
     }
 }
 
-/** The glass panel a popup sits on: see-through dark over the blurred page, with a lit top edge. */
+/**
+ * The glass panel a popup sits on: see-through dark over the blurred page, with a lit top edge. Android 11 can't blur
+ * the page (Haze needs 12), so there it is near solid, or the page's text reads through the popup's.
+ */
 @Composable
 fun GlassPanel(modifier: Modifier = Modifier, shape: androidx.compose.ui.graphics.Shape = org.openstrap.app.ui.glow.GlowLayout.CardShape, content: @Composable () -> Unit) {
-    Surface(shape = shape, color = GlassTint.copy(alpha = 0.72f), border = GlassEdge, contentColor = Color.White, modifier = modifier, content = content)
+    Surface(
+        shape = shape, color = GlassTint.copy(alpha = GlassPanelAlpha), border = GlassEdge, contentColor = Color.White,
+        modifier = modifier, content = content,
+    )
 }
+
+private val GlassPanelAlpha = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) 0.72f else 0.96f
 
 /**
  * A bottom sheet as glass in the overlay, at most [org.openstrap.app.ui.glow.GlowLayout.PageMaxWidth] wide and centred.

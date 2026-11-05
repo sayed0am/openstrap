@@ -1,6 +1,9 @@
 package org.openstrap.app.ui.device
 
 import android.content.ClipData
+import android.content.Intent
+import android.location.LocationManager
+import android.provider.Settings
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
@@ -36,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -47,6 +51,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.R
+import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.device.SyncState
@@ -533,6 +538,14 @@ private fun ManualPairSheet(
     var address by rememberSaveable { mutableStateOf("") }
     var name by rememberSaveable { mutableStateOf(DeviceViewModel.DEFAULT_NAME) }
     var key by rememberSaveable { mutableStateOf("") }
+    // Android 11 only reports BLE scan results while Location is on. Read again on resume, after the settings page.
+    val context = LocalContext.current
+    var locationOff by remember { mutableStateOf(false) }
+    LifecycleResumeEffect(Unit) {
+        locationOff = BlePermissions.scanNeedsLocationOn &&
+            context.getSystemService(LocationManager::class.java)?.isLocationEnabled == false
+        onPauseOrDispose { }
+    }
     var showKey by rememberSaveable { mutableStateOf(false) }
 
     PageSheet(
@@ -546,6 +559,14 @@ private fun ManualPairSheet(
             PageButton(
                 stringResource(R.string.you_pair_scan), { onRequestBluetooth { vm.startScan() } }, Modifier.fillMaxWidth(),
                 icon = AppIcons.Bluetooth,
+            )
+        }
+        if (locationOff) {
+            PageNote(stringResource(R.string.you_pair_scan_location_off), color = MetricColors.warn)
+            PageButton(
+                stringResource(R.string.you_pair_scan_location_on),
+                { context.startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)) },
+                Modifier.fillMaxWidth(), icon = AppIcons.Location01,
             )
         }
         scan.error?.let { PageNote(stringResource(R.string.you_pair_scan_failed, it), color = MetricColors.warn) }

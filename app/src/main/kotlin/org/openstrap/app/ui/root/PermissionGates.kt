@@ -54,7 +54,9 @@ internal fun rememberPermissionGates(
 ): PermissionGates {
     val context = LocalContext.current
     val activity = LocalActivity.current
-    val bluetoothRequired = stringResource(R.string.day_bluetooth_required)
+    // Android 11 asks for location in place of Nearby devices (BlePermissions).
+    val android11 = BlePermissions.scanNeedsLocationOn
+    val bluetoothRequired = stringResource(if (android11) R.string.day_bluetooth_required_location else R.string.day_bluetooth_required)
     val locationDeclined = stringResource(R.string.day_location_declined)
     var pending by rememberSaveable(stateSaver = PendingAction.Saver) { mutableStateOf<PendingAction?>(null) }
     val blocked = rememberSaveable { mutableStateOf(false) }
@@ -117,8 +119,8 @@ internal fun BluetoothBlockedDialog(gates: PermissionGates) {
     if (!gates.bluetoothBlocked) return
     val context = LocalContext.current
     PageConfirm(
-        title = stringResource(R.string.day_nearby_title),
-        text = stringResource(R.string.day_nearby_text),
+        title = stringResource(if (BlePermissions.scanNeedsLocationOn) R.string.day_nearby_title_location else R.string.day_nearby_title),
+        text = stringResource(if (BlePermissions.scanNeedsLocationOn) R.string.day_nearby_text_location else R.string.day_nearby_text),
         confirm = stringResource(R.string.day_nearby_open_settings),
         onConfirm = {
             gates.dismissBlocked()

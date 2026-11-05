@@ -20,6 +20,30 @@ class BlePermissionsTest {
 
     @Test fun `the strap needs scan and connect`() {
         assertEquals(listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT), BlePermissions.bluetooth)
+        assertFalse(BlePermissions.scanNeedsLocationOn)
+    }
+
+    @Test fun `Android 12 and later need scan and connect, Android 11 fine location`() {
+        val runtime = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        assertEquals(listOf(Manifest.permission.ACCESS_FINE_LOCATION), BlePermissions.bluetooth(30))
+        assertEquals(runtime, BlePermissions.bluetooth(31))
+        assertEquals(runtime, BlePermissions.bluetooth(36))
+    }
+
+    @Test @Config(sdk = [30])
+    fun `on Android 11 the request asks for fine location only, and scans need Location on`() {
+        assertEquals(listOf(Manifest.permission.ACCESS_FINE_LOCATION), BlePermissions.required().toList())
+        assertTrue(BlePermissions.scanNeedsLocationOn)
+    }
+
+    @Test @Config(sdk = [30])
+    fun `on Android 11 granted follows fine location, not the Bluetooth permissions it doesn't have`() {
+        shadowOf(app).grantPermissions(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        assertFalse(BlePermissions.granted(app))
+        shadowOf(app).grantPermissions(Manifest.permission.ACCESS_FINE_LOCATION)
+        assertTrue(BlePermissions.granted(app))
+        assertTrue(BlePermissions.granted(mapOf(Manifest.permission.ACCESS_FINE_LOCATION to true)))
+        assertFalse(BlePermissions.granted(mapOf(Manifest.permission.BLUETOOTH_SCAN to true, Manifest.permission.BLUETOOTH_CONNECT to true)))
     }
 
     @Test @Config(sdk = [32])
