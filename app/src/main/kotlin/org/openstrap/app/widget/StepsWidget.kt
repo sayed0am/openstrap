@@ -27,12 +27,11 @@ import org.openstrap.app.data.DayWindow
 import org.openstrap.app.data.DetailRoutes
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.data.WidgetKind
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
-import org.openstrap.app.ui.glow.draw.drawGhostLine
 import org.openstrap.app.ui.glow.draw.drawPillBar
-import org.openstrap.app.ui.glow.draw.ghostLineGeometry
+import org.openstrap.app.ui.glow.draw.ChartInk
+import org.openstrap.app.ui.glow.draw.hourPills
 import org.openstrap.app.ui.glow.draw.renderToBitmap
 import org.openstrap.app.ui.glow.draw.weekBars
 import org.openstrap.app.ui.glow.draw.weekStub
@@ -90,7 +89,7 @@ private val Ink = MetricColors.steps
 /** The goal bar's track (the mockup's): white at 10%. */
 private const val TRACK_ALPHA = 0.10f
 
-/** The widget at the size Glance lays out, lit from the bottom as Today's Steps card ([EdgeKind.Progress]). */
+/** The widget at the size Glance lays out: a dark picture card, as Today's Steps card. */
 @Composable
 private fun StepsContent(data: StepsWidget.Shown) {
     val m = data.model
@@ -104,10 +103,10 @@ private fun StepsContent(data: StepsWidget.Shown) {
     }
 }
 
-/** Small: the top row, then the steps with "today", then the goal bar and the share of the goal. */
+/** Small: the top row, then the steps with "today", then the hours as pills (the goal bar before a step) and the share of the goal. */
 @Composable
 private fun ColumnScope.SmallContent(m: StepsWidgetModel, f: WidgetFrame) {
-    val fit = StepsLayout.small(m.smallText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status)
+    val fit = StepsLayout.small(m.smallText, m.share, f.contentWidth, f.contentHeight, f.fontScale, f.status, pills = m.showLine)
     Edge(fit.spread, f)
     TopRowView(m.title, null, fit.top, f, fit.spread.edge(f.drawContentHeight))
     Gap()
@@ -121,7 +120,7 @@ private fun ColumnScope.SmallContent(m: StepsWidgetModel, f: WidgetFrame) {
     }
     Gap()
     Column(GlanceModifier.fillMaxWidth()) {
-        GoalBar(m.progress, f)
+        StepsLine(m, StepsLayout.SMALL_PILLS_DP, f)
         if (fit.share) {
             Spacer(GlanceModifier.height(StepsLayout.SMALL_BAR_GAP_DP.dp))
             Text(m.share, style = WidgetType.secondary, maxLines = 1)
@@ -173,8 +172,8 @@ private fun NumberRow(m: StepsWidgetModel, row: StepsLayout.NumberRow, f: Widget
 }
 
 /**
- * The day so far as the Steps card's line, solid in lime and ending in its dot, [height] dp high with the goal at the
- * top, so it fills as the day reaches the goal. The goal bar instead when there's no room or no step yet.
+ * The day so far as Today's Steps card draws it, [height] dp high: the hours as lime pill bars, the latest full, the
+ * rest dimmer, on a hairline baseline. The goal bar instead when there's no room or no step yet.
  */
 @Composable
 private fun StepsLine(m: StepsWidgetModel, height: Float?, f: WidgetFrame) {
@@ -186,7 +185,13 @@ private fun StepsLine(m: StepsWidgetModel, height: Float?, f: WidgetFrame) {
     val w = f.drawContentWidth * f.density
     val h = height * f.density
     val bitmap = renderToBitmap(w, h) { c ->
-        ghostLineGeometry(m.line, null, m.lineMax, w, h, f.density)?.let { drawGhostLine(c, it, Ink, f.density) }
+        hourPills(m.hourly, null, w, h, f.density)?.let { g ->
+            c.drawLine(0f, g.baselineY, w, g.baselineY, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = ChartInk.Grid.toArgb()
+                strokeWidth = ChartInk.HAIRLINE_DP * f.density
+            })
+            g.bars.forEach { (bar, latest) -> drawPillBar(c, bar, if (latest) Ink else Ink.copy(alpha = HOUR_BAR_ALPHA)) }
+        }
     }
     Image(
         ImageProvider(bitmap),
@@ -229,6 +234,9 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
 /* ------------------------------------------------------------------------------------------------ */
 /* Bitmaps                                                                                           */
 /* ------------------------------------------------------------------------------------------------ */
+
+/** The hours before the latest, a little dimmer than it, as on Today's Steps card. */
+private const val HOUR_BAR_ALPHA = 0.6f
 
 /** Room for the dots, the line, the bar and the week beside the backgrounds, in the bitmap budget. */
 private const val BITMAP_EXTRA = 1.35
