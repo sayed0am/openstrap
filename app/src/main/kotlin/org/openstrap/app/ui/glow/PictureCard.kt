@@ -99,7 +99,7 @@ fun PictureCard(
             .then(opening?.modifier ?: Modifier)
             .let { if (onClick != null) it.pressClickable(opening?.onClick ?: onClick, CardShape) else it }
             .let {
-                if (plain) it.clip(CardShape).background(ListSurface, CardShape).border(1.dp, RowHairline, CardShape)
+                if (plain) it.clip(CardShape).background(ListSurface, CardShape).border(1.dp, CardHairline, CardShape)
                 else it.clip(CardShape).background(EdgeSurface, CardShape).border(1.dp, CardHairline, CardShape)
                     .let { m -> if (rim != null) m.rimLight(rim, ink, mood.edge) else m }
             }
@@ -109,8 +109,8 @@ fun PictureCard(
     }
 }
 
-/** The card's hairline: white at 8% (spec 2.2). */
-internal val CardHairline = Color.White.copy(alpha = GlowLayout.HairlineAlpha)
+/** The edge round a card or list panel ([GlowLayout.CardEdgeAlpha]). */
+internal val CardHairline = Color.White.copy(alpha = GlowLayout.CardEdgeAlpha)
 
 /** An elliptical radial gradient centred on [c] with radii [rx] and [ry], [colors] at [stops]. */
 private fun ellipse(c: Offset, rx: Float, ry: Float, colors: List<Color>, stops: List<Float>) = object : ShaderBrush() {

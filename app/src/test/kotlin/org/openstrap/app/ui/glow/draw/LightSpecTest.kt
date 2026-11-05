@@ -92,7 +92,7 @@ class LightSpecTest {
     @Test fun `grain and hairline`() {
         val p = glowPaint(GlowStyle(MetricColors.heart), w, h, density)
         assertEquals((0.06f * 255).toInt(), p.grainAlpha)
-        assertEquals(Color.White.copy(alpha = GlowLayout.HairlineAlpha), p.hairline)
+        assertEquals(Color.White.copy(alpha = GlowLayout.CardEdgeAlpha), p.hairline)
         assertEquals(0, glowPaint(GlowStyle(MetricColors.heart, grain = 0f), w, h, density).grainAlpha)
     }
 

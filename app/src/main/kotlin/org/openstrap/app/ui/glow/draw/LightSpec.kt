@@ -82,7 +82,7 @@ data class GlowPaint(
     val coreMargin: Float,
     val coreOpacity: Float,
     val gloss: GlossSpec,
-    /** The 1 dp hairline round the card, white at [GlowLayout.HairlineAlpha]. */
+    /** The 1 dp edge round the card, white at [GlowLayout.CardEdgeAlpha]. */
     val hairline: Color,
     val hairlineWidth: Float,
     /** Film grain, 0..255 of the grain tile, or 0 for none. */
@@ -209,7 +209,7 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
         coreMargin = margin,
         coreOpacity = style.coreOpacity,
         gloss = gloss,
-        hairline = Color.White.copy(alpha = GlowLayout.HairlineAlpha),
+        hairline = Color.White.copy(alpha = GlowLayout.CardEdgeAlpha),
         hairlineWidth = 1f * density,
         grainAlpha = if (style.grain > 0f) (style.grain.coerceIn(0f, 1f) * 255).toInt() else 0,
         outline = if (style.outline) style.color.copy(alpha = OUTLINE_ALPHA) else null,
@@ -311,7 +311,7 @@ fun edgePaint(light: EdgeLight, tint: Color, level: Float?, mood: GlowMood, w: F
         surface = EdgeSurface,
         glow = gradient,
         radius = GlowLayout.CardCorner.value * density,
-        hairline = Color.White.copy(alpha = GlowLayout.HairlineAlpha),
+        hairline = Color.White.copy(alpha = GlowLayout.CardEdgeAlpha),
         hairlineWidth = 1f * density,
     )
 }

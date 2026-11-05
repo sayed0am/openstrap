@@ -70,6 +70,7 @@ class DesignTokenTest {
         }
         assertEquals(0.08f, GlowLayout.HairlineAlpha, 1e-6f)
         assertEquals(0.06f, GlowLayout.DividerAlpha, 1e-6f)
+        assertEquals(0.12f, GlowLayout.CardEdgeAlpha, 1e-6f)
     }
 
     @Test fun `only the digits are made of dots`() {

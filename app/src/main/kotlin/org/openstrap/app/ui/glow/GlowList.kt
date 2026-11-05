@@ -90,7 +90,7 @@ fun ListPanel(
             .fillMaxWidth()
             .clip(GlowLayout.CardShape)
             .background(ListSurface, GlowLayout.CardShape)
-            .border(1.dp, RowHairline, GlowLayout.CardShape)
+            .border(1.dp, CardHairline, GlowLayout.CardShape)
             .padding(GlowLayout.ListPadding),
         content = rows,
     )
