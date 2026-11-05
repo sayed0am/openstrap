@@ -135,7 +135,7 @@ class DayKeyMigrationTest {
             assertEquals(wakes.flatMap { listOf(listOf(it, 61L, 0L), listOf(it + 60, 64L, 1L)) }, rows(db, "SELECT * FROM heart_rate ORDER BY timestamp"))
             assertEquals(wakes.map { it - 9 * 3600 }, keys(db, "osa_result", "belongTime"))
             assertEquals(listOf(listOf(1_780_000_000L, 1_780_000_600L, 1_780_028_800L)), rows(db, "SELECT strapStart, start, `end` FROM sleep_edit"))
-            assertEquals(28, db.openHelper.readableDatabase.version)
+            assertEquals(29, db.openHelper.readableDatabase.version)
             // Room reads them as the dates.
             val dao = db.healthDao()
             assertEquals(dates, dao.restingHrAll().map { it.day })
@@ -211,7 +211,7 @@ class DayKeyMigrationTest {
         assertEquals(List(2) { DayKey.of(LocalDate.of(2026, 1, 14)) }, keys(db, "sleep_session", "day"))
     }
 
-    @Test fun `a version 26 database reaches 28 with its badges, weeks and bests untouched`() = runTest {
+    @Test fun `a version 26 database reaches the latest version with its badges, weeks and bests untouched`() = runTest {
         val d = LocalDate.of(2026, 10, 30)
         val file = harness.create(26) {
             seedDays(listOf(d)) { Days.start(it, newYork) }
@@ -220,7 +220,7 @@ class DayKeyMigrationTest {
             put("INSERT INTO personal_best (kind, value, date, workoutStart) VALUES ('MOST_STEPS', 15000, 1790000000, NULL)")
         }
         val db = harness.open(file, newYork)
-        assertEquals(28, db.openHelper.readableDatabase.version)
+        assertEquals(29, db.openHelper.readableDatabase.version)
         assertEquals(listOf(d), db.healthDao().restingHrAll().map { it.day })
         assertEquals(listOf(listOf("steps_10k", 1_790_000_000L, null, d.toEpochDay())), rows(db, "SELECT * FROM badge"))
         assertEquals(listOf(listOf(d.toEpochDay(), 3L, 4L, 1L)), rows(db, "SELECT * FROM week_result"))

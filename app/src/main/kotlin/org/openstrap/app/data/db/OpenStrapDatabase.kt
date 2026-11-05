@@ -55,7 +55,7 @@ import java.time.ZoneId
         BadgeRow::class,
         WeekResult::class,
     ],
-    version = 28,
+    version = 29,
     autoMigrations = [
         AutoMigration(from = 1, to = 2), AutoMigration(from = 2, to = 3), AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5), AutoMigration(from = 5, to = 6),
@@ -68,6 +68,7 @@ import java.time.ZoneId
         AutoMigration(from = 20, to = 21), AutoMigration(from = 21, to = 22), AutoMigration(from = 22, to = 23),
         AutoMigration(from = 23, to = 24),
         AutoMigration(from = 24, to = 25, spec = SleepEditMigration::class),
+        AutoMigration(from = 28, to = 29),
     ],
 )
 @TypeConverters(DayKeyConverter::class)

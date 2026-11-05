@@ -546,8 +546,10 @@ class HistorySync internal constructor(
                 // The strap's resting-HR profile; used only for days without a real resting value.
                 if (r.restHr in 30..120) restingIfMissing += RestingHeartRate(dayOf(r.timestamp), r.restHr)
             }
-            // Overnight SpO2 legitimately dips below the 80 % floor used for spot readings; below 70 is optical noise.
-            is SleepSpO2Sample -> if (r.spo2 in 70..100) sleepSpo2 += SleepSpo2Sample(r.timestamp, r.spo2)
+            // Every record as sent, extras and all, so they can be decoded later ([SleepSpo2Sample]).
+            is SleepSpO2Sample -> sleepSpo2 += SleepSpo2Sample(
+                r.timestamp, r.spo2, r.time, r.v2?.high, r.v2?.low, r.v2?.signalQuality, r.v2?.extend,
+            )
             is SpO2OsaEvent -> osaEvents += OsaEventRow(
                 r.timestamp, r.spo2Decrease, r.spo2?.map { it.toByte() }?.toByteArray(), r.heartRate?.map { it.toByte() }?.toByteArray(),
             )
