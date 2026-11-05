@@ -353,7 +353,9 @@ internal fun TodayPictureCard(
             if (picture != null) {
                 Spacer(Modifier.height(12.dp))
                 picture(Modifier.fillMaxWidth().weight(1f))
-                Spacer(Modifier.height(8.dp))
+                // As much room under the picture as over it, so a picture standing on a baseline (Steps' bars) doesn't
+                // touch the number.
+                Spacer(Modifier.height(12.dp))
             } else Spacer(Modifier.weight(1f))
             if (value != null || dash) PictureNumber(value, unit, tag)
             val line = status.takeIf { tag == null || value == null }
@@ -568,10 +570,15 @@ internal fun ActivityCard(
     val isToday = state.date == java.time.LocalDate.now()
     val now = java.time.LocalTime.now()
     val pace = org.openstrap.app.presentation.ActivityCopy.paceOf(state.steps, usual, isToday, now.hour, now.minute)
+    // A Small is half a row: a count in the thousands leaves no room for "steps" beside it, and the unit dropping to a
+    // line of its own squeezed the bars to a sliver. The title already says Steps, so a Small has the number alone and
+    // only the goal share under it, one line like Heart rate's beside it; the pace waits on the Wide and the page.
+    val small = size == PictureSize.Small
     TodayPictureCard(
         MetricColors.steps, stringResource(R.string.glow_today_steps_title), size, Units.count(state.steps, Units.DOT_LOCALE),
-        stringResource(R.string.glow_today_steps), goalTag(GoalMetric.Steps, facts ?: GoalFacts(state.steps, goal)),
-        org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday),
+        if (small) null else stringResource(R.string.glow_today_steps), goalTag(GoalMetric.Steps, facts ?: GoalFacts(state.steps, goal)),
+        if (small) org.openstrap.app.presentation.ActivityCopy.goalShare(state.steps, goal)
+        else org.openstrap.app.presentation.ActivityCopy.activityLine(state.steps, goal, pace, isToday),
         modifier, note = stringResource(R.string.glow_today_steps_goal, Units.count(goal)), onClick = onClick, marker = upTo, titleTag = tag,
         picture = if (state.steps <= 0) null else { m -> HourBars(state.hourlySteps, MetricColors.steps, m) },
     )
