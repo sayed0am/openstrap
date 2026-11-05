@@ -154,12 +154,19 @@ class RecoveryWidgetModelTest {
         assertEquals(WeekBarsLook.CORNER_DP, bar.corner, 0.01f)
     }
 
-    @Test fun `the week narrows beside a long word, never below its least`() {
-        assertEquals(WeekBarsLook.COLUMN_DP, RecoveryLayout.weekColumn(358f, 55f, "Ready"), 0.01f)
-        assertTrue(RecoveryLayout.weekColumn(318f, 55f, "Ready") > 26f)
-        val long = RecoveryLayout.weekColumn(318f, 55f, "Ready for more")
-        assertTrue(long < WeekBarsLook.COLUMN_DP && long >= WeekBarsLook.MIN_COLUMN_DP)
-        assertEquals(WeekBarsLook.MIN_COLUMN_DP, RecoveryLayout.weekColumn(318f, 55f, "Ready for more", fontScale = 2f), 0.01f)
+    @Test fun `the week of dots narrows beside a long word, never below its least`() {
+        assertEquals(RecoveryLayout.DOTS_COLUMN_DP, RecoveryLayout.weekColumn(358f, 55f, "Ready"), 0.01f)
+        val long = RecoveryLayout.weekColumn(260f, 55f, "Ready for more")
+        assertTrue(long < RecoveryLayout.DOTS_COLUMN_DP && long >= RecoveryLayout.DOTS_MIN_COLUMN_DP)
+        assertEquals(RecoveryLayout.DOTS_MIN_COLUMN_DP, RecoveryLayout.weekColumn(318f, 55f, "Ready for more", fontScale = 2f), 0.01f)
+    }
+
+    @Test fun `the Large keeps the week over the figures on the Fold's cover cell at its font size`() {
+        val m = WidgetSamples.recovery(today)
+        val large = RecoveryLayout.large(m, 240f, 220f, 1.15f)
+        assertTrue(large.week)
+        assertTrue(large.sentenceLines > 0)
+        assertTrue(RecoveryLayout.wide(m, 240f, 120f, 1.15f).week)
     }
 
     @Test fun `with the strap status the title row counts the button and the words replace the note`() {

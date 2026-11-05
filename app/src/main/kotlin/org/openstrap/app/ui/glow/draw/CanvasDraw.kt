@@ -307,6 +307,48 @@ fun drawWeekBars(canvas: Canvas, bars: List<PillBar?>, shown: Int, color: Color)
     bars.forEachIndexed { i, bar -> bar?.let { drawPillBar(canvas, it, if (i == shown) color else Color.White.copy(alpha = WeekBarsLook.DIM_ALPHA)) } }
 }
 
+/**
+ * A week of dots through your band, as the app's Recovery card draws it (spec 2.7), for the widgets: [values] oldest
+ * first, one per [column] px wide column with [gap] px between, in [height] px. [usual] is a band of the ink at 12%;
+ * dots inside it are dimmer, outside it full ink, the latest larger. The scale spans the values and the band with 15%
+ * room, the dots a radius clear of top and foot.
+ */
+fun drawWeekDots(canvas: Canvas, values: List<Float?>, usual: ClosedFloatingPointRange<Float>?, ink: Color, column: Float, gap: Float, height: Float) {
+    val known = values.filterNotNull() + listOfNotNull(usual?.start, usual?.endInclusive)
+    if (known.isEmpty()) return
+    var lo = known.min()
+    var hi = known.max()
+    if (hi - lo < 1e-3f) {
+        lo -= 1f
+        hi += 1f
+    }
+    val room = (hi - lo) * WEEK_DOTS_ROOM
+    lo -= room
+    hi += room
+    val big = WEEK_DOTS_LATEST_R * height
+    fun y(v: Float) = big + (1f - ((v - lo) / (hi - lo)).coerceIn(0f, 1f)) * (height - 2 * big)
+    val width = values.size * column + (values.size - 1).coerceAtLeast(0) * gap
+    if (usual != null) {
+        val top = y(usual.endInclusive)
+        val bottom = maxOf(y(usual.start), top + 2f)
+        canvas.drawRoundRect(0f, top, width, bottom, column / 6, column / 6, fill(ink.copy(alpha = WEEK_DOTS_BAND_ALPHA)))
+    }
+    val last = values.lastIndex
+    values.forEachIndexed { i, v ->
+        v ?: return@forEachIndexed
+        val inBand = usual == null || v in usual
+        val alpha = if (i == last || !inBand) 1f else WEEK_DOTS_DIM_ALPHA
+        canvas.drawCircle(i * (column + gap) + column / 2, y(v), if (i == last) big else WEEK_DOTS_R * height, fill(ink.copy(alpha = alpha)))
+    }
+}
+
+/** As the app's week of dots: a dot's radius and the latest's as shares of the height, the band, the dim dots. */
+private const val WEEK_DOTS_R = 3.5f / 40f
+private const val WEEK_DOTS_LATEST_R = 5f / 40f
+private const val WEEK_DOTS_BAND_ALPHA = 0.12f
+private const val WEEK_DOTS_DIM_ALPHA = 0.55f
+private const val WEEK_DOTS_ROOM = 0.15f
+
 /** One pill bar in [color]. */
 fun drawPillBar(canvas: Canvas, bar: PillBar, color: Color) {
     canvas.drawRoundRect(bar.topLeft.x, bar.topLeft.y, bar.topLeft.x + bar.size.width, bar.topLeft.y + bar.size.height, bar.corner, bar.corner, fill(color))

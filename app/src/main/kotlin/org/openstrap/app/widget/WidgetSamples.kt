@@ -35,6 +35,7 @@ object WidgetSamples {
             firstNights = false,
             restingHr = 52f, hrv = 64.4f, sleep = 82,
             week = week,
+            usual = 62f..80f,
         )
         return RecoveryWidgetModel.from(day, null, locale)
     }
