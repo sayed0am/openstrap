@@ -332,14 +332,16 @@ internal class GlowPalette(style: GlowStyle) {
         // Near-grey colours stay neutral (a dark grey glow); anything coloured gets enough saturation to glow.
         val s = if (s0 < 0.12f) s0 else s0.coerceIn(0.35f, 0.9f)
         // A rim not far above the body in brightness, so the light melts in rather than sitting on top.
-        val rim = hsl(h, s * 0.9f, (l + 0.03f).coerceIn(0.45f, 0.6f))
+        // A level card lights with the ink itself, the same orange as its bars beside it (user, 2026-11-05); its body
+        // is the ink at full saturation, deep.
+        val level = style.lightLevel != null
+        val rim = if (level) style.color else hsl(h, s * 0.9f, (l + 0.03f).coerceIn(0.45f, 0.6f))
         // Same lightness looks far brighter in yellow-green than in red or blue, so the body and band
         // are darkened until their actual brightness keeps white text readable, whatever the hue.
         // Only a small hue step from the rim, so the card reads as one colour in different light.
         // A level card's body is a deep shade of its colour, so the light reads as rising from the bottom edge rather
         // than as a flat slab of colour (design-system.html, Levels).
-        val bodyL = if (style.lightLevel != null) LEVEL_BODY_LIGHTNESS else style.bodyLightness
-        val body = capped(h + style.bodyHueShift, s * (if (style.lightLevel != null) 0.8f else 0.85f), bodyL, MID_MAX_LUMINANCE)
+        val body = if (level) hsl(h, s0, LEVEL_BODY_LIGHTNESS) else capped(h + style.bodyHueShift, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)
         val band = capped(h + style.toneShift, s * 0.8f, style.bodyLightness - 0.04f, TONE_MAX_LUMINANCE)
         core = hsl(h + style.coreHueShift, 0.7f, style.coreLightness)
         // A dimmer mood darkens the whole lit area, like turning the light down.

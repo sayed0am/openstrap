@@ -67,7 +67,8 @@ as light.
 
 - On a glow card the light rises from the bottom, like a battery, on a Tall, a hero and every other level glow. Only a short wide card with just a number
   and a line (Energy on Today) fills across from the left. The lit edge is the light colour at full, the lit part is
-  the value's share of the card. The body above the lit edge is a deep shade of the colour (16% lightness), and the
+  the value's share of the card, lit with the ink itself at full saturation, the same orange as the bars beside it, and
+  no grain. The body above the lit edge is the ink deep (16% lightness, same saturation), and the
   dark core fades in across the value, from 85% of the level to 11% of the card past it (at least 22 dp), like the
   Levels section of design-system.html. At 0 the bottom 12% still glows.
 - A level glow is always this bright, because its light is the value, in every mood (Evening and Night don't dim it). Beside a hero (Energy on Recovery, Energy as the

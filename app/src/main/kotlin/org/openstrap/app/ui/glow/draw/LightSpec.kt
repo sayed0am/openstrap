@@ -210,7 +210,8 @@ fun glowPaint(style: GlowStyle, w: Float, h: Float, density: Float): GlowPaint {
         gloss = gloss,
         hairline = Color.White.copy(alpha = GlowLayout.CardEdgeAlpha),
         hairlineWidth = 1f * density,
-        grainAlpha = if (style.grain > 0f) (style.grain.coerceIn(0f, 1f) * 255).toInt() else 0,
+        // No grain on a level card: its white and black specks grey the colour, and the design system's Levels have none.
+        grainAlpha = if (style.grain > 0f && light.level == null) (style.grain.coerceIn(0f, 1f) * 255).toInt() else 0,
         outline = if (style.outline) style.color.copy(alpha = OUTLINE_ALPHA) else null,
         outlineWidth = OUTLINE_WIDTH_DP * density,
     )
