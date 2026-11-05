@@ -206,7 +206,8 @@ object Recovery {
 
     /**
      * Readiness contributors and their weights (a design choice, evidence-review.md): autonomic 52 %, sleep 28 %, other
-     * body signals 13 %, load 4 %, renormalised over the contributors present. Breathing disturbances (a stable trait,
+     * body signals 13 %, load 4 %, renormalised over the contributors present. The recovery index is shown but weighs
+     * nothing: the timing of the overnight low has no peer-reviewed link to recovery (Oura's idea). Breathing disturbances (a stable trait,
      * so only a fixed offset inside Readiness) moved to the Breathing card ([breathingDisturbances]); training load
      * balance (ACWR) moved to the Load screen ([acwr]). Their names on screen are presentation's (`TabCopy.factorName`).
      * [physiological] contributors can trigger the red-flag cap. Blood oxygen can't: a wrist SpO2 reading is off by 2 to
@@ -222,7 +223,7 @@ object Recovery {
         Breathing(0.04f, physiological = true),
         PreviousDayLoad(0.04f),
         BloodOxygen(0.03f),
-        RecoveryIndex(0.03f),
+        RecoveryIndex(0f),
     }
 
     data class Contributor(val factor: Factor, val score: Int, val detail: Detail)

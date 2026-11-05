@@ -218,7 +218,7 @@ Each contributor scores 0–100. Weights are a design choice, and the evidence r
 | **Breathing rate** | 4 % | Like temperature: a change either way counts. |
 | **Previous day's load** | 4 % | Yesterday's training load ÷ your usual (fitness, section 8, up to the day before). A ratio up to 1.5 → 100, then −25 points per extra 1.0, never below 30. Needs 7 days of load. |
 | **Blood oxygen** | 3 % | Only a **drop** counts: 100 − 25 points per % below your usual, after a 1 % free band. So −2 % → 75 and −3 % → 50. Higher than usual is no better. |
-| **Recovery index** | 3 % | When the night's lowest HR came. In the first half of the night → 100. Later, it loses 1.2 points per % of the night after halfway, never below 40. |
+| **Recovery index** | 0 % (shown only) | When the night's lowest HR came. Shown with the others but not scored: no peer-reviewed study links its timing to recovery. In the first half of the night → 100. Later, it loses 1.2 points per % of the night after halfway, never below 40. |
 
 Temperature, breathing and blood-oxygen baselines use all usable past nights, not only valid ones, and need 7 of them.
 

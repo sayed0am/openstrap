@@ -156,7 +156,7 @@ private fun Recovery.sleepBalance(nights: List<Night>, tonight: Night, sleepNeed
         Contributor(Factor.SleepBalance, score, Detail.SleepDebt(if (debt < SLEEP_DEBT_NAMED_FROM) 0 else debt.toInt()))
     }
 
-/** Recovery index: the night's lowest heart rate should come in its first half (Oura). */
+/** Recovery index: the night's lowest heart rate should come in its first half (Oura). Shown, but weighs nothing. */
 private fun recoveryIndex(tonight: Night): Contributor? {
     if (tonight.nadirTime == null || tonight.end <= tonight.start) return null
     val p = (tonight.nadirTime - tonight.start).toFloat() / (tonight.end - tonight.start)

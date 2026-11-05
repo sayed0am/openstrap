@@ -268,7 +268,9 @@ class RecoveryTest {
         assertEquals(0.52f, w.getValue(Factor.HrvBalance) + w.getValue(Factor.RestingHr), 1e-5f)
         assertEquals(0.28f, w.getValue(Factor.Sleep) + w.getValue(Factor.SleepBalance), 1e-5f)
         assertEquals(0.13f, w.getValue(Factor.Temperature) + w.getValue(Factor.Breathing) + w.getValue(Factor.BloodOxygen), 1e-5f)
-        assertEquals(1f, w.values.sum(), 1e-5f)
+        // The recovery index is shown, never scored.
+        assertEquals(0f, w.getValue(Factor.RecoveryIndex), 0f)
+        assertEquals(0.97f, w.values.sum(), 1e-5f)
     }
 
     // --- Charge ------------------------------------------------------------------------------------

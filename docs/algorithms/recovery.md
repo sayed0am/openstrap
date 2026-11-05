@@ -84,10 +84,10 @@ Most contributors are z-scores (deviation from the baseline centre in units of i
 * Why half-life 7: the old 4-night half-life discounted nights 8–14 to 25 % or less, undercounting the 14-day build-up. One 10 h recovery night is incomplete (Banks et al. 2010), and about 1 h of debt took 4 nights to clear (Kitamura 2016).
 * Source: Van Dongen et al. 2003 (Sleep 26:117): 6 h nights for 14 days caused deficits that built up night by night, equal to one or two nights of total deprivation, which subjects didn't notice.
 
-**Recovery index** (weight 0.03)
+**Recovery index** (weight 0, shown only)
 * Input: where the night's lowest 10-minute HR falls.
 * Score: 100 when it falls in the first half of the night, then sliding down to 40 at the very end.
-* Source: Oura's recovery index (a late nadir suggests late meals, alcohol or late exercise).
+* Source: Oura's recovery index (a late nadir suggests late meals, alcohol or late exercise). No peer-reviewed study links the timing to recovery, so since 2026-11-05 it is shown in the contributor list (last, as it weighs least) and adds nothing to the score.
 
 **Body temperature** (weight 0.06)
 * Input: mean skin temperature during sleep (≥ 30 readings).
@@ -118,7 +118,7 @@ Most contributors are z-scores (deviation from the baseline centre in units of i
 * Input: acute:chronic ratio from EWMA, 7 vs 28 days (`acwr`), needing ≥ 21 days of load (7 acute plus `ACWR_MIN_CHRONIC_DAYS` = 14 chronic).
 * Out of Readiness because the evidence is against scoring with it: the coupling critique is accepted by its own proponents (BJSM 53/15/921), ACWR rescales acute load (Impellizzeri 2021), and the 2025 meta-analysis for 0.8–1.3 has a CI of 0.14–0.94 (Qin et al. 2025).
 
-Weights (a design choice, to be checked with the backtest) add up to 1: autonomic (HRV + resting HR) 52 %, sleep 28 %, other body signals 13 %, previous day's load 4 %, recovery index 3 %. They're renormalised over the contributors present, so only their ratios matter. Polar's only public hint is that heart rate has "the biggest influence"; bounding sleep's share keeps one short night from carrying the score.
+Weights (a design choice, to be checked with the backtest) add up to 0.97: autonomic (HRV + resting HR) 52 %, sleep 28 %, other body signals 13 %, previous day's load 4 %, recovery index 0 (shown only). They're renormalised over the contributors present, so only their ratios matter. Polar's only public hint is that heart rate has "the biggest influence"; bounding sleep's share keeps one short night from carrying the score.
 
 ### The strap's own nightly HRV and resting HR
 

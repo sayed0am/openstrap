@@ -88,7 +88,7 @@ New weights (design choice), renormalised over the contributors present:
 | Breathing rate | 0.03 | 0.04 |
 | Previous day's load | 0.07 | 0.04 |
 | Blood oxygen | 0.05 | 0.03 |
-| Recovery index | 0.07 | 0.03 |
+| Recovery index | 0.07 | 0 (shown only: no peer-reviewed support) |
 | Breathing disturbances | 0.04 | moved to a Breathing card |
 | Training load balance | 0.05 | moved to the Load screen |
 
