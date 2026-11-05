@@ -65,6 +65,16 @@ internal object SleepCopy {
      */
     val NIGHT_SIGNALS: Set<Metric> = setOf(Metric.Hrv, Metric.Breathing, Metric.Spo2, Metric.SkinTemperature)
 
+    /**
+     * What a night signal says while its normal is still forming: "Learning, 5 of 7 nights". The same words on every
+     * tab, so the count shows the normal is coming and when. Null once there's a normal.
+     */
+    fun learning(state: DayUiState, metric: Metric, strings: Strings = Strings.app): String? {
+        if (nightNormal(state, metric) != null) return null
+        val nights = nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
+        return strings.format(R.string.day_sleep_vital_learning, nights, History.MIN_NORMAL_DAYS)
+    }
+
     /** The night's value of [metric], the one its night vital row shows. */
     fun nightValue(state: DayUiState, metric: Metric): Float? =
         if (metric == Metric.HeartRate) averageHeart(state)?.toFloat() else tonight(state)?.let { n -> pick(metric)?.invoke(n) }

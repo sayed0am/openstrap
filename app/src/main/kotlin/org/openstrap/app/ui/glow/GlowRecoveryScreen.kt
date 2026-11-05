@@ -153,7 +153,7 @@ fun GlowRecoveryScreen(
                     RecoveryCard.Recharged -> ChargeSmall(r?.charge, recharged = true, m, failed = failure != null)
                     RecoveryCard.Drained -> ChargeSmall(r?.charge, recharged = false, m, failed = failure != null)
                     RecoveryCard.SkinTemp -> SkinTempCard(
-                        signals.skin, signals.skinNormal, waiting, onOpen = { onOpenMetric(Metric.SkinTemperature) }, modifier = m,
+                        signals.skin, signals.skinNormal, signals.skinLearning, waiting, onOpen = { onOpenMetric(Metric.SkinTemperature) }, modifier = m,
                     )
                     RecoveryCard.BodySignals -> SignalsList(signals.rows, waiting, onOpenMetric)
                     RecoveryCard.HabitAge -> HabitAgeEdgeCard(healthspan, onOpenHealthspan, onOpenProfile)
@@ -430,7 +430,14 @@ private const val DIAL_SHARE = 0.44f
  * foot when below. Before there's a normal it waits for one. Opens the skin temperature detail.
  */
 @Composable
-private fun SkinTempCard(today: Float?, normal: History.Normal?, waiting: String, onOpen: () -> Unit, modifier: Modifier = Modifier) {
+private fun SkinTempCard(
+    today: Float?,
+    normal: History.Normal?,
+    learning: String?,
+    waiting: String,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val deviation = if (today != null && normal != null) today - normal.mean else null
     val band = normal?.let { (it.low - it.mean)..(it.high - it.mean) }
     val status = bodyOffStatus(today, normal)
@@ -443,7 +450,9 @@ private fun SkinTempCard(today: Float?, normal: History.Normal?, waiting: String
                 Spacer(Modifier.height(12.dp))
                 NumberWithTag(tag) {
                     androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.Bottom) {
+                        // Against your normal once there is one; until then last night's reading, as the Sleep tab shows it.
                         val shown = deviation?.let { Metric.SkinTemperature.formatChange(it, Units.DOT_LOCALE) }
+                            ?: today?.let { Metric.SkinTemperature.format(it, Units.DOT_LOCALE) }
                         if (shown != null) DotMatrixText(shown, Modifier.cardNumber(shown), dot = DotSize.Edge)
                         else WaitingDash(Modifier.padding(vertical = 8.dp))
                         if (shown != null) Text(
@@ -455,7 +464,7 @@ private fun SkinTempCard(today: Float?, normal: History.Normal?, waiting: String
                 Text(
                     when {
                         today == null -> waiting
-                        normal == null -> TodayCopy.normalWord(null)
+                        normal == null -> learning ?: TodayCopy.normalWord(null)
                         else -> stringResource(R.string.glow_recovery_against_normal)
                     },
                     color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
@@ -477,10 +486,12 @@ private class BodySignal(
     val value: String?,
     val direction: Int?,
     val tag: NewsTag?,
+    /** What the row says while its normal is forming, "Learning, 5 of 7 nights"; null for the plain word. */
+    val learning: String? = null,
 )
 
 /** The Recovery tab's body signals: the rows of the list and skin temperature for its own card. */
-private class Signals(val rows: List<BodySignal>, val skin: Float?, val skinNormal: History.Normal?)
+private class Signals(val rows: List<BodySignal>, val skin: Float?, val skinNormal: History.Normal?, val skinLearning: String?)
 
 /**
  * Loads the last 30 days of each body signal, enough for its normal ([rememberNormal], keyed on the day and the
@@ -496,7 +507,10 @@ private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
     return remember(state, stress) {
         fun body(metric: Metric, name: String, accent: Color, today: Float?, normal: History.Normal?, unit: String = ""): BodySignal {
             val direction = History.status(today, normal)
-            return BodySignal(metric, name, accent, today?.let { metric.format(it) + unit }, direction, bodyTag(metric, direction))
+            return BodySignal(
+                metric, name, accent, today?.let { metric.format(it) + unit }, direction, bodyTag(metric, direction),
+                SleepCopy.learning(state, metric),
+            )
         }
         val stressToday = stressMean(state.stress)
         Signals(
@@ -519,6 +533,7 @@ private fun rememberSignals(state: DayUiState, history: DailyHistory): Signals {
             // read several degrees low, so a day with no sleep has no reading here.
             skin = SleepCopy.nightValue(state, Metric.SkinTemperature),
             skinNormal = SleepCopy.nightNormal(state, Metric.SkinTemperature),
+            skinLearning = SleepCopy.learning(state, Metric.SkinTemperature),
         )
     }
 }
@@ -529,7 +544,12 @@ private fun SignalsList(signals: List<BodySignal>, waiting: String, onOpen: (Met
     ListPanel(title = stringResource(R.string.glow_recovery_body_signals), note = stringResource(R.string.glow_recovery_against_normal)) {
         signals.forEachIndexed { i, s ->
             ListRow(
-                s.label, s.accent, s.value, if (s.value == null) waiting else TodayCopy.normalWord(s.direction),
+                s.label, s.accent, s.value,
+                when {
+                    s.value == null -> waiting
+                    s.learning != null -> s.learning
+                    else -> TodayCopy.normalWord(s.direction)
+                },
                 tag = s.tag, onClick = { onOpen(s.metric) }, divider = i > 0, icon = s.metric.rowIcon(),
             )
         }

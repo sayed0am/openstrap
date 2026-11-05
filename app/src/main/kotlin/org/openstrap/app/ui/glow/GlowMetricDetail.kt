@@ -759,7 +759,12 @@ internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistor
     val status = if (m == Metric.HeartRate) null else History.status(v, normal)
     ListRow(
         m.title, colorOf(m), v?.let { m.format(it) },
-        if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
+        when {
+            v == null -> NO_VALUE
+            // A night signal whose normal is still forming says so, with the count, as on every tab.
+            night && normal == null -> SleepCopy.learning(state, m)
+            else -> DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null }
+        },
         tag = org.openstrap.app.ui.dashboard.bodyTag(m, status), onClick = { onOpen(Detail.OfMetric(m, night)) }, divider = divider,
         icon = m.rowIcon(),
     )

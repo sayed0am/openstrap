@@ -778,15 +778,15 @@ private fun TodayRow(
                 // Night signals: last night's against the nights before, as the Sleep tab and their details read them.
                 BodyRow(
                     stringResource(R.string.glow_today_hrv), MetricColors.hrv, SleepCopy.nightValue(s, Metric.Hrv),
-                    SleepCopy.nightNormal(s, Metric.Hrv), "", Metric.Hrv,
+                    SleepCopy.nightNormal(s, Metric.Hrv), "", Metric.Hrv, SleepCopy.learning(s, Metric.Hrv),
                 ),
                 BodyRow(
                     stringResource(R.string.glow_today_blood_oxygen), MetricColors.spo2, SleepCopy.nightValue(s, Metric.Spo2),
-                    SleepCopy.nightNormal(s, Metric.Spo2), "%", Metric.Spo2,
+                    SleepCopy.nightNormal(s, Metric.Spo2), "%", Metric.Spo2, SleepCopy.learning(s, Metric.Spo2),
                 ),
                 BodyRow(
                     stringResource(R.string.glow_today_breathing_rate), MetricColors.sleepLight, SleepCopy.nightValue(s, Metric.Breathing),
-                    SleepCopy.nightNormal(s, Metric.Breathing), "", Metric.Breathing,
+                    SleepCopy.nightNormal(s, Metric.Breathing), "", Metric.Breathing, SleepCopy.learning(s, Metric.Breathing),
                 ),
             ),
             ctx.waiting, onOpenMetric,

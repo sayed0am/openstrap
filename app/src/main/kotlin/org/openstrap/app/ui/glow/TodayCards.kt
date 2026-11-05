@@ -843,6 +843,8 @@ internal fun SmallCard(
 /** A row of a body list: a value against your [normal] ([org.openstrap.app.ui.glow.rememberNormal]). */
 internal class BodyRow(
     val name: String, val color: Color, val value: Float?, val normal: org.openstrap.app.data.History.Normal?, val unit: String, val metric: Metric,
+    /** What the row says while its normal is forming, "Learning, 5 of 7 nights"; null for the plain word. */
+    val learning: String? = null,
 )
 
 /**
@@ -858,7 +860,11 @@ internal fun BodyList(
             val direction = org.openstrap.app.data.History.status(r.value, r.normal)
             ListRow(
                 r.name, r.color, r.value?.let { r.metric.format(it) + r.unit },
-                if (r.value == null) waiting else TodayCopy.normalWord(direction),
+                when {
+                    r.value == null -> waiting
+                    r.normal == null && r.learning != null -> r.learning
+                    else -> TodayCopy.normalWord(direction)
+                },
                 tag = org.openstrap.app.ui.dashboard.bodyTag(r.metric, direction), onClick = { onOpenMetric(r.metric) }, divider = i > 0,
                 icon = r.metric.rowIcon(),
             )

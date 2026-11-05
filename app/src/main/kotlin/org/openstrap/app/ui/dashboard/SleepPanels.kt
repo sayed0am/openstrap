@@ -67,10 +67,7 @@ internal fun nightVitals(state: DayUiState, firstNights: Boolean = false, string
         val v = SleepCopy.nightValue(state, metric) ?: return NightVital(metric, label, color, null, missing)
         val n = SleepCopy.nightNormal(state, metric)
         val direction = History.status(v, n)
-        val status = if (n == null) {
-            val nights = SleepCopy.nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
-            strings.format(R.string.day_sleep_vital_learning, nights, History.MIN_NORMAL_DAYS)
-        } else TodayCopy.normalWord(direction)
+        val status = SleepCopy.learning(state, metric, strings) ?: TodayCopy.normalWord(direction)
         return NightVital(metric, label, color, show(v, n), status, direction.takeIf { n != null })
     }
     val lowest = SleepCopy.lowestHeart(state)
