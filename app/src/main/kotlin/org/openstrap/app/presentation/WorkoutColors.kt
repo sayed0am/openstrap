@@ -5,13 +5,17 @@ package org.openstrap.app.presentation
  * `Color(int)`, a notification takes it as it is.
  */
 object WorkoutColors {
-    /** Zone 1, easy: the cool blue of light sleep. */
-    const val ZONE_1 = 0xFF8FA8FF.toInt()
+    /** Zone 1, easy: a calm blue, the cool end of one scale that warms with effort. */
+    const val ZONE_1 = 0xFF5B8CFF.toInt()
 
-    /** Zone 2, aerobic. Also the rest green between sets and intervals. */
-    const val ZONE_2 = 0xFF3DDC97.toInt()
-    const val ZONE_3 = 0xFFFFD166.toInt()
-    const val ZONE_4 = 0xFFFF9F43.toInt()
+    /** Zone 2, aerobic: teal. Also the rest colour between sets and intervals. */
+    const val ZONE_2 = 0xFF2EC5D3.toInt()
+
+    /** Zone 3, tempo: lime. */
+    const val ZONE_3 = 0xFFA6E05A.toInt()
+
+    /** Zone 4, threshold: amber. */
+    const val ZONE_4 = 0xFFFFB020.toInt()
 
     /** Zone 5, max: the heart red. */
     const val ZONE_5 = 0xFFFF5A5F.toInt()
