@@ -232,7 +232,7 @@
     <!-- The week story's sheet: last week day by day. -->
     <string name="day_info_week_name">Your week</string>
     <string name="day_info_week_meaning">This week so far, day by day: how much you moved, trained and slept.</string>
-    <string name="day_info_week_how">Steps are each day\'s total from the strap\'s minutes, and steps a day the average of the days with any. Active minutes are calculated as in their own sheet. A night belongs to the evening it started, so the week\'s last night runs into the next week.</string>
+    <string name="day_info_week_how">Steps are each day\'s total from the strap\'s minutes, and steps a day the average of the days with any, leaving out today until it\'s over. Active minutes are calculated as in their own sheet. A night belongs to the evening it started, so the week\'s last night runs into the next week.</string>
     <string name="day_info_week_moves">Every walk, workout and early night shows here once the strap syncs.</string>
     <string name="day_info_week_off">Steps and workouts are compared with the week before. Active minutes and sleep only go back two weeks, so they\'re shown without a comparison. A day with the strap off reads low.</string>
 

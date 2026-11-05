@@ -931,9 +931,13 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
             .sortedBy { it.workout.start }.groupBy(::dayOf).mapValues { (_, v) -> v.map { it.sportName } },
         ctx.state.nights.mapNotNull { n -> n.asleepSeconds?.let { n.date to it } }.toMap(),
     )
-    val totals = WeekStory.totals(days)
+    // Steps a day leave out today while it's still going, so a morning's few steps don't pull the week down; today
+    // alone still counts, rather than nothing.
+    val today = LocalDate.now()
+    val counted = if (days.any { it.date < today && it.steps != null }) minOf(end, today.minusDays(1)) else end
+    val totals = WeekStory.totals(days).copy(stepsADay = WeekStory.totals(days.filter { it.date <= counted }).stepsADay)
     fun avg(from: LocalDate, to: LocalDate) = steps.orEmpty().filter { it.date in from..to && it.value > 0f }.map { it.value.toDouble() }.takeIf { it.isNotEmpty() }?.average()
-    val change = TodayCopy.stepsChange(avg(start, end), avg(start.minusDays(7), start.minusDays(1)))
+    val change = TodayCopy.stepsChange(avg(start, counted), avg(start.minusDays(7), start.minusDays(1)))
     // Workouts go back as far as the app keeps them; the week before counts only once the app has a workout before it.
     val before = start.minusDays(7)
     val workoutsBefore = if (ctx.workouts.any { dayOf(it) < start }) ctx.workouts.count {
