@@ -46,7 +46,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.font.FontWeight
 import org.openstrap.app.ui.workout.SplitRow
 import org.openstrap.app.ui.workout.ZoneSeconds
+import org.openstrap.app.data.WorkoutRecorder
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.mainZoneColor
 import kotlinx.coroutines.delay
 import org.openstrap.app.data.Route
 import org.openstrap.app.data.WorkoutAnalysis
@@ -204,7 +206,11 @@ fun GlowWorkoutSummaryScreen(
         }
         val family = FamilySummary.familyOf(w.sportType, summary.structure)
         val effort = Workouts.effort(w.trainingLoad, usualLoad)
-        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), familyColor(family), effort) { swell.value }
+        val heartZones = LocalHeartZones.current
+        val zones = remember(a, heartZones) {
+            WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp <= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate, heartZones).toList()
+        }
+        SummaryHeroCard(hero ?: summaryHero(family, summary, usualLoad), mainZoneColor(zones, familyColor(family)), effort) { swell.value }
         // What was done to the times, under the hero that says them.
         TrimNote(summary, trim.undo, Modifier.padding(horizontal = 4.dp), onCard = false)
         val weekStarts = remember(workouts) { goalWeekStarts(workouts) }

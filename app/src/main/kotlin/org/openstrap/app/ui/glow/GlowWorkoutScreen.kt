@@ -52,6 +52,7 @@ import org.openstrap.app.ui.workout.EffectFigures
 import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.workout.ZoneSeconds
 import org.openstrap.app.ui.workout.familyColor
+import org.openstrap.app.ui.workout.mainZoneColor
 import org.openstrap.app.ui.workout.WorkoutDetailCopy
 import org.openstrap.app.ui.workout.WorkoutFact
 import java.time.Instant
@@ -128,7 +129,7 @@ fun GlowWorkoutDetailScreen(
                 // The summary's hero with the length in dots: a strap workout has no kind of its own to show.
                 val sentence = WorkoutDetailCopy.sentence(w.sportType, shown.activeSeconds, w.trainingLoad, usual, zones)
                 val hero = SummaryHero(dotClock(shown.activeSeconds), "", sentence = sentence)
-                SummaryHeroCard(hero, MetricColors.heart, Workouts.effort(w.trainingLoad, usual))
+                SummaryHeroCard(hero, mainZoneColor(zones, MetricColors.heart), Workouts.effort(w.trainingLoad, usual))
             }
             if (shown.heartRate.isNotEmpty() || w.averageHeartRate != null) item { HeartRateCard(shown) }
             val activeKcal = Workouts.activeKcal(shown, bmrPerMinute)
@@ -208,7 +209,7 @@ private fun PastSummary(
                         if (h.sentence != null) h
                         else SummaryHero(h.value, h.unit, h.figures, WorkoutDetailCopy.sentence(w.sportType, a.activeSeconds, w.trainingLoad, usual, zones.toList()), h.line)
                     }
-                    SummaryHeroCard(hero, familyColor(family), Workouts.effort(w.trainingLoad, usual))
+                    SummaryHeroCard(hero, mainZoneColor(zones, familyColor(family)), Workouts.effort(w.trainingLoad, usual))
                     FamilySection(family, summary, emptyList(), others, weekStarts, heartLine = false)
                     // Always there, even before any heart rate, since it holds Trim.
                     HeartRateCard(a, trim)
