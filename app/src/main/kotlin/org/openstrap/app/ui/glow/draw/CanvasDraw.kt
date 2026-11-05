@@ -342,9 +342,9 @@ fun drawWeekDots(canvas: Canvas, values: List<Float?>, usual: ClosedFloatingPoin
     }
 }
 
-/** As the app's week of dots: a dot's radius and the latest's as shares of the height, the band, the dim dots. */
-private const val WEEK_DOTS_R = 3.5f / 40f
-private const val WEEK_DOTS_LATEST_R = 5f / 40f
+/** As the app's week of dots, 3.5 and 5 dp across a 28 dp row: a dot's radius and the latest's as shares of the height. */
+private const val WEEK_DOTS_R = 3.5f / 28f
+private const val WEEK_DOTS_LATEST_R = 5f / 28f
 private const val WEEK_DOTS_BAND_ALPHA = 0.12f
 private const val WEEK_DOTS_DIM_ALPHA = 0.55f
 private const val WEEK_DOTS_ROOM = 0.15f
