@@ -274,11 +274,11 @@ other card, strip and list is unlit: a dark panel with a hairline. An unlit stri
 height (`Shape.Strip`), so they may follow each other.
 
 **The moving border.** Start a workout, on Today and on Activity, is the one action the screens offer, so it has the
-one moving light: a light travelling round its border once every 7 s, white-hot at its head and fading along a
-rainbow tail of the cards' own colours, Heart's red at its end through Energy's orange, Calories' gold, Steps'
-lime, Recovery's teal and Sleep's blue to the evening's violet behind the head, with a soft halo (`movingBorder`).
-It holds still while the list scrolls or the page is off screen, as the glows do, and rests at the top with the
-system's animations off.
+one moving light, a chroma ring (`movingBorder`): a faint 2 dp ring all the way round, with three lights sliding round
+it at their own speeds (a turn every 2 to 3 s, so they pass and gather) and a fine shimmer. The lights take the cards'
+own colours, Heart's red, Energy's orange, Calories' gold, Steps' lime, Recovery's teal, Sleep's blue and the evening's
+violet, softened with a cool white, drifting along the ring, with a soft halo where they are. It holds still while the
+list scrolls or the page is off screen, as the glows do, and rests with the system's animations off.
 
 #### Glow card
 
