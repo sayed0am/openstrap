@@ -94,7 +94,10 @@
     <string name="you_firmware_file_title">Firmware from file</string>
     <string name="you_firmware_file_unread">Couldn\'t read the file. Choose it again.</string>
     <string name="you_firmware_wrong_product">The image says it\'s for product <xliff:g id="image" example="158">%1$d</xliff:g>, but this strap is product <xliff:g id="strap" example="157">%2$d</xliff:g>.</string>
-    <string name="you_firmware_wrong_size">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> bytes). It may be incomplete.</string>
+    <plurals name="you_firmware_wrong_size">
+        <item quantity="one">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> byte). It may be incomplete.</item>
+        <item quantity="other">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> bytes). It may be incomplete.</item>
+    </plurals>
     <!-- What must be done before installing. -->
     <string name="you_firmware_block_connect">Connect the strap.</string>
     <string name="you_firmware_block_battery_unknown">Battery level unknown. Reconnect the strap.</string>

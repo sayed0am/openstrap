@@ -4,7 +4,7 @@
   Edit Today lists, the details' titles, pairing, the first score, a partial day, sync trouble, and the words for
   ratings and the stress level. Energy, Recovery, Load and Habit Age are the app's names for its scores.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A detail's title at the top of its page, and the title of its info sheet. A few words. -->
     <string name="day_score_recovery">Recovery</string>
     <string name="day_score_energy">Energy</string>
@@ -108,7 +108,10 @@
     <string name="day_chip_not_connected_description">Strap not connected</string>
     <!-- The chip while the strap charges: its battery. A few words. -->
     <string name="day_chip_charging">Charging <xliff:g id="percent" example="64">%1$d</xliff:g>%%</string>
-    <string name="day_chip_charging_description">Strap charging, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</string>
+    <plurals name="day_chip_charging_description">
+        <item quantity="one">Strap charging, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</item>
+        <item quantity="other">Strap charging, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</item>
+    </plurals>
     <!-- The chip when the last sync failed. One or two words. -->
     <string name="day_chip_not_synced">Not synced</string>
     <string name="day_chip_not_synced_description">Strap connected, not synced</string>
@@ -116,8 +119,14 @@
     <string name="day_chip_connected_description">Strap connected</string>
     <!-- The chip when all is well: the strap's battery. -->
     <string name="day_chip_battery"><xliff:g id="percent" example="64">%1$d</xliff:g>%%</string>
-    <string name="day_chip_battery_low_description">Strap connected, battery low, <xliff:g id="percent" example="12">%1$d</xliff:g> percent</string>
-    <string name="day_chip_battery_description">Strap connected, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</string>
+    <plurals name="day_chip_battery_low_description">
+        <item quantity="one">Strap connected, battery low, <xliff:g id="percent" example="12">%1$d</xliff:g> percent</item>
+        <item quantity="other">Strap connected, battery low, <xliff:g id="percent" example="12">%1$d</xliff:g> percent</item>
+    </plurals>
+    <plurals name="day_chip_battery_description">
+        <item quantity="one">Strap connected, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</item>
+        <item quantity="other">Strap connected, battery <xliff:g id="percent" example="64">%1$d</xliff:g> percent</item>
+    </plurals>
     <!-- How long ago the strap was last seen, on the chip: under a minute. -->
     <string name="day_ago_now">Just now</string>
     <!-- Minutes ago, on the chip. Short. -->
@@ -163,19 +172,19 @@
     <string name="day_rating_low">Low</string>
 
     <!-- Where stress starts counting: the level, the margin above the user's calm level, that calm level, then the days it's from (day_stress_last_days). -->
-    <string name="day_stress_counts_from_calm">Stress counts from <xliff:g id="level" example="35">%1$d</xliff:g>: <xliff:g id="margin" example="10">%2$d</xliff:g> above your calm level of <xliff:g id="calm" example="25">%3$d</xliff:g> over the last <xliff:g id="days" example="5 days">%4$s</xliff:g>.</string>
+    <string name="day_stress_counts_from_calm" tools:ignore="PluralsCandidate">Stress counts from <xliff:g id="level" example="35">%1$d</xliff:g>: <xliff:g id="margin" example="10">%2$d</xliff:g> above your calm level of <xliff:g id="calm" example="25">%3$d</xliff:g> over the last <xliff:g id="days" example="5 days">%4$s</xliff:g>.</string>
     <!-- The days in day_stress_counts_from_calm. -->
     <plurals name="day_stress_last_days">
         <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> day</item>
         <item quantity="other"><xliff:g id="days" example="5">%1$d</xliff:g> days</item>
     </plurals>
     <!-- Before there's a calm level: the level for now, then how much more wear it needs (day_stress_more_days). -->
-    <string name="day_stress_counts_for_now">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now. After <xliff:g id="more" example="2 more days">%2$s</xliff:g> of wear it adjusts to your own calm level.</string>
+    <string name="day_stress_counts_for_now" tools:ignore="PluralsCandidate">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now. After <xliff:g id="more" example="2 more days">%2$s</xliff:g> of wear it adjusts to your own calm level.</string>
     <!-- The wear in day_stress_counts_for_now. -->
     <plurals name="day_stress_more_days">
         <item quantity="one"><xliff:g id="days" example="1">%1$d</xliff:g> more day</item>
         <item quantity="other"><xliff:g id="days" example="2">%1$d</xliff:g> more days</item>
     </plurals>
     <!-- Before there's a calm level, with enough wear but too few calm readings. -->
-    <string name="day_stress_counts_until">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now, until there are enough calm readings to find your own level.</string>
+    <string name="day_stress_counts_until" tools:ignore="PluralsCandidate">Stress counts from <xliff:g id="level" example="40">%1$d</xliff:g> for now, until there are enough calm readings to find your own level.</string>
 </resources>

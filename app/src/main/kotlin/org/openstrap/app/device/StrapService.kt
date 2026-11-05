@@ -496,7 +496,7 @@ class StrapService : LifecycleService() {
                 if (!connected) getString(R.string.system_strength_strap_gone, WorkoutWords.STRAP_GONE)
                 else listOfNotNull(
                     bpm?.let { getString(R.string.system_strength_bpm, it) },
-                    r.workout.setsTarget?.let { getString(R.string.system_strength_sets, done, it) },
+                    r.workout.setsTarget?.let { resources.getQuantityString(R.plurals.system_strength_sets, it, done, it) },
                 ).joinToString(", "),
             )
             .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)) else WorkoutColors.PAUSED_GREY)

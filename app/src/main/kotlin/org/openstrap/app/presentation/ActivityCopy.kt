@@ -99,7 +99,7 @@ internal object ActivityCopy {
         return when (at) {
             0 -> strings.format(R.string.core_activity_points_month_under, HEART_POINTS_TARGET, known.min(), known.max())
             known.size -> strings.format(R.string.core_activity_points_month_all, HEART_POINTS_TARGET)
-            else -> strings.format(R.string.core_activity_points_month_some, HEART_POINTS_TARGET, at, known.size)
+            else -> strings.plural(R.plurals.core_activity_points_month_some, known.size, HEART_POINTS_TARGET, at, known.size)
         }
     }
 

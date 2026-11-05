@@ -3,7 +3,7 @@
   Today: the hero at the top of the Today tab and the cards under it (ui/glow/GlowTodayScreen.kt, ui/glow/TodayCards.kt).
   Recovery, Energy and Load are the names of the app's scores. Helio Strap is the strap's name. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Title of the Today hero in the morning and of the Recovery card later in the day: the Recovery score's name. -->
     <string name="glow_today_recovery_title">Recovery</string>
     <!-- Beside the Recovery score in dots on the morning hero: Energy when you woke. -->
@@ -47,7 +47,7 @@
     <!-- Beside a step count in dots. Very short. -->
     <string name="glow_today_steps">steps</string>
     <!-- Under the steps in the evening hero, when the Energy card is hidden. -->
-    <string name="glow_today_energy_left">Energy <xliff:g id="energy" example="34">%1$d</xliff:g> left</string>
+    <string name="glow_today_energy_left" tools:ignore="PluralsCandidate">Energy <xliff:g id="energy" example="34">%1$d</xliff:g> left</string>
     <!-- Title of the hero when no strap is paired. Helio Strap is the strap's name. -->
     <string name="glow_today_pair_title">Pair your Helio Strap</string>
     <!-- A button on the pairing hero that opens the Strap page. -->

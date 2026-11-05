@@ -1,9 +1,9 @@
 package org.openstrap.app.ui.device
 
 import android.app.Application
+import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.content.pm.ResolveInfo
+import android.content.IntentFilter
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.PaddingValues
@@ -90,7 +90,7 @@ class HealthConnectInstallTest {
         val activity = activity()
         shadowOf(app).checkActivities(true)
         val web = healthConnectStoreIntents(app.packageName).last()
-        shadowOf(app.packageManager).addResolveInfoForIntent(web, browser())
+        canOpen(web)
         assertTrue(installHealthConnect(activity))
         assertEquals(web.data, shadowOf(activity).nextStartedActivity.data)
     }
@@ -99,8 +99,8 @@ class HealthConnectInstallTest {
         val activity = activity()
         shadowOf(app).checkActivities(true)
         val (play, _, web) = healthConnectStoreIntents(app.packageName)
-        shadowOf(app.packageManager).addResolveInfoForIntent(play, browser())
-        shadowOf(app.packageManager).addResolveInfoForIntent(web, browser())
+        canOpen(play)
+        canOpen(web)
         assertTrue(installHealthConnect(activity))
         assertEquals("com.android.vending", shadowOf(activity).nextStartedActivity.`package`)
     }
@@ -132,10 +132,17 @@ class HealthConnectInstallTest {
         }
     }
 
-    private fun browser() = ResolveInfo().apply {
-        activityInfo = ActivityInfo().apply {
-            packageName = "org.example.browser"
-            name = "Browser"
-        }
+    /** An installed activity that opens [intent]: in its own package when it names one, else a browser's. */
+    private fun canOpen(intent: Intent) {
+        val component = ComponentName(intent.`package` ?: "org.example.browser", "Opener")
+        val packages = shadowOf(app.packageManager)
+        packages.addActivityIfNotPresent(component)
+        packages.addIntentFilterForActivity(
+            component,
+            IntentFilter(intent.action).apply {
+                addCategory(Intent.CATEGORY_DEFAULT)
+                addDataScheme(intent.data!!.scheme)
+            },
+        )
     }
 }

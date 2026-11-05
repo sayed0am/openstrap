@@ -4,7 +4,7 @@
   screen around them. A card's text is drawn into the picture, so it has one line of room unless a comment says otherwise.
   OpenStrap is the app's name and stands on every card. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Two parts of one card line joined, as "141 avg bpm, 320 kcal" or "Weekly goal, 3 of 4". -->
     <string name="glow_share_join"><xliff:g id="first" example="141 avg bpm">%1$s</xliff:g>, <xliff:g id="second" example="320 kcal">%2$s</xliff:g></string>
     <!-- A run card's foot: the sport and the date, as "Run, Oct 21". -->
@@ -42,7 +42,7 @@
     <string name="glow_share_row_top"><xliff:g id="sets" example="5 × 10">%1$s</xliff:g>, top <xliff:g id="kg" example="65">%2$s</xliff:g> kg</string>
 
     <!-- An indoor card's line: the average heart rate. -->
-    <string name="glow_share_avg_bpm"><xliff:g id="bpm" example="141">%1$d</xliff:g> avg bpm</string>
+    <string name="glow_share_avg_bpm" tools:ignore="PluralsCandidate"><xliff:g id="bpm" example="141">%1$d</xliff:g> avg bpm</string>
     <!-- An indoor card's line: kcal burned above resting. -->
     <string name="glow_share_kcal"><xliff:g id="kcal" example="320">%1$s</xliff:g> kcal</string>
     <!-- Under an indoor card's time in dots. -->
@@ -53,9 +53,15 @@
     <!-- Unit beside the rounds done on an intervals card, without the plan. Short. -->
     <string name="glow_share_unit_rounds">rounds</string>
     <!-- Unit beside the reps done on an intervals card: how many were planned, as "6 of 8 reps". -->
-    <string name="glow_share_unit_of_reps">of <xliff:g id="planned" example="8">%1$d</xliff:g> reps</string>
+    <plurals name="glow_share_unit_of_reps">
+        <item quantity="one">of <xliff:g id="planned" example="8">%1$d</xliff:g> rep</item>
+        <item quantity="other">of <xliff:g id="planned" example="8">%1$d</xliff:g> reps</item>
+    </plurals>
     <!-- Unit beside the rounds done on an intervals card: how many were planned, as "6 of 8 rounds". -->
-    <string name="glow_share_unit_of_rounds">of <xliff:g id="planned" example="8">%1$d</xliff:g> rounds</string>
+    <plurals name="glow_share_unit_of_rounds">
+        <item quantity="one">of <xliff:g id="planned" example="8">%1$d</xliff:g> round</item>
+        <item quantity="other">of <xliff:g id="planned" example="8">%1$d</xliff:g> rounds</item>
+    </plurals>
     <!-- An intervals card's line: the highest heart rate. -->
     <string name="glow_share_peak_bpm">Peak <xliff:g id="bpm" example="172">%1$d</xliff:g> bpm</string>
     <!-- An intervals card's line: the time spent working, in minutes. -->

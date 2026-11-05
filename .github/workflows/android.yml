@@ -40,14 +40,10 @@ jobs:
         run: ./gradlew :protocol:test :app:testDebugUnitTest
 
       # Android lint and detekt fail on any finding not in their baselines (app/lint-baseline.xml, */detekt-baseline-*.xml).
+      # detekt checks the debug build only: release differs by four stub files in app/src/release, and checking it too
+      # compiled the whole app a second time, about 5 of this step's 7 minutes.
       - name: Lint and static analysis
-        run: ./gradlew :app:lintDebug detektMain
-
-      # ktlint's baseline pins findings by line and column, so any edit that moves lines brings old findings back.
-      # It reports here without failing the build until the code is formatted once.
-      - name: Formatting
-        continue-on-error: true
-        run: ./gradlew ktlintCheck
+        run: ./gradlew :app:lintDebug :app:detektDebug :protocol:detektMain
 
       # A German locale and a zone with a 45 minute offset, so a comma decimal mark or a fixed zone fails the build.
       - name: Tests under a German locale

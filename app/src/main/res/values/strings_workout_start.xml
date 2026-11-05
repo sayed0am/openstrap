@@ -4,7 +4,7 @@
   (ui/workout/StartCopy.kt). The strap is the Helio Strap the app records with. Tabata is the name of a workout, keep it
   unless your language has its own. Units (km, m, min, s, h, bpm) read as the app writes them elsewhere.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Choose's one line about the strap, when it's connected and reads a heart rate. One line. -->
     <string name="workout_start_strap_ready_bpm">Strap ready, <xliff:g id="bpm" example="72">%1$d</xliff:g> bpm</string>
     <!-- Choose's strap line when it's connected but no heart rate has come yet. -->
@@ -148,9 +148,15 @@
     <!-- Beside HIIT's rounds: all of their time, as a clock. -->
     <string name="workout_start_total_line"><xliff:g id="time" example="4:00">%1$s</xliff:g> in all</string>
     <!-- Timed rounds by name: seconds of work and of rest, then the rounds. -->
-    <string name="workout_start_structure_timed"><xliff:g id="work" example="30">%1$d</xliff:g> / <xliff:g id="rest" example="15">%2$d</xliff:g>, <xliff:g id="rounds" example="6">%3$d</xliff:g> rounds</string>
+    <plurals name="workout_start_structure_timed">
+        <item quantity="one"><xliff:g id="work" example="30">%1$d</xliff:g> / <xliff:g id="rest" example="15">%2$d</xliff:g>, <xliff:g id="rounds" example="6">%3$d</xliff:g> round</item>
+        <item quantity="other"><xliff:g id="work" example="30">%1$d</xliff:g> / <xliff:g id="rest" example="15">%2$d</xliff:g>, <xliff:g id="rounds" example="6">%3$d</xliff:g> rounds</item>
+    </plurals>
     <!-- Rounds that start every so often, by name. -->
-    <string name="workout_start_structure_every">Every <xliff:g id="time" example="90 s">%1$s</xliff:g>, <xliff:g id="rounds" example="10">%2$d</xliff:g> rounds</string>
+    <plurals name="workout_start_structure_every">
+        <item quantity="one">Every <xliff:g id="time" example="90 s">%1$s</xliff:g>, <xliff:g id="rounds" example="10">%2$d</xliff:g> round</item>
+        <item quantity="other">Every <xliff:g id="time" example="90 s">%1$s</xliff:g>, <xliff:g id="rounds" example="10">%2$d</xliff:g> rounds</item>
+    </plurals>
     <!-- Run intervals by name: how many reps of what length. -->
     <string name="workout_start_structure_reps"><xliff:g id="reps" example="6">%1$d</xliff:g> × <xliff:g id="length" example="400 m">%2$s</xliff:g></string>
     <!-- HIIT's note with no timer. -->
@@ -171,7 +177,10 @@
     <!-- A game played in four quarters. A pill. -->
     <string name="workout_start_quarters">Quarters</string>
     <!-- A game played in another number of periods. A pill. -->
-    <string name="workout_start_periods"><xliff:g id="count" example="3">%1$d</xliff:g> periods</string>
+    <plurals name="workout_start_periods">
+        <item quantity="one"><xliff:g id="count" example="3">%1$d</xliff:g> period</item>
+        <item quantity="other"><xliff:g id="count" example="3">%1$d</xliff:g> periods</item>
+    </plurals>
     <!-- The first half of a game: on the live screen under its clock and on the summary. About 12 characters. -->
     <string name="workout_start_half_1">1st half</string>
     <!-- The second half of a game. About 12 characters. -->

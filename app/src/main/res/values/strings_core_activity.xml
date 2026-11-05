@@ -4,7 +4,7 @@
   Heart points, active minutes, Load, VO2 max, time to recover, calories and distance. Load and Heart points are the
   app's names for two measures, keep them capitalised as names.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Steps detail, the status beside today's steps: about as many as you usually have by this time of day. One line. -->
     <string name="core_activity_pace_more_now">More than usual by now</string>
     <string name="core_activity_pace_about_now">About usual by now</string>
@@ -45,18 +45,21 @@
     <!-- Heart points detail, the label under one day's points while its bar is tapped. The day is a short date. -->
     <string name="core_activity_points_earned">points earned, <xliff:g id="day" example="Tue 20 Oct">%1$s</xliff:g></string>
     <!-- Heart points detail, the month's sentence when no day reached the aim: the lowest and highest 7-day totals. -->
-    <string name="core_activity_points_month_under">Under <xliff:g id="aim" example="100">%1$d</xliff:g> every day in the last 30, between <xliff:g id="lowest" example="40">%2$d</xliff:g> and <xliff:g id="highest" example="96">%3$d</xliff:g>.</string>
+    <string name="core_activity_points_month_under" tools:ignore="PluralsCandidate">Under <xliff:g id="aim" example="100">%1$d</xliff:g> every day in the last 30, between <xliff:g id="lowest" example="40">%2$d</xliff:g> and <xliff:g id="highest" example="96">%3$d</xliff:g>.</string>
     <!-- Heart points detail, the month's sentence when every day with a total reached the aim. -->
     <string name="core_activity_points_month_all">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more every day with a total in the last 30.</string>
     <!-- Heart points detail, the month's sentence: on how many of the days with a total it reached the aim. -->
-    <string name="core_activity_points_month_some">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more on <xliff:g id="days_at_aim" example="12">%2$d</xliff:g> of <xliff:g id="days" example="30">%3$d</xliff:g> days in the last 30.</string>
+    <plurals name="core_activity_points_month_some">
+        <item quantity="one">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more on <xliff:g id="days_at_aim" example="12">%2$d</xliff:g> of <xliff:g id="days" example="30">%3$d</xliff:g> day in the last 30.</item>
+        <item quantity="other">At <xliff:g id="aim" example="100">%1$d</xliff:g> or more on <xliff:g id="days_at_aim" example="12">%2$d</xliff:g> of <xliff:g id="days" example="30">%3$d</xliff:g> days in the last 30.</item>
+    </plurals>
 
     <!-- Active minutes detail, the status word beside the week's minutes once the weekly goal is reached. -->
     <string name="core_activity_active_goal_met">Goal met</string>
     <!-- Active minutes detail, under the week's minutes when they are exactly the target (150). -->
     <string name="core_activity_active_week_at">Right at the <xliff:g id="target" example="150">%1$d</xliff:g> to aim for.</string>
     <!-- Active minutes detail, under the week's minutes: by how many minutes they are past the target. -->
-    <string name="core_activity_active_week_past"><xliff:g id="over" example="10">%1$d</xliff:g> past the <xliff:g id="target" example="150">%2$d</xliff:g> to aim for.</string>
+    <string name="core_activity_active_week_past" tools:ignore="PluralsCandidate"><xliff:g id="over" example="10">%1$d</xliff:g> past the <xliff:g id="target" example="150">%2$d</xliff:g> to aim for.</string>
     <!-- Active minutes detail, under the week's minutes: how many minutes are left to the target. -->
     <string name="core_activity_active_week_to_go"><xliff:g id="left" example="54">%1$d</xliff:g> to go for <xliff:g id="target" example="150">%2$d</xliff:g>.</string>
     <!-- A number of minutes, inside the active minutes day sentences below. -->

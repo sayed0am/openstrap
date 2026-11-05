@@ -5,7 +5,7 @@
   Recovery, Energy, Load and Habit Age are the names of the app's scores. HRV and REM stay as they are unless the
   language has its own short form. kcal and bpm are units.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A sleep stage's name, on the hypnogram, the stage totals and the Sleep widget. Short, one word. -->
     <string name="core_tab_stage_awake">Awake</string>
     <!-- A sleep stage's name, as above: rapid eye movement sleep. -->
@@ -23,7 +23,10 @@
     <string name="core_tab_same_as_yesterday">Same as yesterday</string>
 
     <!-- The caveat while Recovery calibrates: nights so far of the nights it needs. Short. -->
-    <string name="core_tab_learning_nights">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="core_tab_learning_nights">
+        <item quantity="one">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
 
     <!-- A Recovery contributor's name on its row: heart rate variability. -->
     <string name="core_tab_factor_hrv">HRV</string>
@@ -101,9 +104,9 @@
     <!-- The Energy card's line when there is no waking level to compare with. Short. -->
     <string name="core_tab_charge_now">Now</string>
     <!-- The Energy card's line: how much it fell since waking. -->
-    <string name="core_tab_charge_used">Used <xliff:g id="amount" example="20">%1$d</xliff:g> since waking</string>
+    <string name="core_tab_charge_used" tools:ignore="PluralsCandidate">Used <xliff:g id="amount" example="20">%1$d</xliff:g> since waking</string>
     <!-- The Energy card's line: how much it rose since waking. -->
-    <string name="core_tab_charge_up">Up <xliff:g id="amount" example="5">%1$d</xliff:g> since waking</string>
+    <string name="core_tab_charge_up" tools:ignore="PluralsCandidate">Up <xliff:g id="amount" example="5">%1$d</xliff:g> since waking</string>
     <!-- The Energy card's line: the same as at waking. -->
     <string name="core_tab_charge_level">Same as at waking</string>
 
@@ -153,11 +156,17 @@
     <string name="core_tab_usual_times">Usually asleep by <xliff:g id="bedtime" example="23:10">%1$s</xliff:g>, up at <xliff:g id="wake" example="06:50">%2$s</xliff:g>.</string>
 
     <!-- Breathing disturbances before there is a usual: nights so far of the nights it needs. -->
-    <string name="core_tab_breathing_learning">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="core_tab_breathing_learning">
+        <item quantity="one">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning your usual, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- Breathing disturbances: your usual number of them an hour, "2.1". -->
     <string name="core_tab_breathing_usual">Your usual is <xliff:g id="per_hour" example="2.1">%1$s</xliff:g> an hour</string>
     <!-- Breathing disturbances on a small card before there is a usual. Short. -->
-    <string name="core_tab_breathing_short_learning">Learning, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="core_tab_breathing_short_learning">
+        <item quantity="one">Learning, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning, <xliff:g id="nights" example="3">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- Breathing disturbances on a small card: your usual an hour, and that it is early. Short. -->
     <string name="core_tab_breathing_short_usual">Usual <xliff:g id="per_hour" example="2.1">%1$s</xliff:g>, early estimate</string>
 
@@ -173,7 +182,7 @@
     <string name="core_tab_balance_steady">Steady</string>
 
     <!-- Active minutes over the last 7 days, with the goal reached. -->
-    <string name="core_tab_active_reached">Last 7 days, goal of <xliff:g id="goal" example="150">%1$d</xliff:g> reached</string>
+    <string name="core_tab_active_reached" tools:ignore="PluralsCandidate">Last 7 days, goal of <xliff:g id="goal" example="150">%1$d</xliff:g> reached</string>
     <!-- Active minutes over the last 7 days, with the goal. -->
     <string name="core_tab_active_goal">Last 7 days, goal <xliff:g id="goal" example="150">%1$d</xliff:g></string>
     <!-- Heart points over the last 7 days, with the aim reached. -->

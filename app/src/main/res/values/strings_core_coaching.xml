@@ -3,7 +3,7 @@
   Workout targets (data/Coaching.kt): the choices on the ready screen's Target row and the target named during a
   workout. Each is a chip or a short line, so keep them short.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A heart rate zone target, one zone, as a chip. -->
     <string name="core_coach_zone">Zone <xliff:g id="zone" example="2">%1$d</xliff:g></string>
     <!-- A heart rate zone target spanning zones, as a chip: "Zone 2 to 3". -->
@@ -11,7 +11,7 @@
     <!-- A time target in minutes, as a chip. -->
     <string name="core_coach_minutes"><xliff:g id="minutes" example="45">%1$d</xliff:g> min</string>
     <!-- An active calories target, as a chip. -->
-    <string name="core_coach_kcal"><xliff:g id="kcal" example="300">%1$d</xliff:g> kcal</string>
+    <string name="core_coach_kcal" tools:ignore="PluralsCandidate"><xliff:g id="kcal" example="300">%1$d</xliff:g> kcal</string>
     <!-- A distance target under a kilometre, in metres, as a chip. -->
     <string name="core_coach_meters"><xliff:g id="meters" example="800">%1$d</xliff:g> m</string>
     <!-- A distance target in kilometres, as a chip: "5 km", "21.1 km". -->

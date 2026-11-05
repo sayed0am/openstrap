@@ -41,10 +41,14 @@ object TabCopy {
      * there are enough.
      */
     fun learning(phase: Recovery.Phase, nights: Int, strings: Strings = Strings.app): String? = when (phase) {
-        Recovery.Phase.Withheld -> strings.format(R.string.core_tab_learning_nights, nights, Recovery.SCORED_NIGHTS)
-        Recovery.Phase.Learning -> strings.format(R.string.core_tab_learning_nights, nights, Recovery.SETTLED_NIGHTS)
+        Recovery.Phase.Withheld -> learningOf(Recovery.SCORED_NIGHTS, nights, strings)
+        Recovery.Phase.Learning -> learningOf(Recovery.SETTLED_NIGHTS, nights, strings)
         Recovery.Phase.Scored, Recovery.Phase.Calibrated -> null
     }
+
+    /** "Learning, 4 of 7 nights", the noun agreeing with the nights it needs. */
+    private fun learningOf(needed: Int, nights: Int, strings: Strings): String =
+        strings.plural(R.plurals.core_tab_learning_nights, needed, nights, needed)
 
     /** A contributor's name on a row. */
     fun factorName(f: Recovery.Factor, strings: Strings = Strings.app): String = strings.get(
@@ -246,7 +250,10 @@ object TabCopy {
 
     /** Breathing disturbances against your usual, or how many nights it still needs. */
     fun breathing(b: Recovery.BreathingDisturbances, strings: Strings = Strings.app): String = when (val usual = b.usual) {
-        null -> strings.format(R.string.core_tab_breathing_learning, b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS)
+        null -> strings.plural(
+            R.plurals.core_tab_breathing_learning, Recovery.SCORED_NIGHTS,
+            b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS,
+        )
         else -> strings.format(R.string.core_tab_breathing_usual, String.format(Locale.getDefault(), "%.1f", usual))
     }
 
@@ -314,8 +321,9 @@ object TabCopy {
 
     /** Breathing disturbances as a Small: your usual, or how many nights it still needs, and that it's early. */
     fun breathingShort(b: Recovery.BreathingDisturbances, strings: Strings = Strings.app): String = when (val usual = b.usual) {
-        null -> strings.format(
-            R.string.core_tab_breathing_short_learning, b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS,
+        null -> strings.plural(
+            R.plurals.core_tab_breathing_short_learning, Recovery.SCORED_NIGHTS,
+            b.nights.coerceAtMost(Recovery.SCORED_NIGHTS), Recovery.SCORED_NIGHTS,
         )
         else -> strings.format(R.string.core_tab_breathing_short_usual, String.format(Locale.getDefault(), "%.1f", usual))
     }
