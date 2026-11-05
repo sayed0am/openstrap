@@ -84,7 +84,7 @@ object FamilySummary {
                 val text = if (s.reps != null && s.weightKg != null) {
                     strings.format(R.string.workout_summary_set_reps_kg, s.reps, Strength.kgText(s.weightKg))
                 } else if (s.reps != null) {
-                    strings.format(R.string.workout_summary_set_reps, s.reps)
+                    strings.plural(R.plurals.workout_summary_set_reps, s.reps, s.reps)
                 } else {
                     Units.workoutClock(s.end!! - s.start)
                 }

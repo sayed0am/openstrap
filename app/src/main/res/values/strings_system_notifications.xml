@@ -5,7 +5,7 @@
   two lines before it is expanded, and an action button a word or two.
   OpenStrap is the app's name and Helio Strap the strap's. Keep both as they are.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Channel name: notifications for workouts the strap noticed and recorded by itself. -->
     <string name="system_channel_auto_detected">Auto-detected workouts</string>
     <!-- Channel name: the strap's alerts for a high or low heart rate, high stress, low blood oxygen or an irregular rhythm. -->
@@ -111,12 +111,15 @@
     <string name="system_strength_resting">Resting after set <xliff:g id="set" example="2">%1$d</xliff:g></string>
     <!-- Before the first set. The sport is "Strength" or "HIIT". -->
     <string name="system_strength_ready">"<xliff:g id="sport" example="Strength">%1$s</xliff:g>, ready for set 1"</string>
-    <string name="system_strength_rest_over">Rest over, set <xliff:g id="set" example="3">%1$d</xliff:g> next</string>
+    <string name="system_strength_rest_over" tools:ignore="PluralsCandidate">Rest over, set <xliff:g id="set" example="3">%1$d</xliff:g> next</string>
     <!-- The text when the strap is out of reach. The first part is "Waiting for the strap". -->
     <string name="system_strength_strap_gone"><xliff:g id="waiting" example="Waiting for the strap">%1$s</xliff:g>. Still recording.</string>
     <string name="system_strength_bpm"><xliff:g id="bpm" example="128">%1$d</xliff:g> bpm</string>
     <!-- Sets done of the sets planned. -->
-    <string name="system_strength_sets"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> sets</string>
+    <plurals name="system_strength_sets">
+        <item quantity="one"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> sets</item>
+    </plurals>
     <!-- Buttons. -->
     <string name="system_strength_action_start_set">Start set <xliff:g id="set" example="3">%1$d</xliff:g></string>
     <!-- Makes the rest 30 seconds longer. -->

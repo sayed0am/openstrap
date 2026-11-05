@@ -5,7 +5,7 @@
   lines of about 30 characters, a button of about 12, and a unit under a big number of about 12. A set is a set of a
   strength exercise, a round or a rep one stretch of work in intervals.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The unit under the big number of a GPS workout: kilometres. Fits under a big number, about 12 characters. -->
     <string name="workout_glance_unit_km">km</string>
     <!-- The unit under the big number: heart beats per minute. Fits under a big number, about 12 characters. -->
@@ -99,7 +99,7 @@
     <!-- The first line while resting between sets. About 30 characters. -->
     <string name="workout_glance_rest_left"><xliff:g id="time" example="1:20">%1$s</xliff:g> rest left</string>
     <!-- After the heart rate in the second line while resting, in lower case. About 12 characters. -->
-    <string name="workout_glance_set_next_lower">set <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
+    <string name="workout_glance_set_next_lower" tools:ignore="PluralsCandidate">set <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
     <!-- The hero's line under its bar while resting: the heart rate. -->
     <string name="workout_glance_rest_bpm_sentence"><xliff:g id="bpm" example="122">%1$d</xliff:g> bpm.</string>
     <!-- The hero's line under its bar while resting: the heart rate and how far it has come down. -->
@@ -111,9 +111,9 @@
     <!-- The first line before the first set. About 30 characters. -->
     <string name="workout_glance_ready_for_set_1">Ready for set 1</string>
     <!-- The first line once a rest is over, of a planned number of sets. About 30 characters. -->
-    <string name="workout_glance_rest_over_of">Rest over, set <xliff:g id="number" example="4">%1$d</xliff:g> of <xliff:g id="target" example="5">%2$d</xliff:g> next</string>
+    <string name="workout_glance_rest_over_of" tools:ignore="PluralsCandidate">Rest over, set <xliff:g id="number" example="4">%1$d</xliff:g> of <xliff:g id="target" example="5">%2$d</xliff:g> next</string>
     <!-- The first line once a rest is over. About 30 characters. -->
-    <string name="workout_glance_rest_over">Rest over, set <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
+    <string name="workout_glance_rest_over" tools:ignore="PluralsCandidate">Rest over, set <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
 
     <!-- The one line of mind and body with a length: the sport, the time so far and the length in minutes. About 30 characters. -->
     <string name="workout_glance_mind_of"><xliff:g id="sport" example="Yoga">%1$s</xliff:g>, <xliff:g id="time" example="23:40">%2$s</xliff:g> of <xliff:g id="length" example="45">%3$d</xliff:g> min</string>
@@ -138,9 +138,9 @@
     <!-- A button: an every-minute round's work is done. About 12 characters. -->
     <string name="workout_glance_done">Done</string>
     <!-- The first line in a rest between run reps. About 30 characters. -->
-    <string name="workout_glance_rest_rep_next">Rest, rep <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
+    <string name="workout_glance_rest_rep_next" tools:ignore="PluralsCandidate">Rest, rep <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
     <!-- The first line in a rest between rounds. About 30 characters. -->
-    <string name="workout_glance_rest_round_next">Rest, round <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
+    <string name="workout_glance_rest_round_next" tools:ignore="PluralsCandidate">Rest, round <xliff:g id="number" example="4">%1$d</xliff:g> next</string>
     <!-- A button: end the rest now. About 12 characters. -->
     <string name="workout_glance_skip_rest">Skip rest</string>
     <!-- A button: ten more seconds of rest. About 8 characters. -->
@@ -150,9 +150,15 @@
     <!-- A button: the warm up is over, start the rounds. About 12 characters. -->
     <string name="workout_glance_start_rounds">Start rounds</string>
     <!-- The first line once every run rep is done. About 30 characters. -->
-    <string name="workout_glance_all_reps_done">All <xliff:g id="reps" example="6">%1$d</xliff:g> reps done</string>
+    <plurals name="workout_glance_all_reps_done">
+        <item quantity="one"><xliff:g id="reps" example="6">%1$d</xliff:g> rep done</item>
+        <item quantity="other">All <xliff:g id="reps" example="6">%1$d</xliff:g> reps done</item>
+    </plurals>
     <!-- The first line once every round is done. About 30 characters. -->
-    <string name="workout_glance_all_rounds_done">All <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds done</string>
+    <plurals name="workout_glance_all_rounds_done">
+        <item quantity="one"><xliff:g id="rounds" example="8">%1$d</xliff:g> round done</item>
+        <item quantity="other">All <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds done</item>
+    </plurals>
 
     <!-- The hero's split strip, after the last kilometre's time: which kilometre was the fastest. -->
     <string name="workout_glance_fastest_was">Fastest so far was km <xliff:g id="number" example="3">%1$d</xliff:g>.</string>
@@ -176,7 +182,7 @@
     <!-- Beside a time goal, or in the bar, under a minute away. About 22 characters. -->
     <string name="workout_glance_under_a_minute">Under a minute to go</string>
     <!-- Beside a calorie goal, or in the bar: the calories left. About 16 characters. -->
-    <string name="workout_glance_kcal_to_go"><xliff:g id="kcal" example="120">%1$d</xliff:g> kcal to go</string>
+    <string name="workout_glance_kcal_to_go" tools:ignore="PluralsCandidate"><xliff:g id="kcal" example="120">%1$d</xliff:g> kcal to go</string>
     <!-- In the bar: the distance left to the goal. The distance is "0.68 km" or "680 m". About 16 characters. -->
     <string name="workout_glance_to_go"><xliff:g id="distance" example="0.68 km">%1$s</xliff:g> to go</string>
     <!-- A short distance in metres. -->

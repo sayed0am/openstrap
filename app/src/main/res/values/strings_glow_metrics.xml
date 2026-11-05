@@ -5,7 +5,7 @@
   A detail's headline is a big dotted number with a short label beside it, so those labels stay short.
   Habit Age is the app's name for its estimate of your age from your habits.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- All metrics -->
 
     <!-- The All metrics sheet's title: every number the app has, grouped. -->
@@ -36,7 +36,10 @@
     <string name="glow_metrics_steps">Steps</string>
     <string name="glow_metrics_workouts">Workouts</string>
     <!-- Under Recovery while the app learns your baselines: nights so far out of the nights it needs. -->
-    <string name="glow_metrics_learning_nights">Learning, <xliff:g id="nights" example="2">%1$d</xliff:g> of <xliff:g id="needed" example="4">%2$d</xliff:g> nights</string>
+    <plurals name="glow_metrics_learning_nights">
+        <item quantity="one">Learning, <xliff:g id="nights" example="2">%1$d</xliff:g> of <xliff:g id="needed" example="4">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning, <xliff:g id="nights" example="2">%1$d</xliff:g> of <xliff:g id="needed" example="4">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- Under Recovery: the number is the day's score. -->
     <string name="glow_metrics_score_for_day">Score for the day</string>
     <!-- Under Sleep: the number is the night's score. -->

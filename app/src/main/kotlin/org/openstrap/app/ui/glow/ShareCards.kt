@@ -227,7 +227,7 @@ private fun roundsCard(
     if (done == 0) return StoryCard.Rounds(whenLine, a.sportName, minutes.first, minutes.second, emptyList(), a.maxHeartRate, peakText)
     val unit = when {
         planned != null && planned >= done ->
-            strings.format(if (reps) R.string.glow_share_unit_of_reps else R.string.glow_share_unit_of_rounds, planned)
+            strings.plural(if (reps) R.plurals.glow_share_unit_of_reps else R.plurals.glow_share_unit_of_rounds, planned, planned)
         else -> strings.get(if (reps) R.string.glow_share_unit_reps else R.string.glow_share_unit_rounds)
     }
     return StoryCard.Rounds(

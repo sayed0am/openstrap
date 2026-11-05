@@ -247,7 +247,7 @@ object RewardsCopy {
     fun recapText(week: WeekResult, inARow: Int, strings: Strings = Strings.app): String = when {
         !week.met -> strings.plural(R.plurals.core_rewards_recap, week.goal, week.goal, week.count)
         inARow > 1 -> strings.plural(R.plurals.core_rewards_recap_met_in_a_row, inARow, inARow, week.count, week.goal)
-        else -> strings.format(R.string.core_rewards_recap_met, week.count, week.goal)
+        else -> strings.plural(R.plurals.core_rewards_recap_met, week.goal, week.count, week.goal)
     }
 }
 

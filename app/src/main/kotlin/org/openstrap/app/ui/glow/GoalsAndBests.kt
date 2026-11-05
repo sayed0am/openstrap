@@ -86,7 +86,7 @@ private fun GoalWeekCard(
                 "$count", pluralStringResource(R.plurals.glow_goals_of_workouts, goal, goal), Modifier.padding(top = GlowLayout.TitleGap),
             )
             // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
-            val described = stringResource(R.string.glow_goals_count_of_goal, count, goal)
+            val described = pluralStringResource(R.plurals.glow_goals_count_of_goal, goal, count, goal)
             if (bar) SegmentBar(
                 List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
                 Modifier.padding(top = 18.dp).semantics { contentDescription = described }, height = 8.dp, gap = 6.dp,
