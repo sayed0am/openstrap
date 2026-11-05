@@ -20,12 +20,17 @@
 
     <!-- A message when the user turned the Bluetooth permission down. -->
     <string name="day_bluetooth_required">OpenStrap needs Nearby devices to reach your strap.</string>
+    <!-- The same on Android 11, where finding the strap needs the location permission instead. -->
+    <string name="day_bluetooth_required_location">OpenStrap needs location access to find your strap. It doesn\'t use your location.</string>
     <!-- A message when the user turned location down for a workout: it starts anyway, without GPS. -->
     <string name="day_location_declined">Without location, distance comes from the strap\'s steps.</string>
     <!-- The dialog when Nearby devices was turned down for good: its title. -->
     <string name="day_nearby_title">Allow Nearby devices</string>
     <!-- Its text. Permissions is the heading in Android's settings page for the app. -->
     <string name="day_nearby_text">OpenStrap needs Nearby devices to find and connect to your strap. Android won\'t ask again, so turn it on in OpenStrap\'s settings, under Permissions.</string>
+    <!-- The same dialog on Android 11, where finding the strap needs the location permission instead. -->
+    <string name="day_nearby_title_location">Allow location</string>
+    <string name="day_nearby_text_location">On Android 11, OpenStrap needs location access to find and connect to your strap. It doesn\'t use your location. Android won\'t ask again, so turn it on in OpenStrap\'s settings, under Permissions.</string>
     <!-- Its button that opens Android's settings page for the app. -->
     <string name="day_nearby_open_settings">Open settings</string>
     <!-- Its button that closes it. -->

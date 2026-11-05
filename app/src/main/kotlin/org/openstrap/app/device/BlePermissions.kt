@@ -1,6 +1,7 @@
 package org.openstrap.app.device
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -11,10 +12,25 @@ import android.provider.Settings
 
 /**
  * The one place that says which permissions the strap needs, so every check and request asks for the same ones.
+ * Android 12 brought runtime Bluetooth permissions. On Android 11, Bluetooth itself is granted at install, and a BLE
+ * scan needs fine location instead, with Location switched on ([scanNeedsLocationOn]).
  */
 object BlePermissions {
-    /** What scanning for and talking to the strap needs. Scanning never derives location (neverForLocation). */
-    val bluetooth: List<String> = listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+    /** What scanning for and talking to the strap needs on this phone. From 12 scanning never derives location (neverForLocation). */
+    val bluetooth: List<String> get() = bluetooth(Build.VERSION.SDK_INT)
+
+    // Lint can't follow the guard through the parameter: the Android 12 names are only returned for sdk S and up.
+    /** What scanning for and talking to the strap needs on API level [sdk]. */
+    @SuppressLint("InlinedApi")
+    internal fun bluetooth(sdk: Int): List<String> =
+        if (sdk >= Build.VERSION_CODES.S) {
+            listOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+        } else {
+            listOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+    /** Android 11 and older only report BLE scan results while Location is switched on in system settings. */
+    val scanNeedsLocationOn: Boolean get() = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
 
     /**
      * What the app asks for before it pairs, connects or starts a workout: [bluetooth], plus notifications for the

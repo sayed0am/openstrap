@@ -30,7 +30,7 @@ import org.openstrap.app.data.settings.SettingsStore
 /**
  * Registers the paired strap with Android's companion device manager (a plain association, no watch profile).
  * Associated, the app may run and start its service from the background, is left out of battery optimization,
- * and is woken through [StrapPresenceService] when the strap comes into range.
+ * and on Android 12+ is woken through [StrapPresenceService] when the strap comes into range.
  */
 class CompanionLink(private val context: Context, private val settings: SettingsStore) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -73,7 +73,11 @@ class CompanionLink(private val context: Context, private val settings: Settings
      * which [launch] starts; pass the activity result to [onResult]. [onError] gets a message to show.
      */
     fun associate(activity: Activity, address: String, launch: (IntentSender) -> Unit, onError: (String) -> Unit) {
-        val cdm = cdm ?: return onError(Strings.app.get(R.string.system_companion_unsupported))
+        if (cdm == null) return onError(Strings.app.get(R.string.system_companion_unsupported))
+        // The activity's own manager: before Android 13 associate() casts the manager's context to an Activity, and
+        // one from the application context crashes the app (seen on Android 11).
+        val cdm = activity.getSystemService(CompanionDeviceManager::class.java)
+            ?: return onError(Strings.app.get(R.string.system_companion_unsupported))
         // The strap is a BLE device; the classic filter also matches it once Android knows it from a connection.
         val request = AssociationRequest.Builder()
             .addDeviceFilter(BluetoothLeDeviceFilter.Builder().setScanFilter(ScanFilter.Builder().setDeviceAddress(address).build()).build())
@@ -122,7 +126,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
         refresh()
     }
 
-    /** Has Android bind [StrapPresenceService] when the strap is in range. Android keeps this across reboots. */
+    /** Has Android bind [StrapPresenceService] when the strap is in range (Android 12+). Android keeps this across reboots. */
     private fun observePresence(address: String) {
         val cdm = cdm ?: return
         runCatching {
@@ -131,7 +135,9 @@ class CompanionLink(private val context: Context, private val settings: Settings
                     val id = myAssociationId(address) ?: return
                     cdm.startObservingDevicePresence(ObservingDevicePresenceRequest.Builder().setAssociationId(id).build())
                 }
-                else -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> @Suppress("DEPRECATION") cdm.startObservingDevicePresence(address)
+                // Android 11 has no presence events. The association still lets the app run and reconnect in the background.
+                else -> Unit
             }
         }.onFailure { Log.w(TAG, "presence observing failed: $it") }
     }
