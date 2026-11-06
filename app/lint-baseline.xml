@@ -140,7 +140,7 @@
         errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="630"
+            line="616"
             column="80"/>
     </issue>
 
@@ -162,18 +162,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="400"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="ComposableNaming"
-        message="Composable functions with a return type should start with a lowercase letter"
-        errorLine1="internal fun FamilySection("
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="194"
+            line="405"
             column="14"/>
     </issue>
 
@@ -184,7 +173,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="536"
+            line="522"
             column="13"/>
     </issue>
 
@@ -261,7 +250,7 @@
         errorLine2="                                                                   ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="646"
+            line="632"
             column="68"/>
     </issue>
 
@@ -272,7 +261,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="89"
+            line="108"
             column="5"/>
     </issue>
 
@@ -316,7 +305,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="793"
+            line="828"
             column="29"/>
     </issue>
 
@@ -371,7 +360,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="304"
+            line="303"
             column="49"/>
     </issue>
 
@@ -382,7 +371,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="305"
+            line="304"
             column="47"/>
     </issue>
 
@@ -393,7 +382,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="336"
+            line="320"
             column="29"/>
     </issue>
 
@@ -404,7 +393,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="454"
+            line="456"
             column="47"/>
     </issue>
 
@@ -415,7 +404,7 @@
         errorLine2="                                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="455"
+            line="457"
             column="45"/>
     </issue>
 
@@ -426,7 +415,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="140"
+            line="141"
             column="63"/>
     </issue>
 
@@ -437,7 +426,7 @@
         errorLine2="                                                           ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="144"
+            line="145"
             column="60"/>
     </issue>
 
@@ -591,7 +580,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="276"
+            line="367"
             column="5"/>
     </issue>
 
@@ -602,7 +591,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="284"
+            line="375"
             column="5"/>
     </issue>
 
@@ -613,7 +602,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="327"
+            line="418"
             column="15"/>
     </issue>
 
@@ -697,17 +686,6 @@
     <issue
         id="ComposeCompositionLocalUsage"
         message="`CompositionLocal`s are implicit dependencies and creating new ones should be avoided.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#compositionlocals for more information."
-        errorLine1="val LocalEdgeOverride = staticCompositionLocalOf { EdgeOverride() }"
-        errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/EdgeCard.kt"
-            line="52"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeCompositionLocalUsage"
-        message="`CompositionLocal`s are implicit dependencies and creating new ones should be avoided.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#compositionlocals for more information."
         errorLine1="/** The overlay host, provided at the app&apos;s root. */"
         errorLine2="^">
         <location
@@ -745,7 +723,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="152"
+            line="157"
             column="1"/>
     </issue>
 
@@ -756,7 +734,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="303"
+            line="308"
             column="1"/>
     </issue>
 
@@ -800,7 +778,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="143"
+            line="142"
             column="1"/>
     </issue>
 
@@ -811,7 +789,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="149"
+            line="148"
             column="1"/>
     </issue>
 
@@ -866,7 +844,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="84"
+            line="82"
             column="5"/>
     </issue>
 
@@ -954,7 +932,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="424"
+            line="429"
             column="5"/>
     </issue>
 
@@ -965,7 +943,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="370"
+            line="375"
             column="5"/>
     </issue>
 
@@ -976,7 +954,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="133"
+            line="132"
             column="5"/>
     </issue>
 
@@ -987,7 +965,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="288"
+            line="287"
             column="5"/>
     </issue>
 
@@ -998,7 +976,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="100"
+            line="104"
             column="5"/>
     </issue>
 
@@ -1009,7 +987,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="152"
+            line="149"
             column="5"/>
     </issue>
 
@@ -1020,7 +998,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="168"
+            line="165"
             column="5"/>
     </issue>
 
@@ -1031,7 +1009,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="254"
+            line="248"
             column="5"/>
     </issue>
 
@@ -1042,7 +1020,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="294"
+            line="288"
             column="5"/>
     </issue>
 
@@ -1207,7 +1185,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="101"
+            line="102"
             column="5"/>
     </issue>
 
@@ -1284,7 +1262,7 @@
         errorLine2="                            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="781"
+            line="785"
             column="29"/>
     </issue>
 
@@ -1295,7 +1273,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="782"
+            line="786"
             column="30"/>
     </issue>
 
@@ -1306,19 +1284,8 @@
         errorLine2="                                 ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="783"
+            line="787"
             column="34"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.RightNow -> BodyList("
-        errorLine2="                              ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="804"
-            column="31"/>
     </issue>
 
     <issue
@@ -1328,52 +1295,8 @@
         errorLine2="                                             ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="818"
+            line="811"
             column="46"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="            else LastNightCard(s, ctx.firstNights, onOpenSleep, stuck = ctx.stuck)"
-        errorLine2="                 ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="819"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.HeartRate -> HeartCard("
-        errorLine2="                               ~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="821"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Activity -> ActivityCard("
-        errorLine2="                              ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="827"
-            column="31"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Recovery -> RecoveryEarlierCard(ctx.recoveryShown, { openScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, failure = ctx.recoveryFailure, onRetry = onRetryRecovery)"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="831"
-            column="31"/>
     </issue>
 
     <issue
@@ -1390,22 +1313,11 @@
     <issue
         id="ComposeModifierReused"
         message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        ) else LoadList("
-        errorLine2="               ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="857"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Week -> WeekCard(s, ctx.workouts, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })"
+        errorLine1="        TodayCard.Week -> WeekCard(s, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })"
         errorLine2="                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="880"
+            line="860"
             column="27"/>
     </issue>
 
@@ -1416,19 +1328,19 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="882"
+            line="862"
             column="31"/>
     </issue>
 
     <issue
         id="ComposeModifierReused"
         message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.StartWorkout -> StartWorkoutStrip(ctx.usualSport, onStartSport)"
-        errorLine2="                                  ~~~~~~~~~~~~~~~~~">
+        errorLine1="        TodayCard.StartWorkout -> if (ctx.moment != Moment.Night) StartWorkoutStrip(ctx.usualSport, onStartSport)"
+        errorLine2="                                                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="883"
-            column="35"/>
+            line="864"
+            column="67"/>
     </issue>
 
     <issue
@@ -1438,7 +1350,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="208"
+            line="204"
             column="5"/>
     </issue>
 
@@ -1449,7 +1361,7 @@
         errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/gallery/ComponentGalleryActivity.kt"
-            line="316"
+            line="319"
             column="80"/>
     </issue>
 
@@ -1460,7 +1372,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/gallery/ComponentGalleryActivity.kt"
-            line="330"
+            line="332"
             column="5"/>
     </issue>
 
@@ -1493,41 +1405,41 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="226"
+            line="253"
             column="5"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="    c: Recovery.ChargeDay?, day: LongRange, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~">
+        errorLine1="    c: Recovery.ChargeDay?, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="277"
-            column="45"/>
+            line="346"
+            column="29"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) ="
-        errorLine2="                                                                                     ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun BreathingCard(rec: org.openstrap.app.data.RecoveryResult?, size: PictureSize, modifier: Modifier, onInfo: (() -> Unit)?) {"
+        errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="315"
-            column="86"/>
+            line="317"
+            column="91"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun NapsCard(state: DayUiState, modifier: Modifier, onOpen: () -> Unit) {"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun NapsCard(state: DayUiState, size: PictureSize, modifier: Modifier, onOpen: () -> Unit) {"
+        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="327"
-            column="41"/>
+            line="337"
+            column="60"/>
     </issue>
 
     <issue
@@ -1537,7 +1449,7 @@
         errorLine2="                                                                                                       ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="464"
+            line="462"
             column="104"/>
     </issue>
 
@@ -1548,7 +1460,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="498"
+            line="496"
             column="84"/>
     </issue>
 
@@ -1559,19 +1471,19 @@
         errorLine2="                                                                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="565"
+            line="563"
             column="108"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {"
-        errorLine2="                                                                                            ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun AfterHero(ctx: TodayContext, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {"
+        errorLine2="                                                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="592"
-            column="93"/>
+            line="591"
+            column="73"/>
     </issue>
 
     <issue
@@ -1691,7 +1603,7 @@
         errorLine2="                                                                                 ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="496"
+            line="498"
             column="82"/>
     </issue>
 
@@ -1823,7 +1735,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="532"
+            line="523"
             column="1"/>
     </issue>
 
@@ -1834,18 +1746,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="400"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="ComposeNamingLowercase"
-        message="Composable functions that return a value should start with a lowercase letter. While useful and accepted outside of @Composable functions, this factory function convention has drawbacks that set inappropriate expectations for callers when used with @Composable functions.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#naming-composable-functions-properly for more information."
-        errorLine1="internal fun FamilySection("
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="194"
+            line="405"
             column="14"/>
     </issue>
 
@@ -1856,7 +1757,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="536"
+            line="522"
             column="13"/>
     </issue>
 
@@ -1878,7 +1779,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="384"
+            line="389"
             column="22"/>
     </issue>
 
@@ -1944,7 +1845,7 @@
         errorLine2="                     ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="645"
+            line="631"
             column="22"/>
     </issue>
 
@@ -1955,7 +1856,7 @@
         errorLine2="                       ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="85"
+            line="104"
             column="24"/>
     </issue>
 
@@ -1988,7 +1889,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="734"
+            line="769"
             column="11"/>
     </issue>
 
@@ -1999,7 +1900,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="788"
+            line="823"
             column="13"/>
     </issue>
 
@@ -2010,7 +1911,7 @@
         errorLine2="                                                                                              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="788"
+            line="823"
             column="95"/>
     </issue>
 
@@ -2021,7 +1922,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="215"
+            line="224"
             column="13"/>
     </issue>
 
@@ -2076,7 +1977,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="86"
+            line="84"
             column="13"/>
     </issue>
 
@@ -2087,7 +1988,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="245"
+            line="241"
             column="19"/>
     </issue>
 
@@ -2098,7 +1999,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="245"
+            line="241"
             column="51"/>
     </issue>
 
@@ -2109,7 +2010,7 @@
         errorLine2="                                                ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="257"
+            line="253"
             column="49"/>
     </issue>
 
@@ -2120,7 +2021,7 @@
         errorLine2="                                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="392"
+            line="388"
             column="47"/>
     </issue>
 
@@ -2186,7 +2087,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="111"
+            line="131"
             column="15"/>
     </issue>
 
@@ -2197,7 +2098,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="133"
+            line="154"
             column="17"/>
     </issue>
 
@@ -2208,18 +2109,18 @@
         errorLine2="                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="205"
+            line="242"
             column="31"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float>? is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `usual: ImmutableList&lt;Float>?` or create an `@Immutable` wrapper for this class: `@Immutable data class UsualList(val items: List&lt;Float>?)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun StepsGlow(state: DayUiState, usual: List&lt;Float>?, tag: TitleTag?, onClick: () -> Unit) {"
+        errorLine1="private fun StepsGlow(state: DayUiState, usual: List&lt;Float>?, history: ActivityHistory, tag: TitleTag?, onClick: () -> Unit) {"
         errorLine2="                                                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="249"
+            line="287"
             column="49"/>
     </issue>
 
@@ -2230,7 +2131,7 @@
         errorLine2="                              ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="285"
+            line="329"
             column="31"/>
     </issue>
 
@@ -2241,7 +2142,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="347"
+            line="515"
             column="54"/>
     </issue>
 
@@ -2252,7 +2153,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="410"
+            line="586"
             column="32"/>
     </issue>
 
@@ -2439,7 +2340,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="248"
+            line="253"
             column="35"/>
     </issue>
 
@@ -2450,7 +2351,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="248"
+            line="253"
             column="72"/>
     </issue>
 
@@ -2461,7 +2362,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="130"
+            line="132"
             column="15"/>
     </issue>
 
@@ -2472,7 +2373,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="135"
+            line="137"
             column="12"/>
     </issue>
 
@@ -2483,7 +2384,7 @@
         errorLine2="            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="137"
+            line="139"
             column="13"/>
     </issue>
 
@@ -2494,7 +2395,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="263"
+            line="268"
             column="29"/>
     </issue>
 
@@ -2505,7 +2406,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="284"
+            line="289"
             column="37"/>
     </issue>
 
@@ -2516,7 +2417,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="312"
+            line="317"
             column="14"/>
     </issue>
 
@@ -2527,7 +2428,7 @@
         errorLine2="                                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="655"
+            line="664"
             column="42"/>
     </issue>
 
@@ -2538,7 +2439,7 @@
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="715"
+            line="724"
             column="34"/>
     </issue>
 
@@ -2549,7 +2450,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="381"
+            line="533"
             column="34"/>
     </issue>
 
@@ -2560,7 +2461,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="212"
+            line="220"
             column="37"/>
     </issue>
 
@@ -2571,7 +2472,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="144"
+            line="143"
             column="15"/>
     </issue>
 
@@ -2582,7 +2483,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="196"
+            line="195"
             column="17"/>
     </issue>
 
@@ -2604,7 +2505,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="290"
+            line="289"
             column="15"/>
     </issue>
 
@@ -2615,7 +2516,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="295"
+            line="294"
             column="19"/>
     </issue>
 
@@ -2626,7 +2527,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="296"
+            line="295"
             column="12"/>
     </issue>
 
@@ -2637,7 +2538,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="347"
+            line="346"
             column="32"/>
     </issue>
 
@@ -2648,7 +2549,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="84"
+            line="83"
             column="15"/>
     </issue>
 
@@ -2659,7 +2560,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="179"
+            line="169"
             column="15"/>
     </issue>
 
@@ -2670,7 +2571,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="332"
+            line="316"
             column="13"/>
     </issue>
 
@@ -2681,7 +2582,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="332"
+            line="316"
             column="72"/>
     </issue>
 
@@ -2692,7 +2593,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="385"
+            line="369"
             column="37"/>
     </issue>
 
@@ -2703,7 +2604,7 @@
         errorLine2="                                                                 ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="408"
+            line="392"
             column="66"/>
     </issue>
 
@@ -2714,7 +2615,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="431"
+            line="415"
             column="34"/>
     </issue>
 
@@ -2725,7 +2626,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="103"
+            line="107"
             column="16"/>
     </issue>
 
@@ -2736,7 +2637,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="104"
+            line="108"
             column="15"/>
     </issue>
 
@@ -2747,7 +2648,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="294"
+            line="298"
             column="32"/>
     </issue>
 
@@ -2758,7 +2659,7 @@
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="400"
+            line="405"
             column="59"/>
     </issue>
 
@@ -2769,7 +2670,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="462"
+            line="467"
             column="33"/>
     </issue>
 
@@ -2780,7 +2681,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="74"
+            line="71"
             column="49"/>
     </issue>
 
@@ -3066,7 +2967,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="310"
+            line="312"
             column="32"/>
     </issue>
 
@@ -3077,7 +2978,7 @@
         errorLine2="                                                                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="336"
+            line="338"
             column="85"/>
     </issue>
 
@@ -3088,7 +2989,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="336"
+            line="338"
             column="56"/>
     </issue>
 
@@ -3165,7 +3066,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMind.kt"
-            line="60"
+            line="78"
             column="13"/>
     </issue>
 
@@ -3253,7 +3154,7 @@
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="416"
+            line="418"
             column="28"/>
     </issue>
 
@@ -3264,7 +3165,7 @@
         errorLine2="                                                         ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="416"
+            line="418"
             column="58"/>
     </issue>
 
@@ -3275,7 +3176,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="449"
+            line="451"
             column="31"/>
     </issue>
 
@@ -3286,7 +3187,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="449"
+            line="451"
             column="63"/>
     </issue>
 
@@ -3297,7 +3198,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="449"
+            line="451"
             column="91"/>
     </issue>
 
@@ -3308,7 +3209,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="510"
+            line="512"
             column="51"/>
     </issue>
 
@@ -3429,7 +3330,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="111"
+            line="112"
             column="19"/>
     </issue>
 
@@ -3440,7 +3341,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="112"
+            line="113"
             column="12"/>
     </issue>
 
@@ -3451,7 +3352,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="119"
+            line="120"
             column="12"/>
     </issue>
 
@@ -3462,18 +3363,18 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="160"
+            line="171"
             column="30"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;RecoveryWeekDay> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `week: ImmutableList&lt;RecoveryWeekDay>` or create an `@Immutable` wrapper for this class: `@Immutable data class WeekList(val items: List&lt;RecoveryWeekDay>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun Week(week: List&lt;RecoveryWeekDay>, column: Float, density: Float) {"
+        errorLine1="private fun Week(week: List&lt;RecoveryWeekDay>, usual: ClosedFloatingPointRange&lt;Float>?, column: Float, density: Float) {"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="171"
+            line="182"
             column="24"/>
     </issue>
 
@@ -3484,7 +3385,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ScoreDetail.kt"
-            line="70"
+            line="72"
             column="15"/>
     </issue>
 
@@ -3572,7 +3473,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="456"
+            line="459"
             column="13"/>
     </issue>
 
@@ -3583,7 +3484,7 @@
         errorLine2="                                                                     ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="456"
+            line="459"
             column="70"/>
     </issue>
 
@@ -3594,7 +3495,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="664"
+            line="679"
             column="61"/>
     </issue>
 
@@ -3605,7 +3506,7 @@
         errorLine2="                                                                                      ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="664"
+            line="679"
             column="87"/>
     </issue>
 
@@ -3616,7 +3517,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/SleepPanels.kt"
-            line="146"
+            line="169"
             column="11"/>
     </issue>
 
@@ -3627,7 +3528,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="208"
+            line="206"
             column="27"/>
     </issue>
 
@@ -3638,7 +3539,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="259"
+            line="257"
             column="29"/>
     </issue>
 
@@ -3649,7 +3550,7 @@
         errorLine2="                                                                                                                             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="195"
+            line="191"
             column="126"/>
     </issue>
 
@@ -3660,7 +3561,7 @@
         errorLine2="                                                               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="195"
+            line="191"
             column="64"/>
     </issue>
 
@@ -3671,7 +3572,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="195"
+            line="191"
             column="91"/>
     </issue>
 
@@ -3682,7 +3583,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="295"
+            line="283"
             column="30"/>
     </issue>
 
@@ -3693,7 +3594,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="342"
+            line="330"
             column="31"/>
     </issue>
 
@@ -3704,7 +3605,7 @@
         errorLine2="                                ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="392"
+            line="380"
             column="33"/>
     </issue>
 
@@ -3715,7 +3616,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="431"
+            line="419"
             column="34"/>
     </issue>
 
@@ -3726,7 +3627,7 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="536"
+            line="522"
             column="39"/>
     </issue>
 
@@ -3737,7 +3638,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="581"
+            line="567"
             column="37"/>
     </issue>
 
@@ -3748,7 +3649,7 @@
         errorLine2="                                       ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="622"
+            line="608"
             column="40"/>
     </issue>
 
@@ -3759,7 +3660,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="646"
+            line="632"
             column="11"/>
     </issue>
 
@@ -3770,7 +3671,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="673"
+            line="659"
             column="33"/>
     </issue>
 
@@ -3781,7 +3682,7 @@
         errorLine2="                                               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="107"
+            line="126"
             column="48"/>
     </issue>
 
@@ -3792,7 +3693,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="220"
+            line="239"
             column="34"/>
     </issue>
 
@@ -3803,7 +3704,7 @@
         errorLine2="                                                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="380"
+            line="563"
             column="83"/>
     </issue>
 
@@ -3814,19 +3715,8 @@
         errorLine2="                                                                                                               ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="458"
+            line="727"
             column="112"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;org.openstrap.app.data.WorkoutAnalysis> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `workouts: ImmutableList&lt;org.openstrap.app.data.WorkoutAnalysis>` or create an `@Immutable` wrapper for this class: `@Immutable data class WorkoutsList(val items: List&lt;org.openstrap.app.data.WorkoutAnalysis>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    state: DayUiState, workouts: List&lt;org.openstrap.app.data.WorkoutAnalysis>, history: DailyHistory?, modifier: Modifier = Modifier,"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="517"
-            column="34"/>
     </issue>
 
     <issue
@@ -3836,7 +3726,7 @@
         errorLine2="                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="605"
+            line="879"
             column="26"/>
     </issue>
 
@@ -3847,7 +3737,7 @@
         errorLine2="                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="560"
+            line="551"
             column="75"/>
     </issue>
 

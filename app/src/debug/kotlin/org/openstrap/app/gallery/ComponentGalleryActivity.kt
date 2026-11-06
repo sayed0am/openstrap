@@ -22,10 +22,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,7 +52,6 @@ import org.openstrap.app.ui.theme.OpenStrapTheme
 import androidx.compose.foundation.layout.Box
 import org.openstrap.app.data.Phase
 import org.openstrap.app.data.db.AppWorkout
-import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.presentation.WorkoutWords
 import org.openstrap.app.ui.glow.LineDots
@@ -66,8 +61,6 @@ import org.openstrap.app.ui.glow.StatusDot
 import org.openstrap.app.ui.glow.TrendBad
 import org.openstrap.app.ui.glow.TrendGood
 import org.openstrap.app.ui.glow.live.EffortBar
-import org.openstrap.app.ui.glow.live.LiveControls
-import org.openstrap.app.ui.glow.live.LiveMindScreen
 import org.openstrap.app.ui.glow.live.MindRing
 import org.openstrap.app.ui.glow.live.MovingTime
 import org.openstrap.app.ui.glow.live.RestRing
@@ -252,7 +245,7 @@ private val LiveRecent = (0 until 120).map { i ->
 private val LiveZones = ZoneSeconds(listOf(120, 420, 780, 180, 34))
 
 /** A calm session's heart rate settling from the high 80s, as the mind screen draws it. */
-private val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
+internal val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
 
 /**
  * The live workout's parts (workouts spec 2.3) with fixed numbers: the heart card, the bars, rings and lines the kinds'
@@ -295,24 +288,6 @@ private fun LiveParts(modifier: Modifier = Modifier) {
         }
         Label("Moving time")
         MovingTime { LIVE_ACTIVE }
-    }
-}
-
-/**
- * The whole Mind and body live screen, a yoga session ten minutes in, for its dimming (`--es section mind`): it dims
- * ten seconds after the last touch, all but the time.
- */
-@Composable
-private fun MindLive() {
-    val start = remember { System.currentTimeMillis() / 1000 - 600 }
-    val run = WorkoutState.Recording(AppWorkout(start = start, end = null, sportType = 60), maxHeartRate = 190)
-    val recent = MindLine.mapIndexed { i, bpm -> start + 600 - (MindLine.size - i) * 5L to (bpm ?: 0f).toInt() }
-    val none = {}
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
-        LiveMindScreen(
-            run, 64, recent, ConnectionState.Connected(batteryPercent = 82, firmware = null), WindowInsets.systemBars.asPaddingValues(),
-            LiveControls(none, none, none, none, none, none),
-        )
     }
 }
 

@@ -47,6 +47,9 @@ typealias Rim = org.openstrap.app.ui.glow.draw.Rim
 @Immutable
 data class CardOverride(val plain: Boolean = false)
 
+// A layout's say over whichever card it places, several composables down: passing it would thread a parameter
+// through every card, for the few a screen moves to another look.
+@Suppress("CompositionLocalAllowlist", "ComposeCompositionLocalUsage")
 val LocalCardOverride = staticCompositionLocalOf { CardOverride() }
 
 private val CardShape = GlowLayout.CardShape
