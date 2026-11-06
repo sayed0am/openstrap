@@ -1,6 +1,6 @@
 # Readiness and Energy
 
-OpenStrap's own recovery model. Code, in `app/src/main/kotlin/org/openstrap/app/data/`: the pure model is one file per part, `ReadinessModel.kt` (Readiness), `ChargeModel.kt` (Energy), `LoadModel.kt` (training load) and `MaxHrModel.kt` (maximum heart rate), with the inputs, results and constants they share in `Recovery.kt`. `RecoveryEngine.kt` feeds them from the database (database → model). Tests: `app/src/test/.../RecoveryTest.kt`. Constant names below match the code.
+unstrap's own recovery model. Code, in `app/src/main/kotlin/org/openstrap/app/data/`: the pure model is one file per part, `ReadinessModel.kt` (Readiness), `ChargeModel.kt` (Energy), `LoadModel.kt` (training load) and `MaxHrModel.kt` (maximum heart rate), with the inputs, results and constants they share in `Recovery.kt`. `RecoveryEngine.kt` feeds them from the database (database → model). Tests: `app/src/test/.../RecoveryTest.kt`. Constant names below match the code.
 
 Planned changes and their evidence: [evidence-review.md](evidence-review.md).
 
@@ -124,7 +124,7 @@ Weights (a design choice, to be checked with the backtest) add up to 0.97: auton
 
 The strap's method is unknown and may change with firmware, and a baseline that mixes two definitions measures the switch, not the body. So:
 
-1. Before 7 valid own nights (and on a withheld day), the strap's Readiness and its parts show as "Strap's estimate". They never enter OpenStrap's score. The strap's score carries that label rather than a rating word. OpenStrap's score and contributors are rated in its four bands (85 / 70 / 55).
+1. Before 7 valid own nights (and on a withheld day), the strap's Readiness and its parts show as "Strap's estimate". They never enter unstrap's score. The strap's score carries that label rather than a rating word. unstrap's score and contributors are rated in its four bands (85 / 70 / 55).
 2. On a night where our own value fails the validity rule, the strap's `sleepHrv` / `sleepRestingHr` show (and feed the alerts), flagged "strap fallback", and stay out of the baseline.
 3. A data-quality note appears when own and strap differ by more than `HRV_QA_FRACTION` = 15 % (HRV) or `RHR_QA_BPM` = 3 bpm (resting HR).
 
@@ -192,7 +192,7 @@ Each minute gets a state, following Firstbeat's stress/recovery method (*Stress 
 
 `BASE_DRAIN` = 0.04 (about 2.4/h) is the floor under every minute that is doing something: movement, stress, exercise recovery, the stress exclusion. "Moving" is `moving`, the same signal daily load uses: the strap counted 1–250 steps that minute.
 
-**No drain at rest.** Zepp's physical pool drains only with movement and HRR over 10 %; at rest it recharges slowly. A seated day falls through its mental pool, which drains while stress is 24 or more, and ever more slowly once the pool is under half (native 03 §4.3–4.4). OpenStrap has one pool, so:
+**No drain at rest.** Zepp's physical pool drains only with movement and HRR over 10 %; at rest it recharges slowly. A seated day falls through its mental pool, which drains while stress is 24 or more, and ever more slowly once the pool is under half (native 03 §4.3–4.4). unstrap has one pool, so:
 
 * A calm, still minute (Relax) has no drain, only its slow recharge, as Zepp's stress under 24 drains neither pool.
 * Relax recharges at `RELAX_K` = 0.00015 of the headroom a minute: 85 → 86 over 8 calm hours, 60 → 62.8. Zepp's toy replay of 8 hours at a desk at stress 20 goes from 85 to 86 (native 03 §11): its physical pool barely moves between 80 and 100 at rest and its mental pool gains a little. The earlier ¼ of light sleep (0.0012) gave 85 → 91.6, so a calm day climbed; now it holds and sleep, about 30 times faster, is what fills Energy.
@@ -208,7 +208,7 @@ Each minute gets a state, following Firstbeat's stress/recovery method (*Stress 
 
 Future: learn the user's own no-wear drift from their quiet, awake, worn minutes over about 30 days, as Zepp does (native 03 §4.7), and keep the defaults until then.
 
-**Body-signal Alert.** On a night in Alert ([Body signals off baseline](#body-signals-off-baseline)), from that sleep's start until the next main sleep starts, recharge (Sleep, Relax) is × `ALERT_RECHARGE` = 0.5 and every drain × `ALERT_DRAIN` = 1.5. These are the ends of Zepp's health-alarm multipliers (native 03 §4.2, §8.2), which apply from the sleep-start minute too. Zepp ramps them with how far over its one-night threshold (z ≥ 1.66) the night is; OpenStrap's Alert already needs persistence or two signal families, so it takes the full effect. Watch doesn't touch Energy: it is one signal for one night, shown in the app only and leaving Readiness uncapped, and Zepp's multipliers just under its threshold are within 5 % of 1. The engine runs the body-signal rule over every night it loaded (it only looks backwards, so each night gets the state Readiness gave it) and passes each main sleep's start and state in `ChargeParams.bodySignals`.
+**Body-signal Alert.** On a night in Alert ([Body signals off baseline](#body-signals-off-baseline)), from that sleep's start until the next main sleep starts, recharge (Sleep, Relax) is × `ALERT_RECHARGE` = 0.5 and every drain × `ALERT_DRAIN` = 1.5. These are the ends of Zepp's health-alarm multipliers (native 03 §4.2, §8.2), which apply from the sleep-start minute too. Zepp ramps them with how far over its one-night threshold (z ≥ 1.66) the night is; unstrap's Alert already needs persistence or two signal families, so it takes the full effect. Watch doesn't touch Energy: it is one signal for one night, shown in the app only and leaving Readiness uncapped, and Zepp's multipliers just under its threshold are within 5 % of 1. The engine runs the body-signal rule over every night it loaded (it only looks backwards, so each night gets the state Readiness gave it) and passes each main sleep's start and state in `ChargeParams.bodySignals`.
 
 ### Stress exclusion around workouts
 
@@ -230,7 +230,7 @@ The strap's stress score is the same one Zepp shows. Zepp labels it relaxed 1–
 * *T* is 60 until there are `MIN_STRESS_DAYS` = 3 days and at least 60 calm readings.
 * The Recovery screen states *T* and the calm level it came from.
 
-Zepp does the same job differently. It computes a stress threshold on the phone or in its cloud and writes it to the strap (Readiness module 0x49, opcode `0E`; `j560.java`). The strap only stores what Zepp gives it. A strap used only with OpenStrap returns no records (`0C` → `0d 00 00`, verified on hardware), so there is nothing to read back.
+Zepp does the same job differently. It computes a stress threshold on the phone or in its cloud and writes it to the strap (Readiness module 0x49, opcode `0E`; `j560.java`). The strap only stores what Zepp gives it. A strap used only with unstrap returns no records (`0C` → `0d 00 00`, verified on hardware), so there is nothing to read back.
 
 ### Calibration targets (checked by unit tests)
 
@@ -255,7 +255,7 @@ Zepp does the same job differently. It computes a stress threshold on the phone 
 
 * The charge at waking and now. After a night with the strap off, a small note: "Strap off overnight, Energy estimated.", and the start value is labelled as such.
 * What was recharged, and what was drained by movement, by physiological stress, and by simply being awake. This is our version of Zepp's physical/mental split. The stress drain is labelled "physiological stress (estimate)", not mental: consumer stress scores separate rest from lab stress tasks but barely track self-reported daily stress (Rosenbach et al. 2025), and Firstbeat's support is manufacturer-curated.
-* Not logged: Zepp's BioCharge `totalCharge`. A strap used only with OpenStrap returns nothing from the Readiness module's record command, and no channel for BioCharge results is known, so there is nothing to fit `SLEEP_K`, `BASE_DRAIN`, `REST_DRAIN` or the drains to yet. A full EPOC model and separate physical and mental pools are deferred until there is a calibration target.
+* Not logged: Zepp's BioCharge `totalCharge`. A strap used only with unstrap returns nothing from the Readiness module's record command, and no channel for BioCharge results is known, so there is nothing to fit `SLEEP_K`, `BASE_DRAIN`, `REST_DRAIN` or the drains to yet. A full EPOC model and separate physical and mental pools are deferred until there is a calibration target.
 
 ## Training load (TRIMP)
 
@@ -266,11 +266,11 @@ Code: `LoadModel.kt`.
   * **Workout:** every minute overlapping a stored workout, phone (`app_workout`, shown start to end less its pauses, `activeRanges`) or strap (`workout`), counts whatever its intensity, asleep or not. Each minute counts once, so a phone and a strap workout over the same time aren't added twice. The minute's HR is the workout's own recording (mean of its samples in that minute, the higher where two overlap; `withWorkoutHeartRate`), else the all-day value.
   * **Everyday:** any other minute counts only when awake, the strap counted a step that minute (`moving`: steps 1–250), and either x ≥ `LOAD_MIN_HRR` = 0.35 (Zepp's cut-off) or, with ≥ `LOAD_WALK_STEPS` = 60 steps that minute, x ≥ `LOAD_WALK_HRR` = 0.20 (`everydayMinute`); and at least `LOAD_RUN_MINUTES` = 3 of the last `LOAD_RUN_WINDOW` = 5 minutes (itself included) pass too, so isolated PPG spikes don't count. All at full TRIMP.
   * **Why the walking exception:** on a real database, sustained walking at about 100 steps a minute sat at HRR 0.24–0.34, so 0.35 alone dropped whole walks (42 minutes on one day). 60 steps a minute is the bottom of the cadence MET scale used for calories; below it, a few steps around a desk keep the 0.35 line. Before this, every awake minute at x ≥ 0.2 counted, moving or not, so a seated, raised heart rate added load.
-  * **Why steps:** Zepp gates on a per-minute activity value > 5. In OpenStrap's stored activity records the `mode` (`kind`) was 0 for every awake minute, and `intensity` was above 5 in 79 % of minutes with no step, so neither separates sitting from walking.
+  * **Why steps:** Zepp gates on a per-minute activity value > 5. In unstrap's stored activity records the `mode` (`kind`) was 0 for every awake minute, and `intensity` was above 5 in 79 % of minutes with no step, so neither separates sitting from walking.
   * **Without steps:** a minute outside workouts also counts when it is part of a sustained run (`sustainedRuns`): `SUSTAINED_EFFORT_MINUTES` = 10 or more awake minutes in a row at x ≥ `EXERCISE_HRR` = 0.30, outside the stress exclusion (a workout and its 20 minutes after). It is the rule Energy drains as Exercise by, so unrecorded cycling or rowing counts in both or neither. All of a run counts, its first minutes too. Weights between sets rarely make a run, so record a workout for them.
 * No HR-load method is validated on free-living minutes, and even in sessions Banister's test–retest CV is 15.6 % (Wallace et al. 2014); it's the least-bad choice (Lucia needs lab thresholds, Edwards' zones start at 50 % HRmax, which walking crosses).
 * Days with fewer than `LOAD_MIN_WORN_MINUTES` = 8 h of heart-rate data are left out of the load history (`LOAD_DAYS` = 90 days of it), unless a recorded workout put load in them (`loadDayCounts`): the workout is most of such a day's load, and leaving it out dropped it from fitness and fatigue.
-* TRIMP is the only daily load. A workout's EPOC (the strap's sport effect, or OpenStrap's for phone workouts) is shown on the workout as "Load" and never enters the daily total, CTL/ATL or the ratio.
+* TRIMP is the only daily load. A workout's EPOC (the strap's sport effect, or unstrap's for phone workouts) is shown on the workout as "Load" and never enters the daily total, CTL/ATL or the ratio.
 
 ### Load screen (Activity → Training load; descriptive)
 

@@ -1,17 +1,17 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
-    <img src="docs/assets/logo-light.png" alt="OpenStrap logo" height="56">
+    <img src="docs/assets/logo-light.png" alt="unstrap logo" height="56">
   </picture>
 </p>
 
-# OpenStrap
+# unstrap
 
 **Answers, not dashboards.**
 
 Wake up to how recovered you are. Train when your body is ready. Wind down when it's time.
 
-OpenStrap is a calm Android app for the **Amazfit Helio Strap**. Other apps hand you dashboards to read. OpenStrap tells you how you slept, how ready you are and what your day needs, in plain words. It replaces the Zepp app, syncs your sleep, heart rate, HRV, SpO₂, stress and workouts, and keeps everything on your phone.
+unstrap is a calm Android app for the **Amazfit Helio Strap**. Other apps hand you dashboards to read. unstrap tells you how you slept, how ready you are and what your day needs, in plain words. It replaces the Zepp app, syncs your sleep, heart rate, HRV, SpO₂, stress and workouts, and keeps everything on your phone.
 
 <p align="center">
   <img src="docs/screenshots/today.png" width="19%" alt="Today in the morning: Recovery 74, and how your body looks against your normal">
@@ -25,7 +25,7 @@ OpenStrap is a calm Android app for the **Amazfit Helio Strap**. Other apps hand
 
 ## What it feels like
 
-Most health apps hand you a wall of numbers. OpenStrap tries to answer one question at a time, in plain words.
+Most health apps hand you a wall of numbers. unstrap tries to answer one question at a time, in plain words.
 
 - **Today changes with your day.** The app has moments: waking up, midday, your usual workout time, after a workout, evening and night. Each one leads with what matters then. In the morning it's how you slept and how recovered you are. Before your usual run it's whether you're ready for effort. In the evening it's the day in one sentence and when to head to bed.
 - **Sentences first, numbers second.** "Recovered enough for your usual training" comes before the 74. Every number is compared with your own normal, not a stranger's.
@@ -48,24 +48,24 @@ I use it every day with one strap on one Android 16 phone. Other phones and firm
 
 ## Install
 
-Download the APK from the [latest release](https://github.com/sayed0am/openstrap/releases/latest) and open it on your phone (Android 9 or newer). After that, OpenStrap tells you when a new version is out, shows what changed, and installs it from **You → Updates**. Updates keep your data.
+Download the APK from the [latest release](https://github.com/sayed0am/unstrap/releases/latest) and open it on your phone (Android 11 or newer). After that, unstrap tells you when a new version is out, shows what changed, and installs it from **You → Updates**. Updates keep your data.
 
 To pair, you need your strap's auth key:
 
-1. **Link the strap in the Zepp app once**, with an email and password account. (Google or Apple sign-in won't work inside OpenStrap, but you can add an email to your Zepp account.)
+1. **Link the strap in the Zepp app once**, with an email and password account. (Google or Apple sign-in won't work inside unstrap, but you can add an email to your Zepp account.)
 2. **Put the strap on its charger** near the phone and force-stop Zepp. Don't unlink the strap in Zepp, because that wipes the key.
-3. In OpenStrap, go to **You → your strap → Sign in with Zepp**, check the strap it finds, and tap **Pair this strap**.
+3. In unstrap, go to **You → your strap → Sign in with Zepp**, check the strap it finds, and tap **Pair this strap**.
 
 Can't add an email? Get the key on a computer with the [Gadgetbridge guide](https://gadgetbridge.org/basics/pairing/huami-xiaomi-server/#on-a-computer), then tap **Enter it yourself**. Treat the key like a password.
 
 ## Privacy
 
-No cloud for your health data, no analytics, no trackers. OpenStrap only goes online when you ask it to (to sign in with Zepp, to check for firmware, or to load map tiles for a GPS workout), and once a day to ask GitHub whether a new OpenStrap is out, which you can turn off. [privacy.md](docs/privacy.md) lists every request and every permission, and why.
+No cloud for your health data, no analytics, no trackers. unstrap only goes online when you ask it to (to sign in with Zepp, to check for firmware, or to load map tiles for a GPS workout), and once a day to ask GitHub whether a new unstrap is out, which you can turn off. [privacy.md](docs/privacy.md) lists every request and every permission, and why.
 
 ## Good to know
 
 - **The first pairing still needs Zepp.** The strap only accepts a first pairing Zepp's server has signed. After that, everything is local.
-- **Scores won't match Zepp's.** OpenStrap uses its own model, written out in plain words in [calculations.md](docs/algorithms/calculations.md), with the research behind it in [evidence-review.md](docs/algorithms/evidence-review.md). Recovery needs about a week of nights before it shows a score, and settles over four weeks.
+- **Scores won't match Zepp's.** unstrap uses its own model, written out in plain words in [calculations.md](docs/algorithms/calculations.md), with the research behind it in [evidence-review.md](docs/algorithms/evidence-review.md). Recovery needs about a week of nights before it shows a score, and settles over four weeks.
 - **Android only.**
 - **Not a medical device.** The scores are estimates for personal insight, not medical advice. If you're worried about a reading, talk to a health professional.
 
@@ -93,4 +93,4 @@ Pushing a `vX.Y.Z` tag publishes a signed release through CI ([`android.yml`](.g
 
 ## License
 
-[MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), your choice. Fonts are under the SIL OFL 1.1 ([licenses/](licenses)). OpenStrap is not affiliated with Zepp Health or Amazfit.
+[MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), your choice. Fonts are under the SIL OFL 1.1 ([licenses/](licenses)). unstrap is not affiliated with Zepp Health or Amazfit.

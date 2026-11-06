@@ -2,7 +2,7 @@
 
 How Zepp tells the strap that a workout started on the phone, so the strap runs a session of its own alongside: it may keep its own record (summary type 5, sport effect type 59) and signal when your heart rate is back to normal.
 
-**Status: from static analysis of Zepp 10.9.0 only. Not yet verified on hardware.** OpenStrap implements it behind an experimental setting, off by default (`SportSession`, `StrapManager.sportSession`). Debug builds turn it on with:
+**Status: from static analysis of Zepp 10.9.0 only. Not yet verified on hardware.** unstrap implements it behind an experimental setting, off by default (`SportSession`, `StrapManager.sportSession`). Debug builds turn it on with:
 
 ```
 adb shell am start -n org.openstrap.app/.MainActivity --ez strap_sessions true
@@ -51,11 +51,11 @@ SportInfo is a `u32` mask followed by the fields that are present. START carries
 03 04 04000000 <elapsed u32>                STOP
 ```
 
-After a reconnect Zepp sends the config and START again with the **original** start time and the current elapsed time, then PAUSE if the workout is paused. The strap resumes its session rather than starting a new one. OpenStrap does the same.
+After a reconnect Zepp sends the config and START again with the **original** start time and the current elapsed time, then PAUSE if the workout is paused. The strap resumes its session rather than starting a new one. unstrap does the same.
 
 ## 5. What the strap sends
 
-- `13 00`: heart rate back to normal. Zepp then asks "Do you need to end the workout?". OpenStrap shows its "Looks like you've stopped" question.
+- `13 00`: heart rate back to normal. Zepp then asks "Do you need to end the workout?". unstrap shows its "Looks like you've stopped" question.
 - `11 <state>`: the strap paused or stopped the workout itself.
 - `12 <x> <mask u32> <fields>`: live data. Fields follow in bit order: bits 0–3 are `u32` each, bit 5 is the heart rate (`u8`). Only the first mask is meaningful.
 

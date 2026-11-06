@@ -355,7 +355,7 @@ The whole payload is rejected if its length is not a multiple of 6 (`d/o40.java:
 
 If band feature bit 25 is set ("versioned"), **payload byte 0 is a version** `v` and the records follow it. Otherwise there is no version byte, and the legacy layout applies (`d/wg60.java:183-196`; feature check `d/og60.java:39`, `d/eh60.java:55`).
 
-**Verified on hardware (Helio Strap 3.20.0.1):** type 37 arrives versioned (`02` + 65-byte records). OpenStrap does not read the feature bit yet, so it detects the version byte: byte 0 is 1 or 2 and the u32 at offset 1 is within two days of the START time.
+**Verified on hardware (Helio Strap 3.20.0.1):** type 37 arrives versioned (`02` + 65-byte records). unstrap does not read the feature bit yet, so it detects the version byte: byte 0 is 1 or 2 and the u32 at offset 1 is within two days of the START time.
 
 | Type | Layout without version byte, or v = 1 | v = 2 | Evidence |
 |---|---|---|---|
@@ -631,7 +631,7 @@ From the MILI job loader (`d/dot.java:426-551`; run in order by `com/huami/devic
 
 Jobs skip themselves when their feature or `dataTypeMap` gate fails (§2).
 
-**Recommended order for OpenStrap** (bold = strap-relevant):
+**Recommended order for unstrap** (bold = strap-relevant):
 
 1. ACTIVITY 1
 2. SLEEP_RESULT 72
