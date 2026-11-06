@@ -63,8 +63,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.Route
-import org.openstrap.app.data.WorkoutAnalysis
-import org.openstrap.app.data.Workouts
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.presentation.EarnedLine
 import org.openstrap.app.ui.workout.FamilySummary
@@ -92,17 +90,16 @@ private enum class Export { Save, Share }
 
 /**
  * The share screen for [summary]'s workout, from the [hero] its summary shows and what it [earned]. [liveRoute] is the
- * route still in memory when the workout's wasn't kept; [workouts] are all of them, for a game's usual Load.
+ * route still in memory when the workout's wasn't kept.
  */
 @Composable
 internal fun WorkoutShareScreen(
-    summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, liveRoute: List<Route.Point>, workouts: List<WorkoutAnalysis>,
+    summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, liveRoute: List<Route.Point>,
     contentPadding: PaddingValues, onClose: () -> Unit,
 ) {
     val a = summary.analysis
-    val card = remember(summary, hero, earned, workouts) {
-        val usualLoad = Workouts.usualLoad(workouts.filter { it.workout.start != a.workout.start }.map { it.workout.trainingLoad })
-        storyCard(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, hero, earned, usualLoad, System.currentTimeMillis() / 1000)
+    val card = remember(summary, hero, earned) {
+        storyCard(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, hero, earned)
     }
     val route = remember(summary, liveRoute) { summary.route.ifEmpty { liveRoute.filter { it.t in a.shownStart..a.end } } }
     ShareScreen(card, route, "unstrap_${a.workout.start}.png", contentPadding, onClose)
