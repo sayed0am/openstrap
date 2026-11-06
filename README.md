@@ -1,11 +1,9 @@
-<p align="center">
+<h1 align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/logo-dark.png">
-    <img src="docs/assets/logo-light.png" alt="unstrap logo" height="56">
+    <img src="docs/assets/logo-light.png" alt="unstrap" height="56">
   </picture>
-</p>
-
-# unstrap
+</h1>
 
 **Answers, not dashboards.**
 
