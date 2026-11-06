@@ -14,11 +14,11 @@ Wake up to how recovered you are. Train when your body is ready. Wind down when 
 unstrap is a calm Android app for the **Amazfit Helio Strap**. Other apps hand you dashboards to read. unstrap tells you how you slept, how ready you are and what your day needs, in plain words. It replaces the Zepp app, syncs your sleep, heart rate, HRV, SpO₂, stress and workouts, and keeps everything on your phone.
 
 <p align="center">
-  <img src="docs/screenshots/today.png" width="19%" alt="Today in the morning: Recovery 74, and how your body looks against your normal">
+  <img src="docs/screenshots/today.png" width="19%" alt="Today in the morning: Recovery 77, and how your body looks against your normal">
   <img src="docs/screenshots/evening.png" width="19%" alt="Today in the evening: the day in one line, Energy and steps">
-  <img src="docs/screenshots/recovery-detail.png" width="19%" alt="The Recovery page: the score in its arc and what drove it">
+  <img src="docs/screenshots/recovery-detail.png" width="19%" alt="The Recovery page: the score, its last seven days and what drove it">
   <img src="docs/screenshots/sleep.png" width="19%" alt="Sleep: last night's stages and night vitals">
-  <img src="docs/screenshots/workout-live.png" width="19%" alt="During a workout: 142 bpm in zone 3 on the zone arc">
+  <img src="docs/screenshots/workout-live.png" width="19%" alt="During a walk: the pace in dots, 142 bpm in zone 3">
 </p>
 
 <sub>The first four use the sample data debug builds can generate. The workout is a real walk with a real strap.</sub>
