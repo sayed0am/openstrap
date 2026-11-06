@@ -58,8 +58,10 @@ those, and changing what's stored would cost current users their updates or data
    used by every notification and the manifest. Decided on the Fold 2026-11-06 against "un": Android fits the icon
    into a square, so two short letters came out half the height of the icons beside it, as "os." did. "u" matches
    them.
-8. **Launcher icon.** `mipmap-anydpi*/ic_launcher*.xml` and its layers. Red "un" on #0B0D10, plus a
-   one-colour monochrome layer for the themed icon. Play Store 512 px from the same.
+8. **Launcher icon.** Done: red "un" (#FF5A5F, with the soft glow) on #0B0D10, 52 dp wide in the 108 dp canvas,
+   the same width as the old "os." and inside the 66 dp circle every mask keeps. The monochrome layer is the same
+   "un" for themed icons. Red over white, chosen 2026-11-06: the red "un" is the brand, and white read as a plain
+   label. Samsung's shade shows this icon on our notifications. Play Store 512 px still to export.
 9. **Splash and any in-app wordmark.** Find where the name is drawn, not just written. The logo artifact has Splash and
    Banner pages to work from.
 10. **Updates.** `Releases.kt:34` reads `sayed0am/openstrap`. GitHub forwards a renamed repo, including the API, so
