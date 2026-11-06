@@ -1,6 +1,15 @@
 package org.openstrap.app.ui.glow
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.animation.ContentTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -40,7 +49,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -61,6 +72,7 @@ import org.openstrap.app.R
 import org.openstrap.app.data.RecentChip
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.ConnectionState
+import org.openstrap.app.ui.components.Motion
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.dashboard.ScreenList
 import org.openstrap.app.ui.theme.AppIcons
@@ -91,17 +103,71 @@ fun GlowChooseScreen(
     onBack: () -> Unit,
     onSaved: (RecentChip.Saved) -> Unit = {},
 ) {
-    var more by rememberSaveable { mutableStateOf(false) }
-    var searching by rememberSaveable { mutableStateOf(false) }
-    BackHandler { if (searching) searching = false else if (more) more = false else onBack() }
-    if (more) {
-        MoreSports(contentPadding, onReady) { more = false }
-        return
+    var page by rememberSaveable { mutableStateOf(ChoosePage.Choose) }
+    BackHandler { if (page != ChoosePage.Choose) page = ChoosePage.Choose else onBack() }
+    SharedTransitionLayout {
+        AnimatedContent(page, transitionSpec = { choosePageMotion(initialState, targetState) }, label = "choose") { shown ->
+            // The search box glides from its place on Choose to the top of its page, and back, as the rest crossfades.
+            val searchBox = Modifier.sharedBounds(
+                rememberSharedContentState(SEARCH_BOX), this@AnimatedContent, boundsTransform = { _, _ -> SearchBounds },
+                resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+            )
+            when (shown) {
+                ChoosePage.Search -> SearchPage(contentPadding, onReady, { page = ChoosePage.Choose }, searchBox)
+                ChoosePage.More -> MoreSports(contentPadding, onReady) { page = ChoosePage.Choose }
+                ChoosePage.Choose -> ChooseBody(
+                    usual, recent, connection, liveHeartRate, contentPadding, onStartUsual, onReady, onBack, onSaved,
+                    onSearch = { page = ChoosePage.Search }, onMore = { page = ChoosePage.More }, modifier = searchBox,
+                )
+            }
+        }
     }
-    if (searching) {
-        SearchPage(contentPadding, onReady) { searching = false }
-        return
+}
+
+/** Choose and the two pages it opens in place. */
+private enum class ChoosePage { Choose, Search, More }
+
+private const val SEARCH_BOX = "choose_search"
+private val SearchBounds = tween<Rect>(Motion.SWIFT, easing = Motion.easing)
+
+/** A page slides a quarter of the width; the one it covers drifts an eighth behind it. */
+private const val SLIDE_PART = 4
+private const val SLIDE_BEHIND = 8
+
+/**
+ * To and from the search, a crossfade the search box glides through. More sports pushes in from the right as a
+ * deeper page does (as PushContent moves screens), and slides back out to it.
+ */
+private fun choosePageMotion(from: ChoosePage, to: ChoosePage): ContentTransform {
+    if (from == ChoosePage.Search || to == ChoosePage.Search) {
+        return ContentTransform(fadeIn(tween(Motion.SWIFT, easing = Motion.easing)), fadeOut(tween(Motion.QUICK)), sizeTransform = null)
     }
+    val forward = to == ChoosePage.More
+    val slide = tween<IntOffset>(Motion.SWIFT, easing = Motion.easing)
+    return ContentTransform(
+        slideInHorizontally(slide) { if (forward) it / SLIDE_PART else -it / SLIDE_PART } + fadeIn(tween(Motion.SWIFT)),
+        slideOutHorizontally(slide) { if (forward) -it / SLIDE_BEHIND else it / SLIDE_PART } + fadeOut(tween(Motion.QUICK)),
+        sizeTransform = null,
+    )
+}
+
+/** Choose itself. [modifier] goes on its search box, which glides into the search page. */
+@Suppress("LongParameterList", "ModifierNotUsedAtRoot", "UnstableCollections", "ComposeUnstableCollections")
+@Composable
+private fun ChooseBody(
+    usual: ChooseSport?,
+    recent: List<RecentChip>,
+    connection: ConnectionState,
+    liveHeartRate: Int?,
+    contentPadding: PaddingValues,
+    onStartUsual: (Int) -> Unit,
+    onReady: (Int) -> Unit,
+    onBack: () -> Unit,
+    onPickPreset: (RecentChip.Saved) -> Unit,
+    onSearch: () -> Unit,
+    onMore: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val header: @Composable () -> Unit = {
         Row(verticalAlignment = Alignment.CenterVertically) {
             RoundIcon(AppIcons.X, stringResource(R.string.glow_close), onBack)
@@ -113,14 +179,14 @@ fun GlowChooseScreen(
         StrapLine(connection, liveHeartRate)
         if (usual != null) UsualRow(usual, { onStartUsual(usual.type) }, { onReady(usual.type) })
         // The search opens a page of its own (board ActivitySearchTyping).
-        SearchEntry(stringResource(R.string.glow_choose_search_all)) { searching = true }
+        SearchEntry(stringResource(R.string.glow_choose_search_all), onSearch, modifier)
         if (recent.isNotEmpty()) {
             SectionLabel(stringResource(R.string.glow_choose_recent))
             Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 recent.forEach { chip ->
                     when (chip) {
                         is RecentChip.Sport -> RecentPill(chip.type, Workouts.shortName(chip.type)) { onReady(chip.type) }
-                        is RecentChip.Saved -> RecentPill(chip.sport, chip.name) { onSaved(chip) }
+                        is RecentChip.Saved -> RecentPill(chip.sport, chip.name) { onPickPreset(chip) }
                     }
                 }
             }
@@ -144,7 +210,7 @@ fun GlowChooseScreen(
         } else WorkoutPage(Color.Transparent, contentPadding) {
             header()
             choose()
-            MoreSportsRow { more = true }
+            MoreSportsRow(onMore)
         }
     }
 }
@@ -321,9 +387,9 @@ private fun SearchResults(query: String, selected: Int, onPick: (Int) -> Unit) {
 
 /** Choose's search field before it's typed in: it looks like the field and opens [SearchPage]. */
 @Composable
-private fun SearchEntry(hint: String, onClick: () -> Unit) {
+private fun SearchEntry(hint: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        Modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised)
+        modifier.fillMaxWidth().height(48.dp).clip(GlowLayout.TileShape).background(Raised)
             .pressClickable(onClick, GlowLayout.TileShape).semantics { role = Role.Button }.padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -337,8 +403,10 @@ private fun SearchEntry(hint: String, onClick: () -> Unit) {
  * The search over every sport (board ActivitySearchTyping): back and the field, with the keyboard up, then how many
  * sports match and a row for each, its icon and full name. Before anything is typed, every sport A to Z.
  */
+// [modifier] goes on the search box, the one part that glides in from Choose.
+@Suppress("ModifierNotUsedAtRoot")
 @Composable
-private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit) {
+private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onBack: () -> Unit, modifier: Modifier = Modifier) {
     var query by rememberSaveable { mutableStateOf("") }
     val found = remember(query) {
         if (query.isBlank()) (Workouts.EVERYDAY + Workouts.MORE).distinct().sortedBy { Workouts.sportName(it) }
@@ -361,7 +429,7 @@ private fun SearchPage(contentPadding: PaddingValues, onPick: (Int) -> Unit, onB
             Row(verticalAlignment = Alignment.CenterVertically) {
                 BackButton(onBack)
                 Spacer(Modifier.width(12.dp))
-                Box(Modifier.weight(1f)) {
+                Box(Modifier.weight(1f).then(modifier)) {
                     SearchField(query, stringResource(R.string.glow_choose_search_all), Modifier.focusRequester(focus)) { query = it }
                 }
             }
