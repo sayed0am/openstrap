@@ -85,9 +85,6 @@ interface StrapController {
      */
     val heartRateReadings: kotlinx.coroutines.flow.SharedFlow<Int>
 
-    /** The user's live-HR switch; when on, streaming runs while connected and the app is on screen. */
-    val liveHeartRateEnabled: StateFlow<Boolean>
-
     /**
      * The strap's live step counter for today, or null when unknown. Taken as sent: on firmware 3.25 the
      * total carries a large constant offset, so check [StepTotals.isPlausible] before showing it directly.
@@ -115,7 +112,6 @@ interface StrapController {
     fun backgroundConnect()
     fun disconnect()
     fun syncNow()
-    fun setLiveHeartRate(enabled: Boolean)
 
     /** Called as the app's screen comes to the front or leaves it; live HR only runs while it's visible. */
     fun setAppVisible(visible: Boolean)

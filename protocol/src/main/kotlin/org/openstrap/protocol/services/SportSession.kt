@@ -30,6 +30,9 @@ object SportSession {
     /** [DEVICE_STATUS] 0: heart rate is back to normal; Zepp asks "Do you need to end the workout?". */
     const val STATUS_HR_NORMAL = 0
 
+    /** A session heart rate outside this is dropped; 0 means the strap has no reading. */
+    private val PLAUSIBLE_HR = 30..240
+
     enum class State(val code: Int) { START(1), PAUSE(2), RESUME(3), STOP(4), ABANDON(5) }
 
     /** SportInfo mask bits the phone sends (encoder order matches bit order for these). */
@@ -100,8 +103,12 @@ object SportSession {
         data class StateChanged(val state: State) : Push
         /** [DEVICE_STATUS]; [STATUS_HR_NORMAL] means "heart rate back to normal". */
         data class Status(val status: Int) : Push
-        /** Live data; only the heart rate is read here (bit 5 of the first mask). */
-        data class Data(val heartRate: Int?) : Push
+        /**
+         * Live data; only the heart rate is read here (bit 5 of the first mask). [heartRate] is null when the frame
+         * has none or it isn't plausible. [noReading] is true when the strap sent 0: it has no reading, e.g. it is off
+         * the body (seen on hardware for the first seconds of a session).
+         */
+        data class Data(val heartRate: Int?, val noReading: Boolean = false) : Push
     }
 
     fun parsePush(p: ByteArray): Push? {
@@ -109,7 +116,9 @@ object SportSession {
         return when (p.u8(0)) {
             DEVICE_STATE -> p.takeIf { it.size >= 2 }?.let { s -> State.entries.firstOrNull { it.code == s.u8(1) }?.let(Push::StateChanged) }
             DEVICE_STATUS -> p.takeIf { it.size >= 2 }?.let { Push.Status(it.u8(1)) }
-            DEVICE_DATA, DEVICE_DATA_2 -> if (p.size <= 6) null else Push.Data(dataHeartRate(p))
+            DEVICE_DATA, DEVICE_DATA_2 -> if (p.size <= 6) null else dataHeartRate(p).let { hr ->
+                Push.Data(hr?.takeIf { it in PLAUSIBLE_HR }, noReading = hr == 0)
+            }
             else -> null
         }
     }
@@ -123,6 +132,6 @@ object SportSession {
         val mask = r.u32()
         if (mask and (1L shl 5) == 0L) return null
         for (bit in 0..3) if (mask and (1L shl bit) != 0L) r.u32()
-        return r.u8().takeIf { it in 30..240 }
+        return r.u8()
     }
 }

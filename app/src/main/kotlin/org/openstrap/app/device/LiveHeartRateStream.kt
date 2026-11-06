@@ -8,38 +8,40 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.StrapUuids
 import org.openstrap.app.data.catching
-import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.protocol.ChannelSession
 import org.openstrap.protocol.services.Endpoints
 import org.openstrap.protocol.services.LiveHeartRate
+import org.openstrap.protocol.services.SportSession
 import org.openstrap.protocol.toHex
 import org.openstrap.protocol.u8
 
 /**
- * Live heart rate from the strap, on the channel push and the standard 2A37 characteristic. It streams only while
- * it's shown, a workout records it, or workout auto-start watches for effort ([wanted]).
+ * Live heart rate from the strap, on the channel push, or the standard 2A37 characteristic without it. It streams
+ * only while the app is on screen, a workout records it, or workout auto-start watches for effort ([wanted]). There is
+ * no switch for it, as in Zepp: the strap's own measuring is set by its monitor frequency.
  */
 // One setter per reason to stream, as StrapController has them, plus start, stop and the reading.
 @Suppress("TooManyFunctions")
 internal class LiveHeartRateStream(
     private val scope: CoroutineScope,
-    private val settings: SettingsStore,
     private val link: LiveLink,
     private val connection: StateFlow<ConnectionState>,
     private val firmwareUpdating: StateFlow<Boolean>,
     private val log: (String) -> Unit,
+    private val clock: () -> Long = android.os.SystemClock::elapsedRealtime,
 ) {
     val liveHeartRate = MutableStateFlow<Int?>(null)
     val heartRateReadings = MutableSharedFlow<Int>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val enabled = MutableStateFlow(true)
 
     private var liveJob: Job? = null
+
+    /** Which of the strap's heart rate sources is shown and recorded ([HeartRateSources]); guarded by itself. */
+    private val sources = HeartRateSources()
 
     /** Live HR streams only while the app is on screen, where it's shown, or while a workout records it. */
     @Volatile private var appVisible = false
@@ -47,15 +49,9 @@ internal class LiveHeartRateStream(
 
     @Volatile private var effortWatch = false
 
-    private fun wanted() = workoutActive || effortWatch || (enabled.value && appVisible)
+    private fun wanted() = workoutActive || effortWatch || appVisible
 
     val isRunning: Boolean get() = liveJob?.isActive == true
-
-    fun setEnabled(on: Boolean) {
-        enabled.value = on
-        scope.launch { settings.setLiveHeartRate(on) }
-        refresh()
-    }
 
     fun setAppVisible(visible: Boolean) {
         if (visible == appVisible) return
@@ -76,9 +72,8 @@ internal class LiveHeartRateStream(
         refresh()
     }
 
-    /** A new connection: reads the user's switch and starts streaming if [wanted]. */
-    suspend fun onConnected() {
-        enabled.value = settings.liveHeartRate.first()
+    /** A new connection: starts streaming if [wanted]. */
+    fun onConnected() {
         if (wanted()) start()
     }
 
@@ -86,6 +81,8 @@ internal class LiveHeartRateStream(
     fun onLinkEnded() {
         liveJob?.cancel()
         liveHeartRate.value = null
+        synchronized(sources) { sources.reset() }
+        sessionLogged = false
     }
 
     /** Starts or stops streaming to match [wanted]; a stream already running is left alone. */
@@ -97,7 +94,7 @@ internal class LiveHeartRateStream(
         }
     }
 
-    /** Stops streaming without changing the user's preference (e.g. during a firmware update). */
+    /** Stops streaming for now (e.g. during a firmware update); [refresh] starts it again when it's wanted. */
     fun pause() {
         liveJob?.cancel()
         liveHeartRate.value = null
@@ -113,10 +110,12 @@ internal class LiveHeartRateStream(
         liveHeartRate.value = null
         val s = link.activeSession ?: return
         val client = link.gatt ?: return
+        synchronized(sources) { sources.reset() }
         liveJob = scope.launch {
+            launch { clearWhenStale() }
             try {
-                listen(s, client)
                 val channel = s.services.has(Endpoints.HEART_RATE)
+                listen(s, client, channel)
                 if (channel) {
                     val opened = s.request(Endpoints.OPEN_APP, LiveHeartRate.OPEN, OPEN_TIMEOUT_MS) { it.u8(0) == OPEN_REPLY }
                     log("live hr open: ${opened.toHex()}")
@@ -145,13 +144,17 @@ internal class LiveHeartRateStream(
         }
     }
 
-    /** Collects from both the channel push and the standard 2A37 characteristic, in this stream's job. */
-    private suspend fun CoroutineScope.listen(s: ChannelSession, client: GattClient) {
+    /**
+     * Collects the channel push on a strap that has 0x0048 ([channel]), else the standard 2A37 characteristic, in this
+     * stream's job. Never both: Zepp builds one path per connection and subscribes to 2A37 only on a strap without
+     * 0x0048 (`srg0.h`; its 2A37 class `gok` exists only inside the GATT path `dok`).
+     */
+    private suspend fun CoroutineScope.listen(s: ChannelSession, client: GattClient, channel: Boolean) {
         var pushes = 0
         launch {
             s.messagesFor(Endpoints.HEART_RATE).collect { p ->
                 if (pushes++ == 0) log("live hr 0048 < ${p.toHex()}")
-                LiveHeartRate.parsePush(p)?.let { onReading(it) }
+                LiveHeartRate.parsePush(p)?.let { offer(HeartRateSources.Source.CHANNEL, it, noReading = false) }
             }
         }
         // Each keep-alive is answered with `05 02`; only log the first reply and anything else.
@@ -161,12 +164,15 @@ internal class LiveHeartRateStream(
                 if (opens++ == 0 || !p.contentEquals(KEEP_ALIVE_REPLY)) log("live hr 001d < ${p.toHex()}")
             }
         }
+        if (channel) return
         var measurements = 0
         launch {
             client.notifications.filter { it.characteristic == StrapUuids.HR_MEASUREMENT }
                 .collect { n ->
                     if (measurements++ == 0) log("live hr 2a37 < ${n.value.toHex()}")
-                    LiveHeartRate.parseMeasurement(n.value)?.let { onReading(it) }
+                    val offBody = LiveHeartRate.measurementOffBody(n.value)
+                    val bpm = LiveHeartRate.parseMeasurement(n.value)
+                    if (offBody || bpm != null) offer(HeartRateSources.Source.MEASUREMENT, bpm, offBody)
                 }
         }
         catching { client.enableNotifications(StrapUuids.HEART_RATE_SERVICE, StrapUuids.HR_MEASUREMENT) }
@@ -184,7 +190,48 @@ internal class LiveHeartRateStream(
         }.onFailure { log("live hr stop failed: $it") }
     }
 
-    /** Shown live, and recorded during a workout; the strap also records per-second HR itself and history sync stores it. */
+    /**
+     * A `14` frame of the strap's workout session (0x0019): the workout's heart rate while it comes ([HeartRateSources]). It
+     * arrives through [StrapManager] whether or not this stream runs.
+     */
+    fun onSessionData(data: SportSession.Push.Data) {
+        if (!sessionLogged) {
+            sessionLogged = true
+            log("live hr: the strap's session heart rate leads (${data.heartRate ?: "no reading"})")
+        }
+        offer(HeartRateSources.Source.SESSION, data.heartRate, data.noReading)
+    }
+
+    @Volatile private var sessionLogged = false
+
+    private fun offer(source: HeartRateSources.Source, bpm: Int?, noReading: Boolean) {
+        val decision = synchronized(sources) { sources.offer(source, bpm, noReading, clock()) }
+        when (decision) {
+            is HeartRateSources.Decision.Reading -> onReading(decision.bpm)
+            HeartRateSources.Decision.NoReading -> {
+                if (liveHeartRate.value != null) log("live hr: no reading from the strap ($source)")
+                liveHeartRate.value = null
+            }
+            HeartRateSources.Decision.Ignore -> Unit
+        }
+    }
+
+    /** A number no source has refreshed for [HeartRateSources.STALE_MS] is cleared rather than left on screen. */
+    private suspend fun clearWhenStale() {
+        while (true) {
+            delay(STALE_CHECK_MS)
+            val stale = synchronized(sources) { sources.isStale(clock()).also { if (it) sources.cleared() } }
+            if (stale && liveHeartRate.value != null) {
+                log("live hr: no reading for ${HeartRateSources.STALE_MS} ms, cleared")
+                liveHeartRate.value = null
+            }
+        }
+    }
+
+    /**
+     * Shown live, and recorded during a workout; the strap also records per-second HR itself and history sync stores it.
+     * Called directly only by the emulator's simulated strap.
+     */
     fun onReading(bpm: Int) {
         liveHeartRate.value = bpm
         heartRateReadings.tryEmit(bpm)
@@ -195,5 +242,6 @@ internal class LiveHeartRateStream(
         const val OPEN_TIMEOUT_MS = 5_000L
         const val OPEN_REPLY = 0x05
         const val SUBSCRIBE_REPLY = 0x04
+        const val STALE_CHECK_MS = 2_000L
     }
 }
