@@ -34,11 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import dev.chrisbanes.haze.rememberHazeState
 import java.time.LocalDate
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutLocation
@@ -126,10 +130,25 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         val container = (application as OpenStrapApp).container
+        showLiveWorkoutWhenLocked(container)
         setContent {
             OpenStrapTheme {
                 AppRoot(container, navRequests, previews, pendingStrap)
             }
+        }
+    }
+
+    /**
+     * The live workout shows over the lock screen, so pressing power mid-workout shows it without the unlock. Only the
+     * live screen: tucked away, ended (the summary can share and delete) or with no workout, the app is behind the lock
+     * as usual. Collected while the activity exists, not only while it's started, so the flag is right before the
+     * screen comes on.
+     */
+    private fun showLiveWorkoutWhenLocked(container: AppContainer) {
+        lifecycleScope.launch {
+            combine(container.workout.state, container.workout.minimized) { state, minimized ->
+                state is WorkoutState.Recording && !minimized
+            }.distinctUntilChanged().collect { setShowWhenLocked(it) }
         }
     }
 
