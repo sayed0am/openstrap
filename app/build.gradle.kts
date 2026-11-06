@@ -10,7 +10,7 @@ plugins {
 fun env(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
 
 // The version comes from the release tag (CI passes -PappVersion=1.2.3); local builds default to the current one.
-val appVersionName = providers.gradleProperty("appVersion").orNull?.removePrefix("v") ?: "2.1.4"
+val appVersionName = providers.gradleProperty("appVersion").orNull?.removePrefix("v") ?: "3.0.0"
 // 1.2.3 -> 10203, so every release installs over the one before it.
 val appVersionCode = appVersionName.substringBefore('-').split('.').map { it.toInt() }
     .let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch }
