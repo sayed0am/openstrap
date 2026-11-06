@@ -113,6 +113,8 @@
     <!-- A button that opens Android's settings for OpenStrap. -->
     <string name="you_phone_open_settings">Open settings</string>
     <string name="you_phone_call_buzz">Call buzz</string>
+    <!-- Above the choice of how long the strap buzzes for a ringing call. -->
+    <string name="you_phone_call_length">Buzz for</string>
     <!-- The notifications switch's title. -->
     <string name="you_phone_notifications">Notifications</string>
     <string name="you_phone_notifications_note">Buzzes for notifications that make a sound.</string>

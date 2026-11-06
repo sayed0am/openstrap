@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
+import org.openstrap.app.data.settings.CallBuzzLength
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.StrapNotificationListener
@@ -89,6 +90,7 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
     val notificationAccess by vm.notificationAccess.collectAsStateWithLifecycle()
     val pattern by vm.pattern.collectAsStateWithLifecycle()
     val callStyle by vm.callStyle.collectAsStateWithLifecycle()
+    val callLength by vm.callLength.collectAsStateWithLifecycle()
     val previewError by vm.previewError.collectAsStateWithLifecycle()
     val callPreviewError by vm.callPreviewError.collectAsStateWithLifecycle()
     DisposableEffect(vm) { onDispose { vm.clearPreviewErrors() } }
@@ -149,6 +151,13 @@ fun PhoneAlertsScreen(vm: PhoneAlertsViewModel, contentPadding: PaddingValues, o
                         // Picking one plays it for a few seconds, so the two can be compared on the wrist.
                         GlowSegments(CallBuzz.entries.map { it.label }, callStyle.ordinal, { i -> vm.pickCallBuzz(CallBuzz.entries[i]) })
                         callPreviewError?.let { PageNote(it, color = MetricColors.warn) }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text(stringResource(R.string.you_phone_call_length), style = GlowType.body, color = Color.White)
+                        GlowSegments(
+                            CallBuzzLength.entries.map { it.label }, callLength.ordinal,
+                            { i -> vm.pickCallLength(CallBuzzLength.entries[i]) },
+                        )
                     }
                 }
                 PageSwitchRow(

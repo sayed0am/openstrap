@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
+import org.openstrap.app.data.settings.CallBuzzLength
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.testing.endMain
@@ -93,6 +94,14 @@ class PhoneAlertsViewModelTest {
         assertEquals("The strap didn't answer.", vm.callPreviewError.value)
         vm.clearPreviewErrors()
         assertNull(vm.callPreviewError.value)
+    }
+
+    @Test fun `the call length is 10 s by default, and picking one keeps it without a buzz`() = runBlocking {
+        val vm = vm()
+        assertEquals(CallBuzzLength.TEN, settings.callBuzzLength.first())
+        vm.pickCallLength(CallBuzzLength.UNTIL_ANSWERED).join()
+        assertEquals(CallBuzzLength.UNTIL_ANSWERED, settings.callBuzzLength.first())
+        assertEquals(emptyList<Any>(), alerts.played)
     }
 
     @Test fun `the switches write the settings`() = runBlocking {

@@ -34,12 +34,14 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
+import org.openstrap.app.data.settings.CallBuzzLength
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.data.settings.SettingsStore
 
 /**
  * Buzzes the strap for phone calls and notifications. The strap has no notification module (Zepp leaves the
- * feature off for it), so a ringing call uses its find-device buzz until the call is answered or ends, and a
+ * feature off for it), so a ringing call uses its find-device buzz for the user's length or until the call is
+ * answered or ends, and a
  * notification plays a short motor pattern (docs/protocol/01 §5.8). Both follow Do Not Disturb, and the user's quiet
  * hours hold notifications back (calls too, when they chose so). Calls from apps
  * (WhatsApp, Telegram, Teams) never reach the call state, so their incoming call notification and the phone's
@@ -61,6 +63,7 @@ class PhoneAlerts(
         private set
     @Volatile private var pattern = BuzzPattern.TWO_SHORT
     @Volatile private var callStyle = CallBuzz.STEADY
+    @Volatile private var callLength = CallBuzzLength.TEN
     @Volatile private var quiet = QuietHours()
 
     /** Re-checked by [refresh]; the screen calls it on resume, after the user may have granted access. */
@@ -85,6 +88,7 @@ class PhoneAlerts(
         }
         scope.launch { settings.notificationPattern.collect { pattern = it } }
         scope.launch { settings.callBuzzStyle.collect { callStyle = it } }
+        scope.launch { settings.callBuzzLength.collect { callLength = it } }
         scope.launch { settings.quietHours.collect { quiet = it } }
     }
 
@@ -239,8 +243,18 @@ class PhoneAlerts(
             }
             catching { strap.startCallBuzz(callStyle == CallBuzz.PULSED) }
                 .onFailure { log("call buzz failed: ${it.message}"); return@launch }
+            // The user's length: the buzz stops, but the call still counts as ringing, so other buzzes stay held back
+            // and a second source of the same call doesn't start it again.
+            val length = callLength.millis
+            if (length != null && length < MAX_RING_MS) {
+                delay(length)
+                log("call ringing: buzzed ${length / 1000} s, stopped")
+                catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") }
+                delay(MAX_RING_MS - length)
+            } else {
+                delay(MAX_RING_MS)
+            }
             // A missed call can end without a state change reaching us; don't leave the strap buzzing.
-            delay(MAX_RING_MS)
             log("call ringing: ${MAX_RING_MS / 1000} s limit")
             synchronized(ringSources) { ringSources.clear() }
             catching { strap.stopCallBuzz() }.onFailure { log("call buzz not stopped: $it") }
