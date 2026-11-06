@@ -58,7 +58,7 @@ import org.openstrap.app.ui.components.HapticEvent
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
+import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowType
 import org.openstrap.app.ui.glow.MediumBody
 import org.openstrap.app.ui.glow.TrendBad
@@ -73,6 +73,7 @@ import org.openstrap.app.ui.glow.WaitingDash
 import org.openstrap.app.ui.glow.workoutClock
 import org.openstrap.app.ui.glow.dotClock
 import org.openstrap.app.ui.dashboard.LocalHeartZones
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import org.openstrap.app.R
 
@@ -263,7 +264,7 @@ private fun RepPage(
                     is org.openstrap.app.data.Phase.Work -> stringResource(R.string.workout_live_rep_of, m.round, m.rounds)
                     is org.openstrap.app.data.Phase.Rest -> stringResource(R.string.workout_live_done_of, m.round - 1, m.rounds)
                     org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_warm_up)
-                    org.openstrap.app.data.Phase.Done -> stringResource(R.string.workout_live_all_reps_done, m.rounds)
+                    org.openstrap.app.data.Phase.Done -> pluralStringResource(R.plurals.workout_live_all_reps_done, m.rounds, m.rounds)
                 },
                 color = Color.White, style = MediumBody, maxLines = 1, modifier = Modifier.weight(1f),
             )
@@ -272,7 +273,7 @@ private fun RepPage(
                     m.nextRest?.let { stringResource(R.string.workout_live_then_rest, org.openstrap.app.ui.workout.StartCopy.restText(it)) }
                         ?: stringResource(R.string.workout_live_last_rep)
                 is org.openstrap.app.data.Phase.Rest -> stringResource(R.string.workout_live_rep_next, m.round)
-                org.openstrap.app.data.Phase.WarmUp -> stringResource(R.string.workout_live_reps_after, m.rounds)
+                org.openstrap.app.data.Phase.WarmUp -> pluralStringResource(R.plurals.workout_live_reps_after, m.rounds, m.rounds)
                 org.openstrap.app.data.Phase.Done -> ""
             }
             Text(next, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)
@@ -363,7 +364,7 @@ internal fun speedText(secondsPerKm: Double?, locale: java.util.Locale = java.ut
  */
 @Composable
 private fun PaceCard(pace: Double?, averagePace: () -> Double?, splits: List<Route.Split>, speed: Boolean, modifier: Modifier = Modifier) {
-    EdgeCard(MetricColors.steps, modifier.fillMaxWidth()) {
+    PictureCard(MetricColors.steps, modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth()) {
             Text(
                 stringResource(if (speed) R.string.workout_live_speed_title else R.string.workout_live_pace_title), color = Color.White,

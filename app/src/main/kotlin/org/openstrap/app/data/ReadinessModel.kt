@@ -151,11 +151,12 @@ private fun Recovery.restingHeartRate(tonight: Night, base: Baseline?): Contribu
 /** Sleep balance: debt built over the last 14 nights, against need (naps count). */
 private fun Recovery.sleepBalance(nights: List<Night>, tonight: Night, sleepNeed: Int): Contributor? =
     sleepDebtMinutes(nights, tonight.day, sleepNeed)?.let { debt ->
-        val score = (100 - SLEEP_DEBT_POINTS_PER_HOUR * debt / 60f).toInt().coerceIn(0, 100)
+        val scored = (debt - SLEEP_DEBT_FREE_MINUTES) / (SLEEP_DEBT_ZERO_MINUTES - SLEEP_DEBT_FREE_MINUTES)
+        val score = (100 * (1 - scored)).toInt().coerceIn(0, 100)
         Contributor(Factor.SleepBalance, score, Detail.SleepDebt(if (debt < SLEEP_DEBT_NAMED_FROM) 0 else debt.toInt()))
     }
 
-/** Recovery index: the night's lowest heart rate should come in its first half (Oura). */
+/** Recovery index: the night's lowest heart rate should come in its first half (Oura). Shown, but weighs nothing. */
 private fun recoveryIndex(tonight: Night): Contributor? {
     if (tonight.nadirTime == null || tonight.end <= tonight.start) return null
     val p = (tonight.nadirTime - tonight.start).toFloat() / (tonight.end - tonight.start)
@@ -198,7 +199,7 @@ private fun Recovery.previousDayLoad(dailyLoad: List<Float>): Contributor? {
     val chronic = fitnessFatigue(dailyLoad.dropLast(1)).last().ctl
     val yesterday = dailyLoad.last()
     val ratio = yesterday / max(chronic, MIN_CHRONIC_LOAD)
-    val score = if (ratio <= 1.5f) 100 else (100 - 25 * (ratio - 1.5f)).toInt().coerceIn(30, 100)
+    val score = if (ratio <= HARD_DAY_RATIO) 100 else (100 - 25 * (ratio - HARD_DAY_RATIO)).toInt().coerceIn(30, 100)
     return Contributor(Factor.PreviousDayLoad, score, Detail.Load(yesterday.toInt(), chronic.toInt()))
 }
 
@@ -250,7 +251,7 @@ fun Recovery.softMinimum(parts: List<Pair<Float, Int>>): Double {
 /**
  * Sleep debt in minutes at the morning [day], from the last [SLEEP_DEBT_NIGHTS] nights of [nights] (oldest to
  * newest; missing nights skipped; naps count toward total sleep). Each night d = need − TST: a short night adds d
- * on top of the decayed debt, a long one repays min(½·surplus, 60 min). Null with fewer than [SLEEP_DEBT_MIN_NIGHTS].
+ * on top of the decayed debt, a long one repays its surplus, at most 2 h. Null with fewer than [SLEEP_DEBT_MIN_NIGHTS].
  * Deficits build near-linearly over 14 days without people noticing (Van Dongen 2003); about 1 h of debt took 4
  * nights to clear (Kitamura 2016).
  */
@@ -280,6 +281,20 @@ fun Recovery.breathingDisturbances(tonight: Night?, history: List<Night>): Breat
     val odi = tonight?.odi ?: return null
     val past = history.filter { it.day < tonight.day }.sortedBy { it.day }.takeLast(BASELINE_NIGHTS).mapNotNull { it.odi }
     return BreathingDisturbances(odi, past.takeIf { it.size >= SCORED_NIGHTS }?.let { percentile(it, 0.5f) }, past.size)
+}
+
+/**
+ * The usual band of breathing disturbances for the night of [day] (local midnight), for the week picture: the median
+ * of the [BASELINE_NIGHTS] nights before it with a value, ± their standard deviation, never under 0. [History.Normal.mean]
+ * holds that median, the same usual [breathingDisturbances] gives. Null under [SCORED_NIGHTS] such nights.
+ */
+fun Recovery.disturbancesUsual(history: List<Night>, day: Long): History.Normal? {
+    val past = history.filter { it.day < day }.sortedBy { it.day }.takeLast(BASELINE_NIGHTS).mapNotNull { it.odi }
+    if (past.size < SCORED_NIGHTS) return null
+    val median = percentile(past, 0.5f) ?: return null
+    val mean = past.average()
+    val sd = kotlin.math.sqrt(past.sumOf { (it - mean) * (it - mean) } / (past.size - 1)).toFloat()
+    return History.Normal(median, (median - sd).coerceAtLeast(0f), median + sd, past.size)
 }
 
 /**

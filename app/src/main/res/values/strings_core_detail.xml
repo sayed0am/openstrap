@@ -4,7 +4,7 @@
   The status word beside the value, the label under it, and the sentence about the day, week, month or year. "Your
   normal" is the band of values usual for you, learned over the first 7 days or nights.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The status word beside a value against your normal. Short, one line. -->
     <string name="core_detail_status_above">Above your normal</string>
     <string name="core_detail_status_below">Below your normal</string>
@@ -13,12 +13,24 @@
     <!-- The label of the band on the chart that marks your normal. The values are already written with their decimals. -->
     <string name="core_detail_band_label">Your normal, <xliff:g id="low" example="44">%1$s</xliff:g> to <xliff:g id="high" example="58">%2$s</xliff:g></string>
     <!-- Under the value before your normal is known: how many of the 7 nights it needs have data. -->
-    <string name="core_detail_learning_nights">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="core_detail_learning_nights">
+        <item quantity="one">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- Under the value before your normal is known: how many of the 7 days it needs have data. -->
-    <string name="core_detail_learning_days">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days</string>
+    <plurals name="core_detail_learning_days">
+        <item quantity="one">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> day</item>
+        <item quantity="other">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days</item>
+    </plurals>
     <!-- The same as a sentence, under a chart. -->
-    <string name="core_detail_learning_nights_sentence">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights.</string>
-    <string name="core_detail_learning_days_sentence">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days.</string>
+    <plurals name="core_detail_learning_nights_sentence">
+        <item quantity="one">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> night.</item>
+        <item quantity="other">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights.</item>
+    </plurals>
+    <plurals name="core_detail_learning_days_sentence">
+        <item quantity="one">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> day.</item>
+        <item quantity="other">Learning your normal, <xliff:g id="have" example="4">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> days.</item>
+    </plurals>
 
     <!-- Small numbers in words, inside a sentence: "no", "one" to "nine". Used for counts of nights, days, naps and workouts. -->
     <string name="core_detail_number_0">no</string>
@@ -98,8 +110,8 @@
     <string name="core_detail_none_year">In the last 12 months</string>
 
     <!-- Heart rate's day sentence: the lowest and highest readings. -->
-    <string name="core_detail_heart_day_today">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm so far today.</string>
-    <string name="core_detail_heart_day_past">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm that day.</string>
+    <string name="core_detail_heart_day_today" tools:ignore="PluralsCandidate">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm so far today.</string>
+    <string name="core_detail_heart_day_past" tools:ignore="PluralsCandidate">Between <xliff:g id="low" example="52">%1$d</xliff:g> and <xliff:g id="high" example="148">%2$d</xliff:g> bpm that day.</string>
 
     <!-- A week's or month's sentence: the latest values in a row above your normal. The count is "three nights" or "12 days". -->
     <string name="core_detail_run_above">Above your normal for <xliff:g id="count" example="three nights">%1$s</xliff:g>.</string>
@@ -115,10 +127,22 @@
     <string name="core_detail_every_day_month">Within your normal every day in the last 30 days.</string>
     <string name="core_detail_every_day_with_data_month">Within your normal every day with data in the last 30 days.</string>
     <!-- A week's or month's sentence: on how many of the nights or days with data the value was within your normal. -->
-    <string name="core_detail_inside_nights">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> nights.</string>
-    <string name="core_detail_inside_nights_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> nights in the last 30 days.</string>
-    <string name="core_detail_inside_days">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> days.</string>
-    <string name="core_detail_inside_days_month">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> days in the last 30 days.</string>
+    <plurals name="core_detail_inside_nights">
+        <item quantity="one">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> night.</item>
+        <item quantity="other">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> nights.</item>
+    </plurals>
+    <plurals name="core_detail_inside_nights_month">
+        <item quantity="one">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> night in the last 30 days.</item>
+        <item quantity="other">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> nights in the last 30 days.</item>
+    </plurals>
+    <plurals name="core_detail_inside_days">
+        <item quantity="one">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> day.</item>
+        <item quantity="other">Within your normal on <xliff:g id="inside" example="6">%1$d</xliff:g> of <xliff:g id="total" example="7">%2$d</xliff:g> days.</item>
+    </plurals>
+    <plurals name="core_detail_inside_days_month">
+        <item quantity="one">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> day in the last 30 days.</item>
+        <item quantity="other">Within your normal on <xliff:g id="inside" example="24">%1$d</xliff:g> of <xliff:g id="total" example="30">%2$d</xliff:g> days in the last 30 days.</item>
+    </plurals>
 
     <!-- The year's sentence from weekly averages, after which comes the unit ("ms", "bpm"). The values are already written with their decimals. -->
     <string name="core_detail_year_unit">Over the last 12 months, weekly averages ran from <xliff:g id="lowest" example="48">%1$s</xliff:g> to <xliff:g id="highest" example="61">%2$s</xliff:g> <xliff:g id="unit" example="ms">%3$s</xliff:g>.</string>
@@ -128,10 +152,10 @@
     <!-- A score's week sentence with a single score so far. -->
     <string name="core_detail_score_week_one">One score in the last 7 days so far.</string>
     <!-- A score's week sentence: its average, lowest and highest. -->
-    <string name="core_detail_score_week">Averaged <xliff:g id="average" example="74">%1$d</xliff:g> over the last 7 days, from <xliff:g id="lowest" example="61">%2$d</xliff:g> to <xliff:g id="highest" example="84">%3$d</xliff:g>.</string>
+    <string name="core_detail_score_week" tools:ignore="PluralsCandidate">Averaged <xliff:g id="average" example="74">%1$d</xliff:g> over the last 7 days, from <xliff:g id="lowest" example="61">%2$d</xliff:g> to <xliff:g id="highest" example="84">%3$d</xliff:g>.</string>
 
     <!-- Energy detail, a past day: the Energy it started and ended at. -->
-    <string name="core_detail_charge_started">Started the day at <xliff:g id="start" example="84">%1$d</xliff:g> and ended it at <xliff:g id="end" example="30">%2$d</xliff:g>.</string>
+    <string name="core_detail_charge_started" tools:ignore="PluralsCandidate">Started the day at <xliff:g id="start" example="84">%1$d</xliff:g> and ended it at <xliff:g id="end" example="30">%2$d</xliff:g>.</string>
     <!-- Energy detail, a past day whose start is unknown: the Energy it ended at. -->
     <string name="core_detail_charge_ended">Ended the day at <xliff:g id="end" example="30">%1$d</xliff:g>.</string>
 
@@ -144,7 +168,10 @@
     <!-- Recovery's hero word while it learns your normal. One short word. -->
     <string name="core_detail_recovery_learning">Learning</string>
     <!-- Under it: nights with data of the nights a score needs. -->
-    <string name="core_detail_recovery_nights"><xliff:g id="have" example="6">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="core_detail_recovery_nights">
+        <item quantity="one"><xliff:g id="have" example="6">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other"><xliff:g id="have" example="6">%1$d</xliff:g> of <xliff:g id="need" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- Recovery's hero word for a night without a score. Short. -->
     <string name="core_detail_recovery_no_score">No score</string>
     <!-- Under it, when the night had too little heart data. -->

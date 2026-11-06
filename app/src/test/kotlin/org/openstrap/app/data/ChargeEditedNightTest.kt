@@ -100,7 +100,7 @@ class ChargeEditedNightTest {
 
         // The trim is what the rest of the app shows: tonight's own lowest half hour is the kept sleep's.
         assertEquals(cut, trimmed.tonight!!.start)
-        assertEquals(68f, trimmed.tonight!!.restingHr!!, 0.5f)
+        assertEquals(68f, trimmed.tonight.restingHr!!, 0.5f)
         assertEquals(54f, whole.tonight!!.restingHr!!, 0.5f)
 
         val before = rates(whole.charge)

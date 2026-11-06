@@ -24,8 +24,8 @@ class BodySignalsTest {
     private fun List<BodySignals.Day>.at(i: Int) = first { it.day == i * day }
 
     @Test fun `no alerts before 14 valid nights`() {
-        // Night 15's baseline is nights 1-12 (the 2 most recent are left out): too few.
-        val days = BodySignals.evaluate((1..13).map { night(it) } + night(14, rhr = 75f) + night(15, rhr = 75f))
+        // Night 18's baseline is nights 1-12 (the 5 most recent are left out): too few.
+        val days = BodySignals.evaluate((1..16).map { night(it) } + night(17, rhr = 75f) + night(18, rhr = 75f))
         assertEquals(State.Normal, days.last().state)
         assertTrue(days.last().flags.isEmpty())
         assertEquals(12, days.last().baselineNights)

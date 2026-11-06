@@ -58,11 +58,12 @@ fun Recovery.calmStress(
  * whatever the mind is doing, so a reading during a workout or while the heart is still settling after one says
  * nothing about stress. The window is each of [workouts]' active parts (phone and strap, as
  * [workoutRanges] gives them) plus [STRESS_AFTER_WORKOUT_SECONDS] after each part ends. A pause therefore stays
- * excluded for its first 20 minutes too, being the same settling-down. Readings in it are kept and exported, but
+ * excluded for its first 20 minutes too, being the same settling-down. After a hard workout [tails] (from
+ * [stressTails]) carry it on for an hour or more. Readings in it are kept and exported, but
  * Charge, the calm level and the day's stress figures and charts leave them out (see [stressCounts]).
  */
-fun Recovery.stressExcluded(workouts: List<LongRange>): List<LongRange> =
-    workouts.flatMap { listOf(it, it.last + 1..it.last + STRESS_AFTER_WORKOUT_SECONDS) }
+fun Recovery.stressExcluded(workouts: List<LongRange>, tails: List<LongRange> = emptyList()): List<LongRange> =
+    workouts.flatMap { listOf(it, it.last + 1..it.last + STRESS_AFTER_WORKOUT_SECONDS) } + tails
 
 /** Whether a stress reading at [t] counts as daily stress: not inside [excluded] (from [stressExcluded]). */
 fun Recovery.stressCounts(t: Long, excluded: List<LongRange>): Boolean = !inWorkout(t / 60 * 60, excluded)
@@ -95,6 +96,8 @@ fun Recovery.charge(
     start: Float = 50f,
     sampleSeconds: Long = 300,
     mainSleepEnd: Long? = null,
+    /** When the main sleep began: Charge then is [ChargeDay.atBedtime], Recharged's start. */
+    bedtime: Long? = null,
     /** Report nothing until a sleep has been seen (see [ChargeDay.anchored]); tests switch this off. */
     requireAnchor: Boolean = true,
 ): ChargeDay {
@@ -107,6 +110,8 @@ fun Recovery.charge(
     var stress = 0f
     var living = 0f
     var atWake: Float? = null
+    var atBedtime: Float? = null
+    var bedtimeSeen = false
     var latest: Float? = null
     var hrvFactor = hrvFactor(params.hrvScore)
     val hrvScores = params.sleepHrvScore.sortedBy { it.first }
@@ -143,6 +148,11 @@ fun Recovery.charge(
             }
             notWornCount = 0
             wi++
+        }
+        // Charge as the main sleep began, before its first minute: none when the strap was off then.
+        if (bedtime != null && !bedtimeSeen && m.t >= bedtime) {
+            bedtimeSeen = true
+            if (!invalid && !off[i]) atBedtime = c
         }
         if (off[i]) {
             notWornCount++
@@ -305,7 +315,7 @@ fun Recovery.charge(
     if (!anchored && requireAnchor) return ChargeDay(emptyList(), null, null, 0f, 0f, 0f, 0f, null, null, anchored = false)
     return ChargeDay(
         points, latest, atWake ?: estimatedWake, recharged, exercise, stress, living, values.maxOrNull(), values.minOrNull(), anchored,
-        strapOffOvernight = offOvernight,
+        strapOffOvernight = offOvernight, atBedtime = atBedtime,
     )
 }
 
@@ -403,10 +413,15 @@ fun Recovery.minutes(
     offWrist: Set<Long> = emptySet(),
     /** Recorded wear changes (time, worn or null for unknown), each holding until the next ([Minute.worn]). */
     wear: List<Pair<Long, Boolean?>> = emptyList(),
+    /**
+     * Hard workouts' longer stress exclusion ([stressTails]). Only the stress readings in it are dropped: the minutes
+     * keep no [WorkoutPhase], so heart rate there is effort only while moving, as anywhere outside a workout.
+     */
+    stressTails: List<LongRange> = emptyList(),
 ): List<Minute> {
-    val excluded = stressExcluded(workouts)
+    val excluded = stressExcluded(workouts, stressTails)
     val active = MinuteRanges(workouts)
-    val after = MinuteRanges(excluded)
+    val after = MinuteRanges(stressExcluded(workouts))
     val hrByMinute = hr.associate { (it.first / 60 * 60) to it.second }
     // A reading taken in the exclusion must not be held into the minutes after it either.
     val stressSorted = stress.filter { stressCounts(it.first, excluded) }.sortedBy { it.first }

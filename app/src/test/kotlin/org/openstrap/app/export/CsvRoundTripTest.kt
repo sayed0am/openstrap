@@ -96,7 +96,7 @@ class CsvRoundTripTest {
             f.isAccessible = true
             when (f.type) {
                 Boolean::class.javaPrimitiveType -> f.setBoolean(row, false)
-                java.lang.Boolean::class.java -> f.set(row, false)
+                Boolean::class.javaObjectType -> f.set(row, false)
             }
         }
     }

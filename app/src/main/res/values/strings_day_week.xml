@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  The week story (ui/dashboard/WeekStory.kt), opened from Your week on Today: last week day by day, its steps, active
+  The week story (ui/dashboard/WeekStory.kt), opened from Your week on Today: this week day by day, its steps, active
   minutes, workouts and sleep, against the week before where that week is kept.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">

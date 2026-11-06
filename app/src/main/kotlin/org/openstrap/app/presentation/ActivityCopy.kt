@@ -99,7 +99,7 @@ internal object ActivityCopy {
         return when (at) {
             0 -> strings.format(R.string.core_activity_points_month_under, HEART_POINTS_TARGET, known.min(), known.max())
             known.size -> strings.format(R.string.core_activity_points_month_all, HEART_POINTS_TARGET)
-            else -> strings.format(R.string.core_activity_points_month_some, HEART_POINTS_TARGET, at, known.size)
+            else -> strings.plural(R.plurals.core_activity_points_month_some, known.size, HEART_POINTS_TARGET, at, known.size)
         }
     }
 
@@ -176,6 +176,11 @@ internal object ActivityCopy {
             100 - percentile,
         )
     }
+
+    /** A run much longer than the month's longest ([org.openstrap.app.data.Recovery.longRun]), in a sentence. */
+    fun longRun(run: org.openstrap.app.data.LongRun, today: Boolean, strings: Strings = Strings.app): String = strings.format(
+        if (today) R.string.core_activity_load_long_run_today else R.string.core_activity_load_long_run_day, run.percentLonger,
+    )
 
     /**
      * The week's balance in a sentence, from its word ([TabCopy.loadBalance]). The word is matched against the same

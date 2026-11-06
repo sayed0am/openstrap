@@ -36,6 +36,7 @@ import org.openstrap.app.data.catching
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.data.WorkoutTarget
+import org.openstrap.app.data.MomentLead
 import org.openstrap.app.data.Workouts
 import org.openstrap.app.presentation.NotificationCopy
 import org.openstrap.app.presentation.StrapBands
@@ -141,7 +142,7 @@ class StrapService : LifecycleService() {
             strap.sync.distinctUntilChangedBy { it is SyncState.Done }.collectLatest {
                 while (true) {
                     // A failed read keeps the figures shown.
-                    figures.value = catching { loadFigures(dao, container.settings, strap) }
+                    figures.value = catching { loadFigures(dao, container.settings, strap, container.strapMoment) }
                         .onFailure { e -> (strap as? StrapManager)?.log("service: notification figures not read: $e") }
                         .getOrNull() ?: figures.value
                     delay(FIGURES_REFRESH_MS)
@@ -244,7 +245,7 @@ class StrapService : LifecycleService() {
     )
 
     private fun notification(title: String, text: String): Notification = NotificationCompat.Builder(this, CHANNEL)
-        .setSmallIcon(R.drawable.ic_stat_openstrap)
+        .setSmallIcon(R.drawable.ic_stat_unstrap)
         .setContentTitle(title)
         .setContentText(text)
         .setOngoing(true)
@@ -253,38 +254,83 @@ class StrapService : LifecycleService() {
 
     /** What the everyday notification says; equal content isn't posted again. */
     private data class IdleContent(
-        val title: String, val text: String, val syncedAt: Long?, val progress: Float?, val syncing: Boolean,
+        val title: String, val text: String, val header: String?, val syncedAt: Long?, val progress: Float?, val syncing: Boolean,
         val retry: Boolean, val connected: Boolean, val sport: Int, val problem: String?,
     )
 
     /**
-     * Your day first, the link second: "Recovery 72, Energy 58" over "Strap connected, battery 80%" (the strap's battery named, so it's never taken for Energy), with the last sync as the
-     * notification's time. Problems take the text: a failed connection (with Retry), a low battery, a sync under way.
+     * The moment first, as Today leads with it: "Evening, Energy 35" over Today's sentence for the moment. The strap
+     * goes to the header, "Strap 71%, synced 10:30" (the strap's battery named, so it's never taken for Energy). A
+     * problem takes the title, with your numbers from earlier under it: a failed connection (with Retry), no strap,
+     * a low battery. A sync under way, or a connection being made, takes the text.
      */
     private fun idleContent(c: ConnectionState, sync: SyncState, f: Figures?): IdleContent {
-        val title = idleTitle(f?.recovery, f?.charge)
         val connected = c as? ConnectionState.Connected
         val battery = connected?.batteryPercent
         val low = connected != null && StrapBands.lowBattery(battery, connected.charging)
-        val text = when {
-            c is ConnectionState.Failed -> getString(R.string.system_strap_failed)
+        val problem = problemTitle(c, low, battery)
+        val syncedAt = (sync as? SyncState.Done)?.atEpochSeconds ?: f?.syncedAt
+        return IdleContent(
+            title = problem ?: momentTitle(f) ?: idleTitle(f?.recovery, f?.charge),
+            text = idleText(c, sync, f, problem),
+            header = idleHeader(connected.takeIf { problem == null }, syncedAt),
+            syncedAt = syncedAt, progress = (sync as? SyncState.Running)?.progress, syncing = sync is SyncState.Running,
+            retry = c is ConnectionState.Failed, connected = connected != null, sport = f?.sport ?: Workouts.DEFAULT_SPORTS.first(),
+            problem = when { c is ConnectionState.Failed -> "failed"; low -> "low"; problem != null -> "off"; else -> null },
+        )
+    }
+
+    /** What's wrong, as the title: the strap out of reach, not connected, or low. Null when nothing is. */
+    private fun problemTitle(c: ConnectionState, low: Boolean, battery: Int?): String? = when {
+        c is ConnectionState.Failed -> getString(R.string.system_strap_failed)
+        c is ConnectionState.Connected -> if (low) getString(R.string.system_strap_low_battery, battery) else null
+        c is ConnectionState.Connecting || c is ConnectionState.Authenticating -> null
+        else -> getString(R.string.system_strap_not_connected)
+    }
+
+    /** Under the title: your numbers under a problem, the link being made, the sync's step, else Today's sentence. */
+    private fun idleText(c: ConnectionState, sync: SyncState, f: Figures?, problem: String?): String {
+        val connected = c as? ConnectionState.Connected
+        val battery = connected?.batteryPercent
+        return when {
+            problem != null -> if (f?.recovery != null || f?.charge != null) idleTitle(f.recovery, f.charge) else ""
             c is ConnectionState.Connecting -> getString(R.string.system_strap_connecting)
             c is ConnectionState.Authenticating -> getString(R.string.system_strap_authenticating)
-            connected == null -> getString(R.string.system_strap_not_connected)
             sync is SyncState.Running -> getString(R.string.system_strap_syncing, sync.step)
-            low -> getString(R.string.system_strap_low_battery, battery)
-            battery != null ->
-                getString(
-                    if (connected.charging) R.string.system_strap_charging_battery else R.string.system_strap_connected_battery,
-                    battery,
-                )
-            else -> getString(if (connected.charging) R.string.system_strap_charging else R.string.system_strap_connected)
+            f?.moment?.sentence != null -> f.moment.sentence
+            connected != null && battery != null -> getString(
+                if (connected.charging) R.string.system_strap_charging_battery else R.string.system_strap_connected_battery, battery,
+            )
+            else -> getString(if (connected?.charging == true) R.string.system_strap_charging else R.string.system_strap_connected)
         }
-        return IdleContent(
-            title, text, (sync as? SyncState.Done)?.atEpochSeconds ?: f?.syncedAt, (sync as? SyncState.Running)?.progress,
-            sync is SyncState.Running, c is ConnectionState.Failed, connected != null, f?.sport ?: Workouts.DEFAULT_SPORTS.first(),
-            when { c is ConnectionState.Failed -> "failed"; low -> "low"; else -> null },
-        )
+    }
+
+    /** "Strap 71%, synced" before the time of the last sync; "Synced" alone with no strap to name. */
+    private fun idleHeader(connected: ConnectionState.Connected?, syncedAt: Long?): String? {
+        val strap = connected?.batteryPercent?.let {
+            getString(if (connected.charging) R.string.system_strap_header_charging else R.string.system_strap_header_battery, it)
+        }
+        return when {
+            strap != null && syncedAt != null -> getString(R.string.system_strap_header_synced, strap)
+            strap != null -> strap
+            syncedAt != null -> getString(R.string.system_strap_synced)
+            else -> null
+        }
+    }
+
+    /**
+     * "Evening, Energy 35": the moment's name as Today's header says it, and the number it leads with (Recovery on
+     * waking, else Energy). Null before the moment can be read.
+     */
+    private fun momentTitle(f: Figures?): String? {
+        val moment = f?.moment?.name ?: return null
+        val number = when {
+            f.moment.lead == MomentLead.Recovery && f.recovery != null -> getString(R.string.system_strap_title_recovery, f.recovery)
+            f.charge != null -> getString(R.string.system_strap_title_energy, f.charge)
+            f.recovery != null -> getString(R.string.system_strap_title_recovery, f.recovery)
+            else -> null
+        }
+        return number?.let { getString(R.string.system_strap_title_moment, moment, it) } ?: moment
     }
 
     /** "Recovery 72, Energy 58", either alone, or the strap's name before there's either. */
@@ -297,16 +343,18 @@ class StrapService : LifecycleService() {
 
     private fun idleNotification(i: IdleContent): Notification {
         val b = NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(i.title)
             .setContentText(i.text)
+            // Expanded, Today's sentence reads whole.
+            .setStyle(NotificationCompat.BigTextStyle().bigText(i.text))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentIntent(openApp())
             .setDeleteIntent(service(ACTION_HIDE))
-        // The header shows how long ago it synced, and keeps counting on its own.
-        val synced = getString(R.string.system_strap_synced)
-        i.syncedAt?.let { b.setShowWhen(true).setWhen(it * 1000).setSubText(synced) } ?: b.setShowWhen(false)
+        // The header carries the strap and how long ago it synced, which keeps counting on its own.
+        i.header?.let { b.setSubText(it) }
+        i.syncedAt?.let { b.setShowWhen(true).setWhen(it * 1000) } ?: b.setShowWhen(false)
         if (i.syncing) b.setProgress(100, ((i.progress ?: 0f) * 100).roundToInt(), i.progress == null)
         if (i.retry) b.addAction(NotificationCompat.Action(0, getString(R.string.system_strap_action_retry), service(ACTION_RETRY)))
         if (i.connected) {
@@ -322,12 +370,21 @@ class StrapService : LifecycleService() {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    /** Today's Recovery and Charge, the last sync and your usual sport; the model runs in a few hundred ms. */
-    private suspend fun loadFigures(dao: HealthDao, settings: SettingsStore, strap: StrapController): Figures {
+    /**
+     * Today's Recovery and Charge, the last sync, your usual sport, and the moment as the Moment widget reads it (its
+     * name and Today's sentence for it); the model runs in a few hundred ms.
+     */
+    private suspend fun loadFigures(
+        dao: HealthDao, settings: SettingsStore, strap: StrapController, readMoment: suspend () -> StrapMoment?,
+    ): Figures {
         val r = org.openstrap.app.data.RecoveryEngine(dao).compute(java.time.LocalDate.now(), settings.profile.first())
         val sport = dao.appWorkoutsAll().maxByOrNull { it.start }?.sportType ?: Workouts.DEFAULT_SPORTS.first()
         val syncedAt = (strap.sync.value as? SyncState.Done)?.atEpochSeconds ?: figures.value?.syncedAt
-        return Figures(NotificationCopy.recovery(r), r.charge.latest?.let(::chargeShown), sport, syncedAt)
+        // A moment that can't be read leaves the notification on its numbers alone.
+        val moment = catching { readMoment() }
+            .onFailure { e -> (strap as? StrapManager)?.log("service: notification moment not read: $e") }
+            .getOrNull()
+        return Figures(NotificationCopy.recovery(r), r.charge.latest?.let(::chargeShown), sport, syncedAt, moment)
     }
 
     /**
@@ -392,7 +449,7 @@ class StrapService : LifecycleService() {
                 }
             }
         val b = NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(card.sport)
             .setContentText(card.text)
             .setStyle(bar)
@@ -458,7 +515,7 @@ class StrapService : LifecycleService() {
         val time = TimeOfDay.format(end, java.time.ZoneId.systemDefault())
         val text = if (cut != null) getString(R.string.system_saved_cut, facts, time, (cut / 60).toInt()) else facts
         val b = NotificationCompat.Builder(this, SAVED_CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(R.string.system_saved_title, Workouts.sportName(w.sportType)))
             .setContentText(facts)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -490,13 +547,13 @@ class StrapService : LifecycleService() {
             else -> getString(R.string.system_strength_rest_over, done + 1)
         }
         val b = NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(title)
             .setContentText(
                 if (!connected) getString(R.string.system_strength_strap_gone, WorkoutWords.STRAP_GONE)
                 else listOfNotNull(
                     bpm?.let { getString(R.string.system_strength_bpm, it) },
-                    r.workout.setsTarget?.let { getString(R.string.system_strength_sets, done, it) },
+                    r.workout.setsTarget?.let { resources.getQuantityString(R.plurals.system_strength_sets, it, done, it) },
                 ).joinToString(", "),
             )
             .setColor(if (connected) WorkoutColors.zone(WorkoutRecorder.liveZone(bpm, r.maxHeartRate, zones)) else WorkoutColors.PAUSED_GREY)
@@ -532,7 +589,7 @@ class StrapService : LifecycleService() {
         val sport = Workouts.sportName(r.workout.sportType).lowercase()
         val text = getString(if (r.inCar) R.string.system_stopped_car_text else R.string.system_stopped_text, time, sport)
         return NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(if (r.inCar) R.string.system_stopped_car_title else R.string.system_stopped_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -553,7 +610,7 @@ class StrapService : LifecycleService() {
         val sport = Workouts.sportName(o.sportType).lowercase()
         val text = getString(R.string.system_offer_text, time, o.averageHeartRate, sport)
         return NotificationCompat.Builder(this, OFFER_CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(R.string.system_offer_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -589,7 +646,10 @@ class StrapService : LifecycleService() {
     private data class Status(val connection: ConnectionState, val heartRate: Int?, val workout: WorkoutState, val restored: Boolean, val more: More)
     private data class More(val sync: SyncState, val figures: Figures?, val hidden: Hidden?, val confirmEnd: Long)
     private data class Hidden(val problem: String?)
-    private data class Figures(val recovery: Int?, val charge: Int?, val sport: Int, val syncedAt: Long?)
+    private data class Figures(
+        val recovery: Int?, val charge: Int?, val sport: Int, val syncedAt: Long?,
+        val moment: StrapMoment? = null,
+    )
 
     companion object {
         private const val CHANNEL = "strap"

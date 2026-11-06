@@ -80,7 +80,6 @@ import org.openstrap.app.ui.workout.SummaryCopy
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.data.HeartZones
 import org.openstrap.app.ui.dashboard.LocalHeartZones
@@ -216,23 +215,23 @@ internal fun WorkoutPage(
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
 
 /**
- * Where an offer or a suggestion sits: a quiet panel, or on Today a strip lit in heart red from [edge]'s side, so the
+ * Where an offer or a suggestion sits: a quiet panel, or on Today an unlit strip ([strip]), so the
  * two never look alike when both show.
  */
 @Composable
-private fun OfferBox(edge: EdgeKind?, content: @Composable ColumnScope.() -> Unit) {
-    if (edge == null) QuietPanel(content = content)
-    else EdgeCard(MetricColors.heart, Modifier.fillMaxWidth(), kind = edge) {
+private fun OfferBox(strip: Boolean, content: @Composable ColumnScope.() -> Unit) {
+    if (!strip) QuietPanel(content = content)
+    else PictureCard(MetricColors.heart, Modifier.fillMaxWidth()) {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp), content = content)
     }
 }
 
-/** "Looks like you worked out": a stretch nobody started, offered for saving. [edge] draws it as a Today strip. */
+/** "Looks like you worked out": a stretch nobody started, offered for saving. [strip] draws it as a Today strip. */
 @Composable
 internal fun SuggestionPanel(
-    s: org.openstrap.app.data.WorkoutSuggestions.Suggestion, onSave: () -> Unit, onDismiss: () -> Unit, edge: EdgeKind? = null,
+    s: org.openstrap.app.data.WorkoutSuggestions.Suggestion, onSave: () -> Unit, onDismiss: () -> Unit, strip: Boolean = false,
 ) {
-    OfferBox(edge) {
+    OfferBox(strip) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(AppIcons.Heartbeat, null, tint = ZONE_COLORS[s.zone], modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))
@@ -254,11 +253,11 @@ internal fun SuggestionPanel(
 
 /**
  * "Looks like a workout": an effort still under way that nobody started, offered for recording from its start.
- * [edge] draws it as a Today strip.
+ * [strip] draws it as a Today strip.
  */
 @Composable
-internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () -> Unit, onDecline: () -> Unit, edge: EdgeKind? = null) {
-    OfferBox(edge) {
+internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () -> Unit, onDecline: () -> Unit, strip: Boolean = false) {
+    OfferBox(strip) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(SportIcons.of(o.sportType), null, tint = MetricColors.heart, modifier = Modifier.padding(top = 2.dp).size(20.dp))
             Spacer(Modifier.width(10.dp))

@@ -31,8 +31,8 @@ object GlowType {
     /** The sport at the top of a share card ("Push day", boards ShareStrength, ShareHiit): Display 500, 30 on 34. */
     val storyTitle = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 30.sp, lineHeight = 34.sp)
 
-    /** "OpenStrap" on a share card: Display 500, 14 on 18, spaced out a little. */
-    val storyBrand = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 14.sp, lineHeight = 18.sp, letterSpacing = 0.04.em)
+    /** The wordmark on a share card ([Wordmark]): Display 700, 16 on 20, drawn a little tight as the logo is. */
+    val storyBrand = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Bold, fontSize = 16.sp, lineHeight = 20.sp, letterSpacing = (-0.02).em)
 
     /** The date in the moment header: Display 500, 20 on 24. */
     val headerDate = TextStyle(fontFamily = FunnelDisplay, fontWeight = FontWeight.Medium, fontSize = 20.sp, lineHeight = 24.sp)

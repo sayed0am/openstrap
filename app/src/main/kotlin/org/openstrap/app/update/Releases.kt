@@ -29,9 +29,11 @@ data class Release(
     val versionName: String get() = version.joinToString(".")
 }
 
-/** OpenStrap's releases on GitHub: where they're read from, and which are newer than the one installed. */
+/** unstrap's releases on GitHub: where they're read from, and which are newer than the one installed. */
 object Releases {
-    const val REPO = "sayed0am/openstrap"
+    // Was sayed0am/openstrap until 3.0. GitHub forwards the old name, the API included, so 2.x builds still find
+    // releases here. Never create a repo at the old name, or that forwarding stops.
+    const val REPO = "sayed0am/unstrap"
     const val API = "https://api.github.com/repos/$REPO/releases?per_page=30"
     const val PAGE = "https://github.com/$REPO/releases"
 

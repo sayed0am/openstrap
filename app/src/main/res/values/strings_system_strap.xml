@@ -2,15 +2,15 @@
 <!--
   What the strap's connection says to the user (device/): why connecting or pairing failed, why a command to the strap
   failed, and how a sync is going. They show on the Strap page, in a card's line or a message under a button, a
-  sentence or two. OpenStrap is the app's name and Zepp the strap maker's app. Keep both as they are.
+  sentence or two. unstrap is the app's name, written in lowercase even at the start of a sentence and Zepp the strap maker's app. Keep both as they are.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Why connecting failed. Nearby devices is Android's name for the Bluetooth permission, in the app's settings. -->
-    <string name="system_connect_permission">OpenStrap isn\'t allowed to use Bluetooth. Allow Nearby devices in the app\'s settings, then tap Connect.</string>
+    <string name="system_connect_permission">unstrap isn\'t allowed to use Bluetooth. Allow Nearby devices in the app\'s settings, then tap Connect.</string>
     <string name="system_connect_bad_address">The saved strap address isn\'t valid. Forget the strap and pair it again.</string>
     <string name="system_connect_timeout">The strap stopped answering.</string>
     <string name="system_connect_link_dropped">The Bluetooth connection to the strap dropped.</string>
-    <string name="system_connect_protocol">The strap answered in a way OpenStrap doesn\'t understand.</string>
+    <string name="system_connect_protocol">The strap answered in a way unstrap doesn\'t understand.</string>
     <string name="system_connect_failed">Couldn\'t connect to the strap.</string>
 
     <!-- Why pairing failed. The auth key is the strap's secret, made when it was linked in the Zepp app. -->
@@ -36,7 +36,7 @@
     <!-- Fast-charge mode is a strap mode where it only charges. -->
     <string name="system_firmware_fast_charge">Turn off fast-charge mode on the strap first</string>
     <!-- Why an update can't start, on the Firmware page and as the install's failure. -->
-    <string name="system_firmware_no_service">This strap can\'t take firmware updates from OpenStrap.</string>
+    <string name="system_firmware_no_service">This strap can\'t take firmware updates from unstrap.</string>
 
     <!-- Why a command to the strap failed: an alarm, a setting, a restart, find my strap, a workout. -->
     <string name="system_command_not_connected">The strap isn\'t connected</string>
@@ -53,7 +53,7 @@
     <string name="system_command_setting_refused">The strap didn\'t accept the setting. Try again. (code <xliff:g id="code" example="2">%1$s</xliff:g>)</string>
     <string name="system_command_no_restart">This strap can\'t be restarted from the app</string>
     <string name="system_command_restart_refused">The strap didn\'t accept the restart. Try again. (code <xliff:g id="code" example="2">%1$s</xliff:g>)</string>
-    <!-- When the strap can't record workouts started from the app, or its way of doing it is newer than OpenStrap knows. -->
+    <!-- When the strap can't record workouts started from the app, or its way of doing it is newer than unstrap knows. -->
     <string name="system_command_no_sport_module">This strap can\'t record workouts from the app</string>
     <string name="system_command_workout_refused">The strap refused the workout command</string>
     <string name="system_command_sport_version">This strap\'s workout version isn\'t supported yet</string>

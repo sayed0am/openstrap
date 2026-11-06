@@ -6,16 +6,17 @@
     <ID>ComplexCondition:BodySignals.kt:BodySignals$k &gt; 0 &amp;&amp; out[k].flags.none { it.core } &amp;&amp; out[k].state == State.Alert &amp;&amp; nightsBetween(sorted[k - 1].day, sorted[k].day) - 1 &lt;= 1</ID>
     <ID>ComplexCondition:GlowMetricDetail.kt:!night &amp;&amp; metric == Metric.HeartRate &amp;&amp; isToday &amp;&amp; canUseLive &amp;&amp; liveEnabled</ID>
     <ID>ComplexCondition:GlowMetricDetail.kt:!night &amp;&amp; metric == Metric.HeartRate &amp;&amp; isToday &amp;&amp; canUseLive &amp;&amp; range == Range.Day</ID>
+    <ID>ComplexCondition:GlowMetricDetail.kt:!night &amp;&amp; range == Range.Day &amp;&amp; metric == Metric.Stress &amp;&amp; state.stressStrip.any { it != null }</ID>
     <ID>ComplexCondition:GlowTodayScreen.kt:it == HeroKind.Waking &amp;&amp; ctx.state.loaded &amp;&amp; ctx.recoveryFailure == null &amp;&amp; wakingLead(ctx.firstNights, ctx.state.asleepSeconds, ctx.isToday) == WakingLead.Charge</ID>
     <ID>ComplexCondition:HistorySync.kt:HistorySync$received.any { it is WorkoutSummary || it is WorkoutDetail || it is SportEffect || it is RecoveryHeartRate }</ID>
     <ID>ComplexCondition:LiveIntervals.kt:m.phase is Phase.Work &amp;&amp; m.left != null &amp;&amp; workLength != null &amp;&amp; workLength &gt; 0</ID>
     <ID>ComplexCondition:LiveSets.kt:!compact &amp;&amp; target != null &amp;&amp; moment.done &gt;= target &amp;&amp; !r.inSet</ID>
     <ID>ComplexCondition:Recovery.kt:Recovery$own != null &amp;&amp; strap != null &amp;&amp; strap &gt; 0 &amp;&amp; abs(own - strap) / strap &gt; HRV_QA_FRACTION</ID>
     <ID>ComplexCondition:SyncStates.kt:!isToday || !stopped || newest == null || now - newest &lt; staleAfter</ID>
+    <ID>ComplexCondition:TodayCards.kt:size == PictureSize.Small &amp;&amp; normal != null &amp;&amp; mean != null &amp;&amp; !off.off</ID>
     <ID>ComplexCondition:Vo2max.kt:Vo2max$w == null || h == null || measured == null || day - measured &gt; BODY_MAX_AGE_DAYS * dayS</ID>
     <ID>ComplexCondition:WidgetGalleryActivity.kt:WidgetGalleryActivity$WidgetRefresh.debugMood != null || WidgetRefresh.debugMoment != null || WidgetRefresh.debugPlaced != null || WidgetRefresh.debugStrap != null</ID>
     <ID>ComposableNaming:GlowWorkoutSummary.kt:@Composable internal fun SplitsList: Boolean</ID>
-    <ID>ComposableNaming:SummarySections.kt:@Composable internal fun FamilySection: Boolean</ID>
     <ID>ComposableNaming:SummarySections.kt:@Composable private fun IndoorHeartCard: Boolean</ID>
     <ID>ComposableParamOrder:Adaptive.kt:@Composable fun &lt;S&gt; ListDetail</ID>
     <ID>ComposableParamOrder:GlowLayout.kt:@Composable internal fun TitleRow</ID>
@@ -25,19 +26,18 @@
     <ID>ComposableParamOrder:PageParts.kt:@Composable fun PageProgress</ID>
     <ID>ComposableParamOrder:ReadyCardio.kt:@Composable private fun TypedNumber</ID>
     <ID>ComposableParamOrder:SummarySections.kt:@Composable internal fun WeekDots</ID>
-    <ID>ComposableParamOrder:SummarySections.kt:@Composable private fun SmoothLine</ID>
     <ID>ComposableParamOrder:TodayCards.kt:@Composable internal fun HeroFigure</ID>
     <ID>ComposableParamOrder:ZeppSignIn.kt:@Composable fun ZeppSignInDialog</ID>
     <ID>CompositionLocalAllowlist:CardToDetail.kt:/** * False where a card's tap opens a detail without growing: the rows inside a detail (Related rows), which crossfade * to the next detail instead (spec 3.5). */ val LocalCardsGrow = compositionLocalOf { true }</ID>
     <ID>CompositionLocalAllowlist:CardToDetail.kt:/** The screen's share in the card to detail motion; null outside a tab's stack or with animations off. */ val LocalCardShare = compositionLocalOf&lt;CardShare?&gt; { null }</ID>
     <ID>CompositionLocalAllowlist:CardToDetail.kt:val LocalCardNumbers = compositionLocalOf&lt;CardNumbers?&gt; { null }</ID>
-    <ID>CompositionLocalAllowlist:EdgeCard.kt:val LocalEdgeOverride = staticCompositionLocalOf { EdgeOverride() }</ID>
     <ID>CompositionLocalAllowlist:Glass.kt:/** The overlay host, provided at the app's root. */ val LocalGlassHost = staticCompositionLocalOf&lt;GlassHost&gt; { error("No GlassHost provided") }</ID>
     <ID>CompositionLocalAllowlist:GlowCard.kt:/** * Whether glow cards should hold still right now; a scrolling screen provides its scroll state, so * the cores pause while the list moves and the scroll gets every frame to itself. */ val LocalGlowPaused = staticCompositionLocalOf&lt;() -&gt; Boolean&gt; { { false } }</ID>
     <ID>CompositionLocalAllowlist:GlowCard.kt:/** * Whether the page holding these cards is off screen or the tab pager is moving; provided by the pager, apart from * [LocalGlowPaused] so a screen's own scroll state doesn't override it. Cores hold still then, so a swipe between * tabs gets every frame to itself and the pages kept ready either side don't animate unseen. */ val LocalGlowPagePaused = staticCompositionLocalOf&lt;() -&gt; Boolean&gt; { { false } }</ID>
     <ID>CompositionLocalAllowlist:GlowLayout.kt:/** * The widest a page's column gets ([GlowLayout.PageMaxWidth] over the app); [ScreenList] and the workout pages centre * their content in it. A dashboard lays out its own width, so [GlowScreenList] clears it. */ val LocalPageColumn = compositionLocalOf { GlowLayout.PageMaxWidth }</ID>
     <ID>CompositionLocalAllowlist:GlowLayout.kt:/** * Whether the card around this content opens something when tapped. [GlowCard] and [EdgeCard] provide it from their * `onClick`, so every card title ([CardTitle]) shows the tap caret on its own (spec 2.5, Tappable says so). */ val LocalCardOpens = compositionLocalOf { false }</ID>
     <ID>CompositionLocalAllowlist:GrowFromButton.kt:val LocalGrowOrigin = staticCompositionLocalOf&lt;GrowOrigin?&gt; { null }</ID>
+    <ID>CompositionLocalAllowlist:PictureCard.kt:val LocalCardOverride = staticCompositionLocalOf { CardOverride() }</ID>
     <ID>CompositionLocalAllowlist:PullToSync.kt:/** Set by [PullToSync]; [PullSyncReveal] reads it to open a gap under the wordmark. */ val LocalPullSync = staticCompositionLocalOf&lt;PullSyncState?&gt; { null }</ID>
     <ID>CompositionLocalAllowlist:Routes.kt:/** Your daily goals, provided once at the top of the app so every screen measures against the same ones. */ val LocalGoals = compositionLocalOf { Goals() }</ID>
     <ID>CompositionLocalAllowlist:WidgetParts.kt:/** * How many times the launcher has resized this kind of widget ([WidgetRefresh.resized]). The card reads it so a new size * lays the widget out again, since the session's own options can stay at the empty ones it started with. */ internal val LocalResized = staticCompositionLocalOf { 0 }</ID>
@@ -49,23 +49,25 @@
     <ID>CyclomaticComplexMethod:ActivityDetail.kt:@Composable private fun CaloriesDetail</ID>
     <ID>CyclomaticComplexMethod:ActivityDetail.kt:@Composable private fun HeartPointsDetail</ID>
     <ID>CyclomaticComplexMethod:ActivityDetail.kt:@Composable private fun LoadDetail</ID>
+    <ID>CyclomaticComplexMethod:ActivityDetail.kt:@Composable private fun RecoverDetail</ID>
     <ID>CyclomaticComplexMethod:BodySignals.kt:BodySignals$fun evaluate: List&lt;Day&gt;</ID>
     <ID>CyclomaticComplexMethod:CardLooks.kt:fun neighbours: Set&lt;kotlin.Pair&lt;Int, Int&gt;&gt;</ID>
     <ID>CyclomaticComplexMethod:DemoData.kt:DemoData$suspend fun fill</ID>
     <ID>CyclomaticComplexMethod:DeviceScreen.kt:@Composable fun DeviceScreen</ID>
     <ID>CyclomaticComplexMethod:EnergyExpenditure.kt:EnergyExpenditure$fun day: Day?</ID>
-    <ID>CyclomaticComplexMethod:GlowActivityScreen.kt:@Composable private fun FactsList</ID>
+    <ID>CyclomaticComplexMethod:GlowActivityScreen.kt:@Composable fun GlowActivityScreen</ID>
     <ID>CyclomaticComplexMethod:GlowCard.kt:@Composable fun GlowCard</ID>
     <ID>CyclomaticComplexMethod:GlowCharts.kt:@Composable fun GlowHypnogram</ID>
     <ID>CyclomaticComplexMethod:GlowCharts.kt:@Composable internal fun NormalTrend</ID>
     <ID>CyclomaticComplexMethod:GlowHealthspan.kt:@Composable fun HabitAgeEdgeCard</ID>
     <ID>CyclomaticComplexMethod:GlowMetricDetail.kt:@Composable fun GlowMetricDetailScreen</ID>
     <ID>CyclomaticComplexMethod:GlowMetricDetail.kt:@Composable private fun DayChart</ID>
+    <ID>CyclomaticComplexMethod:GlowRecoveryScreen.kt:@Composable private fun ChargeSmall</ID>
+    <ID>CyclomaticComplexMethod:GlowStyle.kt:internal fun GlowStyle.light: GlowLight</ID>
     <ID>CyclomaticComplexMethod:GlowTodayScreen.kt:@Composable fun GlowTodayScreen</ID>
     <ID>CyclomaticComplexMethod:GlowTodayScreen.kt:@Composable private fun Hero</ID>
     <ID>CyclomaticComplexMethod:GlowTodayScreen.kt:@Composable private fun TodayRow</ID>
     <ID>CyclomaticComplexMethod:GlowWorkoutScreen.kt:@Composable fun GlowWorkoutDetailScreen</ID>
-    <ID>CyclomaticComplexMethod:GlowWorkoutScreen.kt:@Composable private fun PastSummary</ID>
     <ID>CyclomaticComplexMethod:GlowWorkoutSummary.kt:@Composable fun GlowWorkoutSummaryScreen</ID>
     <ID>CyclomaticComplexMethod:GlowWorkoutSummary.kt:@Composable internal fun SplitsList: Boolean</ID>
     <ID>CyclomaticComplexMethod:Healthspan.kt:Healthspan$fun estimate: Pair&lt;Result?, Withheld?&gt;</ID>
@@ -76,7 +78,6 @@
     <ID>CyclomaticComplexMethod:LiveDistance.kt:@Composable private fun RepPage</ID>
     <ID>CyclomaticComplexMethod:LiveFrame.kt:@Composable internal fun LiveFrame</ID>
     <ID>CyclomaticComplexMethod:LiveGlance.kt:Glance$fun of: LiveGlance</ID>
-    <ID>CyclomaticComplexMethod:LiveGlance.kt:Glance$private fun interval: LiveGlance</ID>
     <ID>CyclomaticComplexMethod:LiveIntervals.kt:@Composable internal fun LiveIntervalsScreen</ID>
     <ID>CyclomaticComplexMethod:LiveSets.kt:@Composable internal fun LiveStrengthScreen</ID>
     <ID>CyclomaticComplexMethod:MomentWidgetModel.kt:MomentLayout$private fun ladders: List&lt;List&lt;Fit&gt;&gt;</ID>
@@ -93,9 +94,8 @@
     <ID>CyclomaticComplexMethod:SleepDetail.kt:@Composable internal fun SleepScoreDetail</ID>
     <ID>CyclomaticComplexMethod:SportIcons.kt:SportIcons$fun of: ImageVector</ID>
     <ID>CyclomaticComplexMethod:StrapService.kt:StrapService$override fun onStartCommand: Int</ID>
-    <ID>CyclomaticComplexMethod:SummarySections.kt:@Composable internal fun FamilySection: Boolean</ID>
+    <ID>CyclomaticComplexMethod:SummarySections.kt:@Composable internal fun FamilySection</ID>
     <ID>CyclomaticComplexMethod:SummarySections.kt:internal fun summaryHero: SummaryHero</ID>
-    <ID>CyclomaticComplexMethod:TodayLooks.kt:private fun ownLook: CardLook</ID>
     <ID>CyclomaticComplexMethod:WorkoutCapsule.kt:@Composable internal fun LiveHero</ID>
     <ID>CyclomaticComplexMethod:WorkoutDetailCopy.kt:WorkoutDetailCopy$fun effectSheet: EffectSheet</ID>
     <ID>CyclomaticComplexMethod:WorkoutEffect.kt:WorkoutEffect$fun vo2max: Float?</ID>
@@ -106,11 +106,11 @@
     <ID>EmptyElseBlock:GlowCharts.kt:if (l &gt; 0f) out += lerp(points[i], points[i + 1], left / l)</ID>
     <ID>ForEachOnRange:HeartZonesScreen.kt:0 until Workouts.ZONES</ID>
     <ID>ForEachOnRange:ReadyCardio.kt:0 until Workouts.ZONES</ID>
-    <ID>ForEachOnRange:TodayCards.kt:CheckIn.MIN..CheckIn.MAX</ID>
     <ID>ForbiddenComment:Recovery.kt:Recovery$* Not-worn drift per minute: the mean of Zepp's default no-wear slopes for its two pools (native 03 §4.7), physical * −0.04596 with mental −0.0505 at or above 50 and −0.02386 below: about −2.9 an hour above 50, −2.1 below. * Zepp learns per-user slopes from rest minutes; OpenStrap keeps the defaults. * * TODO: learn the user's own drift rate from their history, as Zepp does (native 03 §4.7): each day, measure the * mean per-minute change of Charge over quiet, awake, worn minutes; once about 30 days and enough minutes have * built up, replace these defaults with the minute-weighted mean of those days, keeping the defaults until then.</ID>
     <ID>ForbiddenComment:TabCopy.kt:TabCopy$* A workout row's second line: its fact, then when it started ("3.4 km, 17:35"), or the time alone. * TODO: a personal best ("Fastest 5 km since March") goes after the fact in the mock's warm colour (0xFFFFD08A) * once the app detects them; it doesn't yet.</ID>
     <ID>ForbiddenMethodCall/uiClock:ActivityDetail.kt:ActivityDetailContext$now()</ID>
     <ID>ForbiddenMethodCall/uiClock:ActivityDetail.kt:currentTimeMillis()</ID>
+    <ID>ForbiddenMethodCall/uiClock:ActivityDetail.kt:now()</ID>
     <ID>ForbiddenMethodCall/uiClock:AllMetricsScreen.kt:now()</ID>
     <ID>ForbiddenMethodCall/uiClock:BackupPage.kt:currentTimeMillis()</ID>
     <ID>ForbiddenMethodCall/uiClock:Celebrations.kt:currentTimeMillis()</ID>
@@ -153,10 +153,7 @@
     <ID>ImplicitDefaultLocale:FirmwareCloud.kt:FirmwareCloud.Companion$"%02x".format(it)</ID>
     <ID>ImplicitDefaultLocale:GattStrapLink.kt:StrapUuids$"0000%04x-0000-1000-8000-00805f9b34fb".format(id)</ID>
     <ID>ImplicitDefaultLocale:GattStrapLink.kt:StrapUuids$"0000%04x-0000-3512-2118-0009af100700".format(id)</ID>
-    <ID>ImplicitDefaultLocale:InfoCopy.kt:InfoCopy$"$night Your usual is %.1f.".format(usual)</ID>
-    <ID>ImplicitDefaultLocale:InfoCopy.kt:InfoCopy$"${if (today) "Last night" else "That night"} %.1f an hour.".format(b.perHour)</ID>
     <ID>ImplicitDefaultLocale:InfoCopy.kt:InfoCopy$"%.1f".format(this)</ID>
-    <ID>ImplicitDefaultLocale:InfoCopy.kt:InfoCopy$"Your last 7 days against the last 4 weeks come to %.2f, the acute to chronic ratio. It's shown for ".format(it)</ID>
     <ID>ImplicitDefaultLocale:SleepRegularity.kt:SleepRegularity$"%02d:%02d".format(minutes / 60, abs(minutes % 60))</ID>
     <ID>ImplicitDefaultLocale:StrapManager.kt:StrapManager$"%02x".format(type)</ID>
     <ID>ImplicitDefaultLocale:StrapManager.kt:StrapManager$"%08x".format(crc32(file))</ID>
@@ -165,8 +162,6 @@
     <ID>ImplicitDefaultLocale:StrapManager.kt:StrapManager$"probe %04x &lt; %s".format(endpoint, it.toHex())</ID>
     <ID>ImplicitDefaultLocale:StrapManager.kt:StrapManager$"probe %04x &gt; %s".format(endpoint, payload.toHex())</ID>
     <ID>ImplicitDefaultLocale:StrapManager.kt:StrapManager$"probe %04x ack &lt; %s".format(endpoint, it.toHex())</ID>
-    <ID>ImplicitDefaultLocale:TabCopy.kt:TabCopy$"Usual %.1f, early estimate".format(usual)</ID>
-    <ID>ImplicitDefaultLocale:TabCopy.kt:TabCopy$"Your usual is %.1f an hour".format(usual)</ID>
     <ID>InjectDispatcher:AppUpdater.kt:AppUpdater$IO</ID>
     <ID>InjectDispatcher:AutoBackup.kt:AutoBackup$IO</ID>
     <ID>InjectDispatcher:DeviceViewModel.kt:DeviceViewModel$IO</ID>
@@ -184,12 +179,10 @@
     <ID>LambdaParameterEventTrailing:ActivityDetail.kt:onPick: (Int?) -&gt; Unit</ID>
     <ID>LambdaParameterEventTrailing:ChooseScreen.kt:onChange: (String) -&gt; Unit</ID>
     <ID>LambdaParameterEventTrailing:ChooseScreen.kt:onClick: () -&gt; Unit</ID>
-    <ID>LambdaParameterEventTrailing:GlowActivityScreen.kt:onClick: () -&gt; Unit</ID>
     <ID>LambdaParameterEventTrailing:GlowRecoveryScreen.kt:onOpen: () -&gt; Unit</ID>
+    <ID>LambdaParameterEventTrailing:GlowSleepScreen.kt:onInfo: (() -&gt; Unit)?</ID>
     <ID>LambdaParameterEventTrailing:GlowSleepScreen.kt:onOpen: () -&gt; Unit</ID>
     <ID>LambdaParameterEventTrailing:LiveSets.kt:onMore: () -&gt; Unit</ID>
-    <ID>LambdaParameterEventTrailing:ShareScreen.kt:onClick: () -&gt; Unit</ID>
-    <ID>LambdaParameterEventTrailing:ZeppSignIn.kt:onClick: () -&gt; Unit</ID>
     <ID>LambdaParameterEventTrailing:ZeppSignIn.kt:onThirdParty: (provider: String) -&gt; Unit</ID>
     <ID>LambdaParameterInRestartableEffect:GlowLayout.kt:onFocused: () -&gt; Unit = {}</ID>
     <ID>LambdaParameterInRestartableEffect:ReadyCardio.kt:onDone: () -&gt; Unit</ID>
@@ -197,10 +190,10 @@
     <ID>LargeClass:WorkoutSession.kt:WorkoutSession</ID>
     <ID>LongMethod:DemoData.kt:DemoData$suspend fun fill</ID>
     <ID>LongMethod:HistorySync.kt:HistorySync$private suspend fun store</ID>
-    <ID>LongMethod:InfoCopy.kt:InfoCopy$fun of: Info</ID>
     <ID>LongMethod:LightSpec.kt:fun glowPaint: GlowPaint</ID>
     <ID>LongMethod:StrapService.kt:StrapService$override fun onStartCommand: Int</ID>
     <ID>LongParameterList:ActivityDetail.kt:ActivityDetailContext</ID>
+    <ID>LongParameterList:CanvasDraw.kt:fun drawPictureCard</ID>
     <ID>LongParameterList:ChartSpec.kt:LineChartGeometry</ID>
     <ID>LongParameterList:GlowStyle.kt:GlowLight</ID>
     <ID>LongParameterList:NotificationCopy.kt:NotificationCopy$fun card: WorkoutCard</ID>
@@ -211,7 +204,6 @@
     <ID>LongParameterList:WorkoutEffect.kt:WorkoutEffect$fun compute: Result</ID>
     <ID>LongParameterList:WorkoutRecorder.kt:WorkoutRecorder$fun kcalMinutes: List&lt;EnergyExpenditure.WorkoutMinute&gt;?</ID>
     <ID>LongParameterList:WorkoutRecorder.kt:WorkoutRecorder$fun liveKcalTick: Kcal?</ID>
-    <ID>LoopWithTooManyJumpStatements:GlowWorkoutScreen.kt:for</ID>
     <ID>LoopWithTooManyJumpStatements:HealthConnectExporter.kt:HealthConnectExporter$for</ID>
     <ID>LoopWithTooManyJumpStatements:HistorySync.kt:HistorySync$for</ID>
     <ID>LoopWithTooManyJumpStatements:Rewards.kt:Rewards$for</ID>
@@ -245,7 +237,9 @@
     <ID>MagicNumber:CaloriesCopy.kt:CaloriesCopy$100</ID>
     <ID>MagicNumber:CanvasDraw.kt:0.57735f</ID>
     <ID>MagicNumber:CanvasDraw.kt:0.5f</ID>
+    <ID>MagicNumber:CanvasDraw.kt:1e-3f</ID>
     <ID>MagicNumber:CanvasDraw.kt:255</ID>
+    <ID>MagicNumber:CanvasDraw.kt:6</ID>
     <ID>MagicNumber:CardMotion.kt:CardMotion$3</ID>
     <ID>MagicNumber:CardMotion.kt:CardMotion$4</ID>
     <ID>MagicNumber:CardMotion.kt:CardMotion$5</ID>
@@ -279,6 +273,7 @@
     <ID>MagicNumber:DayCalendar.kt:6</ID>
     <ID>MagicNumber:DayCalendar.kt:7</ID>
     <ID>MagicNumber:DayViewModel.kt:DayUiState$24</ID>
+    <ID>MagicNumber:DayViewModel.kt:DayViewModel$6</ID>
     <ID>MagicNumber:DemoData.kt:DemoData$0.25</ID>
     <ID>MagicNumber:DemoData.kt:DemoData$0.3f</ID>
     <ID>MagicNumber:DemoData.kt:DemoData$0.75</ID>
@@ -332,7 +327,6 @@
     <ID>MagicNumber:DetailCopy.kt:DetailCopy$6</ID>
     <ID>MagicNumber:DeviceScreen.kt:3</ID>
     <ID>MagicNumber:DeviceViewModel.kt:DeviceViewModel.Companion$32</ID>
-    <ID>MagicNumber:EdgeCard.kt:EdgeGlow$1.702f</ID>
     <ID>MagicNumber:EnergyExpenditure.kt:EnergyExpenditure$0.2f</ID>
     <ID>MagicNumber:EnergyExpenditure.kt:EnergyExpenditure$10f</ID>
     <ID>MagicNumber:EnergyExpenditure.kt:EnergyExpenditure$1440f</ID>
@@ -366,12 +360,12 @@
     <ID>MagicNumber:FirmwareViewModel.kt:FirmwareViewModel$1024</ID>
     <ID>MagicNumber:FirmwareViewModel.kt:FirmwareViewModel$16</ID>
     <ID>MagicNumber:Frame.kt:24</ID>
-    <ID>MagicNumber:Frame.kt:48</ID>
     <ID>MagicNumber:Frame.kt:60</ID>
     <ID>MagicNumber:GattClient.kt:GattClient$500</ID>
     <ID>MagicNumber:Glass.kt:0xFF101012</ID>
     <ID>MagicNumber:Glass.kt:0xFF1A1A1D</ID>
     <ID>MagicNumber:Glass.kt:220</ID>
+    <ID>MagicNumber:GlowActivityScreen.kt:6L</ID>
     <ID>MagicNumber:GlowCard.kt:0.035f</ID>
     <ID>MagicNumber:GlowCard.kt:0.03f</ID>
     <ID>MagicNumber:GlowCard.kt:0.08f</ID>
@@ -391,19 +385,13 @@
     <ID>MagicNumber:GlowHealthspan.kt:0.05f</ID>
     <ID>MagicNumber:GlowHealthspan.kt:0.375f</ID>
     <ID>MagicNumber:GlowHealthspan.kt:0.75f</ID>
-    <ID>MagicNumber:GlowHealthspan.kt:100</ID>
     <ID>MagicNumber:GlowHealthspanScreen.kt:0.05f</ID>
     <ID>MagicNumber:GlowHealthspanScreen.kt:7</ID>
-    <ID>MagicNumber:GlowList.kt:360f</ID>
-    <ID>MagicNumber:GlowList.kt:90f</ID>
     <ID>MagicNumber:GlowMetricDetail.kt:0.1f</ID>
     <ID>MagicNumber:GlowMetricDetail.kt:0.25f</ID>
     <ID>MagicNumber:GlowMetricDetail.kt:0.2f</ID>
-    <ID>MagicNumber:GlowMetricDetail.kt:0.47f</ID>
     <ID>MagicNumber:GlowMetricDetail.kt:0.5f</ID>
     <ID>MagicNumber:GlowMetricDetail.kt:0.7f</ID>
-    <ID>MagicNumber:GlowMetricDetail.kt:0xFF121214</ID>
-    <ID>MagicNumber:GlowMetricDetail.kt:50</ID>
     <ID>MagicNumber:GlowParts.kt:0.4f</ID>
     <ID>MagicNumber:GlowRecoveryScreen.kt:100f</ID>
     <ID>MagicNumber:GlowStyle.kt:0.5f</ID>
@@ -413,6 +401,7 @@
     <ID>MagicNumber:GlowStyle.kt:GlowPalette$0.7f</ID>
     <ID>MagicNumber:GlowStyle.kt:GlowPalette$360f</ID>
     <ID>MagicNumber:GlowStyle.kt:GlowStyle$40f</ID>
+    <ID>MagicNumber:GlowStyle.kt:GlowStyle$4f</ID>
     <ID>MagicNumber:GlowTodayScreen.kt:0xFF4E8F86</ID>
     <ID>MagicNumber:GlowTodayScreen.kt:300</ID>
     <ID>MagicNumber:GlowWorkoutMode.kt:1000</ID>
@@ -479,7 +468,6 @@
     <ID>MagicNumber:HeartZones.kt:HeartZones$100f</ID>
     <ID>MagicNumber:HeartZones.kt:HeartZones.Companion$100f</ID>
     <ID>MagicNumber:HeartZonesScreen.kt:3</ID>
-    <ID>MagicNumber:HistorySync.kt:HistorySync$100</ID>
     <ID>MagicNumber:HistorySync.kt:HistorySync$1000</ID>
     <ID>MagicNumber:HistorySync.kt:HistorySync$120</ID>
     <ID>MagicNumber:HistorySync.kt:HistorySync$20</ID>
@@ -490,13 +478,79 @@
     <ID>MagicNumber:HistorySync.kt:HistorySync$40</ID>
     <ID>MagicNumber:HistorySync.kt:HistorySync$400.0</ID>
     <ID>MagicNumber:HistorySync.kt:HistorySync$60</ID>
-    <ID>MagicNumber:HistorySync.kt:HistorySync$70</ID>
     <ID>MagicNumber:InfoCopy.kt:InfoCopy$25</ID>
     <ID>MagicNumber:InfoCopy.kt:InfoCopy$3</ID>
     <ID>MagicNumber:InfoCopy.kt:InfoCopy$60</ID>
     <ID>MagicNumber:InfoCopy.kt:InfoCopy$60L</ID>
     <ID>MagicNumber:InfoSheet.kt:0xFF141416</ID>
+    <ID>MagicNumber:LevelPictures.kt:0.2f</ID>
+    <ID>MagicNumber:LevelPictures.kt:0.32f</ID>
+    <ID>MagicNumber:LevelPictures.kt:0.55f</ID>
+    <ID>MagicNumber:LevelPictures.kt:0.5f</ID>
+    <ID>MagicNumber:LevelPictures.kt:100f</ID>
+    <ID>MagicNumber:LevelPictures.kt:136f</ID>
+    <ID>MagicNumber:LevelPictures.kt:176f</ID>
+    <ID>MagicNumber:LevelPictures.kt:1e-3f</ID>
+    <ID>MagicNumber:LevelPictures.kt:20f</ID>
+    <ID>MagicNumber:LevelPictures.kt:324f</ID>
+    <ID>MagicNumber:LevelPictures.kt:360f</ID>
+    <ID>MagicNumber:LevelPictures.kt:364f</ID>
+    <ID>MagicNumber:LevelPictures.kt:4f</ID>
+    <ID>MagicNumber:LevelPictures.kt:60f</ID>
+    <ID>MagicNumber:LevelPictures.kt:70f</ID>
+    <ID>MagicNumber:LevelPictures.kt:7f</ID>
+    <ID>MagicNumber:LevelPictures.kt:90f</ID>
     <ID>MagicNumber:LightSpec.kt:0.6f</ID>
+    <ID>MagicNumber:LightSpec.kt:EdgeGlow$1.702f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:0.05f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:0.25f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:0.2f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:0.4f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:0.7f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:10</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:12</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:13</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:14</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:15</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:18</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:2.2f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:20</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:22</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:22f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:23</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:24</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:25</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:30</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:36</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:3f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:40</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:45</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:46</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:5</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:50</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:54f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:55</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:5f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:6</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:60</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:64</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:64f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:66f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:7</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:7f</ID>
+    <ID>MagicNumber:LinePictureSamples.kt:8</ID>
+    <ID>MagicNumber:LinePictures.kt:0.15f</ID>
+    <ID>MagicNumber:LinePictures.kt:0.55f</ID>
+    <ID>MagicNumber:LinePictures.kt:0.5f</ID>
+    <ID>MagicNumber:LinePictures.kt:0.85f</ID>
+    <ID>MagicNumber:LinePictures.kt:10f</ID>
+    <ID>MagicNumber:LinePictures.kt:12</ID>
+    <ID>MagicNumber:LinePictures.kt:180f</ID>
+    <ID>MagicNumber:LinePictures.kt:20</ID>
+    <ID>MagicNumber:LinePictures.kt:24</ID>
+    <ID>MagicNumber:LinePictures.kt:5f</ID>
+    <ID>MagicNumber:LinePictures.kt:60</ID>
+    <ID>MagicNumber:LinePictures.kt:90f</ID>
     <ID>MagicNumber:LiveDistance.kt:3600</ID>
     <ID>MagicNumber:LiveDistance.kt:50</ID>
     <ID>MagicNumber:LiveFrame.kt:1000</ID>
@@ -505,13 +559,10 @@
     <ID>MagicNumber:LiveFrame.kt:50</ID>
     <ID>MagicNumber:LiveFrame.kt:90f</ID>
     <ID>MagicNumber:LiveGame.kt:5</ID>
-    <ID>MagicNumber:LiveGame.kt:50</ID>
     <ID>MagicNumber:LiveGlance.kt:Glance$60</ID>
     <ID>MagicNumber:LiveHeart.kt:0.45f</ID>
     <ID>MagicNumber:LiveHeart.kt:100</ID>
     <ID>MagicNumber:LiveHeart.kt:2.6f</ID>
-    <ID>MagicNumber:LiveIndoor.kt:0.04f</ID>
-    <ID>MagicNumber:LiveIndoor.kt:50</ID>
     <ID>MagicNumber:LiveIntervals.kt:6</ID>
     <ID>MagicNumber:LiveIntervals.kt:&lt;no name provided&gt;$0.08f</ID>
     <ID>MagicNumber:LiveIntervals.kt:&lt;no name provided&gt;$0.3f</ID>
@@ -524,13 +575,9 @@
     <ID>MagicNumber:LiveMap.kt:50</ID>
     <ID>MagicNumber:LiveMind.kt:0.5f</ID>
     <ID>MagicNumber:LiveMind.kt:0.6f</ID>
-    <ID>MagicNumber:LiveMind.kt:360f</ID>
     <ID>MagicNumber:LiveMind.kt:60</ID>
-    <ID>MagicNumber:LiveMind.kt:90f</ID>
     <ID>MagicNumber:LiveSets.kt:10</ID>
-    <ID>MagicNumber:LiveSets.kt:360f</ID>
     <ID>MagicNumber:LiveSets.kt:4</ID>
-    <ID>MagicNumber:LiveSets.kt:90f</ID>
     <ID>MagicNumber:MomentHeader.kt:0.4f</ID>
     <ID>MagicNumber:MomentHeader.kt:3</ID>
     <ID>MagicNumber:MomentResolver.kt:MomentResolver$1440</ID>
@@ -543,12 +590,17 @@
     <ID>MagicNumber:MomentWidgetModel.kt:MomentWidgetModel.Companion$720</ID>
     <ID>MagicNumber:Motion.kt:4</ID>
     <ID>MagicNumber:Motion.kt:8</ID>
-    <ID>MagicNumber:MovingBorder.kt:1e6f</ID>
-    <ID>MagicNumber:MovingBorder.kt:360f</ID>
-    <ID>MagicNumber:MovingBorder.kt:90f</ID>
+    <ID>MagicNumber:MovingBorder.kt:127.1f</ID>
+    <ID>MagicNumber:MovingBorder.kt:1e9f</ID>
+    <ID>MagicNumber:MovingBorder.kt:311.7f</ID>
+    <ID>MagicNumber:MovingBorder.kt:3f</ID>
+    <ID>MagicNumber:MovingBorder.kt:43758.547f</ID>
     <ID>MagicNumber:Narrative.kt:Narrative$100f</ID>
     <ID>MagicNumber:NotificationCopy.kt:NotificationCopy$3</ID>
     <ID>MagicNumber:NotificationCopy.kt:NotificationCopy$4</ID>
+    <ID>MagicNumber:OffStatuses.kt:12</ID>
+    <ID>MagicNumber:OffStatuses.kt:24</ID>
+    <ID>MagicNumber:OffStatuses.kt:60</ID>
     <ID>MagicNumber:PageParts.kt:0.45f</ID>
     <ID>MagicNumber:PageParts.kt:0.4f</ID>
     <ID>MagicNumber:Pai.kt:Pai$1e-9</ID>
@@ -556,6 +608,9 @@
     <ID>MagicNumber:PhoneAlerts.kt:PhoneAlerts$1000</ID>
     <ID>MagicNumber:PhoneAlerts.kt:PhoneAlerts$60</ID>
     <ID>MagicNumber:PhoneAlertsScreen.kt:60</ID>
+    <ID>MagicNumber:PictureGallery.kt:0xFF4C6FFF</ID>
+    <ID>MagicNumber:PictureGallery.kt:0xFF7CF2C9</ID>
+    <ID>MagicNumber:PictureGallery.kt:0xFFFF8A3D</ID>
     <ID>MagicNumber:ProfileScreen.kt:4</ID>
     <ID>MagicNumber:ProfileScreen.kt:5</ID>
     <ID>MagicNumber:PullToSync.kt:180f</ID>
@@ -575,7 +630,6 @@
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.Breathing$0.04f</ID>
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.HrvBalance$0.30f</ID>
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.PreviousDayLoad$0.04f</ID>
-    <ID>MagicNumber:Recovery.kt:Recovery.Factor.RecoveryIndex$0.03f</ID>
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.RestingHr$0.22f</ID>
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.Sleep$0.16f</ID>
     <ID>MagicNumber:Recovery.kt:Recovery.Factor.SleepBalance$0.12f</ID>
@@ -592,7 +646,6 @@
     <ID>MagicNumber:RecoveryEngine.kt:RecoveryEngine.Companion$60</ID>
     <ID>MagicNumber:RecoveryWidgetModel.kt:RecoveryLayout$100</ID>
     <ID>MagicNumber:RecoveryWidgetModel.kt:RecoveryLayout$100f</ID>
-    <ID>MagicNumber:RecoveryWidgetModel.kt:RecoveryLayout$4f</ID>
     <ID>MagicNumber:Releases.kt:Releases$3</ID>
     <ID>MagicNumber:Rewards.kt:Rewards$1000.0</ID>
     <ID>MagicNumber:Rewards.kt:Rewards$7L</ID>
@@ -674,6 +727,9 @@
     <ID>MagicNumber:SportIcons.kt:SportIcons$143</ID>
     <ID>MagicNumber:SportIcons.kt:SportIcons$15</ID>
     <ID>MagicNumber:SportIcons.kt:SportIcons$17</ID>
+    <ID>MagicNumber:SportIcons.kt:SportIcons$227</ID>
+    <ID>MagicNumber:SportIcons.kt:SportIcons$216</ID>
+    <ID>MagicNumber:SportIcons.kt:SportIcons$191</ID>
     <ID>MagicNumber:SportIcons.kt:SportIcons$18</ID>
     <ID>MagicNumber:SportIcons.kt:SportIcons$204</ID>
     <ID>MagicNumber:SportIcons.kt:SportIcons$205</ID>
@@ -774,10 +830,8 @@
     <ID>MagicNumber:Summaries.kt:Summaries$30</ID>
     <ID>MagicNumber:Summaries.kt:Summaries$5</ID>
     <ID>MagicNumber:Summaries.kt:Summaries$60</ID>
-    <ID>MagicNumber:SummaryCopy.kt:SummaryCopy$100</ID>
     <ID>MagicNumber:SummaryCopy.kt:SummaryCopy$60.0</ID>
     <ID>MagicNumber:SummaryCopy.kt:SummaryCopy$90</ID>
-    <ID>MagicNumber:SummarySections.kt:0.5f</ID>
     <ID>MagicNumber:SummarySections.kt:10</ID>
     <ID>MagicNumber:SummarySections.kt:4</ID>
     <ID>MagicNumber:SummarySections.kt:60</ID>
@@ -786,7 +840,6 @@
     <ID>MagicNumber:TodayCards.kt:3</ID>
     <ID>MagicNumber:TodayCards.kt:4</ID>
     <ID>MagicNumber:TodayCards.kt:5</ID>
-    <ID>MagicNumber:TodayCards.kt:50</ID>
     <ID>MagicNumber:TodayCopy.kt:TodayCopy$0.8</ID>
     <ID>MagicNumber:TodayCopy.kt:TodayCopy$1440</ID>
     <ID>MagicNumber:TodayCopy.kt:TodayCopy$60</ID>
@@ -895,41 +948,32 @@
     <ID>MatchingDeclarationName:ActivityDetail.kt:ActivityDetailContext</ID>
     <ID>MatchingDeclarationName:ChooseScreen.kt:ChooseSport</ID>
     <ID>MatchingDeclarationName:DayCalendar.kt:DayPicker</ID>
+    <ID>MatchingDeclarationName:PictureGallery.kt:PictureSample</ID>
+    <ID>MatchingDeclarationName:PictureRim.kt:Rim</ID>
+    <ID>MatchingDeclarationName:Pictures.kt:PictureSize</ID>
     <ID>MatchingDeclarationName:PullToSync.kt:PullSyncState</ID>
     <ID>MatchingDeclarationName:SummarySections.kt:SummaryHero</ID>
     <ID>MatchingDeclarationName:Theme.kt:MetricColors</ID>
     <ID>MaxLineLength:Activity.kt:Activity.Mvpa$operator fun plus</ID>
-    <ID>MaxLineLength:ActivityCopy.kt:ActivityCopy$if (fromWorkout) "From your latest workout the strap could read it from." else "Estimated from your profile and resting heart rate, updated weekly."</ID>
-    <ID>MaxLineLength:ActivityCopy.kt:ActivityCopy$m.moderateMinutes == 0 &amp;&amp; m.vigorousMinutes == 0 -&gt; if (today) "No active minutes so far today." else "No active minutes that day."</ID>
-    <ID>MaxLineLength:ActivityDetail.kt:KcalBars(stacks, listOf(color, WalkingKcal, EverydayKcal), goal = null, labels = listOf("00", "06", "12", "18", "24"), spread = true, Modifier.padding(top = 16.dp), height = 120.dp, onPick = onPick)</ID>
+    <ID>MaxLineLength:ActivityDetail.kt:Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET, perBlock = ACTIVE_BLOCK_MINUTES)</ID>
     <ID>MaxLineLength:ActivityDetail.kt:Score.ActiveMinutes.title</ID>
     <ID>MaxLineLength:ActivityDetail.kt:Score.HeartPoints.title</ID>
-    <ID>MaxLineLength:ActivityDetail.kt:Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))</ID>
     <ID>MaxLineLength:ActivityDetail.kt:androidx.compose.foundation.layout</ID>
-    <ID>MaxLineLength:ActivityDetail.kt:bars.map { it.second ?: emptyList() }</ID>
     <ID>MaxLineLength:ActivityDetail.kt:contentPadding = ctx.contentPadding</ID>
     <ID>MaxLineLength:ActivityDetail.kt:divider = i &gt; 0</ID>
     <ID>MaxLineLength:ActivityDetail.kt:drawLine(Color.White.copy(alpha = 0.08f), Offset(0f, size.height - 0.5.dp.toPx()), Offset(size.width, size.height - 0.5.dp.toPx()), 1.dp.toPx())</ID>
+    <ID>MaxLineLength:ActivityDetail.kt:else</ID>
     <ID>MaxLineLength:ActivityDetail.kt:fun avg</ID>
     <ID>MaxLineLength:ActivityDetail.kt:horizontalArrangement = if (spread) androidx.compose.foundation.layout.Arrangement.SpaceBetween else androidx.compose.foundation.layout.Arrangement.Start</ID>
-    <ID>MaxLineLength:ActivityDetail.kt:if (oldest &gt; 0f) drawRoundRect(Color.Black.copy(alpha = 0.35f * a), Offset(x, yOf(oldest)), Size(w, size.height - yOf(oldest)), r)</ID>
     <ID>MaxLineLength:ActivityDetail.kt:onClick = { ctx.onOpen(Detail.Workout(w.workout.start)) }</ID>
-    <ID>MaxLineLength:ActivityDetail.kt:range == Range.Week -&gt; DetailHeadline(a.weekEquivalent.toString(), "minutes, last 7 days", ActivityCopy.activeWord(a.weekEquivalent))</ID>
+    <ID>MaxLineLength:ActivityDetail.kt:pluralStringResource(R.plurals.glow_activity_blocks_of, Activity.MVPA_WEEKLY_TARGET, a.weekEquivalent, Activity.MVPA_WEEKLY_TARGET)</ID>
     <ID>MaxLineLength:ActivityDetail.kt:values</ID>
-    <ID>MaxLineLength:AlarmsScreen.kt:PageButton("Save", { onSave(alarm.copy(hour = time.hour, minute = time.minute, days = days, enabled = true)) }, Modifier.weight(1f), primary = true)</ID>
-    <ID>MaxLineLength:AlarmsScreen.kt:PageTextButton("Delete all", onDeleteAll, Modifier.align(Alignment.CenterHorizontally), enabled = !state.busy, color = DestructiveInk)</ID>
     <ID>MaxLineLength:AlarmsScreen.kt:Row</ID>
     <ID>MaxLineLength:AlarmsScreen.kt:Text(daysLabel(a.days), style = GlowType.secondary, color = Color.White.copy(alpha = 0.6f), modifier = Modifier.padding(top = 6.dp))</ID>
     <ID>MaxLineLength:AlarmsViewModel.kt:AlarmsUiState$val</ID>
     <ID>MaxLineLength:AlarmsViewModel.kt:AlarmsViewModel$if (value == SettingsCodec.HR_CONTINUOUS &amp;&amp; g[SettingsCodec.KEY_ACTIVITY_HR] != null) add(SettingsCodec.boolSetting(SettingsCodec.KEY_ACTIVITY_HR, true))</ID>
     <ID>MaxLineLength:AlarmsViewModel.kt:AlarmsViewModel${ (caps, alarms, health) -&gt; s.copy(loading = false, busy = false, error = error, caps = caps, alarms = alarms, health = health) }</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:Column</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:ListRow(r.name, r.color, r.value, r.status, onClick = { onOpen(r.target) }, divider = i &gt; 0, icon = r.target.rowIcon())</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:Text("All metrics", color = Color.White, style = GlowType.cardTitle.copy(fontSize = 20.sp, lineHeight = 26.sp), maxLines = 1)</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:listOf(row("Sleep", MetricColors.sleepDeep, state.sleep?.score?.toString(), "Score for the night", IndexTarget.Home(HomeTab.Sleep)))</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:metric(Metric.SkinTemperature, "Skin temperature", MetricColors.temperature, state.skinTemperature.takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.toFloat(), "Day average")</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:row("Habit Age", MetricColors.habitAge, habitValue, habitStatus, IndexTarget.Open(Detail.Healthspan), waiting = habitStatus)</ID>
-    <ID>MaxLineLength:AllMetricsScreen.kt:shown.word.takeIf { shown.estimate } ?: status ?: "Score for the day"</ID>
+    <ID>MaxLineLength:AllMetricsScreen.kt:)</ID>
     <ID>MaxLineLength:AppIcons.kt:AppIcons$val</ID>
     <ID>MaxLineLength:AppIcons.kt:AppIcons$val ArrowCircleUp: ImageVector by lazy { line("ArrowCircleUp", "M2 12A10 10 0 1 0 22 12A10 10 0 1 0 2 12Z", "M16 13.5C16 13.5 13.054 10.5 12 10.5C10.9459 10.5 8 13.5 8 13.5") }</ID>
     <ID>MaxLineLength:AppIcons.kt:AppIcons$val ArrowCounterClockwise: ImageVector by lazy { line("ArrowCounterClockwise", "M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C8.66873 3 5.76018 4.80989 4.20404 7.5", "M3 3V4.27816C3 6.47004 3 7.56599 3.70725 8.16512C4.4145 8.76425 5.49553 8.58408 7.6576 8.22373L9 8") }</ID>
@@ -1029,40 +1073,29 @@
     <ID>MaxLineLength:Backtest.kt:Backtest.Companion$"strap_sleep_hrv"</ID>
     <ID>MaxLineLength:Backtest.kt:Backtest.Companion$row.result.load.f1()</ID>
     <ID>MaxLineLength:Backtest.kt:Backtest.Companion$val</ID>
-    <ID>MaxLineLength:BackupPage.kt:PageRow</ID>
-    <ID>MaxLineLength:BackupPage.kt:PageRow("Restore", "Any OpenStrap zip. Fills in what this phone is missing", onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)</ID>
-    <ID>MaxLineLength:BackupPage.kt:PageRow("Save a copy", "A zip saved where you choose, never cleared", onClick = onSaveCopy, below = true, icon = AppIcons.DownloadSimple)</ID>
     <ID>MaxLineLength:BackupPage.kt:PickBackup$.</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$if (d &gt;= RR_FLAG_PER_MIN &amp;&amp; d &gt;= FLAG_SCALES * rrBase.scale) { flags += Flag.RrFlag; signals += "breathing rate up ${"%.1f".format(d)}/min" }</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$if (d &gt;= TEMP_FLAG_C &amp;&amp; d &gt;= FLAG_SCALES * tempBase.scale) { flags += Flag.TempFlag; signals += "skin temperature up from your usual" }</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$if (hrvBase != null) hrvOf(n)?.let { if (hrvBase.z(it) &lt;= HRV_SUPPORT_Z) { flags += Flag.HrvSupport; signals += "HRV well below your normal" } }</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$val hrvBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.hrvLn }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.HRV_LN_SD_FLOOR, MIN_ALERT_NIGHTS)</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$val rhrBase = Recovery.baseline(pool.filter { it.valid }.mapNotNull { it.rhrMeanSleep }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.RHR_SD_FLOOR, MIN_ALERT_NIGHTS)</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$val rrBase = Recovery.baseline(pool.mapNotNull { it.breathRate }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.BREATH_SD_FLOOR, MIN_ALERT_NIGHTS)</ID>
-    <ID>MaxLineLength:BodySignals.kt:BodySignals$val tempBase = Recovery.baseline(pool.mapNotNull { it.skinTemperature }.takeLast(ALERT_BASELINE_NIGHTS), Recovery.TEMP_SD_FLOOR, MIN_ALERT_NIGHTS)</ID>
     <ID>MaxLineLength:BodySignals.kt:BodySignals$while (k &gt; 0 &amp;&amp; out[k].flags.none { it.core } &amp;&amp; out[k].state == State.Alert &amp;&amp; nightsBetween(sorted[k - 1].day, sorted[k].day) - 1 &lt;= 1) { clearRun++; k-- }</ID>
-    <ID>MaxLineLength:CaloriesCopy.kt:CaloriesCopy$fun</ID>
     <ID>MaxLineLength:CaloriesCopy.kt:CaloriesCopy$fun aDay</ID>
     <ID>MaxLineLength:CanvasDraw.kt:bars.forEachIndexed { i, bar -&gt; bar?.let { drawPillBar(canvas, it, if (i == shown) color else Color.White.copy(alpha = WeekBarsLook.DIM_ALPHA)) } }</ID>
+    <ID>MaxLineLength:CanvasDraw.kt:canvas.drawCircle(i * (column + gap) + column / 2, y(v), if (i == last) big else WEEK_DOTS_R * height, fill(ink.copy(alpha = alpha)))</ID>
     <ID>MaxLineLength:CanvasDraw.kt:canvas.drawLine(s.x0, height / 2, s.x1, height / 2, roundStroke(stageColor(s.stage), height).apply { strokeJoin = Paint.Join.ROUND })</ID>
     <ID>MaxLineLength:CanvasDraw.kt:canvas.drawRoundRect(0f, 0f, w, h, r, r, Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = paint.hairlineWidth; shader = gloss })</ID>
     <ID>MaxLineLength:CanvasDraw.kt:canvas.drawRoundRect(bar.topLeft.x, bar.topLeft.y, bar.topLeft.x + bar.size.width, bar.topLeft.y + bar.size.height, bar.corner, bar.corner, fill(color))</ID>
+    <ID>MaxLineLength:CanvasDraw.kt:canvas.drawRoundRect(s / 2, s / 2, w - s / 2, h - s / 2, r - s / 2, r - s / 2, stroke(Color.White.copy(alpha = org.openstrap.app.ui.glow.GlowLayout.CardEdgeAlpha), s))</ID>
     <ID>MaxLineLength:CanvasDraw.kt:fun</ID>
     <ID>MaxLineLength:CanvasDraw.kt:g.usual?.let { canvas.drawPath(androidPath(polylineOps(it)), roundStroke(Color.White.copy(alpha = GhostLineLook.USUAL_ALPHA), GhostLineLook.USUAL_DP * density)) }</ID>
+    <ID>MaxLineLength:CanvasDraw.kt:val edge = ellipse(rx, ry, listOf(ink.copy(alpha = strength), ink.copy(alpha = RIM_HALF_ALPHA * strength), Color.Transparent), listOf(0f, RIM_HALF_AT, 1f))</ID>
     <ID>MaxLineLength:CanvasDraw.kt:val gloss = LinearGradient(0f, 0f, if (g.across) w else 0f, if (g.across) 0f else h, g.stops.map { it.second.toArgb() }.toIntArray(), g.stops.map { it.first }.toFloatArray(), Shader.TileMode.CLAMP)</ID>
+    <ID>MaxLineLength:CanvasDraw.kt:val inside = ellipse(rx * RIM_WASH_REACH_X, ry * RIM_WASH_REACH_Y, listOf(ink.copy(alpha = RIM_WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f))</ID>
     <ID>MaxLineLength:CardLooks.kt:Hue$enum</ID>
     <ID>MaxLineLength:CardToDetail.kt:fadeIn(spring(Spring.DampingRatioNoBouncy, stiffness))</ID>
     <ID>MaxLineLength:CardToDetail.kt:if (motion == StackMotion.Jump || motion == StackMotion.Idle) return ContentTransform(EnterTransition.None, ExitTransition.None, sizeTransform = null)</ID>
     <ID>MaxLineLength:Celebrations.kt:.</ID>
     <ID>MaxLineLength:Celebrations.kt:Column</ID>
-    <ID>MaxLineLength:Celebrations.kt:PageSwitchRow("Weekly goal moment", "A full screen once a week, when you reach your goal", goalMoment, onGoalMoment, divider = false)</ID>
     <ID>MaxLineLength:Celebrations.kt:RewardsCopy.whenSet(best.best.date, sportName)</ID>
-    <ID>MaxLineLength:Celebrations.kt:Text("From your workouts so far", color = Color.White, style = GlowType.pageTitle, modifier = Modifier.padding(start = 4.dp, top = 8.dp))</ID>
-    <ID>MaxLineLength:Celebrations.kt:Text("Weekly goal met", color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 12.dp))</ID>
     <ID>MaxLineLength:Celebrations.kt:Text(RewardsCopy.beatLine(best, now), color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
     <ID>MaxLineLength:Celebrations.kt:Text(RewardsCopy.bestTitle(best.best.kind), color = Color.White, style = GlowType.pageTitle, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
     <ID>MaxLineLength:Celebrations.kt:Text(RewardsCopy.momentLine(inARow), color = Color.White, style = GlowType.sentence, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:Celebrations.kt:Text(title.orEmpty(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.weight(1f).padding(start = 4.dp))</ID>
     <ID>MaxLineLength:Celebrations.kt:fun</ID>
     <ID>MaxLineLength:Celebrations.kt:internal</ID>
     <ID>MaxLineLength:Celebrations.kt:note?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.caption, textAlign = TextAlign.Center) }</ID>
@@ -1070,10 +1103,10 @@
     <ID>MaxLineLength:ChartSpec.kt:fun</ID>
     <ID>MaxLineLength:ChartSpec.kt:ops += PathOp.Cubic(pts[i].x + dx, pts[i].y + m[i] * dx, pts[i + 1].x - dx, pts[i + 1].y - m[i + 1] * dx, pts[i + 1].x, pts[i + 1].y)</ID>
     <ID>MaxLineLength:ChartSpec.kt:val hi = (yRange?.endInclusive ?: maxOf(known.max(), band?.endInclusive ?: -Float.MAX_VALUE)).let { if (it - lo &lt; 1e-3f) lo + 1f else it }</ID>
-    <ID>MaxLineLength:ChooseScreen.kt:Column</ID>
+    <ID>MaxLineLength:ChooseScreen.kt:*</ID>
     <ID>MaxLineLength:ChooseScreen.kt:Column(Modifier.weight(1f).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(14.dp), content = choose)</ID>
-    <ID>MaxLineLength:ChooseScreen.kt:EdgeCard</ID>
     <ID>MaxLineLength:ChooseScreen.kt:PageRow(Workouts.sportName(type), icon = SportIcons.of(type), divider = i &gt; 0, onClick = { keyboard?.hide(); onPick(type) })</ID>
+    <ID>MaxLineLength:ChooseScreen.kt:PictureCard</ID>
     <ID>MaxLineLength:ChooseScreen.kt:Workouts.sportName(s.type)</ID>
     <ID>MaxLineLength:ChooseScreen.kt:color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)</ID>
     <ID>MaxLineLength:ChooseScreen.kt:else</ID>
@@ -1081,21 +1114,16 @@
     <ID>MaxLineLength:Coaching.kt:WorkoutTarget.Companion$Zones(1, 1)</ID>
     <ID>MaxLineLength:CompanionLink.kt:CompanionLink$(myAssociationId(address) ?: LEGACY_ID).let { if (settings.companionAssociation.first() != it) settings.setCompanionAssociation(it) }</ID>
     <ID>MaxLineLength:CompanionLink.kt:CompanionLink$.</ID>
-    <ID>MaxLineLength:CompanionLink.kt:CompanionLink.&lt;no name provided&gt;$onError("Android couldn't find the strap (${error ?: "no reason given"}). Keep it on its charger near the phone and try again.")</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:Edge("Load", "64", "Above your normal", MetricColors.load, EdgeStatus.Above, EdgeKind.Progress, Modifier.weight(1f), progress = 1f)</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:Edge("Skin temperature", "34.6", "Above your normal", MetricColors.temperature, EdgeStatus.Above, EdgeKind.Value, Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:Edge("Steps", "6,420", "80% of your goal", MetricColors.steps, EdgeStatus.Usual, EdgeKind.Progress, Modifier.weight(1f), progress = 0.8f)</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:EdgeCard</ID>
     <ID>MaxLineLength:ComponentGalleryActivity.kt:GlowCard</ID>
     <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Large) { m -&gt; GlowCard(glow(MetricColors.readiness, LightAngle.LowerLeft), m) { GlowText("Large", "78", "The hero of the moment") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; EdgeCard(MetricColors.habitAge, m, kind = EdgeKind.Earlier) { CardText("A lone small, now wide", "38", "Habit Age") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; EdgeCard(MetricColors.heart, m, contentPadding = SmallPadding) { CardText("Small", "52", "Usual") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; EdgeCard(MetricColors.hrv, m, status = EdgeStatus.Below, contentPadding = SmallPadding) { CardText("Small", "41", "Below your normal") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; EdgeCard(MetricColors.spo2, m, contentPadding = SmallPadding) { CardText("Small", "97%", "Usual") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; EdgeCard(MetricColors.stress, m, contentPadding = SmallPadding) { CardText("Small", "28", "Usual") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Strip) { m -&gt; EdgeCard(Color.White, m, contentPadding = PaddingValues(horizontal = 20.dp)) { StripText("Strip", "Start a workout") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; PictureCard(MetricColors.habitAge, m) { CardText("A lone small, now wide", "38", "Habit Age") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; PictureCard(MetricColors.heart, m, contentPadding = SmallPadding) { CardText("Small", "52", "Usual") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; PictureCard(MetricColors.hrv, m, rim = Rim.End, contentPadding = SmallPadding) { CardText("Small", "41", "Below your normal") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; PictureCard(MetricColors.spo2, m, contentPadding = SmallPadding) { CardText("Small", "97%", "Usual") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Small) { m -&gt; PictureCard(MetricColors.stress, m, contentPadding = SmallPadding) { CardText("Small", "28", "Usual") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Strip) { m -&gt; PictureCard(Color.White, m, contentPadding = PaddingValues(horizontal = 20.dp)) { StripText("Strip", "Start a workout") } }</ID>
     <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Tall) { m -&gt; GlowCard(Charge.copy(lightLevel = 0.55f, second = true), m, contentPadding = SmallPadding) { GlowText("Tall", "55", "Charge") } }</ID>
-    <ID>MaxLineLength:ComponentGalleryActivity.kt:GridCard(CardSize.Wide) { m -&gt; EdgeCard(MetricColors.sleepDeep, m, kind = EdgeKind.Sleep) { CardText("Wide", "7:40", "Last night") } }</ID>
+    <ID>MaxLineLength:ComponentGalleryActivity.kt:ListRow("HRV", MetricColors.hrv, "41", "Below your normal", tag = org.openstrap.app.ui.dashboard.NewsTag("Below normal", goal = false), onClick = {})</ID>
     <ID>MaxLineLength:ComponentGalleryActivity.kt:Text(status, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp))</ID>
     <ID>MaxLineLength:ComposeDraw.kt:if (rowColors == null) g.joins.forEach { j -&gt; drawLine(Color.White.copy(alpha = HypnogramLook.JOIN_ALPHA), j.from, j.to, ChartInk.HAIRLINE_DP * density) }</ID>
     <ID>MaxLineLength:CsvTables.kt:"start,start_epoch,end_epoch,sport_type,source,pauses,end_reason,avg_hr,max_hr,ask_to_end,recorded_end_epoch,shown_start_epoch,target,"</ID>
@@ -1119,11 +1147,11 @@
     <ID>MaxLineLength:Daos.kt:HealthDao$"WHERE NOT EXISTS (SELECT 1 FROM sleep_stage n WHERE n.sessionStart = sleep_stage.sessionStart AND n.start = sleep_stage.`end` AND n.start &gt; sleep_stage.start) "</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("DELETE FROM sleep_session WHERE nap = 1 AND EXISTS (SELECT 1 FROM sleep_session m WHERE m.nap = 0 AND sleep_session.start &lt; m.`end` AND sleep_session.`end` &gt; m.start)")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("DELETE FROM sleep_stage WHERE sessionStart IN (SELECT n.start FROM sleep_session n JOIN sleep_session m ON m.nap = 0 AND n.nap = 1 AND n.start &lt; m.`end` AND n.`end` &gt; m.start)")</ID>
+    <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(s.`end`, 'unixepoch', 'localtime') AS day, AVG(o.percent) AS value, MIN(o.percent) AS min, MAX(o.percent) AS max, COUNT(*) AS count FROM spo2 o JOIN sleep_session s ON s.nap = 0 AND o.timestamp BETWEEN s.start AND s.`end` WHERE o.timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(celsius) AS value, MIN(celsius) AS min, MAX(celsius) AS max, COUNT(*) AS count FROM skin_temperature WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(milliseconds) AS value, MIN(milliseconds) AS min, MAX(milliseconds) AS max, COUNT(*) AS count FROM hrv WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(milliseconds) AS value, MIN(milliseconds) AS min, MAX(milliseconds) AS max, COUNT(*) AS count FROM hrv_sdnn WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(perMinute) AS value, MIN(perMinute) AS min, MAX(perMinute) AS max, COUNT(*) AS count FROM breath_rate WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
-    <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(percent) AS value, MIN(percent) AS min, MAX(percent) AS max, COUNT(*) AS count FROM sleep_spo2 WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, AVG(percent) AS value, MIN(percent) AS min, MAX(percent) AS max, COUNT(*) AS count FROM spo2 WHERE timestamp BETWEEN :from AND :to GROUP BY day ORDER BY day")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, CAST(strftime('%H', timestamp, 'unixepoch', 'localtime') AS INTEGER) AS hour, SUM(steps) AS steps FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND steps BETWEEN 0 AND 250 GROUP BY day, hour ORDER BY day, hour")</ID>
     <ID>MaxLineLength:Daos.kt:HealthDao$@Query("SELECT date(timestamp, 'unixepoch', 'localtime') AS day, SUM(steps) AS value, MIN(steps) AS min, MAX(steps) AS max, COUNT(*) AS count FROM activity_minute WHERE timestamp BETWEEN :from AND :to AND steps BETWEEN 0 AND 250 GROUP BY day ORDER BY day")</ID>
@@ -1146,63 +1174,33 @@
     <ID>MaxLineLength:DemoData.kt:DemoData$useGps = true</ID>
     <ID>MaxLineLength:DemoData.kt:DemoData$val cycle = listOf(SleepStage.LIGHT to 25, SleepStage.DEEP to 35, SleepStage.LIGHT to 20, SleepStage.REM to 18, SleepStage.AWAKE to 3)</ID>
     <ID>MaxLineLength:DemoData.kt:DemoData$weeklyLoad = 380f + (20 - back) * 6</ID>
+    <ID>MaxLineLength:DetailHost.kt:detail.metric</ID>
     <ID>MaxLineLength:DeviceScreen.kt:Column</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Alarms", alarmsSummary(alarms) ?: waiting, onClick = onAlarms, divider = false, icon = AppIcons.Alarm, selected = selected == "Alarms")</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Firmware", info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware ?: "Check for updates", onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == "Firmware")</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Forget this strap", onClick = { confirmForget = true }, divider = !first, titleColor = DestructiveInk, icon = AppIcons.Trash)</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Health alerts", healthAlertsSummary(alarms) ?: waiting, onClick = onHealthAlerts, icon = AppIcons.Heartbeat, selected = selected == "Health alerts")</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Phone alerts", phoneAlertsSummary(calls, notifications), onClick = onPhoneAlerts, icon = AppIcons.Vibrate, selected = selected == "Phone alerts")</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:PageRow("Zepp account", if (zeppSignedIn) "Signed in" else "Not signed in", onClick = onZeppAccount, icon = AppIcons.Key, selected = selected == "Zepp account")</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:StepText("Force-stop or uninstall Zepp so it lets go of the strap. Don't unlink the strap in Zepp: that wipes its key.", muted = true)</ID>
-    <ID>MaxLineLength:DeviceScreen.kt:Text("% battery", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))</ID>
     <ID>MaxLineLength:DeviceScreen.kt:led</ID>
     <ID>MaxLineLength:DeviceViewModel.kt:DeviceViewModel$.</ID>
-    <ID>MaxLineLength:EnergyExpenditure.kt:EnergyExpenditure$b + net(if (steps &gt;= RUNNING_CADENCE &amp;&amp; neighbourAtLeast(minutes, k, RUNNING_CADENCE)) runningMet(steps, h) else cadenceMet(steps, a), w)</ID>
-    <ID>MaxLineLength:EnergyExpenditure.kt:EnergyExpenditure$val points = if (older) listOf(60f to 2f, 100f to 3f, 110f to 4f, 120f to 5f, 130f to 6f) else listOf(60f to 2f, 100f to 3f, 130f to 6f)</ID>
     <ID>MaxLineLength:Entities.kt:AppWorkout$fun withPause</ID>
     <ID>MaxLineLength:Entities.kt:AppWorkout$pauseRanges.sumOf { (minOf(it.last, now) - maxOf(it.first, from)).coerceAtLeast(0) } + (pausedAt?.let { (now - maxOf(it, from)).coerceAtLeast(0) } ?: 0)</ID>
     <ID>MaxLineLength:Entities.kt:AppWorkoutRoutePoint$val point get() = org.openstrap.app.data.Route.Point(timestamp, lat, lon, accuracy, speed, bearing, altitude, speedAccuracy, bearingAccuracy)</ID>
     <ID>MaxLineLength:Entities.kt:AppWorkoutRoutePoint.Companion$AppWorkoutRoutePoint(workoutStart, p.t, p.lat, p.lon, p.accuracy, p.speed, p.bearing, p.altitude, p.speedAccuracy, p.bearingAccuracy)</ID>
     <ID>MaxLineLength:Entities.kt:Workout$/** The summary's Type.subtype: 1 auto-detected, 6 a phone workout mirrored on the strap, 0 normal (codemap 05 §8). Null before version 17. */</ID>
     <ID>MaxLineLength:FamilySummary.kt:FamilySummary$fun</ID>
-    <ID>MaxLineLength:FamilySummary.kt:FamilySummary$if (restSeconds != null) "You recovered $avg bpm in ${clockOrSeconds(restSeconds)} on average." else "You recovered $avg bpm in each rest on average."</ID>
-    <ID>MaxLineLength:FamilySummary.kt:FamilySummary$private</ID>
     <ID>MaxLineLength:FamilySummary.kt:FamilySummary$return peaks.map { p -&gt; p?.let { (if (top &lt;= floor) 1.0 else (it - floor) / (top - floor)).toFloat().coerceIn(PEAK_MIN_SHARE, 1f) } }</ID>
     <ID>MaxLineLength:FamilySummary.kt:FamilySummary$val low = r.restEnd?.takeIf { it &gt; workEnd }?.let { end -&gt; readings.filter { it.first in workEnd..end }.minOfOrNull { it.second } }</ID>
     <ID>MaxLineLength:FamilySummary.kt:FamilySummary$val raw = org.openstrap.app.data.Summaries.bucketMeans(readings, points, { ((it.first - first) * (points - 1) / span).toInt().coerceIn(0, points - 1) }, { it.second.toFloat() })</ID>
     <ID>MaxLineLength:FirmwareCloud.kt:FirmwareCloud$else -&gt; throw FirmwareCloudException("Update server returned HTTP $code${body.take(200).let { if (it.isBlank()) "" else ": $it" }}")</ID>
     <ID>MaxLineLength:FirmwareCloud.kt:FirmwareCloud.Companion$fun</ID>
     <ID>MaxLineLength:FirmwareCloud.kt:FirmwareCloud.Companion$val json = runCatching { JSONObject(body) }.getOrElse { throw FirmwareCloudException("Unexpected reply from the update server") }</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:Body("The strap is restarting. OpenStrap reconnects by itself. Check again afterwards in case there are more parts to install.")</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:InfoLine("Update service", when (info?.dfuAvailable) { true -&gt; "Available"; false -&gt; "Not found"; null -&gt; "Connect to check" })</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:PageButton(if (account == null) "Sign in with Zepp" else "Sign in again", { signIn = true }, Modifier.fillMaxWidth(), enabled = enabled, primary = true)</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:PageButton(if (next == null) "Unsupported" else "Download", { next?.let(vm::download) }, Modifier.weight(1f), enabled = next != null, primary = true)</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:PageRow("Install from a file", "For an image you have", onClick = { pickFile.launch(arrayOf("*/*")) }, enabled = !installing)</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:PageRow("Zepp account", if (account != null) "Signed in" else "Not signed in", onClick = onZeppAccount, divider = false, enabled = !installing)</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:Point(AppIcons.CheckCircle, "Safe install", "Downloads are checked against the server's checksum, and the strap verifies the signature before installing.")</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:Point(AppIcons.CloudArrowDown, "Update check", "Sends the update server your token, user ID and the strap's firmware, hardware and serial number. Nothing else.")</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:Point(AppIcons.Key, "Sign-in", "Happens on Zepp's own page. OpenStrap keeps only the app token and user ID, and fetches your device list once.")</ID>
     <ID>MaxLineLength:FirmwareScreen.kt:confirm?.let { image -&gt; ConfirmInstall(image, vm.blockers(), onDismiss = { confirm = null }, onInstall = { confirm = null; vm.install(image) }) }</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:else</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:if</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:if (image.warnings.isNotEmpty()) PageSwitchRow("I understand and want to install it anyway", null, accepted, { accepted = it }, divider = false)</ID>
     <ID>MaxLineLength:FirmwareScreen.kt:item { AccountPanel(account, enabled = !installing, onSave = vm::saveAccount, onClear = vm::clearAccount, onSignIn = vm::saveSignIn) }</ID>
-    <ID>MaxLineLength:FirmwareScreen.kt:private</ID>
-    <ID>MaxLineLength:FirmwareViewModel.kt:FirmwareViewModel$ReadyImage(bytes, type, "${part.label} ${part.version}", part.version, fromCloud = true, trailer, trailerWarnings(bytes, trailer, type))</ID>
     <ID>MaxLineLength:FirmwareViewModel.kt:FirmwareViewModel$private val busy get() = _step.value.let { it is FirmwareStep.Checking || it is FirmwareStep.Downloading || it is FirmwareStep.Installing }</ID>
-    <ID>MaxLineLength:Frame.kt:connection.charging &amp;&amp; battery != null -&gt; StrapChip("Charging $battery%", StrapChip.Dot.Charging, "Strap charging, battery $battery percent")</ID>
-    <ID>MaxLineLength:Frame.kt:fun</ID>
-    <ID>MaxLineLength:Frame.kt:if (connection !is ConnectionState.Connected &amp;&amp; sinceStart &lt; STARTUP_GRACE_S) return StrapChip("", StrapChip.Dot.Quiet, "Connecting to the strap")</ID>
     <ID>MaxLineLength:Glass.kt:1.dp</ID>
     <ID>MaxLineLength:Glass.kt:Box</ID>
-    <ID>MaxLineLength:Glass.kt:Box(Modifier.fillMaxWidth(), contentAlignment = if (icon != null) Alignment.Center else Alignment.CenterStart) { title() }</ID>
-    <ID>MaxLineLength:Glass.kt:Surface(shape = shape, color = GlassTint.copy(alpha = 0.72f), border = GlassEdge, contentColor = Color.White, modifier = modifier, content = content)</ID>
     <ID>MaxLineLength:Glass.kt:fun</ID>
-    <ID>MaxLineLength:GlowActivityScreen.kt:TabCopy.AUTO_DETECTED</ID>
-    <ID>MaxLineLength:GlowActivityScreen.kt:if (shown.isEmpty()) ListRow("No workouts yet", MetricColors.heart, null, "Workouts you record show up here", dash = false, divider = divider())</ID>
-    <ID>MaxLineLength:GlowActivityScreen.kt:modifier = Modifier.border(1.dp, Color.White.copy(alpha = 0.19f), RoundedCornerShape(6.dp)).padding(horizontal = 6.dp, vertical = 1.dp)</ID>
+    <ID>MaxLineLength:GlowActivityScreen.kt:TaggedNumber(Units.count(count, Units.DOT_LOCALE), null, goalTag.takeIf { h == null || picked == null }, dot = DotSize.Second)</ID>
+    <ID>MaxLineLength:GlowActivityScreen.kt:if (value != null) DotMatrixText(value, Modifier.cardNumber(value), dot = dot) else WaitingDash(Modifier.padding(vertical = 8.dp))</ID>
     <ID>MaxLineLength:GlowActivityScreen.kt:private</ID>
     <ID>MaxLineLength:GlowActivityScreen.kt:state: DayUiState</ID>
+    <ID>MaxLineLength:GlowActivityScreen.kt:{ pm -&gt; Blocks(w.weekEquivalent, MetricColors.steps, PictureSize.Small, pm, target = Activity.MVPA_WEEKLY_TARGET) }</ID>
     <ID>MaxLineLength:GlowCard.kt:GlowCache.peek(GlowCache.Key(still, IntSize(w.roundToInt(), h.roundToInt()), density.density)) ?: GlowCache.latest(still, density.density)</ID>
     <ID>MaxLineLength:GlowCard.kt:it.nativeCanvas.drawBitmap(first.core, null, first.coreIn(w, h), Paint(FILTER).apply { alpha = (lit.coreOpacity * 255).roundToInt().coerceIn(0, 255) })</ID>
     <ID>MaxLineLength:GlowCharts.kt:drawRoundRect(color.copy(alpha = 0.35f), Offset(x - sw - 6.dp.toPx(), labelH / 2 - 4.dp.toPx()), Size(sw, 8.dp.toPx()), CornerRadius(3.dp.toPx()))</ID>
@@ -1210,12 +1208,7 @@
     <ID>MaxLineLength:GlowCharts.kt:fun</ID>
     <ID>MaxLineLength:GlowCharts.kt:if (stage != null &amp;&amp; lastStage != null &amp;&amp; stage != lastStage) haptics.perform(org.openstrap.app.ui.components.HapticEvent.ScrubStep)</ID>
     <ID>MaxLineLength:GlowCharts.kt:val i = x?.takeIf { values.isNotEmpty() &amp;&amp; width &gt; 0f }?.let { tx -&gt; (tx / (width / values.size)).toInt().coerceIn(0, values.size - 1) }</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:Orchid</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:Text(text, color = color, style = MaterialTheme.typography.labelSmall, modifier = Modifier.align(androidx.compose.ui.BiasAlignment(bias, 0f)))</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:drawLine(Color.White.copy(alpha = 0.15f), Offset(px(from.toFloat()), y), Offset(px(to.toFloat()), y), 6.dp.toPx(), StrokeCap.Round)</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:drawLine(Orchid.copy(alpha = 0.5f), Offset(px(low.toFloat()), y), Offset(px(high.toFloat()), y), 12.dp.toPx(), StrokeCap.Round)</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:if (v == null) return if (t.habit == Healthspan.Habit.Vo2max) "No VO2 max from workouts yet, counted as typical" else "Not enough data yet, counted as typical"</ID>
-    <ID>MaxLineLength:GlowHealthspan.kt:private</ID>
+    <ID>MaxLineLength:GlowHealthspan.kt:Layout</ID>
     <ID>MaxLineLength:GlowHealthspanScreen.kt:drawLine(Color.White.copy(alpha = 0.35f), Offset(mid, y - 5.dp.toPx()), Offset(mid, y + 5.dp.toPx()), 1.5.dp.toPx(), StrokeCap.Round)</ID>
     <ID>MaxLineLength:GlowHealthspanScreen.kt:if (pace != null) PaceScale(marker = (pace + 1f) / 4f, color = MetricColors.habitAge, Modifier.padding(start = RowIcon + RowIconGap, bottom = GlowLayout.RowPadding))</ID>
     <ID>MaxLineLength:GlowLayout.kt:Layout</ID>
@@ -1224,13 +1217,9 @@
     <ID>MaxLineLength:GlowList.kt:*</ID>
     <ID>MaxLineLength:GlowList.kt:.</ID>
     <ID>MaxLineLength:GlowList.kt:Icon(icon, null, tint = iconTint.copy(alpha = iconTint.alpha * if (waiting) WAITING_ICON_ALPHA else 1f), modifier = Modifier.size(RowIcon))</ID>
+    <ID>MaxLineLength:GlowMetricDetail.kt:*</ID>
     <ID>MaxLineLength:GlowMetricDetail.kt:/** A day's value of [metric]: the live or latest heart rate, the strap's resting heart rate, the day's steps, else the average of its readings. */</ID>
-    <ID>MaxLineLength:GlowMetricDetail.kt:DetailEmpty(if (metric == Metric.Breathing) "Breathing rate is measured during sleep." else "No ${inSentence(metric.title)} for this day yet.")</ID>
-    <ID>MaxLineLength:GlowMetricDetail.kt:DetailEmpty(if (session == null) SleepCopy.noNight(state.date == LocalDate.now()) else "No ${inSentence(metric.title)} readings while asleep.")</ID>
     <ID>MaxLineLength:GlowMetricDetail.kt:DetailSibling$internal</ID>
-    <ID>MaxLineLength:GlowMetricDetail.kt:Modifier.fillMaxWidth().padding(top = 6.dp).clip(shape).background(Color(0xFF121214)).border(1.dp, Color.White.copy(alpha = 0.07f), shape).padding(4.dp)</ID>
-    <ID>MaxLineLength:GlowMetricDetail.kt:Modifier.size(size).clip(CircleShape).background(Color.White.copy(alpha = 0.10f)).clickable(onClickLabel = label, role = Role.Button, onClick = onClick)</ID>
-    <ID>MaxLineLength:GlowMetricDetail.kt:Text("Live", color = if (on) Color.Black else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)</ID>
     <ID>MaxLineLength:GlowMetricDetail.kt:Text(d.label, color = if (d.selected) Color.White else Color.White.copy(alpha = 0.5f), style = GlowType.secondary, maxLines = 1)</ID>
     <ID>MaxLineLength:GlowMetricDetail.kt:band = nightNormal?.let { it.low..it.high }</ID>
     <ID>MaxLineLength:GlowMetricDetail.kt:drawRect(Brush.radialGradient(listOf(color.copy(alpha = 0.4f), Color.Transparent), Offset(size.width / 2, -size.height * 0.1f), size.width * 0.7f))</ID>
@@ -1241,103 +1230,70 @@
     <ID>MaxLineLength:GlowMetricDetail.kt:values</ID>
     <ID>MaxLineLength:GlowParts.kt:.</ID>
     <ID>MaxLineLength:GlowParts.kt:fun</ID>
-    <ID>MaxLineLength:GlowQuiet.kt:Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))</ID>
+    <ID>MaxLineLength:GlowRecoveryScreen.kt:/** Body signals against your normal, each opening its metric, its off tag in place of its word. [waiting] is what a row with no reading says. */</ID>
     <ID>MaxLineLength:GlowRecoveryScreen.kt:HeroFigure(figure.toString(), if (score != null) TodayCopy.recoveryWord(score, alert) else shown?.word.orEmpty(), big = true)</ID>
-    <ID>MaxLineLength:GlowRecoveryScreen.kt:ListPanel</ID>
-    <ID>MaxLineLength:GlowRecoveryScreen.kt:if</ID>
+    <ID>MaxLineLength:GlowRecoveryScreen.kt:androidx.compose.foundation.layout</ID>
     <ID>MaxLineLength:GlowRecoveryScreen.kt:if (score != null) ready.let { TabCopy.learning(it.phase, it.baselineNights) }?.let { CaveatLine(it, MetricColors.readiness) }</ID>
-    <ID>MaxLineLength:GlowRecoveryScreen.kt:if (top.isEmpty()) ListRow("Waiting for a night", MetricColors.readiness, null, "What drove Recovery shows here each morning", dash = false, divider = false)</ID>
     <ID>MaxLineLength:GlowRecoveryScreen.kt:noSleep = isToday &amp;&amp; state.loaded &amp;&amp; state.asleepSeconds == null</ID>
     <ID>MaxLineLength:GlowRecoveryScreen.kt:r: RecoveryResult?</ID>
-    <ID>MaxLineLength:GlowRecoveryScreen.kt:r?.charge</ID>
     <ID>MaxLineLength:GlowRecoveryScreen.kt:ready.phase == Recovery.Phase.Withheld -&gt; TodayCopy.noScoreLine(TodayCopy.NoScore.Learning(ready.baselineNights, Recovery.SCORED_NIGHTS))</ID>
-    <ID>MaxLineLength:GlowSleepScreen.kt:Box(Modifier.weight(seconds.toFloat()).fillMaxHeight().background(stageColor(stage), RoundedCornerShape(StageBarLook.CORNER_DP.dp)))</ID>
-    <ID>MaxLineLength:GlowSleepScreen.kt:SleepCard.Naps -&gt; NapsCard(state, if (pair) m else Modifier.fillMaxWidth().height(GlowGrid.UnitHeight)) { onOpen(Detail.OfScore(Score.Naps)) }</ID>
-    <ID>MaxLineLength:GlowSleepScreen.kt:breathing != null -&gt; if (pair) BreathingSmall(breathing, m) { breathingInfo = true } else BreathingCard(breathing) { breathingInfo = true }</ID>
-    <ID>MaxLineLength:GlowSleepScreen.kt:color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)</ID>
+    <ID>MaxLineLength:GlowRecoveryScreen.kt:signals.skin</ID>
+    <ID>MaxLineLength:GlowSleepScreen.kt:BedWakeBars(week.first, week.second, MetricColors.sleepDeep, PictureSize.Wide, Modifier.fillMaxWidth().height(RegularityBarsHeight))</ID>
+    <ID>MaxLineLength:GlowSleepScreen.kt:SleepStatus(TabCopy.usualTimes(SleepHistory.clockMinutes(u.bedtime), SleepHistory.clockMinutes(u.wake)), Modifier.padding(top = 4.dp))</ID>
     <ID>MaxLineLength:GlowSleepScreen.kt:if (firstNights) TabCopy.FIRST_NIGHT_SLEEP else TabCopy.noNight(state.naps.isNotEmpty(), isToday, deleted = deleted != null)</ID>
-    <ID>MaxLineLength:GlowSleepScreen.kt:pair -&gt; SmallCard(MetricColors.sleepLight, "Breathing disturbances", null, null, AFTER_FIRST_NIGHT, m, waiting = true)</ID>
+    <ID>MaxLineLength:GlowSleepScreen.kt:if (value != null) DotMatrixText(value, Modifier.cardNumber(value), dot = DotSize.Edge) else WaitingDash(Modifier.padding(vertical = 8.dp))</ID>
     <ID>MaxLineLength:GlowSleepScreen.kt:private</ID>
+    <ID>MaxLineLength:GlowSleepScreen.kt:rec</ID>
     <ID>MaxLineLength:GlowSleepScreen.kt:return spans.map { GlowStage((it.start - start).toFloat() / (end - start), (it.end - start).toFloat() / (end - start), rows[it.stage] ?: 0) }</ID>
+    <ID>MaxLineLength:GlowSleepScreen.kt:state</ID>
     <ID>MaxLineLength:GlowSleepScreen.kt:val slots = sleepCards(SleepFacts(breathing = breathing != null || firstNights, naps = state.naps.isNotEmpty(), hasNight = state.sleep != null))</ID>
-    <ID>MaxLineLength:GlowTabletop.kt:GlowLineChart(values, height = GlowLayout.ChartHeight, labels = listOf("00", "06", "12", "18", "24")) { _, v -&gt; "${v.toInt()} bpm" }</ID>
-    <ID>MaxLineLength:GlowTodayScreen.kt:BodyRow("Breathing rate", MetricColors.sleepLight, s.breathRate.avg()?.toFloat(), normal(Metric.Breathing), "", Metric.Breathing)</ID>
-    <ID>MaxLineLength:GlowTodayScreen.kt:BodyRow("Resting heart rate", MetricColors.heart, s.restingHeartRate?.toFloat(), normal(Metric.RestingHr), "", Metric.RestingHr)</ID>
+    <ID>MaxLineLength:GlowStyle.kt:GlowPalette$val body = if (level) hsl(h, s0, LEVEL_BODY_LIGHTNESS) else capped(h + style.bodyHueShift, s * 0.85f, style.bodyLightness, MID_MAX_LUMINANCE)</ID>
+    <ID>MaxLineLength:GlowTodayScreen.kt:/** Each day's steps and the best before, for the Steps card's goal tag ([ActivityHistory.stepsFacts]). Null climbs only to what the goal tells. */</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:HeroKind.Waking -&gt; WakingHero(ctx, lightAngle, { onOpenScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, onRetryRecovery, m)</ID>
-    <ID>MaxLineLength:GlowTodayScreen.kt:TodayCard.Recovery -&gt; RecoveryEarlierCard(ctx.recoveryShown, { openScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, failure = ctx.recoveryFailure, onRetry = onRetryRecovery)</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:if</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:if (ctx.state.loaded) HeroSentence(TodayCopy.waking(ctx.state.asleepSeconds, score, ctx.alert, ctx.noScore, ctx.firstNights, ctx.isToday, deleted = ctx.state.deletedSleep != null))</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:if (slot.size == CardSize.Small) Modifier.fillMaxSize() else Modifier</ID>
-    <ID>MaxLineLength:GlowTodayScreen.kt:onLoad = { openScore(org.openstrap.app.ui.dashboard.Score.Load) }</ID>
+    <ID>MaxLineLength:GlowTodayScreen.kt:latestRecoveryEstimate(ctx.workouts)</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:onOpenWorkout</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:private</ID>
+    <ID>MaxLineLength:GlowTodayScreen.kt:s</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:val dim = if (pairing != null &amp;&amp; slot.card != TodayCard.Hero &amp;&amp; slot.card != TodayCard.EditToday) Modifier.alpha(0.45f) else Modifier</ID>
     <ID>MaxLineLength:GlowTodayScreen.kt:when { ctx.recoveryFailure != null -&gt; FAILED_SHORT; ctx.rec == null -&gt; ctx.waiting; else -&gt; TodayCopy.loadWord(ctx.loadStatus) }</ID>
     <ID>MaxLineLength:GlowType.kt:GlowType$val</ID>
     <ID>MaxLineLength:GlowWorkoutMode.kt:Modifier.fillMaxSize().then(if (scroll) Modifier.imePadding().verticalScroll(rememberScrollState()) else Modifier).statusBarsPadding()</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:Note("Your heart rate has been up since ${clock(o.start)}, ${o.averageHeartRate} bpm on average. Record a ${Workouts.sportName(o.sportType).lowercase()} from ${clock(o.start)}?")</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:Text("Trimmed to start at ${clock(a.shownStart)}. The rest is kept.", color = Color.White.copy(alpha = 0.8f), style = GlowType.secondary, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:WorkoutPage</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:drawLine(color, Offset(x(a.first), y(a.second.toFloat())), Offset(x(b.first), y(b.second.toFloat())), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:else</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:if</ID>
     <ID>MaxLineLength:GlowWorkoutMode.kt:internal</ID>
-    <ID>MaxLineLength:GlowWorkoutMode.kt:modifier = Modifier.clip(RoundedCornerShape(50)).pressClickable(onUndoTrim, RoundedCornerShape(50)).padding(horizontal = 12.dp, vertical = 8.dp)</ID>
     <ID>MaxLineLength:GlowWorkoutMode.kt:private</ID>
     <ID>MaxLineLength:GlowWorkoutScreen.kt:.</ID>
-    <ID>MaxLineLength:GlowWorkoutScreen.kt:CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, LocalDate.now()), true)</ID>
-    <ID>MaxLineLength:GlowWorkoutScreen.kt:CaloriesCopy.inYourDay(WorkoutDetailCopy.sport(w.sportType), k, dayActiveKcal?.roundToInt(), CaloriesCopy.dayWord(date, today), false)</ID>
-    <ID>MaxLineLength:GlowWorkoutScreen.kt:CompositionLocalProvider</ID>
-    <ID>MaxLineLength:GlowWorkoutScreen.kt:ListRow("No workouts yet", MetricColors.heart, null, "Workouts you start in OpenStrap show up here, and the strap's own after a sync.", dash = false, divider = false)</ID>
     <ID>MaxLineLength:GlowWorkoutScreen.kt:Text(text, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 8.dp))</ID>
     <ID>MaxLineLength:GlowWorkoutScreen.kt:else</ID>
-    <ID>MaxLineLength:GlowWorkoutScreen.kt:if (w.trainingLoad != null || (a.recoveryMinutes ?: 0) &gt; 0 || drop != null) LoadCard(a, usual, best = null, drop = drop, onInfo = { info = true })</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:"Lap ${lap.index + 1}"</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:"Zone ${z + 1}"</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:CompositionLocalProvider</ID>
+    <ID>MaxLineLength:GlowWorkoutScreen.kt:if (family != Workouts.Family.Distance &amp;&amp; family != Workouts.Family.Strength) SplitsList(summary, liveRoute = emptyList())</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:FamilySummary.whenLine(a.shownStart, System.currentTimeMillis() / 1000)</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:GoalMomentScreen(rewards.week.count, rewards.week.goal, rewards.inARow, starts, contentPadding, onSettings = { settings = true }, onContinue = done)</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:Modifier.fillMaxWidth(best.toFloat() / seconds[i]).fillMaxHeight().clip(CircleShape).background(if (lit) Color.White else bar)</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:Route.splits(route, summary.pauses)</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:Text("bpm now", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:Text(hero.unit, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp))</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:Text(r.time, color = Color.White, style = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, modifier = Modifier.padding(start = 14.dp))</ID>
+    <ID>MaxLineLength:GlowWorkoutSummary.kt:WorkoutRecorder.liveZoneSeconds(a.heartRate.filter { it.timestamp &lt;= a.end }.map { it.timestamp to it.bpm }, a.maxHeartRate, heartZones).toList()</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:celebrations.goalMoment</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:drop?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 4.dp)) }</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:else</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:hero.line?.let { Text(it, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp)) }</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:r.name</ID>
-    <ID>MaxLineLength:GlowWorkoutSummary.kt:trailingContent = { Spacer(Modifier.width(10.dp)); RoundButton(AppIcons.Info, "About the heart rate drop", onInfo, size = 32.dp) }</ID>
     <ID>MaxLineLength:GlowWorkoutSummary.kt:val moment = rewards != null &amp;&amp; celebrations != null &amp;&amp; rewards.goalMet &amp;&amp; celebrations.goalMoment &amp;&amp; celebrations.momentWeek != rewards.weekStart</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:"Badges, ${view.earned.size} of ${Rewards.BADGES.size}"</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:"This week"</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:BadgeRow(earned.take(if (next != null) 3 else 4) + listOfNotNull(next), locked = { b -&gt; view.earned.none { it.id == b.id } }, face = view::face)</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:RewardsCopy.bestTitle(b.kind)</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:Text("of $goal workouts", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.padding(start = 8.dp))</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:b to (earned[b.id]?.let { shortDate(it.earnedAt) } ?: view.progress[b.id]?.let { (have, need) -&gt; RewardsCopy.progressLine(have, need, b.unit) })</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:if (run &gt; 0) "Weekly streak: $run ${if (run == 1) "week" else "weeks"} in a row" else "${(goal - count).coerceAtLeast(0)} short of your goal"</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:if (shown.isEmpty()) Text("Your bests show here after your first workouts.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp))</ID>
-    <ID>MaxLineLength:GoalsAndBests.kt:if (week?.met == true &amp;&amp; run &gt; 0) StoryChip("$run ${if (run == 1) "week" else "weeks"} in a row", best = false, met = true) else null</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:return (0L until 7L).map { first.plusDays(it).let { d -&gt; d.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault()) to (d in days) } }</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:val earned = view.earned.sortedByDescending { it.earnedAt }.take(5).mapNotNull { r -&gt; Rewards.badge(r.id)?.let { it to shortDate(r.earnedAt) } }</ID>
     <ID>MaxLineLength:GoalsAndBests.kt:val next = view.next?.let { b -&gt; view.progress[b.id]?.let { (have, need) -&gt; b to RewardsCopy.progressLine(have, need, b.unit) } }</ID>
-    <ID>MaxLineLength:GoalsSheet.kt:"Save"</ID>
     <ID>MaxLineLength:GoalsSheet.kt:*</ID>
-    <ID>MaxLineLength:GoalsSheet.kt:.</ID>
     <ID>MaxLineLength:GoalsSheet.kt:Box</ID>
     <ID>MaxLineLength:GoalsSheet.kt:Modifier.fillMaxWidth().focusRequester(focus).onFocusChanged { if (it.isFocused) focused = true else if (focused) commit() }</ID>
-    <ID>MaxLineLength:GoalsSheet.kt:RoundButton(AppIcons.Minus, "Lower the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, -Goals.CALORIES_STEP)) }, size = 44.dp)</ID>
-    <ID>MaxLineLength:GoalsSheet.kt:RoundButton(AppIcons.Plus, "Raise the calorie goal", { typing = false; refused = false; onChange(CalorieGoal.step(value, Goals.CALORIES_STEP)) }, size = 44.dp)</ID>
     <ID>MaxLineLength:GrowFromButton.kt:Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (origin == null) 1f else GrowMotion.contentAlpha(anim.value) }) { content(!visible) }</ID>
     <ID>MaxLineLength:GrowFromButton.kt:GrowMotion$fun</ID>
     <ID>MaxLineLength:HealthConnectExporter.kt:HealthConnectExporter$SleepSessionRecord.STAGE_TYPE_AWAKE, SleepSessionRecord.STAGE_TYPE_AWAKE_IN_BED, SleepSessionRecord.STAGE_TYPE_OUT_OF_BED -&gt; SleepStage.AWAKE</ID>
     <ID>MaxLineLength:HealthConnectExporter.kt:HealthConnectExporter$fun minutes</ID>
     <ID>MaxLineLength:HealthConnectExporter.kt:HealthConnectExporter$private fun meta</ID>
-    <ID>MaxLineLength:HealthConnectPage.kt:PageRow</ID>
-    <ID>MaxLineLength:HealthConnectPage.kt:PageRow("Copy now", "The last 30 days, to Android Health Connect", onClick = onCopyNow, below = true, divider = false, icon = AppIcons.Heartbeat)</ID>
-    <ID>MaxLineLength:HealthConnectPage.kt:PageRow("Restore", "Bring back what OpenStrap saved there", onClick = onRestore, below = true, icon = AppIcons.ArrowCounterClockwise)</ID>
     <ID>MaxLineLength:HealthRepository.kt:HealthRepository$combine(dao.stress(w.from, w.to), stressExcluded(w.from, w.to)) { s, excluded -&gt; s.filter { Recovery.stressCounts(it.timestamp, excluded) } }</ID>
     <ID>MaxLineLength:Healthspan.kt:Healthspan$private</ID>
     <ID>MaxLineLength:Healthspan.kt:Healthspan$return Value.of(VO2_WEIGHT * VO2_PER_MET * mets, VO2_WEIGHT * VO2_PER_MET_LOW * mets, VO2_WEIGHT * VO2_PER_MET_HIGH * mets, -VO2_LIMIT, VO2_LIMIT)</ID>
@@ -1345,19 +1301,14 @@
     <ID>MaxLineLength:Healthspan.kt:Healthspan.Result$val</ID>
     <ID>MaxLineLength:Healthspan.kt:Healthspan.Terms$return Value(fitness.years + rest.sumOf { it.years.toDouble() }.toFloat(), fitness.low + rest.sumOf { it.low.toDouble() }.toFloat(), fitness.high + rest.sumOf { it.high.toDouble() }.toFloat())</ID>
     <ID>MaxLineLength:HealthspanEngine.kt:HealthspanEngine$result</ID>
-    <ID>MaxLineLength:HeartZonesCopy.kt:HeartZonesCopy$MaxHeartRate.Source.Learned -&gt; "Learned from your hardest efforts" + (m.learnedOn?.let { ", " + it.format(DateTimeFormatter.ofPattern("d MMM", locale)) } ?: "")</ID>
-    <ID>MaxLineLength:HeartZonesCopy.kt:HeartZonesCopy$fun</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:BpmStepper(HeartZonesCopy.ENDS_AT, end, { onZones(zones.withEnd(zone, end - 1, maxHr)) }, { onZones(zones.withEnd(zone, end + 1, maxHr)) })</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:BpmStepper(HeartZonesCopy.STARTS_AT, start, { onZones(zones.withStart(zone, start - 1, maxHr)) }, { onZones(zones.withStart(zone, start + 1, maxHr)) })</ID>
-    <ID>MaxLineLength:HeartZonesScreen.kt:DotMatrixText(max?.bpm?.toString() ?: "0", dot = DotSize.Hero, color = if (max != null) Color.White else Color.White.copy(alpha = 0.2f))</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:PageButton(HeartZonesCopy.RESET, { onZones(HeartZones.STANDARD) }, Modifier.fillMaxWidth(), icon = AppIcons.ArrowCounterClockwise)</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:PageButton(HeartZonesCopy.SAVE, { onMax(value) }, Modifier.weight(1f), enabled = value != null, primary = true, icon = AppIcons.Tick02)</ID>
-    <ID>MaxLineLength:HeartZonesScreen.kt:Text("$bpm bpm", color = Color.White, style = GlowType.sentence, modifier = Modifier.width(110.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:ZoneRow(z, if (max != null) HeartZonesCopy.zoneBpm(zones, z, max.bpm) else "", divider = z &gt; 0) { if (max != null) editing = z }</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:if (max != null) Text(HeartZonesCopy.source(max), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:if (max.source == MaxHeartRate.Source.Set) PageButton(HeartZonesCopy.LEARN_IT, { onMax(null) }, Modifier.weight(1f), icon = AppIcons.ArrowCounterClockwise)</ID>
     <ID>MaxLineLength:HeartZonesScreen.kt:item { Text(HeartZonesCopy.NOTE, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(horizontal = 4.dp)) }</ID>
-    <ID>MaxLineLength:HeartZonesScreen.kt:text</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$else</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$if</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$is OsaResult -&gt; osaResults += OsaResultRow(r.timestamp, r.odiValidTime, r.odiRefined, r.odiScore, r.odiDispCode, r.odNumRefined, r.version)</ID>
@@ -1367,61 +1318,43 @@
     <ID>MaxLineLength:HistorySync.kt:HistorySync$log("history ${spec.type}: ${payload.size} bytes (${chunk.sizeField}×$unit) from ${Instant.ofEpochSecond(headerTime)}: ${payload.copyOf(minOf(32, payload.size)).toHex()}")</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$log("history workout ${Instant.ofEpochSecond(w.summary.trackId)}: type ${w.summary.sportType}, subtype ${w.summary.subtype}, ${w.detail?.heartRate?.size ?: 0} HR samples")</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$val parsed = spec?.parser?.parse(payload, ParseContext(header, activityRecordSize = recordSize(code, payload, chunk.sizeField)))</ID>
-    <ID>MaxLineLength:HistorySync.kt:HistorySync$val reason = if (!gatt.connected.value) "The link to the strap dropped." else e.message?.takeUnless { e.cause != null &amp;&amp; it == e.cause.toString() }</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$val reply = session.request(Endpoints.READINESS, ReadinessCodec.scoreRequest(since), 8_000) { it.isNotEmpty() &amp;&amp; it.u8(0) == ReadinessCodec.SCORE + 1 }</ID>
     <ID>MaxLineLength:HistorySync.kt:HistorySync$when</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$"${(Activity.HR_VIGOROUS_HRR * 100).toInt()}%. A vigorous minute counts double, as in the World Health Organization's 2020 guidelines."</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$"Active kcal are what moving burned on top of your body's use at rest. The total adds that rest. Both are estimates, in kilocalories (kcal)."</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$"Minutes of brisk movement or harder over the last 7 days, against the ${Activity.MVPA_WEEKLY_TARGET} a week health guidelines aim for."</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$"Points for the minutes your heart rate is raised, harder minutes earning more, over the last 7 days. Aim for ${ActivityCopy.HEART_POINTS_TARGET}."</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$e.sex?.let { add("That's typical of a ${if (it == org.openstrap.app.data.settings.UserProfile.Sex.Male) "man" else "woman"} aged about ${a.first} to ${a.last}.") }</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$fun</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$if (normal == null) return "Your normal shows after ${History.MIN_NORMAL_DAYS} $word with data. ${days.coerceAtMost(History.MIN_NORMAL_DAYS)} so far."</ID>
-    <ID>MaxLineLength:InfoCopy.kt:InfoCopy$ready.fallbackRestingHr?.let { add("Last night's own resting heart rate wasn't clean enough, so the strap's ${it.toInt()} bpm stands in.") }</ID>
     <ID>MaxLineLength:InfoSheet.kt:.</ID>
     <ID>MaxLineLength:InfoSheet.kt:Modifier.padding(top = 24.dp).fillMaxWidth().background(Color(0xFF141416), GlowLayout.CardShape).padding(horizontal = 18.dp)</ID>
     <ID>MaxLineLength:InfoSheet.kt:fun widest</ID>
     <ID>MaxLineLength:Insights.kt:/* Black glass: what passes under is blurred and darkened until only its colour shows; a light catching the top edge, shade along the bottom. */</ID>
+    <ID>MaxLineLength:LevelPictureSamples.kt:DayBars(if (off) listOf(12f, 40f, 8f, null, 22f, 35f, 52f) else listOf(18f, 25f, 9f, 30f, 14f, 21f, 31f), MetricColors.heart, size, m, target = 30f)</ID>
+    <ID>MaxLineLength:LevelPictureSamples.kt:WeekRings(if (off) listOf(1f, 1f, 1f, 1f, 1f, 1f, 1.2f) else listOf(1f, 1f, 0.55f, 1f, 0.7f, 0.02f, null), MetricColors.steps, size, m)</ID>
+    <ID>MaxLineLength:LevelPictureSamples.kt:draw = { size, off, m -&gt; WeekOfDots(if (off) breathingWeekOff else breathingWeek, breathingUsual, MetricColors.sleepLight, size, m) }</ID>
+    <ID>MaxLineLength:LevelPictureSamples.kt:draw = { size, off, m -&gt; if (off) RangeFill(58f, 50f, MetricColors.charge, size, m) else RangeFill(34f, 72f, MetricColors.charge, size, m) }</ID>
+    <ID>MaxLineLength:LevelPictures.kt:bar(ink.copy(alpha = splitAlpha(p.rank)), p.start, p.end, cy, h, roundStart = k == 0, roundEnd = k == laid.lastIndex, inner = 3.dp.toPx())</ID>
+    <ID>MaxLineLength:LevelPictures.kt:drawRoundRect(ink.copy(alpha = BAND_ALPHA), Offset(x(g.bandStart), cy - bandH / 2), Size(x(g.bandEnd) - x(g.bandStart), bandH), CornerRadius(5.dp.toPx()))</ID>
+    <ID>MaxLineLength:LevelPictures.kt:fun</ID>
+    <ID>MaxLineLength:LevelPictures.kt:internal</ID>
+    <ID>MaxLineLength:LevelPictures.kt:internal fun rangeFillGeometry: RangeFillGeometry</ID>
+    <ID>MaxLineLength:LevelPictures.kt:private</ID>
+    <ID>MaxLineLength:LevelPictures.kt:return LevelFillGeometry(usual?.start?.let { share(it, 0f, top) }, usual?.endInclusive?.let { share(it, 0f, top) }, share(value, 0f, top))</ID>
     <ID>MaxLineLength:LightSpec.kt:GlossSpec(false, listOf(0f to Color.White.copy(alpha = 0.04f), 0.75f to Color.White.copy(alpha = 0.08f), 1f to Color.White.copy(alpha = 0.35f)))</ID>
     <ID>MaxLineLength:LightSpec.kt:GlossSpec(false, listOf(0f to Color.White.copy(alpha = 0.35f), 0.25f to Color.White.copy(alpha = 0.08f), 1f to Color.White.copy(alpha = 0.04f)))</ID>
     <ID>MaxLineLength:LightSpec.kt:GlossSpec(true, listOf(0f to Color.White.copy(alpha = 0.35f), 0.25f to Color.White.copy(alpha = 0.08f), 1f to Color.White.copy(alpha = 0.04f)))</ID>
     <ID>MaxLineLength:LightSpec.kt:rims += InsetShadow(-vx * g * 0.6f, -vy * g * 0.6f, blur = g * 1.2f, spread = -g * 0.5f, p.light.copy(alpha = k.coerceAtMost(1f)))</ID>
-    <ID>MaxLineLength:LiveDistance.kt:"${org.openstrap.app.ui.workout.StartCopy.structureName(structure)}, ${org.openstrap.app.ui.workout.StartCopy.restText(structure.rest)} rest"</ID>
+    <ID>MaxLineLength:LinePictures.kt:addRoundRect(RoundRect(Rect(p.x0 * this@Canvas.size.width, mid - h / 2, p.x1 * this@Canvas.size.width, mid + h / 2), CornerRadius(h / 2)))</ID>
+    <ID>MaxLineLength:LinePictures.kt:drawRoundRect(ink.normalBand(), Offset(0f, top), Size(this.size.width, (y(band.start) - top).coerceAtLeast(1f)), CornerRadius(4.dp.toPx()))</ID>
     <ID>MaxLineLength:LiveDistance.kt:Column</ID>
     <ID>MaxLineLength:LiveDistance.kt:Modifier.clip(RoundedCornerShape(50)).background(org.openstrap.app.ui.glow.Raised).padding(horizontal = 14.dp, vertical = 9.dp)</ID>
-    <ID>MaxLineLength:LiveDistance.kt:Text("Rep ${round.index + 1}", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)</ID>
-    <ID>MaxLineLength:LiveDistance.kt:Text(if (speed) "Speed" else "Pace", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:LiveDistance.kt:Text(if (speed) "km/h" else "/km", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1)</ID>
     <ID>MaxLineLength:LiveDistance.kt:if (line != null) Text(line, color = Color.White, style = GlowType.sentence, textAlign = androidx.compose.ui.text.style.TextAlign.Center)</ID>
-    <ID>MaxLineLength:LiveDistance.kt:is org.openstrap.app.data.Phase.Work -&gt; m.nextRest?.let { "Then rest ${org.openstrap.app.ui.workout.StartCopy.restText(it)}" } ?: "Last rep"</ID>
     <ID>MaxLineLength:LiveDistance.kt:r</ID>
-    <ID>MaxLineLength:LiveDistance.kt:when { work -&gt; "$repName rep"; rest -&gt; "Rest"; m.phase == org.openstrap.app.data.Phase.WarmUp -&gt; "Warming up"; else -&gt; "Done" }</ID>
     <ID>MaxLineLength:LiveDistance.kt:}</ID>
     <ID>MaxLineLength:LiveFrame.kt:Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, label, tint = Color.White, modifier = Modifier.size(20.dp))</ID>
     <ID>MaxLineLength:LiveFrame.kt:Icon(if (r.paused) AppIcons.PlayFill else AppIcons.PauseFill, pauseLabel, tint = Color.Black, modifier = Modifier.size(30.dp))</ID>
     <ID>MaxLineLength:LiveFrame.kt:Row</ID>
-    <ID>MaxLineLength:LiveFrame.kt:WorkoutButton("Pause", Raised, Color.White, controls.onPause, Modifier.weight(1f), icon = AppIcons.PauseFill, height = 52.dp)</ID>
-    <ID>MaxLineLength:LiveFrame.kt:WorkoutButton("Resume", Color.White, Color.Black, controls.onResume, Modifier.weight(1f), icon = AppIcons.PlayFill, height = 64.dp)</ID>
-    <ID>MaxLineLength:LiveFrame.kt:else</ID>
-    <ID>MaxLineLength:LiveFrame.kt:if</ID>
     <ID>MaxLineLength:LiveFrame.kt:internal</ID>
     <ID>MaxLineLength:LiveFrame.kt:internal val LiveFigure = GlowType.sentence.copy(fontSize = 26.sp, lineHeight = 30.sp, letterSpacing = (-0.02).em, fontFeatureSettings = "tnum")</ID>
     <ID>MaxLineLength:LiveFrame.kt:val side = org.openstrap.app.ui.glow.GlowLayout.pageSide(maxWidth, org.openstrap.app.ui.glow.LocalPageColumn.current, org.openstrap.app.ui.glow.GlowLayout.Gutter)</ID>
-    <ID>MaxLineLength:LiveGame.kt:Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(50)).background(if (on) ZONE_COLORS[i] else Color.Black.copy(alpha = 0.35f)))</ID>
-    <ID>MaxLineLength:LiveGame.kt:if (bpm != null) DotMatrixText("$bpm", dot = DotSize.Detail) else Text(WorkoutCopy.noHeartRate(r.paused, connected), color = Color.White, style = GlowType.sentence)</ID>
-    <ID>MaxLineLength:LiveGame.kt:if (periods != null &amp;&amp; phase is Phase.Rest) WorkoutButton("Start ${StartCopy.periodName(phase.round + 1, periods.rounds).lowercase()}", Color.White, Color.Black, onHalfTime, icon = AppIcons.PlayFill, height = 64.dp)</ID>
     <ID>MaxLineLength:LiveGame.kt:if (periods != null &amp;&amp; phase is Phase.Work) WorkoutButton(StartCopy.breakName(periods.rounds), Color.White, Color.Black, onHalfTime, icon = AppIcons.PauseFill, height = 64.dp)</ID>
     <ID>MaxLineLength:LiveGame.kt:workoutClock((WorkoutRecorder.activeSeconds(r.workout, now()) - WorkoutRecorder.activeSeconds(r.workout, phase.start)).coerceAtLeast(0))</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$action = if (m.everyMinute) GlanceAction.Skip else GlanceAction.Pause</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$figure = "${i.activeSeconds / 60}"</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$figure = figure</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$goal = listOfNotNull(heart?.let { "$it." }, s.restBelow?.let { "Ends sooner once you stay under $it." }).joinToString(" ").ifEmpty { null }</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$line1 = "All ${m.rounds} ${word.lowercase()}s done"</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$line1 = "Warming up, ${base.clock}"</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$line2</ID>
     <ID>MaxLineLength:LiveGlance.kt:Glance$progress = s.restTotal?.takeIf { it &gt; 0 }?.let { GlanceProgress((s.restLeft.toFloat() / it).coerceIn(0f, 1f), drain = true) }</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$tint = GlanceTint.Asking</ID>
-    <ID>MaxLineLength:LiveGlance.kt:Glance$val done = if (distance &amp;&amp; i.distanceMeters != null) "$sport, ${kmWithUnit(i.distanceMeters)} so far" else "$sport, $clock so far"</ID>
     <ID>MaxLineLength:LiveGlance.kt:internal</ID>
     <ID>MaxLineLength:LiveGlance.kt:val ran = route.filter { it.t &gt;= p.start }.takeIf { it.size &gt; 1 }?.let { Route.distance(it, r.workout.pauseRanges).toFloat() } ?: 0f</ID>
     <ID>MaxLineLength:LiveHeart.kt:LiveDistanceScreen(r, liveHeartRate, recent, stats, connection, contentPadding, controls, route, history, onLap, liveView, onLiveView, kcal, onSkip, split, compact)</ID>
@@ -1432,46 +1365,22 @@
     <ID>MaxLineLength:LiveHeart.kt:return org.openstrap.app.data.Summaries.bucketMeans(recent, (WINDOW_S / BUCKET_S).toInt(), { ((it.first - from) / BUCKET_S).toInt() }, { it.second.toFloat() })</ID>
     <ID>MaxLineLength:LiveIndoor.kt:if (r.structure is org.openstrap.app.data.Structure.Reps) RepCard(r, emptyList(), recent, liveHeartRate.takeIf { connected &amp;&amp; !r.paused })</ID>
     <ID>MaxLineLength:LiveIntervals.kt:Column</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:Icon(if (label == "Done") AppIcons.Tick02 else AppIcons.SkipFill, label, tint = Color.White, modifier = Modifier.size(20.dp))</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:Modifier.fillMaxWidth().height(56.dp).semantics { contentDescription = "Peak heart rate per round: " + peaks.filterNotNull().joinToString(", ") }</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:Phase.WarmUp -&gt; PhaseFigure("Warm up", "${m.rounds} rounds after it", "Warming up", null, "Start the rounds when you're ready", compact)</ID>
     <ID>MaxLineLength:LiveIntervals.kt:Row</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:Text(peaks.filterNotNull().joinToString(", ") + " bpm", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:LiveIntervals.kt:if (line.isNotEmpty()) Text(line, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center)</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:is Phase.Rest -&gt; if (!compact) WorkoutButton("+10 s", OverGlow, Color.White, onAddRest, Modifier.align(Alignment.CenterHorizontally).width(140.dp), height = 52.dp)</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:is Phase.Work -&gt; if (m.everyMinute) WorkoutButton("Done", Color.White, Color.Black, onSkip, icon = AppIcons.Tick02, height = tall)</ID>
-    <ID>MaxLineLength:LiveIntervals.kt:val h = if (p == null) 4.dp.toPx() else ((p - low).toFloat() / (top - low).coerceAtLeast(1)).coerceIn(0.15f, 1f) * size.height</ID>
     <ID>MaxLineLength:LiveIntervals.kt:where: String</ID>
     <ID>MaxLineLength:LiveIntervals.kt:zone?.let { Spacer(Modifier.width(16.dp)); Text(WorkoutCopy.zoneLine(it), color = Color.White, style = GlowType.secondary, maxLines = 1) }</ID>
     <ID>MaxLineLength:LiveMap.kt:Box(Modifier.size(6.dp).clip(CircleShape).background(if (acc != null &amp;&amp; acc &lt;= Route.MAX_ACCURACY_M) TrendGood else TrendBad))</ID>
-    <ID>MaxLineLength:LiveMap.kt:MapButton(AppIcons.MapFold, if (routeOnly) "Show the map" else "Show route only, no map", lit = routeOnly) { routeOnly = !routeOnly }</ID>
     <ID>MaxLineLength:LiveMap.kt:RoundIcon(icon, label, onClick, surface = if (lit) Color.White else OverMap, ink = if (lit) Color.Black else Color.White, iconSize = 20.dp)</ID>
     <ID>MaxLineLength:LiveMap.kt:Text(line, color = Color.White, style = GlowType.body.copy(fontFeatureSettings = "tnum"), maxLines = 1, modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:LiveMind.kt:LiveFrame</ID>
     <ID>MaxLineLength:LivePaused.kt:internal</ID>
     <ID>MaxLineLength:LiveSets.kt:Box(Modifier.size(14.dp).clip(CircleShape).background(if (i &lt; done || now) Color.White else Color.Black.copy(alpha = 0.35f)))</ID>
-    <ID>MaxLineLength:LiveSets.kt:Box(Modifier.weight(1f)) { WorkoutButton("Start set ${moment.setNumber}", Color.White, Color.Black, onStartSet, icon = AppIcons.PlayFill, height = tall) }</ID>
     <ID>MaxLineLength:LiveSets.kt:Column</ID>
-    <ID>MaxLineLength:LiveSets.kt:LogStepper("Reps", reps.toString(), "Fewer reps", "More reps", Modifier.weight(1f), { reps = Strength.stepReps(reps, -1) }, { reps = Strength.stepReps(reps, 1) })</ID>
-    <ID>MaxLineLength:LiveSets.kt:LogStepper("kg", Strength.kgText(kg), "Less weight", "More weight", Modifier.weight(1f), { kg = Strength.stepKg(kg, -1) }, { kg = Strength.stepKg(kg, 1) })</ID>
-    <ID>MaxLineLength:LiveSets.kt:Modifier.fillMaxWidth().clip(GlowLayout.CardShape).border(1.5.dp, Color.White.copy(alpha = 0.2f), GlowLayout.CardShape).padding(20.dp)</ID>
-    <ID>MaxLineLength:LiveSets.kt:Text("All $target sets done. Hold the square to end, or keep going.", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center)</ID>
-    <ID>MaxLineLength:LiveSets.kt:Text("Filled from your last set. Change only what's different.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
-    <ID>MaxLineLength:LiveSets.kt:Text("after " + WorkoutCopy.setOf(done, r.workout.setsTarget).lowercase(), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:LiveSets.kt:Text(WorkoutCopy.restRule(rule.belowBpm), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
-    <ID>MaxLineLength:LiveSets.kt:Text(WorkoutCopy.setOf(number, r.workout.setsTarget) + " next. Tap Start when you pick up the weight.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:LiveSets.kt:Text(WorkoutCopy.setOf(number, r.workout.setsTarget), color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:LiveSets.kt:Text(if (number == 1) "Ready for set 1" else "Rest over", color = Color.White, style = GlowType.cardTitle, maxLines = 1, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:LiveSets.kt:if (bpm != null) Text("$bpm bpm" + (drop?.takeIf { it &gt; 0 }?.let { ", down $it" } ?: ""), color = Color.White, style = GlowType.sentence)</ID>
     <ID>MaxLineLength:LiveSets.kt:if (naming) ExerciseSheet(r.exercise, exercises.map { it.name }, onPick = { onExercise(it); naming = false }, onDismiss = { naming = false })</ID>
-    <ID>MaxLineLength:LiveSets.kt:if (typed.isEmpty()) Text("Type a name", color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.body)</ID>
-    <ID>MaxLineLength:LiveSets.kt:if (typed.isNotBlank()) Icon(AppIcons.Tick02, "Use this name", tint = Color.White, modifier = Modifier.size(28.dp).clip(CircleShape).pressClickable({ onPick(typed) }, CircleShape).padding(4.dp))</ID>
-    <ID>MaxLineLength:LiveSets.kt:names.forEachIndexed { i, name -&gt; PageRow(name, value = if (name.equals(current, ignoreCase = true)) "Now" else null, divider = i &gt; 0, onClick = { onPick(name) }) }</ID>
     <ID>MaxLineLength:LiveSets.kt:private</ID>
-    <ID>MaxLineLength:LiveSets.kt:r.inSet -&gt; WorkoutButton("Set done", Color.White, Color.Black, { haptics.perform(HapticEvent.SetDone); onSetDone() }, icon = AppIcons.Tick02, height = tall)</ID>
     <ID>MaxLineLength:MaxHeartRates.kt:MaxHeartRates$private suspend fun work: MaxHeartRate</ID>
-    <ID>MaxLineLength:MomentHeader.kt:RoundButton(AppIcons.User, if (updateWaiting) "You, a new version is ready" else "You", "Open You", g.onClick, g.modifier, dot = updateWaiting)</ID>
-    <ID>MaxLineLength:MomentHeader.kt:icon: androidx.compose.ui.graphics.vector.ImageVector</ID>
     <ID>MaxLineLength:MomentWidget.kt:Intent(context, MainActivity::class.java).putExtra(MainActivity.EXTRA_MOMENT, MainActivity.MOMENT_NOW).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)</ID>
     <ID>MaxLineLength:MomentWidget.kt:MomentChartKind.Line -&gt; ghostLineGeometry(chart.shares, null, 1f, w, h, f.density)?.let { drawGhostLine(c, it, Color.White, f.density) }</ID>
     <ID>MaxLineLength:MomentWidget.kt:MomentWidget$override fun sample: MomentWidgetModel</ID>
@@ -1487,26 +1396,18 @@
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentLayout$val waiting = if (m.number == null &amp;&amp; sentence == null) m.waiting?.let { line(listOf(it), FIGURE_SIZES, width, fontScale) } else null</ID>
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentLight$data</ID>
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentWidgetModel.Content$e.points.forEach { p -&gt; if (p.t in wake..t) { val i = ((p.t - wake) / step).toInt().coerceAtMost(n); sums[i] += p.value; counts[i]++ } }</ID>
-    <ID>MaxLineLength:MomentWidgetModel.kt:MomentWidgetModel.Content$figures = if (e != null &amp;&amp; left != null &amp;&amp; drained != null) listOf("Drained $drained, recharged ${e.recharged}", "Drained $drained") else emptyList()</ID>
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentWidgetModel.Content$return MomentChart(MomentChartKind.Line, values = values, low = low, high = high, from = clock(start), to = clock(points.last().x), description = description)</ID>
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentWidgetModel.Content$sentences = shorter(TodayCopy.waking(input.night?.asleepSeconds, input.score, input.alert, input.noScore, input.firstNights, isToday = true, deleted = input.nightDeleted))</ID>
     <ID>MaxLineLength:MomentWidgetModel.kt:MomentWidgetModel.Content$val wake = input.inputs.sleepEnd ?: today.atTime(org.openstrap.app.data.MomentResolver.WAKE_FALLBACK).atZone(zone).toEpochSecond()</ID>
     <ID>MaxLineLength:Motion.kt:fun</ID>
-    <ID>MaxLineLength:MovingBorder.kt:drawRoundRect(brush, Offset(inset, inset), Size(size.width - thin, size.height - thin), CornerRadius(corner - inset), style = Stroke(thin))</ID>
-    <ID>MaxLineLength:MovingBorder.kt:drawRoundRect(brush, Offset(inset, inset), Size(size.width - thin, size.height - thin), CornerRadius(corner), alpha = 0.28f, style = Stroke(halo))</ID>
     <ID>MaxLineLength:Narrative.kt:Narrative$/** Under 6 h asleep: the bottom of Zepp's duration bands (codemap 06 §4.2), and 56 on [org.openstrap.app.data.Recovery.durationScore]. */</ID>
-    <ID>MaxLineLength:Narrative.kt:Narrative$calm != null -&gt; "Stress counts from ${t.value}: ${org.openstrap.app.data.Recovery.STRESS_MARGIN} above your calm level of $calm over the last ${t.days} days."</ID>
-    <ID>MaxLineLength:Narrative.kt:Narrative$left &gt; 0 -&gt; "Stress counts from ${t.value} for now. After ${if (left == 1) "1 more day" else "$left more days"} of wear it adjusts to your own calm level."</ID>
     <ID>MaxLineLength:OpenStrapApp.kt:AppContainer$app</ID>
     <ID>MaxLineLength:PageParts.kt:Text(placeholder, color = Color.White.copy(alpha = 0.3f), style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:PageParts.kt:Text(title, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:PageParts.kt:Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:PageParts.kt:drawRoundRect(Color.White, topLeft = Offset(-w + (size.width + w) * slide.value, 0f), size = Size(w, size.height), cornerRadius = r)</ID>
-    <ID>MaxLineLength:PageParts.kt:fun</ID>
     <ID>MaxLineLength:PageParts.kt:if (note != null) Text(note, color = RowValueColor, style = GlowType.secondary, modifier = Modifier.padding(bottom = GlowLayout.RowPadding))</ID>
     <ID>MaxLineLength:PageParts.kt:if (subtitle != null) Text(subtitle, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)</ID>
     <ID>MaxLineLength:PageParts.kt:if (value != null) Text(value, color = RowValueColor, style = GlowType.secondary, maxLines = 2, overflow = TextOverflow.Ellipsis)</ID>
-    <ID>MaxLineLength:PageParts.kt:modifier.fillMaxWidth().clip(PanelShape).background(PanelSurface, PanelShape).border(1.dp, Color.White.copy(alpha = 0.06f), PanelShape)</ID>
     <ID>MaxLineLength:PageParts.kt:tonalElevation = 0.dp</ID>
     <ID>MaxLineLength:PageParts.kt:trailingIcon = if (on) ({ Icon(AppIcons.Tick02, null, tint = Color.White, modifier = Modifier.size(18.dp)) }) else null</ID>
     <ID>MaxLineLength:Phases.kt:Phases$fun</ID>
@@ -1518,14 +1419,15 @@
     <ID>MaxLineLength:Phases.kt:Structure.Reps$data</ID>
     <ID>MaxLineLength:PhoneAlerts.kt:PhoneAlerts$log("call notification ${sbn.packageName}: type $callType, ongoing ${sbn.isOngoing}, full screen ${n.fullScreenIntent != null}, update $update, filter ${ranking?.matchesInterruptionFilter()} -&gt; ${if (incoming) "ringing" else "not ringing"}")</ID>
     <ID>MaxLineLength:PhoneAlertsScreen.kt:.</ID>
-    <ID>MaxLineLength:ProfileScreen.kt:NumberField(feet, { feet = it.take(1) }, "Feet", "ft", !heightBlank &amp;&amp; heightValue == null, Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:ProfileScreen.kt:NumberField(inches, { inches = it.take(2) }, "Inches", "in", !heightBlank &amp;&amp; heightValue == null, Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:ProfileScreen.kt:PageNote(if (activity in 0..4) org.openstrap.app.data.Vo2max.ACTIVITY_LEVELS[activity] else "Pick the level that best matches a usual week.")</ID>
+    <ID>MaxLineLength:PictureCard.kt:val wash = ellipse(c, rx * WASH_REACH_X, ry * WASH_REACH_Y, listOf(ink.copy(alpha = WASH_ALPHA * strength), Color.Transparent), listOf(0f, 1f))</ID>
+    <ID>MaxLineLength:PictureGallery.kt:PictureCard(Color(0xFF4C6FFF), Modifier.weight(1f).height(GlowGrid.UnitHeight), rim = Rim.Corner) { Sample("Rim in the corner", "5:52", null, "Short") }</ID>
+    <ID>MaxLineLength:PictureGallery.kt:PictureCard(Color(0xFF7CF2C9), Modifier.weight(1f).height(GlowGrid.UnitHeight), rim = Rim.End) { Sample("Off, rim at the end", "41", null, "Below usual") }</ID>
+    <ID>MaxLineLength:PictureGallery.kt:PictureCard(Color(0xFFFF8A3D), Modifier.weight(1f).height(GlowGrid.UnitHeight), rim = Rim.Top) { Sample("Rim at the top", "+0.6", "°C", "Above normal") }</ID>
+    <ID>MaxLineLength:PictureGallery.kt:if (unit != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))</ID>
+    <ID>MaxLineLength:PictureRim.kt:Rim$*</ID>
     <ID>MaxLineLength:ProfileScreen.kt:ScreenList</ID>
     <ID>MaxLineLength:ProfileScreen.kt:fun</ID>
     <ID>MaxLineLength:ProfileScreen.kt:org.openstrap.app.ui.glow.GlowSegments((1..5).map { "$it" }, activity, { i -&gt; activity = if (activity == i) -1 else i })</ID>
-    <ID>MaxLineLength:ProfileScreen.kt:org.openstrap.app.ui.glow.GlowSegments(listOf("Female", "Male"), if (sex in 0..1) sex else -1, { i -&gt; sex = if (sex == i) 2 else i })</ID>
-    <ID>MaxLineLength:ProfileScreen.kt:org.openstrap.app.ui.glow.GlowSegments(listOf("Metric", "Imperial"), if (imperial) 1 else 0, { switchUnits(it == 1) })</ID>
     <ID>MaxLineLength:ProfileScreen.kt:org.openstrap.app.ui.workout.HeartZonesCopy.MAX_ROW</ID>
     <ID>MaxLineLength:ProfileScreen.kt:val dirty = listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") != initial</ID>
     <ID>MaxLineLength:ProfileScreen.kt:val initial = rememberSaveable { listOf(age, sex, imperial, weight, heightCm, feet, inches, activity, betaBlocker, pregnant, sleepNeed).joinToString("\u0000") }</ID>
@@ -1537,7 +1439,7 @@
     <ID>MaxLineLength:ReadyCardio.kt:Box</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Column</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Modifier.clip(RoundedCornerShape(12.dp)).clickable(onClickLabel = StartCopy.TAP_TO_TYPE, onClick = onClick).padding(horizontal = 8.dp)</ID>
-    <ID>MaxLineLength:ReadyCardio.kt:Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp)</ID>
+    <ID>MaxLineLength:ReadyCardio.kt:Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, CardHairline, GlowLayout.CardShape).padding(16.dp)</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Modifier.focusRequester(focus[i]).onFocusChanged { if (it.isFocused) { focused = i; everFocused = true } else if (focused == i) focused = null }</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Modifier.focusRequester(minutesFocus).tracked(1).onFocusChanged { if (!it.isFocused) hoursDone = false }</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Modifier.weight(1f).height(34.dp).clip(CircleShape).border(1.dp, if (chosen) Color.White else Color.White.copy(alpha = 0.15f), CircleShape)</ID>
@@ -1548,10 +1450,8 @@
     <ID>MaxLineLength:ReadyCardio.kt:Row</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Text("×", color = Color.White.copy(alpha = 0.5f), style = GlowType.goalValueMinor, modifier = Modifier.alignByBaseline().padding(horizontal = 4.dp))</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Text(StartCopy.planTitle(family), color = Color.White.copy(alpha = 0.6f), style = GlowType.body, modifier = Modifier.padding(horizontal = 4.dp))</ID>
-    <ID>MaxLineLength:ReadyCardio.kt:Text(label, color = if (on) Color.Black else Color.White.copy(alpha = 0.85f), style = GlowType.secondary.copy(fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal))</ID>
     <ID>MaxLineLength:ReadyCardio.kt:Text(text, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
     <ID>MaxLineLength:ReadyCardio.kt:TypedValueScope$/** What a [TypedValue]'s lines have: its numbers ([Number]), what's typed so far ([typed], null at rest), the number being typed ([focused]). */</ID>
-    <ID>MaxLineLength:ReadyCardio.kt:ValueStepper</ID>
     <ID>MaxLineLength:ReadyCardio.kt:fun Modifier.tracked</ID>
     <ID>MaxLineLength:ReadyCardio.kt:hours = selected("${seconds / 3600}"); minutes = selected("${seconds / 60 % 60}"); everFocused = false; hoursDone = false; onTyping(true)</ID>
     <ID>MaxLineLength:ReadyCardio.kt:hours = v.copy(text = v.text.filter { it.isDigit() }.takeLast(1), selection = TextRange(1).takeIf { v.text.length &gt; 1 } ?: v.selection)</ID>
@@ -1560,26 +1460,21 @@
     <ID>MaxLineLength:ReadyCardio.kt:if (maxHr != null) Text("${zones.startBpm(z, maxHr)}", color = ink.copy(alpha = ink.alpha * 0.75f), style = GlowType.caption)</ID>
     <ID>MaxLineLength:ReadyCardio.kt:if (maxHr != null) Text(StartCopy.zoneRangeLine(goal, zones, maxHr), color = Color.White.copy(alpha = 0.7f), style = GlowType.body, textAlign = TextAlign.Center)</ID>
     <ID>MaxLineLength:ReadyCardio.kt:private</ID>
-    <ID>MaxLineLength:ReadyCardio.kt:}</ID>
-    <ID>MaxLineLength:ReadyPlans.kt:Modifier.fillMaxWidth().height(10.dp).semantics { contentDescription = "${s.rounds} rounds of ${s.work} seconds work and ${s.rest} seconds rest" }</ID>
     <ID>MaxLineLength:ReadyPlans.kt:PlanChoice</ID>
     <ID>MaxLineLength:ReadyPlans.kt:Workouts.Family.Intervals</ID>
     <ID>MaxLineLength:ReadyPlans.kt:if (i &lt; s.rounds - 1 &amp;&amp; s.rest &gt; 0) Box(Modifier.weight(s.rest.toFloat()).height(10.dp).clip(CircleShape).background(MetricColors.sleepDeep))</ID>
     <ID>MaxLineLength:ReadyPlans.kt:internal</ID>
-    <ID>MaxLineLength:ReadyPlans.kt:listOf(NumberField("${rounds.period}", "s a round"), NumberField("${rounds.rounds}", "rounds", length = 2, style = GlowType.goalValueMinor))</ID>
     <ID>MaxLineLength:ReadyScreen.kt:PageSwitchRow(StartCopy.WARM_UP, StartCopy.WARM_UP_NOTE, rounds.warmUp, { structureCode = rounds.warm(it).code }, divider = false)</ID>
     <ID>MaxLineLength:ReadyScreen.kt:Row(Modifier.weight(1f), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically, content = value)</ID>
     <ID>MaxLineLength:ReadyScreen.kt:SportPicker(type, recentSports, contentPadding, onPick = { onSport(it); picking = false }, onBack = { if (pickSport) onBack() else picking = false })</ID>
-    <ID>MaxLineLength:ReadyScreen.kt:Text(StartCopy.strapLine(connection, liveHeartRate), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
-    <ID>MaxLineLength:ReadyScreen.kt:Text(text, color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption, modifier = Modifier.padding(start = 4.dp))</ID>
     <ID>MaxLineLength:ReadyScreen.kt:pinned = if (typing) null else ({ WorkoutButton(StartCopy.startLabel(type), Color.White, Color.Black, start, icon = AppIcons.PlayFill, height = 64.dp) })</ID>
     <ID>MaxLineLength:ReadyScreen.kt:type</ID>
     <ID>MaxLineLength:ReadyScreen.kt:{ draft = if (it == null) draft.copy(kind = WorkoutSetup.GoalKind.None) else draft.copy(kind = WorkoutSetup.GoalKind.Time, seconds = it) }</ID>
-    <ID>MaxLineLength:Recovery.kt:Recovery$if (rhr != null &amp;&amp; strapRhr != null &amp;&amp; abs(rhr - strapRhr) &gt; RHR_QA_BPM) add("Resting HR: ours ${rhr.toInt()} bpm, the strap's ${strapRhr.toInt()} bpm")</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$fun</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$if (range.isEmpty()) null else range to Recovery.workoutMinutes(range, dao.workoutHeartRateOnce(w.start).map { it.timestamp to it.bpm })</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$loadTrend</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$phoneWorkoutKcal(w, profile, age, restingHr, maxHr, vo2max, now)?.forEach { if (it.t in day.from..day.to) phone[it.t] = it.kcal }</ID>
+    <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$return Recovery.charge(minutes, params, day.from..day.to, start = 50f, mainSleepEnd = base.tonight?.end, bedtime = base.tonight?.start)</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$suspend</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$val</ID>
     <ID>MaxLineLength:RecoveryEngine.kt:RecoveryEngine$val dailyLoad = { series: List&lt;Pair&lt;Long, Int&gt;&gt; -&gt; Recovery.dailyLoad(series, restingHr, maxHr, female, workoutRanges, asleep) { stepsByMinute[it] } }</ID>
@@ -1593,26 +1488,23 @@
     <ID>MaxLineLength:RecoveryWidget.kt:else -&gt; LargeContent(model, RecoveryLayout.large(model, frame.contentWidth, frame.contentHeight, frame.fontScale, frame.status), frame)</ID>
     <ID>MaxLineLength:RecoveryWidget.kt:frame.bucket == WidgetSizes.Small -&gt; SmallContent(model, RecoveryLayout.small(model, frame.contentWidth, frame.contentHeight, frame.fontScale, frame.status), frame)</ID>
     <ID>MaxLineLength:RecoveryWidget.kt:frame.bucket == WidgetSizes.Wide -&gt; WideContent(model, RecoveryLayout.wide(model, frame.contentWidth, frame.contentHeight, frame.fontScale, frame.status), frame)</ID>
-    <ID>MaxLineLength:RecoveryWidget.kt:val bitmap = renderToBitmap(width * density, WeekBarsLook.HEIGHT_DP * density) { drawWeekBars(it, bars, week.indexOfFirst { d -&gt; d.shown }, Ink) }</ID>
+    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryDay.Companion$off = score != null &amp;&amp; org.openstrap.app.data.History.status(score.toFloat(), r.readinessUsual).let { it != null &amp;&amp; it != 0 }</ID>
+    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$(ladder.map { at(it, true) } + ladder.map { at(it, true, withWeek = false) }).firstOrNull { it.spread.fits(height, MIN_GAP_DP) }?.let { return it }</ID>
     <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$WidgetHero.ladder(WidgetSizes.Small, height).map { at(it, true) }.firstOrNull { it.spread.fits(height, MIN_GAP_DP) }?.let { return it }</ID>
-    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$WidgetHero.ladder(WidgetSizes.Wide, height).map { at(it, true) }.firstOrNull { it.spread.fits(height, MIN_GAP_DP) }?.let { return it }</ID>
     <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$fun</ID>
-    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$org.openstrap.app.ui.glow.draw.WeekBarsLook.column(days, content - dots - WORD_GAP_DP - textWidth(word, WORD_SP, fontScale) - WEEK_GAP_DP)</ID>
-    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$return Fit(top, d, m.word != null, Spread.of(top.height, row, if (figures) figuresHeight(fontScale) else null), figures = figures)</ID>
+    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$return Fit(top, d, m.word != null, Spread.of(top.height, row, if (figures) figuresHeight(fontScale) else null), figures = figures, week = week, weekColumn = column)</ID>
     <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$return Fit(top, d, w, Spread.of(top.height, WidgetDots.height(d), if (w) WidgetText.line(wordSp, fontScale) else null), wordSp = wordSp ?: WORD_SP)</ID>
+    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$return listOf(at(SHORT_DOT, true, false), at(SHORT_DOT, false, false)).firstOrNull { it.spread.fits(height, MIN_GAP_DP) } ?: at(SHORT_DOT, false, false)</ID>
     <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$rowWidth(m, d, fontScale) + WEEK_GAP_DP + org.openstrap.app.ui.glow.draw.WeekBarsLook.width(m.week.size, column) &lt;= width + 0.01f</ID>
+    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$val</ID>
     <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$val lines = if (sentence) m.sentence?.let { WidgetText.wrappedLines(it, sp, width, fontScale) }?.takeIf { it &lt;= SENTENCE_LINES } ?: return null else 0</ID>
-    <ID>MaxLineLength:RecoveryWidgetModel.kt:RecoveryLayout$val spread = Spread.of(top.height, lines.takeIf { it &gt; 0 }?.let { it * WidgetText.line(sp, fontScale) }, row, if (figures) figuresHeight(fontScale) else null)</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards$fun</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards$if (structure is Structure.Timed &amp;&amp; structure.work == Structure.TABATA.work &amp;&amp; structure.rest == Structure.TABATA.rest) earn("first_tabata", e)</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards$ordered.flatMap { w -&gt; w.sets.filter { it.end != null &amp;&amp; it.weightKg != null &amp;&amp; (it.reps ?: 0) &gt; 0 &amp;&amp; !it.exercise.isNullOrBlank() }.map { w to it } }</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards$private</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards$runs.maxByOrNull { it.gpsMeters!! }?.let { out += PersonalBest(Kind.LONGEST_RUN, it.gpsMeters!!.toDouble(), it.shownStart, it.start) }</ID>
     <ID>MaxLineLength:Rewards.kt:Rewards.Stretch.Companion$Stretch(m.toIntOrNull() ?: return@mapNotNull null, s.toLongOrNull() ?: return@mapNotNull null, t.toLongOrNull() ?: return@mapNotNull null)</ID>
-    <ID>MaxLineLength:RewardsCopy.kt:RewardsCopy$"${week.count} of ${week.goal} workouts" + if (week.met) ", goal met." + (if (inARow &gt; 1) " $inARow weeks in a row." else "") else "."</ID>
     <ID>MaxLineLength:RewardsCopy.kt:RewardsCopy$*</ID>
-    <ID>MaxLineLength:RewardsCopy.kt:RewardsCopy$EarnedLine(EarnedLine.Kind.Best, bestTitle(n.best.kind), bestValue(n.best.kind, n.best.value), "New best, ${beatBy(n.best, n.before)}")</ID>
-    <ID>MaxLineLength:RewardsCopy.kt:RewardsCopy$return EarnedLine(EarnedLine.Kind.Goal, if (week.metByThis) "Weekly goal met" else "Weekly goal", "${week.count} of ${week.goal}", note, met = week.count &gt;= week.goal)</ID>
     <ID>MaxLineLength:RewardsCopy.kt:suspend</ID>
     <ID>MaxLineLength:RewardsCopy.kt:val progress = Rewards.BADGES.mapNotNull { b -&gt; Rewards.progress(b, f.workouts, f.days, weeks, thisWeek)?.let { b.id to it } }.toMap()</ID>
     <ID>MaxLineLength:RewardsKeeper.kt:RewardsKeeper$stretches = Rewards.Stretch.parse(p?.stretches)</ID>
@@ -1620,16 +1512,10 @@
     <ID>MaxLineLength:SampleData.kt:SampleData$minutes += ActivityMinute(ts, steps, if (workout) 90 else if (walking) 45 else 5, if (workout) 2 else if (walking) 1 else 0, bpm)</ID>
     <ID>MaxLineLength:ScoreDetail.kt:DetailSentence(DetailCopy.charge(now, atWake, TabCopy.drainedAmount(c.drainedExercise + c.drainedStress + c.drainedLiving).toInt(), c.anchored, isToday, LocalTime.now().hour))</ID>
     <ID>MaxLineLength:ScoreDetail.kt:Score.HeartPoints</ID>
-    <ID>MaxLineLength:ScoreDetail.kt:m.title</ID>
     <ID>MaxLineLength:ScoreDetail.kt:onOpen: (Detail) -&gt; Unit</ID>
-    <ID>MaxLineLength:ScoreDetail.kt:range == Range.Week &amp;&amp; known.isNotEmpty() -&gt; DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 days", null)</ID>
     <ID>MaxLineLength:ScoreDetail.kt:ready.phase == Recovery.Phase.Withheld -&gt; TodayCopy.noScoreLine(TodayCopy.NoScore.Learning(ready.baselineNights, Recovery.SCORED_NIGHTS))</ID>
     <ID>MaxLineLength:ScoreDetail.kt:score</ID>
-    <ID>MaxLineLength:ScoreDetail.kt:score != null -&gt; DetailHeadline(score.toString(), if (isToday) "this morning" else "that morning", TodayCopy.recoveryWord(score, alert))</ID>
     <ID>MaxLineLength:ScoreDetail.kt:values</ID>
-    <ID>MaxLineLength:ShareCards.kt:?:</ID>
-    <ID>MaxLineLength:ShareCards.kt:Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.count, DotSize.Live, 310.dp) }</ID>
-    <ID>MaxLineLength:ShareCards.kt:Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) { StoryNumber(card.time, DotSize.Detail, 310.dp) }</ID>
     <ID>MaxLineLength:ShareCards.kt:Brush.verticalGradient(0f to Color.Transparent, 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.85f))</ID>
     <ID>MaxLineLength:ShareCards.kt:Canvas(Modifier.size(14.dp)) { drawCircle(Color.White.copy(alpha = 0.8f), radius = size.minDimension * 0.34f, style = Stroke(2.4.dp.toPx())) }</ID>
     <ID>MaxLineLength:ShareCards.kt:Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent)))</ID>
@@ -1639,8 +1525,6 @@
     <ID>MaxLineLength:ShareCards.kt:StoryCard.Rounds$class</ID>
     <ID>MaxLineLength:ShareCards.kt:StoryCard.Week$class</ID>
     <ID>MaxLineLength:ShareCards.kt:StoryRouteShape$return points.indices.map { i -&gt; Offset((left + (xs[i] - xs.min()) * scale).toFloat(), (top + (ys[i] - ys.min()) * scale).toFloat()) }</ID>
-    <ID>MaxLineLength:ShareCards.kt:Text("My week", color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
-    <ID>MaxLineLength:ShareCards.kt:Text("Workout time", color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
     <ID>MaxLineLength:ShareCards.kt:Text(card.footer, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:ShareCards.kt:Text(card.goalLine, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
     <ID>MaxLineLength:ShareCards.kt:Text(card.sport, color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())</ID>
@@ -1648,29 +1532,18 @@
     <ID>MaxLineLength:ShareCards.kt:Text(name, color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.weight(1f).padding(end = 12.dp))</ID>
     <ID>MaxLineLength:ShareCards.kt:WeekFigure$internal</ID>
     <ID>MaxLineLength:ShareCards.kt:f.unit?.let { Text(" $it", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.padding(bottom = 3.dp)) }</ID>
-    <ID>MaxLineLength:ShareCards.kt:if</ID>
-    <ID>MaxLineLength:ShareCards.kt:internal</ID>
     <ID>MaxLineLength:ShareCards.kt:s.unit?.let { Text(" $it", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.padding(bottom = 3.dp)) }</ID>
     <ID>MaxLineLength:ShareCards.kt:val (icon, tint) = if (chip.best) AppIcons.FlagCheckered to MetricColors.calories else AppIcons.Target to if (chip.met) MetricColors.good else Color.White</ID>
-    <ID>MaxLineLength:ShareScreen.kt:Row</ID>
     <ID>MaxLineLength:ShareScreen.kt:StoryCardView(card, photo, shown, Modifier.drawWithContent { layer.record { this@drawWithContent.drawContent() }; recorded.complete(Unit) })</ID>
-    <ID>MaxLineLength:ShareScreen.kt:Text("Route", color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.width(84.dp))</ID>
-    <ID>MaxLineLength:ShareScreen.kt:WorkoutButton("Share", Color.White, Color.Black, { if (export == null) export = Export.Share }, Modifier.weight(1f), icon = AppIcons.UploadSimple)</ID>
     <ID>MaxLineLength:ShareScreen.kt:WorkoutButton(saveLabel, Raised, Color.White, { if (export == null) save() }, Modifier.weight(1f), icon = if (saved == true) AppIcons.Tick02 else AppIcons.DownloadSimple)</ID>
-    <ID>MaxLineLength:ShareScreen.kt:modifier.height(44.dp).clip(CircleShape).background(Raised).pressClickable(onClick, CircleShape).padding(start = 16.dp, end = 20.dp)</ID>
     <ID>MaxLineLength:ShareScreen.kt:storyCard(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, hero, earned, usualLoad, System.currentTimeMillis() / 1000)</ID>
-    <ID>MaxLineLength:ShareScreen.kt:style = if (on) GlowType.secondary.copy(fontWeight = FontWeight.SemiBold) else GlowType.secondary</ID>
     <ID>MaxLineLength:ShareScreen.kt:val</ID>
-    <ID>MaxLineLength:SleepCopy.kt:SleepCopy$const val DELETED_INTRO = "Sleep and naps you deleted in the last 7 days. Restoring puts it back in your totals, scores and Health Connect."</ID>
     <ID>MaxLineLength:SleepCopy.kt:SleepCopy$return History.normal(previous(state).mapNotNull { n -&gt; p(n)?.let { DayStat(n.date, it, it, it, 1) } }, state.date.minusDays(1), SLEEP_NIGHTS - 1)</ID>
     <ID>MaxLineLength:SleepDetail.kt:)</ID>
     <ID>MaxLineLength:SleepDetail.kt:Caption(SleepCopy.napHeart(hr.minOf { it.y }.toInt(), hr.map { it.y }.average().toInt()), Modifier.padding(top = 6.dp, bottom = 8.dp))</ID>
-    <ID>MaxLineLength:SleepDetail.kt:ChartTitle("Heart rate", "Lowest ${hr.minOf { it.y }.toInt()}, average ${hr.map { it.y }.average().toInt()} bpm", scrubbed = hrAt)</ID>
     <ID>MaxLineLength:SleepDetail.kt:ContributorRow(f.name, color, f.word, f.fraction, offNormal = f.off, divider = i &gt; 0, detail = f.detail, onClick = { info = true })</ID>
     <ID>MaxLineLength:SleepDetail.kt:DetailCopy.span(Range.Week, DetailCopy.levels(values, normal), nightly = true, normalKnown = normal != null, days = before.size)</ID>
     <ID>MaxLineLength:SleepDetail.kt:Modifier.align(Alignment.BottomCenter).padding(bottom = contentPadding.calculateBottomPadding() + 16.dp, start = 16.dp, end = 16.dp)</ID>
-    <ID>MaxLineLength:SleepDetail.kt:Score.Naps.title</ID>
-    <ID>MaxLineLength:SleepDetail.kt:ScrubLine(hr, window, 100.dp, listOf(clock(nap.start), clock(nap.end)), MetricColors.heart, "bpm") { scrub = it }</ID>
     <ID>MaxLineLength:SleepDetail.kt:Text(SLEEP_NAMES[st].orEmpty(), color = Color.White.copy(alpha = 0.85f), style = GlowType.secondary, modifier = Modifier.width(56.dp))</ID>
     <ID>MaxLineLength:SleepDetail.kt:UndoHost</ID>
     <ID>MaxLineLength:SleepDetail.kt:band = normal?.let { it.low..it.high }</ID>
@@ -1681,13 +1554,11 @@
     <ID>MaxLineLength:SleepDetail.kt:onOpen: (Detail) -&gt; Unit</ID>
     <ID>MaxLineLength:SleepDetail.kt:private</ID>
     <ID>MaxLineLength:SleepDetail.kt:private fun minutesOf: Int</ID>
-    <ID>MaxLineLength:SleepDetail.kt:range == Range.Week &amp;&amp; known.isNotEmpty() -&gt; DetailHeadline(Math.round(known.average()).toString(), "Average of the last 7 nights", null)</ID>
     <ID>MaxLineLength:SleepDetail.kt:val before = state.nights.filter { it.date &lt; state.date }.mapNotNull { n -&gt; n.session?.score?.let { DayStat(n.date, it.toFloat(), it.toFloat(), it.toFloat(), 1) } }</ID>
     <ID>MaxLineLength:SleepDetail.kt:val others = state.nights.takeLast(SleepHistory.WEEK_NIGHTS).filter { it.date != state.date }.mapNotNull { it.asleepSeconds }</ID>
     <ID>MaxLineLength:SleepDetail.kt:val week = state.nights.takeLast(SleepHistory.WEEK_NIGHTS).map { n -&gt; n.date to if (n.date == state.date) score?.toFloat() else n.session?.score?.toFloat() }</ID>
     <ID>MaxLineLength:SleepEdits.kt:SleepEdits$return s.copy(score = score(strap, s, Part(((end - start) / 60).toInt(), null), Part(((strap.end - strap.start) / 60).toInt(), null)))</ID>
     <ID>MaxLineLength:SleepEdits.kt:SleepEdits$val s = strap.copy(start = start, end = end, deepMinutes = null, lightMinutes = null, remMinutes = null, awakeMinutes = null, wakeCount = null)</ID>
-    <ID>MaxLineLength:SleepPanels.kt:NightVital(Metric.HeartRate, "Average heart rate", MetricColors.heart, average?.toString(), if (average != null) "While asleep" else missing)</ID>
     <ID>MaxLineLength:SleepPanels.kt:val spans = week.map { n -&gt; n.session?.let { sinceNoon(it.start, false) to sinceNoon(it.end, true).coerceAtLeast(sinceNoon(it.start, false) + 1) } }</ID>
     <ID>MaxLineLength:SleepRegularity.kt:SleepRegularity$fun</ID>
     <ID>MaxLineLength:SleepRegularity.kt:SleepRegularity.Band$*</ID>
@@ -1696,11 +1567,8 @@
     <ID>MaxLineLength:SleepSource.kt:SleepSource$return edits.filter { it.deleted &amp;&amp; !SleepEdits.expired(it, now) }.sortedByDescending { it.editedAt }.mapNotNull { e -&gt; strapOf(e, edits) }</ID>
     <ID>MaxLineLength:SleepSource.kt:SleepSource$val e = edits.firstOrNull { !it.deleted &amp;&amp; it.nap == session.nap &amp;&amp; it.start == session.start &amp;&amp; it.end == session.end } ?: return null</ID>
     <ID>MaxLineLength:SleepWidgetModel.kt:SleepLayout$listOfNotNull(note, asleep) to hasBar</ID>
-    <ID>MaxLineLength:SleepWidgetModel.kt:SleepWidgetModel.Companion$fun</ID>
-    <ID>MaxLineLength:SleepWidgetModel.kt:SleepWidgetModel.Companion$return SleepWidgetModel(null, TITLE, null, false, null, null, null, null, null, null, emptyList(), emptyList(), emptyList(), line)</ID>
     <ID>MaxLineLength:SleepWidgetModel.kt:SleepWidgetNight.Companion$fun</ID>
     <ID>MaxLineLength:StartCopy.kt:StartCopy$fun</ID>
-    <ID>MaxLineLength:StartCopy.kt:StartCopy$val names = if (goal.low == goal.high) ZONE_NAMES[goal.low].lowercase() else "${ZONE_NAMES[goal.low].lowercase()} to ${ZONE_NAMES[goal.high].lowercase()}"</ID>
     <ID>MaxLineLength:StartWidget.kt:*</ID>
     <ID>MaxLineLength:StartWidget.kt:frame.bucket == WidgetSizes.Small -&gt; Column(GlanceModifier.fillMaxWidth().defaultWeight().then(Inset)) { SmallContent(m, frame) }</ID>
     <ID>MaxLineLength:StartWidget.kt:rec != null &amp;&amp; frame.bucket == WidgetSizes.Small -&gt; Column(GlanceModifier.fillMaxWidth().defaultWeight().then(Inset)) { SmallRecording(m, rec, frame) }</ID>
@@ -1714,9 +1582,10 @@
     <ID>MaxLineLength:StartWidgetModel.kt:StartLayout$return Recording(tile, open, name, false, sp, if (since) SincePlace.Under else SincePlace.None, null, base + if (since) sinceH else 0f, 3)</ID>
     <ID>MaxLineLength:StartWidgetModel.kt:StartLayout$val title = listOf(StartWidgetModel.TITLE, SHORT_TITLE).firstOrNull { WidgetText.fitWidth(it, TopRow.TITLE_SIZES.last(), fontScale) + beside &lt;= width } ?: SHORT_TITLE</ID>
     <ID>MaxLineLength:StartWidgetModel.kt:StartWidgetModel.Companion$val</ID>
-    <ID>MaxLineLength:StepsWidget.kt:WeekChart(ImageProvider(weekBitmap(m, week.column, density)), "Steps each day this week", m.week.map { it.letter to (it.state == StepsDay.Today) }, week.column)</ID>
+    <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$fun</ID>
     <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$height - top.height - r.height(fontScale) - (week?.height ?: 0f) - inner * MIN_GAP_DP &gt;= (if (m.showLine) MIN_LINE_DP else BAR_DP)</ID>
     <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$return WidgetHero.ladder(WidgetSizes.Small, height).map { at(it, word, withShare) }.firstOrNull { it.spread.fits(height, gap) } ?: base</ID>
+    <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$val foot = (if (pills) SMALL_PILLS_DP else BAR_DP) + (if (withShare) SMALL_BAR_GAP_DP + WidgetText.line(WidgetText.SECONDARY_SP, fontScale) else 0f)</ID>
     <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$val rows = WidgetHero.ladder(if (large) WidgetSizes.Large else WidgetSizes.Wide, height).map { numberRow(m.stepsText, m.toGo, width, fontScale, it) }</ID>
     <ID>MaxLineLength:StepsWidgetModel.kt:StepsLayout$val title = WidgetText.width(StepsWidgetModel.THIS_WEEK, sp, fontScale) + WEEK_GAP_DP + WidgetText.width(weekLine, sp, fontScale) &lt;= width</ID>
     <ID>MaxLineLength:StrapController.kt:StrapController$suspend</ID>
@@ -1734,17 +1603,13 @@
     <ID>MaxLineLength:StrapService.kt:StrapService$.</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$PendingIntent.getService(this, action.hashCode(), Intent(this, StrapService::class.java).setAction(action), PendingIntent.FLAG_IMMUTABLE)</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$Status</ID>
-    <ID>MaxLineLength:StrapService.kt:StrapService$else -&gt; listOfNotNull(if (connected.charging) "Strap charging" else "Strap connected", battery?.let { "battery $it%" }).joinToString(", ")</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$n = workoutNotification(w, hr.takeIf { c is ConnectionState.Connected }, c is ConnectionState.Connected, confirming, workout)</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$private</ID>
-    <ID>MaxLineLength:StrapService.kt:StrapService$setContentText(NotificationCopy.END_QUESTION).apply { WorkoutNotification.actions(paused = false, confirming = true, ::service).forEach(::addAction) }</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$style.setProgressSegments(listOf(NotificationCompat.ProgressStyle.Segment(target.kcal.coerceAtLeast(1)).setColor(color)))</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$style.setProgressSegments(listOf(NotificationCompat.ProgressStyle.Segment(target.seconds.toInt().coerceAtLeast(1)).setColor(color)))</ID>
-    <ID>MaxLineLength:StrapService.kt:StrapService$val</ID>
     <ID>MaxLineLength:StrapService.kt:StrapService$val auto = w.endReason == org.openstrap.app.data.db.AppWorkout.END_AUTO || w.endReason == org.openstrap.app.data.db.AppWorkout.END_CAR</ID>
     <ID>MaxLineLength:StrapStatus.kt:fun</ID>
     <ID>MaxLineLength:Summaries.kt:Summaries$bucketMeans(items, ((range.last - range.first + 1) / seconds).toInt().coerceAtLeast(2), { ((time(it) - range.first) / seconds).toInt() }, value)</ID>
-    <ID>MaxLineLength:SummarySections.kt:"${p.hardEfforts} hard ${if (p.hardEfforts == 1) "effort" else "efforts"}"</ID>
     <ID>MaxLineLength:SummarySections.kt:)</ID>
     <ID>MaxLineLength:SummarySections.kt:.</ID>
     <ID>MaxLineLength:SummarySections.kt:Box(Modifier.fillMaxWidth(share).fillMaxHeight().clip(CircleShape).background(if (share &gt;= 1f) color else color.copy(alpha = 0.6f)))</ID>
@@ -1753,66 +1618,49 @@
     <ID>MaxLineLength:SummarySections.kt:Row</ID>
     <ID>MaxLineLength:SummarySections.kt:SummaryHero$internal</ID>
     <ID>MaxLineLength:SummarySections.kt:Text("$it", color = Color.White, style = GlowType.rowValue, maxLines = 1, modifier = Modifier.padding(start = 12.dp))</ID>
-    <ID>MaxLineLength:SummarySections.kt:Text("Earned", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, modifier = Modifier.padding(start = 4.dp))</ID>
-    <ID>MaxLineLength:SummarySections.kt:Text("Zone ${z + 1}, ${ZONE_NAMES[z].lowercase()}", color = Color.White, style = style, maxLines = 1, modifier = Modifier.weight(1f).padding(start = 10.dp))</ID>
     <ID>MaxLineLength:SummarySections.kt:Text(p.name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1, modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:SummarySections.kt:WeekDaysPanel(weekStarts, note = week?.let { FamilySummary.weekGoalLine(it.count, it.goal) }, day = day, color = MetricColors.evening)</ID>
     <ID>MaxLineLength:SummarySections.kt:days: List&lt;Pair&lt;String, Boolean&gt;&gt;</ID>
-    <ID>MaxLineLength:SummarySections.kt:fun at</ID>
-    <ID>MaxLineLength:SummarySections.kt:if (peak) drawLine(Color.White.copy(alpha = 0.12f), Offset(0f, size.height - 0.5f), Offset(size.width, size.height - 0.5f), 1.dp.toPx())</ID>
     <ID>MaxLineLength:SummarySections.kt:letter</ID>
-    <ID>MaxLineLength:SummarySections.kt:line = listOfNotNull(a.workout.averageHeartRate?.let { "Average $it bpm" }, a.activeKcal?.let { "${Math.round(it)} active kcal" }).joinToString(", ").ifEmpty { null }</ID>
-    <ID>MaxLineLength:SummarySections.kt:listOf(load?.toString() to (load?.let { FamilySummary.loadLabel(it, usualLoad) } ?: "Load"), kcal to "Active kcal", peak to "Peak bpm")</ID>
-    <ID>MaxLineLength:SummarySections.kt:private</ID>
-    <ID>MaxLineLength:SummarySections.kt:s.peak?.let { "peak $it" }.orEmpty()</ID>
-    <ID>MaxLineLength:SummarySections.kt:sets &gt; 0 -&gt; SummaryHero("$sets", if (sets == 1) "set" else "sets", listOf(time to "Time", rest to "Avg rest", peak to "Peak"))</ID>
-    <ID>MaxLineLength:SummarySections.kt:val text = note ?: days.count { it.second }.let { n -&gt; "$n ${if (n == 1) "day" else "days"} with a workout ${if (thisWeek) "this" else "that"} week." }</ID>
     <ID>MaxLineLength:SummarySections.kt:workoutClock(t)</ID>
     <ID>MaxLineLength:SyncStates.kt:StrapPreview.Charging -&gt; copy(paired = true, connection = connected.copy(charging = true), sync = SyncState.Idle, record = SyncRecord())</ID>
     <ID>MaxLineLength:SyncStates.kt:StrapPreview.Disconnected -&gt; copy(paired = true, connection = ConnectionState.Disconnected, sync = SyncState.Idle, record = SyncRecord(), lastSeen = now - 18 * 60)</ID>
     <ID>MaxLineLength:SyncStates.kt:StrapPreview.NotPaired -&gt; copy(paired = false, connection = ConnectionState.NotPaired, sync = SyncState.Idle, record = SyncRecord(), lastSeen = null)</ID>
     <ID>MaxLineLength:SyncStates.kt:record = SyncRecord(lastSuccess = now - STUCK_AFTER_S - 3600, lastAttempt = now - 10 * 60, failingSince = now - STUCK_AFTER_S - 60)</ID>
-    <ID>MaxLineLength:TabCopy.kt:TabCopy$fun</ID>
     <ID>MaxLineLength:TabParts.kt:Text(name, color = Color.White, style = GlowType.body, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:TabParts.kt:Text(word, color = if (offNormal) color else Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)</ID>
     <ID>MaxLineLength:TabParts.kt:internal</ID>
-    <ID>MaxLineLength:TabPlans.kt:(if (pair) small(SleepCard.Breathing, Hue.Sleep, Edge.Bottom, Pane.Left) else TabSlot(SleepCard.Breathing, edge(Hue.Sleep, Edge.Bottom), Pane.Right))</ID>
-    <ID>MaxLineLength:TabPlans.kt:(if (pair) small(SleepCard.Naps, Hue.Sleep, Edge.Left, Pane.Left) else TabSlot(SleepCard.Naps, edge(Hue.Sleep, Edge.Left), Pane.Left))</ID>
     <ID>MaxLineLength:TabPlans.kt:lookClashes(slots.map { it.look }, tabPanes(slots, smallsAcross &amp;&amp; wide), wide, fullTouchesColumns = true, sizes = slots.map { it.size })</ID>
     <ID>MaxLineLength:Theme.kt:style.copy(fontFamily = FunnelDisplay, fontWeight = weight, fontSize = size.sp, letterSpacing = tracking.sp, fontFeatureSettings = "tnum")</ID>
     <ID>MaxLineLength:TodayCards.kt:/** The workout just done, after it: how long it was, the average heart rate and the zone it mostly sat in. Lit from the left, about earlier. */</ID>
     <ID>MaxLineLength:TodayCards.kt:BodyRow$val name: String</ID>
     <ID>MaxLineLength:TodayCards.kt:Column(Modifier.weight(1f)) { EdgeValue(now?.toString(), null, status, Color.White.copy(alpha = 0.8f), dot = DotSize.Second) }</ID>
-    <ID>MaxLineLength:TodayCards.kt:ListRow("Load today", MetricColors.load, load?.roundToInt()?.toString(), loadLine, divider = false, onClick = onLoad, icon = Score.Load.rowIcon())</ID>
-    <ID>MaxLineLength:TodayCards.kt:Text("$name, your usual", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)</ID>
-    <ID>MaxLineLength:TodayCards.kt:color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA)</ID>
+    <ID>MaxLineLength:TodayCards.kt:MetricColors.load</ID>
     <ID>MaxLineLength:TodayCards.kt:contentPadding = StripPadding</ID>
-    <ID>MaxLineLength:TodayCards.kt:else</ID>
+    <ID>MaxLineLength:TodayCards.kt:height = org.openstrap.app.ui.glow.draw.StageBarLook.HEIGHT_DP.dp</ID>
     <ID>MaxLineLength:TodayCards.kt:if</ID>
     <ID>MaxLineLength:TodayCards.kt:if (feeling != null) Text(CheckIn.label(feeling), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:TodayCards.kt:if (status != null) Text(status, color = statusColor, style = GlowType.secondary, modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:TodayCards.kt:if (unit != null &amp;&amp; value != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 6.dp))</ID>
     <ID>MaxLineLength:TodayCards.kt:if (unit != null &amp;&amp; value != null) Text(unit, color = Color.White.copy(alpha = 0.7f), style = GlowType.secondary, modifier = Modifier.padding(start = 8.dp))</ID>
     <ID>MaxLineLength:TodayCards.kt:internal</ID>
-    <ID>MaxLineLength:TodayCards.kt:kind: EdgeKind = EdgeKind.Value</ID>
-    <ID>MaxLineLength:TodayCards.kt:line</ID>
+    <ID>MaxLineLength:TodayCards.kt:modifier</ID>
+    <ID>MaxLineLength:TodayCards.kt:picture = if (state.heartRate.size &lt; 2) null else { m -&gt; DayLine(values, restingRange?.let { it.low..it.high }, MetricColors.heart, size, m) }</ID>
     <ID>MaxLineLength:TodayCards.kt:title: String</ID>
-    <ID>MaxLineLength:TodayCards.kt:val line = remember(state.hourlySteps, isToday, hour) { org.openstrap.app.data.Summaries.runningSteps(state.hourlySteps, if (isToday) hour else null) }</ID>
-    <ID>MaxLineLength:TodayCopy.kt:TodayCopy$estimate != null -&gt; RecoveryShown(estimate, "Strap's estimate", noScore?.let(::noScoreLine) ?: "OpenStrap's own score isn't ready yet.", estimate = true)</ID>
-    <ID>MaxLineLength:TodayCopy.kt:TodayCopy$fun</ID>
-    <ID>MaxLineLength:TodayCopy.kt:TodayCopy$workouts: List&lt;String?&gt;</ID>
+    <ID>MaxLineLength:TodayCards.kt:val values = remember(state.heartRate, state.dayStart, state.dayEnd) { bucket(state.heartRate, state.dayStart..state.dayEnd, HEART_STEP) }</ID>
+    <ID>MaxLineLength:TodayCards.kt:workout: org.openstrap.app.data.WorkoutAnalysis?</ID>
     <ID>MaxLineLength:TodayLooks.kt:fun</ID>
-    <ID>MaxLineLength:TodayLooks.kt:private fun opposite</ID>
+    <ID>MaxLineLength:TodayLooks.kt:s.card == TodayCard.LastNight &amp;&amp; s.size == CardSize.Strip -&gt; listOf(s.copy(size = CardSize.Wide)).map { it.copy(look = defaultLook(it, null)) }</ID>
+    <ID>MaxLineLength:TodayLooks.kt:s.card == TodayCard.LastNight &amp;&amp; s.size == CardSize.Wide -&gt; listOf(s.copy(size = CardSize.Strip)).map { it.copy(look = defaultLook(it, null)) }</ID>
     <ID>MaxLineLength:TodayLooks.kt:val</ID>
     <ID>MaxLineLength:TodayLooks.kt:val pick = options(out[at]).firstOrNull { o -&gt; settled(out.toMutableList().also { it[at] = o }, i, wide, across) } ?: return false</ID>
     <ID>MaxLineLength:TodayLooks.kt:val places = (top until end).filter { it != from &amp;&amp; it in starts }.sortedWith(compareBy({ kotlin.math.abs(it - from) }, { it &lt; from }))</ID>
-    <ID>MaxLineLength:UpdateCopy.kt:UpdateCopy$fun</ID>
-    <ID>MaxLineLength:UpdateCopy.kt:UpdateCopy$return if (install.total &gt; 0) "Downloading, ${install.done * 100 / install.total}%" else "Downloading, ${megabytes(install.done)}"</ID>
+    <ID>MaxLineLength:TodayPlan.kt:Moment.Midday -&gt; pair(TodayCard.Recovery, TodayCard.LastNight) + wide(TodayCard.Activity) + pair(TodayCard.HeartRate, TodayCard.Stress)</ID>
+    <ID>MaxLineLength:TodayPlan.kt:Moment.Waking</ID>
+    <ID>MaxLineLength:TodayPlan.kt:Moment.WorkoutWindow -&gt; listOf(energy) + pair(TodayCard.LoadToday, TodayCard.Recover) + wide(TodayCard.Activity) + strip(TodayCard.LastNight)</ID>
     <ID>MaxLineLength:UpdateNotifier.kt:UpdateNotifier$fun available</ID>
-    <ID>MaxLineLength:UpdatesPage.kt:PageRow</ID>
     <ID>MaxLineLength:UpdatesPage.kt:Text(release.versionName, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), modifier = Modifier.weight(1f))</ID>
     <ID>MaxLineLength:UpdatesPage.kt:Text(spans(block.spans), color = Color.White.copy(alpha = 0.75f), style = GlowType.secondary, modifier = Modifier.padding(top = 1.dp))</ID>
-    <ID>MaxLineLength:UpdatesPage.kt:if (blocks.isEmpty()) Text("No notes for this release.", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary)</ID>
     <ID>MaxLineLength:UpdatesPage.kt:spans(block.spans)</ID>
     <ID>MaxLineLength:WidgetGalleryActivity.kt:WidgetGalleryActivity$*</ID>
     <ID>MaxLineLength:WidgetGalleryActivity.kt:WidgetGalleryActivity$else -&gt; placed.split(',').mapNotNull { n -&gt; WidgetKind.entries.firstOrNull { it.name.equals(n.trim(), ignoreCase = true) } }.toSet()</ID>
@@ -1820,7 +1668,6 @@
     <ID>MaxLineLength:WidgetGalleryActivity.kt:WidgetGalleryActivity$layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply { bottomMargin = dp(16) }</ID>
     <ID>MaxLineLength:WidgetGalleryActivity.kt:WidgetGalleryActivity$private</ID>
     <ID>MaxLineLength:WidgetGalleryActivity.kt:WidgetGalleryActivity$val info: AppWidgetProviderInfo? = manager.getInstalledProvidersForPackage(packageName, null).firstOrNull { it.provider == provider }</ID>
-    <ID>MaxLineLength:WidgetParts.kt:)</ID>
     <ID>MaxLineLength:WidgetParts.kt:CardWidget(open, bitmapExtra, WidgetSizes.PADDING_DP, showStatus, { w, h, corner, density -&gt; glowBackground(style, w, h, corner, density) }, content)</ID>
     <ID>MaxLineLength:WidgetParts.kt:GlanceModifier.padding(top = (WidgetSizes.PADDING_DP + top - reach).coerceAtLeast(0f).dp, end = (WidgetSizes.PADDING_DP - reach).dp)</ID>
     <ID>MaxLineLength:WidgetParts.kt:Text(letter, style = (if (lit) WidgetType.captionShown else WidgetType.caption).copy(textAlign = TextAlign.Center), maxLines = 1)</ID>
@@ -1828,6 +1675,7 @@
     <ID>MaxLineLength:WidgetParts.kt:WidgetType$val caption = TextStyle(color = ColorProvider(Color.White.copy(alpha = 0.50f)), fontSize = WidgetText.CAPTION_SP.sp, fontWeight = FontWeight.Medium)</ID>
     <ID>MaxLineLength:WidgetParts.kt:c.drawCircle(s / 2, s / 2, s / 2, android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { this.color = ControlSurface.toArgb() })</ID>
     <ID>MaxLineLength:WidgetParts.kt:internal</ID>
+    <ID>MaxLineLength:WidgetParts.kt:renderToBitmap(w * density, h * density) { drawPictureCard(it, w * density, h * density, corner * density, density, ink, rim, mood.edge, wash) }</ID>
     <ID>MaxLineLength:WidgetParts.kt:runCatching { context.resources.getDimension(android.R.dimen.system_app_widget_background_radius) / context.resources.displayMetrics.density }.getOrNull()</ID>
     <ID>MaxLineLength:WidgetParts.kt:val allPixels = WidgetSizes.all.sumOf { (it.width.value * it.height.value).toDouble() } * bitmapExtra * metrics.density * metrics.density</ID>
     <ID>MaxLineLength:WidgetParts.kt:val density = metrics.density * WidgetSizes.bitmapScale(allPixels.toLong(), WidgetSizes.bitmapBudget(metrics.widthPixels, metrics.heightPixels))</ID>
@@ -1842,14 +1690,11 @@
     <ID>MaxLineLength:WorkoutCapsule.kt:Text(it, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1, overflow = TextOverflow.Ellipsis)</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 1)</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:if</ID>
-    <ID>MaxLineLength:WorkoutCapsule.kt:if (glance.figure != null) DotMatrixText(glance.figure, dot = DotSize.Hero) else WaitingDash(Modifier.padding(vertical = 12.dp))</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:infiniteRepeatable(keyframes { durationMillis = period; 1.5f at period * 15 / 100; 1f at period * 40 / 100 }, RepeatMode.Restart)</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:internal</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:modifier.fillMaxWidth().height(if (quiet) 56.dp else 64.dp).then(if (quiet) Modifier else Modifier.shadow(24.dp, shape, ambientColor = color, spotColor = color))</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:private</ID>
     <ID>MaxLineLength:WorkoutCapsule.kt:val move = androidx.compose.animation.core.tween&lt;androidx.compose.ui.unit.IntOffset&gt;(swift, easing = org.openstrap.app.ui.components.Motion.easing)</ID>
-    <ID>MaxLineLength:WorkoutCopy.kt:WorkoutCopy$if (belowBpm == null) "Rest ends when the time is up." else "Rest ends when the time is up, or sooner once you stay under $belowBpm."</ID>
-    <ID>MaxLineLength:WorkoutDetailCopy.kt:WorkoutDetailCopy$vo2max?.let { "VO2 max" to "The most oxygen your body can use, in ml per kg per minute, estimated from this workout: ${Math.round(it)}." }</ID>
     <ID>MaxLineLength:WorkoutEffect.kt:WorkoutEffect$fun</ID>
     <ID>MaxLineLength:WorkoutEffect.kt:WorkoutEffect$if (start.isNotEmpty() &amp;&amp; end.isNotEmpty() &amp;&amp; kotlin.math.abs(end.average() - start.average()) &gt; MAX_GRADE * v * WINDOW_S) return Double.NaN</ID>
     <ID>MaxLineLength:WorkoutEffect.kt:WorkoutEffect$private</ID>
@@ -1885,17 +1730,8 @@
     <ID>MaxLineLength:WorkoutSetup.kt:WorkoutSetup$saved.filter { Structure.parse(it.structure) != null }.take(SAVED_CHIPS).map { RecentChip.Saved(it.name, it.sport, it.structure) }</ID>
     <ID>MaxLineLength:WorkoutTileService.kt:WorkoutTileService$val pending = PendingIntent.getActivity(this, REQUEST_TILE, intent, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)</ID>
     <ID>MaxLineLength:Workouts.kt:Workouts$fun</ID>
-    <ID>MaxLineLength:Workouts.kt:Workouts.Sides$data</ID>
     <ID>MaxLineLength:WorkoutsMigration.kt:WorkoutsMigration$"`workStart` INTEGER NOT NULL, `workEnd` INTEGER, `restEnd` INTEGER, `peakBpm` INTEGER, PRIMARY KEY(`workoutStart`, `index`))"</ID>
     <ID>MaxLineLength:WorkoutsMigration.kt:WorkoutsMigration$*</ID>
-    <ID>MaxLineLength:YouPage.kt:"Deleted sleep"</ID>
-    <ID>MaxLineLength:YouPage.kt:"Goals and bests"</ID>
-    <ID>MaxLineLength:YouPage.kt:"Health Connect"</ID>
-    <ID>MaxLineLength:YouPage.kt:PageRow("Backup", BackupCopy.summary(backup, now, zone), onClick = onBackup, below = true, icon = AppIcons.ShieldCheck, selected = selected == "Backup")</ID>
-    <ID>MaxLineLength:YouPage.kt:PageRow("Diagnostics", "$logLines lines, for bug reports", onClick = onDiagnostics, below = true, icon = AppIcons.Bug, selected = selected == "Diagnostics")</ID>
-    <ID>MaxLineLength:YouPage.kt:PageRow("Profile", profile.summary(), onClick = onProfile, below = true, divider = false, icon = AppIcons.User, selected = selected == "Profile")</ID>
-    <ID>MaxLineLength:YouPage.kt:fun</ID>
-    <ID>MaxLineLength:YouPage.kt:if (onSampleData != null) PageRow("Load sample data", "Debug builds only", onClick = onSampleData, below = true, icon = AppIcons.Flask)</ID>
     <ID>MaxLineLength:YouPage.kt:org.openstrap.app.ui.workout.HeartZonesCopy.TITLE</ID>
     <ID>MaxLineLength:ZeppCloud.kt:BoundDevice$override fun toString</ID>
     <ID>MaxLineLength:ZeppCloud.kt:ZeppCloud$.</ID>
@@ -1903,18 +1739,13 @@
     <ID>MaxLineLength:ZeppCloud.kt:ZeppCloud$val bases = (listOfNotNull(preferredBase?.trim()?.takeIf { it.startsWith("https://") }?.let { if (it.endsWith("/")) it else "$it/" }) + API_HOSTS).distinct()</ID>
     <ID>MaxLineLength:ZeppCloud.kt:ZeppCloud$val login = account.loginToken?.takeIf { it.isNotBlank() } ?: throw ZeppCloudException("No login token to renew the sign-in with. Sign in again.", rejected = true)</ID>
     <ID>MaxLineLength:ZeppCloud.kt:ZeppCloud$val root = runCatching { JSONObject(body) }.getOrElse { throw ZeppCloudException("Unexpected reply when renewing the Zepp sign-in") }</ID>
-    <ID>MaxLineLength:ZeppSignIn.kt:"$provider sign-in doesn't work inside OpenStrap, because $provider blocks sign-in in embedded pages.\n\n"</ID>
     <ID>MaxLineLength:ZeppSignIn.kt:Column</ID>
-    <ID>MaxLineLength:ZeppSignIn.kt:Modifier.size(44.dp).clip(CircleShape).background(ControlSurface).clickable(onClickLabel = "Close", onClick = onDismiss)</ID>
     <ID>MaxLineLength:ZeppSignIn.kt:Row</ID>
-    <ID>MaxLineLength:ZeppSignIn.kt:Text("Auth key", color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, modifier = Modifier.weight(1f))</ID>
-    <ID>MaxLineLength:ZeppSignIn.kt:Text(if (s.thirdParty) "Use email sign-in" else "Couldn't get your devices", color = Color.White, style = GlowType.cardTitle, maxLines = 1)</ID>
     <ID>MaxLineLength:ZeppSignIn.kt:Text(label, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, maxLines = 1, modifier = Modifier.padding(end = 12.dp))</ID>
     <ID>MaxLineLength:ZeppSignIn.kt:value</ID>
     <ID>MemberNameEqualsClassName:Pai.kt:Pai$fun pai: Double</ID>
     <ID>ModifierComposed:Motion.kt:fun Modifier.pressClickable: Modifier</ID>
     <ID>ModifierMissing:Adaptive.kt:@Composable fun &lt;S&gt; ListDetail</ID>
-    <ID>ModifierMissing:AllMetricsScreen.kt:@Composable fun AllMetricsSheet</ID>
     <ID>ModifierMissing:Celebrations.kt:@Composable fun BestCardScreen</ID>
     <ID>ModifierMissing:Celebrations.kt:@Composable fun CelebrationsSheet</ID>
     <ID>ModifierMissing:Celebrations.kt:@Composable fun GoalMomentScreen</ID>
@@ -1925,14 +1756,12 @@
     <ID>ModifierMissing:DeviceScreen.kt:@Composable fun DeviceScreen</ID>
     <ID>ModifierMissing:DeviceScreen.kt:@Composable fun DiagnosticsScreen</ID>
     <ID>ModifierMissing:FirmwareScreen.kt:@Composable fun FirmwareScreen</ID>
-    <ID>ModifierMissing:Glass.kt:@Composable fun GlassAlertDialog</ID>
     <ID>ModifierMissing:Glass.kt:@Composable fun GlassOverlay</ID>
     <ID>ModifierMissing:Glass.kt:@Composable fun GlassSheet</ID>
+    <ID>ModifierMissing:GlowActivityScreen.kt:@Composable fun GlowActivityScreen</ID>
     <ID>ModifierMissing:GlowLayout.kt:@Composable fun GlowHeader</ID>
     <ID>ModifierMissing:GlowLayout.kt:@Composable fun GlowScreenList</ID>
     <ID>ModifierMissing:GlowMetricDetail.kt:@Composable fun GlowMetricDetailScreen</ID>
-    <ID>ModifierMissing:GlowQuiet.kt:@Composable fun PanelTitle</ID>
-    <ID>ModifierMissing:GlowSleepScreen.kt:@Composable fun GlowSleepScreen</ID>
     <ID>ModifierMissing:GlowTodayScreen.kt:@Composable fun GlowTodayScreen</ID>
     <ID>ModifierMissing:GlowWorkoutMode.kt:@Composable fun GlowAddWorkoutScreen</ID>
     <ID>ModifierMissing:GlowWorkoutSummary.kt:@Composable fun GlowWorkoutSummaryScreen</ID>
@@ -1945,7 +1774,6 @@
     <ID>ModifierMissing:InfoSheet.kt:@Composable fun InfoSheet</ID>
     <ID>ModifierMissing:MomentHeader.kt:@Composable fun MomentHeader</ID>
     <ID>ModifierMissing:PageParts.kt:@Composable fun &lt;T&gt; PageMenuRow</ID>
-    <ID>ModifierMissing:PageParts.kt:@Composable fun BackButton</ID>
     <ID>ModifierMissing:PageParts.kt:@Composable fun PageConfirm</ID>
     <ID>ModifierMissing:PageParts.kt:@Composable fun PageHeader</ID>
     <ID>ModifierMissing:PageParts.kt:@Composable fun PageNote</ID>
@@ -1967,7 +1795,6 @@
     <ID>ModifierWithoutDefault:ComponentGalleryActivity.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:DataStateParts.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:DeviceScreen.kt:modifier: Modifier</ID>
-    <ID>ModifierWithoutDefault:GlowActivityScreen.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:GlowRecoveryScreen.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:GlowSleepScreen.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:GlowTodayScreen.kt:modifier: Modifier</ID>
@@ -1979,13 +1806,10 @@
     <ID>ModifierWithoutDefault:MomentHeader.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:ReadyCardio.kt:field: Modifier</ID>
     <ID>ModifierWithoutDefault:ShareCards.kt:modifier: Modifier</ID>
-    <ID>ModifierWithoutDefault:ShareScreen.kt:modifier: Modifier</ID>
-    <ID>ModifierWithoutDefault:StartWidget.kt:modifier: GlanceModifier</ID>
     <ID>ModifierWithoutDefault:StrapDrawing.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:WorkoutCapsule.kt:modifier: Modifier</ID>
     <ID>ModifierWithoutDefault:ZeppSignIn.kt:modifier: Modifier</ID>
     <ID>MultipleEmitters:FirmwareScreen.kt:@Composable private fun CheckResult</ID>
-    <ID>MultipleEmitters:GlowWorkoutMode.kt:@Composable internal fun TrimSection</ID>
     <ID>MultipleEmitters:ReadyCardio.kt:@Composable private fun IntervalsGoal</ID>
     <ID>MultipleEmitters:ReadyCardio.kt:@Composable private fun ReadyPlanCard</ID>
     <ID>MultipleEmitters:ReadyCardio.kt:@Composable private fun ZoneGoal</ID>
@@ -2025,7 +1849,6 @@
     <ID>ReturnCount:DayViewModel.kt:DayViewModel$private suspend fun yesterdayScore: Int?</ID>
     <ID>ReturnCount:DetailCopy.kt:DetailCopy$fun span: String?</ID>
     <ID>ReturnCount:EnergyExpenditure.kt:EnergyExpenditure$fun bmrPerMinute: Float?</ID>
-    <ID>ReturnCount:EnergyExpenditure.kt:EnergyExpenditure$fun cadenceMet: Float</ID>
     <ID>ReturnCount:EnergyExpenditure.kt:EnergyExpenditure$fun day: Day?</ID>
     <ID>ReturnCount:EnergyExpenditure.kt:EnergyExpenditure$fun workoutMinutes: List&lt;WorkoutMinute&gt;?</ID>
     <ID>ReturnCount:FamilySummary.kt:FamilySummary$fun gameRead: String?</ID>
@@ -2046,6 +1869,7 @@
     <ID>ReturnCount:HistorySync.kt:HistorySync$private fun holdBackPartialMinute: Pair&lt;List&lt;HistoryRecord&gt;, Long?&gt;</ID>
     <ID>ReturnCount:HistorySync.kt:HistorySync$private suspend fun syncType</ID>
     <ID>ReturnCount:HistorySync.kt:HistorySync$private suspend fun syncWorkouts</ID>
+    <ID>ReturnCount:LinePictures.kt:fun bedWakeRim: Rim?</ID>
     <ID>ReturnCount:LiveGlance.kt:Glance$fun goalLine: Pair&lt;String?, String?&gt;</ID>
     <ID>ReturnCount:LiveGlance.kt:Glance$fun of: LiveGlance</ID>
     <ID>ReturnCount:LiveGlance.kt:internal fun intervalMoment: IntervalMoment?</ID>
@@ -2061,6 +1885,7 @@
     <ID>ReturnCount:Phases.kt:Structure.Companion$fun parse: Structure?</ID>
     <ID>ReturnCount:PhoneAlerts.kt:PhoneAlerts$fun onNotification</ID>
     <ID>ReturnCount:PhoneAlerts.kt:PhoneAlerts$private fun shouldBuzz: Boolean</ID>
+    <ID>ReturnCount:ReadinessModel.kt:fun Recovery.disturbancesUsual: History.Normal?</ID>
     <ID>ReturnCount:RecoveryEngine.kt:RecoveryEngine$suspend fun phoneWorkoutKcal: List&lt;EnergyExpenditure.WorkoutMinute&gt;?</ID>
     <ID>ReturnCount:RecoveryWidgetModel.kt:RecoveryWidgetModel.Companion$fun from: RecoveryWidgetModel</ID>
     <ID>ReturnCount:Releases.kt:Releases$fun version: List&lt;Int&gt;?</ID>
@@ -2090,12 +1915,12 @@
     <ID>ReturnCount:Strength.kt:Strength.Rest.Companion$fun parse: Rest?</ID>
     <ID>ReturnCount:SummaryCopy.kt:SummaryCopy$fun carriedOver: String?</ID>
     <ID>ReturnCount:SummaryCopy.kt:SummaryCopy$fun dropLine: String</ID>
-    <ID>ReturnCount:SummarySections.kt:@Composable internal fun FamilySection: Boolean</ID>
     <ID>ReturnCount:SyncStates.kt:fun syncStuck: Boolean</ID>
     <ID>ReturnCount:TabCopy.kt:TabCopy$fun loadBalance: String?</ID>
+    <ID>ReturnCount:Tags.kt:fun goalRung: GoalRung?</ID>
+    <ID>ReturnCount:Tags.kt:fun offTag: NewsTag?</ID>
     <ID>ReturnCount:TodayCopy.kt:TodayCopy$fun waking: String</ID>
     <ID>ReturnCount:TodayLooks.kt:fun varyLooks: List&lt;TodaySlot&gt;</ID>
-    <ID>ReturnCount:TodayLooks.kt:private fun options: List&lt;TodaySlot&gt;</ID>
     <ID>ReturnCount:UpdateCopy.kt:UpdateCopy$fun checkStatus: String</ID>
     <ID>ReturnCount:UpdateCopy.kt:UpdateCopy$fun install: String</ID>
     <ID>ReturnCount:UpdateCopy.kt:UpdateCopy$fun summary: String</ID>
@@ -2159,6 +1984,8 @@
     <ID>TooManyFunctions:GlowCharts.kt:org.openstrap.app.ui.glow.GlowCharts.kt</ID>
     <ID>TooManyFunctions:GlowLayout.kt:org.openstrap.app.ui.glow.GlowLayout.kt</ID>
     <ID>TooManyFunctions:GlowMetricDetail.kt:org.openstrap.app.ui.glow.GlowMetricDetail.kt</ID>
+    <ID>TooManyFunctions:GlowRecoveryScreen.kt:org.openstrap.app.ui.glow.GlowRecoveryScreen.kt</ID>
+    <ID>TooManyFunctions:GlowStyle.kt:org.openstrap.app.ui.glow.draw.GlowStyle.kt</ID>
     <ID>TooManyFunctions:GlowTodayScreen.kt:org.openstrap.app.ui.glow.GlowTodayScreen.kt</ID>
     <ID>TooManyFunctions:GlowWorkoutMode.kt:org.openstrap.app.ui.glow.GlowWorkoutMode.kt</ID>
     <ID>TooManyFunctions:HealthConnectExporter.kt:HealthConnectExporter</ID>
@@ -2166,12 +1993,15 @@
     <ID>TooManyFunctions:Healthspan.kt:Healthspan</ID>
     <ID>TooManyFunctions:HistorySync.kt:HistorySync</ID>
     <ID>TooManyFunctions:InfoCopy.kt:InfoCopy</ID>
+    <ID>TooManyFunctions:LevelPictures.kt:org.openstrap.app.ui.glow.pictures.LevelPictures.kt</ID>
+    <ID>TooManyFunctions:LinePictures.kt:org.openstrap.app.ui.glow.pictures.LinePictures.kt</ID>
     <ID>TooManyFunctions:LiveFrame.kt:org.openstrap.app.ui.glow.live.LiveFrame.kt</ID>
     <ID>TooManyFunctions:LiveGlance.kt:Glance</ID>
     <ID>TooManyFunctions:LiveSets.kt:org.openstrap.app.ui.glow.live.LiveSets.kt</ID>
     <ID>TooManyFunctions:MomentWidget.kt:org.openstrap.app.widget.MomentWidget.kt</ID>
     <ID>TooManyFunctions:MomentWidgetModel.kt:MomentLayout</ID>
     <ID>TooManyFunctions:MomentWidgetModel.kt:MomentWidgetModel$Content</ID>
+    <ID>TooManyFunctions:OffStatuses.kt:org.openstrap.app.ui.dashboard.OffStatuses.kt</ID>
     <ID>TooManyFunctions:PageParts.kt:org.openstrap.app.ui.glow.PageParts.kt</ID>
     <ID>TooManyFunctions:PhoneAlerts.kt:PhoneAlerts</ID>
     <ID>TooManyFunctions:ReadyCardio.kt:org.openstrap.app.ui.glow.ReadyCardio.kt</ID>
@@ -2185,12 +2015,10 @@
     <ID>TooManyFunctions:SleepDetail.kt:org.openstrap.app.ui.glow.SleepDetail.kt</ID>
     <ID>TooManyFunctions:SleepEdits.kt:SleepEdits</ID>
     <ID>TooManyFunctions:SleepSource.kt:SleepSource</ID>
-    <ID>TooManyFunctions:SleepWidget.kt:org.openstrap.app.widget.SleepWidget.kt</ID>
     <ID>TooManyFunctions:SleepWidgetModel.kt:SleepLayout</ID>
     <ID>TooManyFunctions:StartCopy.kt:StartCopy</ID>
     <ID>TooManyFunctions:StartWidget.kt:org.openstrap.app.widget.StartWidget.kt</ID>
     <ID>TooManyFunctions:StartWidgetModel.kt:StartLayout</ID>
-    <ID>TooManyFunctions:StepsWidget.kt:org.openstrap.app.widget.StepsWidget.kt</ID>
     <ID>TooManyFunctions:StepsWidgetModel.kt:StepsLayout</ID>
     <ID>TooManyFunctions:StrapController.kt:StrapController</ID>
     <ID>TooManyFunctions:StrapManager.kt:StrapManager : StrapController</ID>
@@ -2244,6 +2072,11 @@
     <ID>UnsafeCallOnNullableType:GoalsSheet.kt:stepsValue!!</ID>
     <ID>UnsafeCallOnNullableType:HistorySync.kt:HistorySync$next!!</ID>
     <ID>UnsafeCallOnNullableType:HistorySync.kt:HistorySync$spec.parser!!</ID>
+    <ID>UnsafeCallOnNullableType:LevelPictures.kt:g.ys.last()!!</ID>
+    <ID>UnsafeCallOnNullableType:LevelPictures.kt:v!!</ID>
+    <ID>UnsafeCallOnNullableType:LinePictures.kt:nights[it]!!</ID>
+    <ID>UnsafeCallOnNullableType:LinePictures.kt:values[i + 1]!!</ID>
+    <ID>UnsafeCallOnNullableType:LinePictures.kt:values[i]!!</ID>
     <ID>UnsafeCallOnNullableType:LiveDistance.kt:round.workEnd!!</ID>
     <ID>UnsafeCallOnNullableType:LiveIntervals.kt:it.workEnd!!</ID>
     <ID>UnsafeCallOnNullableType:LiveSets.kt:s.end!!</ID>
@@ -2277,20 +2110,15 @@
     <ID>UnsafeCallOnNullableType:Strength.kt:Strength$it.reps!!</ID>
     <ID>UnsafeCallOnNullableType:Strength.kt:Strength$it.weightKg!!</ID>
     <ID>UnsafeCallOnNullableType:SummaryCopy.kt:SummaryCopy$usual!!</ID>
-    <ID>UnsafeCallOnNullableType:SummarySections.kt:it.value!!</ID>
     <ID>UnsafeCallOnNullableType:TabCopy.kt:TabCopy$reg.band!!</ID>
     <ID>UnsafeCallOnNullableType:TabParts.kt:GlowGrid.height(CardSize.Tall)!!</ID>
-    <ID>UnsafeCallOnNullableType:TodayLooks.kt:out[a].look!!</ID>
-    <ID>UnsafeCallOnNullableType:TodayLooks.kt:slots[a].look!!</ID>
+    <ID>UnsafeCallOnNullableType:TodayLooks.kt:it.look!!</ID>
     <ID>UnsafeCallOnNullableType:Vo2max.kt:Vo2max$Recovery.percentile(recent.takeLast(RHR_NIGHTS_USED), 0.5f)!!</ID>
     <ID>UnsafeCallOnNullableType:WeekStory.kt:WeekStory$it.steps!!</ID>
     <ID>UnsafeCallOnNullableType:WorkoutEffectEngine.kt:WorkoutEffectEngine$p.end!!</ID>
     <ID>UnsafeCallOnNullableType:WorkoutEffectEngine.kt:WorkoutEffectEngine$w.end!!</ID>
     <ID>UnsafeCallOnNullableType:WorkoutSession.kt:WorkoutSession$it.end!!</ID>
-    <ID>UnstableCollections:ActivityDetail.kt:List&lt;Color&gt;</ID>
-    <ID>UnstableCollections:ActivityDetail.kt:List&lt;Float&gt;</ID>
     <ID>UnstableCollections:ActivityDetail.kt:List&lt;List&lt;Float&gt;&gt;</ID>
-    <ID>UnstableCollections:ActivityDetail.kt:List&lt;Pair&lt;String, Color&gt;&gt;</ID>
     <ID>UnstableCollections:ActivityDetail.kt:List&lt;String&gt;</ID>
     <ID>UnstableCollections:ActivityDetail.kt:Map&lt;LocalDate, CaloriesCopy.DayKcal&gt;</ID>
     <ID>UnstableCollections:AllMetricsScreen.kt:List&lt;IndexGroup&gt;</ID>
@@ -2318,7 +2146,6 @@
     <ID>UnstableCollections:GlowCharts.kt:List&lt;Int&gt;</ID>
     <ID>UnstableCollections:GlowCharts.kt:List&lt;Int?&gt;</ID>
     <ID>UnstableCollections:GlowCharts.kt:List&lt;String&gt;</ID>
-    <ID>UnstableCollections:GlowGrid.kt:List&lt;GridCard&gt;</ID>
     <ID>UnstableCollections:GlowLayout.kt:List&lt;@Composable () -&gt; Unit&gt;</ID>
     <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;DayStat&gt;</ID>
     <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;DetailCopy.StripDay&gt;</ID>
@@ -2326,9 +2153,7 @@
     <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;Metric&gt;</ID>
     <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;Pair&lt;String?, String&gt;&gt;</ID>
     <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;Range&gt;</ID>
-    <ID>UnstableCollections:GlowMetricDetail.kt:List&lt;String&gt;</ID>
     <ID>UnstableCollections:GlowRecoveryScreen.kt:List&lt;BodySignal&gt;</ID>
-    <ID>UnstableCollections:GlowSleepScreen.kt:List&lt;Pair&lt;Int, Long&gt;&gt;</ID>
     <ID>UnstableCollections:GlowSleepScreen.kt:List&lt;StageSpan&gt;</ID>
     <ID>UnstableCollections:GlowTodayScreen.kt:List&lt;Float&gt;?</ID>
     <ID>UnstableCollections:GlowTodayScreen.kt:List&lt;WorkoutAnalysis&gt;</ID>
@@ -2337,7 +2162,6 @@
     <ID>UnstableCollections:GlowWorkoutMode.kt:List&lt;Pair&lt;Long, Int&gt;&gt;?</ID>
     <ID>UnstableCollections:GlowWorkoutMode.kt:Map&lt;Int, Boolean&gt;</ID>
     <ID>UnstableCollections:GlowWorkoutScreen.kt:List&lt;Float?&gt;</ID>
-    <ID>UnstableCollections:GlowWorkoutScreen.kt:List&lt;Int&gt;</ID>
     <ID>UnstableCollections:GlowWorkoutScreen.kt:List&lt;LongRange&gt;</ID>
     <ID>UnstableCollections:GlowWorkoutScreen.kt:List&lt;WorkoutAnalysis&gt;</ID>
     <ID>UnstableCollections:GlowWorkoutScreen.kt:List&lt;WorkoutFact&gt;</ID>
@@ -2366,7 +2190,6 @@
     <ID>UnstableCollections:LiveMap.kt:List&lt;Pair&lt;Long, Int&gt;&gt;</ID>
     <ID>UnstableCollections:LiveMap.kt:List&lt;Pair&lt;String?, String&gt;&gt;</ID>
     <ID>UnstableCollections:LiveMap.kt:List&lt;Route.Point&gt;</ID>
-    <ID>UnstableCollections:LiveMind.kt:List&lt;Float?&gt;</ID>
     <ID>UnstableCollections:LiveMind.kt:List&lt;Pair&lt;Long, Int&gt;&gt;</ID>
     <ID>UnstableCollections:LivePaused.kt:List&lt;Pair&lt;Long, Int&gt;&gt;</ID>
     <ID>UnstableCollections:LivePaused.kt:List&lt;Pair&lt;String?, String&gt;&gt;</ID>
@@ -2389,9 +2212,6 @@
     <ID>UnstableCollections:RecoveryWidget.kt:List&lt;RecoveryFigure&gt;</ID>
     <ID>UnstableCollections:RecoveryWidget.kt:List&lt;RecoveryWeekDay&gt;</ID>
     <ID>UnstableCollections:ScoreDetail.kt:List&lt;org.openstrap.app.data.WorkoutAnalysis&gt;</ID>
-    <ID>UnstableCollections:ShareCards.kt:List&lt;Float?&gt;</ID>
-    <ID>UnstableCollections:ShareCards.kt:List&lt;Int&gt;</ID>
-    <ID>UnstableCollections:ShareCards.kt:List&lt;Int?&gt;</ID>
     <ID>UnstableCollections:ShareCards.kt:List&lt;Route.Point&gt;</ID>
     <ID>UnstableCollections:ShareCards.kt:List&lt;WeekFigure&gt;</ID>
     <ID>UnstableCollections:ShareScreen.kt:List&lt;EarnedLine&gt;</ID>
@@ -2405,22 +2225,18 @@
     <ID>UnstableCollections:SleepWidget.kt:List&lt;SleepStageRow&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;EarnedLine&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;ExerciseSets&gt;</ID>
-    <ID>UnstableCollections:SummarySections.kt:List&lt;Float?&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;Long&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;Pair&lt;Long, Int&gt;&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;Pair&lt;String, Boolean&gt;&gt;</ID>
-    <ID>UnstableCollections:SummarySections.kt:List&lt;Pair&lt;String?, String&gt;&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;PeriodLine&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;RoundLine&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;Route.Point&gt;</ID>
     <ID>UnstableCollections:SummarySections.kt:List&lt;WorkoutAnalysis&gt;</ID>
-    <ID>UnstableCollections:TabParts.kt:List&lt;Pair&lt;String?, String&gt;&gt;</ID>
     <ID>UnstableCollections:TodayCards.kt:List&lt;BodyRow&gt;</ID>
     <ID>UnstableCollections:TodayCards.kt:List&lt;Float&gt;?</ID>
     <ID>UnstableCollections:TodayCards.kt:List&lt;Float?&gt;?</ID>
     <ID>UnstableCollections:TodayCards.kt:List&lt;HealthAlertRow&gt;</ID>
     <ID>UnstableCollections:TodayCards.kt:List&lt;String&gt;</ID>
-    <ID>UnstableCollections:TodayCards.kt:List&lt;org.openstrap.app.data.WorkoutAnalysis&gt;</ID>
     <ID>UnstableCollections:WidgetParts.kt:List&lt;Pair&lt;String, Boolean&gt;&gt;</ID>
     <ID>UnstableCollections:WorkoutMap.kt:List&lt;Pair&lt;List&lt;Route.Point&gt;, Int&gt;&gt;</ID>
     <ID>UnusedParameter:Narrative.kt:Narrative$session: SleepSession</ID>
@@ -2433,29 +2249,7 @@
     <ID>UseOrEmpty:CsvExporter.kt:CsvExporter.Companion$v?.toString()?.let(::escape) ?: ""</ID>
     <ID>UseOrEmpty:GlowSleepScreen.kt:SLEEP_NAMES[it.key] ?: ""</ID>
     <ID>UseOrEmpty:GlowSleepScreen.kt:byRow[it] ?: ""</ID>
-    <ID>UseOrEmpty:GlowWorkoutSummary.kt:r.averageBpm?.let { ", average $it bpm" } ?: ""</ID>
-    <ID>UseOrEmpty:HeartZonesCopy.kt:HeartZonesCopy$m.learnedOn?.let { ", " + it.format(DateTimeFormatter.ofPattern("d MMM", locale)) } ?: ""</ID>
-    <ID>UseOrEmpty:HistorySync.kt:HistorySync$only?.let { ", syncing $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveGlance.kt:Glance$(i.target as? WorkoutTarget.Time)?.let { " of ${it.seconds / 60} min" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveGlance.kt:Glance$m.drop?.takeIf { it &gt; 0 }?.let { ", down $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveGlance.kt:Glance$s.drop?.takeIf { it &gt; 0 }?.let { ", down $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveGlance.kt:Glance$s.setsTarget?.let { " of $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveIntervals.kt:m.drop?.takeIf { it &gt; 0 }?.let { ", down $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveMind.kt:first?.minus(b)?.takeIf { it &gt; 0 }?.let { ", down $it since you started" } ?: ""</ID>
-    <ID>UseOrEmpty:LivePaused.kt:drop?.takeIf { it &gt; 0 }?.let { ", down $it since you stopped" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveSets.kt:drop?.takeIf { it &gt; 0 }?.let { ", down $it" } ?: ""</ID>
-    <ID>UseOrEmpty:LiveSets.kt:target?.let { ", ${(it - done).coerceAtLeast(0)} to go" } ?: ""</ID>
-    <ID>UseOrEmpty:MomentWidgetModel.kt:MomentWidgetModel.Content$nowValue?.let { ", $it now" } ?: ""</ID>
-    <ID>UseOrEmpty:MomentWidgetModel.kt:MomentWidgetModel.Content$word?.let { ", $it" } ?: ""</ID>
-    <ID>UseOrEmpty:ShareCards.kt:top?.let { ", top ${Strength.kgText(it)} kg" } ?: ""</ID>
-    <ID>UseOrEmpty:TodayCopy.kt:TodayCopy$score?.let { s -&gt; ", score $s" } ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutCapsule.kt:glance.line2?.let { ". $it" } ?: ""</ID>
     <ID>UseOrEmpty:WorkoutCapsule.kt:glance.secondLabel ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutCopy.kt:WorkoutCopy$avg?.let { ", avg $it" } ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutCopy.kt:WorkoutCopy$target?.let { " of $it" } ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutDetailCopy.kt:WorkoutDetailCopy$drop120?.let { ", $it in two" } ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutDetailCopy.kt:WorkoutDetailCopy$mostlyZone(zoneSeconds)?.let { ", mostly in zone ${it + 1}" } ?: ""</ID>
-    <ID>UseOrEmpty:WorkoutDetailCopy.kt:WorkoutDetailCopy$usualLoad?.let { " Your usual is ${Math.round(it)}." } ?: ""</ID>
     <ID>VarCouldBeVal:Route.kt:Route$var i = times.binarySearch(t).let { if (it &lt; 0) -it - 1 else it }</ID>
     <ID>VarsWithoutStateBacking:ActivityDetail.kt:var first = true</ID>
     <ID>VarsWithoutStateBacking:AlarmsScreen.kt:var first = true</ID>
@@ -2466,7 +2260,6 @@
     <ID>VarsWithoutStateBacking:ReadyCardio.kt:var rows = 0</ID>
     <ID>VarsWithoutStateBacking:ReadyScreen.kt:var divider = false</ID>
     <ID>VarsWithoutStateBacking:StartWidget.kt:var x = -StartLayout.CAPTION_BLEED_DP</ID>
-    <ID>VarsWithoutStateBacking:SummarySections.kt:var first = true</ID>
     <ID>VarsWithoutStateBacking:SummarySections.kt:var i = 0</ID>
     <ID>ViewModelForwarding:AlarmsScreen.kt:HeartAlertsPanel(state, vm)</ID>
     <ID>ViewModelForwarding:DeviceScreen.kt:FindStrapButton(vm, Modifier.weight(1f).height(56.dp))</ID>

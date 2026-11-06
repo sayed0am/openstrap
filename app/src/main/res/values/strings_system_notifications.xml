@@ -1,19 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Notifications, their channels, the Quick Settings tile and the workout toast (device/). Channel names and
-  descriptions show in Android's notification settings for OpenStrap. A notification's title has one line, its text
+  descriptions show in Android's notification settings for unstrap. A notification's title has one line, its text
   two lines before it is expanded, and an action button a word or two.
-  OpenStrap is the app's name and Helio Strap the strap's. Keep both as they are.
+  unstrap is the app's name, written in lowercase even at the start of a sentence and Helio Strap the strap's. Keep both as they are.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Channel name: notifications for workouts the strap noticed and recorded by itself. -->
     <string name="system_channel_auto_detected">Auto-detected workouts</string>
     <!-- Channel name: the strap's alerts for a high or low heart rate, high stress, low blood oxygen or an irregular rhythm. -->
     <string name="system_channel_health">Health alerts</string>
-    <!-- Channel name: the notice asking to open OpenStrap so Android doesn't stop a workout. -->
+    <!-- Channel name: the notice asking to open unstrap so Android doesn't stop a workout. -->
     <string name="system_channel_keep_recording">Keep recording</string>
     <!-- Channel description, under its name in the notification settings. -->
-    <string name="system_channel_keep_recording_description">Asks you to open OpenStrap when Android may stop a workout.</string>
+    <string name="system_channel_keep_recording_description">Asks you to open unstrap when Android may stop a workout.</string>
     <!-- Channel name: the ongoing notification about the strap's connection, battery and sync. -->
     <string name="system_channel_strap">Strap connection</string>
     <!-- Channel name: the summary shown once a workout is saved. -->
@@ -49,7 +49,7 @@
     <!-- Heads-up when Android may stop a workout. The sport is lower case in the sentence, "outdoor run" or "HIIT". -->
     <string name="system_keep_recording_title">Keep recording your <xliff:g id="sport" example="outdoor run">%1$s</xliff:g></string>
     <!-- Its text. A tap opens the app. -->
-    <string name="system_keep_recording_text">Android may stop it while OpenStrap is closed. Tap to keep it going.</string>
+    <string name="system_keep_recording_text">Android may stop it while unstrap is closed. Tap to keep it going.</string>
 
     <!-- The strap's ongoing notification. Its title before there's anything of your day to show: the strap's name. -->
     <string name="system_strap_title" translatable="false">Helio Strap</string>
@@ -57,6 +57,8 @@
     <string name="system_strap_title_both">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g>, Energy <xliff:g id="energy" example="58">%2$d</xliff:g></string>
     <string name="system_strap_title_recovery">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g></string>
     <string name="system_strap_title_energy">Energy <xliff:g id="energy" example="58">%1$d</xliff:g></string>
+    <!-- Its title: the moment of the day as Today's header names it, then the number it leads with. -->
+    <string name="system_strap_title_moment"><xliff:g id="moment" example="Evening">%1$s</xliff:g>, <xliff:g id="number" example="Energy 35">%2$s</xliff:g></string>
     <!-- Its text while the app connects to the strap. -->
     <string name="system_strap_connecting">Connecting…</string>
     <!-- Its text while the strap checks the app's key. -->
@@ -75,6 +77,11 @@
     <string name="system_strap_charging_battery">Strap charging, battery <xliff:g id="percent" example="80">%1$d</xliff:g>%%</string>
     <!-- In the notification's header, before how long ago the last sync was ("Synced 5m"). One word. -->
     <string name="system_strap_synced">Synced</string>
+    <!-- In the header: the strap's battery. "Strap" is named, so it's never taken for Energy. -->
+    <string name="system_strap_header_battery">Strap <xliff:g id="percent" example="71">%1$d</xliff:g>%%</string>
+    <string name="system_strap_header_charging">Strap charging, <xliff:g id="percent" example="71">%1$d</xliff:g>%%</string>
+    <!-- In the header, before the time of the last sync: "Strap 71%, synced 10:30". -->
+    <string name="system_strap_header_synced"><xliff:g id="strap" example="Strap 71%">%1$s</xliff:g>, synced</string>
     <!-- Action buttons. -->
     <string name="system_strap_action_retry">Retry</string>
     <string name="system_strap_action_start_workout">Start workout</string>
@@ -111,12 +118,15 @@
     <string name="system_strength_resting">Resting after set <xliff:g id="set" example="2">%1$d</xliff:g></string>
     <!-- Before the first set. The sport is "Strength" or "HIIT". -->
     <string name="system_strength_ready">"<xliff:g id="sport" example="Strength">%1$s</xliff:g>, ready for set 1"</string>
-    <string name="system_strength_rest_over">Rest over, set <xliff:g id="set" example="3">%1$d</xliff:g> next</string>
+    <string name="system_strength_rest_over" tools:ignore="PluralsCandidate">Rest over, set <xliff:g id="set" example="3">%1$d</xliff:g> next</string>
     <!-- The text when the strap is out of reach. The first part is "Waiting for the strap". -->
     <string name="system_strength_strap_gone"><xliff:g id="waiting" example="Waiting for the strap">%1$s</xliff:g>. Still recording.</string>
     <string name="system_strength_bpm"><xliff:g id="bpm" example="128">%1$d</xliff:g> bpm</string>
     <!-- Sets done of the sets planned. -->
-    <string name="system_strength_sets"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> sets</string>
+    <plurals name="system_strength_sets">
+        <item quantity="one"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> set</item>
+        <item quantity="other"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="target" example="4">%2$d</xliff:g> sets</item>
+    </plurals>
     <!-- Buttons. -->
     <string name="system_strength_action_start_set">Start set <xliff:g id="set" example="3">%1$d</xliff:g></string>
     <!-- Makes the rest 30 seconds longer. -->

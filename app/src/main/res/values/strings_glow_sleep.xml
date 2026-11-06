@@ -6,8 +6,6 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Title of the breathing disturbances card: the strap's count of dips in blood oxygen while asleep. -->
     <string name="glow_sleep_breathing_title">Breathing disturbances</string>
-    <!-- The breathing disturbances card's note on its title row: the figure isn't checked yet. -->
-    <string name="glow_sleep_early_estimate">Early estimate</string>
     <!-- Title of the Sleep tab's hero. -->
     <string name="glow_sleep_last_night">Last night</string>
     <!-- A button that brings back a deleted night. -->

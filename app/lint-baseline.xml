@@ -8,7 +8,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutSession.kt"
-            line="1089"
+            line="1067"
             column="37"/>
     </issue>
 
@@ -19,7 +19,7 @@
         errorLine2="        ~~~~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="29"
+            line="28"
             column="9"/>
     </issue>
 
@@ -30,7 +30,7 @@
         errorLine2="                                                               ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutTileService.kt"
-            line="64"
+            line="65"
             column="64"/>
     </issue>
 
@@ -41,7 +41,7 @@
         errorLine2="                                                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="296"
+            line="350"
             column="70"/>
     </issue>
 
@@ -52,7 +52,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/AlarmsScreen.kt"
-            line="157"
+            line="177"
             column="36"/>
     </issue>
 
@@ -63,7 +63,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="184"
+            line="203"
             column="20"/>
     </issue>
 
@@ -74,7 +74,7 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="198"
+            line="218"
             column="55"/>
     </issue>
 
@@ -85,7 +85,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="222"
+            line="253"
             column="17"/>
     </issue>
 
@@ -96,7 +96,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="452"
+            line="505"
             column="17"/>
     </issue>
 
@@ -107,7 +107,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/firmware/FirmwareScreen.kt"
-            line="93"
+            line="113"
             column="16"/>
     </issue>
 
@@ -118,18 +118,18 @@
         errorLine2="                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/firmware/FirmwareScreen.kt"
-            line="125"
+            line="161"
             column="40"/>
     </issue>
 
     <issue
         id="NonObservableLocale"
         message="Reading locale in a non-observable way in a composable function"
-        errorLine1="                        firstDay.plus(i.toLong()).getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2),"
+        errorLine1="                        firstDay.plus(i.toLong()).getDisplayName(TextStyle.SHORT, Locale.getDefault()).take(2).uppercase(),"
         errorLine2="                                                                                  ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="97"
+            line="98"
             column="83"/>
     </issue>
 
@@ -140,7 +140,7 @@
         errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="614"
+            line="616"
             column="80"/>
     </issue>
 
@@ -151,7 +151,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/AlarmsScreen.kt"
-            line="273"
+            line="314"
             column="14"/>
     </issue>
 
@@ -162,19 +162,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="393"
-            column="14"/>
-    </issue>
-
-
-    <issue
-        id="ComposableNaming"
-        message="Composable functions with a return type should start with a lowercase letter"
-        errorLine1="internal fun FamilySection("
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="183"
+            line="405"
             column="14"/>
     </issue>
 
@@ -185,30 +173,8 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="504"
+            line="522"
             column="13"/>
-    </issue>
-
-    <issue
-        id="ConfigurationScreenWidthHeight"
-        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
-        errorLine1="    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.9f).dp"
-        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="178"
-            column="22"/>
-    </issue>
-
-    <issue
-        id="ConfigurationScreenWidthHeight"
-        message="Using Configuration.screenHeightDp instead of LocalWindowInfo.current.containerSize"
-        errorLine1="    val maxHeight = (LocalConfiguration.current.screenHeightDp * 0.85f).dp"
-        errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/InfoSheet.kt"
-            line="64"
-            column="22"/>
     </issue>
 
     <issue
@@ -218,7 +184,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="524"
+            line="604"
             column="22"/>
     </issue>
 
@@ -229,7 +195,7 @@
         errorLine2="                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/firmware/FirmwareScreen.kt"
-            line="322"
+            line="388"
             column="20"/>
     </issue>
 
@@ -240,7 +206,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutMap.kt"
-            line="84"
+            line="95"
             column="35"/>
     </issue>
 
@@ -251,7 +217,7 @@
         errorLine2="                                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="501"
+            line="573"
             column="43"/>
     </issue>
 
@@ -262,19 +228,8 @@
         errorLine2="                                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="501"
+            line="573"
             column="43"/>
-    </issue>
-
-    <issue
-        id="ModifierParameter"
-        message="Optional Modifier parameter should have a default value of `Modifier`"
-        errorLine1="    modifier: Modifier = Modifier.fillMaxWidth(),"
-        errorLine2="    ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/device/ProfileScreen.kt"
-            line="216"
-            column="5"/>
     </issue>
 
     <issue
@@ -284,7 +239,7 @@
         errorLine2="    ~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="461"
+            line="428"
             column="5"/>
     </issue>
 
@@ -295,7 +250,7 @@
         errorLine2="                                                                   ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="628"
+            line="632"
             column="68"/>
     </issue>
 
@@ -306,7 +261,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="86"
+            line="108"
             column="5"/>
     </issue>
 
@@ -317,19 +272,8 @@
         errorLine2="                        ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="276"
+            line="298"
             column="25"/>
-    </issue>
-
-    <issue
-        id="ModifierParameter"
-        message="Optional Modifier parameter should have a default value of `Modifier`"
-        errorLine1="fun OptionButton(caption: String, label: String, modifier: Modifier = Modifier.fillMaxWidth(), onClick: () -> Unit) {"
-        errorLine2="                                                 ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="286"
-            column="50"/>
     </issue>
 
     <issue
@@ -339,10 +283,9 @@
         errorLine2="                            ~~~~~~~~~~~">
         <location
             file="build.gradle.kts"
-            line="35"
+            line="34"
             column="29"/>
     </issue>
-
 
     <issue
         id="ComposeModifierComposed"
@@ -362,18 +305,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="214"
-            column="29"/>
-    </issue>
-
-    <issue
-        id="AutoboxingStateCreation"
-        message="Prefer `mutableFloatStateOf` instead of `mutableStateOf`"
-        errorLine1="    var width by remember { mutableStateOf(0f) }"
-        errorLine2="                            ~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="741"
+            line="828"
             column="29"/>
     </issue>
 
@@ -395,7 +327,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="281"
+            line="277"
             column="29"/>
     </issue>
 
@@ -406,7 +338,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="564"
+            line="560"
             column="29"/>
     </issue>
 
@@ -417,7 +349,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="693"
+            line="690"
             column="29"/>
     </issue>
 
@@ -428,7 +360,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="311"
+            line="303"
             column="49"/>
     </issue>
 
@@ -439,7 +371,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="312"
+            line="304"
             column="47"/>
     </issue>
 
@@ -450,7 +382,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="316"
+            line="320"
             column="29"/>
     </issue>
 
@@ -461,7 +393,7 @@
         errorLine2="                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="409"
+            line="456"
             column="47"/>
     </issue>
 
@@ -472,7 +404,7 @@
         errorLine2="                                            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="410"
+            line="457"
             column="45"/>
     </issue>
 
@@ -483,7 +415,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="121"
+            line="141"
             column="63"/>
     </issue>
 
@@ -494,7 +426,7 @@
         errorLine2="                                                           ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="125"
+            line="145"
             column="60"/>
     </issue>
 
@@ -527,7 +459,7 @@
         errorLine2="                 ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowParts.kt"
-            line="90"
+            line="94"
             column="18"/>
     </issue>
 
@@ -538,7 +470,7 @@
         errorLine2="                             ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Insights.kt"
-            line="97"
+            line="91"
             column="30"/>
     </issue>
 
@@ -549,7 +481,7 @@
         errorLine2="                             ~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Insights.kt"
-            line="141"
+            line="129"
             column="30"/>
     </issue>
 
@@ -626,7 +558,7 @@
         errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/update/AppUpdater.kt"
-            line="165"
+            line="166"
             column="68"/>
     </issue>
 
@@ -637,7 +569,7 @@
         errorLine2="                                                           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/export/AutoBackup.kt"
-            line="68"
+            line="69"
             column="60"/>
     </issue>
 
@@ -648,7 +580,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="276"
+            line="367"
             column="5"/>
     </issue>
 
@@ -659,7 +591,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="284"
+            line="375"
             column="5"/>
     </issue>
 
@@ -670,7 +602,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/draw/CanvasDraw.kt"
-            line="327"
+            line="418"
             column="15"/>
     </issue>
 
@@ -681,7 +613,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="297"
+            line="351"
             column="34"/>
     </issue>
 
@@ -692,7 +624,7 @@
         errorLine2="              ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCard.kt"
-            line="351"
+            line="352"
             column="15"/>
     </issue>
 
@@ -703,7 +635,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/StrapService.kt"
-            line="536"
+            line="575"
             column="22"/>
     </issue>
 
@@ -714,7 +646,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/device/WorkoutNotification.kt"
-            line="143"
+            line="158"
             column="22"/>
     </issue>
 
@@ -754,22 +686,11 @@
     <issue
         id="ComposeCompositionLocalUsage"
         message="`CompositionLocal`s are implicit dependencies and creating new ones should be avoided.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#compositionlocals for more information."
-        errorLine1="val LocalEdgeOverride = staticCompositionLocalOf { EdgeOverride() }"
-        errorLine2="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/EdgeCard.kt"
-            line="55"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeCompositionLocalUsage"
-        message="`CompositionLocal`s are implicit dependencies and creating new ones should be avoided.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#compositionlocals for more information."
         errorLine1="/** The overlay host, provided at the app&apos;s root. */"
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Glass.kt"
-            line="139"
+            line="92"
             column="1"/>
     </issue>
 
@@ -802,7 +723,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="150"
+            line="157"
             column="1"/>
     </issue>
 
@@ -813,7 +734,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="301"
+            line="308"
             column="1"/>
     </issue>
 
@@ -835,7 +756,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/PullToSync.kt"
-            line="57"
+            line="60"
             column="1"/>
     </issue>
 
@@ -846,7 +767,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/Routes.kt"
-            line="49"
+            line="41"
             column="1"/>
     </issue>
 
@@ -886,22 +807,11 @@
     <issue
         id="ComposeModifierMissing"
         message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun AllMetricsSheet("
-        errorLine2="    ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="172"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierMissing"
-        message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
         errorLine1="fun BestCardScreen(best: Rewards.NewBest, sportName: String, contentPadding: PaddingValues, onContinue: () -> Unit) {"
         errorLine2="    ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="98"
+            line="101"
             column="5"/>
     </issue>
 
@@ -912,7 +822,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="123"
+            line="129"
             column="5"/>
     </issue>
 
@@ -923,7 +833,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="175"
+            line="190"
             column="5"/>
     </issue>
 
@@ -934,7 +844,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="80"
+            line="82"
             column="5"/>
     </issue>
 
@@ -967,7 +877,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="111"
+            line="129"
             column="5"/>
     </issue>
 
@@ -978,7 +888,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="380"
+            line="433"
             column="5"/>
     </issue>
 
@@ -989,18 +899,7 @@
         errorLine2="    ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/firmware/FirmwareScreen.kt"
-            line="65"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierMissing"
-        message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun GlassAlertDialog("
-        errorLine2="    ~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/components/Glass.kt"
-            line="61"
+            line="69"
             column="5"/>
     </issue>
 
@@ -1011,7 +910,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Glass.kt"
-            line="164"
+            line="117"
             column="5"/>
     </issue>
 
@@ -1022,7 +921,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Glass.kt"
-            line="206"
+            line="167"
             column="5"/>
     </issue>
 
@@ -1033,7 +932,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="425"
+            line="429"
             column="5"/>
     </issue>
 
@@ -1044,18 +943,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="415"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierMissing"
-        message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun PanelTitle(title: String, trailing: String? = null, chevron: Boolean = false, warning: Boolean = false, expanded: Boolean? = null) {"
-        errorLine2="    ~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowQuiet.kt"
-            line="63"
+            line="375"
             column="5"/>
     </issue>
 
@@ -1066,7 +954,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="128"
+            line="132"
             column="5"/>
     </issue>
 
@@ -1077,7 +965,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="296"
+            line="287"
             column="5"/>
     </issue>
 
@@ -1088,7 +976,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="99"
+            line="104"
             column="5"/>
     </issue>
 
@@ -1099,7 +987,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="145"
+            line="149"
             column="5"/>
     </issue>
 
@@ -1110,7 +998,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="161"
+            line="165"
             column="5"/>
     </issue>
 
@@ -1121,7 +1009,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="237"
+            line="248"
             column="5"/>
     </issue>
 
@@ -1132,7 +1020,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="272"
+            line="288"
             column="5"/>
     </issue>
 
@@ -1143,7 +1031,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/GoalsSheet.kt"
-            line="57"
+            line="61"
             column="5"/>
     </issue>
 
@@ -1154,7 +1042,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/HeartZonesScreen.kt"
-            line="52"
+            line="51"
             column="5"/>
     </issue>
 
@@ -1165,7 +1053,7 @@
         errorLine2="    ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/InfoSheet.kt"
-            line="60"
+            line="57"
             column="5"/>
     </issue>
 
@@ -1176,18 +1064,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/MomentHeader.kt"
-            line="60"
-            column="5"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierMissing"
-        message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun BackButton(onBack: () -> Unit, enabled: Boolean = true) {"
-        errorLine2="    ~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="101"
+            line="63"
             column="5"/>
     </issue>
 
@@ -1198,7 +1075,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="115"
+            line="154"
             column="5"/>
     </issue>
 
@@ -1209,7 +1086,7 @@
         errorLine2="    ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="188"
+            line="220"
             column="5"/>
     </issue>
 
@@ -1220,29 +1097,29 @@
         errorLine2="        ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="315"
+            line="350"
             column="9"/>
     </issue>
 
     <issue
         id="ComposeModifierMissing"
         message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun PageSwitchRow(title: String, subtitle: String?, checked: Boolean, onChange: (Boolean) -> Unit, divider: Boolean = true, enabled: Boolean = true) {"
+        errorLine1="fun PageSwitchRow("
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="378"
+            line="417"
             column="5"/>
     </issue>
 
     <issue
         id="ComposeModifierMissing"
         message="This @Composable function emits content but doesn&apos;t have a modifier parameter.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#when-should-i-expose-modifier-parameters for more information."
-        errorLine1="fun PageSheet(onDismiss: () -> Unit, title: String, note: String? = null, content: @Composable ColumnScope.() -> Unit) {"
+        errorLine1="fun PageSheet("
         errorLine2="    ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="523"
+            line="597"
             column="5"/>
     </issue>
 
@@ -1253,7 +1130,7 @@
         errorLine2="    ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="545"
+            line="625"
             column="5"/>
     </issue>
 
@@ -1264,7 +1141,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="590"
+            line="834"
             column="5"/>
     </issue>
 
@@ -1275,7 +1152,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/alarms/PhoneAlertsScreen.kt"
-            line="77"
+            line="83"
             column="5"/>
     </issue>
 
@@ -1286,7 +1163,7 @@
         errorLine2="    ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/ProfileScreen.kt"
-            line="65"
+            line="73"
             column="5"/>
     </issue>
 
@@ -1297,7 +1174,7 @@
         errorLine2="    ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/PullToSync.kt"
-            line="125"
+            line="130"
             column="5"/>
     </issue>
 
@@ -1308,7 +1185,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="82"
+            line="102"
             column="5"/>
     </issue>
 
@@ -1319,7 +1196,7 @@
         errorLine2="    ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/ScreenParts.kt"
-            line="39"
+            line="31"
             column="5"/>
     </issue>
 
@@ -1330,7 +1207,7 @@
         errorLine2="    ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/UpdatesPage.kt"
-            line="51"
+            line="53"
             column="5"/>
     </issue>
 
@@ -1341,7 +1218,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="246"
+            line="261"
             column="5"/>
     </issue>
 
@@ -1352,7 +1229,7 @@
         errorLine2="    ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="266"
+            line="281"
             column="5"/>
     </issue>
 
@@ -1363,7 +1240,7 @@
         errorLine2="    ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/YouPage.kt"
-            line="77"
+            line="107"
             column="5"/>
     </issue>
 
@@ -1374,7 +1251,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="101"
+            line="106"
             column="5"/>
     </issue>
 
@@ -1385,7 +1262,7 @@
         errorLine2="                            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="757"
+            line="785"
             column="29"/>
     </issue>
 
@@ -1396,7 +1273,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="758"
+            line="786"
             column="30"/>
     </issue>
 
@@ -1407,19 +1284,8 @@
         errorLine2="                                 ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="759"
+            line="787"
             column="34"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.RightNow -> BodyList("
-        errorLine2="                              ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="769"
-            column="31"/>
     </issue>
 
     <issue
@@ -1429,84 +1295,29 @@
         errorLine2="                                             ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="778"
+            line="811"
             column="46"/>
     </issue>
 
     <issue
         id="ComposeModifierReused"
         message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="            else LastNightCard(s, ctx.firstNights, onOpenSleep, stuck = ctx.stuck)"
-        errorLine2="                 ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="779"
-            column="18"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.HeartRate -> HeartCard("
-        errorLine2="                               ~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="781"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Activity -> ActivityCard("
-        errorLine2="                              ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="787"
-            column="31"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Recovery -> RecoveryEarlierCard(ctx.recoveryShown, { openScore(org.openstrap.app.ui.dashboard.Score.Recovery) }, failure = ctx.recoveryFailure, onRetry = onRetryRecovery)"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="791"
-            column="31"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="            ChargeWideCard(ctx.charge, status, slot.secondGlow, { openScore(org.openstrap.app.ui.dashboard.Score.Charge) }, soFar = soFar, upTo = ctx.upTo(ctx.newest), tag = ctx.partial)"
+        errorLine1="            ChargeWideCard("
         errorLine2="            ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="805"
+            line="845"
             column="13"/>
     </issue>
 
     <issue
         id="ComposeModifierReused"
         message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        ) else LoadList("
-        errorLine2="               ~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="814"
-            column="16"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierReused"
-        message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.Week -> WeekCard(s, ctx.workouts, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })"
+        errorLine1="        TodayCard.Week -> WeekCard(s, history, onClick = { onOpen(org.openstrap.app.ui.dashboard.Detail.Week) })"
         errorLine2="                          ~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="832"
+            line="860"
             column="27"/>
     </issue>
 
@@ -1517,30 +1328,30 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="834"
+            line="862"
             column="31"/>
     </issue>
 
     <issue
         id="ComposeModifierReused"
         message="One branch passes the modifier parameter, but this branch does not. Pass it to every branch whose composable accepts a modifier.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#dont-re-use-modifiers for more information."
-        errorLine1="        TodayCard.StartWorkout -> StartWorkoutStrip(ctx.usualSport, onStartSport)"
-        errorLine2="                                  ~~~~~~~~~~~~~~~~~">
+        errorLine1="        TodayCard.StartWorkout -> if (ctx.moment != Moment.Night) StartWorkoutStrip(ctx.usualSport, onStartSport)"
+        errorLine2="                                                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="835"
-            column="35"/>
+            line="864"
+            column="67"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun SportTile(type: Int, name: String, modifier: Modifier, selected: Boolean = false, onClick: () -> Unit) {"
-        errorLine2="                                               ~~~~~~~~~~~~~~~~~~">
+        errorLine1="    modifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="208"
-            column="48"/>
+            line="204"
+            column="5"/>
     </issue>
 
     <issue
@@ -1550,7 +1361,7 @@
         errorLine2="                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/gallery/ComponentGalleryActivity.kt"
-            line="207"
+            line="319"
             column="80"/>
     </issue>
 
@@ -1561,7 +1372,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/gallery/ComponentGalleryActivity.kt"
-            line="221"
+            line="332"
             column="5"/>
     </issue>
 
@@ -1583,63 +1394,52 @@
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="246"
+            line="296"
             column="50"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="    icon: androidx.compose.ui.graphics.vector.ImageVector, name: String, outdoor: Boolean, modifier: Modifier, onClick: () -> Unit,"
-        errorLine2="                                                                                           ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="239"
-            column="92"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="    c: Recovery.ChargeDay?, day: LongRange, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,"
-        errorLine2="                                            ~~~~~~~~~~~~~~~~~~">
+        errorLine1="    modifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="257"
-            column="45"/>
+            line="253"
+            column="5"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun ChargeSmall(c: Recovery.ChargeDay?, recharged: Boolean, modifier: Modifier, failed: Boolean = false) {"
-        errorLine2="                                                                    ~~~~~~~~~~~~~~~~~~">
+        errorLine1="    c: Recovery.ChargeDay?, modifier: Modifier, failed: Boolean = false, tag: TitleTag? = null, onOpen: () -> Unit,"
+        errorLine2="                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="293"
-            column="69"/>
+            line="346"
+            column="29"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun BreathingSmall(b: org.openstrap.app.data.Recovery.BreathingDisturbances, modifier: Modifier, onInfo: () -> Unit) ="
-        errorLine2="                                                                                     ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun BreathingCard(rec: org.openstrap.app.data.RecoveryResult?, size: PictureSize, modifier: Modifier, onInfo: (() -> Unit)?) {"
+        errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="333"
-            column="86"/>
+            line="317"
+            column="91"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun NapsCard(state: DayUiState, modifier: Modifier, onOpen: () -> Unit) {"
-        errorLine2="                                        ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun NapsCard(state: DayUiState, size: PictureSize, modifier: Modifier, onOpen: () -> Unit) {"
+        errorLine2="                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="344"
-            column="41"/>
+            line="337"
+            column="60"/>
     </issue>
 
     <issue
@@ -1649,19 +1449,8 @@
         errorLine2="                                                                                                       ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="457"
+            line="462"
             column="104"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun FailedHero(f: RecoveryFailure, lightAngle: Float?, onOpen: () -> Unit, onRetry: () -> Unit, modifier: Modifier) {"
-        errorLine2="                                                                                                        ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="483"
-            column="105"/>
     </issue>
 
     <issue
@@ -1671,7 +1460,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="503"
+            line="496"
             column="84"/>
     </issue>
 
@@ -1682,19 +1471,19 @@
         errorLine2="                                                                                                           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="561"
+            line="563"
             column="108"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun AfterHero(ctx: TodayContext, lightAngle: Float?, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {"
-        errorLine2="                                                                                            ~~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun AfterHero(ctx: TodayContext, onOpenWorkout: (Long) -> Unit, modifier: Modifier) {"
+        errorLine2="                                                                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="582"
-            column="93"/>
+            line="591"
+            column="73"/>
     </issue>
 
     <issue
@@ -1704,7 +1493,7 @@
         errorLine2="                                                                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="622"
+            line="638"
             column="128"/>
     </issue>
 
@@ -1715,7 +1504,7 @@
         errorLine2="                                                                                                                     ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="662"
+            line="682"
             column="118"/>
     </issue>
 
@@ -1726,7 +1515,7 @@
         errorLine2="                                                         ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="697"
+            line="717"
             column="58"/>
     </issue>
 
@@ -1737,7 +1526,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="719"
+            line="739"
             column="84"/>
     </issue>
 
@@ -1748,19 +1537,30 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Insights.kt"
-            line="221"
+            line="216"
             column="49"/>
     </issue>
 
     <issue
         id="ComposeModifierWithoutDefault"
         message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun RepPage(r: WorkoutState.Recording, route: List&lt;Route.Point>, readings: List&lt;Pair&lt;Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {"
-        errorLine2="                                                                                                                                   ~~~~~~~~~~~~~~~~~~">
+        errorLine1="    modifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="214"
-            column="132"/>
+            line="243"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="ComposeModifierWithoutDefault"
+        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
+        errorLine1="    modifier: Modifier,"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
+            line="269"
+            column="5"/>
     </issue>
 
     <issue
@@ -1770,19 +1570,8 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="284"
+            line="409"
             column="37"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="internal fun LiveStat(label: String, modifier: Modifier, value: @Composable () -> Unit) {"
-        errorLine2="                                     ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="367"
-            column="38"/>
     </issue>
 
     <issue
@@ -1792,7 +1581,7 @@
         errorLine2="                                            ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="180"
+            line="201"
             column="45"/>
     </issue>
 
@@ -1803,7 +1592,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="220"
+            line="242"
             column="5"/>
     </issue>
 
@@ -1814,7 +1603,7 @@
         errorLine2="                                                                                 ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="433"
+            line="498"
             column="82"/>
     </issue>
 
@@ -1825,7 +1614,7 @@
         errorLine2="                                                                                                                  ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/MomentHeader.kt"
-            line="150"
+            line="145"
             column="115"/>
     </issue>
 
@@ -1836,7 +1625,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="461"
+            line="428"
             column="5"/>
     </issue>
 
@@ -1847,30 +1636,8 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="358"
+            line="394"
             column="49"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun PeakColumns(peaks: List&lt;Int?>, maxHr: Int, modifier: Modifier) {"
-        errorLine2="                                                       ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="583"
-            column="56"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun CalmLine(values: List&lt;Float?>, modifier: Modifier) {"
-        errorLine2="                                           ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="618"
-            column="44"/>
     </issue>
 
     <issue
@@ -1880,30 +1647,8 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="650"
+            line="627"
             column="36"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun PhotoButton(label: String, modifier: Modifier, onClick: () -> Unit) {"
-        errorLine2="                                       ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="254"
-            column="40"/>
-    </issue>
-
-    <issue
-        id="ComposeModifierWithoutDefault"
-        message="This @Composable function has a modifier parameter but it doesn&apos;t have a default value.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#modifiers-should-have-default-parameters for more information."
-        errorLine1="private fun Figure(label: String, value: String, modifier: GlanceModifier) {"
-        errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/widget/StartWidget.kt"
-            line="536"
-            column="50"/>
     </issue>
 
     <issue
@@ -1924,7 +1669,7 @@
         errorLine2="                                                                                                                               ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutCapsule.kt"
-            line="164"
+            line="171"
             column="128"/>
     </issue>
 
@@ -1935,7 +1680,7 @@
         errorLine2="                        ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="310"
+            line="308"
             column="25"/>
     </issue>
 
@@ -1946,7 +1691,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="293"
+            line="273"
             column="1"/>
     </issue>
 
@@ -1957,7 +1702,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="600"
+            line="577"
             column="1"/>
     </issue>
 
@@ -1968,7 +1713,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="637"
+            line="614"
             column="1"/>
     </issue>
 
@@ -1979,18 +1724,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="448"
-            column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeMultipleContentEmitters"
-        message="Composable functions should only be emitting content into the composition from one source at their top level.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#do-not-emit-multiple-pieces-of-content for more information."
-        errorLine1="/** In place of a Recovery that failed: yesterday&apos;s score dimmed, the line, and Try again. */"
-        errorLine2="^">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="424"
+            line="468"
             column="1"/>
     </issue>
 
@@ -2001,7 +1735,7 @@
         errorLine2="^">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="507"
+            line="523"
             column="1"/>
     </issue>
 
@@ -2012,18 +1746,7 @@
         errorLine2="             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="393"
-            column="14"/>
-    </issue>
-
-    <issue
-        id="ComposeNamingLowercase"
-        message="Composable functions that return a value should start with a lowercase letter. While useful and accepted outside of @Composable functions, this factory function convention has drawbacks that set inappropriate expectations for callers when used with @Composable functions.&#xA;&#xA;See https://slackhq.github.io/compose-lints/rules/#naming-composable-functions-properly for more information."
-        errorLine1="internal fun FamilySection("
-        errorLine2="             ~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="183"
+            line="405"
             column="14"/>
     </issue>
 
@@ -2034,7 +1757,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="504"
+            line="522"
             column="13"/>
     </issue>
 
@@ -2056,7 +1779,7 @@
         errorLine2="                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="385"
+            line="389"
             column="22"/>
     </issue>
 
@@ -2067,7 +1790,7 @@
         errorLine2="                 ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowParts.kt"
-            line="41"
+            line="45"
             column="18"/>
     </issue>
 
@@ -2089,7 +1812,7 @@
         errorLine2="                   ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Insights.kt"
-            line="118"
+            line="112"
             column="20"/>
     </issue>
 
@@ -2100,7 +1823,7 @@
         errorLine2="                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="501"
+            line="573"
             column="17"/>
     </issue>
 
@@ -2111,19 +1834,8 @@
         errorLine2="                       ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="456"
+            line="423"
             column="24"/>
-    </issue>
-
-    <issue
-        id="ComposeParameterOrder"
-        message="Parameters in a composable function should be ordered following this pattern: params without defaults, modifiers, params with defaults and optionally, a trailing function that might not have a default param.&#xA;Current params are: `[values: List&lt;Float?>, color: Color, modifier: Modifier = Modifier, height: Dp, ends: Boolean = false, peak: Boolean = false]` but should be `[values: List&lt;Float?>, color: Color, height: Dp, modifier: Modifier = Modifier, ends: Boolean = false, peak: Boolean = false]`.&#xA;See https://slackhq.github.io/compose-lints/rules/#ordering-composable-parameters-properly for more information."
-        errorLine1="private fun SmoothLine(values: List&lt;Float?>, color: Color, modifier: Modifier = Modifier, height: Dp, ends: Boolean = false, peak: Boolean = false) {"
-        errorLine2="                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="546"
-            column="23"/>
     </issue>
 
     <issue
@@ -2133,7 +1845,7 @@
         errorLine2="                     ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="627"
+            line="631"
             column="22"/>
     </issue>
 
@@ -2144,7 +1856,7 @@
         errorLine2="                       ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="82"
+            line="104"
             column="24"/>
     </issue>
 
@@ -2155,7 +1867,7 @@
         errorLine2="                    ^">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/zepp/ZeppSignIn.kt"
-            line="101"
+            line="106"
             column="21"/>
     </issue>
 
@@ -2166,30 +1878,8 @@
         errorLine2="~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="352"
+            line="353"
             column="1"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `values: ImmutableList&lt;Float>` or create an `@Immutable` wrapper for this class: `@Immutable data class ValuesList(val items: List&lt;Float>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    values: List&lt;Float>, target: Float, color: Color, labels: List&lt;String>, modifier: Modifier = Modifier, height: Dp = 200.dp,"
-        errorLine2="            ~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="209"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;String> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `labels: ImmutableList&lt;String>` or create an `@Immutable` wrapper for this class: `@Immutable data class LabelsList(val items: List&lt;String>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    values: List&lt;Float>, target: Float, color: Color, labels: List&lt;String>, modifier: Modifier = Modifier, height: Dp = 200.dp,"
-        errorLine2="                                                              ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="209"
-            column="63"/>
     </issue>
 
     <issue
@@ -2199,52 +1889,30 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="693"
+            line="769"
             column="11"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Color> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `colors: ImmutableList&lt;Color>` or create an `@Immutable` wrapper for this class: `@Immutable data class ColorsList(val items: List&lt;Color>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    stacks: List&lt;List&lt;Float>>, colors: List&lt;Color>, goal: Float?, labels: List&lt;String>, spread: Boolean,"
-        errorLine2="                                       ~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="736"
-            column="40"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;List&lt;Float>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `stacks: ImmutableList&lt;List&lt;Float>>` or create an `@Immutable` wrapper for this class: `@Immutable data class StacksList(val items: List&lt;List&lt;Float>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    stacks: List&lt;List&lt;Float>>, colors: List&lt;Color>, goal: Float?, labels: List&lt;String>, spread: Boolean,"
+        errorLine1="    stacks: List&lt;List&lt;Float>>, colorOf: (bar: Int, part: Int) -> Color, goal: Float?, labels: List&lt;String>, spread: Boolean,"
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="736"
+            line="823"
             column="13"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;String> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `labels: ImmutableList&lt;String>` or create an `@Immutable` wrapper for this class: `@Immutable data class LabelsList(val items: List&lt;String>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    stacks: List&lt;List&lt;Float>>, colors: List&lt;Color>, goal: Float?, labels: List&lt;String>, spread: Boolean,"
-        errorLine2="                                                                          ~~~~~~~~~~~~">
+        errorLine1="    stacks: List&lt;List&lt;Float>>, colorOf: (bar: Int, part: Int) -> Color, goal: Float?, labels: List&lt;String>, spread: Boolean,"
+        errorLine2="                                                                                              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="736"
-            column="75"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;String, Color>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `items: ImmutableList&lt;Pair&lt;String, Color>>` or create an `@Immutable` wrapper for this class: `@Immutable data class ItemsList(val items: List&lt;Pair&lt;String, Color>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun KcalLegend(items: List&lt;Pair&lt;String, Color>>, modifier: Modifier = Modifier) {"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ActivityDetail.kt"
-            line="800"
-            column="31"/>
+            line="823"
+            column="95"/>
     </issue>
 
     <issue
@@ -2254,7 +1922,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/AllMetricsScreen.kt"
-            line="173"
+            line="224"
             column="13"/>
     </issue>
 
@@ -2265,7 +1933,7 @@
         errorLine2="                                                                     ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="123"
+            line="129"
             column="70"/>
     </issue>
 
@@ -2276,7 +1944,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="175"
+            line="190"
             column="33"/>
     </issue>
 
@@ -2287,7 +1955,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="193"
+            line="214"
             column="31"/>
     </issue>
 
@@ -2298,7 +1966,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/Celebrations.kt"
-            line="214"
+            line="235"
             column="32"/>
     </issue>
 
@@ -2309,7 +1977,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="82"
+            line="84"
             column="13"/>
     </issue>
 
@@ -2320,7 +1988,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="237"
+            line="241"
             column="19"/>
     </issue>
 
@@ -2331,7 +1999,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="237"
+            line="241"
             column="51"/>
     </issue>
 
@@ -2342,7 +2010,7 @@
         errorLine2="                                                ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="249"
+            line="253"
             column="49"/>
     </issue>
 
@@ -2353,7 +2021,7 @@
         errorLine2="                                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ChooseScreen.kt"
-            line="376"
+            line="388"
             column="47"/>
     </issue>
 
@@ -2375,7 +2043,7 @@
         errorLine2="               ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/DayCalendar.kt"
-            line="140"
+            line="151"
             column="16"/>
     </issue>
 
@@ -2397,7 +2065,7 @@
         errorLine2="                             ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/device/DeviceScreen.kt"
-            line="380"
+            line="433"
             column="30"/>
     </issue>
 
@@ -2408,7 +2076,7 @@
         errorLine2="                                                        ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/firmware/FirmwareScreen.kt"
-            line="259"
+            line="324"
             column="57"/>
     </issue>
 
@@ -2419,7 +2087,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="107"
+            line="131"
             column="15"/>
     </issue>
 
@@ -2430,7 +2098,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="129"
+            line="154"
             column="17"/>
     </issue>
 
@@ -2441,18 +2109,18 @@
         errorLine2="                              ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="200"
+            line="242"
             column="31"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float>? is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `usual: ImmutableList&lt;Float>?` or create an `@Immutable` wrapper for this class: `@Immutable data class UsualList(val items: List&lt;Float>?)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun StepsGlow(state: DayUiState, usual: List&lt;Float>?, tag: TitleTag?, onClick: () -> Unit) {"
+        errorLine1="private fun StepsGlow(state: DayUiState, usual: List&lt;Float>?, history: ActivityHistory, tag: TitleTag?, onClick: () -> Unit) {"
         errorLine2="                                                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="270"
+            line="287"
             column="49"/>
     </issue>
 
@@ -2463,7 +2131,7 @@
         errorLine2="                              ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="303"
+            line="329"
             column="31"/>
     </issue>
 
@@ -2474,7 +2142,7 @@
         errorLine2="                                                     ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="359"
+            line="515"
             column="54"/>
     </issue>
 
@@ -2485,7 +2153,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowActivityScreen.kt"
-            line="418"
+            line="586"
             column="32"/>
     </issue>
 
@@ -2496,7 +2164,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="156"
+            line="161"
             column="13"/>
     </issue>
 
@@ -2507,7 +2175,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="159"
+            line="164"
             column="13"/>
     </issue>
 
@@ -2518,7 +2186,7 @@
         errorLine2="            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="268"
+            line="264"
             column="13"/>
     </issue>
 
@@ -2529,7 +2197,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="271"
+            line="267"
             column="13"/>
     </issue>
 
@@ -2540,7 +2208,7 @@
         errorLine2="          ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="329"
+            line="325"
             column="11"/>
     </issue>
 
@@ -2551,7 +2219,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="545"
+            line="541"
             column="13"/>
     </issue>
 
@@ -2562,7 +2230,7 @@
         errorLine2="              ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="546"
+            line="542"
             column="15"/>
     </issue>
 
@@ -2573,7 +2241,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="549"
+            line="545"
             column="13"/>
     </issue>
 
@@ -2584,7 +2252,7 @@
         errorLine2="               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="556"
+            line="552"
             column="16"/>
     </issue>
 
@@ -2595,7 +2263,7 @@
         errorLine2="                                                                                                   ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="628"
+            line="624"
             column="100"/>
     </issue>
 
@@ -2606,7 +2274,7 @@
         errorLine2="                     ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="628"
+            line="624"
             column="22"/>
     </issue>
 
@@ -2617,7 +2285,7 @@
         errorLine2="                      ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="647"
+            line="643"
             column="23"/>
     </issue>
 
@@ -2628,10 +2296,9 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="681"
+            line="677"
             column="13"/>
     </issue>
-
 
     <issue
         id="ComposeUnstableCollections"
@@ -2640,42 +2307,30 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="686"
+            line="683"
             column="13"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Color> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `colors: ImmutableList&lt;Color>` or create an `@Immutable` wrapper for this class: `@Immutable data class ColorsList(val items: List&lt;Color>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="fun ZoneBar(zoneSeconds: List&lt;Int>, colors: List&lt;Color>, modifier: Modifier = Modifier, height: Dp = 6.dp) {"
-        errorLine2="                                            ~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="793"
-            column="45"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Int> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `zoneSeconds: ImmutableList&lt;Int>` or create an `@Immutable` wrapper for this class: `@Immutable data class ZoneSecondsList(val items: List&lt;Int>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="fun ZoneBar(zoneSeconds: List&lt;Int>, colors: List&lt;Color>, modifier: Modifier = Modifier, height: Dp = 6.dp) {"
-        errorLine2="                         ~~~~~~~~~">
+        errorLine1="    zoneSeconds: List&lt;Int>,"
+        errorLine2="                 ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
-            line="793"
-            column="26"/>
+            line="830"
+            column="18"/>
     </issue>
-
 
     <issue
         id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;GridCard> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `cards: ImmutableList&lt;GridCard>` or create an `@Immutable` wrapper for this class: `@Immutable data class CardsList(val items: List&lt;GridCard>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="fun GlowGridColumn(cards: List&lt;GridCard>, modifier: Modifier = Modifier) {"
-        errorLine2="                          ~~~~~~~~~~~~~~">
+        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Color> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `colors: ImmutableList&lt;Color>` or create an `@Immutable` wrapper for this class: `@Immutable data class ColorsList(val items: List&lt;Color>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
+        errorLine1="    colors: List&lt;Color>,"
+        errorLine2="            ~~~~~~~~~~~">
         <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowGrid.kt"
-            line="111"
-            column="27"/>
+            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowCharts.kt"
+            line="831"
+            column="13"/>
     </issue>
 
     <issue
@@ -2685,7 +2340,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="246"
+            line="253"
             column="35"/>
     </issue>
 
@@ -2696,19 +2351,8 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowLayout.kt"
-            line="246"
+            line="253"
             column="72"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;String> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `options: ImmutableList&lt;String>` or create an `@Immutable` wrapper for this class: `@Immutable data class OptionsList(val items: List&lt;String>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="internal fun GlowSegments(options: List&lt;String>, selected: Int, onSelect: (Int) -> Unit) {"
-        errorLine2="                                   ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="88"
-            column="36"/>
     </issue>
 
     <issue
@@ -2718,7 +2362,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="149"
+            line="132"
             column="15"/>
     </issue>
 
@@ -2729,7 +2373,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="154"
+            line="137"
             column="12"/>
     </issue>
 
@@ -2740,7 +2384,7 @@
         errorLine2="            ~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="156"
+            line="139"
             column="13"/>
     </issue>
 
@@ -2751,19 +2395,8 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="299"
+            line="268"
             column="29"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Range> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `ranges: ImmutableList&lt;Range>` or create an `@Immutable` wrapper for this class: `@Immutable data class RangesList(val items: List&lt;Range>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun RangePills(ranges: List&lt;Range>, range: Range, onRange: (Range) -> Unit) {"
-        errorLine2="                               ~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="319"
-            column="32"/>
     </issue>
 
     <issue
@@ -2773,19 +2406,19 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="337"
+            line="289"
             column="37"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;String?, String>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `figures: ImmutableList&lt;Pair&lt;String?, String>>` or create an `@Immutable` wrapper for this class: `@Immutable data class FiguresList(val items: List&lt;Pair&lt;String?, String>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="internal fun DetailFigures(figures: List&lt;Pair&lt;String?, String>>, modifier: Modifier = Modifier) {"
-        errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="    figures: List&lt;Pair&lt;String?, String>>,"
+        errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="364"
-            column="37"/>
+            line="317"
+            column="14"/>
     </issue>
 
     <issue
@@ -2795,7 +2428,7 @@
         errorLine2="                                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="674"
+            line="664"
             column="42"/>
     </issue>
 
@@ -2806,7 +2439,7 @@
         errorLine2="                                 ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowMetricDetail.kt"
-            line="726"
+            line="724"
             column="34"/>
     </issue>
 
@@ -2817,30 +2450,8 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowRecoveryScreen.kt"
-            line="354"
+            line="533"
             column="34"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;Int, Long>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `totals: ImmutableList&lt;Pair&lt;Int, Long>>` or create an `@Immutable` wrapper for this class: `@Immutable data class TotalsList(val items: List&lt;Pair&lt;Int, Long>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun StageBar(totals: List&lt;Pair&lt;Int, Long>>) {"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="199"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;Int, Long>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `totals: ImmutableList&lt;Pair&lt;Int, Long>>` or create an `@Immutable` wrapper for this class: `@Immutable data class TotalsList(val items: List&lt;Pair&lt;Int, Long>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun StageLegend(totals: List&lt;Pair&lt;Int, Long>>) {"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="210"
-            column="33"/>
     </issue>
 
     <issue
@@ -2850,7 +2461,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowSleepScreen.kt"
-            line="231"
+            line="220"
             column="37"/>
     </issue>
 
@@ -2861,7 +2472,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="139"
+            line="143"
             column="15"/>
     </issue>
 
@@ -2872,7 +2483,7 @@
         errorLine2="                ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="190"
+            line="195"
             column="17"/>
     </issue>
 
@@ -2883,7 +2494,7 @@
         errorLine2="                                                                         ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowTodayScreen.kt"
-            line="742"
+            line="766"
             column="74"/>
     </issue>
 
@@ -2894,7 +2505,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="298"
+            line="289"
             column="15"/>
     </issue>
 
@@ -2905,7 +2516,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="303"
+            line="294"
             column="19"/>
     </issue>
 
@@ -2916,7 +2527,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="304"
+            line="295"
             column="12"/>
     </issue>
 
@@ -2927,7 +2538,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutMode.kt"
-            line="355"
+            line="346"
             column="32"/>
     </issue>
 
@@ -2938,7 +2549,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="87"
+            line="83"
             column="15"/>
     </issue>
 
@@ -2949,19 +2560,8 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="170"
+            line="169"
             column="15"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Int> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `zones: ImmutableList&lt;Int>` or create an `@Immutable` wrapper for this class: `@Immutable data class ZonesList(val items: List&lt;Int>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun WorkoutHero(a: WorkoutAnalysis, usual: Float?, zones: List&lt;Int>) {"
-        errorLine2="                                                                  ~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="248"
-            column="67"/>
     </issue>
 
     <issue
@@ -2971,7 +2571,7 @@
         errorLine2="            ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="313"
+            line="316"
             column="13"/>
     </issue>
 
@@ -2982,19 +2582,19 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
-            line="313"
+            line="316"
             column="72"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;WorkoutFact> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `facts: ImmutableList&lt;WorkoutFact>` or create an `@Immutable` wrapper for this class: `@Immutable data class FactsList(val items: List&lt;WorkoutFact>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun FactsList(facts: List&lt;WorkoutFact>, summary: PhoneSummary?) {"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun WorkoutFactsList(facts: List&lt;WorkoutFact>, summary: PhoneSummary?) {"
+        errorLine2="                                    ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutScreen.kt"
             line="369"
-            column="30"/>
+            column="37"/>
     </issue>
 
     <issue
@@ -3026,7 +2626,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="102"
+            line="107"
             column="16"/>
     </issue>
 
@@ -3037,7 +2637,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="103"
+            line="108"
             column="15"/>
     </issue>
 
@@ -3048,7 +2648,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="291"
+            line="298"
             column="32"/>
     </issue>
 
@@ -3059,19 +2659,19 @@
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="393"
+            line="405"
             column="59"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;SplitRow> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `rows: ImmutableList&lt;SplitRow>` or create an `@Immutable` wrapper for this class: `@Immutable data class RowsList(val items: List&lt;SplitRow>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun SplitBars(rows: List&lt;SplitRow>, fastest: Int?) {"
-        errorLine2="                            ~~~~~~~~~~~~~~">
+        errorLine1="private fun SplitTimeBars(rows: List&lt;SplitRow>, fastest: Int?) {"
+        errorLine2="                                ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GlowWorkoutSummary.kt"
-            line="445"
-            column="29"/>
+            line="467"
+            column="33"/>
     </issue>
 
     <issue
@@ -3081,7 +2681,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/GoalsAndBests.kt"
-            line="70"
+            line="71"
             column="49"/>
     </issue>
 
@@ -3092,7 +2692,7 @@
         errorLine2="                                                                                           ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/InfoSheet.kt"
-            line="61"
+            line="58"
             column="92"/>
     </issue>
 
@@ -3103,7 +2703,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/InfoSheet.kt"
-            line="62"
+            line="59"
             column="11"/>
     </issue>
 
@@ -3114,7 +2714,7 @@
         errorLine2="                          ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/InfoSheet.kt"
-            line="101"
+            line="95"
             column="27"/>
     </issue>
 
@@ -3136,7 +2736,7 @@
         errorLine2="           ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/components/Insights.kt"
-            line="119"
+            line="113"
             column="12"/>
     </issue>
 
@@ -3147,7 +2747,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="87"
+            line="93"
             column="13"/>
     </issue>
 
@@ -3158,7 +2758,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="92"
+            line="98"
             column="12"/>
     </issue>
 
@@ -3169,30 +2769,30 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="93"
+            line="99"
             column="14"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;Long, Int>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `readings: ImmutableList&lt;Pair&lt;Long, Int>>` or create an `@Immutable` wrapper for this class: `@Immutable data class ReadingsList(val items: List&lt;Pair&lt;Long, Int>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun RepPage(r: WorkoutState.Recording, route: List&lt;Route.Point>, readings: List&lt;Pair&lt;Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {"
-        errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~~~~~">
+        errorLine1="    r: WorkoutState.Recording, route: List&lt;Route.Point>, readings: List&lt;Pair&lt;Long, Int>>, bpm: Int?, color: Color, compact: Boolean,"
+        errorLine2="                                                                   ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="214"
-            column="84"/>
+            line="242"
+            column="68"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Route.Point> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `route: ImmutableList&lt;Route.Point>` or create an `@Immutable` wrapper for this class: `@Immutable data class RouteList(val items: List&lt;Route.Point>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun RepPage(r: WorkoutState.Recording, route: List&lt;Route.Point>, readings: List&lt;Pair&lt;Long, Int>>, bpm: Int?, color: Color, modifier: Modifier) {"
-        errorLine2="                                                      ~~~~~~~~~~~~~~~~~">
+        errorLine1="    r: WorkoutState.Recording, route: List&lt;Route.Point>, readings: List&lt;Pair&lt;Long, Int>>, bpm: Int?, color: Color, compact: Boolean,"
+        errorLine2="                                      ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="214"
-            column="55"/>
+            line="242"
+            column="39"/>
     </issue>
 
     <issue
@@ -3202,19 +2802,19 @@
         errorLine2="                                                                        ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="316"
+            line="366"
             column="73"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Route.Split> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `splits: ImmutableList&lt;Route.Split>` or create an `@Immutable` wrapper for this class: `@Immutable data class SplitsList(val items: List&lt;Route.Split>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun SplitBars(splits: List&lt;Route.Split>) {"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~">
+        errorLine1="private fun KmSplitBars(splits: List&lt;Route.Split>) {"
+        errorLine2="                                ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveDistance.kt"
-            line="357"
-            column="31"/>
+            line="413"
+            column="33"/>
     </issue>
 
     <issue
@@ -3224,7 +2824,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveFrame.kt"
-            line="112"
+            line="125"
             column="13"/>
     </issue>
 
@@ -3235,7 +2835,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveGame.kt"
-            line="56"
+            line="58"
             column="15"/>
     </issue>
 
@@ -3246,7 +2846,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="70"
+            line="80"
             column="13"/>
     </issue>
 
@@ -3257,7 +2857,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="81"
+            line="92"
             column="12"/>
     </issue>
 
@@ -3268,7 +2868,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="82"
+            line="93"
             column="14"/>
     </issue>
 
@@ -3279,7 +2879,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="92"
+            line="103"
             column="16"/>
     </issue>
 
@@ -3290,7 +2890,7 @@
         errorLine2="                                                                       ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="147"
+            line="168"
             column="72"/>
     </issue>
 
@@ -3301,7 +2901,7 @@
         errorLine2="                                        ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="147"
+            line="168"
             column="41"/>
     </issue>
 
@@ -3312,7 +2912,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="147"
+            line="168"
             column="12"/>
     </issue>
 
@@ -3323,7 +2923,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="215"
+            line="237"
             column="13"/>
     </issue>
 
@@ -3334,7 +2934,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveHeart.kt"
-            line="298"
+            line="341"
             column="13"/>
     </issue>
 
@@ -3345,7 +2945,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIndoor.kt"
-            line="36"
+            line="48"
             column="13"/>
     </issue>
 
@@ -3356,7 +2956,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="77"
+            line="84"
             column="15"/>
     </issue>
 
@@ -3367,7 +2967,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="269"
+            line="312"
             column="32"/>
     </issue>
 
@@ -3378,7 +2978,7 @@
         errorLine2="                                                                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="300"
+            line="338"
             column="85"/>
     </issue>
 
@@ -3389,7 +2989,7 @@
         errorLine2="                                                       ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveIntervals.kt"
-            line="300"
+            line="338"
             column="56"/>
     </issue>
 
@@ -3400,7 +3000,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="56"
+            line="59"
             column="12"/>
     </issue>
 
@@ -3411,7 +3011,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="57"
+            line="60"
             column="15"/>
     </issue>
 
@@ -3422,7 +3022,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="62"
+            line="65"
             column="14"/>
     </issue>
 
@@ -3433,7 +3033,7 @@
         errorLine2="                                                                                         ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="148"
+            line="159"
             column="90"/>
     </issue>
 
@@ -3444,7 +3044,7 @@
         errorLine2="                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="148"
+            line="159"
             column="59"/>
     </issue>
 
@@ -3455,7 +3055,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMap.kt"
-            line="148"
+            line="159"
             column="30"/>
     </issue>
 
@@ -3466,19 +3066,8 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMind.kt"
-            line="64"
+            line="78"
             column="13"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float?> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `values: ImmutableList&lt;Float?>` or create an `@Immutable` wrapper for this class: `@Immutable data class ValuesList(val items: List&lt;Float?>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun MindHeartLine(values: List&lt;Float?>) {"
-        errorLine2="                                  ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveMind.kt"
-            line="161"
-            column="35"/>
     </issue>
 
     <issue
@@ -3488,7 +3077,7 @@
         errorLine2="                                                                                            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LivePaused.kt"
-            line="32"
+            line="34"
             column="93"/>
     </issue>
 
@@ -3499,7 +3088,7 @@
         errorLine2="                                                                                                                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LivePaused.kt"
-            line="32"
+            line="34"
             column="125"/>
     </issue>
 
@@ -3510,7 +3099,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LivePaused.kt"
-            line="57"
+            line="63"
             column="35"/>
     </issue>
 
@@ -3521,7 +3110,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="106"
+            line="110"
             column="14"/>
     </issue>
 
@@ -3532,7 +3121,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="110"
+            line="114"
             column="16"/>
     </issue>
 
@@ -3543,7 +3132,7 @@
         errorLine2="                                                                                                             ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="241"
+            line="270"
             column="110"/>
     </issue>
 
@@ -3554,7 +3143,7 @@
         errorLine2="                                   ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="308"
+            line="342"
             column="36"/>
     </issue>
 
@@ -3565,7 +3154,7 @@
         errorLine2="                           ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="374"
+            line="418"
             column="28"/>
     </issue>
 
@@ -3576,7 +3165,7 @@
         errorLine2="                                                         ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="374"
+            line="418"
             column="58"/>
     </issue>
 
@@ -3587,7 +3176,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="404"
+            line="451"
             column="31"/>
     </issue>
 
@@ -3598,7 +3187,7 @@
         errorLine2="                                                              ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="404"
+            line="451"
             column="63"/>
     </issue>
 
@@ -3609,7 +3198,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="404"
+            line="451"
             column="91"/>
     </issue>
 
@@ -3620,7 +3209,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/live/LiveSets.kt"
-            line="447"
+            line="512"
             column="51"/>
     </issue>
 
@@ -3631,7 +3220,7 @@
         errorLine2="             ~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/PageParts.kt"
-            line="317"
+            line="352"
             column="14"/>
     </issue>
 
@@ -3642,7 +3231,7 @@
         errorLine2="           ~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="244"
+            line="224"
             column="12"/>
     </issue>
 
@@ -3653,7 +3242,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="253"
+            line="233"
             column="12"/>
     </issue>
 
@@ -3664,7 +3253,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="281"
+            line="261"
             column="14"/>
     </issue>
 
@@ -3675,7 +3264,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="302"
+            line="282"
             column="14"/>
     </issue>
 
@@ -3686,7 +3275,7 @@
         errorLine2="                                  ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="414"
+            line="381"
             column="35"/>
     </issue>
 
@@ -3697,7 +3286,7 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="434"
+            line="401"
             column="29"/>
     </issue>
 
@@ -3708,7 +3297,7 @@
         errorLine2="             ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="544"
+            line="515"
             column="14"/>
     </issue>
 
@@ -3719,7 +3308,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="648"
+            line="625"
             column="12"/>
     </issue>
 
@@ -3730,7 +3319,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyCardio.kt"
-            line="740"
+            line="719"
             column="13"/>
     </issue>
 
@@ -3741,7 +3330,7 @@
         errorLine2="                  ~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="92"
+            line="112"
             column="19"/>
     </issue>
 
@@ -3752,7 +3341,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="93"
+            line="113"
             column="12"/>
     </issue>
 
@@ -3763,7 +3352,7 @@
         errorLine2="           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ReadyScreen.kt"
-            line="100"
+            line="120"
             column="12"/>
     </issue>
 
@@ -3774,14 +3363,14 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
-            line="167"
+            line="171"
             column="30"/>
     </issue>
 
     <issue
         id="ComposeUnstableCollections"
         message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;RecoveryWeekDay> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `week: ImmutableList&lt;RecoveryWeekDay>` or create an `@Immutable` wrapper for this class: `@Immutable data class WeekList(val items: List&lt;RecoveryWeekDay>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun Week(week: List&lt;RecoveryWeekDay>, column: Float, density: Float) {"
+        errorLine1="private fun Week(week: List&lt;RecoveryWeekDay>, usual: ClosedFloatingPointRange&lt;Float>?, column: Float, density: Float) {"
         errorLine2="                       ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/RecoveryWidget.kt"
@@ -3796,7 +3385,7 @@
         errorLine2="              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ScoreDetail.kt"
-            line="69"
+            line="72"
             column="15"/>
     </issue>
 
@@ -3807,7 +3396,7 @@
         errorLine2="                                                                        ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="285"
+            line="321"
             column="73"/>
     </issue>
 
@@ -3818,7 +3407,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="358"
+            line="394"
             column="30"/>
     </issue>
 
@@ -3829,41 +3418,8 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="532"
+            line="563"
             column="34"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Int> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `zones: ImmutableList&lt;Int>` or create an `@Immutable` wrapper for this class: `@Immutable data class ZonesList(val items: List&lt;Int>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun ZoneStrip(zones: List&lt;Int>) {"
-        errorLine2="                             ~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="550"
-            column="30"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Int?> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `peaks: ImmutableList&lt;Int?>` or create an `@Immutable` wrapper for this class: `@Immutable data class PeaksList(val items: List&lt;Int?>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun PeakColumns(peaks: List&lt;Int?>, maxHr: Int, modifier: Modifier) {"
-        errorLine2="                               ~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="583"
-            column="32"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float?> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `values: ImmutableList&lt;Float?>` or create an `@Immutable` wrapper for this class: `@Immutable data class ValuesList(val items: List&lt;Float?>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun CalmLine(values: List&lt;Float?>, modifier: Modifier) {"
-        errorLine2="                             ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/ShareCards.kt"
-            line="618"
-            column="30"/>
     </issue>
 
     <issue
@@ -3873,7 +3429,7 @@
         errorLine2="                                                      ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="107"
+            line="99"
             column="55"/>
     </issue>
 
@@ -3884,7 +3440,7 @@
         errorLine2="                                                                                   ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="107"
+            line="99"
             column="84"/>
     </issue>
 
@@ -3895,7 +3451,7 @@
         errorLine2="                                                                                                                ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="107"
+            line="99"
             column="113"/>
     </issue>
 
@@ -3906,7 +3462,7 @@
         errorLine2="                                                ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/ShareScreen.kt"
-            line="137"
+            line="129"
             column="49"/>
     </issue>
 
@@ -3917,7 +3473,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="431"
+            line="459"
             column="13"/>
     </issue>
 
@@ -3928,7 +3484,7 @@
         errorLine2="                                                                     ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="431"
+            line="459"
             column="70"/>
     </issue>
 
@@ -3939,7 +3495,7 @@
         errorLine2="                                                            ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="637"
+            line="679"
             column="61"/>
     </issue>
 
@@ -3950,7 +3506,7 @@
         errorLine2="                                                                                      ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SleepDetail.kt"
-            line="637"
+            line="679"
             column="87"/>
     </issue>
 
@@ -3961,7 +3517,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/dashboard/SleepPanels.kt"
-            line="135"
+            line="169"
             column="11"/>
     </issue>
 
@@ -3972,7 +3528,7 @@
         errorLine2="                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="215"
+            line="206"
             column="27"/>
     </issue>
 
@@ -3983,19 +3539,8 @@
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/SleepWidget.kt"
-            line="266"
+            line="257"
             column="29"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;String?, String>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `figures: ImmutableList&lt;Pair&lt;String?, String>>` or create an `@Immutable` wrapper for this class: `@Immutable data class FiguresList(val items: List&lt;Pair&lt;String?, String>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="internal fun SummaryFigures(figures: List&lt;Pair&lt;String?, String>>, modifier: Modifier = Modifier) {"
-        errorLine2="                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="164"
-            column="38"/>
     </issue>
 
     <issue
@@ -4005,7 +3550,7 @@
         errorLine2="                                                                                                                             ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="184"
+            line="191"
             column="126"/>
     </issue>
 
@@ -4016,7 +3561,7 @@
         errorLine2="                                                               ~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="184"
+            line="191"
             column="64"/>
     </issue>
 
@@ -4027,7 +3572,7 @@
         errorLine2="                                                                                          ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="184"
+            line="191"
             column="91"/>
     </issue>
 
@@ -4038,7 +3583,7 @@
         errorLine2="                             ~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="279"
+            line="283"
             column="30"/>
     </issue>
 
@@ -4049,7 +3594,7 @@
         errorLine2="                              ~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="319"
+            line="330"
             column="31"/>
     </issue>
 
@@ -4060,7 +3605,7 @@
         errorLine2="                                ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="364"
+            line="380"
             column="33"/>
     </issue>
 
@@ -4071,7 +3616,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="403"
+            line="419"
             column="34"/>
     </issue>
 
@@ -4082,19 +3627,8 @@
         errorLine2="                                      ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="504"
+            line="522"
             column="39"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Float?> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `values: ImmutableList&lt;Float?>` or create an `@Immutable` wrapper for this class: `@Immutable data class ValuesList(val items: List&lt;Float?>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="private fun SmoothLine(values: List&lt;Float?>, color: Color, modifier: Modifier = Modifier, height: Dp, ends: Boolean = false, peak: Boolean = false) {"
-        errorLine2="                               ~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="546"
-            column="32"/>
     </issue>
 
     <issue
@@ -4104,7 +3638,7 @@
         errorLine2="                                    ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="581"
+            line="567"
             column="37"/>
     </issue>
 
@@ -4115,7 +3649,7 @@
         errorLine2="                                       ~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="606"
+            line="608"
             column="40"/>
     </issue>
 
@@ -4126,7 +3660,7 @@
         errorLine2="          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="628"
+            line="632"
             column="11"/>
     </issue>
 
@@ -4137,18 +3671,7 @@
         errorLine2="                                ~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/SummarySections.kt"
-            line="655"
-            column="33"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;Pair&lt;String?, String>> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `figures: ImmutableList&lt;Pair&lt;String?, String>>` or create an `@Immutable` wrapper for this class: `@Immutable data class FiguresList(val items: List&lt;Pair&lt;String?, String>>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="internal fun FigureRow(figures: List&lt;Pair&lt;String?, String>>, modifier: Modifier = Modifier) {"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/TabParts.kt"
-            line="172"
+            line="659"
             column="33"/>
     </issue>
 
@@ -4159,7 +3682,7 @@
         errorLine2="                                               ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="104"
+            line="126"
             column="48"/>
     </issue>
 
@@ -4170,7 +3693,7 @@
         errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="245"
+            line="239"
             column="34"/>
     </issue>
 
@@ -4181,7 +3704,7 @@
         errorLine2="                                                                                  ~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="373"
+            line="563"
             column="83"/>
     </issue>
 
@@ -4192,19 +3715,8 @@
         errorLine2="                                                                                                               ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="446"
+            line="727"
             column="112"/>
-    </issue>
-
-    <issue
-        id="ComposeUnstableCollections"
-        message="The Compose Compiler cannot infer the stability of a parameter if a List&lt;org.openstrap.app.data.WorkoutAnalysis> is used in it, even if the item type is stable.&#xA;You should use Kotlinx Immutable Collections instead: `workouts: ImmutableList&lt;org.openstrap.app.data.WorkoutAnalysis>` or create an `@Immutable` wrapper for this class: `@Immutable data class WorkoutsList(val items: List&lt;org.openstrap.app.data.WorkoutAnalysis>)`&#xA;See https://slackhq.github.io/compose-lints/rules/#avoid-using-unstable-collections for more information."
-        errorLine1="    state: DayUiState, workouts: List&lt;org.openstrap.app.data.WorkoutAnalysis>, history: DailyHistory?, modifier: Modifier = Modifier,"
-        errorLine2="                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="496"
-            column="34"/>
     </issue>
 
     <issue
@@ -4214,7 +3726,7 @@
         errorLine2="                         ~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/TodayCards.kt"
-            line="582"
+            line="879"
             column="26"/>
     </issue>
 
@@ -4225,7 +3737,7 @@
         errorLine2="                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/widget/WidgetParts.kt"
-            line="535"
+            line="551"
             column="75"/>
     </issue>
 
@@ -4236,7 +3748,7 @@
         errorLine2="               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/kotlin/org/openstrap/app/ui/glow/WorkoutMap.kt"
-            line="57"
+            line="63"
             column="16"/>
     </issue>
 
@@ -4247,7 +3759,7 @@
         errorLine2="                    ~~~">
         <location
             file="src/debug/kotlin/org/openstrap/app/widget/debug/WidgetGalleryActivity.kt"
-            line="261"
+            line="263"
             column="21"/>
     </issue>
 

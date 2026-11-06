@@ -3,7 +3,7 @@
   The weekly goal, personal bests and badges (presentation/RewardsCopy.kt): the Earned rows on a workout summary, the best
   card, the goal moment, the weekly recap notification and the Goals and bests page.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A personal best's title: the fastest time over a distance, like "5 km" or "half marathon". -->
     <string name="core_rewards_best_fastest">Fastest <xliff:g id="distance" example="5 km">%1$s</xliff:g></string>
     <!-- A personal best's title: the heaviest weight lifted in an exercise, its name in lower case. -->
@@ -110,7 +110,10 @@
         <item quantity="other"><xliff:g id="count" example="2">%2$d</xliff:g> of <xliff:g id="goal" example="4">%1$d</xliff:g> workouts.</item>
     </plurals>
     <!-- The weekly recap notification: the goal met. -->
-    <string name="core_rewards_recap_met"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts, goal met.</string>
+    <plurals name="core_rewards_recap_met">
+        <item quantity="one"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workout, goal met.</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="goal" example="4">%2$d</xliff:g> workouts, goal met.</item>
+    </plurals>
     <!-- The weekly recap notification: the goal met, and the weeks in a row it has been. The form follows the weeks. -->
     <plurals name="core_rewards_recap_met_in_a_row">
         <item quantity="one"><xliff:g id="count" example="4">%2$d</xliff:g> of <xliff:g id="goal" example="4">%3$d</xliff:g> workouts, goal met. <xliff:g id="weeks" example="1">%1$d</xliff:g> week in a row.</item>

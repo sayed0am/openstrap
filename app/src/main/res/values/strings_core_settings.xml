@@ -13,4 +13,12 @@
     <string name="core_settings_call_steady">Steady</string>
     <!-- While a call rings: a pulse once a second. -->
     <string name="core_settings_call_pulsed">Pulsed</string>
+    <!-- How long the strap buzzes for a call: 5 seconds. -->
+    <string name="core_settings_call_5s">5 s</string>
+    <!-- 10 seconds. -->
+    <string name="core_settings_call_10s">10 s</string>
+    <!-- 15 seconds. -->
+    <string name="core_settings_call_15s">15 s</string>
+    <!-- The whole time the call rings, until it is answered or ends. -->
+    <string name="core_settings_call_until_answered">Full ring</string>
 </resources>

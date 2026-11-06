@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -42,9 +41,7 @@ import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.presentation.RewardsCopy
 import org.openstrap.app.presentation.RewardsView
 import org.openstrap.app.ui.glow.draw.GlowStyle
-import org.openstrap.app.ui.glow.draw.EdgeKind
 import org.openstrap.app.ui.glow.draw.level
-import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The Goals and bests page from You (workouts spec 3.5, board AchievementsV1), All badges, and the weekly recap the
@@ -86,7 +83,7 @@ private fun GoalWeekCard(
                 "$count", pluralStringResource(R.plurals.glow_goals_of_workouts, goal, goal), Modifier.padding(top = GlowLayout.TitleGap),
             )
             // The week's workouts against the goal as a bar of [goal] parts, [count] of them white.
-            val described = stringResource(R.string.glow_goals_count_of_goal, count, goal)
+            val described = pluralStringResource(R.plurals.glow_goals_count_of_goal, goal, count, goal)
             if (bar) SegmentBar(
                 List(goal.coerceIn(1, MAX_GOAL_SHOWN)) { i -> Segment(1f, Color.White.copy(alpha = if (i < count) 1f else 0.2f)) },
                 Modifier.padding(top = 18.dp).semantics { contentDescription = described }, height = 8.dp, gap = 6.dp,
@@ -118,14 +115,11 @@ private fun weekStory(view: RewardsView, first: LocalDate, strings: Strings = St
     val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
     val kcal = Math.round(mine.mapNotNull { it.activeKcal }.sum())
     val totals = if (mine.isEmpty()) emptyList() else listOfNotNull(
-        WeekFigure(AppIcons.Timer, Units.clockDuration(seconds), null, strings.get(R.string.glow_goals_hours)),
+        StoryStat(Units.clockDuration(seconds), null, strings.get(R.string.glow_goals_hours)),
         meters.takeIf { it >= MIN_WEEK_METERS }?.let {
-            WeekFigure(
-                AppIcons.Route01, Units.km(it, Units.Precision.Day), strings.get(R.string.glow_unit_km),
-                strings.get(R.string.glow_goals_distance),
-            )
+            StoryStat(Units.km(it, Units.Precision.Day), strings.get(R.string.glow_unit_km), strings.get(R.string.glow_goals_distance))
         },
-        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, Units.count(it), null, strings.get(R.string.glow_goals_active_kcal)) },
+        kcal.takeIf { it > 0 }?.let { StoryStat(Units.count(it), null, strings.get(R.string.glow_goals_active_kcal)) },
     )
     val run = Rewards.inARow(view.weeks, first)
     val best = view.bests.firstOrNull { it.date in from until to }
@@ -141,7 +135,7 @@ private fun weekStory(view: RewardsView, first: LocalDate, strings: Strings = St
         },
     )
     return StoryCard.Week(
-        Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), "$count",
+        Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), strings.get(R.string.glow_share_my_week), "$count",
         strings.format(R.string.glow_goals_story_goal, strings.plural(R.plurals.glow_goals_workouts_word, count), goal),
         weekDots(view, first), totals, chips,
     )
@@ -189,20 +183,17 @@ fun GoalsAndBestsPage(
             ) { PageButton(stringResource(R.string.glow_goals_goal_button, view.goal), onGoal, icon = AppIcons.PencilEdit) }
         }
         item {
-            // Lit from the left in gold, so it doesn't sit as a list right under the badges' panel's look.
-            CompositionLocalProvider(LocalEdgeOverride provides EdgeOverride(edge = Edge.Left, color = BestColor)) {
-                ListPanel(title = stringResource(R.string.glow_goals_personal_bests)) {
-                    val shown = view.bests.sortedBy { order(it.kind) }
-                    if (shown.isEmpty()) Text(
-                        stringResource(R.string.glow_goals_no_bests), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
-                        style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp),
+            ListPanel(title = stringResource(R.string.glow_goals_personal_bests)) {
+                val shown = view.bests.sortedBy { order(it.kind) }
+                if (shown.isEmpty()) Text(
+                    stringResource(R.string.glow_goals_no_bests), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+                    style = GlowType.secondary, modifier = Modifier.padding(vertical = 10.dp),
+                )
+                shown.forEachIndexed { i, b ->
+                    ListRow(
+                        RewardsCopy.bestTitle(b.kind), BestColor, RewardsCopy.bestValue(b.kind, b.value), shortDate(b.date), divider = i > 0,
+                        icon = AppIcons.FlagCheckered,
                     )
-                    shown.forEachIndexed { i, b ->
-                        ListRow(
-                            RewardsCopy.bestTitle(b.kind), BestColor, RewardsCopy.bestValue(b.kind, b.value), shortDate(b.date), divider = i > 0,
-                            icon = AppIcons.FlagCheckered,
-                        )
-                    }
                 }
             }
         }
@@ -296,7 +287,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
     var sharing by rememberSaveable { mutableStateOf(false) }
     if (sharing && view != null) {
         val card = remember(view, first) { weekStory(view, first) }
-        WeekShareScreen(card, "OpenStrap_week_$first.png") { sharing = false }
+        WeekShareScreen(card, "unstrap_week_$first.png") { sharing = false }
         return
     }
     BackHandler(onBack = onBack)
@@ -339,7 +330,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
             val seconds = mine.sumOf { it.activeSeconds }
             val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
             val kcal = mine.mapNotNull { it.activeKcal }.sum()
-            EdgeCard(GoalColor, Modifier.fillMaxWidth(), kind = EdgeKind.Earlier) {
+            PictureCard(GoalColor, Modifier.fillMaxWidth()) {
                 EdgeTitle(
                     stringResource(R.string.glow_goals_in_all),
                     pluralStringResource(R.plurals.glow_goals_workouts_count, mine.size, mine.size),

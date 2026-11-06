@@ -2,10 +2,10 @@
 <!--
   Today: the hero's sentences, its small facts and the header's title (presentation/TodayCopy.kt, HeaderCopy.kt and
   FirstNightCopy.kt). The widgets and the Recovery and Sleep tabs show some of them too.
-  OpenStrap is the app's name, keep it as it is. Recovery, Energy and Load are the names of the app's scores, written
+  unstrap is the app's name, written in lowercase even at the start of a sentence, keep it as it is. Recovery, Energy and Load are the names of the app's scores, written
   with a capital where they stand for the score.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- What a card or widget waiting for the first night says in place of its value. Short, one line. -->
     <string name="core_first_night_after">After your first night</string>
 
@@ -75,7 +75,7 @@
     <string name="core_today_meaning_low">Still catching up. An easy day helps.</string>
 
     <!-- Why there is no Recovery score yet: nights so far of the nights the first score needs. -->
-    <string name="core_today_no_score_learning">OpenStrap is still learning your nights, <xliff:g id="nights" example="5">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g>.</string>
+    <string name="core_today_no_score_learning">unstrap is still learning your nights, <xliff:g id="nights" example="5">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g>.</string>
     <!-- Why there is no Recovery score: the night lacked the heart readings a score needs. -->
     <string name="core_today_no_score_heart">Not enough heart data last night for a Recovery score.</string>
 
@@ -91,10 +91,10 @@
     <string name="core_today_deleted_last_night">You deleted last night\'s sleep.</string>
     <!-- In place of the above on a past day whose night the user deleted. -->
     <string name="core_today_deleted_that_night">You deleted that night\'s sleep.</string>
-    <!-- The word beside the strap's own Recovery number, shown while OpenStrap's score isn't ready. Short. -->
+    <!-- The word beside the strap's own Recovery number, shown while unstrap's score isn't ready. Short. -->
     <string name="core_today_strap_estimate">Strap\'s estimate</string>
-    <!-- The line under the strap's estimate when OpenStrap's own score isn't ready. -->
-    <string name="core_today_own_score_not_ready">OpenStrap\'s own score isn\'t ready yet.</string>
+    <!-- The line under the strap's estimate when unstrap's own score isn't ready. -->
+    <string name="core_today_own_score_not_ready">unstrap\'s own score isn\'t ready yet.</string>
 
     <!-- The Energy hero before the first night. -->
     <string name="core_today_energy_first_night">Energy starts after your first night. Sleep is what fills it.</string>
@@ -141,7 +141,7 @@
     <!-- After a workout, before the strap sends heart rate. -->
     <string name="core_today_after_waiting">Heart rate after your workout shows once the strap sends it.</string>
     <!-- After a workout: the heart rate now, in beats a minute, before there is a resting heart rate. -->
-    <string name="core_today_after_now">Heart rate <xliff:g id="bpm" example="74">%1$d</xliff:g> now.</string>
+    <string name="core_today_after_now" tools:ignore="PluralsCandidate">Heart rate <xliff:g id="bpm" example="74">%1$d</xliff:g> now.</string>
     <!-- After a workout, with the heart near its resting rate. -->
     <string name="core_today_after_settled">Heart rate back near resting.</string>
     <!-- After a workout, with the heart still coming down. -->
@@ -245,8 +245,8 @@
     <!-- Your week: steps the same as the week before. -->
     <string name="core_today_steps_steady">Steps held steady</string>
 
-    <!-- The Last night strip: time asleep and the sleep score. -->
-    <string name="core_today_last_night_score"><xliff:g id="duration" example="7 h 40">%1$s</xliff:g>, score <xliff:g id="score" example="83">%2$d</xliff:g></string>
+    <!-- The Last night strip: the sleep score first, as on its page, then the time asleep. -->
+    <string name="core_today_last_night_score">Score <xliff:g id="score" example="83">%2$d</xliff:g>, <xliff:g id="duration" example="7 h 40">%1$s</xliff:g></string>
 
     <!-- How to read the heart rate line, when your resting range is drawn behind it. -->
     <string name="core_today_heart_note_band">Touch and hold the line to read any moment. The band is your resting range.</string>

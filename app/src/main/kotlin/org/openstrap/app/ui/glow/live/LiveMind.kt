@@ -22,6 +22,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
@@ -46,12 +55,21 @@ import org.openstrap.app.R
 /** The screen dims this long after the last touch. */
 private const val DIM_AFTER_MS = 10_000L
 
+/** Dimmed, the screen is covered by this much black, and the clock's digits by [CLOCK_VEIL], so the time still reads. */
+private const val VEIL = 0.92f
+private const val CLOCK_VEIL = 0.5f
+
+/** The lighter spot reaches this far out, in the digits' width, and is at its lightest up to this share of it. */
+private const val SPOT_WIDTH = 0.95f
+private const val SPOT_LIT = 0.55f
+
 /**
  * Mind and body (workouts spec 2.6, board LiveMind): dark by design. The time against the length, a soft heart line
  * that shows it settling, then Pause and the square to end. No zone colours, no kcal. The screen dims to near black
- * after ten seconds and lights again on a touch, which does nothing else. One soft buzz at the end of the length; the
- * workout keeps recording until you end it. With [split] the heart rate is on the other half of a folded phone, so this
- * half leaves it out, and [compact] (a short half) drops the ring around the time.
+ * after ten seconds, all but the time, which stays at half, and lights again on a touch, which does nothing else.
+ * One soft buzz at the end of the length; the workout keeps recording until you end it. With [split] the heart rate
+ * is on the other half of a folded phone, so this half leaves it out, and [compact] (a short half) drops the ring
+ * around the time.
  */
 @Composable
 internal fun LiveMindScreen(
@@ -77,7 +95,10 @@ internal fun LiveMindScreen(
         dim = true
     }
     // Read only in the veil's draw, so dimming fades the screen without composing it again each frame.
-    val veil = animateFloatAsState(if (dim) 0.92f else 0f, tween(if (dim) 1500 else 200), label = "dim")
+    val veil = animateFloatAsState(if (dim) VEIL else 0f, tween(if (dim) 1500 else 200), label = "dim")
+    // Where the clock's digits are, in the screen's root, for the lighter spot in the veil.
+    val clock = remember { mutableStateOf(Rect.Zero) }
+    val veilAt = remember { mutableStateOf(Offset.Zero) }
     Box(
         Modifier.fillMaxSize().pointerInput(Unit) {
             // Seen before anything under it, and never taken from it: a touch lights the screen and still presses.
@@ -89,7 +110,7 @@ internal fun LiveMindScreen(
     ) {
         LiveFrame(r, MindColor.copy(alpha = 0.5f), connected, contentPadding, controls, time = null, quiet = true, fill = true, tapHint = !compact) {
             Spacer(Modifier.weight(0.6f))
-            MindRing({ active.value }, length, ring = !compact)
+            MindRing({ active.value }, length, ring = !compact, onClock = { clock.value = it })
             Spacer(Modifier.weight(0.5f))
             if (split) {
                 Spacer(Modifier.weight(0.6f))
@@ -115,7 +136,8 @@ internal fun LiveMindScreen(
         }
         // Dimmed, the first touch only lights the screen: the veil takes it.
         Box(
-            Modifier.fillMaxSize().drawBehind { if (veil.value > 0f) drawRect(Color.Black.copy(alpha = veil.value)) }
+            Modifier.fillMaxSize().onGloballyPositioned { veilAt.value = it.positionInRoot() }
+                .drawBehind { if (veil.value > 0f) drawVeil(veil.value, clock.value.translate(-veilAt.value)) }
                 .then(if (dim) Modifier.pointerInput(Unit) { detectTapGestures { touched = System.currentTimeMillis() } } else Modifier),
         )
     }
@@ -126,26 +148,52 @@ internal fun LiveMindScreen(
  * faint track. Without the [ring], the time and its line alone.
  */
 @Composable
-internal fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true) {
+internal fun MindRing(time: () -> Long, length: Long?, ring: Boolean = true, onClock: (Rect) -> Unit = {}) {
     // The time is read by the ring's draw and the clock's text, so the second composes only the text again.
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         // The strength rest ring's line and track, so the app's rings read as one.
         if (ring) ProgressRing({ if (length != null && length > 0) time().toFloat() / length else 0f }, MindColor, Modifier.size(280.dp))
-        MindClock(time, length)
+        MindClock(time, length, onClock)
     }
 }
 
 /** The mind ring's time and its line under it, its own scope so only it reads the second. */
 @Composable
-private fun MindClock(time: () -> Long, length: Long?) {
+private fun MindClock(time: () -> Long, length: Long?, onClock: (Rect) -> Unit) {
     val active = time()
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1)
+        Text(
+            workoutClock(active), color = Color.White.copy(alpha = 0.9f), style = GlowType.mindClock, maxLines = 1,
+            modifier = Modifier.onGloballyPositioned { onClock(it.boundsInRoot()) },
+        )
         Text(
             length?.let {
                 stringResource(if (active >= it) R.string.workout_live_mind_length_up else R.string.workout_live_mind_length, it / 60)
             } ?: stringResource(R.string.workout_live_mind_open),
             color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.body, textAlign = TextAlign.Center,
+        )
+    }
+}
+
+/**
+ * The dimmed screen: [alpha] black everywhere, easing to [CLOCK_VEIL]'s share of it over the [clock]'s digits, a soft
+ * oval with no edge to see. Before the clock is placed, the whole screen evenly.
+ */
+private fun DrawScope.drawVeil(alpha: Float, clock: Rect) {
+    val black = Color.Black.copy(alpha = alpha)
+    if (clock.isEmpty) {
+        drawRect(black)
+        return
+    }
+    val light = Color.Black.copy(alpha = alpha * CLOCK_VEIL / VEIL)
+    // A circle stretched sideways to the digits' shape: the gradient is drawn round, under a scale.
+    val radius = clock.width * SPOT_WIDTH
+    val squash = (clock.height / radius).coerceAtMost(1f)
+    scale(1f, squash, pivot = clock.center) {
+        drawRect(
+            Brush.radialGradient(SPOT_LIT to light, 1f to black, center = clock.center, radius = radius),
+            topLeft = Offset(0f, clock.center.y - clock.center.y / squash),
+            size = Size(size.width, size.height / squash),
         )
     }
 }

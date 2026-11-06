@@ -78,6 +78,8 @@ import org.openstrap.app.ui.dashboard.SleepCopy
 import org.openstrap.app.ui.dashboard.siblingsOf
 import java.time.LocalDate
 import org.openstrap.app.ui.glow.draw.DotSize
+import org.openstrap.app.ui.glow.pictures.DayStrip
+import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.ui.theme.ControlSurface
 
 /* ------------------------------------------- Shared pieces ------------------------------------------ */
@@ -119,7 +121,7 @@ internal fun siblings(detail: Detail, onSwitch: (Detail) -> Unit): List<DetailSi
  * carries back, the switcher across [siblings] ([title] on it), the (i) that opens the info sheet ([onInfo]), the
  * [headline] and the seven-day [strip] ([onDay] picks a day). Under it the [ranges] as pills when there's more than
  * one, then [body]: the chart, the sentence and the rows. [heroValue] replaces the value row with a score gauge (the
- * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroSide] sits to the right of
+ * Recovery arc, the Sleep horizon), centred with its label and status word under it; [heroPicture] is the card's picture under the value, above the days; [heroSide] sits to the right of
  * a plain value row (heart rate's Live switch). While a chart is scrubbed, [scrubbed] gives the reading under the
  * finger in the headline's place, on the value row in the gauge's place. It's read only inside the hero.
  */
@@ -139,6 +141,7 @@ internal fun DetailTemplate(
     onRange: (Range) -> Unit,
     heroValue: (@Composable () -> Unit)? = null,
     heroSide: (@Composable () -> Unit)? = null,
+    heroPicture: (@Composable () -> Unit)? = null,
     scrubbed: () -> DetailHeadline? = { null },
     body: LazyListScope.() -> Unit,
 ) {
@@ -194,6 +197,8 @@ internal fun DetailTemplate(
                     if (gauge == null && shown.word != null && shown.value != null) {
                         StatusWord(shown.word, color, Modifier.padding(top = 12.dp))
                     }
+                    // The card's picture, under the value and above the days, as the gauges sit.
+                    if (heroPicture != null) Column(Modifier.fillMaxWidth().padding(top = 16.dp)) { heroPicture() }
                     if (strip.isNotEmpty()) WeekStrip(strip, color, onDay, Modifier.padding(top = 20.dp))
                 }
             }
@@ -373,9 +378,7 @@ fun GlowMetricDetailScreen(
     state: DayUiState,
     history: DailyHistory,
     liveHeartRate: Int?,
-    liveEnabled: Boolean,
     canUseLive: Boolean,
-    onLiveToggle: (Boolean) -> Unit,
     onOpen: (Detail) -> Unit,
     onSwitch: (Detail) -> Unit,
     onSelectDay: (LocalDate) -> Unit,
@@ -402,7 +405,9 @@ fun GlowMetricDetailScreen(
     val color = colorOf(metric)
     val nightly = if (night) range == Range.Day || range == Range.Week || SleepCopy.dailyIsNightly(metric) else metric in NIGHTLY
     val isToday = end == today
-    val live = if (!night && metric == Metric.HeartRate && isToday && canUseLive && liveEnabled) liveHeartRate else null
+    // Live only on today's heart rate by day, and only with the strap connected.
+    val heartToday = !night && metric == Metric.HeartRate && isToday
+    val live = liveHeartRate.takeIf { heartToday && canUseLive }
     var scrub by remember(metric, night, range, end) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable(metric, night) { mutableStateOf(false) }
 
@@ -440,13 +445,9 @@ fun GlowMetricDetailScreen(
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(end, today, withData), onDay = onSelectDay,
         ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
-        heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
-            {
-                PageChip(
-                    stringResource(R.string.glow_metrics_live), liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch,
-                    filled = true,
-                )
-            }
+        // The Stress card's picture: the day as one strip, calm to high.
+        heroPicture = if (!night && range == Range.Day && metric == Metric.Stress && state.stressStrip.any { it != null }) {
+            { DetailPicture(height = 28.dp) { m -> DayStrip(state.stressStrip, color, PictureSize.Wide, m) } }
         } else null,
     ) {
         if (night && range == Range.Day) {
@@ -750,14 +751,23 @@ internal fun RecoveryScoreRow(ready: org.openstrap.app.data.Recovery.Readiness?,
 /** A body signal as a related row: the day's value and its word against your normal, marked when it's off normal. */
 @Composable
 internal fun RelatedMetricRow(m: Metric, state: DayUiState, history: DailyHistory, divider: Boolean, onOpen: (Detail) -> Unit) {
-    val normal = rememberNormal(m, state.date, history)
-    val v = dayValue(m, state)
+    // A night signal reads as everywhere else: last night's against the nights before (SleepCopy.NIGHT_SIGNALS).
+    val night = m in SleepCopy.NIGHT_SIGNALS
+    val dayNormal = rememberNormal(m, state.date, history)
+    val normal = if (night) SleepCopy.nightNormal(state, m) else dayNormal
+    val v = if (night) SleepCopy.nightValue(state, m) else dayValue(m, state)
     // The heart rate moves all day, so it has no word against a normal.
     val status = if (m == Metric.HeartRate) null else History.status(v, normal)
+    // A percent stays on its number, as on Recovery ("99%"): the line under it is the word, not the unit.
     ListRow(
-        m.title, colorOf(m), v?.let { m.format(it) },
-        if (v == null) NO_VALUE else DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null },
-        offNormal = status != null && status != 0, onClick = { onOpen(Detail.OfMetric(m)) }, divider = divider,
+        m.title, colorOf(m), v?.let { if (m == Metric.Spo2) "${m.format(it)}%" else m.format(it) },
+        when {
+            v == null -> NO_VALUE
+            // A night signal whose normal is still forming says so, with the count, as on every tab.
+            night && normal == null -> SleepCopy.learning(state, m)
+            else -> DetailCopy.statusWord(status) ?: m.unit.ifEmpty { null }
+        },
+        tag = org.openstrap.app.ui.dashboard.bodyTag(m, status), onClick = { onOpen(Detail.OfMetric(m, night)) }, divider = divider,
         icon = m.rowIcon(),
     )
 }

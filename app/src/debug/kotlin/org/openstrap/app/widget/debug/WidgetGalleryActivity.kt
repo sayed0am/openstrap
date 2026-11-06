@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetHostView
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
 import android.content.ComponentName
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.util.SizeF
@@ -165,7 +166,9 @@ class WidgetGalleryActivity : ComponentActivity() {
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, w)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, h)
         putInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, h)
-        putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            putParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, arrayListOf(SizeF(w.toFloat(), h.toFloat())))
+        }
     }
 
     /** Loads the widget again and renders every bound id. */
@@ -279,7 +282,7 @@ class WidgetGalleryActivity : ComponentActivity() {
     private fun dp(v: Int): Int = dp(v.toFloat())
 
     private companion object {
-        const val TAG = "OpenStrap"
+        const val TAG = "unstrap"
         const val HOST_ID = 0x5753
         const val EXTRA_MOOD = "mood"
         const val EXTRA_PIN = "pin"

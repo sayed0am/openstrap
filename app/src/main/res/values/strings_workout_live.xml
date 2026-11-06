@@ -6,7 +6,7 @@
   Times like "5:42" are a clock, minutes and seconds. km, m, kg, kcal and bpm are units: translate them only if your
   language writes them another way. Zepp is a name. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- ======================================== Figures ======================================== -->
 
     <!-- A label under a figure in a row of three (value over label). About 12 characters: the active calories burned. -->
@@ -127,19 +127,25 @@
     <!-- Where you are in run reps, over the big number. -->
     <string name="workout_live_rep_of">Rep <xliff:g id="rep" example="3">%1$d</xliff:g> of <xliff:g id="reps" example="6">%2$d</xliff:g></string>
     <!-- Where you are in reps or rounds while resting: how many are done of all of them. -->
-    <string name="workout_live_done_of"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="total" example="6">%2$d</xliff:g> done</string>
+    <string name="workout_live_done_of" tools:ignore="PluralsCandidate"><xliff:g id="done" example="2">%1$d</xliff:g> of <xliff:g id="total" example="6">%2$d</xliff:g> done</string>
     <!-- Where you are before the reps or rounds start. -->
     <string name="workout_live_warm_up">Warm-up</string>
     <!-- Every rep run, over the big number. -->
-    <string name="workout_live_all_reps_done">All <xliff:g id="reps" example="6">%1$d</xliff:g> reps done</string>
+    <plurals name="workout_live_all_reps_done">
+        <item quantity="one"><xliff:g id="reps" example="6">%1$d</xliff:g> rep done</item>
+        <item quantity="other">All <xliff:g id="reps" example="6">%1$d</xliff:g> reps done</item>
+    </plurals>
     <!-- What comes after this rep or round, small on the right: the rest, "90 s" or "2 min". -->
     <string name="workout_live_then_rest">Then <xliff:g id="rest" example="90 s">%1$s</xliff:g> rest</string>
     <!-- Small on the right during the last rep. -->
     <string name="workout_live_last_rep">Last rep</string>
     <!-- Small on the right while resting: the rep after the rest. -->
-    <string name="workout_live_rep_next">Rep <xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
+    <string name="workout_live_rep_next" tools:ignore="PluralsCandidate">Rep <xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
     <!-- Small on the right while warming up before run reps. -->
-    <string name="workout_live_reps_after">Then <xliff:g id="reps" example="6">%1$d</xliff:g> reps</string>
+    <plurals name="workout_live_reps_after">
+        <item quantity="one">Then <xliff:g id="reps" example="6">%1$d</xliff:g> rep</item>
+        <item quantity="other">Then <xliff:g id="reps" example="6">%1$d</xliff:g> reps</item>
+    </plurals>
     <!-- Small over the big number during a rep: its length, "400 m rep". About 14 characters. -->
     <string name="workout_live_rep_word"><xliff:g id="length" example="400 m">%1$s</xliff:g> rep</string>
     <!-- Small over the big number during a rest, and in large capitals on interval workouts. About 10 characters. -->
@@ -222,7 +228,7 @@
     <!-- Under the big seconds during work or rest. One line. -->
     <string name="workout_live_seconds_left">seconds left</string>
     <!-- Small on the right while resting: the round after the rest. -->
-    <string name="workout_live_round_next">Round <xliff:g id="round" example="4">%1$d</xliff:g> next</string>
+    <string name="workout_live_round_next" tools:ignore="PluralsCandidate">Round <xliff:g id="round" example="4">%1$d</xliff:g> next</string>
     <!-- Under the big seconds during a rest: the heart rate now. -->
     <string name="workout_live_heart_rate">Heart rate <xliff:g id="bpm" example="128">%1$d</xliff:g></string>
     <!-- Under the big seconds during a rest: the heart rate now and how far it has come down since the work. -->
@@ -230,15 +236,24 @@
     <!-- A button during a rest: ten seconds more rest. About 6 characters. -->
     <string name="workout_live_add_10_s">+10 s</string>
     <!-- Small on the right while warming up before the rounds. -->
-    <string name="workout_live_rounds_after">Then <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds</string>
+    <plurals name="workout_live_rounds_after">
+        <item quantity="one">Then <xliff:g id="rounds" example="8">%1$d</xliff:g> round</item>
+        <item quantity="other">Then <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds</item>
+    </plurals>
     <!-- Under WARMING UP: the big button starts the rounds. -->
     <string name="workout_live_rounds_start_hint">Start the rounds when you\'re ready</string>
     <!-- Every round done, over the big word. -->
-    <string name="workout_live_all_rounds_done">All <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds done</string>
+    <plurals name="workout_live_all_rounds_done">
+        <item quantity="one"><xliff:g id="rounds" example="8">%1$d</xliff:g> round done</item>
+        <item quantity="other">All <xliff:g id="rounds" example="8">%1$d</xliff:g> rounds done</item>
+    </plurals>
     <!-- The big button while warming up: start the rounds. -->
     <string name="workout_live_start_rounds">Start rounds</string>
     <!-- The bar of rounds for a screen reader. -->
-    <string name="workout_live_rounds_done_description"><xliff:g id="done" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g> rounds done</string>
+    <plurals name="workout_live_rounds_done_description">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g> round done</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> of <xliff:g id="rounds" example="8">%2$d</xliff:g> rounds done</item>
+    </plurals>
     <!-- The title of the card of each round's peak heart rate. One line. -->
     <string name="workout_live_peaks_title">Peak each round</string>
     <!-- The peaks card's bars for a screen reader: the peaks, "168, 172, 175". -->
@@ -246,7 +261,7 @@
     <!-- Under the peaks card's bars: the peaks, "168, 172, 175 bpm". -->
     <string name="workout_live_peaks_bpm"><xliff:g id="peaks" example="168, 172, 175">%1$s</xliff:g> bpm</string>
     <!-- The treadmill rep card's title while resting: the rep after the rest. One line. -->
-    <string name="workout_live_rest_rep_next">Rest, rep <xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
+    <string name="workout_live_rest_rep_next" tools:ignore="PluralsCandidate">Rest, rep <xliff:g id="rep" example="3">%1$d</xliff:g> next</string>
     <!-- Beside the rep card's title: the pace now, minutes per kilometre. -->
     <string name="workout_live_pace_now"><xliff:g id="pace" example="4:40">%1$s</xliff:g>/km now</string>
     <!-- In the rep card while warming up: Skip starts the reps. -->
@@ -259,7 +274,7 @@
     <!-- Under the time paused: the heart rate now. -->
     <string name="workout_live_paused_heart">Heart rate <xliff:g id="bpm" example="104">%1$d</xliff:g></string>
     <!-- Under the time paused: the heart rate now and how far it has come down since the pause. -->
-    <string name="workout_live_paused_heart_down">Heart rate <xliff:g id="bpm" example="104">%1$d</xliff:g>, down <xliff:g id="drop" example="38">%2$d</xliff:g> since you stopped</string>
+    <string name="workout_live_paused_heart_down" tools:ignore="PluralsCandidate">Heart rate <xliff:g id="bpm" example="104">%1$d</xliff:g>, down <xliff:g id="drop" example="38">%2$d</xliff:g> since you stopped</string>
     <!-- Under the time paused: why pausing is worth it. Two short lines at most. -->
     <string name="workout_live_paused_note">Pausing keeps this time out of your pace and averages</string>
 
@@ -268,7 +283,7 @@
     <!-- Under the dimmed screen's heart rate line: the heart rate now. One line. -->
     <string name="workout_live_mind_heart">Heart rate <xliff:g id="bpm" example="68">%1$d</xliff:g>, settling</string>
     <!-- Under the dimmed screen's heart rate line: the heart rate now and how far it has come down since the start. One line. -->
-    <string name="workout_live_mind_heart_down">Heart rate <xliff:g id="bpm" example="68">%1$d</xliff:g>, settling, down <xliff:g id="drop" example="9">%2$d</xliff:g> since you started</string>
+    <string name="workout_live_mind_heart_down" tools:ignore="PluralsCandidate">Heart rate <xliff:g id="bpm" example="68">%1$d</xliff:g>, settling, down <xliff:g id="drop" example="9">%2$d</xliff:g> since you started</string>
     <!-- Under the time in the ring: the session's length. -->
     <string name="workout_live_mind_length">of <xliff:g id="minutes" example="45">%1$d</xliff:g> min</string>
     <!-- Under the time in the ring once the session's length has passed. -->
@@ -285,7 +300,10 @@
     <!-- The big button between sets: start the next one. -->
     <string name="workout_live_sets_start_set">Start set <xliff:g id="set" example="4">%1$d</xliff:g></string>
     <!-- Under the buttons once the planned sets are done. -->
-    <string name="workout_live_sets_all_done">All <xliff:g id="sets" example="5">%1$d</xliff:g> sets done. Hold the square to end, or keep going.</string>
+    <plurals name="workout_live_sets_all_done">
+        <item quantity="one"><xliff:g id="sets" example="5">%1$d</xliff:g> set done. Hold the square to end, or keep going.</item>
+        <item quantity="other">All <xliff:g id="sets" example="5">%1$d</xliff:g> sets done. Hold the square to end, or keep going.</item>
+    </plurals>
     <!-- Under the set's clock in dots. About 12 characters. -->
     <string name="workout_live_sets_in_this_set">in this set</string>
     <!-- A short card's title during rest: which set it follows, in lower case, "set 3" or "set 3 of 5". One line. -->
@@ -309,16 +327,22 @@
     <!-- The line of the heart rate falling since the set ended, for a screen reader. -->
     <string name="workout_live_sets_falling_description">Heart rate since the set ended</string>
     <!-- The dots of sets for a screen reader: the sets done. -->
-    <string name="workout_live_sets_dots_description"><xliff:g id="done" example="3">%1$d</xliff:g> sets done</string>
+    <plurals name="workout_live_sets_dots_description">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> set done</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> sets done</item>
+    </plurals>
     <!-- The dots of sets for a screen reader: the sets done and the planned sets still to go. -->
-    <string name="workout_live_sets_dots_description_to_go"><xliff:g id="done" example="3">%1$d</xliff:g> sets done, <xliff:g id="left" example="2">%2$d</xliff:g> to go</string>
+    <plurals name="workout_live_sets_dots_description_to_go">
+        <item quantity="one"><xliff:g id="done" example="3">%1$d</xliff:g> set done, <xliff:g id="left" example="2">%2$d</xliff:g> to go</item>
+        <item quantity="other"><xliff:g id="done" example="3">%1$d</xliff:g> sets done, <xliff:g id="left" example="2">%2$d</xliff:g> to go</item>
+    </plurals>
     <!-- The exercise pill before the sets have a name: a tap names it. About 10 characters. -->
     <string name="workout_live_sets_name_it">Name it</string>
     <!-- A row in the list of sets done, on its left. -->
     <string name="workout_live_sets_row">Set <xliff:g id="set" example="2">%1$d</xliff:g></string>
 
     <!-- The sheet after a set, to log its reps and weight: its title. -->
-    <string name="workout_live_log_title">Set <xliff:g id="set" example="3">%1$d</xliff:g> done</string>
+    <string name="workout_live_log_title" tools:ignore="PluralsCandidate">Set <xliff:g id="set" example="3">%1$d</xliff:g> done</string>
     <!-- The log sheet's note: the set's time, its peak heart rate, and the rest running under the sheet with its time left. -->
     <string name="workout_live_log_note_peak_rest"><xliff:g id="time" example="0:51">%1$s</xliff:g>, peak <xliff:g id="bpm" example="148">%2$d</xliff:g> bpm. Rest is running, <xliff:g id="left" example="1:20">%3$s</xliff:g> left.</string>
     <!-- The log sheet's note: the set's time and its peak heart rate. -->

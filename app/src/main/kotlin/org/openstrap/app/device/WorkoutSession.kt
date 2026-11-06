@@ -950,7 +950,7 @@ class WorkoutSession(
         strap.autoConnect()
         // The CPU must keep up with the strap's readings and the flushes while the screen is off.
         wake = context.getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:workout").apply { acquire(MAX_WAKE_MS) }
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "unstrap:workout").apply { acquire(MAX_WAKE_MS) }
         watchForCar()
         restingHr = catching { dao.restingHrIn(now() - RESTING_LOOKBACK_S, now(), java.time.ZoneId.systemDefault()).lastOrNull()?.bpm }
             .onFailure { log("workout: resting heart rate not read: $it") }.getOrNull() ?: DEFAULT_RESTING_HR
@@ -1214,7 +1214,7 @@ class WorkoutSession(
         @Suppress("InjectDispatcher")
         fun fallbackScope() = CoroutineScope(
             SupervisorJob() + Dispatchers.Default +
-                CoroutineExceptionHandler { _, e -> android.util.Log.e("OpenStrap", "workout: uncaught $e", e) },
+                CoroutineExceptionHandler { _, e -> android.util.Log.e("unstrap", "workout: uncaught $e", e) },
         )
 
         const val FLUSH_MS = 10_000L

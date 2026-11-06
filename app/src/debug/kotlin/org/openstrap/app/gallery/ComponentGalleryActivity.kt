@@ -31,9 +31,8 @@ import org.openstrap.app.ui.glow.CardSize
 import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
-import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.PictureCard
+import org.openstrap.app.ui.glow.Rim
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowGrid
 import org.openstrap.app.ui.glow.GlowLayout
@@ -75,7 +74,8 @@ import org.openstrap.app.ui.workout.ZoneSeconds
  * Debug builds only: every design v2 foundation piece on one scrolling screen, to check them on a phone, then the live
  * workout's parts with fixed numbers, which an emulator can't show otherwise (no strap, no workout).
  * `adb shell am start -n org.openstrap.app.dev/org.openstrap.app.gallery.ComponentGalleryActivity` (the dev build), with
- * `--es section live` for the live parts alone.
+ * `--es section live` for the live parts alone, `--es section pictures` for the picture cards' pictures, `--es section share`
+ * for every share card.
  */
 class ComponentGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,8 +84,16 @@ class ComponentGalleryActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
-        val liveOnly = intent.getStringExtra("section") == "live"
-        setContent { OpenStrapTheme { Gallery(liveOnly) } }
+        val section = intent.getStringExtra("section")
+        setContent {
+            OpenStrapTheme {
+                when (section) {
+                    "mind" -> MindLive()
+                    "share" -> SharePreview()
+                    else -> Gallery(section == "live", section == "pictures")
+                }
+            }
+        }
     }
 }
 
@@ -103,7 +111,7 @@ private val Charge = GlowStyle.Ember
 private val SmallPadding = GlowLayout.CardPadding
 
 @Composable
-private fun Gallery(liveOnly: Boolean) {
+private fun Gallery(liveOnly: Boolean, picturesOnly: Boolean = false) {
     Column(
         Modifier
             .fillMaxSize()
@@ -116,6 +124,10 @@ private fun Gallery(liveOnly: Boolean) {
     ) {
         if (liveOnly) {
             LiveParts()
+            return@Column
+        }
+        if (picturesOnly) {
+            PictureGallery()
             return@Column
         }
         Heading("Glow cards, light angle")
@@ -160,26 +172,26 @@ private fun Gallery(liveOnly: Boolean) {
 
         Heading("Edge light cards")
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            Edge("Resting heart rate", "52", "Usual", MetricColors.heart, EdgeStatus.Usual, EdgeKind.Value, Modifier.weight(1f))
-            Edge("Skin temperature", "34.6", "Above your normal", MetricColors.temperature, EdgeStatus.Above, EdgeKind.Value, Modifier.weight(1f))
+            Edge("Resting heart rate", "52", "Usual", MetricColors.heart, null, Modifier.weight(1f))
+            Edge("Skin temperature", "34.6", "Above your normal", MetricColors.temperature, Rim.End, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            Edge("HRV", "41", "Below your normal", MetricColors.hrv, EdgeStatus.Below, EdgeKind.Value, Modifier.weight(1f))
-            Edge("Steps", "6,420", "80% of your goal", MetricColors.steps, EdgeStatus.Usual, EdgeKind.Progress, Modifier.weight(1f), progress = 0.8f)
+            Edge("HRV", "41", "Below your normal", MetricColors.hrv, Rim.End, Modifier.weight(1f))
+            Edge("Steps", "6,420", "80% of your goal", MetricColors.steps, null, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            Edge("Heart rate", "71", "Now", MetricColors.heart, EdgeStatus.Usual, EdgeKind.Live, Modifier.weight(1f))
-            Edge("Recovery", "78", "This morning", MetricColors.readiness, EdgeStatus.Usual, EdgeKind.Earlier, Modifier.weight(1f))
+            Edge("Heart rate", "71", "Now", MetricColors.heart, null, Modifier.weight(1f))
+            Edge("Recovery", "78", "This morning", MetricColors.readiness, null, Modifier.weight(1f))
         }
         Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
-            Edge("Last night", "7:40", "Asleep", MetricColors.sleepDeep, EdgeStatus.Usual, EdgeKind.Sleep, Modifier.weight(1f))
-            Edge("Load", "64", "Above your normal", MetricColors.load, EdgeStatus.Above, EdgeKind.Progress, Modifier.weight(1f), progress = 1f)
+            Edge("Last night", "7:40", "Asleep", MetricColors.sleepDeep, null, Modifier.weight(1f))
+            Edge("Load", "64", "Above your normal", MetricColors.load, Rim.End, Modifier.weight(1f))
         }
 
         Heading("Grouped list")
         ListPanel(title = "Your body this morning", note = "Against your normal") {
             ListRow("Resting heart rate", MetricColors.heart, "52", "Usual", onClick = {})
-            ListRow("HRV", MetricColors.hrv, "41", "Below your normal", offNormal = true, onClick = {})
+            ListRow("HRV", MetricColors.hrv, "41", "Below your normal", tag = org.openstrap.app.ui.dashboard.NewsTag("Below normal", goal = false), onClick = {})
             ListRow("Blood oxygen", MetricColors.spo2, "97%", "Usual", onClick = {})
             ListRow("Breathing rate", MetricColors.sleepLight, null, "After your first night")
         }
@@ -188,14 +200,14 @@ private fun Gallery(liveOnly: Boolean) {
         GlowGridColumn(
             listOf(
                 GridCard(CardSize.Large) { m -> GlowCard(glow(MetricColors.readiness, LightAngle.LowerLeft), m) { GlowText("Large", "78", "The hero of the moment") } },
-                GridCard(CardSize.Small) { m -> EdgeCard(MetricColors.heart, m, contentPadding = SmallPadding) { CardText("Small", "52", "Usual") } },
-                GridCard(CardSize.Small) { m -> EdgeCard(MetricColors.hrv, m, status = EdgeStatus.Below, contentPadding = SmallPadding) { CardText("Small", "41", "Below your normal") } },
+                GridCard(CardSize.Small) { m -> PictureCard(MetricColors.heart, m, contentPadding = SmallPadding) { CardText("Small", "52", "Usual") } },
+                GridCard(CardSize.Small) { m -> PictureCard(MetricColors.hrv, m, rim = Rim.End, contentPadding = SmallPadding) { CardText("Small", "41", "Below your normal") } },
                 GridCard(CardSize.Tall) { m -> GlowCard(Charge.copy(lightLevel = 0.55f, second = true), m, contentPadding = SmallPadding) { GlowText("Tall", "55", "Charge") } },
-                GridCard(CardSize.Small) { m -> EdgeCard(MetricColors.spo2, m, contentPadding = SmallPadding) { CardText("Small", "97%", "Usual") } },
-                GridCard(CardSize.Small) { m -> EdgeCard(MetricColors.stress, m, contentPadding = SmallPadding) { CardText("Small", "28", "Usual") } },
-                GridCard(CardSize.Wide) { m -> EdgeCard(MetricColors.sleepDeep, m, kind = EdgeKind.Sleep) { CardText("Wide", "7:40", "Last night") } },
-                GridCard(CardSize.Strip) { m -> EdgeCard(Color.White, m, contentPadding = PaddingValues(horizontal = 20.dp)) { StripText("Strip", "Start a workout") } },
-                GridCard(CardSize.Small) { m -> EdgeCard(MetricColors.habitAge, m, kind = EdgeKind.Earlier) { CardText("A lone small, now wide", "38", "Habit Age") } },
+                GridCard(CardSize.Small) { m -> PictureCard(MetricColors.spo2, m, contentPadding = SmallPadding) { CardText("Small", "97%", "Usual") } },
+                GridCard(CardSize.Small) { m -> PictureCard(MetricColors.stress, m, contentPadding = SmallPadding) { CardText("Small", "28", "Usual") } },
+                GridCard(CardSize.Wide) { m -> PictureCard(MetricColors.sleepDeep, m) { CardText("Wide", "7:40", "Last night") } },
+                GridCard(CardSize.Strip) { m -> PictureCard(Color.White, m, contentPadding = PaddingValues(horizontal = 20.dp)) { StripText("Strip", "Start a workout") } },
+                GridCard(CardSize.Small) { m -> PictureCard(MetricColors.habitAge, m) { CardText("A lone small, now wide", "38", "Habit Age") } },
                 GridCard(CardSize.List) { m ->
                     ListPanel(m, title = "List") {
                         ListRow("Time to recover", MetricColors.load, "14", "Hours")
@@ -212,13 +224,13 @@ private fun Gallery(liveOnly: Boolean) {
                     GlowCard(glow(MetricColors.readiness, LightAngle.LowerLeft), Modifier.weight(1f).height(GlowGrid.UnitHeight), contentPadding = SmallPadding) {
                         GlowText("Recovery", "78", "Lower left")
                     }
-                    Edge("Last night", "7:40", "Asleep", MetricColors.sleepDeep, EdgeStatus.Usual, EdgeKind.Sleep, Modifier.weight(1f))
+                    Edge("Last night", "7:40", "Asleep", MetricColors.sleepDeep, null, Modifier.weight(1f))
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(GlowGrid.Gap)) {
                     GlowCard(Charge.copy(lightLevel = 0.4f), Modifier.weight(1f).height(GlowGrid.UnitHeight), contentPadding = SmallPadding) {
                         GlowText("Charge", "40", "Level")
                     }
-                    Edge("HRV", "41", "Below your normal", MetricColors.hrv, EdgeStatus.Below, EdgeKind.Value, Modifier.weight(1f))
+                    Edge("HRV", "41", "Below your normal", MetricColors.hrv, Rim.End, Modifier.weight(1f))
                 }
             }
         }
@@ -242,7 +254,7 @@ private val LiveRecent = (0 until 120).map { i ->
 private val LiveZones = ZoneSeconds(listOf(120, 420, 780, 180, 34))
 
 /** A calm session's heart rate settling from the high 80s, as the mind screen draws it. */
-private val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
+internal val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
 
 /**
  * The live workout's parts (workouts spec 2.3) with fixed numbers: the heart card, the bars, rings and lines the kinds'
@@ -325,13 +337,11 @@ private fun Edge(
     value: String,
     status: String,
     color: Color,
-    edgeStatus: EdgeStatus,
-    kind: EdgeKind,
+    rim: Rim?,
     modifier: Modifier,
-    progress: Float? = null,
 ) {
-    EdgeCard(color, modifier.height(GlowGrid.UnitHeight), status = edgeStatus, kind = kind, progress = progress, contentPadding = SmallPadding) {
-        CardText(title, value, status, valueColor = if (edgeStatus == EdgeStatus.Usual) Color.White else color)
+    PictureCard(color, modifier.height(GlowGrid.UnitHeight), rim = rim, contentPadding = SmallPadding) {
+        CardText(title, value, status)
     }
 }
 

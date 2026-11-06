@@ -1,6 +1,6 @@
 # Evidence review
 
-What published research says about each part of OpenStrap's health model, and what we're changing. The current model is in [recovery.md](recovery.md); constant names match `Recovery.kt`.
+What published research says about each part of unstrap's health model, and what we're changing. The current model is in [recovery.md](recovery.md); constant names match `Recovery.kt`.
 
 **Status: steps 1–12 are done on branch `evidence-review` (2026-10-18), including the FRIEND 2022 band and fitness age (Kaminsky 2022 Table 3; bands at the reported 30th/50th/70th/90th percentiles). [recovery.md](recovery.md) describes the model as built.** Not done: step 13 (personal weights, which need ≥ 6 weeks of check-ins), VO2max phase 2 (phone GPS), the optional personal sleep need, and BioCharge logging (not readable from the strap). The new weights haven't been checked against real data yet. Constants marked for review are settled at the strap calibration review on **2026-10-30** ([readiness-calibration.md](readiness-calibration.md)).
 
@@ -23,16 +23,16 @@ What published research says about each part of OpenStrap's health model, and wh
 | Strap HRV/RHR | stored, unused | Placeholder, flagged fallback, QA check | Probable | S |
 | Sleep score | duration 50 / efficiency 25 / stages 25 | Duration 70 / continuity 30; drop stage target | Established (staging weak) | S |
 | Sleep need | 8 h flat | 480 min (18–64), 450 min (≥ 65), user override | Established | S |
-| Sleep debt | half-life 4, repay ≤ 1 h | Half-life 7, credit min(0.5·surplus, 60 min) | Established direction, Contested formula | S |
+| Sleep debt | half-life 4, repay ≤ 1 h | Half-life 7, a long night repays its surplus up to 2 h, 1 h free then 0 at 6 h | Established direction, Contested formula | S |
 | Sleep regularity | none | SRI, ≥ 120 h valid pairs | Probable | M |
 | Body-signal alerts | single night, ≥ 2 of 5 signals | Persistence rule anchored on resting HR, distinct signal families | Probable | M |
-| Training load | Banister on HRR ≥ 0.20 | Keep; 3-of-5-minute filter, 14-day daytime RHR | Probable | S |
+| Training load | Banister on HRR ≥ 0.20 | Keep; moving minutes only, HRR ≥ 0.35 (≥ 0.20 at 60+ steps), 3-of-5-minute filter, 14-day daytime RHR | Probable | S |
 | ACWR | 5 % of Readiness | Out of Readiness; descriptive, labelled contested | Established (against scoring) | S |
 | Strain 0–21 | none | 21·(1 − e^(−TRIMP/180)) plus "vs your usual" | Design choice | S |
 | Energy and stress | Firstbeat-style states | Keep; 3-minute stress gate, new label | Contested | S |
 | Energy expenditure | none | Mifflin BMR-anchored per-minute model | Established (BMR), Contested (rest) | L |
 | MVPA, steps, distance | none | Cadence 100/130, WHO ×2, step length from height | Established (thresholds), Contested (distance) | M |
-| VO2max, fitness age | none | Jurca 2005 as a band; fitness age optional; healthspan age proposed ([healthspan.md](healthspan.md)), not scheduled | Established (Jurca), design choice (fitness age, combining healthspan terms) | M |
+| VO2max, fitness age | none | Jurca 2005 as a band; fitness age optional; healthspan age implemented ([healthspan.md](healthspan.md)) | Established (Jurca), design choice (fitness age, combining healthspan terms) | M |
 
 ## Readiness
 
@@ -71,7 +71,7 @@ Illness, alcohol and artefact nights inflate a mean/SD baseline, so a bad stretc
 
 ### Mapping and weights
 
-Keep the logistic curve `100 / (1 + e^−(1.386 + 1.2·z))` (80 at z = 0, 93 at +1, 55 at −1, 27 at −2), with a dead zone at the smallest worthwhile change:
+Keep the logistic curve `100 / (1 + e^−(1.386 + 1.19·z))` (80 at z = 0, 93 at +1, 55 at −1, 27 at −2), with a dead zone at the smallest worthwhile change:
 
 * z_eff = sign(z)·max(0, |z| − 0.5). Changes under 0.5 SD are noise (Buchheit, Plews).
 * It applies to the HRV, resting HR, breathing and temperature contributors.
@@ -88,21 +88,21 @@ New weights (design choice), renormalised over the contributors present:
 | Breathing rate | 0.03 | 0.04 |
 | Previous day's load | 0.07 | 0.04 |
 | Blood oxygen | 0.05 | 0.03 |
-| Recovery index | 0.07 | 0.03 |
+| Recovery index | 0.07 | 0 (shown only: no peer-reviewed support) |
 | Breathing disturbances | 0.04 | moved to a Breathing card |
 | Training load balance | 0.05 | moved to the Load screen |
 
 * Autonomic 52 %, sleep 28 %, other body signals 13 %. Polar's only hint is that HR has "the biggest influence".
 * **Withhold Readiness** unless an HRV or resting HR contributor is present. On 2026-10-16, sleep alone gave 52 against the strap's 91. Under this rule that day shows a Sleep score and the strap's placeholder instead.
 * Breathing disturbances move out: they're a stable trait, so inside Readiness they only add a fixed offset.
-* Keep the red-flag cap (`RED_FLAG` = 40, readiness ≤ contributor + 30) and the alert cap of 54 (one below the Fair band). Neither has a source; both are reasonable guards.
+* Keep the red-flag cap (`RED_FLAG` = 40, readiness ≤ contributor + 30) and the alert cap of 54 (one below the Fair band). Neither has a source; both are reasonable guards. Blood oxygen doesn't trigger the red-flag cap: wrist SpO2 is off by 2 to 4 points, so one low night is more often the sensor than the body.
 * Sleep was the main driver of a reconstructed Oura Readiness (R² 0.71 from Oura's own inputs; questionnaires R² 0.29, [De Bot et al. 2025](https://www.scitepress.org/PublishedPapers/2025/137331)). Limiting sleep's share stops one short night from carrying the score. The weights are the first thing to backtest.
 
 ### The strap's own nightly HRV and resting HR (Probable)
 
 Vendors define these differently and often don't say how: Garmin hides its window timing, WHOOP weights the last slow-wave stage, Polar uses the first 4 h. Those choices change agreement with ECG (Dial 2025). The strap's method is unknown and could change with firmware. A baseline that mixes two definitions measures the switch, not the body.
 
-1. Until there are 7 valid nights of our own values, show the strap's values and sub-scores, labelled "Strap's estimate". They never enter OpenStrap's score.
+1. Until there are 7 valid nights of our own values, show the strap's values and sub-scores, labelled "Strap's estimate". They never enter unstrap's score.
 2. On a night where our own value fails the validity rule, use the strap's value for display and alerts, flagged "strap fallback", and keep it out of the baseline.
 3. Raise a data-quality flag when ours and the strap's differ by more than 15 % (HRV) or 3 bpm (RHR).
 4. At the 2026-10-30 review, compare the night-to-night robust SD of both, and how each responds to tagged events. Switch to the strap's definitions only if they're clearly less noisy with the same response; then switch completely and rebuild the baseline.
@@ -131,8 +131,8 @@ Deficits build up almost linearly over 14 days without people noticing ([Van Don
 
 * Go through the last 14 nights from oldest to newest; skip missing nights; naps count toward TST.
 * λ = 0.5^(1/7) ≈ 0.906 (half-life 7 nights). d = need − TST.
-* If d ≥ 0: debt = debt·λ + d. If d < 0: debt = max(0, debt·λ − min(0.5·|d|, 60 min)).
-* Score = clamp(100 − 25·debt hours, 0, 100), keeping `SLEEP_DEBT_POINTS_PER_HOUR` = 25. Withhold with fewer than 7 of 14 nights.
+* If d ≥ 0: debt = debt·λ + d. If d < 0: debt = max(0, debt·λ − min(|d|, 120 min)). The first free night after restriction ran about 2.2 h above need (Kitamura 2016), so a long night repays its whole surplus.
+* Score = clamp(100 × (1 − (debt − 60 min) ÷ 300 min), 0, 100): 1 h of debt is free and 6 h scores 0. A flat 25 points an hour scored 0 for anyone 30 min short every night, because the decayed sum settles near 4 h. Withhold with fewer than 7 of 14 nights.
 
 ### Regularity (Probable)
 
@@ -166,7 +166,7 @@ Today's rule fires on one night with two or more conditions. It has the right co
 
 ### Rule (Probable)
 
-Baseline per signal: the last 28 valid nights, leaving out the 2 most recent and any Watch or Alert nights; median + 1.4826·MAD; floors as for Readiness. No alerts before 14 valid nights. A 28-night window covers a whole menstrual cycle.
+Baseline per signal: the last 28 valid nights, leaving out the 5 most recent and any Watch or Alert nights (resting HR and temperature start rising 3 to 5 days before symptoms, [Mishra 2020](https://www.nature.com/articles/s41551-020-00640-6)); median + 1.4826·MAD; floors as for Readiness. No alerts before 14 valid nights. A 28-night window covers a whole menstrual cycle.
 
 RHR here is the overnight mean sleep HR (the NightSignal metric). Readiness keeps the lowest-30-minute definition.
 
@@ -184,10 +184,10 @@ SpO2 and desaturations are left out; they stay in Readiness and the Breathing ca
 * **Alert** (push; Readiness capped at 54), any of:
   * `RHR_FLAG` on 2 nights in a row;
   * ≥ 2 different core flags on the same night;
-  * any core flag on ≥ 3 of the last 7 nights;
-  * rr − c ≥ 3.0 /min on its own.
+  * a core flag tonight and on ≥ 3 of the last 7 nights;
+  * rr − c ≥ 3.0 /min and ≥ 2 spreads, on its own.
 * One missing night is bridged; two or more reset persistence. The alert clears after 2 nights in a row with no core flag.
-* Likely causes are noted, not suppressed: user tags (alcohol, travel, vaccination, hard session) or previous-day TRIMP > 1.5× chronic.
+* Likely causes are noted, not suppressed: a previous day with TRIMP > 1.5× fitness (CTL to the day before), the chronic load Readiness's previous-day contributor uses. Day tags were removed from the app.
 
 ### Wording
 
@@ -206,14 +206,14 @@ No HR-load method has been validated on everyday waking minutes. Even in structu
 ### TRIMP (Probable as the least bad; design choice for everyday use)
 
 * Keep the formula: x·0.64·e^(1.92x) (male or unknown), x·0.86·e^(1.67x) (female), where x = HRR. Days with < 8 h of HR stay excluded.
-* New filter: a minute counts only when awake, x ≥ 0.20, and ≥ 3 of the last 5 minutes have x ≥ 0.20. Single PPG spikes no longer count.
+* New filter: a minute outside workouts counts only when awake and moving (1 to 250 steps), with x ≥ 0.35, or x ≥ 0.20 at 60+ steps (sustained walking), and ≥ 3 of the last 5 minutes qualify. Single PPG spikes no longer count.
 * RHR for HRR = the 14-day median of the strap's daily resting HR, else median(nightly lowest + offset). Offset = median(daily RHR − nightly lowest) over 14 days when both exist, else 3 bpm. Karvonen and Swain define resting HR as awake rest; a nightly minimum would inflate HRR for every waking minute.
 
 ### Max HR (Probable)
 
 * Default Tanaka 208 − 0.7·age, from 18,712 subjects ([Tanaka et al. 2001](https://doi.org/10.1016/S0735-1097(00)01054-8)). A user-entered test value overrides it.
 * Any equation's individual SD is about 7–11 bpm, so raising the estimate is sound and lowering it isn't.
-* Keep raising it to the observed maximum by at most +15 bpm, using the second-highest artefact-filtered 1-minute HR over 60–90 days. New: this needs two separate days within 3 bpm of each other.
+* Keep raising it to the observed maximum by at most +15 bpm, using each day's artefact-filtered 1-minute maximum over 90 days: the lower of the first two days (from the top) within 3 bpm of each other. One day alone never sets it.
 
 ### Load screen (descriptive)
 
@@ -223,6 +223,7 @@ No HR-load method has been validated on everyday waking minutes. Even in structu
   * Form = CTL_{t−1} − ATL_{t−1}.
   * Personal time constants aren't fitted: the parameters can't be reliably identified ([Imbach et al. 2025](https://hal.inrae.fr/hal-04999009v1)).
 * Optional ACWR, labelled "contested": EWMA acute 7 / chronic 28, with chronic leaving out the current 7 days (uncoupled).
+* Long-run flag: a run more than 10 % longer than the longest of the last 30 days is named on the Load screen. In 5,205 runners such a spike raised injury hazard 1.5 to 2.3×, while ACWR showed the opposite trend (Frandsen 2025). Time stands in for the study's distance.
 * Readiness keeps "previous day's load" (weight 0.04): 100 if TRIMP_yesterday / CTL ≤ 1.5, else −25 per unit, floor 30.
 
 ### Strain (design choice)
@@ -261,19 +262,19 @@ Mifflin-St Jeor came within 10 % of measured resting metabolic rate in more peop
 | Some steps, or a neighbouring minute had steps | 1.3·b |
 | Awake, sedentary | 1.15·b |
 
-* Cadence MET (CADENCE-Adults, [Tudor-Locke et al. 2019](https://ijbnpa.biomedcentral.com/track/pdf/10.1186/s12966-019-0769-6)): up to 60 y, 60 → 2.0, 100 → 3, 130 → 6, linear between; sustained ≥ ~145 uses ACSM running. Age ≥ 61: 100 → 3, 110 → 4, 120 → 5. A fixed-stride ACSM walking equation gives about 3.7 METs at 130 spm, far below the measured 6.
-* HR branch, labelled "HR-assisted": awake, not in a workout, < 20 steps, ≥ 10 minutes in a row with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max_est/3.5 − 1)))).
+* Cadence MET (Moore et al. 2021, Med Sci Sports Exerc 53(1)): VO2 = −0.4367 + 0.001430·c² − 0.001455·age·c − 0.000009012·BMI·c² + 0.0008086·age·height (ml/kg/min, c in steps/min, height in cm), MET = VO2 ÷ 3.5, at least 1, age held to 21 to 84; sustained ≥ ~145 uses ACSM running. It replaces CADENCE-Adults' cut points ([Tudor-Locke et al. 2019](https://ijbnpa.biomedcentral.com/track/pdf/10.1186/s12966-019-0769-6)), which were set to classify intensity, not to cost a minute: 130 spm read as 6 METs where the measured cost for a typical adult is nearer 5.4. Moore's equation also takes age, BMI and height into account.
+* HR branch, labelled "HR-assisted": awake, not in a workout, < 20 steps, ≥ 5 minutes in a row with x ≥ 0.40 → max(EE, b + net(min(6, 1 + x·(VO2max_est/3.5 − 1)))).
 * The daily total is "partial" below 20 h of wear. Flag PAL = TEE/BMR outside 1.2–2.5. No thermic effect of food unless stated.
 * 0.95, 1.15 and 1.3 are conventions, not 2024 Compendium values (sleeping and sitting quietly are both 1.0 there, [pacompendium.com](https://pacompendium.com/inactivity)).
 * *Active kcal* = Σ max(0, EE − b) over the minutes with data: what you burned above resting, the same definition as Apple's and Zepp's "active". Sleep minutes (0.95·b) are held at zero, so sleeping never subtracts. The day also keeps it per local hour, split by source: workout minutes, walking minutes (≥ 60 steps outside a workout, cadence or running MET) and everyday (the rest, HR-assisted minutes included).
-* *Phone workouts (design choice):* each active minute (minute start inside the shown range, pauses left out) takes max(motion, HR). Motion is the table above without the sleep row. HR is b + net(1 + x·(VO2max_est/3.5 − 1)) per heart rate sample, capped at 0.9·VO2max_est/3.5 METs rather than 6, and averaged over the minute; history minutes filled after a disconnect count the same way, spread over their minute. No 10-minute rule inside a workout. Every minute is then at least 1.15·b, so the workout's active kcal is its total less b per minute. Saved on the workout when it ends and again after a trim or a gap fill. The day uses these minutes with their active part scaled to the saved total, so a day and its workout always agree, even after a sync moves the steps or resting HR they were worked out with. While recording, a running total counts the minutes ended and the share gone of the one under way, and never goes down.
+* *Phone workouts (design choice):* each active minute (minute start inside the shown range, pauses left out) takes max(motion, HR). Motion is the table above without the sleep row. HR is b + net(1 + x·(VO2max_est/3.5 − 1)) per heart rate sample, capped at 0.9·VO2max_est/3.5 METs rather than 6, and averaged over the minute; history minutes filled after a disconnect count the same way, spread over their minute. No 5-minute rule inside a workout. Every minute is then at least 1.15·b, so the workout's active kcal is its total less b per minute. Saved on the workout when it ends and again after a trim or a gap fill. The day uses these minutes with their active part scaled to the saved total, so a day and its workout always agree, even after a sync moves the steps or resting HR they were worked out with. While recording, a running total counts the minutes ended and the share gone of the one under way, and never goes down.
 * *Daily history:* each day's totals, active, BMR, minutes with data, partial, workout and walking active kcal, and 24 hourly active values are kept in `daily_energy`. The day shown in the app rewrites its row; after each sync the last 7 days, any day without a row, and every day after a profile change are worked out again, on the strap's daily resting HR, today's max HR and that week's VO2max (these only move HR-assisted minutes).
 
 ### MVPA (Established thresholds)
 
 * Moderate at cadence ≥ 100 (optionally ≥ 105 for age ≥ 61, [McAvoy 2023](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC10688086/)), vigorous at ≥ 130 ([Tudor-Locke](https://pmc.ncbi.nlm.nih.gov/articles/PMC6029645)).
 * A minute counts only inside a run of ≥ 2 qualifying minutes in a row (design choice).
-* HR-MVPA: awake, ≥ 10 minutes in a row with x ≥ 0.40 (vigorous ≥ 0.60), and < 100 steps or in a workout. Never counted twice.
+* HR-MVPA: awake, ≥ 5 minutes in a row with x ≥ 0.40 (vigorous ≥ 0.60), and < 100 steps or in a workout. Never counted twice. WHO 2020 dropped the 10-minute bout, and [Jakicic 2019](https://pubmed.ncbi.nlm.nih.gov/31095078/) found shorter bouts carry the same benefit.
 * MVPA-equivalent = moderate + 2·vigorous, against 150 min/week (WHO 2020). Raw minutes are shown too.
 
 ### Steps and distance (Contested)
@@ -296,7 +297,7 @@ Jurca 2005 needs only sex, age, BMI, resting HR and one activity question. Its S
 * Before coding: check the sex coding and SRPA weights against the Am J Prev Med 2005 full text (the weights may not be whole numbers: 0 / 0.32 / 1.06 / 1.76 / 3.03), and transcribe the FRIEND 2022 tables from the primary paper.
 * Phase 2, phone GPS: flat, steady 1-minute epochs (speed 1.0–4.5 m/s, accuracy ≤ 10 m, HR SD < 3 bpm over 3 min after ≥ 3 min warm-up). VO2 = 3.5 + 0.1·v (walk) or 0.2·v (run), v in m/min. Fit VO2 = a + b·HR (span ≥ 15 bpm, r² ≥ 0.7), extrapolate to HRmax, and take the median of ≥ 3 sessions in 28 days. If it differs from Jurca by > 2 SEE, show both.
 
-* *As built (phase 2, per workout):* outdoor runs only, ACSM running over %HRR per steady 2-minute window rather than a VO2–HR regression, gated as Zepp gates its own; shown with the workout, not merged with Jurca yet. See recovery.md "Workout effect".
+* *As built (phase 2, per workout):* outdoor runs only, ACSM running over %VO2R (from %HRR by Ferri Marini 2021, (x − 0.0886) ÷ 0.972) per steady 2-minute window rather than a VO2–HR regression, gated as Zepp gates its own; shown with the workout, not merged with Jurca yet. See recovery.md "Workout effect".
 
 ### Workout EPOC and training effect (design choice on a Probable base)
 
@@ -316,14 +317,14 @@ It scores six terms against **population medians**, so a user at the median on e
 | Objection (2026-10-18) | Answer in healthspan.md | Resolved? |
 |---|---|---|
 | Summing hazard ratios that weren't adjusted for each other gives a falsely precise number | Sleep regularity uses ratios adjusted for sleep duration, which barely weakens it ([Windred et al. 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC10782501/)); an irregular-sleep pattern also holds after adjusting for activity volume (HR 1.44 → 1.42, [Zhang Y et al. 2024](https://doi.org/10.1186/s12966-024-01673-9)). Resting HR, steps and VO2max all track fitness and have no mutually adjusted source, so they share a ±5 y limit. That limit only catches outliers (about 1–5 % of users in simulation), so for most users their overlap is handled by the 0.6 shrinkage alone; healthspan.md §9 compares the result with validated wearable ageing clocks. Then shrinkage S = 0.6, the shown offset capped at ±5 y (a loose ceiling under [Li et al. 2018](https://pmc.ncbi.nlm.nih.gov/articles/PMC6207481/)'s 15 y five-factor contrast), a ±2 y minimum display range, and whole years only | **Partly.** S and the fitness limit are design choices; there's no outcome data to fit them, and the overlap between the fitness terms is probably larger than S allows for |
-| The sleep ratios come from self-reported sleep, and the long-sleep risk is probably reverse causation | Both sleep terms now come from UK Biobank wrist accelerometry: SRI quintiles adjusted for duration (Windred 2024) and duration bands ([Yuan et al. 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC11106264/)). Short sleep only adds years, and there's no long-sleep term | **Mostly.** The references come from wrist accelerometers; the strap's values are scored as they are |
+| The sleep ratios come from self-reported sleep, and the long-sleep risk is probably reverse causation | Both sleep terms now come from UK Biobank wrist accelerometry: SRI quintiles adjusted for duration (Windred 2024) and fully adjusted hazard ratios against 7 h asleep ([Saint-Maurice et al. 2024](https://doi.org/10.1093/sleep/zsad312), which replaced Yuan et al. 2024's much steeper 5 h figure). Short sleep only adds years, and there's no long-sleep term | **Mostly.** The references come from wrist accelerometers; the strap's values are scored as they are |
 | Jurca's SEE adds ±2.3–2.7 "years" of noise (an SEE of 1.45–1.97 METs actually works out to ±2.2–3.0 y) | Jurca isn't used. Only the strap's exercise-based VO2max, at half weight, optional, limited to ±2 y and inside the fitness limit | **Mostly.** The strap estimate still carries about ±2.2 y of noise at half weight, and there's no VO2max term for users without workouts |
 
 Still open (healthspan.md §9):
 
 * **Strap values are taken as they are.** No side-by-side check against a wrist accelerometer is planned (decision). Strap sleep staging, asleep minutes and steps are scored against references from other devices; the ±2 y minimum range and whole-year display absorb the offset. In practice the shown range is the estimate ±2 y, a display convention rather than a worked-out confidence interval.
 * **Strap steps aren't validated** (see "Steps and distance"), and the under-60 step curve is steep around its median, so step error moves the estimate more than any other input.
-* **Two curves are read off published figures** (±0.01–0.02): Paluch's age-specific step curves and Momma's strength dose–response.
+* **Two curves are read off published figures** (±0.01–0.02): Paluch's age-specific step curves. Strength now comes from Zhang 2026's Table 2, not a figure.
 * **Sleeping vs seated resting HR:** +10 bpm (office vs night mean) is the low end for a lowest-30-minute value, so that term leans young.
 * **Wording** follows fitness age: no mortality language, and the name is still open ("healthspan estimate", "habits age").
 
@@ -354,7 +355,7 @@ The Helio Strap has no published validation for nightly RMSSD, resting HR, skin 
 * Does the strap's "awake" stage include falling-asleep time or a time-in-bed boundary? (WASO vs time-in-bed efficiency.)
 * How often does it log sleep SpO2? Does the type-74 apnea summary land on the right morning?
 * Does any channel expose beat-to-beat RR intervals, for artefact-corrected HRV?
-* Can a strap used only with OpenStrap report BioCharge `totalCharge`?
+* Can a strap used only with unstrap report BioCharge `totalCharge`?
 * Do chest- and arm-worn step counts track cadence well enough for the 100/130 thresholds?
 
 **Validity**

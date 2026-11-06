@@ -5,7 +5,7 @@
   Load, time in zones, the splits and what the workout earned.
   Load is the name of a figure in the app. Keep it as one word.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Two parts of one line joined, as "Average 141 bpm, 320 active kcal" or "Weekly goal, 3 of 4". -->
     <string name="glow_summary_join"><xliff:g id="first" example="Average 141 bpm">%1$s</xliff:g>, <xliff:g id="second" example="320 active kcal">%2$s</xliff:g></string>
     <!-- A number of minutes, as a figure ("12 min"), under the zone strip and under the heart rate drop's line. Short. -->
@@ -61,7 +61,7 @@
     <!-- The hero's line under a calm session's sentence: the average heart rate. -->
     <string name="glow_summary_line_average_bpm">Average <xliff:g id="bpm" example="72">%1$d</xliff:g> bpm</string>
     <!-- The hero's line under a calm session's sentence: kcal burned above resting. -->
-    <string name="glow_summary_line_active_kcal"><xliff:g id="kcal" example="80">%1$d</xliff:g> active kcal</string>
+    <string name="glow_summary_line_active_kcal" tools:ignore="PluralsCandidate"><xliff:g id="kcal" example="80">%1$d</xliff:g> active kcal</string>
 
     <!-- Title of the quiet card that says how the heart rate came down between sets. One word. -->
     <string name="glow_summary_rest_title">Rest</string>

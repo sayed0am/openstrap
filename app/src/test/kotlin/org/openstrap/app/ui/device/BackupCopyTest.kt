@@ -38,7 +38,7 @@ class BackupCopyTest {
 
     @Test fun `every failure and outcome has its words`() {
         for (f in BackupFailure.entries) BackupCopy.failure(f)
-        assertEquals("Backed up as OpenStrap-backup-2026-10-17.zip.", BackupCopy.outcome(AutoBackup.Outcome.Done("OpenStrap-backup-2026-10-17.zip")))
+        assertEquals("Backed up as unstrap-backup-2026-10-17.zip.", BackupCopy.outcome(AutoBackup.Outcome.Done("unstrap-backup-2026-10-17.zip")))
         assertEquals("Couldn't back up. There isn't enough space for it.", BackupCopy.outcome(AutoBackup.Outcome.Failed(BackupFailure.NoSpace)))
         assertEquals("The folder you chose", BackupCopy.folder(on.copy(folderName = null)))
     }

@@ -151,6 +151,17 @@ object Recovery {
      * to where it settles.
      */
     const val STRESS_AFTER_WORKOUT_SECONDS = 20 * 60L
+    /**
+     * After a hard workout HRV stays down for longer than its heart rate: about an hour after moderate-to-vigorous
+     * work and 90 minutes or more after intervals (Stanley 2013, Michael 2017). A workout with aerobic training effect
+     * from [HARD_WORKOUT_TE] keeps its stress readings out for [STRESS_AFTER_HARD_WORKOUT_SECONDS], from
+     * [VERY_HARD_WORKOUT_TE] for [STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS] ([stressTails]). Only stress readings are
+     * dropped there: Charge's workout phase and daily load keep the 20 minutes, as they read heart rate, not HRV.
+     */
+    const val HARD_WORKOUT_TE = 3f
+    const val VERY_HARD_WORKOUT_TE = 4f
+    const val STRESS_AFTER_HARD_WORKOUT_SECONDS = 60 * 60L
+    const val STRESS_AFTER_VERY_HARD_WORKOUT_SECONDS = 90 * 60L
 
     const val STRESS_BASELINE_DAYS = 14
     const val MIN_STRESS_DAYS = 3
@@ -195,9 +206,13 @@ object Recovery {
 
     /**
      * Readiness contributors and their weights (a design choice, evidence-review.md): autonomic 52 %, sleep 28 %, other
-     * body signals 13 %, load 4 %, renormalised over the contributors present. Breathing disturbances (a stable trait,
+     * body signals 13 %, load 4 %, renormalised over the contributors present. The recovery index is shown but weighs
+     * nothing: the timing of the overnight low has no peer-reviewed link to recovery (Oura's idea). Breathing disturbances (a stable trait,
      * so only a fixed offset inside Readiness) moved to the Breathing card ([breathingDisturbances]); training load
      * balance (ACWR) moved to the Load screen ([acwr]). Their names on screen are presentation's (`TabCopy.factorName`).
+     * [physiological] contributors can trigger the red-flag cap. Blood oxygen can't: a wrist SpO2 reading is off by 2 to
+     * 4 points and drops with a cold hand or a loose band, so one low night is more often the sensor than the body
+     * (evidence-review.md, "Readiness").
      */
     enum class Factor(val weight: Float, val physiological: Boolean = false) {
         HrvBalance(0.30f, physiological = true),
@@ -207,8 +222,8 @@ object Recovery {
         Temperature(0.06f, physiological = true),
         Breathing(0.04f, physiological = true),
         PreviousDayLoad(0.04f),
-        BloodOxygen(0.03f, physiological = true),
-        RecoveryIndex(0.03f),
+        BloodOxygen(0.03f),
+        RecoveryIndex(0f),
     }
 
     data class Contributor(val factor: Factor, val score: Int, val detail: Detail)
@@ -337,23 +352,31 @@ object Recovery {
     /** Sleep debt halves over 7 nights: λ = 0.5^(1/7) ≈ 0.906, so a 14-night build-up still counts. */
     const val SLEEP_DEBT_HALF_LIFE_NIGHTS = 7.0
     val SLEEP_DEBT_DECAY = 0.5.pow(1 / SLEEP_DEBT_HALF_LIFE_NIGHTS).toFloat()
-    /** A long night repays half its surplus, at most an hour. */
-    const val SLEEP_DEBT_CREDIT_FRACTION = 0.5f
-    const val SLEEP_DEBT_MAX_CREDIT_MINUTES = 60f
+    /**
+     * A long night repays its whole surplus, at most 2 h: the first free night after restriction ran about 2.2 h
+     * above need (Kitamura 2016).
+     */
+    const val SLEEP_DEBT_CREDIT_FRACTION = 1f
+    const val SLEEP_DEBT_MAX_CREDIT_MINUTES = 120f
     const val SLEEP_DEBT_NIGHTS = 14
     const val SLEEP_DEBT_MIN_NIGHTS = 7
 
     internal const val DAY = 86_400L
     /** Local midnights a DST change apart are an hour off a whole number of days. */
     internal const val DST_SLACK = 2 * 3600L
-    /** Readiness points lost per hour of average nightly shortfall (1 h short ≈ 75, 2 h ≈ 50). */
-    const val SLEEP_DEBT_POINTS_PER_HOUR = 25
+    /**
+     * Sleep balance scores 100 up to this much debt: an hour short is common and a few nights repay it. The debt is a
+     * decayed 14-night sum, so a fixed per-hour slope would score 0 for anyone 30 min short every night (≈ 4 h).
+     */
+    const val SLEEP_DEBT_FREE_MINUTES = 60f
+    /** Debt at which sleep balance reaches 0: 5 h past the free hour (RISE's "keep it under 5 h"). 3 h ≈ 60, 4 h ≈ 40. */
+    const val SLEEP_DEBT_ZERO_MINUTES = 360f
 
     const val RED_FLAG = 40
     const val RED_FLAG_HEADROOM = 30
-    /** Where OpenStrap's "Take it steady" (Fair) band starts, which `Narrative.ratingFor` uses. */
+    /** Where OpenStrap's "Moderate" band starts, which `Narrative.ratingFor` uses. */
     const val FAIR_FROM = 55
-    /** One below the Fair band, so an Alert day always rates in the lowest band ("Take it easy"). */
+    /** One below the Moderate band, so an Alert day always rates in the lowest band ("Take it easy"). */
     const val ALERT_CAP = FAIR_FROM - 1
     internal const val MIN_CHRONIC_LOAD = 20f
     /** Readiness points lost per % of nightly SpO2 below baseline, beyond a 1 % dead band (−2 % ≈ 75, −3 % ≈ 50). */
@@ -443,6 +466,17 @@ object Recovery {
 
     const val HARD_DAY_RATIO = 1.5f
 
+    /**
+     * A run more than this many times the longest in the [LONG_RUN_DAYS] before it is named on the Load screen. In
+     * 5,205 runners a single run more than 10 % longer than the longest of the last 30 days raised the injury hazard
+     * 1.5 to 2.3 times, while the acute:chronic ratio didn't predict it (Frandsen 2025). The study counted distance;
+     * we count active time, which every run has. At least [LONG_RUN_MIN_EARLIER] earlier runs, so a first week of
+     * use doesn't flag every run.
+     */
+    const val LONG_RUN_RATIO = 1.1f
+    const val LONG_RUN_DAYS = 30
+    const val LONG_RUN_MIN_EARLIER = 2
+
     /** Fitness (CTL), fatigue (ATL) and form for one day of [fitnessFatigue]. */
     data class LoadTrend(val ctl: Float, val atl: Float, val form: Float)
 
@@ -531,6 +565,11 @@ object Recovery {
          * [atWake] is then that restart value.
          */
         val strapOffOvernight: Boolean = false,
+        /**
+         * Charge as the main sleep began (its first minute, often the evening before the day), where Recharged
+         * starts from. Null without a main sleep, or when the strap was off then.
+         */
+        val atBedtime: Float? = null,
     )
 
     /** Sleep recharge rate per minute, as a fraction of the remaining headroom (≈30 → 92 over 7.5 h). */
@@ -641,7 +680,7 @@ object Recovery {
     const val ALERT_RECHARGE = 0.5f
     const val ALERT_DRAIN = 1.5f
 
-    /** Charge's EPOC-like debt, and a workout's EPOC at rest ([WorkoutEffect]), are multiplied by this each minute (half-life ≈ 20 min). */
+    /** Charge's EPOC-like debt is multiplied by this each minute out of exercise (half-life ≈ 20 min). A workout's EPOC only adds. */
     const val EPOC_DECAY = 0.966f
 
     /**

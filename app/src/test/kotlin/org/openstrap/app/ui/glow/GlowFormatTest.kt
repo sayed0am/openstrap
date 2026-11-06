@@ -130,7 +130,7 @@ class GlowFormatTest {
     @Test fun `Habit Age's sleep line writes a duration as everywhere else`() {
         inLocale(Locale.US) {
             val line = termDetail(Healthspan.Term(Healthspan.Habit.TimeAsleep, 1f, 340f, null), 40)
-            assertEquals("5 h 40 a night, only counts below 6 h 30", line)
+            assertEquals("5 h 40 a night, only counts below 7 h", line)
             assertCleanCopy(line)
             val steps = termDetail(Healthspan.Term(Healthspan.Habit.Steps, 0f, 6543f, 9000f), 40)
             assertEquals("6,543 a day, typical: 9,000, aim for 8,000 to 10,000", steps)

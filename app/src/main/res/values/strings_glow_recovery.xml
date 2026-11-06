@@ -23,7 +23,6 @@
     <!-- Title of the Energy battery card: the Energy score's name. -->
     <string name="glow_recovery_energy">Energy</string>
     <!-- Under the Energy battery's number while its curve is scrubbed: the time picked. -->
-    <string name="glow_recovery_charge_at">At <xliff:g id="time" example="14:30">%1$s</xliff:g></string>
     <!-- Under the Energy battery's number before the day has a start: the value is Energy now. One word. -->
     <string name="glow_recovery_now">Now</string>
     <!-- Under the Energy battery's number: Energy when the day began, estimated because the strap was off overnight. -->
@@ -34,11 +33,9 @@
     <string name="glow_recovery_recharged">Recharged</string>
     <!-- Title of the small card with what the day took from Energy. One word. -->
     <string name="glow_recovery_drained">Drained</string>
-    <!-- A row in the body signals list. -->
-    <string name="glow_recovery_resting_hr">Resting heart rate</string>
-    <!-- A row in the body signals list: heart rate variability, as an abbreviation. -->
-    <string name="glow_recovery_hrv">HRV</string>
-    <!-- A row in the body signals list. -->
+    <!-- Under Recharged's number: Energy when you went to sleep and when you woke, out of 100. -->
+    <string name="glow_recovery_overnight">Overnight, <xliff:g id="bedtime" example="34">%1$d</xliff:g> to <xliff:g id="waking" example="72">%2$d</xliff:g></string>
+    <!-- Title of the skin temperature card, which shows the change from your normal. -->
     <string name="glow_recovery_skin_temperature">Skin temperature</string>
     <!-- A row in the body signals list. -->
     <string name="glow_recovery_breathing_rate">Breathing rate</string>
@@ -61,7 +58,7 @@
     <string name="glow_recovery_this_morning">this morning</string>
     <!-- Under an earlier day's Recovery score, lower case: when it was scored. -->
     <string name="glow_recovery_that_morning">that morning</string>
-    <!-- Under the strap's own score, shown while OpenStrap's is held back. -->
+    <!-- Under the strap's own score, shown while unstrap's is held back. -->
     <string name="glow_recovery_strap_estimate">The strap\'s estimate</string>
     <!-- The Recovery detail's week view when no day has a score. -->
     <string name="glow_recovery_none_week">No Recovery scores in the last 7 days yet.</string>

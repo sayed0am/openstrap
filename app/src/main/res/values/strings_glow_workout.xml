@@ -3,7 +3,7 @@
   Workouts on the glow screens (ui/glow/GlowWorkoutMode.kt, GlowWorkoutScreen.kt, WorkoutCapsule.kt): a past workout's page,
   the list of every workout, the offers to save or record a workout nobody started, adding one after the fact, trimming
   and deleting, and the capsule of a workout under way.
-  OpenStrap is the app's name. Keep it as it is.
+  unstrap is the app's name, written in lowercase even at the start of a sentence. Keep it as it is.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A workout's name while its sport isn't known yet, as a page title. One word. -->
@@ -51,9 +51,9 @@
     <!-- The question before a workout is deleted. -->
     <string name="glow_workout_delete_confirm">Delete this workout?</string>
     <!-- Under the question, for a workout recorded on the phone: what deleting it does. -->
-    <string name="glow_workout_delete_phone">Its heart rate and times are removed from OpenStrap. The strap\'s own history is kept.</string>
+    <string name="glow_workout_delete_phone">Its heart rate and times are removed from unstrap. The strap\'s own history is kept.</string>
     <!-- Under the question, for a workout the strap recorded: what deleting it does. -->
-    <string name="glow_workout_delete_strap">Its heart rate and times are removed from OpenStrap, and the next sync won\'t bring it back. The strap\'s own history is kept.</string>
+    <string name="glow_workout_delete_strap">Its heart rate and times are removed from unstrap, and the next sync won\'t bring it back. The strap\'s own history is kept.</string>
 
     <!-- Title of the sheet that moves a workout's start and end. -->
     <string name="glow_workout_trim_title">Trim start and end</string>
@@ -108,7 +108,7 @@
     <!-- The row when there are no workouts. -->
     <string name="glow_workout_list_empty">No workouts yet</string>
     <!-- Under that row. -->
-    <string name="glow_workout_list_empty_text">Workouts you start in OpenStrap show up here, and the strap\'s own after a sync.</string>
+    <string name="glow_workout_list_empty_text">Workouts you start in unstrap show up here, and the strap\'s own after a sync.</string>
 
     <!-- Spoken name of the round pause button on a workout under way, for screen readers. -->
     <string name="glow_workout_capsule_pause">Pause</string>

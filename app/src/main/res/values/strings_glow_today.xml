@@ -3,7 +3,7 @@
   Today: the hero at the top of the Today tab and the cards under it (ui/glow/GlowTodayScreen.kt, ui/glow/TodayCards.kt).
   Recovery, Energy and Load are the names of the app's scores. Helio Strap is the strap's name. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Title of the Today hero in the morning and of the Recovery card later in the day: the Recovery score's name. -->
     <string name="glow_today_recovery_title">Recovery</string>
     <!-- Beside the Recovery score in dots on the morning hero: Energy when you woke. -->
@@ -47,7 +47,7 @@
     <!-- Beside a step count in dots. Very short. -->
     <string name="glow_today_steps">steps</string>
     <!-- Under the steps in the evening hero, when the Energy card is hidden. -->
-    <string name="glow_today_energy_left">Energy <xliff:g id="energy" example="34">%1$d</xliff:g> left</string>
+    <string name="glow_today_energy_left" tools:ignore="PluralsCandidate">Energy <xliff:g id="energy" example="34">%1$d</xliff:g> left</string>
     <!-- Title of the hero when no strap is paired. Helio Strap is the strap's name. -->
     <string name="glow_today_pair_title">Pair your Helio Strap</string>
     <!-- A button on the pairing hero that opens the Strap page. -->
@@ -64,8 +64,6 @@
     <string name="glow_today_blood_oxygen">Blood oxygen</string>
     <!-- A row in the body lists. -->
     <string name="glow_today_breathing_rate">Breathing rate</string>
-    <!-- Title of the list of the newest stress and HRV. -->
-    <string name="glow_today_right_now">Right now</string>
     <!-- A row in the Right now list. -->
     <string name="glow_today_stress">Stress</string>
     <!-- The Energy card's status in the evening: sleep is what recharges it. -->
@@ -74,12 +72,6 @@
     <string name="glow_today_charge_steady">Steady since waking</string>
     <!-- Title of the small Load card: the Load score's name. -->
     <string name="glow_today_load">Load</string>
-    <!-- Title of the Load list in your usual workout window. -->
-    <string name="glow_today_load_before">Before you start</string>
-    <!-- Title of the Load list after a workout. The noun is the sport, lower case: "run", "ride" or "workout". The sport is a lower case noun phrase dropped in as it is, so give it whatever article or case your language needs around it. -->
-    <string name="glow_today_load_after">What the <xliff:g id="sport" example="run">%1$s</xliff:g> did</string>
-    <!-- Title of the Load list, and its first row. -->
-    <string name="glow_today_load_today">Load today</string>
     <!-- Title of the small card with the hours left to recover. -->
     <string name="glow_today_to_recover">Time to recover</string>
     <!-- Unit beside the hours left to recover, hours. Very short. -->
@@ -124,8 +116,6 @@
     <string name="glow_today_score_unit">score</string>
     <!-- Under the sleep score: its word and the time asleep. -->
     <string name="glow_today_last_night_scored"><xliff:g id="word" example="Good">%1$s</xliff:g>, <xliff:g id="duration" example="7 h 20">%2$s</xliff:g> asleep</string>
-    <!-- Last night when the strap gave no score: the time asleep. -->
-    <string name="glow_today_last_night_unscored"><xliff:g id="duration" example="7 h 20">%1$s</xliff:g> asleep, no score from the strap</string>
     <!-- Title of the heart rate card. -->
     <string name="glow_today_heart_rate">Heart rate</string>
     <!-- The heart rate card's note on its title row: today's resting heart rate. -->
@@ -148,15 +138,11 @@
     <string name="glow_today_workout_zone">Mostly zone <xliff:g id="zone" example="3">%1$d</xliff:g></string>
     <!-- Title of the week card. -->
     <string name="glow_today_week_title">Your week</string>
-    <!-- Beside the week's average steps in dots. Short. -->
-    <string name="glow_today_week_steps_unit">steps a day</string>
-    <!-- How many workouts were done in the week. -->
-    <plurals name="glow_today_week_workouts">
-        <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> workout</item>
-        <item quantity="other"><xliff:g id="count" example="3">%d</xliff:g> workouts</item>
+    <!-- Your week's note: the days this week the step goal was met, of the week's days. -->
+    <plurals name="glow_today_week_at_goal">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> of <xliff:g id="days" example="1">%2$d</xliff:g> day at goal</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> of <xliff:g id="days" example="7">%2$d</xliff:g> days at goal</item>
     </plurals>
-    <!-- The week card's line: the average time asleep and the workouts, "3 workouts". -->
-    <string name="glow_today_week_line"><xliff:g id="duration" example="7 h 10">%1$s</xliff:g> asleep a night, <xliff:g id="workouts" example="3 workouts">%2$s</xliff:g></string>
     <!-- The week card: this week's steps a day against the week before, more. The percent is a whole number. -->
     <string name="glow_today_week_steps_more"><xliff:g id="percent" example="12">%1$d</xliff:g>%% more steps than the week before.</string>
     <!-- The week card: this week's steps a day against the week before, fewer. The percent is a whole number. -->
@@ -165,8 +151,6 @@
     <string name="glow_today_week_steps_same">About the same steps as the week before.</string>
     <!-- The note on a body list's title row: each value is compared with your normal. -->
     <string name="glow_today_against_normal">Against your normal</string>
-    <!-- A row in the Load list: the hours left until recovered. -->
-    <string name="glow_today_time_to_recover">Time to recover</string>
     <!-- The button at the foot of Today that opens Edit Today. -->
     <string name="glow_today_edit">Edit Today</string>
     <!-- The note under the Edit Today sheet's title. -->

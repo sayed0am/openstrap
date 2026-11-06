@@ -67,7 +67,7 @@ class BackupZipTest {
             restore(zip)
             fail("restored a zip with no records")
         } catch (e: IllegalArgumentException) {
-            assertEquals("This isn't an OpenStrap export.", e.message)
+            assertEquals("This isn't an unstrap export.", e.message)
         }
     }
 }

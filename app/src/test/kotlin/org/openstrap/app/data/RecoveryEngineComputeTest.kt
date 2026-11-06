@@ -119,6 +119,13 @@ class RecoveryEngineComputeTest {
         assertTrue(r.maxHrFromAge)
 
         assertEquals(SNAPSHOT, snapshot(r))
+        // Recovery's usual: the 13 scored mornings of the last 30 days, each at 83 (today's is withheld).
+        assertEquals(History.Normal(83f, 83f, 83f, 13), r.readinessUsual)
+        // No sleep-apnea summaries are stored, so a week without disturbances and no band.
+        assertEquals((6 downTo 0).map { date.minusDays(it.toLong()) to null }, r.disturbancesWeek)
+        assertNull(r.disturbancesUsual)
+        // Charge as last night began, at 23:00.
+        assertEquals(47.57f, requireNotNull(r.charge.atBedtime), 0.01f)
     }
 
     /** The figures the engine works out, so reading its inputs another way can't change them. */
@@ -139,7 +146,7 @@ class RecoveryEngineComputeTest {
          * evening walk, an hour at over 30 % of reserve, became a sustained run and its first two minutes counted too,
          * as Charge drains them.
          */
-        const val SNAPSHOT = "null|20|[84, 84, 84, 84, 84, 84, null]|52.26888|52.26888|55.833332|50|51.24335|96.531845|241|" +
-            "5.292476|100|9900|60|7172.55|1736.3221|423.3075|1200|100.0|3|0.0|52.26888|23:00|21"
+        const val SNAPSHOT = "null|20|[83, 83, 83, 83, 83, 83, null]|52.26888|52.26888|55.833332|50|51.24335|96.531845|241|" +
+            "5.292476|100|9900|60|7172.55|1728.9844|415.9696|1200|100.0|3|0.0|52.26888|23:00|21"
     }
 }

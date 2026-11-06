@@ -1,10 +1,8 @@
 package org.openstrap.app.device
 
-import android.Manifest
 import android.companion.AssociationInfo
 import android.companion.CompanionDeviceService
 import android.companion.DevicePresenceEvent
-import android.content.pm.PackageManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import org.openstrap.app.OpenStrapApp
@@ -12,13 +10,15 @@ import org.openstrap.app.OpenStrapApp
 /**
  * Android binds this while the associated strap is in range (see [CompanionLink]), starting the process if it
  * was killed. Each "appeared" event reconnects; the connection's own retries handle the strap going out of range.
+ * Android 11 has no CompanionDeviceService, so there the manifest entry is ignored and this never runs.
  */
+@RequiresApi(Build.VERSION_CODES.S)
 class StrapPresenceService : CompanionDeviceService() {
 
     private fun appeared(what: String) {
         val strap = (application as OpenStrapApp).container.strap
         (strap as? StrapManager)?.log("companion: strap appeared ($what)")
-        if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) strap.backgroundConnect()
+        if (BlePermissions.granted(this)) strap.backgroundConnect()
     }
 
     // Which of these Android calls varies by version (Android 16 can call more than one for the same event);

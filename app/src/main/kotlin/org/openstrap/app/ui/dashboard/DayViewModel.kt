@@ -126,6 +126,12 @@ data class DayUiState(
     val dayEnd: Long = 0,
     /** False for the empty state before the day's rows arrive, so "no sleep" isn't read into data still loading. */
     val loaded: Boolean = false,
+    /** The usual time asleep in seconds over [nights] ([sleepLengthNormal]), for last night's Short or Long. */
+    val sleepLengthNormal: org.openstrap.app.data.History.Normal? = null,
+    /** The usual bedtime in minutes after noon over [nights] ([bedtimeNormal]), for Regularity's Later or Earlier. */
+    val bedtimeNormal: org.openstrap.app.data.History.Normal? = null,
+    /** The day's stress hour by hour, 0..1, null for hours without a reading or to come ([stressStrip]). */
+    val stressStrip: List<Float?> = emptyList(),
 ) {
     val asleepSeconds: Long? get() = sleepBreakdown?.asleepSeconds ?: sleep?.let { it.end - it.start }
 }
@@ -156,6 +162,13 @@ data class ActivityHistory(
     val heartPoints: Map<LocalDate, HeartPointsDay> = emptyMap(),
     /** The [CALORIES_DAYS] days ending on [date]: the longest range and the one before it. Null while loading. */
     val calories: Map<LocalDate, CaloriesDay>? = null,
+    /**
+     * Each day's steps from [STEPS_DAYS] days before [date] to the end of its week, as Steps' daily history counts
+     * them, days without steps absent.
+     */
+    val steps: Map<LocalDate, Int> = emptyMap(),
+    /** The most steps of any day before [date]: the stored personal best when it's older, else read from the history. */
+    val stepsBest: Int? = null,
 ) {
     /** [heartPoints] when they're [day]'s, else none yet. */
     fun heartPointsOn(day: LocalDate): Map<LocalDate, HeartPointsDay> = if (date == day) heartPoints else emptyMap()
@@ -164,7 +177,22 @@ data class ActivityHistory(
     fun caloriesOn(day: LocalDate, from: LocalDate): Map<LocalDate, CaloriesDay>? =
         calories?.takeIf { date == day }?.filterKeys { it in from..day }
 
+    /**
+     * Steps' goal facts for [day] ([stepsGoalFacts]), for `goalTag(GoalMetric.Steps, facts)`: [value] is the steps
+     * shown (today's live count) and [goal] the daily goal. Null while [day]'s history loads.
+     */
+    fun stepsFacts(day: LocalDate, value: Int, goal: Int): GoalFacts? =
+        if (date == day) stepsGoalFacts(day, value, goal, steps, stepsBest) else null
+
+    /** [day]'s week of steps for Your week ([stepsWeek]), null while [day]'s history loads. */
+    fun stepsWeek(
+        day: LocalDate, value: Int, goal: Int, today: LocalDate = day, firstDay: java.time.DayOfWeek = java.time.DayOfWeek.MONDAY,
+    ): StepsWeek? = if (date == day) org.openstrap.app.ui.dashboard.stepsWeek(day, value, goal, steps, today, firstDay) else null
+
     companion object {
+        /** Days of steps before the day read for Steps' goal tags: the month's best and a streak up to this long. */
+        const val STEPS_DAYS = 90
+
         /** Heart points' month. */
         const val HEART_POINTS_DAYS = 30
 
@@ -257,7 +285,7 @@ class DayViewModel(
                     catching { repo.recovery(d, p) }.fold(
                         onSuccess = { RecoveryOutcome.Ready(it.also { r -> lastRecovery = r }) },
                         onFailure = { e ->
-                            Log.w("OpenStrap", "recovery failed", e)
+                            Log.w("unstrap", "recovery failed", e)
                             RecoveryOutcome.Failed(RecoveryFailure(d, yesterdayScore(d, p)))
                         },
                     )
@@ -284,7 +312,7 @@ class DayViewModel(
             last.readinessTrend.firstOrNull { it.first == yesterday }?.let { return it.second }
         }
         return catching { repo.recovery(yesterday, profile).readiness.score }
-            .onFailure { Log.w("OpenStrap", "yesterday's recovery failed", it) }
+            .onFailure { Log.w("unstrap", "yesterday's recovery failed", it) }
             .getOrNull()
     }
 
@@ -299,7 +327,7 @@ class DayViewModel(
                 catching {
                     val from = d.minusDays(org.openstrap.app.data.UsualSteps.DAYS.toLong())
                     org.openstrap.app.data.UsualSteps.byHour(repo.hourlySteps(from, d.minusDays(1)), d)
-                }.onFailure { Log.w("OpenStrap", "usual steps failed", it) }.getOrNull()
+                }.onFailure { Log.w("unstrap", "usual steps failed", it) }.getOrNull()
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -310,7 +338,7 @@ class DayViewModel(
         combine(selected, profile, repo.changes().debounce(800)) { d, p, _ -> d to p }
             .mapLatest { (d, p) ->
                 withContext(work) {
-                    catching { repo.healthspan(d, p) }.onFailure { Log.w("OpenStrap", "healthspan failed", it) }.getOrNull()
+                    catching { repo.healthspan(d, p) }.onFailure { Log.w("unstrap", "healthspan failed", it) }.getOrNull()
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -320,16 +348,39 @@ class DayViewModel(
         combine(
             repo.dailyPai(d.minusDays(ActivityHistory.HEART_POINTS_DAYS - 1L), d),
             repo.dailyCalories(d.minusDays(ActivityHistory.CALORIES_DAYS - 1L), d),
-        ) { pai, calories ->
+            stepsAndBest(d),
+        ) { pai, calories, (steps, best) ->
             ActivityHistory(
                 date = d,
                 heartPoints = pai.mapValues { (_, p) -> HeartPointsDay(p.daily, p.total) },
                 calories = calories.mapValues { (_, e) -> CaloriesDay(e.activeKcal, e.totalKcal, e.workoutKcal, e.partial) },
+                steps = steps,
+                stepsBest = best,
             )
         }
     }
         .flowOn(work)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ActivityHistory())
+
+    /**
+     * [d]'s steps from [ActivityHistory.STEPS_DAYS] days before it to its week's end, and the most steps of a day
+     * before it: the stored personal best when it's from an earlier day (with the loaded days, as it can lag a sync),
+     * else read from the whole history, as the stored one is then [d]'s or later.
+     */
+    private fun stepsAndBest(d: LocalDate): Flow<Pair<Map<LocalDate, Int>, Int?>> = combine(
+        repo.dailySteps(d.minusDays(ActivityHistory.STEPS_DAYS.toLong()), d.plusDays(6)),
+        repo.personalBest(org.openstrap.app.data.Rewards.Kind.MOST_STEPS),
+    ) { steps, stored -> steps to stored }
+        .mapLatest { (steps, stored) ->
+            val loaded = steps.filterKeys { it < d }.values.filter { it > 0 }.maxOrNull()
+            val storedDay = stored?.let { java.time.Instant.ofEpochSecond(it.date).atZone(java.time.ZoneId.systemDefault()).toLocalDate() }
+            val best = if (stored != null && storedDay != null && storedDay < d) {
+                listOfNotNull(stored.value.toInt(), loaded).maxOrNull()
+            } else {
+                catching { repo.mostStepsBefore(d) }.onFailure { Log.w("unstrap", "best steps failed", it) }.getOrNull() ?: loaded
+            }
+            steps to best
+        }
 
     companion object {
         /**
@@ -391,6 +442,9 @@ class DayViewModel(
                 sleepSkinTemperature = data.sleepSkin.map { ChartPoint(it.timestamp, it.celsius) },
                 dayStart = data.day.from,
                 dayEnd = data.day.to,
+                sleepLengthNormal = sleepLengthNormal(data.nights, data.date),
+                bedtimeNormal = bedtimeNormal(data.nights, data.date),
+                stressStrip = stressStrip(data.stress.map { ChartPoint(it.timestamp, it.value.toFloat()) }, data.day.from, data.day.to),
             )
         }
 

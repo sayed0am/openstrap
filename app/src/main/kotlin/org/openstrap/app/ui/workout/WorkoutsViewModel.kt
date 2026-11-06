@@ -96,7 +96,7 @@ class WorkoutsViewModel(
      */
     private fun backfillEffect(start: Long) {
         viewModelScope.launch(work) {
-            catching { repo.backfillEffect(start) }.onFailure { Log.w("OpenStrap", "effect backfill failed for $start", it) }
+            catching { repo.backfillEffect(start) }.onFailure { Log.w("unstrap", "effect backfill failed for $start", it) }
         }
     }
 

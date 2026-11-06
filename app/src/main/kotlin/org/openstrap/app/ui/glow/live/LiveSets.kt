@@ -55,7 +55,7 @@ import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.components.rememberHaptics
 import org.openstrap.app.ui.glow.DotMatrixText
 import org.openstrap.app.ui.glow.draw.DotSize
-import org.openstrap.app.ui.glow.EdgeCard
+import org.openstrap.app.ui.glow.PictureCard
 import org.openstrap.app.ui.glow.GlowCard
 import org.openstrap.app.ui.glow.GlowLayout
 import org.openstrap.app.ui.glow.OutlineCard
@@ -137,7 +137,7 @@ internal fun LiveStrengthScreen(
     val unlogged = r.sets.lastOrNull { it.end != null }?.takeIf { r.logSets && it.reps == null && it.index !in skipped && !r.inSet }
     val active = activeSecondsState(r)
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true, pillControls = true, fill = true,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true, fill = true,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, history, listOf(
             momentNow().done.let { done -> done.toString() to pluralStringResource(R.plurals.workout_live_figure_sets_done, done) },
             Strength.kgLifted(r.sets)?.let { Strength.kgText(it) } to stringResource(R.string.workout_live_figure_kg_lifted),
@@ -174,7 +174,7 @@ internal fun LiveStrengthScreen(
         val target = r.workout.setsTarget
         if (!compact && target != null && moment.done >= target && !r.inSet) {
             Text(
-                stringResource(R.string.workout_live_sets_all_done, target), color = Color.White.copy(alpha = 0.6f),
+                pluralStringResource(R.plurals.workout_live_sets_all_done, target, target), color = Color.White.copy(alpha = 0.6f),
                 style = GlowType.secondary, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center,
             )
         }
@@ -212,7 +212,7 @@ private fun SetCard(r: WorkoutState.Recording, number: Int, seconds: () -> Long,
 
 /**
  * The set, the rest or the next set on one row (half a folded phone): what it is and its exercise, and the set's clock
- * or the rest left in dots, on an edge card in the screen's colour.
+ * or the rest left in dots, on an unlit picture card.
  */
 @Composable
 private fun CompactCard(
@@ -230,7 +230,7 @@ private fun CompactCard(
             stringResource(title) to null
         }
     }
-    EdgeCard(color, Modifier.fillMaxWidth()) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(title, color = Color.White, style = GlowType.cardTitle, maxLines = 1)
@@ -244,7 +244,7 @@ private fun CompactCard(
 /** Before the first set, or once rest is over: which set is next and its exercise. */
 @Composable
 private fun ReadyCard(r: WorkoutState.Recording, number: Int, color: Color, onName: () -> Unit) {
-    EdgeCard(color, Modifier.fillMaxWidth()) {
+    PictureCard(color, Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
                 stringResource(if (number == 1) R.string.workout_live_sets_ready_first else R.string.workout_live_sets_rest_over),
@@ -362,8 +362,10 @@ private fun FallingHeart(readings: List<Pair<Long, Int>>, level: Int?) {
 private fun SetDots(done: Int, target: Int?, inSet: Boolean, modifier: Modifier = Modifier) {
     val total = maxOf(target ?: 0, done + if (inSet) 1 else 0)
     if (total == 0) return
-    val described = target?.let { stringResource(R.string.workout_live_sets_dots_description_to_go, done, (it - done).coerceAtLeast(0)) }
-        ?: stringResource(R.string.workout_live_sets_dots_description, done)
+    val described = target?.let {
+        pluralStringResource(R.plurals.workout_live_sets_dots_description_to_go, done, done, (it - done).coerceAtLeast(0))
+    }
+        ?: pluralStringResource(R.plurals.workout_live_sets_dots_description, done, done)
     Row(
         modifier.semantics { contentDescription = described },
         horizontalArrangement = Arrangement.spacedBy(10.dp),

@@ -132,6 +132,19 @@ enum class CallBuzz(@StringRes private val labelId: Int) {
     val label: String get() = Strings.app.get(labelId)
 }
 
+/** How long the strap buzzes for a ringing call: [millis], or until it's answered or ends when null. 10 s by default. */
+// The lengths are the choices themselves.
+@Suppress("MagicNumber")
+enum class CallBuzzLength(@StringRes private val labelId: Int, val millis: Long?) {
+    FIVE(R.string.core_settings_call_5s, 5_000L),
+    TEN(R.string.core_settings_call_10s, 10_000L),
+    FIFTEEN(R.string.core_settings_call_15s, 15_000L),
+    UNTIL_ANSWERED(R.string.core_settings_call_until_answered, null),
+    ;
+
+    val label: String get() = Strings.app.get(labelId)
+}
+
 /**
  * Hours the strap stays still for notifications, such as the night: from [from] to [to] in minutes after midnight,
  * running past midnight when [to] comes first. Calls still ring unless [calls] mutes them too.
@@ -206,14 +219,6 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         }
     }
 
-    private val liveHr = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.LIVE_HR)
-
-    /** Whether live heart rate starts automatically on connect. On by default. */
-    val liveHeartRate: Flow<Boolean> = read { it[liveHr] ?: true }
-
-    suspend fun setLiveHeartRate(enabled: Boolean) {
-        store.edit { it[liveHr] = enabled }
-    }
 
     private val autoStartKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.AUTO_START_WORKOUTS)
 
@@ -581,6 +586,17 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         store.edit { it[callBuzz] = style.name }
     }
 
+    private val callBuzzLengthKey = stringPreferencesKey(SettingsKeys.CALL_BUZZ_LENGTH)
+
+    /** How long the strap buzzes for a call; 10 s by default, for those who had calls on before too. */
+    val callBuzzLength: Flow<CallBuzzLength> = read { prefs ->
+        CallBuzzLength.entries.firstOrNull { it.name == prefs[callBuzzLengthKey] } ?: CallBuzzLength.TEN
+    }
+
+    suspend fun setCallBuzzLength(length: CallBuzzLength) {
+        store.edit { it[callBuzzLengthKey] = length.name }
+    }
+
     suspend fun setBuzzOnCalls(enabled: Boolean) {
         store.edit { it[buzzCalls] = enabled }
     }
@@ -793,7 +809,6 @@ object SettingsKeys {
     const val ZEPP_LOGIN_TOKEN = "zepp_login_token"
     const val ZEPP_APP_TOKEN_AT = "zepp_app_token_at"
     const val ZEPP_APP_TTL = "zepp_app_ttl"
-    const val LIVE_HR = "live_hr"
     const val AUTO_START_WORKOUTS = "auto_start_workouts"
     const val WEAR_REMINDER = "wear_reminder"
     const val STRAP_SESSIONS = "strap_sessions"
@@ -839,6 +854,7 @@ object SettingsKeys {
     const val BUZZ_NOTIFICATIONS = "buzz_notifications"
     const val BUZZ_PATTERN = "buzz_pattern"
     const val CALL_BUZZ = "call_buzz"
+    const val CALL_BUZZ_LENGTH = "call_buzz_length"
     const val QUIET_HOURS = "quiet_hours"
     const val QUIET_FROM_MINUTES = "quiet_from_minutes"
     const val QUIET_TO_MINUTES = "quiet_to_minutes"

@@ -68,6 +68,8 @@ data class StepsWidgetModel(
     val week: List<StepsWeekDay>,
     /** "Goal met 2 of 6 days". */
     val weekLine: String,
+    /** Today's steps hour by hour, the Steps card's pill bars. */
+    val hourly: List<Float> = emptyList(),
 ) {
     val goalMet: Boolean get() = steps >= goal
 
@@ -116,6 +118,7 @@ data class StepsWidgetModel(
                 lineMax = maxOf(goal.toFloat(), steps.toFloat(), line.filterNotNull().maxOrNull() ?: 0f),
                 week = week,
                 weekLine = weekLine(met, counted.size, strings),
+                hourly = hourly,
             )
         }
 
@@ -164,14 +167,9 @@ data class StepsWidgetModel(
                 }
             }
 
-        /**
-         * Each day's bar as a share of the week's top, the goal or the most steps in a day if that's more, so a met day
-         * stands taller than a missed one. Null where there's no bar to draw (days to come get a stub instead).
-         */
-        fun barValues(week: List<StepsWeekDay>, goal: Int): List<Float?> {
-            val top = maxOf(goal, week.maxOf { it.steps ?: 0 }).coerceAtLeast(1).toFloat()
-            return week.map { d -> d.steps?.takeIf { d.state != StepsDay.ToCome }?.let { it / top } }
-        }
+        /** Each day's share of the [goal] for its ring, past it above 1; null for a day to come or one without a record. */
+        fun ringShares(week: List<StepsWeekDay>, goal: Int): List<Float?> =
+            week.map { d -> d.steps?.takeIf { d.state != StepsDay.ToCome }?.let { if (goal > 0) it.toFloat() / goal else 0f } }
     }
 }
 
@@ -195,6 +193,9 @@ object StepsLayout {
 
     /** The goal bar's height: the Small's, and the Wide's and Large's when a large font drops their line. */
     const val BAR_DP = 4f
+
+    /** The Small's hour pills, in the goal bar's place once there's a step. */
+    const val SMALL_PILLS_DP = 18f
 
     /**
      * The line at its tallest and shortest worth drawing. It is the Wide's and Large's only progress: its top is the
@@ -235,13 +236,13 @@ object StepsLayout {
      * share only on one line. The blocks share the spare height, the dots growing from 3 dp until no gap is over
      * [Spread.TARGET_GAP_DP]; at least [SMALL_BAR_GAP_DP] between them all.
      */
-    fun small(stepsText: String, share: String, width: Float, height: Float, fontScale: Float, status: StatusLine? = null): Small {
+    fun small(stepsText: String, share: String, width: Float, height: Float, fontScale: Float, status: StatusLine? = null, pills: Boolean = false): Small {
         val top = TopRow.of(StepsWidgetModel.TITLE, null, status, width, fontScale, withWords = false)
         val shareFits = WidgetText.width(share, WidgetText.SECONDARY_SP, fontScale) <= width
         fun at(dot: Float, word: Boolean, withShare: Boolean): Small {
             val d = fitDot(stepsText, width, dot)
             val number = dotsHeight(d) + (if (word) SMALL_WORD_GAP_DP + WidgetText.line(WidgetText.BODY_SP, fontScale) else 0f)
-            val foot = BAR_DP + (if (withShare) SMALL_BAR_GAP_DP + WidgetText.line(WidgetText.SECONDARY_SP, fontScale) else 0f)
+            val foot = (if (pills) SMALL_PILLS_DP else BAR_DP) + (if (withShare) SMALL_BAR_GAP_DP + WidgetText.line(WidgetText.SECONDARY_SP, fontScale) else 0f)
             return Small(d, word, withShare, top, Spread.of(top.height, number, foot))
         }
         val gap = SMALL_BAR_GAP_DP / 2
@@ -284,13 +285,19 @@ object StepsLayout {
 
     /**
      * This week in [width] dp: one line, "This week" on the left and [weekLine] on the right, never wrapping (a
-     * large font drops "This week" first), then the bars across the width, columns up to [WeekBarsLook.COLUMN_DP].
+     * large font drops "This week" first), then the rings spread across the whole width, as on Today's
+     * Your week card, each as tall as [ringHeight] lets it.
      */
+    /** How tall the week's rings draw for a [column] dp wide: as wide as it, at most [WeekBarsLook.HEIGHT_DP]. */
+    fun ringHeight(column: Float): Float = minOf(column, WeekBarsLook.HEIGHT_DP)
+
     fun week(weekLine: String, width: Float, fontScale: Float, days: Int = 7): Week {
         val sp = WidgetText.SECONDARY_SP
         val title = WidgetText.width(StepsWidgetModel.THIS_WEEK, sp, fontScale) + WEEK_GAP_DP + WidgetText.width(weekLine, sp, fontScale) <= width
-        val column = WeekBarsLook.column(days, width)
-        val bars = WeekBarsLook.HEIGHT_DP + 4f + WidgetText.line(WidgetText.CAPTION_SP, fontScale)
+        val gaps = (days - 1).coerceAtLeast(0) * WeekBarsLook.GAP_DP
+        val column = ((width - gaps) / days.coerceAtLeast(1)).coerceAtLeast(WeekBarsLook.MIN_COLUMN_DP)
+        // A ring a column, as tall as it is wide up to the old bars' height, then the letters.
+        val bars = ringHeight(column) + 4f + WidgetText.line(WidgetText.CAPTION_SP, fontScale)
         return Week(column, title, WidgetText.line(sp, fontScale) + WEEK_LINE_GAP_DP + bars)
     }
 

@@ -1,0 +1,8 @@
+<resources>
+    <!-- Android 12 and up: its own splash shows the red "un" launcher icon on the app's black
+         (docs/design/rebrand-unstrap.md). Android 11 keeps the plain theme in values/. -->
+    <style name="Theme.OpenStrap" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowSplashScreenBackground">#000000</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">#0B0D10</item>
+    </style>
+</resources>

@@ -300,7 +300,7 @@ private fun ReadyPlanCard(
         }
     }
     Column(
-        Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, RowHairline, GlowLayout.CardShape).padding(16.dp),
+        Modifier.fillMaxWidth().bringIntoViewRequester(inView).clip(GlowLayout.CardShape).background(ListSurface).border(1.dp, CardHairline, GlowLayout.CardShape).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         var choosing by rememberSaveable { mutableStateOf(false) }

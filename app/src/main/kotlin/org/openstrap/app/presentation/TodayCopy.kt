@@ -51,7 +51,7 @@ object TodayCopy {
         data object NoHeartData : NoScore
     }
 
-    /** "OpenStrap is still learning your nights, 5 of 7." and the like. */
+    /** "unstrap is still learning your nights, 5 of 7." and the like. */
     fun noScoreLine(why: NoScore, strings: Strings = Strings.app): String = when (why) {
         is NoScore.Learning -> strings.format(R.string.core_today_no_score_learning, why.nights, why.of)
         NoScore.NoHeartData -> strings.get(R.string.core_today_no_score_heart)
@@ -317,9 +317,9 @@ object TodayCopy {
     fun weekFirst(locale: Locale = Locale.getDefault(), strings: Strings = Strings.app): String =
         strings.format(R.string.core_today_week_first, Weeks.firstDay(locale).getDisplayName(TextStyle.FULL, locale))
 
-    /** The week Your week tells (spec 4.2): the last full week before [date], from the locale's first day ([Weeks]). */
-    fun lastWeek(date: LocalDate, firstDay: java.time.DayOfWeek = Weeks.firstDay()): ClosedRange<LocalDate> {
-        val start = Weeks.start(date, firstDay).minusWeeks(1)
+    /** [date]'s own week, the phone's first day to its last: the week Your week shows, on its card and its page. */
+    fun thisWeek(date: LocalDate, firstDay: java.time.DayOfWeek = Weeks.firstDay()): ClosedRange<LocalDate> {
+        val start = Weeks.start(date, firstDay)
         return start..Weeks.end(start, firstDay)
     }
 
@@ -350,7 +350,7 @@ object TodayCopy {
         }
     }
 
-    /** The Last night strip: "7 h 40, score 83". */
+    /** The Last night strip: "Score 83, 7 h 40", the score first as on the page it opens. */
     fun lastNight(asleepSeconds: Long?, score: Int?, strings: Strings = Strings.app): String? = asleepSeconds?.let {
         val d = Units.duration(it)
         score?.let { s -> strings.format(R.string.core_today_last_night_score, d, s) } ?: d

@@ -19,6 +19,7 @@ import org.openstrap.app.ui.glow.draw.levelEdge
 import org.openstrap.app.ui.glow.draw.LEVEL_STEP
 import org.openstrap.app.ui.glow.draw.LEVEL_FILL_REACH
 import org.openstrap.app.ui.glow.draw.levelCore
+import org.openstrap.app.ui.glow.draw.levelFade
 import org.openstrap.app.ui.glow.draw.FillStop
 import org.openstrap.app.ui.glow.draw.light
 
@@ -59,6 +60,17 @@ class GlowLightTest {
         // Full: lit all the way.
         assertEquals(0f, levelEdge(1f), 1e-6f)
         assertEquals(22f, LEVEL_STEP.value)
+    }
+
+    @Test fun `a level's light fades into the dark across the value, never in a line`() {
+        // A 1000 px card at density 1, 60%: clear where the fill reaches the body, fully dark 11% past the value.
+        val (dark, clear) = levelFade(0.6f, 1000f, 1f)
+        assertEquals(1000f * (1f - LEVEL_FILL_REACH * 0.6f), clear, 0.01f)
+        assertEquals(1000f * (levelEdge(0.6f) - 0.11f), dark, 0.01f)
+        assertTrue(dark < levelEdge(0.6f) * 1000f && clear > levelEdge(0.6f) * 1000f)
+        // A short card still fades over at least LEVEL_STEP.
+        val (d, c) = levelFade(1f, 100f, 1f)
+        assertTrue(c - d >= LEVEL_STEP.value - 0.01f)
     }
 
     @Test fun `the level core covers the dark part`() {
@@ -136,6 +148,8 @@ class GlowLightTest {
         assertTrue(night.core.y < 0.5f)
         // A level card keeps its level at night.
         assertEquals(0.7f, style.copy(lightLevel = 0.7f, mood = GlowMood.Night).light().level)
+        // and its full brightness: its light is the value.
+        assertEquals(1f, style.copy(lightLevel = 0.7f, mood = GlowMood.Evening).light().brightness, 1e-6f)
         assertNull(style.copy(lightFrom = LightFrom.All, mood = GlowMood.Night).light().angle)
     }
 }

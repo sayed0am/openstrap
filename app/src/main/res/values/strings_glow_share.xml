@@ -2,36 +2,38 @@
 <!--
   Sharing a workout (ui/glow/ShareCards.kt, ShareScreen.kt): the story cards drawn into a 9 by 16 picture, and the Share
   screen around them. A card's text is drawn into the picture, so it has one line of room unless a comment says otherwise.
-  OpenStrap is the app's name and stands on every card. Keep it as it is.
+  unstrap is the app's name, written in lowercase even at the start of a sentence and stands on every card. Keep it as it is.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- Two parts of one card line joined, as "141 avg bpm, 320 kcal" or "Weekly goal, 3 of 4". -->
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Two parts of one chip joined, as "Weekly goal, 3 of 4". -->
     <string name="glow_share_join"><xliff:g id="first" example="141 avg bpm">%1$s</xliff:g>, <xliff:g id="second" example="320 kcal">%2$s</xliff:g></string>
-    <!-- A run card's foot: the sport and the date, as "Run, Oct 21". -->
-    <string name="glow_share_footer"><xliff:g id="sport" example="Run">%1$s</xliff:g>, <xliff:g id="date" example="Oct 21">%2$s</xliff:g></string>
 
-    <!-- A run card's figure label: how far. One word, a third of the card's width. -->
-    <string name="glow_share_stat_distance">Distance</string>
-    <!-- A run card's figure label: the active time. One word, a third of the card's width. -->
+    <!-- A card's figure label: the active time. One word, a third of the card's width. -->
     <string name="glow_share_stat_time">Time</string>
     <!-- A run card's figure label: minutes a kilometre. One word, a third of the card's width. -->
     <string name="glow_share_stat_pace">Pace</string>
-    <!-- A run card's figure label: average heart rate. A third of the card's width. -->
+    <!-- A card's figure label: average heart rate. A third of the card's width. -->
     <string name="glow_share_stat_avg_bpm">Avg bpm</string>
-    <!-- A run card's figure label: kcal burned above resting. A third of the card's width. -->
+    <!-- A card's figure label: kcal burned above resting. A third of the card's width. -->
     <string name="glow_share_stat_active_kcal">Active kcal</string>
+    <!-- A card's figure label: the highest heart rate. A third of the card's width. -->
+    <string name="glow_share_stat_peak_bpm">Peak bpm</string>
+    <!-- A strength card's figure label: the sets done. One word, a third of the card's width. -->
+    <string name="glow_share_stat_sets">Sets</string>
+    <!-- An intervals card's figure label: the time spent in the work phases. One word, a third of the card's width. -->
+    <string name="glow_share_stat_work">Work</string>
+    <!-- A mind and body card's figure label: the heart rate as the session began. Half the card's width. -->
+    <string name="glow_share_stat_bpm_start">Bpm at start</string>
+    <!-- A mind and body card's figure label: the heart rate as the session ended. Half the card's width. -->
+    <string name="glow_share_stat_bpm_end">Bpm at end</string>
+    <!-- A game card's figure label: the training load. One word, a third of the card's width. -->
+    <string name="glow_share_stat_load">Load</string>
     <!-- Unit after a pace figure: a kilometre. Very short. -->
     <string name="glow_share_unit_per_km">/km</string>
 
     <!-- Unit beside the kilograms a strength card says were lifted. Very short. -->
     <string name="glow_share_unit_kg">kg</string>
-    <!-- The last row on a strength card, with the workout's length and sets. One word. -->
-    <string name="glow_share_total">Total</string>
-    <!-- The Total row: the workout's length in minutes. -->
-    <string name="glow_share_total_minutes"><xliff:g id="minutes" example="34">%1$s</xliff:g> min</string>
-    <!-- The Total row: the workout's length in seconds, under a minute. -->
-    <string name="glow_share_total_seconds"><xliff:g id="seconds" example="45">%1$s</xliff:g> s</string>
-    <!-- A number of sets, on the Total row and an exercise's row. -->
+    <!-- A number of sets, on an exercise's row. -->
     <plurals name="glow_share_sets">
         <item quantity="one"><xliff:g id="count" example="1">%d</xliff:g> set</item>
         <item quantity="other"><xliff:g id="count" example="4">%d</xliff:g> sets</item>
@@ -41,29 +43,20 @@
     <!-- An exercise's row with its heaviest weight. The first part is "5 × 10" or "4 sets", the weight "65". -->
     <string name="glow_share_row_top"><xliff:g id="sets" example="5 × 10">%1$s</xliff:g>, top <xliff:g id="kg" example="65">%2$s</xliff:g> kg</string>
 
-    <!-- An indoor card's line: the average heart rate. -->
-    <string name="glow_share_avg_bpm"><xliff:g id="bpm" example="141">%1$d</xliff:g> avg bpm</string>
-    <!-- An indoor card's line: kcal burned above resting. -->
-    <string name="glow_share_kcal"><xliff:g id="kcal" example="320">%1$s</xliff:g> kcal</string>
-    <!-- Under an indoor card's time in dots. -->
-    <string name="glow_share_workout_time">Workout time</string>
-
     <!-- Unit beside the reps done on an intervals card, without the plan. Short. -->
     <string name="glow_share_unit_reps">reps</string>
     <!-- Unit beside the rounds done on an intervals card, without the plan. Short. -->
     <string name="glow_share_unit_rounds">rounds</string>
     <!-- Unit beside the reps done on an intervals card: how many were planned, as "6 of 8 reps". -->
-    <string name="glow_share_unit_of_reps">of <xliff:g id="planned" example="8">%1$d</xliff:g> reps</string>
+    <plurals name="glow_share_unit_of_reps">
+        <item quantity="one">of <xliff:g id="planned" example="8">%1$d</xliff:g> rep</item>
+        <item quantity="other">of <xliff:g id="planned" example="8">%1$d</xliff:g> reps</item>
+    </plurals>
     <!-- Unit beside the rounds done on an intervals card: how many were planned, as "6 of 8 rounds". -->
-    <string name="glow_share_unit_of_rounds">of <xliff:g id="planned" example="8">%1$d</xliff:g> rounds</string>
-    <!-- An intervals card's line: the highest heart rate. -->
-    <string name="glow_share_peak_bpm">Peak <xliff:g id="bpm" example="172">%1$d</xliff:g> bpm</string>
-    <!-- An intervals card's line: the time spent working, in minutes. -->
-    <string name="glow_share_work_minutes"><xliff:g id="minutes" example="12">%1$d</xliff:g> min of work</string>
-    <!-- An intervals card's line: the time spent working, under a minute. -->
-    <string name="glow_share_work_seconds"><xliff:g id="seconds" example="45">%1$d</xliff:g> s of work</string>
-    <!-- A game card's line: the highest heart rate. -->
-    <string name="glow_share_peak">Peak <xliff:g id="bpm" example="172">%1$d</xliff:g></string>
+    <plurals name="glow_share_unit_of_rounds">
+        <item quantity="one">of <xliff:g id="planned" example="8">%1$d</xliff:g> round</item>
+        <item quantity="other">of <xliff:g id="planned" example="8">%1$d</xliff:g> rounds</item>
+    </plurals>
     <!-- The week card's title over the count of workouts. -->
     <string name="glow_share_my_week">My week</string>
 

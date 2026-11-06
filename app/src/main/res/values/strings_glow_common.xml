@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Words the glow screens share (ui/glow): buttons, the states a figure can be in, and short units beside a number.
-  OpenStrap is the app's name. Keep it as it is.
+  unstrap is the app's name, written in lowercase even at the start of a sentence. Keep it as it is.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- A button that closes a sheet or a page without saving. One short word. -->

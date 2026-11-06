@@ -48,11 +48,10 @@ import org.openstrap.app.data.Workouts
 import org.openstrap.app.device.WorkoutState
 import org.openstrap.app.ui.theme.ControlSurface
 import org.openstrap.app.ui.glow.draw.EdgeKind
-import org.openstrap.app.ui.glow.draw.EdgeStatus
+import org.openstrap.app.ui.glow.draw.Rim
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.drawIcon
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.draw.edgeLight
 import org.openstrap.app.ui.theme.AppIcons
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.SportIcons
@@ -122,6 +121,9 @@ internal fun openLiveWorkout(context: Context): Intent =
 /** Heart ink, as Ready's hero: the light toward Start. */
 private val Ink = MetricColors.heart
 
+/** The still light on the top right corner, where the app's Start card's travelling light is when it starts. */
+private val StartCorner = Rim(1f, 0f, reachX = 0.45f, reachY = 0.9f)
+
 /** The name in the usual row: Body 500. */
 private val NameStyle = WidgetType.body.copy(fontWeight = FontWeight.Medium)
 
@@ -145,8 +147,10 @@ private fun StartContent(data: StartWidget.Shown) {
     val open = if (m.recording != null) openLiveWorkout(context) else openReady(context, m.usual.sportType)
     // The side padding is half the card's, so the tile captions can run into it; everything else pads back ([Inset]).
     // While a workout records, the recording is the news and the live screen shows the strap: no status line.
-    EdgeWidget(
-        edgeLight(EdgeStatus.Usual, EdgeKind.Live), Ink, data.mood, open, BITMAP_EXTRA,
+    // Unlit like the app's Start card. A widget can't move the card's travelling light, so it holds still on the top
+    // right corner, only the edge, no wash.
+    PictureWidget(
+        Ink, StartCorner, data.mood, open, BITMAP_EXTRA, wash = false,
         sidePadding = WidgetSizes.PADDING_DP - StartLayout.CAPTION_BLEED_DP, showStatus = m.recording == null,
     ) { frame ->
         val rec = m.recording

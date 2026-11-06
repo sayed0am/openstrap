@@ -35,7 +35,7 @@ fun QuietPanel(
             .fillMaxWidth()
             .let { if (onClick != null) it.pressClickable(onClick, GlowLayout.CardShape) else it }
             .background(ListSurface, GlowLayout.CardShape)
-            .border(1.dp, RowHairline, GlowLayout.CardShape)
+            .border(1.dp, CardHairline, GlowLayout.CardShape)
             .padding(GlowLayout.CardPadding),
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,

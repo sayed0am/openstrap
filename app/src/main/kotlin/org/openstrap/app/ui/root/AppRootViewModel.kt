@@ -135,7 +135,6 @@ class AppRootViewModel(
     ).distinctUntilChanged().state(StrapFacts(true, strap.connection.value, strap.sync.value, strap.syncRecord.value))
 
     val liveHeartRate: StateFlow<Int?> = strap.liveHeartRate
-    val liveEnabled: StateFlow<Boolean> = strap.liveHeartRateEnabled
     val goals: StateFlow<Goals> = settings.goals.state(Goals())
 
     /** Today's hidden and pinned cards, parsed once per change: a new object each time would recompose every tab. */
@@ -273,7 +272,7 @@ class AppRootViewModel(
     fun healthConnectReadGranted(result: Set<String>): Boolean = result.any { it in healthConnect.readPermissions }
 
     private companion object {
-        const val TAG = "OpenStrap"
+        const val TAG = "unstrap"
         const val STOP_MS = 5_000L
     }
 }

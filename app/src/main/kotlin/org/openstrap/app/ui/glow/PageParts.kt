@@ -200,7 +200,7 @@ fun PagePanel(modifier: Modifier = Modifier, title: String? = null, note: String
 fun PageRows(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     Column(
         // Clipped, so a selected row's tint keeps to the panel's corners.
-        modifier.fillMaxWidth().clip(PanelShape).background(PanelSurface, PanelShape).border(1.dp, Color.White.copy(alpha = 0.06f), PanelShape)
+        modifier.fillMaxWidth().clip(PanelShape).background(PanelSurface, PanelShape).border(1.dp, CardHairline, PanelShape)
             .padding(GlowLayout.ListPadding),
         content = content,
     )

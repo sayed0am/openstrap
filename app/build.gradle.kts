@@ -5,13 +5,12 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.detekt)
-    alias(libs.plugins.ktlint)
 }
 
 fun env(name: String): String? = providers.environmentVariable(name).orNull?.takeIf { it.isNotBlank() }
 
 // The version comes from the release tag (CI passes -PappVersion=1.2.3); local builds default to the current one.
-val appVersionName = providers.gradleProperty("appVersion").orNull?.removePrefix("v") ?: "2.1.4"
+val appVersionName = providers.gradleProperty("appVersion").orNull?.removePrefix("v") ?: "3.0.0"
 // 1.2.3 -> 10203, so every release installs over the one before it.
 val appVersionCode = appVersionName.substringBefore('-').split('.').map { it.toInt() }
     .let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch }
@@ -25,7 +24,7 @@ android {
 
     defaultConfig {
         applicationId = "org.openstrap.app"
-        minSdk = 31
+        minSdk = 30
         targetSdk = 36
         versionCode = appVersionCode
         versionName = appVersionName
@@ -57,7 +56,7 @@ android {
             if (providers.gradleProperty("demoApp").isPresent) applicationIdSuffix = ".demo"
             if (providers.gradleProperty("devApp").isPresent) {
                 applicationIdSuffix = ".dev"
-                manifestPlaceholders["appLabel"] = "OpenStrap ${appVersionName.removeSuffix(".0")}"
+                manifestPlaceholders["appLabel"] = "Unstrap ${appVersionName.removeSuffix(".0")}"
             }
         }
         release {
@@ -67,7 +66,21 @@ android {
             // Without the release key, signed with the debug key so a release build still installs locally.
             signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
+        // A release build the :baselineprofile module drives to record app/src/main/baseline-prof.txt: not shrunk, so
+        // the profile names the real classes (R8 renames them for the release), and not debuggable, so it runs like
+        // the release. It installs as the dev app, beside the real one and never over it.
+        create("benchmark") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "Unstrap ${appVersionName.removeSuffix(".0")}"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
+        }
     }
+    // The benchmark build is a release build: the release stubs of the debug tools.
+    sourceSets.getByName("benchmark").kotlin.directories += "src/release/kotlin"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -105,8 +118,9 @@ android {
             "ComposeParameterOrder", "ComposeUnstableCollections", "UnusedResources",
         )
         // LogNotTimber comes in with a dependency's lint checks, but the app logs with android.util.Log on purpose
-        // and has no Timber. NewerVersionAvailable asks the network, so its answer changes from run to run.
-        disable += listOf("LogNotTimber", "NewerVersionAvailable")
+        // and has no Timber. NewerVersionAvailable, GradleDependency and AndroidGradlePluginVersion ask the network, so
+        // their answer changes from run to run with nothing in the repository changed.
+        disable += listOf("LogNotTimber", "NewerVersionAvailable", "GradleDependency", "AndroidGradlePluginVersion")
     }
 }
 
@@ -117,7 +131,8 @@ composeCompiler {
 }
 
 // detekt with the Compose rules. Old findings live in detekt-baseline-debug.xml and detekt-baseline-release.xml
-// (./gradlew :app:detektBaselineMain). detektMain is the type resolved run the coroutine rules need.
+// (./gradlew :app:detektBaselineMain). The type resolved runs are what the coroutine rules need. CI runs detektDebug
+// only: release adds four stub files to the same main sources, and checking it meant a second full compile.
 detekt {
     buildUponDefaultConfig = true
     config.setFrom(rootProject.file("config/detekt.yml"))
@@ -138,12 +153,6 @@ listOf("Debug", "Release").forEach { variant ->
             javac.flatMap { it.destinationDirectory },
         )
     }
-}
-
-// Formatting only, from .editorconfig. Old violations live in the baseline, so nothing is reformatted.
-ktlint {
-    version = libs.versions.ktlint.get()
-    baseline = file("ktlint-baseline.xml")
 }
 
 ksp {
@@ -202,11 +211,13 @@ dependencies {
     implementation(libs.haze.blur)
     // Workout maps: open source, no API key; tiles from OpenFreeMap (README, Network use).
     implementation(libs.maplibre)
-    // Home screen widgets (docs/design/widgets/spec.md 6.1).
+    // Home screen widgets.
     implementation(libs.glance.appwidget)
     implementation(libs.work.runtime.ktx)
     // Automatic backup writes into a folder the user picks (export/AutoBackup.kt).
     implementation(libs.documentfile)
+    // Hands the baseline profile to ART on phones that install the APK outside the Play Store.
+    implementation(libs.profileinstaller)
 
     testImplementation(libs.junit)
     // Android's org.json is a stub in plain JVM unit tests.

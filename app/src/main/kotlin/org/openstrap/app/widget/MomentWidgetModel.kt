@@ -424,7 +424,8 @@ data class MomentWidgetModel(
                 sentences = listOf(TodayCopy.after(since.lastOrNull()?.y?.toInt(), input.restingHr)),
                 waiting = null, start = null, startLabel = null, recording = null,
                 chart = heartChart(since, w.end, strings.format(R.string.system_widget_moment_heart_since, noun)),
-                light = MomentLight(MetricColors.heart, LightAngle.Below, rim = AFTER_RIM),
+                // After a workout the hero is Recovery's teal, as on Today.
+                light = MomentLight(MetricColors.readiness, LightAngle.Below, rim = AFTER_RIM),
                 mood = mood,
                 numberDescription = strings.plural(R.plurals.system_widget_moment_minutes_since, minutes, minutes, noun),
                 tick = nextTick(now),

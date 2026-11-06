@@ -8,6 +8,7 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageInstaller
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import android.util.Log
 import androidx.work.Constraints
@@ -252,7 +253,7 @@ class AppUpdater(
         try {
             conn.connectTimeout = 15_000
             conn.readTimeout = 30_000
-            conn.setRequestProperty("User-Agent", "OpenStrap/$installed")
+            conn.setRequestProperty("User-Agent", "unstrap/$installed")
             if (conn.responseCode !in 200..299) throw IOException("Download returned HTTP ${conn.responseCode}")
             val total = conn.contentLengthLong.takeIf { it > 0 } ?: apk.size
             val digest = MessageDigest.getInstance("SHA-256")
@@ -308,8 +309,10 @@ class AppUpdater(
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(app.packageName)
             setSize(file.length())
-            // Without a prompt when Android allows it (OpenStrap installed the copy it replaces); it asks otherwise.
-            setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+            // Without a prompt when Android allows it (OpenStrap installed the copy it replaces, Android 12+); it asks otherwise.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED)
+            }
         }
         val id = installer.createSession(params)
         var committed = false
@@ -338,7 +341,7 @@ class AppUpdater(
         try {
             conn.connectTimeout = 15_000
             conn.readTimeout = 20_000
-            conn.setRequestProperty("User-Agent", "OpenStrap/$installed")
+            conn.setRequestProperty("User-Agent", "unstrap/$installed")
             if (github) {
                 conn.setRequestProperty("Accept", "application/vnd.github+json")
                 conn.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")
@@ -352,7 +355,7 @@ class AppUpdater(
     }
 
     companion object {
-        private const val TAG = "OpenStrap"
+        private const val TAG = "unstrap"
         private const val DAILY = "update-check"
 
         /** Starts the daily check; a no-op when it's already scheduled. Runs only with a network. */

@@ -117,7 +117,6 @@ internal fun TabletopTop(
     workoutOnTop: WorkoutState.Recording?,
     day: DayUiState,
     live: Int?,
-    liveEnabled: Boolean,
     connection: ConnectionState,
 ) {
     val density = LocalDensity.current
@@ -129,9 +128,7 @@ internal fun TabletopTop(
         val kcal by container.workout.kcal.collectAsStateWithLifecycle()
         GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, connection, top, kcal)
     } else {
-        GlowTabletopHeart(
-            day, live, liveEnabled.takeIf { connection is ConnectionState.Connected }, { container.strap.setLiveHeartRate(it) }, top,
-        )
+        GlowTabletopHeart(day, live.takeIf { connection is ConnectionState.Connected }, top)
     }
     Spacer(Modifier.height(with(density) { hinge.bounds.height().toDp() }))
 }
@@ -265,6 +262,12 @@ private fun LiveWorkout(
     capsuleHidden: Boolean,
 ) {
     val kcal by session.kcal.collectAsStateWithLifecycle()
+    val activity = LocalActivity.current
+    // Over the lock screen, tucking the workout away asks for the unlock first: the rest of the app stays locked.
+    val minimize: () -> Unit = {
+        val tuck = { session.minimized.value = true }
+        if (activity != null) activity.unlockThen(tuck) else tuck()
+    }
     WorkoutMorph(
         minimized, hooks.capsuleBottom + padding.calculateBottomPadding(),
         full = {
@@ -282,7 +285,7 @@ private fun LiveWorkout(
                     GlowWorkoutLiveScreen(
                         state, hooks.live, recent, stats, zoneSeconds, hooks.connection, padding,
                         onPause = session::pause, onResume = session::resume, onEnd = session::end,
-                        onMinimize = { session.minimized.value = true },
+                        onMinimize = minimize,
                         onEndAtPrompt = session::endAtPrompt, onKeepGoing = session::keepGoing,
                         route = route, history = history,
                         onStartSet = session::startSet, onSetDone = session::setDone, onExtendRest = session::extendRest,

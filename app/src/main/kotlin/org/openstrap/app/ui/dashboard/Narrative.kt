@@ -43,32 +43,16 @@ object Narrative {
     const val BROKEN_AWAKE_MINUTES = 30
 
     /**
-     * This many wake-ups is broken sleep even when they were brief. Set high on purpose: everyone wakes a few times a
-     * night and wake detection is the weakest part of wearable staging (evidence-review.md, "Sleep"), so only about
-     * one every hour of a normal night counts. Short wake-ups that add up to 30 min are caught by [BROKEN_AWAKE_MINUTES].
-     */
-    const val BROKEN_WAKE_COUNT = 6
-
-    /**
-     * Deep + REM below this share of the time asleep is a light night. Adults usually spend 40-50 % there; a quarter
-     * leaves room for the strap misreading deep as light (evidence-review.md, "Sleep").
-     */
-    const val LIGHT_SLEEP_SHARE = 0.25f
-
-    /**
      * What pulled the night down, in a few words. The strap's score mostly tracks duration, so a calm short night
-     * says "Short night" rather than "Restless". Short and broken outrank the score; light sleep is the weakest
-     * cause, since stages aren't rated (see [sleepContributors]), so it's named only when nothing else is and the
-     * score is below Good. Null without a score; callers fall back to time asleep.
+     * says "Short night" rather than "Restless". Short and broken outrank the score. Broken is awake time only: a count
+     * of wake-ups and a deep + REM share aren't named, because wearables find 29-52 % of real wake time and score
+     * stages at kappa 0.21-0.53 (evidence-review.md, "Sleep"). Null without a score; callers fall back to time asleep.
      */
     fun sleepHeadline(session: SleepSession, asleepSeconds: Long, strings: Strings = Strings.app): String? {
         val score = session.score ?: return null
         val asleepMin = asleepSeconds / 60
         val short = asleepMin < SHORT_NIGHT_MINUTES
-        val broken = (session.awakeMinutes ?: 0) >= BROKEN_AWAKE_MINUTES || (session.wakeCount ?: 0) >= BROKEN_WAKE_COUNT
-        val deep = session.deepMinutes
-        val rem = session.remMinutes
-        val light = deep != null && rem != null && asleepMin > 0 && (deep + rem) < LIGHT_SLEEP_SHARE * asleepMin
+        val broken = (session.awakeMinutes ?: 0) >= BROKEN_AWAKE_MINUTES
         return strings.get(
             when {
                 short && broken -> R.string.day_sleep_headline_short_broken
@@ -76,7 +60,6 @@ object Narrative {
                 broken -> R.string.day_sleep_headline_broken
                 score >= SleepBands.GREAT_FROM -> R.string.day_sleep_headline_solid
                 score >= SleepBands.GOOD_FROM -> R.string.day_sleep_headline_good
-                light -> R.string.day_sleep_headline_light
                 else -> R.string.day_sleep_headline_okay
             },
         )

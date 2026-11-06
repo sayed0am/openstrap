@@ -56,7 +56,7 @@ class WorkoutGapFill(
             val stats = WorkoutRecorder.withStats(w, all)
             // Without its effect the workout still keeps its filled minutes and figures.
             val withEffect = catching { WorkoutEffectEngine(dao).withEffect(stats, all, profile()) }
-                .onFailure { Log.w("OpenStrap", "workout gap fill: effect not worked out for ${w.start}: $it") }
+                .onFailure { Log.w("unstrap", "workout gap fill: effect not worked out for ${w.start}: $it") }
             dao.upsertAppWorkout(withEffect.getOrDefault(stats))
         }
         return rows.size

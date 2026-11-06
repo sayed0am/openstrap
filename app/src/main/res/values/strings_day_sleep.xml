@@ -4,7 +4,7 @@
   score and what shaped it, Sleep regularity, naps, adjusting a sleep's times, deleting a sleep and the Deleted sleep
   page. "Last night" is the night before today, "That night" an earlier one. Health Connect is a name, keep it.
 -->
-<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+<resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The label under a night vital's value on Day, after its unit ("ms", "bpm", "%"). Lower case after the comma. -->
     <string name="day_sleep_night_label_day"><xliff:g id="unit" example="ms">%1$s</xliff:g>, average asleep</string>
     <!-- The same on Week. -->
@@ -206,7 +206,10 @@
     <!-- A night vital missing on a night with sleep. -->
     <string name="day_sleep_vital_no_reading">No reading</string>
     <!-- A night vital while its normal is still being learned: the nights so far, of the nights needed. -->
-    <string name="day_sleep_vital_learning">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</string>
+    <plurals name="day_sleep_vital_learning">
+        <item quantity="one">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> night</item>
+        <item quantity="other">Learning, <xliff:g id="nights" example="4">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g> nights</item>
+    </plurals>
     <!-- The night vital for the lowest heart rate while asleep. -->
     <string name="day_sleep_vital_lowest_heart">Lowest heart rate</string>
     <!-- Under the lowest heart rate: when it was, a clock time. -->
@@ -223,6 +226,5 @@
     <string name="day_sleep_headline_solid">Solid night</string>
     <string name="day_sleep_headline_good">Restful night</string>
     <!-- Little deep and REM sleep. -->
-    <string name="day_sleep_headline_light">Shallow night</string>
     <string name="day_sleep_headline_okay">Okay night</string>
 </resources>

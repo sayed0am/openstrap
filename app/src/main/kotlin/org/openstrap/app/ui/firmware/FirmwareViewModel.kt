@@ -199,7 +199,11 @@ class FirmwareViewModel(
         if (trailer.pnpId != StrapIdentity.PRODUCT_ID) {
             add(strings.format(R.string.you_firmware_wrong_product, trailer.pnpId, StrapIdentity.PRODUCT_ID))
         }
-        if (trailer.fwSize > bytes.size) add(strings.format(R.string.you_firmware_wrong_size, trailer.fwSize))
+        if (trailer.fwSize > bytes.size) {
+            // The plural only needs the count's form, and a size past Int's range reads as many.
+            val count = trailer.fwSize.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+            add(strings.plural(R.plurals.you_firmware_wrong_size, count, trailer.fwSize))
+        }
     }
 
     /** Problems that must be fixed before installing. */
@@ -244,7 +248,7 @@ class FirmwareViewModel(
     }
 
     private fun log(message: String) {
-        android.util.Log.w("OpenStrap", message)
+        android.util.Log.w("unstrap", message)
         (strap as? StrapManager)?.log(message)
     }
 

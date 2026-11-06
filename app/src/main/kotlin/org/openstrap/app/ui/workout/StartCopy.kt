@@ -196,9 +196,10 @@ object StartCopy {
     fun structureName(s: org.openstrap.app.data.Structure, strings: Strings = Strings.app): String {
         presets(strings).firstOrNull { it.rounds?.code == s.warm(false).code }?.let { return it.name }
         return when (s) {
-            is org.openstrap.app.data.Structure.Timed -> strings.format(R.string.workout_start_structure_timed, s.work, s.rest, s.rounds)
+            is org.openstrap.app.data.Structure.Timed ->
+                strings.plural(R.plurals.workout_start_structure_timed, s.rounds, s.work, s.rest, s.rounds)
             is org.openstrap.app.data.Structure.EveryMinute ->
-                strings.format(R.string.workout_start_structure_every, restText(s.period, strings), s.rounds)
+                strings.plural(R.plurals.workout_start_structure_every, s.rounds, restText(s.period, strings), s.rounds)
             // As Ready's rep field and note say it ([repParts]): "6 × 1.5 km", "8 × 1 min".
             is org.openstrap.app.data.Structure.Reps ->
                 strings.format(R.string.workout_start_structure_reps, s.rounds, repLength(s, strings))
@@ -221,7 +222,7 @@ object StartCopy {
     fun periodsName(s: org.openstrap.app.data.Structure.Periods, strings: Strings = Strings.app): String = when (s.rounds) {
         2 -> strings.get(R.string.workout_start_halves)
         4 -> strings.get(R.string.workout_start_quarters)
-        else -> strings.format(R.string.workout_start_periods, s.rounds)
+        else -> strings.plural(R.plurals.workout_start_periods, s.rounds, s.rounds)
     }
 
     /**

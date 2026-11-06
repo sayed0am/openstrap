@@ -34,11 +34,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigationevent.NavigationEventDispatcher
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import dev.chrisbanes.haze.rememberHazeState
 import java.time.LocalDate
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import org.openstrap.app.device.BlePermissions
 import org.openstrap.app.device.ConnectionState
 import org.openstrap.app.device.WorkoutLocation
@@ -126,10 +130,25 @@ class MainActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         val container = (application as OpenStrapApp).container
+        showLiveWorkoutWhenLocked(container)
         setContent {
             OpenStrapTheme {
                 AppRoot(container, navRequests, previews, pendingStrap)
             }
+        }
+    }
+
+    /**
+     * The live workout shows over the lock screen, so pressing power mid-workout shows it without the unlock. Only the
+     * live screen: tucked away, ended (the summary can share and delete) or with no workout, the app is behind the lock
+     * as usual. Collected while the activity exists, not only while it's started, so the flag is right before the
+     * screen comes on.
+     */
+    private fun showLiveWorkoutWhenLocked(container: AppContainer) {
+        lifecycleScope.launch {
+            combine(container.workout.state, container.workout.minimized) { state, minimized ->
+                state is WorkoutState.Recording && !minimized
+            }.distinctUntilChanged().collect { setShowWhenLocked(it) }
         }
     }
 
@@ -324,7 +343,6 @@ private fun AppRoot(
     val strapFacts by rootVm.strap.collectAsStateWithLifecycle()
     val connected = strapFacts.connection is ConnectionState.Connected
     val live by rootVm.liveHeartRate.collectAsStateWithLifecycle()
-    val liveEnabled by rootVm.liveEnabled.collectAsStateWithLifecycle()
     val workoutState by container.workout.state.collectAsStateWithLifecycle()
     val workoutMinimized by container.workout.minimized.collectAsStateWithLifecycle()
     val running = workoutState as? WorkoutState.Recording
@@ -337,7 +355,7 @@ private fun AppRoot(
     val histories = remember(container) {
         Histories { m, from, to -> container.health.daily(m, from, to) }
     }
-    val liveHeart = LiveHeart(live, liveEnabled, connected) { container.strap.setLiveHeartRate(it) }
+    val liveHeart = LiveHeart(live, connected)
     val pairedKnown = strapFacts.pairedKnown && preview != StrapPreview.NotPaired
     val scan by deviceVm.scan.collectAsStateWithLifecycle()
     val pairing = rememberPairingStage(strapFacts.pairedKnown, scan.scanning, scan.found.isNotEmpty(), strapFacts.connection, dataPreview)
@@ -422,7 +440,7 @@ private fun AppRoot(
     ) {
       Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (hinge != null) {
-            TabletopTop(hinge, container, running?.takeIf { !workoutMinimized }, day, live, liveEnabled, strapFacts.connection)
+            TabletopTop(hinge, container, running?.takeIf { !workoutMinimized }, day, live, strapFacts.connection)
         }
         // Below the fold the status bar is far away, so the pages don't make room for it.
         BoxWithConstraints(

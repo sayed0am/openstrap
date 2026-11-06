@@ -10,6 +10,9 @@ import org.openstrap.app.presentation.ChartPoint
 import org.openstrap.app.ui.dashboard.DayUiState
 import org.openstrap.app.ui.dashboard.Detail
 import org.openstrap.app.presentation.Metric
+import org.openstrap.app.data.SleepNight
+import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.ui.dashboard.SleepCopy
 
 /** The All metrics index is a map of what exists: every metric detail once, and the screens without one. */
 class AllMetricsTest {
@@ -18,9 +21,12 @@ class AllMetricsTest {
 
     private val empty = DayUiState()
 
+    /** A metric's detail as the index opens it: a night signal's scoped to the night. */
+    private fun open(m: Metric) = IndexTarget.Open(Detail.OfMetric(m, m in SleepCopy.NIGHT_SIGNALS))
+
     @Test fun `every metric detail appears exactly once`() {
         val details = metricIndex(empty, null, null, emptyList()).flatMap { it.rows }.map { it.target }
-        for (m in Metric.entries) assertEquals(m.name, 1, details.count { it == IndexTarget.Open(Detail.OfMetric(m)) })
+        for (m in Metric.entries) assertEquals(m.name, 1, details.count { it == open(m) })
     }
 
     @Test fun `the screens without a metric detail are there too`() {
@@ -36,22 +42,26 @@ class AllMetricsTest {
     }
 
     @Test fun `a day without a value says so instead of a number`() {
-        val hrv = metricIndex(empty, null, null, emptyList()).flatMap { it.rows }.first { it.target == IndexTarget.Open(Detail.OfMetric(Metric.Hrv)) }
+        val hrv = metricIndex(empty, null, null, emptyList()).flatMap { it.rows }.first { it.target == open(Metric.Hrv) }
         assertEquals(null, hrv.value)
         assertEquals(NO_VALUE, hrv.status)
     }
 
-    @Test fun `values are the day's, in the metric's format`() {
+    @Test fun `values are the day's, night signals last night's, in the metric's format`() {
+        val sleep = SleepSession(start = 0, end = 8 * 3600)
         val day = empty.copy(
             steps = 13860, latestHeartRate = 58,
-            spo2 = listOf(ChartPoint(0, 96f), ChartPoint(60, 98f)),
-            skinTemperature = listOf(ChartPoint(0, 36.4f), ChartPoint(60, 36.6f)),
+            // The calendar day's readings differ from the night's: the index shows the night's, as every tab does.
+            spo2 = listOf(ChartPoint(0, 90f), ChartPoint(60, 92f)),
+            skinTemperature = listOf(ChartPoint(0, 31.4f), ChartPoint(60, 31.6f)),
+            sleep = sleep,
+            nights = listOf(SleepNight(empty.date, sleep, spo2 = 97f, skinTemperature = 36.5f)),
         )
         val rows = metricIndex(day, null, null, emptyList()).flatMap { it.rows }.associateBy { it.target }
         assertEquals("13,860", rows.getValue(IndexTarget.Open(Detail.OfMetric(Metric.Steps))).value)
         assertEquals("58", rows.getValue(IndexTarget.Open(Detail.OfMetric(Metric.HeartRate))).value)
-        assertEquals("97%", rows.getValue(IndexTarget.Open(Detail.OfMetric(Metric.Spo2))).value)
-        assertEquals("36.5", rows.getValue(IndexTarget.Open(Detail.OfMetric(Metric.SkinTemperature))).value)
+        assertEquals("97%", rows.getValue(open(Metric.Spo2)).value)
+        assertEquals("36.5", rows.getValue(open(Metric.SkinTemperature)).value)
     }
 
     private fun readiness(score: Int?, nights: Int, withheld: Boolean = false) =

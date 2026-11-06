@@ -172,7 +172,11 @@ class RecoveryTest {
         val debt = Recovery.readiness(night(14, asleep = 330), short).contributors.first { it.factor == Factor.SleepBalance }.score
         val none = Recovery.readiness(night(14, asleep = 480), rested).contributors.first { it.factor == Factor.SleepBalance }.score
         assertEquals(100, none)
-        assertEquals(0, debt) // 2.5 h short for 14 nights is far more than 4 h of debt
+        assertEquals(0, debt) // 2.5 h short for 14 nights is far more than 6 h of debt
+        // 30 min short every night settles near 4 h of debt: low, but not 0 as a flat 25 points an hour gave.
+        val slightly = (1..13).map { night(it, asleep = 450) }
+        val mild = Recovery.readiness(night(14, asleep = 450), slightly).contributors.first { it.factor == Factor.SleepBalance }.score
+        assertEquals(40, mild)
     }
 
     @Test
@@ -217,8 +221,8 @@ class RecoveryTest {
         fun nights(vararg asleep: Int) = asleep.mapIndexed { i, a -> night(i + 1, asleep = a) }
         // Five ordinary nights, then two nights 2 h short: debt = 120·λ + 120.
         assertEquals(120 * l + 120, Recovery.sleepDebtMinutes(nights(480, 480, 480, 480, 480, 360, 360), 7 * day)!!, 0.01f)
-        // A 10 h night repays half its 2 h surplus, capped at an hour.
-        assertEquals(max0(120 * l * l + 120 * l - 60), Recovery.sleepDebtMinutes(nights(480, 480, 480, 480, 360, 360, 600), 7 * day)!!, 0.01f)
+        // A 10 h night repays its whole 2 h surplus (capped at 2 h).
+        assertEquals(max0(120 * l * l + 120 * l - 120), Recovery.sleepDebtMinutes(nights(480, 480, 480, 480, 360, 360, 600), 7 * day)!!, 0.01f)
         // Naps count, missing nights are skipped, and fewer than 7 nights withholds it.
         val napped = nights(480, 480, 480, 480, 480, 480, 360).mapIndexed { i, n -> if (i == 6) n.copy(napMinutes = 120) else n }
         assertEquals(0f, Recovery.sleepDebtMinutes(napped, 7 * day)!!, 0.01f)
@@ -249,13 +253,6 @@ class RecoveryTest {
     }
 
     @Test
-    fun ewmaOfConstantLoadIsBalanced() {
-        val (a, c) = Recovery.ewmaLoads(List(28) { 60f })
-        assertEquals(60f, a, 0.01f)
-        assertEquals(60f, c, 0.01f)
-    }
-
-    @Test
     fun loadSpikeIsPenalised() {
         val loads = List(27) { 40f } + 200f
         val r = Recovery.readiness(night(31), history(), loads)
@@ -271,7 +268,9 @@ class RecoveryTest {
         assertEquals(0.52f, w.getValue(Factor.HrvBalance) + w.getValue(Factor.RestingHr), 1e-5f)
         assertEquals(0.28f, w.getValue(Factor.Sleep) + w.getValue(Factor.SleepBalance), 1e-5f)
         assertEquals(0.13f, w.getValue(Factor.Temperature) + w.getValue(Factor.Breathing) + w.getValue(Factor.BloodOxygen), 1e-5f)
-        assertEquals(1f, w.values.sum(), 1e-5f)
+        // The recovery index is shown, never scored.
+        assertEquals(0f, w.getValue(Factor.RecoveryIndex), 0f)
+        assertEquals(0.97f, w.values.sum(), 1e-5f)
     }
 
     // --- Charge ------------------------------------------------------------------------------------
@@ -740,6 +739,10 @@ class RecoveryTest {
         assertTrue(low.alertSignals.isEmpty())
         assertFalse(low.strainAlert)
         assertTrue(low.score!! < normal.score!!)
+        // A collapsed SpO2 reading (score 0) doesn't trigger the red-flag cap: wrist SpO2 is too noisy for it.
+        val collapsed = Recovery.readiness(night(31).copy(spo2 = 88f), past)
+        assertEquals(0, collapsed.contributors.first { it.factor == Factor.BloodOxygen }.score)
+        assertFalse(collapsed.capped)
     }
 
     @Test

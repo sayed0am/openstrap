@@ -58,6 +58,23 @@ internal object SleepCopy {
     fun averageHeart(state: DayUiState): Int? =
         state.sleep?.averageHeartRate ?: sleepHeart(state).takeIf { it.isNotEmpty() }?.map { it.y }?.average()?.roundToInt()
 
+    /**
+     * The signals the strap reads in your sleep. Wherever one shows, on any tab, in its detail or a related row, it's
+     * the night's average ([nightValue]) against the nights before ([nightNormal]), so they all say the same. The
+     * calendar day would split the night at midnight and judge it against whole days, hours off the wrist included.
+     */
+    val NIGHT_SIGNALS: Set<Metric> = setOf(Metric.Hrv, Metric.Breathing, Metric.Spo2, Metric.SkinTemperature)
+
+    /**
+     * What a night signal says while its normal is still forming: "Learning, 5 of 7 nights". The same words on every
+     * tab, so the count shows the normal is coming and when. Null once there's a normal.
+     */
+    fun learning(state: DayUiState, metric: Metric, strings: Strings = Strings.app): String? {
+        if (nightNormal(state, metric) != null) return null
+        val nights = nightNormalNights(state, metric).coerceAtMost(History.MIN_NORMAL_DAYS)
+        return strings.plural(R.plurals.day_sleep_vital_learning, History.MIN_NORMAL_DAYS, nights, History.MIN_NORMAL_DAYS)
+    }
+
     /** The night's value of [metric], the one its night vital row shows. */
     fun nightValue(state: DayUiState, metric: Metric): Float? =
         if (metric == Metric.HeartRate) averageHeart(state)?.toFloat() else tonight(state)?.let { n -> pick(metric)?.invoke(n) }
@@ -101,7 +118,7 @@ internal object SleepCopy {
     }
 
     /**
-     * The per-day series a night-scoped detail's Month and Year draw: blood oxygen's own night table, and for the rest
+     * The per-day series a night-scoped detail's Month and Year draw: blood oxygen inside each main sleep, and for the rest
      * the metric's usual per-day one.
      */
     fun nightDaily(metric: Metric): DailyMetric = if (metric == Metric.Spo2) DailyMetric.SleepSpo2 else metric.daily

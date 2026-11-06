@@ -103,7 +103,7 @@ class StrapManager(
         SyncCoordinator.Notifiers(AutoDetectNotifier(context), healthAlerts), ::log,
     )
     private val live: LiveHeartRateStream =
-        LiveHeartRateStream(scope, settings, connections, connections.connection, firmwareUpdating, ::log)
+        LiveHeartRateStream(scope, connections, connections.connection, firmwareUpdating, ::log)
 
     override val connection: MutableStateFlow<ConnectionState> = connections.connection
     override val sync: MutableStateFlow<SyncState> = syncs.sync
@@ -113,7 +113,6 @@ class StrapManager(
     override val heartRateReadings: MutableSharedFlow<Int> = live.heartRateReadings
     override val sportSessionPushes = MutableSharedFlow<SportSession.Push>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     override val todaySteps = MutableStateFlow<StepTotals?>(null)
-    override val liveHeartRateEnabled: MutableStateFlow<Boolean> = live.enabled
     override val info = MutableStateFlow<StrapInfo?>(null)
     override val alarmsChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     override val settingsChanged = MutableSharedFlow<SettingsGroup>(extraBufferCapacity = 8, onBufferOverflow = BufferOverflow.DROP_OLDEST)
@@ -128,7 +127,7 @@ class StrapManager(
     val activeSession: ChannelSession? get() = connections.activeSession
 
     fun log(message: String) {
-        Log.i("OpenStrap", message)
+        Log.i("unstrap", message)
         val line = "%tT  %s".format(System.currentTimeMillis(), message)
         log.update { (it + line).takeLast(400) }
     }
@@ -282,7 +281,7 @@ class StrapManager(
     }
 
     /** Connected: this connection's listeners in [job], the connect job, so they end with it. Then sync and live HR. */
-    private suspend fun connected(job: CoroutineScope, s: ChannelSession) {
+    private fun connected(job: CoroutineScope, s: ChannelSession) {
         with(job) {
             watchBattery(s)
             watchSteps(s)
@@ -510,7 +509,10 @@ class StrapManager(
         s.messagesFor(SportSession.ENDPOINT).collect { p ->
             if (p.isNotEmpty() && p.u8(0) == SportSession.REPLY) return@collect
             log("sport < ${p.toHex()}")
-            SportSession.parsePush(p)?.let { sportSessionPushes.tryEmit(it) }
+            SportSession.parsePush(p)?.let {
+                if (it is SportSession.Push.Data) live.onSessionData(it)
+                sportSessionPushes.tryEmit(it)
+            }
         }
     }
 
@@ -638,7 +640,6 @@ class StrapManager(
         }
     }
 
-    override fun setLiveHeartRate(enabled: Boolean) = live.setEnabled(enabled)
 
     override fun setAppVisible(visible: Boolean) = live.setAppVisible(visible)
 
@@ -695,7 +696,7 @@ class StrapManager(
             if (!claimed) firmwareUpdating.value = false
         }
         val wake = context.getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:firmware").apply { acquire(30 * 60_000L) }
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "unstrap:firmware").apply { acquire(30 * 60_000L) }
         try {
             // A failure is logged and handed on to the Firmware page. A cancellation is rethrown by catching as it came.
             catching {

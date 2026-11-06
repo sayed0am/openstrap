@@ -104,7 +104,7 @@ class DailyCaloriesHistory(private val dao: HealthDao) {
     }
 
     /** A day or workout the model couldn't work out: it is left as it was, and the reason goes to the log. */
-    private fun log(what: String, e: Throwable) = Log.w("OpenStrap", "daily energy: $what not worked out: $e")
+    private fun log(what: String, e: Throwable) = Log.w("unstrap", "daily energy: $what not worked out: $e")
 
     companion object {
         /** Days back from today rewritten after every sync: the strap's history reaches about a week. */

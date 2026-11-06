@@ -7,8 +7,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.openstrap.app.ui.glow.GlowLayout
-import org.openstrap.app.ui.glow.SoftGlow
-import org.openstrap.app.ui.glow.StrongGlow
+import org.openstrap.app.ui.glow.draw.SoftGlow
+import org.openstrap.app.ui.glow.draw.StrongGlow
 import org.openstrap.app.ui.theme.MetricColors
 
 /** The glow and edge light's shared spec (widgets spec 6.2): what the cards and a widget's background are drawn with. */
@@ -45,13 +45,15 @@ class LightSpecTest {
         assertEquals(0.7f, p.rims[0].color.alpha, 1f / 255)
     }
 
-    @Test fun `a level's rim and core stop at the level`() {
+    @Test fun `a level's rim and core fade out across the level`() {
         val style = GlowStyle.level(MetricColors.steps, 0.3f)
         val p = glowPaint(style, w, h, density)
         val clip = p.rimClip
         assertNotNull(clip)
         clip!!
-        assertEquals(levelEdge(0.3f) * h - 22f * density, clip.top, 1e-3f)
+        // The rim stops where the card is fully dark: 11% of the card past the value, or 22 dp before the fade clears.
+        val dark = minOf((levelEdge(0.3f) - 0.11f) * h, (1f - 0.85f * 0.3f) * h - 22f * density)
+        assertEquals(dark, clip.top, 1e-3f)
         assertEquals(h, clip.bottom, 1e-3f)
         val core = p.core as GlowCore.Level
         // Dark from above the card, transparent below it, across the layer's margin.
@@ -92,7 +94,7 @@ class LightSpecTest {
     @Test fun `grain and hairline`() {
         val p = glowPaint(GlowStyle(MetricColors.heart), w, h, density)
         assertEquals((0.06f * 255).toInt(), p.grainAlpha)
-        assertEquals(Color.White.copy(alpha = GlowLayout.HairlineAlpha), p.hairline)
+        assertEquals(Color.White.copy(alpha = GlowLayout.CardEdgeAlpha), p.hairline)
         assertEquals(0, glowPaint(GlowStyle(MetricColors.heart, grain = 0f), w, h, density).grainAlpha)
     }
 

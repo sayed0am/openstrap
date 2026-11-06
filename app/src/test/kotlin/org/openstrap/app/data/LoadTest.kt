@@ -232,5 +232,31 @@ class LoadTest {
             Recovery.withWorkoutMinutes(ride, workouts.map { (r, hr) -> Recovery.workoutMinutes(r, hr) }),
         )
     }
-}
 
+    @Test fun `a run over 10 percent longer than the month's longest is named`() {
+        val day = 86_400L
+        val d0 = 100 * day
+        fun run(daysBefore: Int, minutes: Int) = Run(d0 - daysBefore * day, d0 - daysBefore * day + minutes * 60, minutes * 60L)
+        val month = listOf(run(20, 40), run(10, 50), run(3, 45))
+        // 56 min against the longest 50: 12 % longer.
+        val long = Recovery.longRun(month + run(0, 56), d0, d0 + day - 1)!!
+        assertEquals(12, long.percentLonger)
+        assertEquals(50 * 60L, long.longestBefore)
+        // 55 min is exactly 10 %: not named.
+        assertNull(Recovery.longRun(month + run(0, 55), d0, d0 + day - 1))
+        // A long run 31 days back is out of the window, so 56 min against 50 still counts.
+        assertEquals(12, Recovery.longRun(listOf(run(31, 90)) + month + run(0, 56), d0, d0 + day - 1)!!.percentLonger)
+        // Only one earlier run: too little to compare with.
+        assertNull(Recovery.longRun(listOf(run(5, 20), run(0, 60)), d0, d0 + day - 1))
+    }
+
+    @Test fun `a strap run under a phone run is the same run`() {
+        val phone = org.openstrap.app.data.db.AppWorkout(start = 0, end = 3600, sportType = SportTypes.OUTDOOR_RUN, pauses = "600-899")
+        val strap = org.openstrap.app.data.db.Workout(10, 3590, SportTypes.OUTDOOR_RUN, 3580, null, null, null, null, null, null, null, null, null)
+        val walk = org.openstrap.app.data.db.Workout(7200, 9000, SportTypes.WALK, 1800, null, null, null, null, null, null, null, null, null)
+        val runs = Recovery.runs(listOf(phone), listOf(strap, walk))
+        assertEquals(1, runs.size)
+        // The phone run's active time, less its 5-minute pause.
+        assertEquals(3300L, runs.single().seconds)
+    }
+}

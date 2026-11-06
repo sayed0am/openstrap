@@ -42,15 +42,17 @@ internal object DetailCopy {
         Strings.app.format(R.string.core_detail_band_label, format(normal.low), format(normal.high))
 
     /** Before there's a normal: "Learning your normal, 4 of 7 days" (spec 2.7). */
-    fun learningNormal(days: Int, nightly: Boolean, strings: Strings = Strings.app): String = strings.format(
-        if (nightly) R.string.core_detail_learning_nights else R.string.core_detail_learning_days,
+    fun learningNormal(days: Int, nightly: Boolean, strings: Strings = Strings.app): String = strings.plural(
+        if (nightly) R.plurals.core_detail_learning_nights else R.plurals.core_detail_learning_days,
+        History.MIN_NORMAL_DAYS,
         days.coerceAtMost(History.MIN_NORMAL_DAYS),
         History.MIN_NORMAL_DAYS,
     )
 
     /** [learningNormal] as a sentence under a chart, with its full stop. */
-    private fun learningSentence(days: Int, nightly: Boolean, strings: Strings): String = strings.format(
-        if (nightly) R.string.core_detail_learning_nights_sentence else R.string.core_detail_learning_days_sentence,
+    private fun learningSentence(days: Int, nightly: Boolean, strings: Strings): String = strings.plural(
+        if (nightly) R.plurals.core_detail_learning_nights_sentence else R.plurals.core_detail_learning_days_sentence,
+        History.MIN_NORMAL_DAYS,
         days.coerceAtMost(History.MIN_NORMAL_DAYS),
         History.MIN_NORMAL_DAYS,
     )
@@ -194,7 +196,7 @@ internal object DetailCopy {
         val inside = known.count { it == Level.Inside }
         val month = range == Range.Month
         val ids = if (nightly) SPAN_NIGHTS else SPAN_DAYS
-        if (inside != known.size) return strings.format(if (month) ids.insideMonth else ids.inside, inside, known.size)
+        if (inside != known.size) return strings.plural(if (month) ids.insideMonth else ids.inside, known.size, inside, known.size)
         val withData = known.size < range.days
         return strings.get(
             when {
@@ -213,11 +215,11 @@ internal object DetailCopy {
 
     private val SPAN_NIGHTS = SpanIds(
         R.string.core_detail_every_night, R.string.core_detail_every_night_with_data, R.string.core_detail_every_night_month,
-        R.string.core_detail_every_night_with_data_month, R.string.core_detail_inside_nights, R.string.core_detail_inside_nights_month,
+        R.string.core_detail_every_night_with_data_month, R.plurals.core_detail_inside_nights, R.plurals.core_detail_inside_nights_month,
     )
     private val SPAN_DAYS = SpanIds(
         R.string.core_detail_every_day, R.string.core_detail_every_day_with_data, R.string.core_detail_every_day_month,
-        R.string.core_detail_every_day_with_data_month, R.string.core_detail_inside_days, R.string.core_detail_inside_days_month,
+        R.string.core_detail_every_day_with_data_month, R.plurals.core_detail_inside_days, R.plurals.core_detail_inside_days_month,
     )
 
     /** The year's sentence, from its weekly averages: "Over the last 12 months, weeks averaged from 48 to 61 ms." */
@@ -257,7 +259,10 @@ internal object DetailCopy {
         ready == null -> strings.get(R.string.core_detail_recovery_waiting) to
             strings.get(if (today) R.string.core_detail_recovery_for_last_night else R.string.core_detail_recovery_no_sleep)
         ready.phase == org.openstrap.app.data.Recovery.Phase.Withheld -> strings.get(R.string.core_detail_recovery_learning) to
-            strings.format(R.string.core_detail_recovery_nights, ready.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS)
+            strings.plural(
+                R.plurals.core_detail_recovery_nights, org.openstrap.app.data.Recovery.SCORED_NIGHTS,
+                ready.baselineNights, org.openstrap.app.data.Recovery.SCORED_NIGHTS,
+            )
         ready.withheld -> strings.get(R.string.core_detail_recovery_no_score) to strings.get(R.string.core_detail_recovery_no_heart_data)
         else -> strings.get(R.string.core_detail_recovery_no_score) to strings.get(R.string.core_detail_recovery_scored_mornings)
     }

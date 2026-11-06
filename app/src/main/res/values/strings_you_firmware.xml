@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The strap's firmware and the Zepp account its update check signs in with, pages opened from the Strap page, and the
-  Zepp sign-in (ui/firmware/, ui/zepp/ZeppSignIn.kt, ui/device/ErrorCopy.kt). OpenStrap is the app's name, Zepp is the
+  Zepp sign-in (ui/firmware/, ui/zepp/ZeppSignIn.kt, ui/device/ErrorCopy.kt). unstrap is the app's name, written in lowercase even at the start of a sentence, Zepp is the
   strap maker's app, account and servers, Amazfit Helio Strap is the strap
   and Google, Apple, Facebook and Xiaomi are sign-in providers. Keep them as they are.
 -->
@@ -27,7 +27,7 @@
     <!-- The privacy panel: its title, then three points, a short title and one sentence each. -->
     <string name="you_firmware_privacy">Privacy and safety</string>
     <string name="you_firmware_privacy_sign_in">Sign-in</string>
-    <string name="you_firmware_privacy_sign_in_text">Happens on Zepp\'s own page. OpenStrap keeps only the app token and user ID, and fetches your device list once.</string>
+    <string name="you_firmware_privacy_sign_in_text">Happens on Zepp\'s own page. unstrap keeps only the app token and user ID, and fetches your device list once.</string>
     <string name="you_firmware_privacy_check">Update check</string>
     <string name="you_firmware_privacy_check_text">Sends the update server your token, user ID and the strap\'s firmware, hardware and serial number. Nothing else.</string>
     <string name="you_firmware_privacy_install">Safe install</string>
@@ -54,7 +54,7 @@
     <string name="you_firmware_install">Install</string>
     <string name="you_firmware_installing_note">Keep the strap close and this screen open. This can take several minutes.</string>
     <string name="you_firmware_installed">Installed</string>
-    <string name="you_firmware_installed_text">The strap is restarting. OpenStrap reconnects by itself. Check again afterwards in case there are more parts to install.</string>
+    <string name="you_firmware_installed_text">The strap is restarting. unstrap reconnects by itself. Check again afterwards in case there are more parts to install.</string>
     <string name="you_firmware_done">Done</string>
     <string name="you_firmware_failed">Something went wrong</string>
     <string name="you_firmware_ok">OK</string>
@@ -66,12 +66,12 @@
     <string name="you_firmware_part_size"><xliff:g id="version" example="3.25.1">%1$s</xliff:g>, <xliff:g id="size" example="1,204">%2$s</xliff:g> KB</string>
     <string name="you_firmware_parts_note">Parts are installed one at a time. After the strap restarts, check again to install the next one.</string>
     <string name="you_firmware_not_now">Not now</string>
-    <!-- The download button when no part can be installed by OpenStrap. -->
+    <!-- The download button when no part can be installed by unstrap. -->
     <string name="you_firmware_unsupported">Can\'t install</string>
     <string name="you_firmware_download">Download</string>
     <!-- Asked before installing. The title is the image's, "Firmware 3.25.1". -->
     <string name="you_firmware_confirm_title">Install <xliff:g id="title" example="Firmware 3.25.1">%1$s</xliff:g>?</string>
-    <string name="you_firmware_confirm_text">The strap will receive the image, check it, install it and restart. Keep it near the phone and don\'t close OpenStrap until it\'s done.</string>
+    <string name="you_firmware_confirm_text">The strap will receive the image, check it, install it and restart. Keep it near the phone and don\'t close unstrap until it\'s done.</string>
     <!-- A switch under the warnings, which allows the install. -->
     <string name="you_firmware_confirm_anyway">I understand and want to install it anyway</string>
 
@@ -79,8 +79,8 @@
     <string name="you_firmware_no_account">Sign in to Zepp first.</string>
     <string name="you_firmware_no_version">Connect the strap first so its firmware version is known.</string>
     <string name="you_firmware_check_failed">Update check failed</string>
-    <!-- A part of a kind OpenStrap doesn't know, by its code. -->
-    <string name="you_firmware_unknown_part">OpenStrap can\'t install this kind of part (<xliff:g id="code" example="xyz">%1$s</xliff:g>)</string>
+    <!-- A part of a kind unstrap doesn't know, by its code. -->
+    <string name="you_firmware_unknown_part">unstrap can\'t install this kind of part (<xliff:g id="code" example="xyz">%1$s</xliff:g>)</string>
     <string name="you_firmware_download_failed">Download failed</string>
     <string name="you_firmware_install_failed">Install failed</string>
     <plurals name="you_firmware_file_size">
@@ -94,7 +94,10 @@
     <string name="you_firmware_file_title">Firmware from file</string>
     <string name="you_firmware_file_unread">Couldn\'t read the file. Choose it again.</string>
     <string name="you_firmware_wrong_product">The image says it\'s for product <xliff:g id="image" example="158">%1$d</xliff:g>, but this strap is product <xliff:g id="strap" example="157">%2$d</xliff:g>.</string>
-    <string name="you_firmware_wrong_size">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> bytes). It may be incomplete.</string>
+    <plurals name="you_firmware_wrong_size">
+        <item quantity="one">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> byte). It may be incomplete.</item>
+        <item quantity="other">The file is shorter than the image says (<xliff:g id="size" example="1234567">%1$d</xliff:g> bytes). It may be incomplete.</item>
+    </plurals>
     <!-- What must be done before installing. -->
     <string name="you_firmware_block_connect">Connect the strap.</string>
     <string name="you_firmware_block_battery_unknown">Battery level unknown. Reconnect the strap.</string>
@@ -141,9 +144,9 @@
     <string name="you_zepp_sign_in_title">Sign in with Zepp</string>
     <string name="you_zepp_reset">Reset</string>
     <string name="you_zepp_sign_in_text">Use the email and password of the Zepp account your strap is linked to. Google, Apple, Facebook and Xiaomi sign-in don\'t work here.</string>
-    <string name="you_zepp_sign_in_note">This is Zepp\'s own page, so OpenStrap never sees your password. It reads only the app token and user ID, then asks Zepp once for your devices.</string>
+    <string name="you_zepp_sign_in_note">This is Zepp\'s own page, so unstrap never sees your password. It reads only the app token and user ID, then asks Zepp once for your devices.</string>
     <!-- The provider is a sign-in the user picked, "Google" or "Apple", named twice. "sign-in in" is meant, not a typo. -->
-    <string name="you_zepp_third_party" tools:ignore="Typos"><xliff:g id="provider" example="Google">%1$s</xliff:g> sign-in doesn\'t work inside OpenStrap, because <xliff:g id="provider" example="Google">%1$s</xliff:g> blocks sign-in in embedded pages.\n\nOpen the Zepp app and add an email and password to your account in its account settings. Then sign in here with that email. Or get the auth key on a computer.</string>
+    <string name="you_zepp_third_party" tools:ignore="Typos"><xliff:g id="provider" example="Google">%1$s</xliff:g> sign-in doesn\'t work inside unstrap, because <xliff:g id="provider" example="Google">%1$s</xliff:g> blocks sign-in in embedded pages.\n\nOpen the Zepp app and add an email and password to your account in its account settings. Then sign in here with that email. Or get the auth key on a computer.</string>
     <string name="you_zepp_fetching">Signed in. Looking up your devices…</string>
     <string name="you_zepp_use_email">Use email sign-in</string>
     <string name="you_zepp_no_devices">Couldn\'t get your devices</string>

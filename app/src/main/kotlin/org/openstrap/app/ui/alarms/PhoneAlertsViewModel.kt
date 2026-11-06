@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.withLock
 import org.openstrap.app.data.catching
 import org.openstrap.app.data.settings.BuzzPattern
 import org.openstrap.app.data.settings.CallBuzz
+import org.openstrap.app.data.settings.CallBuzzLength
 import org.openstrap.app.data.settings.QuietHours
 import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.app.device.PhoneAlerts
@@ -43,6 +44,7 @@ class PhoneAlertsViewModel(private val settings: SettingsStore, private val aler
     val notifications: StateFlow<Boolean> = settings.buzzOnNotifications.state(false)
     val pattern: StateFlow<BuzzPattern> = settings.notificationPattern.state(BuzzPattern.TWO_SHORT)
     val callStyle: StateFlow<CallBuzz> = settings.callBuzzStyle.state(CallBuzz.STEADY)
+    val callLength: StateFlow<CallBuzzLength> = settings.callBuzzLength.state(CallBuzzLength.TEN)
     val quiet: StateFlow<QuietHours> = settings.quietHours.state(QuietHours())
     val callPermission: StateFlow<Boolean> get() = alerts.callPermission
     val notificationAccess: StateFlow<Boolean> get() = alerts.notificationAccess
@@ -70,6 +72,9 @@ class PhoneAlertsViewModel(private val settings: SettingsStore, private val aler
         settings.setCallBuzzStyle(style)
         _callPreviewError.value = catching { alerts.previewCall(style) }.exceptionOrNull()?.let { it.message ?: noBuzz }
     }
+
+    /** Keeps [length]; it isn't played, as waiting out 15 s on the wrist tells nothing new. */
+    fun pickCallLength(length: CallBuzzLength) = viewModelScope.launch { settings.setCallBuzzLength(length) }
 
     /** Keeps [pattern] and plays it once, so it can be felt before the next notification. */
     fun pickPattern(pattern: BuzzPattern) = viewModelScope.launch {

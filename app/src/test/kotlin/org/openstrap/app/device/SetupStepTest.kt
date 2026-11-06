@@ -1,6 +1,7 @@
 package org.openstrap.app.device
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
@@ -15,6 +16,7 @@ import org.openstrap.app.testing.assertCleanCopy
 import org.openstrap.protocol.ProtocolTimeoutException
 
 /** afterAuth's steps (audit C5) and the connect failure copy (E4, E6). */
+@OptIn(ExperimentalCoroutinesApi::class)
 class SetupStepTest {
     @Test
     fun aCancelledConnectStopsAtTheStepInsteadOfFailing() = runTest {

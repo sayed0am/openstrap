@@ -40,6 +40,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import org.openstrap.app.R
 import org.openstrap.app.data.Activity
+import org.openstrap.app.ui.glow.pictures.Blocks
+import org.openstrap.app.ui.glow.pictures.CountdownRing
+import org.openstrap.app.ui.glow.pictures.LevelFill
+import org.openstrap.app.ui.glow.pictures.PictureSize
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.data.DailyMetric
 import org.openstrap.app.data.RecoveryResult
@@ -65,7 +69,6 @@ import org.openstrap.app.ui.theme.MetricColors
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
-import org.openstrap.app.ui.glow.draw.Edge
 
 /*
  * The Activity tab's details (spec 5.3 and 6.1) in the metric template: Heart points, active minutes, Load, VO2 max,
@@ -267,6 +270,26 @@ private fun ActiveMinutesDetail(ctx: ActivityDetailContext) {
         Score.ActiveMinutes.title, color, siblings(Detail.OfScore(Score.ActiveMinutes), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx), onDay = ctx.onSelectDay,
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
+        // The card's picture: the week's minutes as blocks toward the 150 to aim for. It's the week's number the card
+        // shows, so the blocks belong to Week, over the days that make them.
+        heroPicture = if (a != null && range == Range.Week) {
+            {
+                DetailPicture(height = 28.dp) { m ->
+                    Blocks(a.weekEquivalent, color, PictureSize.Wide, m, target = Activity.MVPA_WEEKLY_TARGET, perBlock = ACTIVE_BLOCK_MINUTES)
+                }
+                // What the blocks count, which the card leaves to its number.
+                androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 4.dp)) {
+                    Text(
+                        pluralStringResource(R.plurals.glow_activity_blocks_of, Activity.MVPA_WEEKLY_TARGET, a.weekEquivalent, Activity.MVPA_WEEKLY_TARGET),
+                        Modifier.weight(1f), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                    )
+                    Text(
+                        pluralStringResource(R.plurals.glow_activity_block_is, ACTIVE_BLOCK_MINUTES, ACTIVE_BLOCK_MINUTES),
+                        color = Color.White.copy(alpha = GlowType.CAPTION_ALPHA), style = GlowType.caption,
+                    )
+                }
+            }
+        } else null,
     ) {
         if (a != null && range == Range.Week) {
             val values = week.map { (byDay[it]?.equivalent ?: 0).toFloat() }
@@ -341,6 +364,10 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
         Score.Load.title, color, siblings(Detail.OfScore(Score.Load), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = stepsStrip(ctx, DailyMetric.HeartRate), onDay = ctx.onSelectDay,
         ranges = ranges, range = range, onRange = { rangeIndex = ranges.indexOf(it) }, scrubbed = { scrub },
+        // The Load card's picture: today's Load filling over your usual band, as on Today and Activity.
+        heroPicture = if (r != null && range == Range.Day) {
+            { DetailPicture(height = 40.dp) { m -> LevelFill(r.load, band, color, PictureSize.Wide, m) } }
+        } else null,
     ) {
         if (r != null && range == Range.Day) {
             item {
@@ -353,6 +380,7 @@ private fun LoadDetail(ctx: ActivityDetailContext) {
                         ),
                     )
                     DetailSentence(ActivityCopy.loadDay(r.strainPercentile, ctx.isToday))
+                    r.longRun?.let { DetailSentence(ActivityCopy.longRun(it, ctx.isToday)) }
                 }
             }
         } else if (r != null) {
@@ -518,6 +546,19 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
         Score.Recover.title, color, siblings(Detail.OfScore(Score.Recover), ctx.onSwitch), onInfo = { info = true }, onBack = ctx.onBack,
         contentPadding = ctx.contentPadding, headline = headline, strip = DetailCopy.strip(ctx.state.date, ctx.today, withData), onDay = ctx.onSelectDay,
         ranges = listOf(Range.Day), range = Range.Day, onRange = {},
+        // The card's picture as the header's gauge, as Recovery's arc: the ring filling toward Ready, the hours to go
+        // inside it, or Ready once you're clear.
+        heroValue = if (last != null && left != null) {
+            {
+                val share = recoverShare(last.recoveryMinutes, left)
+                androidx.compose.foundation.layout.Box(Modifier.size(RECOVER_RING), contentAlignment = androidx.compose.ui.Alignment.Center) {
+                    CountdownRing(share, color, Modifier.matchParentSize(), centred = true)
+                    val hours = shown?.first?.toIntOrNull()
+                    if (hours != null) DetailScoreNumber(hours)
+                    else Text(stringResource(R.string.glow_activity_recover_ready), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
+                }
+            }
+        } else null,
     ) {
         // Recovered says which workout under the word already.
         if (source != null && shown?.first != null && ended != null) item { DetailSentence(ActivityCopy.recover(source.sportName, ended)) }
@@ -683,12 +724,7 @@ private fun CaloriesDetail(ctx: ActivityDetailContext) {
                 CaloriesCopy.rangeSentence(summary)?.let { item { DetailSentence(it) } }
             }
         }
-        // On Day the list of sources sits right above, so Related takes the neutral edge (spec 2.5).
-        item {
-            androidx.compose.runtime.CompositionLocalProvider(
-                LocalEdgeOverride provides if (range == Range.Day && e != null) EdgeOverride(edge = Edge.Bottom) else EdgeOverride(),
-            ) { ActivityRelated(Score.Calories, ctx, null) }
-        }
+        item { ActivityRelated(Score.Calories, ctx, null) }
     }
     if (info) InfoSheet(InfoCopy.of(Score.Calories), color, null, null, onDismiss = { info = false }, notes = InfoCopy.caloriesNotes(e))
 }
@@ -706,7 +742,7 @@ private val EverydayKcal = Color.White.copy(alpha = 0.4f)
 private fun HourlyKcal(e: org.openstrap.app.data.EnergyExpenditure.Day, color: Color, onPick: (Int?) -> Unit) {
     val h = e.hourly
     val stacks = remember(h) { List(24) { listOf(h.workout[it], h.walking[it], h.everyday[it].coerceAtLeast(0f)) } }
-    EdgeCard(color, Modifier.fillMaxWidth().padding(top = 8.dp)) {
+    PictureCard(color, Modifier.fillMaxWidth().padding(top = 8.dp)) {
         EdgeTitle(stringResource(R.string.glow_activity_by_the_hour), CaloriesCopy.peak(h.total))
         val colors = listOf(color, WalkingKcal, EverydayKcal)
         StackedBars(
@@ -911,17 +947,19 @@ private fun ActivityRelated(current: Score, ctx: ActivityDetailContext, heartPoi
 /* ----------------------------------------------- Week ----------------------------------------------- */
 
 /**
- * The week story, opened from Your week on Today: last Monday to Sunday, steps a day as dot bars to scrub, the week in
- * a few numbers, a sentence comparing with the week before where it's kept, and each day's line. No strip: tapping a
- * day there would move the day shown, and with it the week.
+ * The week story, opened from Your week on Today: the card's own week (the phone's first day to its last, up to the day
+ * shown), steps a day as dot bars to scrub, the week in a few numbers, a sentence comparing with the week before where
+ * it's kept, and each day's line. No strip: tapping a day there would move the day shown, and with it the week.
  */
 @Composable
 internal fun WeekDetail(ctx: ActivityDetailContext) {
     val color = EdgeNeutral
     var info by rememberSaveable { mutableStateOf(false) }
-    val week = TodayCopy.lastWeek(ctx.state.date)
-    val start = week.start
-    val end = week.endInclusive
+    val whole = TodayCopy.thisWeek(ctx.state.date)
+    val start = whole.start
+    // The days still to come have nothing to say yet.
+    val end = minOf(whole.endInclusive, maxOf(ctx.state.date, LocalDate.now()))
+    val week = start..end
     var scrub by remember(start) { mutableStateOf<DetailHeadline?>(null) }
     val steps by remember(start, ctx.history) { ctx.history(DailyMetric.Steps, start.minusDays(7), end) }.collectAsStateWithLifecycle(null)
     val zone = ZoneId.systemDefault()
@@ -934,20 +972,24 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
             .sortedBy { it.workout.start }.groupBy(::dayOf).mapValues { (_, v) -> v.map { it.sportName } },
         ctx.state.nights.mapNotNull { n -> n.asleepSeconds?.let { n.date to it } }.toMap(),
     )
-    val totals = WeekStory.totals(days)
+    // Steps a day leave out today while it's still going, so a morning's few steps don't pull the week down; today
+    // alone still counts, rather than nothing.
+    val today = LocalDate.now()
+    val counted = if (days.any { it.date < today && it.steps != null }) minOf(end, today.minusDays(1)) else end
+    val totals = WeekStory.totals(days).copy(stepsADay = WeekStory.totals(days.filter { it.date <= counted }).stepsADay)
     fun avg(from: LocalDate, to: LocalDate) = steps.orEmpty().filter { it.date in from..to && it.value > 0f }.map { it.value.toDouble() }.takeIf { it.isNotEmpty() }?.average()
-    val change = TodayCopy.stepsChange(avg(start, end), avg(start.minusDays(7), start.minusDays(1)))
+    val change = TodayCopy.stepsChange(avg(start, counted), avg(start.minusDays(7), start.minusDays(1)))
     // Workouts go back as far as the app keeps them; the week before counts only once the app has a workout before it.
     val before = start.minusDays(7)
     val workoutsBefore = if (ctx.workouts.any { dayOf(it) < start }) ctx.workouts.count {
         dayOf(it) in before..start.minusDays(1) && it.workout.sportType != org.openstrap.app.data.Workouts.GENERIC_ACTIVITY
     } else null
     val headline = when {
-        totals.stepsADay != null -> DetailHeadline(Units.count(totals.stepsADay, Units.DOT_LOCALE), WeekStory.label(week), change)
+        totals.stepsADay != null -> DetailHeadline(Units.count(totals.stepsADay, Units.DOT_LOCALE), WeekStory.label(whole), change)
         steps == null ->
-            DetailHeadline.none(stringResource(R.string.glow_loading), WeekStory.label(week).replaceFirstChar { it.uppercase() })
+            DetailHeadline.none(stringResource(R.string.glow_loading), WeekStory.label(whole).replaceFirstChar { it.uppercase() })
         else -> DetailHeadline.none(
-            stringResource(R.string.glow_activity_no_steps), stringResource(R.string.glow_activity_monday_to_sunday),
+            stringResource(R.string.glow_activity_no_steps), WeekStory.label(whole).replaceFirstChar { it.uppercase() },
         )
     }
     DetailTemplate(
@@ -990,3 +1032,9 @@ internal fun WeekDetail(ctx: ActivityDetailContext) {
     }
     if (info) InfoSheet(InfoCopy.WEEK, MetricColors.steps, null, null, onDismiss = { info = false })
 }
+
+/** Minutes a block of Active minutes' picture stands for, on its card and its page. */
+internal const val ACTIVE_BLOCK_MINUTES = 5
+
+/** Time to recover's ring on its page. */
+private val RECOVER_RING = 132.dp

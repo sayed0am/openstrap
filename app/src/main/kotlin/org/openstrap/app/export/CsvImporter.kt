@@ -99,7 +99,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val batch: Int = CS
                 // Its parent's rows are in already (or are candidates): only theirs, a batch at a time.
                 starts != null -> {
                     count(table.file, table.stream(records) { rows -> rows.filter { it.time in starts } })
-                    if (parent != null && parent !in added) early += table
+                    if (parent !in added) early += table
                 }
                 parent != null -> table.read(records)?.let { children += it }
                 key.table in DELETABLE -> table.read(records)?.let { pending ->
@@ -132,7 +132,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val batch: Int = CS
             }
             for (p in children) count(p.table.file, p.backfill(added))
             // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
-            require(counts.isNotEmpty()) { "This isn't an OpenStrap export." }
+            require(counts.isNotEmpty()) { "This isn't an unstrap export." }
             return Result(counts, present, skipped, settings)
         }
 

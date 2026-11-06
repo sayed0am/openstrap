@@ -28,14 +28,12 @@ import org.openstrap.app.ui.glow.draw.chart
 /**
  * The top half of a foldable standing half-open on a table: your heart rate, big enough to read from across
  * the room, beating at the latest reading, with the day's trace under it. The app carries on in the bottom half.
- * [liveEnabled] null hides the Live switch (no strap connected).
+ * [live] null (no reading, or no strap connected) shows the latest stored reading, labelled as such.
  */
 @Composable
 fun GlowTabletopHeart(
     state: DayUiState,
     live: Int?,
-    liveEnabled: Boolean?,
-    onLiveToggle: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val now = live ?: state.latestHeartRate
@@ -45,19 +43,7 @@ fun GlowTabletopHeart(
             Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
                 GlowHeader(
                     stringResource(R.string.glow_tabletop_heart_rate),
-                    trailing = if (live == null && liveEnabled == null) stringResource(R.string.glow_tabletop_latest) else null,
-                    trailingContent = liveEnabled?.let { on ->
-                        {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    stringResource(R.string.glow_tabletop_live), color = Color.White.copy(alpha = 0.85f),
-                                    style = GlowType.secondary,
-                                )
-                                Spacer(Modifier.width(8.dp))
-                                GlowSwitch(on, onLiveToggle, accent = style.color)
-                            }
-                        }
-                    },
+                    trailing = stringResource(if (live == null) R.string.glow_tabletop_latest else R.string.glow_tabletop_live),
                 )
                 Row(verticalAlignment = Alignment.Bottom) {
                     DotMatrixText(now?.toString() ?: "-", dot = DotSize.Live)

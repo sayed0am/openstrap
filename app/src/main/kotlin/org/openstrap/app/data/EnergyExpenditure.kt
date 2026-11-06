@@ -28,10 +28,13 @@ object EnergyExpenditure {
     /** Running cadence: sustained (this and a neighbouring minute) at or above it uses the ACSM running equation. */
     const val RUNNING_CADENCE = 145
 
-    /** HR branch ("HR-assisted"): awake, outside a workout, < 20 steps, ≥ 10 consecutive minutes at ≥ 40 % of reserve. */
+    /**
+     * HR branch ("HR-assisted"): awake, outside a workout, < 20 steps, ≥ 5 consecutive minutes at ≥ 40 % of reserve.
+     * The run length matches [Activity.HR_RUN_MINUTES], so a run that counts as active also burns above rest.
+     */
     const val HR_BRANCH_MAX_STEPS = 20
     const val HR_BRANCH_HRR = 0.40f
-    const val HR_BRANCH_RUN_MINUTES = 10
+    const val HR_BRANCH_RUN_MINUTES = Activity.HR_RUN_MINUTES
     const val HR_BRANCH_MAX_MET = 6f
     /** VO2max for the HR branch until there's an estimate of the user's own, ml/kg/min (UNVERIFIED default). */
     const val DEFAULT_VO2MAX = 35f
@@ -55,19 +58,26 @@ object EnergyExpenditure {
     fun net(met: Float, weightKg: Float): Float = (met - 1f).coerceAtLeast(0f) * 3.5f * weightKg / 200f
 
     /**
-     * METs for a walking cadence (CADENCE-Adults, Tudor-Locke et al. 2019): up to 60 years, 60 → 2.0, 100 → 3, 130 → 6,
-     * linear between, held at 6 above 130. From 61: 100 → 3, 110 → 4, 120 → 5, then on to 6 at 130 (the last segment
-     * is our extrapolation). A fixed-stride ACSM walking equation gives about 3.7 at 130 spm, far below the measured 6.
+     * METs for a walking cadence: Moore et al. 2021's CADENCE-Adults equation (235 adults aged 21-84, measured VO2,
+     * error about 0.6 MET with almost no bias), VO2 = −0.4367 + 0.001430·c² − 0.001455·age·c − 0.000009012·BMI·c² +
+     * 0.0008086·age·height (cm), ml/kg/min, as METs. It covers every age in one line, so there is no separate 61+ map.
+     * The 100 and 130 steps a minute of CADENCE-Adults are thresholds for classifying intensity, not the mean MET
+     * there: 130 is about 5 METs, not 6, so a cut-point map overstated brisk walking by about 30 %.
      */
-    fun cadenceMet(cadence: Int, age: Int?): Float {
+    fun cadenceMet(cadence: Int, age: Int, bmi: Float, heightCm: Int): Float {
         val c = cadence.toFloat()
-        val older = age != null && age >= 61
-        val points = if (older) listOf(60f to 2f, 100f to 3f, 110f to 4f, 120f to 5f, 130f to 6f) else listOf(60f to 2f, 100f to 3f, 130f to 6f)
-        if (c <= points.first().first) return points.first().second
-        if (c >= points.last().first) return points.last().second
-        val (a, b) = points.zipWithNext().first { (_, hi) -> c <= hi.first }
-        return a.second + (b.second - a.second) * (c - a.first) / (b.first - a.first)
+        val a = age.coerceIn(MOORE_MIN_AGE, MOORE_MAX_AGE).toFloat()
+        val vo2 = -0.4367f + 0.001430f * c * c - 0.001455f * a * c - 0.000009012f * bmi * c * c + 0.0008086f * a * heightCm
+        return (vo2 / ML_PER_MET).coerceAtLeast(1f)
     }
+
+    /** The ages Moore 2021's equation was fitted on; outside them it's held at the nearest end. */
+    /** Body mass index from [weightKg] and [heightCm]. */
+    fun bmi(weightKg: Float, heightCm: Int): Float = weightKg / (heightCm * heightCm / CM2_PER_M2)
+    private const val CM2_PER_M2 = 10_000f
+    const val MOORE_MIN_AGE = 21
+    const val MOORE_MAX_AGE = 84
+    private const val ML_PER_MET = 3.5f
 
     /** ACSM running on the level: VO2 = 3.5 + 0.2·v (v in m/min), as METs. */
     fun runningMet(cadence: Int, heightCm: Int): Float = (3.5f + 0.2f * cadence * Activity.stepLength(cadence, heightCm)) / 3.5f
@@ -187,9 +197,9 @@ object EnergyExpenditure {
      */
     private fun motionEe(minutes: List<Minute>, k: Int, b: Float, w: Float, h: Int, a: Int): Float {
         val steps = minutes[k].steps ?: 0
+        val running = steps >= RUNNING_CADENCE && neighbourAtLeast(minutes, k, RUNNING_CADENCE)
         return when {
-            steps >= CADENCE_MET_STEPS ->
-                b + net(if (steps >= RUNNING_CADENCE && neighbourAtLeast(minutes, k, RUNNING_CADENCE)) runningMet(steps, h) else cadenceMet(steps, a), w)
+            steps >= CADENCE_MET_STEPS -> b + net(if (running) runningMet(steps, h) else cadenceMet(steps, a, bmi(w, h), h), w)
             steps > 0 || neighbourAtLeast(minutes, k, 1) -> LIGHT_FACTOR * b
             else -> SEDENTARY_FACTOR * b
         }

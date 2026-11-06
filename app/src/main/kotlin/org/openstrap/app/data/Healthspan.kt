@@ -14,7 +14,8 @@ import kotlin.math.sqrt
 
 /**
  * Healthspan age: how old your habits look, from data OpenStrap already has (docs/algorithms/healthspan.md). Each habit
- * is scored in years against the typical person of your age and sex, the fitness terms share a limit, the total is
+ * is scored in years against a typical value (by age and sex for resting HR and VO2max, by age for steps, fixed for
+ * the rest), the fitness terms share a limit, the total is
  * shrunk by [S] and capped at ±[CAP] years. A wellness estimate, never a medical measurement; shown as a whole-year range.
  */
 object Healthspan {
@@ -87,10 +88,13 @@ object Healthspan {
     const val SEATED_OFFSET_BPM = 10f
     const val RHR_FLOOR_BPM = 45f
     const val RHR_LIMIT = 4f
-    /** Years per bpm: ln(1.09)/10/G, and both ends of Zhang 2016's CI (RR 1.07-1.12 per 10 bpm). */
-    val RHR_SLOPE = ln(1.09f) / 10f / G
-    val RHR_SLOPE_LOW = ln(1.07f) / 10f / G
-    val RHR_SLOPE_HIGH = ln(1.12f) / 10f / G
+    /**
+     * Years per bpm: ln(1.17)/10/G ≈ 0.171, and both ends of Aune 2017's CI (RR 1.17, 1.14-1.19 per 10 bpm; 87 studies,
+     * 1.8 million people, near-linear down to 40 bpm). Part of it overlaps steps and VO2max, which [FITNESS_LIMIT] and [S] absorb.
+     */
+    val RHR_SLOPE = ln(1.17f) / 10f / G
+    val RHR_SLOPE_LOW = ln(1.14f) / 10f / G
+    val RHR_SLOPE_HIGH = ln(1.19f) / 10f / G
 
     /** NHANES seated pulse P50 (Ostchega 2011) at the band midpoints 30, 50, 70; joined linearly, flat outside. */
     private val RHR_REF_MEN = listOf(30f to 69f, 50f to 68f, 70f to 67f)
@@ -146,43 +150,37 @@ object Healthspan {
 
     // ---- 3.4 Short sleep ----
 
-    /** Yuan 2024 Supplementary Fig. 26, re-based to 6-6.9 h, at band midpoints (minutes asleep). Penalty only. */
-    private val SLEEP_POINTS = listOf(270f to 9.17f, 330f to 2.12f, 390f to 0f)
+    /**
+     * Saint-Maurice 2024 (UK Biobank wrist actigraphy, 88,282 people, fully adjusted), HR against 7 h asleep at 4.5, 5,
+     * 5.5, 6 and 6.5 h: 1.44, 1.29 (1.09-1.52), 1.16, 1.06, 1.01, as years. Penalty only: nothing from 7.5 h up was
+     * significant. Yuan 2024's 2.48 at 5 h, used before, is the outlier among recent cohorts.
+     */
+    private val SLEEP_POINTS = listOf(270f to 1.44f, 300f to 1.29f, 330f to 1.16f, 360f to 1.06f, 390f to 1.01f, 420f to 1f)
+        .map { it.first to years(it.second) }
     const val SLEEP_LIMIT = 4f
     /** Below this, time asleep starts adding years. */
-    const val SLEEP_COUNTS_BELOW_MINUTES = 390
+    const val SLEEP_COUNTS_BELOW_MINUTES = 420
 
     fun sleepTerm(asleepMinutes: Float): Value = Value.halfBand(interp(SLEEP_POINTS, asleepMinutes), 0f, SLEEP_LIMIT)
 
     // ---- 3.5 Strength training ----
 
     /**
-     * Momma 2022 Figure 4 (all-cause), RR by minutes a week, read from the figure (±0.01); 40 min is from the text.
-     * 0 at 0 min and from 140 min. Credit only.
+     * Zhang 2026 Table 2 (147,374 people, 30 years, adjusted for aerobic activity so steps and VO2max aren't counted
+     * twice): all-cause HR for 1-29, 30-59, 60-89, 90-119 and 120+ min a week, placed at the category midpoints and
+     * joined linearly, held from 135 min. Credit only: unlike Momma 2022, used before, there is no upturn at high doses.
      */
-    private val STRENGTH_RR = listOf(
-        0f to 1f, 10f to 0.94f, 20f to 0.89f, 30f to 0.85f, 40f to 0.83f, 50f to 0.83f, 60f to 0.84f, 70f to 0.845f,
-        80f to 0.85f, 90f to 0.865f, 100f to 0.89f, 110f to 0.92f, 120f to 0.95f, 130f to 0.97f, 140f to 1f,
-    )
-    /**
-     * The curve's 95 % CI (the dashed lines), digitized from the same panel's pixels (±0.005): lower and upper RR at
-     * each 10 min. The upper line is above 1.00 from about 118 min; it's capped at 1 before scoring.
-     */
-    private val STRENGTH_CI_LOW = listOf(
-        0f to 1f, 10f to 0.926f, 20f to 0.868f, 30f to 0.820f, 40f to 0.794f, 50f to 0.799f, 60f to 0.805f, 70f to 0.810f,
-        80f to 0.816f, 90f to 0.829f, 100f to 0.856f, 110f to 0.879f, 120f to 0.902f, 130f to 0.926f, 140f to 0.950f,
-    )
-    private val STRENGTH_CI_HIGH = listOf(
-        0f to 1f, 10f to 0.953f, 20f to 0.914f, 30f to 0.883f, 40f to 0.864f, 50f to 0.870f, 60f to 0.875f, 70f to 0.881f,
-        80f to 0.886f, 90f to 0.900f, 100f to 0.927f, 110f to 0.958f, 120f to 0.994f, 130f to 1.028f, 140f to 1.062f,
-    )
-    const val STRENGTH_LIMIT = -2.03f
-    const val STRENGTH_MAX_MINUTES = 140f
-    /** The coaching target: where Momma's curve is lowest. */
-    const val STRENGTH_TARGET_MINUTES = 40
+    private val STRENGTH_RR = listOf(0f to 1f, 15f to 0.95f, 45f to 0.91f, 75f to 0.91f, 105f to 0.87f, 135f to 0.92f)
+    /** The same table's 95 % CIs at the same points. */
+    private val STRENGTH_CI_LOW = listOf(0f to 1f, 15f to 0.92f, 45f to 0.87f, 75f to 0.86f, 105f to 0.81f, 135f to 0.86f)
+    private val STRENGTH_CI_HIGH = listOf(0f to 1f, 15f to 0.97f, 45f to 0.95f, 75f to 0.96f, 105f to 0.95f, 135f to 0.98f)
+    /** The best credit, ln(0.87)/G at 90-119 min; the band is clamped to it too. */
+    const val STRENGTH_LIMIT = -1.52f
+    /** The coaching target: where Zhang's best category (90-119 min a week) starts. */
+    const val STRENGTH_TARGET_MINUTES = 90
 
     fun strengthTerm(minutesPerWeek: Float): Value {
-        if (minutesPerWeek <= 0f || minutesPerWeek >= STRENGTH_MAX_MINUTES) return Value.ZERO
+        if (minutesPerWeek <= 0f) return Value.ZERO
         val rr = interp(STRENGTH_RR, minutesPerWeek)
         val lo = interp(STRENGTH_CI_LOW, minutesPerWeek)
         val hi = interp(STRENGTH_CI_HIGH, minutesPerWeek)
