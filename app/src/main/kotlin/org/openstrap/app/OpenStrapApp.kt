@@ -73,18 +73,27 @@ class AppContainer(val app: Application) {
         // The Recovery cache follows the data from here on.
         health.start(appScope, HealthRepository.recoveryInputs(database))
     }
-    /** The home screen widgets' refreshes. Built last: it watches the strap, the workout and settings. */
-    val widgets = org.openstrap.app.widget.WidgetUpdater(
-        app, appScope, settings, strap, workout, health.sleepEdits(),
-        org.openstrap.app.widget.WidgetSnapshot(
-            health, database.healthDao(), settings, liveSteps,
-            syncing = { strap.sync.value is org.openstrap.app.device.SyncState.Running },
-            todaySteps = { strap.todaySteps.value },
-            workoutState = { workout.state.value },
-            location = { org.openstrap.app.device.locationAvailable(app) },
-            placed = { org.openstrap.app.widget.placedWidgets(app) },
-        ),
+    /** What the home screen widgets show, read fresh each time. The strap's notification reads the Moment from it too. */
+    val widgetSnapshot = org.openstrap.app.widget.WidgetSnapshot(
+        health, database.healthDao(), settings, liveSteps,
+        syncing = { strap.sync.value is org.openstrap.app.device.SyncState.Running },
+        todaySteps = { strap.todaySteps.value },
+        workoutState = { workout.state.value },
+        location = { org.openstrap.app.device.locationAvailable(app) },
+        placed = { org.openstrap.app.widget.placedWidgets(app) },
     )
+
+    /** The moment as the Moment widget reads it, for the strap's notification: its name, lead and Today's sentence. */
+    val strapMoment: suspend () -> org.openstrap.app.device.StrapMoment? = {
+        val now = java.time.Instant.now()
+        val zone = java.time.ZoneId.systemDefault()
+        widgetSnapshot.gather(setOf(org.openstrap.app.data.WidgetKind.Moment), now, zone).momentWidget?.getOrThrow()
+            ?.let { org.openstrap.app.widget.MomentWidgetModel.from(it, now, zone) }
+            ?.let { org.openstrap.app.device.StrapMoment(it.name, it.lead, it.sentences.firstOrNull()) }
+    }
+
+    /** The home screen widgets' refreshes. Built last: it watches the strap, the workout and settings. */
+    val widgets = org.openstrap.app.widget.WidgetUpdater(app, appScope, settings, strap, workout, health.sleepEdits(), widgetSnapshot)
 }
 
 class OpenStrapApp : Application(), androidx.work.Configuration.Provider {

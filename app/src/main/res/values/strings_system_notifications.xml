@@ -57,6 +57,8 @@
     <string name="system_strap_title_both">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g>, Energy <xliff:g id="energy" example="58">%2$d</xliff:g></string>
     <string name="system_strap_title_recovery">Recovery <xliff:g id="recovery" example="72">%1$d</xliff:g></string>
     <string name="system_strap_title_energy">Energy <xliff:g id="energy" example="58">%1$d</xliff:g></string>
+    <!-- Its title: the moment of the day as Today's header names it, then the number it leads with. -->
+    <string name="system_strap_title_moment"><xliff:g id="moment" example="Evening">%1$s</xliff:g>, <xliff:g id="number" example="Energy 35">%2$s</xliff:g></string>
     <!-- Its text while the app connects to the strap. -->
     <string name="system_strap_connecting">Connecting…</string>
     <!-- Its text while the strap checks the app's key. -->
@@ -75,6 +77,11 @@
     <string name="system_strap_charging_battery">Strap charging, battery <xliff:g id="percent" example="80">%1$d</xliff:g>%%</string>
     <!-- In the notification's header, before how long ago the last sync was ("Synced 5m"). One word. -->
     <string name="system_strap_synced">Synced</string>
+    <!-- In the header: the strap's battery. "Strap" is named, so it's never taken for Energy. -->
+    <string name="system_strap_header_battery">Strap <xliff:g id="percent" example="71">%1$d</xliff:g>%%</string>
+    <string name="system_strap_header_charging">Strap charging, <xliff:g id="percent" example="71">%1$d</xliff:g>%%</string>
+    <!-- In the header, before the time of the last sync: "Strap 71%, synced 10:30". -->
+    <string name="system_strap_header_synced"><xliff:g id="strap" example="Strap 71%">%1$s</xliff:g>, synced</string>
     <!-- Action buttons. -->
     <string name="system_strap_action_retry">Retry</string>
     <string name="system_strap_action_start_workout">Start workout</string>
