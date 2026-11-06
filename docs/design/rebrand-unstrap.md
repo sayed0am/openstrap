@@ -81,21 +81,26 @@ those, and changing what's stored would cost current users their updates or data
 
 ### Outside the code
 
-- Rename the GitHub repo `sayed0am/openstrap` to `sayed0am/unstrap`, after the release that points at the new name
-  is out. Never make a new repo at the old name, or the redirect stops.
-- Release notes for the first unstrap version: one line saying OpenStrap is now unstrap, same app, data kept.
-- The first unstrap release must be installable over the last OpenStrap one: same ID, same key. Test on the Fold by
-  installing the new release over the current one and checking data, Health Connect sync and a backup restore.
+- Rename the GitHub repo `sayed0am/openstrap` to `sayed0am/unstrap` after develop is merged to main and before the
+  release, so the 3.0 release is made at the new name. GitHub forwards the old name, the API included, so installed
+  OpenStrap builds keep finding updates. Never make a new repo at the old name, or the forwarding stops. Point the
+  local clone's remote at the new address right after.
+- Release notes for 3.0: one line saying OpenStrap is now unstrap, same app, data kept, then the features.
+- 3.0 must install over the last OpenStrap release: same ID, same key, and build 30000 is above 2.2.2 and the 2.3.0
+  dev builds. Test on the Fold by installing it over the current release and checking data, Health Connect sync
+  and a backup restore.
 
 ## Order
 
-1. Decide the open questions below.
-2. Strings, labels, file names, backup regexes and tests (steps 1, 2, 4, 5, 6, 13).
-3. Brand mark on share cards, notification icon, launcher icon, splash (steps 3, 7, 8, 9).
-4. Updates, release workflow, docs (steps 10, 11, 12).
-5. Check: lint, detekt, unit tests, then install over the current release on the Fold.
-6. Release, then rename the GitHub repo.
+1. Finish the changes on `rebrand/unstrap`: updates (`Releases.kt` to `sayed0am/unstrap`), release workflow, docs,
+   Play Store icon, and the share card layout if it lands in time.
+2. Check: lint, detekt, unit tests, then install over the current release on the Fold.
+3. Merge `rebrand/unstrap` into develop, then develop into main.
+4. Rename the GitHub repo to `unstrap`.
+5. Release 3.0 (tag `v3.0.0`).
 
-## Open questions
+## Decided
 
-1. **Version.** Does the rename ship as 2.4 (next minor) or 3.0?
+- **Version:** 3.0 (decided 2026-11-06). The rename is the moment people need to notice, and it makes a clean cut:
+  OpenStrap is 2.x, unstrap is 3.x. It also carries develop's unreleased 2.3 work, so no 2.3 ships with the old name.
+- **Log tag:** `"unstrap"` (step 15).
