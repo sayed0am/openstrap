@@ -53,6 +53,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -224,9 +225,11 @@ internal fun SportTile(
             )
         }
         Spacer(Modifier.height(6.dp))
-        // Two lines, so a long name in More sports' search isn't cut short.
+        // Two lines, so a long name in More sports' search isn't cut short. A name wider than the tile breaks after its
+        // hyphen ("Cross-" over "training"), else at a hyphenation point, never between any two letters.
         Text(
-            name, color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary, maxLines = 2,
+            name.replace("-", "-\u200B"), color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA),
+            style = GlowType.secondary.copy(hyphens = Hyphens.Auto), maxLines = 2,
             textAlign = TextAlign.Center, overflow = TextOverflow.Ellipsis,
         )
     }
