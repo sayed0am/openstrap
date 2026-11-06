@@ -46,9 +46,12 @@ those, and changing what's stored would cost current users their updates or data
 1. **App name.** `app_name` in `strings.xml`, and the dev and demo label in `app/build.gradle.kts:59,77`.
 2. **Text in the app.** 103 mentions over 21 `values/*.xml` files, plus translator comments that say "OpenStrap is
    the app's name". All text, no layout change. No translations exist yet, so English only.
-3. **Brand on share cards.** `ShareCards.kt:423` and its comment, `GlowType.kt:34`. Draw the new wordmark: "un" in
-   #FF5A5F, "strap" in white, Funnel Display Bold, in place of the old ring and name. Every picture the app shares
-   carries the coloured wordmark: the week card, goals and bests, and workout share pictures too.
+3. **Brand on share cards.** Done: every share picture (run, lift, indoor, rounds, calm, game and the week) opens
+   with `Wordmark` (ui/glow/Wordmark.kt) at the top left, with the date or time on the right where the card has one:
+   "un" in the heart red, "strap" in white, Funnel Display Bold 16 sp, no glow at this size. It moved off the foot
+   because the card light rises from there and the red faded on warm light (about 2 to 1). The top is dark on every
+   card (6.5 to 1), and over a photo the top fade is now 85% black, so the red holds about 4 to 1 even on a near
+   white photo. The ring before the name on the calm and game cards is gone; there "strap" stays dimmed to 80%.
 4. **Shared file names.** `OpenStrap_week_<date>.png` in `GoalsAndBests.kt:293` becomes `unstrap_week_<date>.png`.
 5. **Backup files.** `BackupFiles.kt:16-23` writes `OpenStrap-backup-<date>.zip`. New backups are `unstrap-backup-<date>.zip`. The
    regexes must accept both names, so pruning and restore still find old backups. Add a test with both.
@@ -62,8 +65,9 @@ those, and changing what's stored would cost current users their updates or data
    the same width as the old "os." and inside the 66 dp circle every mask keeps. The monochrome layer is the same
    "un" for themed icons. Red over white, chosen 2026-11-06: the red "un" is the brand, and white read as a plain
    label. Samsung's shade shows this icon on our notifications. Play Store 512 px still to export.
-9. **Splash and any in-app wordmark.** Find where the name is drawn, not just written. The logo artifact has Splash and
-   Banner pages to work from.
+9. **Splash.** Android's own splash (12 and up) draws the launcher icon, so it shows the red "un" with no work. The
+   theme sets its background to the app's black and the icon's circle to #0B0D10. A wordmark in the splash, as in
+   the logo sheet, would need the branding image slot, which Google advises against, so it isn't used.
 10. **Updates.** `Releases.kt:34` reads `sayed0am/openstrap`. GitHub forwards a renamed repo, including the API, so
     old builds keep working after the rename. New builds point at `sayed0am/unstrap`. The APK is picked by `.apk`
     suffix (`Releases.kt:89`), so its file name can change freely.

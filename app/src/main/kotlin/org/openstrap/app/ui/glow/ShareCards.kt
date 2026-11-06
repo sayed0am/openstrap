@@ -322,7 +322,7 @@ internal fun StoryCardView(card: StoryCard, photo: ImageBitmap?, route: List<Rou
     Box(modifier.size(StoryWidth, StoryHeight).background(EdgeSurface)) {
         if (photo != null) {
             Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            PhotoFade(top = card !is StoryCard.Run && card !is StoryCard.Game)
+            PhotoFade(tall = card !is StoryCard.Run && card !is StoryCard.Game)
         } else StoryGlow(storyColor(card), if (card is StoryCard.Calm) 0.6f else 0.95f)
         if (route.size >= 2) RouteLine(route, Modifier.fillMaxWidth().padding(horizontal = 48.dp).padding(top = 110.dp).height(240.dp))
         Box(Modifier.fillMaxSize().padding(24.dp)) {
@@ -374,15 +374,20 @@ private fun StoryGlow(color: Color, strength: Float) {
     )
 }
 
-/** The dark fade over a photo: up from the foot so the figures read, and down from the top when the card has text there. */
+/**
+ * The dark fade over a photo: down from the top, where every card has the wordmark, and up from the foot so the
+ * figures read, higher when the card has text in its middle ([tall]).
+ */
 @Composable
-private fun PhotoFade(top: Boolean) {
+private fun PhotoFade(tall: Boolean) {
     Box(Modifier.fillMaxSize()) {
-        if (top) Box(
-            Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent))),
+        Box(
+            // Deep enough that the wordmark's red reads over a bright photo.
+            Modifier.fillMaxWidth().fillMaxHeight(0.3f)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent))),
         )
         Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(if (top) 0.62f else 0.32f).background(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(if (tall) 0.62f else 0.32f).background(
                 Brush.verticalGradient(0f to Color.Transparent, 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.85f)),
             ),
         )
@@ -412,17 +417,12 @@ private fun RouteLine(route: List<Route.Point>, modifier: Modifier) {
     }
 }
 
-/** "OpenStrap", with the ring before it on the calm and game cards. */
+/**
+ * The wordmark, always at a card's top left: the light rises from the foot, and a photo is darkened at the top, so
+ * the red reads on every card. [soft] dims "strap" on the calm and game cards; the red stays.
+ */
 @Composable
-private fun Brand(ring: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (ring) {
-            Canvas(Modifier.size(14.dp)) { drawCircle(Color.White.copy(alpha = 0.8f), radius = size.minDimension * 0.34f, style = Stroke(2.4.dp.toPx())) }
-            Spacer(Modifier.width(6.dp))
-        }
-        Text("OpenStrap", color = if (ring) Color.White.copy(alpha = 0.8f) else Color.White, style = GlowType.storyBrand, maxLines = 1)
-    }
-}
+private fun Brand(soft: Boolean = false) = Wordmark(strap = if (soft) Color.White.copy(alpha = 0.8f) else Color.White)
 
 /** A best or the weekly goal on a dark pill, its icon in its colour. */
 @Composable
@@ -442,9 +442,10 @@ private val ChipText = GlowType.secondary.copy(fontWeight = FontWeight.Medium)
 /** White for a card's dimmer lines, as on the boards. */
 private const val StoryDim = 0.7f
 
-/** Board ShareRun: everything at the foot, the best over the three figures, the sport and date beside the brand. */
+/** Board ShareRun: the brand at the top, then at the foot the best over the three figures, the sport and date. */
 @Composable
 private fun RunStory(card: StoryCard.Run) {
+    Brand()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Bottom)) {
         card.chip?.let { StoryChipView(it) }
         Row(Modifier.fillMaxWidth()) {
@@ -458,18 +459,24 @@ private fun RunStory(card: StoryCard.Run) {
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(card.footer, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, modifier = Modifier.weight(1f))
-            Brand()
-        }
+        Text(card.footer, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1)
     }
 }
 
-/** When, then the sport large, as the strength and HIIT cards open. */
+/** The brand and when on one row, then the sport large, as the strength and HIIT cards open. */
 @Composable
 private fun StoryHeading(whenLine: String, sport: String) {
-    Text(whenLine, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-    Text(sport, color = Color.White, style = GlowType.storyTitle, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
+    BrandRow(whenLine)
+    Text(sport, color = Color.White, style = GlowType.storyTitle, maxLines = 1, modifier = Modifier.padding(top = 14.dp))
+}
+
+/** The top row: the brand on the left, [side] (the date or when) on the right. */
+@Composable
+private fun BrandRow(side: String, soft: Boolean = false) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { Brand(soft) }
+        Text(side, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
+    }
 }
 
 /** Board ShareStrength: kg lifted in dots, each exercise and the total as rows, the best and the brand at the foot. */
@@ -488,16 +495,7 @@ private fun LiftStory(card: StoryCard.Lift) {
             }
         }
         Spacer(Modifier.weight(1f))
-        FootRow(card.chip)
-    }
-}
-
-/** A chip, if any, on the left and the brand on the right. */
-@Composable
-private fun FootRow(chip: StoryChip?) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f)) { chip?.let { StoryChipView(it) } }
-        Brand()
+        card.chip?.let { StoryChipView(it) }
     }
 }
 
@@ -505,10 +503,7 @@ private fun FootRow(chip: StoryChip?) {
 @Composable
 private fun IndoorStory(card: StoryCard.Indoor) {
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Brand() }
-            Text(card.date, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-        }
+        BrandRow(card.date)
         Spacer(Modifier.weight(1f))
         Text(card.sport, color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
         Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
@@ -533,10 +528,7 @@ private fun IndoorStory(card: StoryCard.Indoor) {
 @Composable
 private fun WeekStory(card: StoryCard.Week) {
     Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Brand() }
-            Text(card.range, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-        }
+        BrandRow(card.range)
         Spacer(Modifier.weight(1f))
         Text(
             stringResource(R.string.glow_share_my_week), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
@@ -576,7 +568,7 @@ private fun WeekFigures(figures: List<WeekFigure>) {
     }
 }
 
-/** Board ShareHiit: rounds in dots, a column for each round's peak, the line under them and the brand. */
+/** Board ShareHiit: the brand and when, rounds in dots, a column for each round's peak, the line under them. */
 @Composable
 private fun RoundsStory(card: StoryCard.Rounds) {
     Column(Modifier.fillMaxSize()) {
@@ -589,36 +581,36 @@ private fun RoundsStory(card: StoryCard.Rounds) {
             PeakBars(card.peaks, { bpm -> colorOf(bpm)?.let { ZONE_COLORS[it] } ?: Color.White }, Modifier.padding(top = 30.dp))
         }
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 2, modifier = Modifier.padding(top = 16.dp)) }
-        Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { Brand() }
     }
 }
 
-/** Board ShareMind: the sport and when, minutes in dots low in the middle, how the heart settled over its line. */
+/** Board ShareMind: the brand and when, the sport, minutes in dots low in the middle, how the heart settled over its line. */
 @Composable
 private fun CalmStory(card: StoryCard.Calm) {
     Column(Modifier.fillMaxSize()) {
-        Text(card.sport, color = Color.White.copy(alpha = 0.85f), style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
-        Text(card.whenLine, color = Color.White.copy(alpha = 0.55f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
+        BrandRow(card.whenLine, soft = true)
+        Text(
+            card.sport, color = Color.White.copy(alpha = 0.85f), style = GlowType.body.copy(fontWeight = FontWeight.Medium),
+            maxLines = 1, modifier = Modifier.padding(top = 14.dp),
+        )
         Spacer(Modifier.weight(1f))
         HeroValue(card.minutes, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 250.dp)
         card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 16.dp)) }
         // The heart rate through the session as one soft white line.
         PlainLine(card.heart, Color.White.copy(alpha = 0.55f), 40.dp, Modifier.padding(top = 16.dp), smooth = false, stroke = 2.dp)
         Spacer(Modifier.weight(1f))
-        Brand(ring = true)
     }
 }
 
-/** Board ShareGame: everything at the foot over the photo, the sport, minutes in dots, Load and the peak, the brand. */
+/** Board ShareGame: the brand at the top, then at the foot over the photo the sport, minutes in dots, Load and the peak. */
 @Composable
 private fun GameStory(card: StoryCard.Game) {
+    Brand(soft = true)
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
         Text(card.sport, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
         Box(Modifier.padding(top = 12.dp)) { HeroValue(card.minutes, card.unit, gap = 10.dp, maxWidth = 250.dp) }
         card.load?.let { GameLine(it, Modifier.padding(top = 14.dp)) }
         card.peak?.let { GameLine(it, Modifier.padding(top = 2.dp)) }
-        Box(Modifier.padding(top = 16.dp)) { Brand(ring = true) }
     }
 }
 
