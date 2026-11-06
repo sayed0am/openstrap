@@ -137,7 +137,7 @@ internal fun LiveStrengthScreen(
     val unlogged = r.sets.lastOrNull { it.end != null }?.takeIf { r.logSets && it.reps == null && it.index !in skipped && !r.inSet }
     val active = activeSecondsState(r)
     LiveFrame(
-        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true, pillControls = true, fill = true,
+        r, color, connected, contentPadding, controls, time = { active.value }, smallTime = true, fill = true,
         paused = { LivePaused(r, liveHeartRate.takeIf { connected }, history, listOf(
             momentNow().done.let { done -> done.toString() to pluralStringResource(R.plurals.workout_live_figure_sets_done, done) },
             Strength.kgLifted(r.sets)?.let { Strength.kgText(it) } to stringResource(R.string.workout_live_figure_kg_lifted),

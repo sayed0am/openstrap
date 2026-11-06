@@ -126,8 +126,6 @@ internal fun LiveFrame(
     paused: (@Composable ColumnScope.() -> Unit)? = null,
     /** The [content] takes the height left above the buttons itself (a weighted pager), so nothing pushes them down. */
     fill: Boolean = false,
-    /** Pause and the hold to end as two pills under the screen's own big button (strength), not the round row. */
-    pillControls: Boolean = false,
     /** The pill's words when more than the sport's name ("HIIT, Tabata"). */
     title: String? = null,
     backdrop: androidx.compose.ui.graphics.Brush? = null,
@@ -186,7 +184,7 @@ internal fun LiveFrame(
             if (landscape) {
                 LandscapePanes(
                     r, connected, controls, bigTime, bottomRoom != null, paused,
-                    frameControls = { FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint, pillControls) },
+                    frameControls = { FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint) },
                     content = content,
                 )
                 return@WorkoutPage
@@ -202,7 +200,7 @@ internal fun LiveFrame(
             }
             r.endPrompt?.let { at -> StoppedPrompt(r, at, controls.onEndAtPrompt, controls.onKeepGoing) }
             if (!fill || r.paused) Spacer(Modifier.weight(1f))
-            FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint, pillControls)
+            FrameControls(r, controls, lap, labelled, paused != null, quiet, tapHint)
         }
     }
 }
@@ -298,18 +296,17 @@ private val LandscapeGap = 24.dp
 
 /**
  * The controls at the foot of the screen, or in their own column on a phone on its side: End workout and Resume when
- * [hasPaused] shows the paused view, the two quiet buttons ([quiet]), Pause and the hold to end as pills
- * ([pillControls]), or else the controls row.
+ * [hasPaused] shows the paused view, the two quiet buttons ([quiet]), or else the controls row.
  */
 @Composable
 private fun ColumnScope.FrameControls(
     r: WorkoutState.Recording, controls: LiveControls, lap: (@Composable () -> Unit)?, labelled: Boolean, hasPaused: Boolean,
-    quiet: Boolean, tapHint: Boolean, pillControls: Boolean,
+    quiet: Boolean, tapHint: Boolean,
 ) {
     when {
         r.paused && hasPaused -> {
             Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                HoldPill(stringResource(R.string.workout_live_end_workout), Modifier.weight(1f), controls.onEnd)
+                HoldPill(stringResource(R.string.workout_live_end_workout), controls.onEnd, Modifier.weight(1f))
                 WorkoutButton(
                     stringResource(R.string.workout_live_resume), Color.White, Color.Black, controls.onResume, Modifier.weight(1f),
                     icon = AppIcons.PlayFill, height = 64.dp,
@@ -330,16 +327,6 @@ private fun ColumnScope.FrameControls(
                 Labelled(stringResource(R.string.workout_live_hold_to_end), true) { HoldToEnd(controls.onEnd) }
             }
             if (tapHint) ControlsHint(stringResource(R.string.workout_live_tap_to_light), alpha = 0.45f)
-            Spacer(Modifier.height(8.dp))
-        }
-        pillControls -> {
-            Row(Modifier.align(Alignment.CenterHorizontally).widthIn(max = 420.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                WorkoutButton(
-                    stringResource(R.string.workout_live_pause), Raised, Color.White, controls.onPause, Modifier.weight(1f),
-                    icon = AppIcons.PauseFill, height = 52.dp,
-                )
-                HoldPill(stringResource(R.string.workout_live_hold_to_end), Modifier.weight(1f), controls.onEnd, height = 52.dp)
-            }
             Spacer(Modifier.height(8.dp))
         }
         else -> {
@@ -406,13 +393,13 @@ internal fun LapButton(onLap: () -> Unit, label: Boolean = false, skip: Boolean 
  * a pocket still can't end a workout.
  */
 @Composable
-private fun HoldPill(label: String, modifier: Modifier, onEnd: () -> Unit, height: androidx.compose.ui.unit.Dp = 64.dp) {
+private fun HoldPill(label: String, onEnd: () -> Unit, modifier: Modifier) {
     val progress = remember { Animatable(0f) }
     val haptics = rememberHaptics()
     val described = stringResource(R.string.workout_live_hold_to_end_description)
     val shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
     Row(
-        modifier.height(height).clip(shape).background(Raised)
+        modifier.height(64.dp).clip(shape).background(Raised)
             .drawBehind { drawRect(EndRed.copy(alpha = 0.35f), size = size.copy(width = size.width * progress.value)) }
             .pointerInput(Unit) {
                 detectTapGestures(onPress = {

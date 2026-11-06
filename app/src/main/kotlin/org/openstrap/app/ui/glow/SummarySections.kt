@@ -240,7 +240,7 @@ internal fun FamilySection(
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
             HeartLineCard(readings, MetricColors.evening, settled, chart = heartLine)
             val day = java.time.Instant.ofEpochSecond(a.shownStart).atZone(java.time.ZoneId.systemDefault()).toLocalDate()
-            WeekDaysPanel(weekStarts, note = week?.let { FamilySummary.weekGoalLine(it.count, it.goal) }, day = day, color = MetricColors.evening)
+            WeekDaysPanel(weekStarts, note = week?.let { FamilySummary.weekGoalLine(it.count, it.goal) }, day = day)
         }
         Workouts.Family.Games -> {
             // Named out of the periods it was set up with, not the ones played, so ending early doesn't rename them.

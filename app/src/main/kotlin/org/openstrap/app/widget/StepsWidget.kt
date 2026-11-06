@@ -30,11 +30,10 @@ import org.openstrap.app.data.WidgetKind
 import org.openstrap.app.ui.glow.draw.GlowMood
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
 import org.openstrap.app.ui.glow.draw.drawPillBar
+import org.openstrap.app.ui.glow.draw.drawWeekRings
 import org.openstrap.app.ui.glow.draw.ChartInk
 import org.openstrap.app.ui.glow.draw.hourPills
 import org.openstrap.app.ui.glow.draw.renderToBitmap
-import org.openstrap.app.ui.glow.draw.weekBars
-import org.openstrap.app.ui.glow.draw.weekStub
 import org.openstrap.app.ui.theme.MetricColors
 
 /**
@@ -212,7 +211,7 @@ private fun GoalBar(progress: Float, f: WidgetFrame) {
     )
 }
 
-/** "This week" and how many days met the goal on one line, then a bar a day under it, from the week's first day. */
+/** "This week" and how many days met the goal on one line, then a ring a day under it, from the week's first day. */
 @Composable
 private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float) {
     // One child of the Large's column: Glance drops a column's children past ten.
@@ -227,7 +226,8 @@ private fun WeekRow(m: StepsWidgetModel, week: StepsLayout.Week, density: Float)
         Spacer(GlanceModifier.height(StepsLayout.WEEK_LINE_GAP_DP.dp))
         val description = LocalContext.current.getString(R.string.system_widget_steps_week_description)
         val today = m.week.map { it.letter to (it.state == StepsDay.Today) }
-        WeekChart(ImageProvider(weekBitmap(m, week.column, density)), description, today, week.column)
+        val rings = ImageProvider(weekBitmap(m, week.column, density))
+        WeekChart(rings, description, today, week.column, height = StepsLayout.ringHeight(week.column))
     }
 }
 
@@ -254,18 +254,10 @@ private fun goalBar(progress: Float, width: Float, density: Float): Bitmap {
     }
 }
 
-/** This week's bars: a met day lime, a missed one white at 30%, today white, a day to come a stub at 12%. */
+/** This week as rings, as Today's Your week card draws them ([drawWeekRings]), a ring per column over its letter. */
 private fun weekBitmap(m: StepsWidgetModel, column: Float, density: Float): Bitmap {
-    val bars = weekBars(StepsWidgetModel.barValues(m.week, m.goal), density, column)
-    return renderToBitmap(WeekBarsLook.width(m.week.size, column) * density, WeekBarsLook.HEIGHT_DP * density) { c ->
-        m.week.forEachIndexed { i, d ->
-            when (d.state) {
-                StepsDay.ToCome -> drawPillBar(c, weekStub(i, density, column), Color.White.copy(alpha = WeekBarsLook.STUB_ALPHA))
-                StepsDay.NoRecord -> Unit
-                StepsDay.Met -> bars[i]?.let { drawPillBar(c, it, Ink) }
-                StepsDay.Missed -> bars[i]?.let { drawPillBar(c, it, Color.White.copy(alpha = WeekBarsLook.DIM_ALPHA)) }
-                StepsDay.Today -> bars[i]?.let { drawPillBar(c, it, Color.White) }
-            }
-        }
+    val height = StepsLayout.ringHeight(column) * density
+    return renderToBitmap(WeekBarsLook.width(m.week.size, column) * density, height) { c ->
+        drawWeekRings(c, StepsWidgetModel.ringShares(m.week, m.goal), Ink, column * density, WeekBarsLook.GAP_DP * density, height, density)
     }
 }

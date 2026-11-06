@@ -552,7 +552,7 @@ private fun RecoverDetail(ctx: ActivityDetailContext) {
             {
                 val share = recoverShare(last.recoveryMinutes, left)
                 androidx.compose.foundation.layout.Box(Modifier.size(RECOVER_RING), contentAlignment = androidx.compose.ui.Alignment.Center) {
-                    CountdownRing(share, color, PictureSize.Small, Modifier.matchParentSize())
+                    CountdownRing(share, color, Modifier.matchParentSize(), centred = true)
                     val hours = shown?.first?.toIntOrNull()
                     if (hours != null) DetailScoreNumber(hours)
                     else Text(stringResource(R.string.glow_activity_recover_ready), color = Color.White, style = GlowType.cardTitle, maxLines = 1)

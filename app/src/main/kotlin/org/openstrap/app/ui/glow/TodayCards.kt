@@ -687,7 +687,7 @@ internal fun RecoverCard(
     TodayPictureCard(
         MetricColors.load, stringResource(R.string.glow_today_to_recover), size, text?.first, stringResource(R.string.glow_today_hours_unit), null,
         text?.second ?: stringResource(R.string.glow_today_recover_no_estimate), modifier, onClick = onClick, dash = false,
-        picture = if (left == null) null else { m -> CountdownRing(share, MetricColors.load, size, m) },
+        picture = if (left == null) null else { m -> CountdownRing(share, MetricColors.load, m) },
     )
 }
 

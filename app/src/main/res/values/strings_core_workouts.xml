@@ -4,7 +4,7 @@
   summary, the notification and the widgets. Then the picker's short tile names and the outdoor and indoor switch.
   HYROX is a brand, keep it as is. HIIT is high intensity interval training.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <!-- The name of a workout whose sport the app doesn't know. -->
     <string name="core_workouts_sport_workout">Workout</string>
     <!-- A sport's full name. One line in lists. -->
@@ -138,7 +138,7 @@
     <!-- The switch's indoor side for cycling or a walk. One word. -->
     <string name="core_workouts_side_indoor">Indoor</string>
     <!-- The switch's outdoor side for a swim. One or two words. -->
-    <string name="core_workouts_side_open_water">Open water</string>
+    <string name="core_workouts_side_open_water" tools:ignore="UnusedResources">Open water</string>
     <!-- The switch's indoor side for a swim. One word. -->
-    <string name="core_workouts_side_pool">Pool</string>
+    <string name="core_workouts_side_pool" tools:ignore="UnusedResources">Pool</string>
 </resources>
