@@ -12,8 +12,6 @@ import org.junit.Test
 import org.openstrap.app.data.Summaries
 import org.openstrap.app.testing.LocaleRule
 import org.openstrap.app.ui.glow.draw.WeekBarsLook
-import org.openstrap.app.ui.glow.draw.weekBars
-import org.openstrap.app.ui.glow.draw.weekStub
 
 /** Widgets spec 3.3: what the Steps widget shows in each state, from the app's own sums and copy, and how it fits. */
 class StepsWidgetModelTest {
@@ -165,28 +163,13 @@ class StepsWidgetModelTest {
         assertEquals("Goal met 0 of 1 day", m.weekLine)
     }
 
-    @Test fun `bars are each day's share of the week's top, none for days to come or not recorded`() {
+    @Test fun `rings are each day's share of the goal, none for days to come or not recorded`() {
         val m = model(days = past - monday.plusDays(2))
-        val values = StepsWidgetModel.barValues(m.week, m.goal)
-        assertEquals(1f, values[1]!!, 1e-4f) // Tuesday's 11,200 is the top, over the goal
-        assertEquals(7_800f / 11_200f, values[0]!!, 1e-4f)
-        assertEquals(8_432f / 11_200f, values[5]!!, 1e-4f)
-        assertNull(values[2])
-        assertNull(values[6])
-        // Under the goal all week, the goal is the top.
-        val quiet = model(steps = 5_000, days = mapOf(monday to 4_000))
-        assertEquals(0.4f, StepsWidgetModel.barValues(quiet.week, quiet.goal)[0]!!, 1e-4f)
-
-        val density = 2f
-        val bars = weekBars(values, density)
-        val full = WeekBarsLook.HEIGHT_DP * density
-        assertEquals(full, bars[1]!!.size.height, 1e-3f)
-        assertTrue(bars[0]!!.size.height < bars[1]!!.size.height)
-        val stub = weekStub(6, density)
-        assertEquals(WeekBarsLook.STUB_DP * density, stub.size.height, 1e-3f)
-        assertEquals(full - stub.size.height, stub.topLeft.y, 1e-3f)
-        assertEquals(bars[1]!!.size.width, stub.size.width, 1e-3f)
-        assertEquals(bars[0]!!.topLeft.x + 6 * (WeekBarsLook.COLUMN_DP + WeekBarsLook.GAP_DP) * density, stub.topLeft.x, 1e-3f)
+        val shares = StepsWidgetModel.ringShares(m.week, m.goal)
+        assertEquals(11_200f / m.goal, shares[1]!!, 1e-4f) // Tuesday's 11,200 is past the goal: a full ring
+        assertEquals(7_800f / m.goal, shares[0]!!, 1e-4f)
+        assertNull(shares[2])
+        assertNull(shares[6])
     }
 
     @Test fun `every string keeps to the copy rules`() {
@@ -256,13 +239,13 @@ class StepsWidgetModelTest {
                 week.height + 3 * StepsLayout.MIN_GAP_DP
             assertTrue("at $scale: $total", total <= large.second + 1e-3f)
             assertTrue(week.column >= WeekBarsLook.MIN_COLUMN_DP)
-            assertTrue(WeekBarsLook.width(7, week.column) <= large.first)
+            assertTrue(WeekBarsLook.width(7, week.column) <= large.first + 1e-3f)
             // "This week" beside the count at the minimum Large at the default font. At 1.3 the estimate leaves no
             // room, so "This week" drops and the count keeps its one line.
             if (scale == 1f) assertTrue(week.title)
         }
-        // With room, the week keeps the mockup's columns.
-        assertEquals(WeekBarsLook.COLUMN_DP, StepsLayout.week("Goal met 2 of 6 days", 420f, 1f).column, 0f)
+        // With room, the rings spread across the whole width.
+        assertEquals(WeekBarsLook.width(7, StepsLayout.week("Goal met 2 of 6 days", 420f, 1f).column), 420f, 0.01f)
         // A font too large for both drops "This week", never wraps the count.
         assertFalse(StepsLayout.week("Goal met 2 of 6 days", large.first, 2f).title)
     }

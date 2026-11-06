@@ -164,7 +164,7 @@ fun GlowWorkoutSummaryScreen(
             else WorkoutButton(stringResource(R.string.glow_done), Color.White, Color.Black, onDone)
         },
     ) {
-        // The sport, then when, with Done beside them (board SummaryRun).
+        // The sport, then when, with Trim beside them.
         Row(Modifier.padding(start = 4.dp, top = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 val title = a?.sportName ?: stringResource(R.string.glow_workout_untitled)
@@ -174,12 +174,11 @@ fun GlowWorkoutSummaryScreen(
                     style = GlowType.secondary, modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            // Trim beside Done: the summary has no heart rate card of its own to carry it, as a past workout's page has.
+            // Trim beside the title: the summary has no heart rate card of its own to carry it, as a past workout's page
+            // has. Done is only on the bottom edge, beside Share.
             if (trim != null) {
                 IconPill(stringResource(R.string.glow_trim), trim.open, icon = AppIcons.Scissors, height = 40.dp, style = TopPillText)
-                Spacer(Modifier.width(8.dp))
             }
-            TopDone(done)
         }
         if (summary == null || a == null || trim == null) {
             PageNote(stringResource(R.string.glow_workout_loading))
@@ -493,9 +492,5 @@ internal fun SummaryButtons(onShare: () -> Unit, onDone: () -> Unit) {
     }
 }
 
-/** Done as a small pill beside the title, to leave without scrolling to the bottom. */
-@Composable
-internal fun TopDone(onDone: () -> Unit) = IconPill(stringResource(R.string.glow_done), onDone, height = 40.dp, style = TopPillText)
-
-/** The small pills beside the summary's title, Trim and Done. */
+/** The small pill beside the summary's title, Trim. */
 private val TopPillText = GlowType.secondary.copy(fontWeight = FontWeight.SemiBold)

@@ -308,6 +308,39 @@ fun drawWeekBars(canvas: Canvas, bars: List<PillBar?>, shown: Int, color: Color)
 }
 
 /**
+ * A week of rings, as Today's Your week card draws them, for the Steps widget: [shares] of the goal oldest first, one
+ * ring per [column] px wide column with [gap] px between, centred in [height] px. A full ring in full [ink] at the
+ * goal, a part ring dimmer, and a null day its faint track alone.
+ */
+fun drawWeekRings(canvas: Canvas, shares: List<Float?>, ink: Color, column: Float, gap: Float, height: Float, density: Float) {
+    val stroke = WeekRingsLook.STROKE_DP * density
+    val r = (minOf(column * WeekRingsLook.SPAN, height) - stroke) / 2
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = stroke; strokeCap = Paint.Cap.ROUND }
+    val cy = height / 2
+    shares.forEachIndexed { i, share ->
+        val cx = i * (column + gap) + column / 2
+        canvas.drawCircle(cx, cy, r, paint.apply { color = Color.White.copy(alpha = WeekRingsLook.TRACK_ALPHA).toArgb() })
+        val sweep = FULL_TURN * (share ?: 0f).coerceIn(0f, 1f)
+        if (share != null && sweep > 0f) canvas.drawArc(
+            cx - r, cy - r, cx + r, cy + r, START_AT_TOP, maxOf(sweep, WeekRingsLook.MIN_SWEEP), false,
+            paint.apply { color = ink.copy(alpha = if (sweep >= FULL_TURN) 1f else WeekRingsLook.DIM_ALPHA).toArgb() },
+        )
+    }
+}
+
+/** The week's rings: stroke, dp; the share of a column they span; the track; a part ring's dim; the least arc shown. */
+object WeekRingsLook {
+    const val STROKE_DP = 3f
+    const val SPAN = 0.82f
+    const val TRACK_ALPHA = 0.10f
+    const val DIM_ALPHA = 0.55f
+    const val MIN_SWEEP = 4f
+}
+
+private const val FULL_TURN = 360f
+private const val START_AT_TOP = -90f
+
+/**
  * A week of dots through your band, as the app's Recovery card draws it (spec 2.7), for the widgets: [values] oldest
  * first, one per [column] px wide column with [gap] px between, in [height] px. [usual] is a band of the ink at 12%;
  * dots inside it are dimmer, outside it full ink, the latest larger. The scale spans the values and the band with 15%

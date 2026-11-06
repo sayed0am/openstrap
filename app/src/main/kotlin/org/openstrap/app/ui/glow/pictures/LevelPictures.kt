@@ -221,14 +221,15 @@ internal fun countdownSweep(share: Float): Float = 360f * share.coerceIn(0f, 1f)
 
 /**
  * A ring filling toward Ready (PictureKind.CountdownRing): Time to recover. [share] is how far recovered, 0 to 1, full
- * when clear. Centred on a Small, at the start of a Wide. Never off, so no rim.
+ * when clear. At the start, in line with the card's title and words, or [centred] where it stands alone (a workout's
+ * page). Never off, so no rim.
  */
 @Composable
-fun CountdownRing(share: Float, ink: Color, size: PictureSize, modifier: Modifier = Modifier) {
+fun CountdownRing(share: Float, ink: Color, modifier: Modifier = Modifier, centred: Boolean = false) {
     Canvas(modifier) {
         val stroke = 5.dp.toPx()
         val r = (min(this.size.height, this.size.width) - stroke) / 2 * 0.85f
-        val cx = if (size == PictureSize.Small) this.size.width / 2 else r + stroke / 2
+        val cx = if (centred) size.width / 2 else r + stroke / 2
         val c = Offset(cx, this.size.height / 2)
         drawCircle(RingTrack, r, c, style = Stroke(stroke))
         val sweep = countdownSweep(share)

@@ -249,14 +249,36 @@ object Workouts {
 
     /** Every sport a workout can be started as, by name, one id per name (Zepp has two "Free training"). */
     val sports: List<Pair<Int, String>>
-        get() = SPORT_NAMES.entries.filter { it.key !in HIDDEN }.distinctBy { it.value }.map { it.key to Strings.app.get(it.value) }
-            .sortedBy { it.second }
+        get() = SPORT_NAMES.entries.filter { it.key !in HIDDEN && it.key !in NOT_ON_STRAP }.distinctBy { it.value }
+            .map { it.key to Strings.app.get(it.value) }.sortedBy { it.second }
+
+    /**
+     * Sports not in Zepp's Helio Strap list (the strap's own list, 0x004D, read 2026-11-06): the strap runs no session
+     * for them. Not offered for now; kept for naming workouts already recorded as them.
+     */
+    val NOT_ON_STRAP = setOf(7, 11, 12, 15, 40, 70, 83, 108, 225)
+
+    /**
+     * Sports OpenStrap first offered under an id the strap doesn't list, to the id Zepp starts them as on the strap:
+     * Soccer (soccer without GPS), Padel (Padel Pro) and Pickleball (with swing). The old ids still name old workouts.
+     */
+    private val STRAP_IDS = mapOf(18 to 191, 205 to 216, 204 to 227)
+
+    /**
+     * The sport a workout of [type] is started again as, from Recent or your usual sports: [type] itself, or the
+     * strap's id for it ([STRAP_IDS]). Null for one not offered ([NOT_ON_STRAP]) or the strap's own "Activity".
+     */
+    fun startable(type: Int): Int? {
+        if (type == GENERIC_ACTIVITY || type !in SPORT_NAMES) return null
+        return (STRAP_IDS[type] ?: type).takeIf { it !in NOT_ON_STRAP }
+    }
 
     /**
      * Sports kept for naming workouts already recorded (by the strap, Zepp or an import) but not offered for new ones:
-     * each is another one under a second name, or the strap's own generic "Activity".
+     * each is another one under a second name, the strap's own generic "Activity", or an id replaced by the strap's
+     * ([STRAP_IDS]).
      */
-    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223, 215)
+    val HIDDEN = setOf(143, 40, 224, 55, 10, 57, 58, 51, 109, 24, 226, 16, 223, 215, 18, 204, 205)
 
     /**
      * A sport offered once with an outdoor and an indoor kind (spec 6.3): Ready's switch picks one, and the workout is
@@ -282,9 +304,10 @@ object Workouts {
     val SIDES = listOf(
         Sides(1, 2, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_treadmill),
         Sides(4, 8, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
+        // Open water and indoor walk aren't on the strap ([NOT_ON_STRAP]): Swim is the pool and Walk is outdoors for now.
         // Most swims are in a pool.
-        Sides(7, 6, R.string.core_workouts_side_open_water, R.string.core_workouts_side_pool, indoorByDefault = true),
-        Sides(3, 40, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
+        // Sides(7, 6, R.string.core_workouts_side_open_water, R.string.core_workouts_side_pool, indoorByDefault = true),
+        // Sides(3, 40, R.string.core_workouts_side_outdoor, R.string.core_workouts_side_indoor),
     )
 
     /** The [Sides] [type] is one of, or null for a sport with one kind. */
@@ -313,10 +336,11 @@ object Workouts {
     }.toMap()
 
     /**
-     * The picker's twelve everyday sports (spec 6.3), by the type each tile starts: Run, Walk, Hike, Cycling, Swim,
-     * Strength, HIIT, Yoga, Pilates, Rowing, Elliptical, Other. Every other sport is behind More sports.
+     * The picker's twelve everyday sports (spec 6.3), by the type each tile starts: Run, Walk, Cross training, Cycling,
+     * Swim, Strength, HIIT, Yoga, Pilates, Rowing, Elliptical, Other. Every other sport is behind More sports. Hike (15)
+     * isn't on the strap ([NOT_ON_STRAP]), so Cross training has its place for now, and Swim is the pool (6).
      */
-    val EVERYDAY = listOf(1, 3, 15, 4, 7, 52, 49, 60, 61, 23, 9, 5)
+    val EVERYDAY = listOf(1, 3, /* 15, */ 130, 4, 6, 52, 49, 60, 61, 23, 9, 5)
 
     /** The tiles' short names; a sport with two kinds has one name for both. */
     private val SHORT_NAMES = mapOf(
@@ -354,11 +378,10 @@ object Workouts {
     }
 
     /**
-     * The picker's Recent row: your last [n] sports, [types] newest first, each by its tile ([tileType]), without the
-     * strap's own "Activity".
+     * The picker's Recent row: your last [n] sports, [types] newest first, each by its tile ([tileType]) as it starts
+     * again ([startable]), without the strap's own "Activity" or a sport not offered.
      */
-    fun recentSports(types: List<Int>, n: Int = 4): List<Int> =
-        types.filter { it != GENERIC_ACTIVITY && it in SPORT_NAMES }.map(::tileType).distinct().take(n)
+    fun recentSports(types: List<Int>, n: Int = 4): List<Int> = types.mapNotNull(::startable).map(::tileType).distinct().take(n)
 
     /** Sports done outdoors, where the ready screen offers GPS. */
     val OUTDOOR = setOf(1, 3, 4, 11, 12, 15, 215, 224, 225)
@@ -419,6 +442,8 @@ object Workouts {
      */
     fun family(type: Int): Family = when (type) {
         in SportTypes.STRENGTH -> Family.Strength
+        // The swims, while open water is off the picker and Swim has no sides ([NOT_ON_STRAP]).
+        in SportTypes.SWIMS -> Family.IndoorCardio
         in INTERVALS -> Family.Intervals
         in MIND_BODY -> Family.MindBody
         in DISTANCE -> Family.Distance
@@ -458,6 +483,8 @@ object Workouts {
         108 to R.string.core_workouts_sport_stair_climbing, 109 to R.string.core_workouts_sport_aerobics,
         130 to R.string.core_workouts_sport_cross_training, 143 to R.string.core_workouts_sport_spinning,
         204 to R.string.core_workouts_sport_pickleball, 205 to R.string.core_workouts_sport_padel,
+        191 to R.string.core_workouts_sport_soccer, 216 to R.string.core_workouts_sport_padel,
+        227 to R.string.core_workouts_sport_pickleball,
         215 to R.string.core_workouts_sport_dog_walking, 222 to R.string.core_workouts_sport_hyrox_training,
         223 to R.string.core_workouts_sport_activity, 224 to R.string.core_workouts_sport_mountain_hike,
         225 to R.string.core_workouts_sport_rucking, 226 to R.string.core_workouts_sport_hybrid_training,

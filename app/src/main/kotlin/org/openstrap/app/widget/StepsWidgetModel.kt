@@ -167,14 +167,9 @@ data class StepsWidgetModel(
                 }
             }
 
-        /**
-         * Each day's bar as a share of the week's top, the goal or the most steps in a day if that's more, so a met day
-         * stands taller than a missed one. Null where there's no bar to draw (days to come get a stub instead).
-         */
-        fun barValues(week: List<StepsWeekDay>, goal: Int): List<Float?> {
-            val top = maxOf(goal, week.maxOf { it.steps ?: 0 }).coerceAtLeast(1).toFloat()
-            return week.map { d -> d.steps?.takeIf { d.state != StepsDay.ToCome }?.let { it / top } }
-        }
+        /** Each day's share of the [goal] for its ring, past it above 1; null for a day to come or one without a record. */
+        fun ringShares(week: List<StepsWeekDay>, goal: Int): List<Float?> =
+            week.map { d -> d.steps?.takeIf { d.state != StepsDay.ToCome }?.let { if (goal > 0) it.toFloat() / goal else 0f } }
     }
 }
 
@@ -290,13 +285,19 @@ object StepsLayout {
 
     /**
      * This week in [width] dp: one line, "This week" on the left and [weekLine] on the right, never wrapping (a
-     * large font drops "This week" first), then the bars across the width, columns up to [WeekBarsLook.COLUMN_DP].
+     * large font drops "This week" first), then the rings spread across the whole width, as on Today's
+     * Your week card, each as tall as [ringHeight] lets it.
      */
+    /** How tall the week's rings draw for a [column] dp wide: as wide as it, at most [WeekBarsLook.HEIGHT_DP]. */
+    fun ringHeight(column: Float): Float = minOf(column, WeekBarsLook.HEIGHT_DP)
+
     fun week(weekLine: String, width: Float, fontScale: Float, days: Int = 7): Week {
         val sp = WidgetText.SECONDARY_SP
         val title = WidgetText.width(StepsWidgetModel.THIS_WEEK, sp, fontScale) + WEEK_GAP_DP + WidgetText.width(weekLine, sp, fontScale) <= width
-        val column = WeekBarsLook.column(days, width)
-        val bars = WeekBarsLook.HEIGHT_DP + 4f + WidgetText.line(WidgetText.CAPTION_SP, fontScale)
+        val gaps = (days - 1).coerceAtLeast(0) * WeekBarsLook.GAP_DP
+        val column = ((width - gaps) / days.coerceAtLeast(1)).coerceAtLeast(WeekBarsLook.MIN_COLUMN_DP)
+        // A ring a column, as tall as it is wide up to the old bars' height, then the letters.
+        val bars = ringHeight(column) + 4f + WidgetText.line(WidgetText.CAPTION_SP, fontScale)
         return Week(column, title, WidgetText.line(sp, fontScale) + WEEK_LINE_GAP_DP + bars)
     }
 

@@ -548,13 +548,13 @@ internal fun DotNumber(text: String, dot: Float, density: Float, description: St
  * read out as [description], with each day's letter under its column as a Caption, white where it's lit.
  */
 @Composable
-internal fun WeekChart(bars: ImageProvider, description: String, letters: List<Pair<String, Boolean>>, column: Float) {
+internal fun WeekChart(bars: ImageProvider, description: String, letters: List<Pair<String, Boolean>>, column: Float, height: Float = WeekBarsLook.HEIGHT_DP) {
     val width = WeekBarsLook.width(letters.size, column)
     Column {
         Image(
             bars,
             contentDescription = description,
-            modifier = GlanceModifier.size(width.dp, WeekBarsLook.HEIGHT_DP.dp),
+            modifier = GlanceModifier.size(width.dp, height.dp),
             contentScale = ContentScale.FillBounds,
         )
         Spacer(GlanceModifier.height(4.dp))

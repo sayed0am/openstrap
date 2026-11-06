@@ -60,8 +60,8 @@ class StartWidgetModelTest {
         // Walk and cycling twice, the walk more recently; treadmill and strength once, the treadmill more recently.
         assertEquals(listOf("Walk", "Cycling", "Treadmill", "Strength"), m.next.take(4).map { it.caption })
         assertEquals(listOf(3, 4, 2, 52), m.next.take(4).map { it.sportType })
-        // Then the everyday sports, each once.
-        assertEquals("Hike", m.next[4].caption)
+        // Then the everyday sports, each once (Hike isn't on the strap for now: Cross training has its place).
+        assertEquals("Cross-training", m.next[4].caption)
         assertEquals(m.next.size, m.next.distinctBy { it.shownType }.size)
         assertTrue(m.next.none { it.shownType == Workouts.GENERIC_ACTIVITY })
         assertNull(m.recording)
@@ -70,7 +70,7 @@ class StartWidgetModelTest {
     @Test fun `before any workout, the default sports, then the everyday ones`() {
         val m = model(workouts = emptyList())
         assertEquals(Workouts.DEFAULT_SPORTS.first(), m.usual.sportType)
-        assertEquals(listOf("Walk", "Strength", "Hike", "Cycling"), m.next.take(4).map { it.caption })
+        assertEquals(listOf("Walk", "Strength", "Cross-training", "Cycling"), m.next.take(4).map { it.caption })
         assertEquals("No workouts yet", m.weekLine)
         assertEquals("Last run", m.lastLabel)
         assertEquals("None yet", m.lastLine)
@@ -223,10 +223,11 @@ class StartWidgetModelTest {
     }
 
     @Test fun `captions are short names, the full one where the short one is already said`() {
-        // Indoor walk alone reads "Walk", a treadmill beside your outdoor runs "Treadmill".
-        val m = model(workouts = listOf(workout(20, 8, 1, 30), workout(21, 8, 1, 30), workout(22, 8, 40, 30), workout(23, 8, 2, 30)))
-        assertEquals(listOf("Treadmill", "Walk"), m.next.take(2).map { it.caption })
-        assertEquals("Indoor walk", m.next[1].name)
+        // Indoor cycling alone reads "Cycling", a treadmill beside your outdoor runs "Treadmill". (Indoor walk isn't on
+        // the strap for now.)
+        val m = model(workouts = listOf(workout(20, 8, 1, 30), workout(21, 8, 1, 30), workout(22, 8, 8, 30), workout(23, 8, 2, 30)))
+        assertEquals(listOf("Treadmill", "Cycling"), m.next.take(2).map { it.caption })
+        assertEquals("Indoor cycling", m.next[1].name)
     }
 
     /* ------------------------------------------------------------------------------------------ */

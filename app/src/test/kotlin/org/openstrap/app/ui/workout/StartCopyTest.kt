@@ -176,9 +176,10 @@ class StartCopyTest {
         val ride = org.openstrap.app.data.Workouts.sidesOf(4)!!
         assertEquals("Indoors", StartCopy.place(ride, indoor = true))
         assertEquals("Indoors", StartCopy.otherPlace(ride, indoor = false))
-        val swim = org.openstrap.app.data.Workouts.sidesOf(6)!!
-        assertEquals("In a pool", StartCopy.place(swim, indoor = true))
-        assertEquals("Open water", StartCopy.otherPlace(swim, indoor = true))
+        // Open water isn't on the strap for now, so Swim has no sides.
+        // val swim = org.openstrap.app.data.Workouts.sidesOf(6)!!
+        // assertEquals("In a pool", StartCopy.place(swim, indoor = true))
+        // assertEquals("Open water", StartCopy.otherPlace(swim, indoor = true))
         assertEquals("Pace from your steps", StartCopy.indoorNote(2))
         assertEquals("Distance from your steps", StartCopy.indoorNote(40))
         assertEquals("Time and heart rate, no distance", StartCopy.indoorNote(8))

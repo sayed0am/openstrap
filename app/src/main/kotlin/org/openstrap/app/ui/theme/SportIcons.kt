@@ -37,10 +37,10 @@ internal object SportIcons {
         61 -> AppIcons.PersonSimpleTaiChi
         53, 55 -> AppIcons.PersonArmsSpread
         76 -> AppIcons.MusicNotes
-        17, 205 -> AppIcons.TennisBall
-        89, 204 -> AppIcons.PingPong
+        17, 205, 216 -> AppIcons.TennisBall
+        89, 204, 227 -> AppIcons.PingPong
         92 -> AppIcons.PersonSimpleThrow
-        18 -> AppIcons.SoccerBall
+        18, 191 -> AppIcons.SoccerBall
         85 -> AppIcons.Basketball
         88 -> AppIcons.Volleyball
         83 -> AppIcons.Golf

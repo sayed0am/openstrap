@@ -46,7 +46,7 @@ internal val LevelPictureSamples: List<PictureSample> = listOf(
     PictureSample(
         PictureKind.CountdownRing, "To recover", "9 h", null, MetricColors.load, null,
         rim = { null },
-        draw = { size, off, m -> CountdownRing(if (off) 1f else 0.62f, MetricColors.load, size, m) },
+        draw = { _, off, m -> CountdownRing(if (off) 1f else 0.62f, MetricColors.load, m) },
     ),
     PictureSample(
         PictureKind.Blocks, "Active minutes", "110", "min", MetricColors.steps, null,
