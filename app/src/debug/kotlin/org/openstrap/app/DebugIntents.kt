@@ -24,7 +24,7 @@ import org.openstrap.app.ui.dashboard.StrapPreview
 import org.openstrap.app.ui.glow.debugRecoveryScoreState
 import org.openstrap.app.ui.root.DebugPreviews
 
-private const val TAG = "OpenStrap"
+private const val TAG = "unstrap"
 private const val HEX = 16
 private const val SIMULATED_BATTERY = 80
 private const val SCORE_MAX = 100

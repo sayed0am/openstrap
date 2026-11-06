@@ -23,7 +23,7 @@ internal fun launchForBroadcast(
     work: suspend () -> Unit,
 ): Job = scope.launch {
     try {
-        catching { withTimeout(timeoutMs) { work() } }.onFailure { Log.w("OpenStrap", "$what failed: $it") }
+        catching { withTimeout(timeoutMs) { work() } }.onFailure { Log.w("unstrap", "$what failed: $it") }
     } finally {
         finish()
     }

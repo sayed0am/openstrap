@@ -58,7 +58,7 @@ object WeeklyRecap {
         // The weeks are only worked out again while the app is open: workouts synced since would be missed, and the
         // week is never sent again. Brought up to date first; a refresh that fails still sends what's stored.
         val recordingStart = (container.workout.state.value as? WorkoutState.Recording)?.workout?.start
-        catching { container.rewards.refreshNow(recordingStart) }.onFailure { Log.w("OpenStrap", "weekly recap: weeks not refreshed: $it") }
+        catching { container.rewards.refreshNow(recordingStart) }.onFailure { Log.w("unstrap", "weekly recap: weeks not refreshed: $it") }
         val weeks = container.database.healthDao().weekResultsOnce()
         val week = weeks.firstOrNull { it.weekStart == lastWeek.toEpochDay() }
         settings.setRecapWeek(lastWeek.toEpochDay())
@@ -95,7 +95,7 @@ object WeeklyRecap {
 /** The recap's look every few hours ([WeeklyRecap.schedule]). A failed look is logged, and the next one tries again. */
 class RecapWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        catching { WeeklyRecap.check(applicationContext) }.onFailure { Log.w("OpenStrap", "weekly recap: look failed: $it") }
+        catching { WeeklyRecap.check(applicationContext) }.onFailure { Log.w("unstrap", "weekly recap: look failed: $it") }
         return Result.success()
     }
 }

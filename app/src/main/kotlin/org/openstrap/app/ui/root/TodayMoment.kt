@@ -107,7 +107,7 @@ internal fun rememberTodayMoment(
     }
     val moment = forced ?: clockMoment
     LaunchedEffect(forced, clockMoment) {
-        forced?.let { Log.i("OpenStrap", "moment: forced $it, the clock says $clockMoment") }
+        forced?.let { Log.i("unstrap", "moment: forced $it, the clock says $clockMoment") }
     }
     return TodayMoment(clockDate, moment, layoutMoment(moment, day.date == clockDate), clockFacts?.second, lastWorkout)
 }

@@ -272,7 +272,7 @@ class AppRootViewModel(
     fun healthConnectReadGranted(result: Set<String>): Boolean = result.any { it in healthConnect.readPermissions }
 
     private companion object {
-        const val TAG = "OpenStrap"
+        const val TAG = "unstrap"
         const val STOP_MS = 5_000L
     }
 }

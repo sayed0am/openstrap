@@ -33,7 +33,7 @@ class AppContainer(val app: Application) {
     // This is where the dispatcher is injected from, so there is nothing to inject it into.
     @Suppress("InjectDispatcher")
     val appScope = CoroutineScope(
-        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.e("OpenStrap", "app scope: uncaught $e", e) },
+        SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, e -> Log.e("unstrap", "app scope: uncaught $e", e) },
     )
     val database = OpenStrapDatabase.create(app)
     val settings = SettingsStore(app)

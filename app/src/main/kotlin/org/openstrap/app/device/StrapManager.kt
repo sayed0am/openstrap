@@ -127,7 +127,7 @@ class StrapManager(
     val activeSession: ChannelSession? get() = connections.activeSession
 
     fun log(message: String) {
-        Log.i("OpenStrap", message)
+        Log.i("unstrap", message)
         val line = "%tT  %s".format(System.currentTimeMillis(), message)
         log.update { (it + line).takeLast(400) }
     }
@@ -696,7 +696,7 @@ class StrapManager(
             if (!claimed) firmwareUpdating.value = false
         }
         val wake = context.getSystemService(PowerManager::class.java)
-            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OpenStrap:firmware").apply { acquire(30 * 60_000L) }
+            .newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "unstrap:firmware").apply { acquire(30 * 60_000L) }
         try {
             // A failure is logged and handed on to the Firmware page. A cancellation is rethrown by catching as it came.
             catching {

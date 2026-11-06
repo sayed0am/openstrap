@@ -355,7 +355,7 @@ class AppUpdater(
     }
 
     companion object {
-        private const val TAG = "OpenStrap"
+        private const val TAG = "unstrap"
         private const val DAILY = "update-check"
 
         /** Starts the daily check; a no-op when it's already scheduled. Runs only with a network. */

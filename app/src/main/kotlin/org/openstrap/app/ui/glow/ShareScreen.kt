@@ -281,7 +281,7 @@ private suspend fun decodePhoto(context: Context, uri: Uri): ImageBitmap? = with
 /** Where a card's picture goes: the gallery, or a cached file another app can read for a moment. */
 internal object StoryFiles {
     /** The gallery folder, under Pictures. */
-    const val FOLDER = "OpenStrap"
+    const val FOLDER = "unstrap"
 
     /** The FileProvider's authority after the package name, as in the manifest. */
     const val AUTHORITY_SUFFIX = ".share"

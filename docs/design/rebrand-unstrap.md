@@ -37,7 +37,6 @@ those, and changing what's stored would cost current users their updates or data
 | `OpenStrapDatabase`, `openstrap.db`, `app/schemas/org.openstrap...` | `data/db` | Room's schema folder follows the class name. Migrations and their tests depend on it. |
 | Health Connect ids `openstrap:` and `openstrap:sleep:` | `HealthConnectExporter.kt:135`, `SleepImport.kt:37` | Records already written carry them. A new prefix would duplicate everything on the next sync and break sleep import. |
 | Intent actions `org.openstrap.app.*` | `StrapService.kt:599-627` | Internal, and pending intents from the old build may still be live after an update. |
-| Wake lock tags, log tag `"OpenStrap"` | various | Only in logcat and battery stats. Changing the log tag would break existing `adb logcat -s OpenStrap` habits. Optional later. |
 | Signing secrets `OPENSTRAP_*` | `.github/workflows/android.yml`, `app/build.gradle.kts` | Renaming means re-adding secrets in GitHub. No gain. |
 | Settings DataStore name `settings` | `SettingsStore.kt:21` | Already neutral. |
 
@@ -77,6 +76,8 @@ those, and changing what's stored would cost current users their updates or data
 13. **Manifest comments.** 9 comments in `AndroidManifest.xml`. `.OpenStrapApp` and `Theme.OpenStrap` can stay
     (code names) or move with step 14.
 14. **Optional code names.** `OpenStrapApp`, `Theme.OpenStrap`. Only if cheap. Skip `OpenStrapDatabase` (see above).
+15. **Log and wake lock tags.** Done: the log tag is `"unstrap"` and the wake locks `"unstrap:firmware"` and
+    `"unstrap:workout"`, so phone logs read with `adb logcat -s unstrap`.
 
 ### Outside the code
 
@@ -98,4 +99,3 @@ those, and changing what's stored would cost current users their updates or data
 ## Open questions
 
 1. **Version.** Does the rename ship as 2.4 (next minor) or 3.0?
-2. **Log tag.** Keep `"OpenStrap"` or move to `"unstrap"`?
