@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -77,6 +78,9 @@ private sealed interface SignInStep {
     data class ThirdParty(val provider: String) : SignInStep
 }
 
+/** Turns the down caret into the intro's fold-up arrow (the icon set has no outline up caret). */
+private const val UP_DEGREES = 180f
+
 /** Gadgetbridge's walkthrough for reading the auth key on a computer, for accounts that can't sign in here. */
 const val COMPUTER_KEY_GUIDE_URL = "https://gadgetbridge.org/basics/pairing/huami-xiaomi-server/#on-a-computer"
 
@@ -112,6 +116,7 @@ fun ZeppSignInDialog(
 ) {
     var step by remember { mutableStateOf<SignInStep>(SignInStep.SignIn) }
     var attempt by remember { mutableIntStateOf(0) }
+    var showIntro by remember { mutableStateOf(true) }
     val app = LocalContext.current.applicationContext
     val diagnostics: (String) -> Unit = { line ->
         ((app as? OpenStrapApp)?.container?.strap as? StrapManager)?.log(line) ?: Log.w("unstrap", line)
@@ -158,9 +163,21 @@ fun ZeppSignInDialog(
                 }
                 when (val s = step) {
                     SignInStep.SignIn -> {
-                        Column(Modifier.padding(horizontal = GlowLayout.Gutter, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                            Text(stringResource(R.string.you_zepp_sign_in_text), color = Color.White, style = GlowType.body)
-                            PageNote(stringResource(R.string.you_zepp_sign_in_note))
+                        // The intro can be hidden, in case Zepp's page needs the room on a short screen.
+                        if (showIntro) {
+                            Row(Modifier.padding(start = GlowLayout.Gutter, end = GlowLayout.Gutter, top = 4.dp, bottom = 4.dp)) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Text(stringResource(R.string.you_zepp_sign_in_text), color = Color.White, style = GlowType.body)
+                                    PageNote(stringResource(R.string.you_zepp_sign_in_note))
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                val hide = stringResource(R.string.you_action_hide)
+                                Box(
+                                    Modifier.size(32.dp).clip(CircleShape).background(ControlSurface)
+                                        .clickable(onClickLabel = hide, onClick = { showIntro = false }),
+                                    contentAlignment = Alignment.Center,
+                                ) { Icon(AppIcons.CaretDown, hide, Modifier.size(18.dp).rotate(UP_DEGREES), tint = Color.White) }
+                            }
                         }
                         key(attempt) {
                             ZeppWebView(Modifier.fillMaxWidth().weight(1f).padding(top = 8.dp)) { provider ->
@@ -310,6 +327,11 @@ private fun ZeppWebView(modifier: Modifier, onThirdParty: (provider: String) -> 
         modifier = modifier,
         factory = { context ->
             WebView(context).apply {
+                // AndroidView leaves a view at WRAP_CONTENT, and a WRAP_CONTENT WebView gives the page a 0px viewport
+                // height, so Zepp's login page (sized with 100dvh) collapsed and pushed its form above the top.
+                layoutParams = android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                )
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.setSupportMultipleWindows(false)
