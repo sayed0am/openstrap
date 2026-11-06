@@ -84,7 +84,7 @@ class ComponentGalleryActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         val section = intent.getStringExtra("section")
-        setContent { OpenStrapTheme { Gallery(section == "live", section == "pictures") } }
+        setContent { OpenStrapTheme { if (section == "mind") MindLive() else Gallery(section == "live", section == "pictures") } }
     }
 }
 
@@ -245,7 +245,7 @@ private val LiveRecent = (0 until 120).map { i ->
 private val LiveZones = ZoneSeconds(listOf(120, 420, 780, 180, 34))
 
 /** A calm session's heart rate settling from the high 80s, as the mind screen draws it. */
-private val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
+internal val MindLine: List<Float?> = List(120) { i -> 88f - i / 8f + (i % 7) * 0.6f }
 
 /**
  * The live workout's parts (workouts spec 2.3) with fixed numbers: the heart card, the bars, rings and lines the kinds'
