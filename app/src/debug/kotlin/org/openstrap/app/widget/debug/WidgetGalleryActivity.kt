@@ -282,7 +282,7 @@ class WidgetGalleryActivity : ComponentActivity() {
     private fun dp(v: Int): Int = dp(v.toFloat())
 
     private companion object {
-        const val TAG = "OpenStrap"
+        const val TAG = "unstrap"
         const val HOST_ID = 0x5753
         const val EXTRA_MOOD = "mood"
         const val EXTRA_PIN = "pin"

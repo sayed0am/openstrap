@@ -132,7 +132,7 @@ class CsvImporter(private val db: OpenStrapDatabase, private val batch: Int = CS
             }
             for (p in children) count(p.table.file, p.backfill(added))
             // Throwing rolls back, so a zip that isn't ours leaves the database untouched.
-            require(counts.isNotEmpty()) { "This isn't an OpenStrap export." }
+            require(counts.isNotEmpty()) { "This isn't an unstrap export." }
             return Result(counts, present, skipped, settings)
         }
 

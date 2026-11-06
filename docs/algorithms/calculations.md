@@ -1,12 +1,12 @@
-# How OpenStrap calculates everything (v1.2.0)
+# How unstrap calculates everything (v1.2.0)
 
-Every number OpenStrap works out itself, explained in plain words. Written from the v1.2.0 code (tag `v1.2.0`, 2026-10-18).
+Every number unstrap works out itself, explained in plain words. Written from the v1.2.0 code (tag `v1.2.0`, 2026-10-18).
 
 * For research sources and the reasoning behind each choice, see [recovery.md](recovery.md) and [evidence-review.md](evidence-review.md).
 * For the planned check against the strap's own Readiness, see [readiness-calibration.md](readiness-calibration.md).
 * Code lives in `app/src/main/kotlin/org/openstrap/app/data/`. The rules are in one file per part: `ReadinessModel.kt` (Readiness, §5, and the sleep score, §9), `ChargeModel.kt` (Energy, §7), `LoadModel.kt` (training load, Strain and fitness, §8, and daytime resting HR, §4) and `MaxHrModel.kt` (maximum HR, §4). Their inputs, results and constants are in `Recovery.kt`, named `Recovery.X` as the code names them, and `RecoveryEngine.kt` feeds them from the database.
 
-OpenStrap is a wellness app. None of these numbers is a medical measurement.
+unstrap is a wellness app. None of these numbers is a medical measurement.
 
 ## Contents
 
@@ -32,7 +32,7 @@ OpenStrap is a wellness app. None of these numbers is a medical measurement.
 
 **Taken from the strap as is:** heart rate, steps, sleep sessions and stages, RMSSD (HRV) samples, SpO₂, stress (0–100), skin temperature, breathing rate, the daily resting HR, PAI, the strap's sleep score, its sleep-apnea summary (desaturation event count), and workout records with their training effect.
 
-**Calculated by OpenStrap:** everything in sections 3–14: Readiness, body-signal alerts, Energy, training load, Strain, fitness/fatigue, sleep score (when the strap gave none), sleep debt, sleep regularity, sleep-health count, active minutes, distance, calories, VO2max, workout zones and recovery HR, and training effect, EPOC, recovery time and run VO2max for workouts started in OpenStrap.
+**Calculated by unstrap:** everything in sections 3–14: Readiness, body-signal alerts, Energy, training load, Strain, fitness/fatigue, sleep score (when the strap gave none), sleep debt, sleep regularity, sleep-health count, active minutes, distance, calories, VO2max, workout zones and recovery HR, and training effect, EPOC, recovery time and run VO2max for workouts started in unstrap.
 
 **Logged but not used in any score:** the strap's own Readiness and its parts, and your morning check-in (1–5, asked on Today before noon). They're kept for the calibration review.
 
@@ -122,7 +122,7 @@ A running average where recent days count more: each day, v = λ·today + (1 −
 
 ## 3. The night: turning sleep into numbers
 
-For each main sleep, OpenStrap works out the following (`RecoveryEngine.night`).
+For each main sleep, unstrap works out the following (`RecoveryEngine.night`).
 
 **Artefact filters**
 * Heart-rate minutes outside 30–220 bpm are ignored.
@@ -144,7 +144,7 @@ For each main sleep, OpenStrap works out the following (`RecoveryEngine.night`).
 
 ### When a night is "valid"
 
-OpenStrap's own HRV and resting HR are only trusted, and only enter a baseline, when the night has all of:
+unstrap's own HRV and resting HR are only trusted, and only enter a baseline, when the night has all of:
 
 * a main sleep of at least 3 hours
 * at least 6 good RMSSD samples
@@ -212,7 +212,7 @@ Each contributor scores 0–100. Weights are a design choice, and the evidence r
 |---|---|---|
 | **HRV balance** | 30 % | 0.4 × z(tonight) + 0.6 × z(7-night average), on the log scale, through the dead zone, then z → score. The 7-night average needs ≥ 3 valid nights in the past 7 days (tonight included); below 5 it's marked "thin". Without it, tonight alone. The detail shows the % difference from usual. |
 | **Resting heart rate** | 22 % | Tonight's lowest 30-minute average vs baseline, flipped so lower is better, through the dead zone, then z → score. |
-| **Last night's sleep** | 16 % | The strap's sleep score when it gave one, otherwise OpenStrap's (section 9). |
+| **Last night's sleep** | 16 % | The strap's sleep score when it gave one, otherwise unstrap's (section 9). |
 | **Sleep balance** | 12 % | 100 up to 1 h of sleep debt (section 9), then falling linearly to 0 at 6 h. So 2 h of debt → 80, 3 h → 60 and 4 h → 40. |
 | **Body temperature** | 6 % | Distance from your usual nightly skin temperature, in **either** direction, through the dead zone, then z → score. |
 | **Breathing rate** | 4 % | Like temperature: a change either way counts. |
@@ -232,7 +232,7 @@ Temperature, breathing and blood-oxygen baselines use all usable past nights, no
 ### Extras shown with Readiness
 
 * **HRV normal range:** the 7-night HRV is "below", "within" or "above" your usual ± 0.5 spread.
-* **Data-quality notes:** shown when OpenStrap's and the strap's values disagree by more than 15 % (HRV) or 3 bpm (resting HR).
+* **Data-quality notes:** shown when unstrap's and the strap's values disagree by more than 15 % (HRV) or 3 bpm (resting HR).
 * **7-day trend:** Readiness recalculated for each of the last 7 mornings, each against its own baseline (the 60 nights before it) and with the daily loads up to the day before it, so a past day shows what that morning showed. (Loads use today's resting and max HR, so a change to those since can still move a past value slightly.)
 
 ### Breathing disturbances card (not part of Readiness)
@@ -312,7 +312,7 @@ Energy is always kept within 0–100.
 
 * **Moving** means the strap counted 1–250 steps that minute, as for daily load. Sitting with a raised heart rate (heat, coffee, a fever) isn't Activity or Exercise outside a workout, short of a sustained run (below): it's Stress if the stress score says so, otherwise Rest, and it can't Relax.
 * **Sustained effort:** 10 or more minutes in a row at HRR ≥ 30 % outside a workout count as Exercise even without steps (unrecorded cycling or rowing). Shorter spikes stay Stress or Rest.
-* **Not worn** uses the strap's own off-body reports where OpenStrap was connected to hear them, plus the heart-rate gap guess everywhere (an "on body" report doesn't cancel it, as it may be stale). Energy then follows Zepp: it drifts down at Zepp's default no-wear rate (about 2.9 an hour above 50). After 384 not-worn minutes (6.4 hours) since waking, or straight away when the strap is off over your usual sleep time, there is no value (a gap in the chart). After a night off, Energy restarts when the strap is back on from the median of your last 7 wake values (80 without any), and the day says "Strap off overnight, Energy estimated." After a long stretch off in the day, the gap lasts until the next sleep, which starts from 50.
+* **Not worn** uses the strap's own off-body reports where unstrap was connected to hear them, plus the heart-rate gap guess everywhere (an "on body" report doesn't cancel it, as it may be stale). Energy then follows Zepp: it drifts down at Zepp's default no-wear rate (about 2.9 an hour above 50). After 384 not-worn minutes (6.4 hours) since waking, or straight away when the strap is off over your usual sleep time, there is no value (a gap in the chart). After a night off, Energy restarts when the strap is back on from the median of your last 7 wake values (80 without any), and the day says "Strap off overnight, Energy estimated." After a long stretch off in the day, the gap lasts until the next sleep, which starts from 50.
 * **Rest drain** is proportional to charge, so a desk day still runs Energy down but more slowly as it falls, as Zepp's mental pool does; Zepp's physical pool doesn't drain at rest at all.
 * **Body-signal Alert:** from the start of a night in Alert until the next sleep starts, every gain is × 0.5 and every drain × 1.5 (Zepp's health-alarm limits). Watch changes nothing.
 
@@ -407,7 +407,7 @@ A run (outdoor, treadmill or trail; phone or strap) that is more than **10 % lon
 
 ## 9. Sleep screen
 
-### OpenStrap's sleep score
+### unstrap's sleep score
 
 Used only when the strap didn't give its own score:
 
@@ -420,7 +420,7 @@ Used only when the strap didn't give its own score:
 
 ### Sleep score rating and headline
 
-The sleep score (the strap's, or OpenStrap's above) is rated in Zepp's bands: **90–100 Optimal, 80–89 Good, 60–79 Fair, 0–59 Pay attention**. The Sleep screen shows it next to the score, and the Recovery tab uses it for the Sleep contributor. Other contributors keep their own 85 / 70 / 55 bands.
+The sleep score (the strap's, or unstrap's above) is rated in Zepp's bands: **90–100 Optimal, 80–89 Good, 60–79 Fair, 0–59 Pay attention**. The Sleep screen shows it next to the score, and the Recovery tab uses it for the Sleep contributor. Other contributors keep their own 85 / 70 / 55 bands.
 
 The headline names what pulled the night down, checked in this order:
 
@@ -482,7 +482,7 @@ Last night's HRV, blood oxygen, breathing and skin temperature are compared with
 
 ### Steps today
 
-The synced minute-by-minute steps, plus the strap's live counter. A believable live total is used directly. On firmware 3.25 the live total carries a large fixed offset, so OpenStrap anchors it: it remembers the live reading each time the synced total changes, and adds only the steps counted since.
+The synced minute-by-minute steps, plus the strap's live counter. A believable live total is used directly. On firmware 3.25 the live total carries a large fixed offset, so unstrap anchors it: it remembers the live reading each time the synced total changes, and adds only the steps counted since.
 
 * A warning shows when the strap's daily total and the sum of minutes differ by more than 5 %.
 * **Active hours:** hours of the day with at least 250 steps.
@@ -617,11 +617,11 @@ Your estimate is compared with the treadmill reference table for your age decade
   * Time between samples counts toward the zone of the earlier sample, at most 5 s per gap.
   * Max HR here is the strap's value from the workout. Without it, your usual max HR from section 4 (tested value, else Tanaka or the strap's value, raised by observed peaks).
 * **Recovery HR:** HR at the end minus HR 60 s and 120 s later. Each reading is a median over ± 2 s. It's only treated as meaningful when you finished at ≥ 65 % of max HR.
-* Training effect and the strap's recovery time come from the strap unchanged for the strap's own workouts. Workouts started in OpenStrap get OpenStrap's own, below.
+* Training effect and the strap's recovery time come from the strap unchanged for the strap's own workouts. Workouts started in unstrap get unstrap's own, below.
 
 ### Training effect, EPOC, recovery and VO2max for phone workouts
 
-The strap works these out for the workouts it records. Zepp works them out for app workouts with neural networks whose weights are its own (analysis `native/04` §1), so OpenStrap uses open methods on the same scales. Code: `WorkoutEffect.kt`, fed by `WorkoutEffectEngine.kt`. Worked out when a workout ends, again after a trim or a gap fill, for older workouts the first time their summary is opened, and for every workout once when the model changes (`WorkoutEffect.MODEL`).
+The strap works these out for the workouts it records. Zepp works them out for app workouts with neural networks whose weights are its own (analysis `native/04` §1), so unstrap uses open methods on the same scales. Code: `WorkoutEffect.kt`, fed by `WorkoutEffectEngine.kt`. Worked out when a workout ends, again after a trim or a gap fill, for older workouts the first time their summary is opened, and for every workout once when the model changes (`WorkoutEffect.MODEL`).
 
 **The strap's own figures come first.** When the strap kept a record of nearly all of a phone workout (at least 90 % of it, as a session it ran alongside does), the workout takes the strap's EPOC, aerobic and anaerobic training effect and recovery time instead of the model's, after the sync that brings them (`WorkoutEffectEngine.strapEffect`). A record the strap only started partway through, as an auto-detected one, covers too little and the model stands. The rest of this section is that model.
 
@@ -676,7 +676,7 @@ EPOC ← EPOC + 0.077 × (e^(4.5x) − 1) × minutes
 * **Daily values** for charts: the average of the day's samples (the total for steps), with the day's lowest and highest. Resting HR uses the strap's one value per day.
 * **Year view:** days are averaged into Monday-starting weeks.
 * **"Your normal"** on metric screens is the mean ± 1 standard deviation of the last 30 days. It needs 7 days with data. Today is "above", "within" or "below".
-* **Weekly resting-HR chart:** the strap's daily resting HR. Without it, OpenStrap estimates one as the day's lowest 30-minute average HR. That needs ≥ 6 hours of data, ≥ 5 samples in the window, and the window covering at least 80 % of 30 minutes. These days are marked as estimated.
+* **Weekly resting-HR chart:** the strap's daily resting HR. Without it, unstrap estimates one as the day's lowest 30-minute average HR. That needs ≥ 6 hours of data, ≥ 5 samples in the window, and the window covering at least 80 % of 30 minutes. These days are marked as estimated.
 
 ---
 

@@ -161,7 +161,7 @@ class CompanionLink(private val context: Context, private val settings: Settings
     }
 
     companion object {
-        private const val TAG = "OpenStrap"
+        private const val TAG = "unstrap"
 
         /** Stored when Android 12 and older made the association: those versions have no association ids. */
         const val LEGACY_ID = -1

@@ -36,9 +36,13 @@ fun NewsPill(text: String, modifier: Modifier = Modifier) {
 /** From a number's unit to its tag. */
 internal val NewsPillGap = 8.dp
 
+/** From a number's dotted digits down to its tag, when the tag drops under them. */
+internal val NewsPillDropGap = 12.dp
+
 /**
  * A card's number with its unit and news tag (spec 2.5, Tags): [number] (the dotted digits and their unit), then the
- * tag 8 dp after it, dropping under the number when the line can't hold both, as on a Small.
+ * tag 8 dp after it, dropping 12 dp under the number when the line can't hold both, as on a Small. The drop is wider
+ * than the side gap because dotted digits read as a block and crowd a pill tucked right under them.
  */
 @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
@@ -46,7 +50,7 @@ fun NumberWithTag(tag: NewsTag?, modifier: Modifier = Modifier, number: @Composa
     androidx.compose.foundation.layout.FlowRow(
         modifier,
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(NewsPillGap),
-        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(6.dp),
+        verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(NewsPillDropGap),
         itemVerticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
     ) {
         number()

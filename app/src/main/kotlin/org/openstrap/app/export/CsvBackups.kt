@@ -76,7 +76,7 @@ class CsvBackups(
         context.contentResolver.openInputStream(uri) ?: throw FileNotFoundException("no input stream for $uri")
 
     private fun warn(message: String) {
-        Log.w("OpenStrap", message)
+        Log.w("unstrap", message)
         log(message)
     }
 }

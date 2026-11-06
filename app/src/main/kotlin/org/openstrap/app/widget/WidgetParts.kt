@@ -217,7 +217,7 @@ internal fun openMetric(context: Context, route: String, day: LocalDate?): Inten
         .apply { day?.let { putExtra(MainActivity.EXTRA_METRIC_DAY, it.toString()) } }
         .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
 
-internal const val WIDGET_TAG = "OpenStrap"
+internal const val WIDGET_TAG = "unstrap"
 
 /* ------------------------------------------------------------------------------------------------ */
 /* The frame                                                                                         */

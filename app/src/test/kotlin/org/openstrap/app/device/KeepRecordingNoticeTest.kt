@@ -28,7 +28,7 @@ class KeepRecordingNoticeTest {
         assertNull(channel.sound)
         assertFalse(channel.shouldVibrate())
         assertEquals("Keep recording", channel.name)
-        assertEquals("Asks you to open OpenStrap when Android may stop a workout.", channel.description)
+        assertEquals("Asks you to open unstrap when Android may stop a workout.", channel.description)
     }
 
     @Test

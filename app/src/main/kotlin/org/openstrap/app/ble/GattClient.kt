@@ -49,7 +49,7 @@ class Notification(val characteristic: UUID, val value: ByteArray)
 class GattClient(
     private val context: Context,
     private val address: String,
-    private val log: (String) -> Unit = { Log.w("OpenStrap", it) },
+    private val log: (String) -> Unit = { Log.w("unstrap", it) },
 ) {
 
     // Written by ops and close(), read by the binder thread's callbacks.

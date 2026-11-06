@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">OpenStrap</string>
+    <string name="app_name">Unstrap</string>
     <string name="shortcut_run">Start run</string>
     <string name="shortcut_strength">Start strength</string>
     <!-- The long form of a launcher shortcut, shown where the launcher has room. -->

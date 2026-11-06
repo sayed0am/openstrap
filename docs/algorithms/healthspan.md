@@ -1,8 +1,8 @@
 # Healthspan age
 
-An estimate of how old your habits look, built only from data OpenStrap already has. **Status: implemented (2026-10-20)** in `data/Healthspan.kt` (the formula) and `data/HealthspanEngine.kt` (loading the data), with §7's examples as unit tests in `HealthspanTest`. [evidence-review.md](evidence-review.md) dropped biological age on 2026-10-18 for three reasons; this document answers each one and lists what is still open. That section of evidence-review.md is now "Healthspan age: implemented".
+An estimate of how old your habits look, built only from data unstrap already has. **Status: implemented (2026-10-20)** in `data/Healthspan.kt` (the formula) and `data/HealthspanEngine.kt` (loading the data), with §7's examples as unit tests in `HealthspanTest`. [evidence-review.md](evidence-review.md) dropped biological age on 2026-10-18 for three reasons; this document answers each one and lists what is still open. That section of evidence-review.md is now "Healthspan age: implemented".
 
-OpenStrap is a wellness app. This is an estimate for personal insight, not a medical measurement.
+unstrap is a wellness app. This is an estimate for personal insight, not a medical measurement.
 
 ## Contents
 
@@ -35,12 +35,12 @@ S     = 0.6                                          shrinkage, because the term
 * **Targets** (8,000–10,000 steps, 90 min/week of strength, at least 7 h measured sleep) appear in the coaching (§5). They don't set the age.
 * **Windows:** 180 days for every input, except VO2max (90 days). Pace uses 30 days.
 * **A missing term** (for example no VO2max) is left out, which is the same as assuming the median.
-* **The shown offset is capped at ±5 y.** Li et al. 2018 found HR 0.26 for 5 vs 0 low-risk factors (smoking, BMI, alcohol, diet, exercise), about 14.7 y on this scale. ±5 y allows a 10 y span, two-thirds of that, and OpenStrap scores none of smoking, BMI, alcohol or diet. It is a loose ceiling, not a calibration.
+* **The shown offset is capped at ±5 y.** Li et al. 2018 found HR 0.26 for 5 vs 0 low-risk factors (smoking, BMI, alcohol, diet, exercise), about 14.7 y on this scale. ±5 y allows a 10 y span, two-thirds of that, and unstrap scores none of smoking, BMI, alcohol or diet. It is a loose ceiling, not a calibration.
 * **Design choices:** S = 0.6, the ±5 y cap, the ±5 y fitness-group limit, the per-term limits, the 0.5 weight on VO2max, and how each curve is drawn between published points.
 
 ## 2. Inputs and references
 
-| Input | Source in OpenStrap | Window rule | Reference |
+| Input | Source in unstrap | Window rule | Reference |
 |---|---|---|---|
 | Age | `UserProfile.age()` (birth year only, so ±1 y) | 20–79 | — |
 | Sex | `UserProfile.sex` | required | — |
@@ -69,7 +69,7 @@ ref (bpm, NHANES seated P50)     age 30   age 50   age 70     (band midpoints of
 joined linearly between the midpoints, flat below 30 and above 70
 ```
 
-* **Why +10 bpm:** office HR is 10.4 bpm above mean night HR in 56,901 ambulatory recordings (75.4 ± 11.5 vs 65.0 ± 9.7 bpm; Böhm 2020), and about 12 bpm in 32,569 (Vinyoles 2014). OpenStrap uses the lowest 30 minutes, which is below the night mean, so +10 is the low end and the term leans slightly young (§9).
+* **Why +10 bpm:** office HR is 10.4 bpm above mean night HR in 56,901 ambulatory recordings (75.4 ± 11.5 vs 65.0 ± 9.7 bpm; Böhm 2020), and about 12 bpm in 32,569 (Vinyoles 2014). unstrap uses the lowest 30 minutes, which is below the night mean, so +10 is the low end and the term leans slightly young (§9).
 * Böhm's night HR was a cuff reading every 30 minutes, in hypertensive patients (mean age 58, 15 % on beta-blockers), with no lowest value reported. Night HR predicted death better than office HR, with risk rising above about 70 bpm at night.
 * **Cross-check:** Fitbit's daily resting HR in 92,457 users (Quer 2020, read from a figure) is about 60–65 bpm for men and 64–68 for women over ages 20–80. Fitbit estimates lying-still HR just after waking, mostly from sleep data, not a minimum. The sleeping medians implied here (NHANES − 10: men 57–59, women 60–64) are a few bpm lower. That fits +10 bpm but doesn't prove it.
 * NHANES excludes people with conditions or medicines that affect pulse, so its median is for fairly healthy adults.
@@ -137,7 +137,7 @@ c_sri: ln HR re-based to the middle quintile, placed at quintile midpoints, join
 * Windred's SRI: GGIR sleep/wake from wrist accelerometry, each epoch compared with the one 24 h later, at least 120 h of valid pairs.
 * SRI is the main sleep term: it's objective (accelerometry, not self-report) and predicted mortality better than duration.
 * **Band:** ±50 % of the term after its limits are applied (design choice), then clamped to the limits, for the same reason as steps.
-* **Reference problem:** 81 comes from wrist actigraphy. OpenStrap's SRI comes from strap sleep staging plus worn minutes, with GGIR-style valid pairs. Two open-source tools disagreed on the same data ([Sleep 2025](https://academic.oup.com/sleep/article/8273793)). See §9.
+* **Reference problem:** 81 comes from wrist actigraphy. unstrap's SRI comes from strap sleep staging plus worn minutes, with GGIR-style valid pairs. Two open-source tools disagreed on the same data ([Sleep 2025](https://academic.oup.com/sleep/article/8273793)). See §9.
 
 ### 3.4 Short sleep only (Probable; limits 0 / +4)
 
@@ -330,18 +330,18 @@ A user exactly at every median gets 35.0.
 
 ## 9. Known problems
 
-* **S isn't fitted.** That would need outcome data OpenStrap will never have, so it stays a design choice. Evidence on how much the terms overlap is partial:
+* **S isn't fitted.** That would need outcome data unstrap will never have, so it stays a design choice. Evidence on how much the terms overlap is partial:
   * Sleep vs sleep: adding sleep duration barely weakens SRI (Windred, §3.3).
   * Sleep vs activity: in 6,673 NHANES adults with wrist accelerometers (Zhang Y 2024), an irregular sleep pattern carried HR 1.44 (1.09–1.90) before and 1.42 (1.01–1.99) after adjusting for activity volume and sleep duration. That pattern is a k-means cluster, not SRI, so it isn't scored.
   * Within fitness (resting HR, steps, VO2max): no mutually adjusted source, and the activity-clock evidence (Pyrkov 2018) suggests a large overlap. The ±5 y shared limit (§3.7) only catches outliers, so for most users this overlap is handled by S alone. A lower S for the fitness group, or a tighter limit, would address it; neither is chosen (design choice).
 * **Strap values are taken as they are (decision).** No side-by-side check against a wrist accelerometer is planned. The strap's sleep staging, asleep minutes, steps and lowest-30-minute HR are scored directly against references from other devices. The ±2 y minimum range, whole-year display and the ±1.5 / ±2 step limits absorb that offset.
-* **Strap vs wrist accelerometry.** The SRI median (81) and the sleep-duration studies use wrist accelerometers and GGIR-style processing. OpenStrap's SRI and asleep minutes come from strap sleep staging, so both sleep terms may be off by an unknown amount. Option: once enough users opt in to share anonymised SRI and sleep minutes, re-centre on OpenStrap's own medians.
+* **Strap vs wrist accelerometry.** The SRI median (81) and the sleep-duration studies use wrist accelerometers and GGIR-style processing. unstrap's SRI and asleep minutes come from strap sleep staging, so both sleep terms may be off by an unknown amount. Option: once enough users opt in to share anonymised SRI and sleep minutes, re-centre on unstrap's own medians.
 * **Sleeping vs seated RHR.** +10 bpm is the night-mean gap; the lowest 30 minutes is lower still, so the term leans young. No study compares a wearable's overnight minimum with clinic seated HR directly. Fitbit's population figures (Quer 2020) are the closest wearable reference, but they're read from a figure and use a different, proprietary resting HR.
 * **Curves read off figures.** The age-specific step curves (Paluch Figure S2c) are read off a published figure, to about ±0.02. Replace them if the authors publish tables.
 * **Strength is scored from categories.** Zhang 2026 gives HRs for bands of minutes, not a curve, so the midpoints and the straight lines between them are a design choice. 120+ min (0.92) is less protective than 90–119 min (0.87), so the credit eases from −1.52 y at 105 min to −0.91 y from 135 min. That is still credit, never a penalty.
 * **Strap steps aren't validated**, hence the ±1.5 / ±2 limits.
-* **Mixed references.** Each reference comes from a different population and statistic: NHANES P50 (US, healthy reference sample), Paluch medians of cohort medians (15 cohorts), UK Biobank median SRI (healthier than the UK average), a fixed 7 h for sleep, FRIEND P50 (US, lab-tested, apparently healthy), BRFSS (US). An average OpenStrap user won't land exactly on 0.
-* **Windows differ from the studies.** The studies used about one week of wear; OpenStrap scores 180-day averages. A 180-day value varies less than a one-week value, so OpenStrap users will cluster nearer the middle than the studies' quintiles and bands suggest.
+* **Mixed references.** Each reference comes from a different population and statistic: NHANES P50 (US, healthy reference sample), Paluch medians of cohort medians (15 cohorts), UK Biobank median SRI (healthier than the UK average), a fixed 7 h for sleep, FRIEND P50 (US, lab-tested, apparently healthy), BRFSS (US). An average unstrap user won't land exactly on 0.
+* **Windows differ from the studies.** The studies used about one week of wear; unstrap scores 180-day averages. A 180-day value varies less than a one-week value, so unstrap users will cluster nearer the middle than the studies' quintiles and bands suggest.
 * **The typical user reads slightly older.** A user at every median reads their own age, but the population doesn't centre on 0. In a simulated population of 35-year-old men the median shown offset is +0.3 y. Three terms push it older: short sleep (penalty-only; mean +0.32 y), SRI (bigger penalty below the median than credit above; +0.28 y) and steps (the under-60 term runs +1.5 to −0.86; +0.17 y). Strength pulls the other way (credit-only; −0.39 y); without it the median would be +0.7 y. These simulation figures, here and in §1, §3.7 and the next bullet, predate the 2026-11-04 change to resting HR, short sleep and strength (§3.1, §3.4, §3.5) and haven't been rerun.
 * **Comparison with wearable ageing clocks validated against mortality.** A 200,000-draw simulation of 35-year-old men (inputs from this document's own sources; fitness inputs independent, or correlated at ρ = 0.4) gives a shown offset with SD 1.7–1.9 y, 5th–95th percentile −2.3 to +3.2 y (independent) or −2.7 to +3.6 y (ρ = 0.4), and median +0.3 y. The fitness limit binds for 1–5 % and the ±5 y cap for under 1 %. Published clocks:
   * **CosinorAge** (Shim et al. 2024; UK Biobank wrist accelerometry, built like PhenoAge): HR 1.08 (1.06–1.11) per year of age gap in the UK Biobank validation set (868 deaths), 1.12 (1.05–1.18) in NHANES (199 deaths). The paper doesn't report how widely the gap spreads.
@@ -352,7 +352,7 @@ A user exactly at every median gets 35.0.
 * **Paluch's quartiles were study-specific.** Each cohort split its own sample, and no pooled cut-points exist (checked in the appendix). The age-specific HRs use whole-cohort quartiles, not age-specific ones.
 * **Missing terms.** A missing term is treated as the median. The range should widen when a term is missing (open).
 * **Cohort ages.** Most of the hazard ratios come from middle-aged and older cohorts, and the Gompertz conversion assumes the ratios hold at every age. The estimate is least supported for users in their 20s.
-* **No MVPA term.** WHOOP scores heart-rate zone time, and OpenStrap already computes MVPA-equivalent minutes (`Activity.mvpa`), but a sourced dose–response hazard ratio is needed before adding it. It would join the fitness group.
+* **No MVPA term.** WHOOP scores heart-rate zone time, and unstrap already computes MVPA-equivalent minutes (`Activity.mvpa`), but a sourced dose–response hazard ratio is needed before adding it. It would join the fitness group.
 * **Not read in full text:** Kodama 2009, Vinyoles 2014, Bennie 2018 and Jackson 2018 (abstracts only).
 
 ## 10. Sources

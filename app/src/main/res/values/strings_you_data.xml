@@ -2,7 +2,7 @@
 <!--
   What happens to your data, from the You page: the Backup page, the Health Connect page, Deleted sleep, and what a
   failed backup, restore or Health Connect copy says (ui/device/BackupCopy.kt, BackupPage.kt, HealthConnectPage.kt,
-  YouPage.kt, DeletedSleepPage.kt, ErrorCopy.kt, DeviceViewModel.kt). OpenStrap is the app's name, Health Connect is
+  YouPage.kt, DeletedSleepPage.kt, ErrorCopy.kt, DeviceViewModel.kt). unstrap is the app's name, written in lowercase even at the start of a sentence, Health Connect is
   Android's health store and the Play Store is Google's app store. Keep them as they are.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -21,10 +21,10 @@
 
     <!-- Why a backup failed, one sentence each. -->
     <string name="you_backup_failure_folder_gone">The folder is no longer available.</string>
-    <string name="you_backup_failure_permission">OpenStrap can no longer reach the folder. Choose it again.</string>
+    <string name="you_backup_failure_permission">unstrap can no longer reach the folder. Choose it again.</string>
     <!-- Why a backup or a saved copy failed: the phone is full. -->
     <string name="you_backup_failure_no_space">There isn\'t enough space for it.</string>
-    <string name="you_backup_failure_cant_write">OpenStrap couldn\'t write to the folder.</string>
+    <string name="you_backup_failure_cant_write">unstrap couldn\'t write to the folder.</string>
     <string name="you_backup_failure_other">Try again, or wait for tomorrow\'s backup.</string>
 
     <!-- A message after a restore: how many records came back, and the settings. The number is already formatted, "1,234". -->
@@ -49,15 +49,15 @@
     <!-- The Backup folder row before the folder's name is known. -->
     <string name="you_backup_folder_unknown">The folder you chose</string>
     <!-- What Back up now says when it's done. The name is the zip's file name. -->
-    <string name="you_backup_outcome_done">Backed up as <xliff:g id="file" example="OpenStrap-backup-2026-10-17.zip">%1$s</xliff:g>.</string>
+    <string name="you_backup_outcome_done">Backed up as <xliff:g id="file" example="unstrap-backup-2026-10-17.zip">%1$s</xliff:g>.</string>
     <string name="you_backup_outcome_recording">A workout is recording. The backup runs after it ends.</string>
     <string name="you_backup_outcome_off">Automatic backup is off.</string>
     <!-- The reason is one of the you_backup_failure sentences. -->
     <string name="you_backup_outcome_failed">Couldn\'t back up. <xliff:g id="reason" example="There isn't enough space for it.">%1$s</xliff:g></string>
     <!-- A message once a copy is saved. -->
     <string name="you_backup_saved_copy">Saved a copy.</string>
-    <!-- A message when Android won't let OpenStrap keep the backup folder. -->
-    <string name="you_backup_folder_refused">OpenStrap can\'t keep writing to that folder. Choose another one.</string>
+    <!-- A message when Android won't let unstrap keep the backup folder. -->
+    <string name="you_backup_folder_refused">unstrap can\'t keep writing to that folder. Choose another one.</string>
 
     <!-- The Backup page: its title and rows. -->
     <string name="you_backup_title">Backup</string>
@@ -67,9 +67,9 @@
     <!-- Under Back up now while it runs. -->
     <string name="you_backup_now_running">Backing up…</string>
     <string name="you_backup_now_note">Saves today\'s zip in that folder</string>
-    <string name="you_backup_restore_note">Any OpenStrap zip. Fills in what this phone is missing</string>
+    <string name="you_backup_restore_note">Any unstrap zip. Fills in what this phone is missing</string>
     <string name="you_backup_save_copy">Save a copy</string>
-    <string name="you_backup_save_copy_note">A zip where you choose. OpenStrap never deletes it</string>
+    <string name="you_backup_save_copy_note">A zip where you choose. unstrap never deletes it</string>
 
     <!-- The Deleted sleep page's title. -->
     <string name="you_deleted_sleep_title">Deleted sleep</string>
@@ -96,7 +96,7 @@
     <string name="you_hc_any_time">Any time</string>
     <string name="you_hc_copy_now">Copy now</string>
     <string name="you_hc_copy_now_note">The last 30 days, to Health Connect</string>
-    <string name="you_hc_restore_note">Bring back what OpenStrap saved there</string>
+    <string name="you_hc_restore_note">Bring back what unstrap saved there</string>
     <string name="you_hc_open">Open Health Connect</string>
     <string name="you_hc_open_note">Permissions and data</string>
     <!-- Where Health Connect is a Play Store app that's missing or out of date: the button, and why. -->
@@ -106,7 +106,7 @@
     <string name="you_hc_store_failed">Couldn\'t open the Play Store.</string>
 
     <!-- Messages after a Health Connect restore or copy. -->
-    <string name="you_hc_restored_none">Health Connect has no OpenStrap data to restore.</string>
+    <string name="you_hc_restored_none">Health Connect has no unstrap data to restore.</string>
     <!-- The number is already formatted, "1,234". -->
     <plurals name="you_hc_restored">
         <item quantity="one">Restored <xliff:g id="count" example="1,234">%1$s</xliff:g> record from Health Connect.</item>
@@ -128,17 +128,17 @@
 
     <!-- A failed Save a copy. The reason is one of the sentences below. -->
     <string name="you_error_save_copy">Couldn\'t save the copy. <xliff:g id="reason" example="Try again, or choose another place.">%1$s</xliff:g></string>
-    <string name="you_error_save_copy_permission">OpenStrap wasn\'t allowed to write there. Choose another place.</string>
+    <string name="you_error_save_copy_permission">unstrap wasn\'t allowed to write there. Choose another place.</string>
     <string name="you_error_save_copy_gone">That place is no longer available. Choose another one.</string>
     <string name="you_error_save_copy_other">Try again, or choose another place.</string>
     <!-- A failed Restore of a zip. The reason is one of the sentences below. -->
     <string name="you_error_restore_copy">Couldn\'t restore the copy. <xliff:g id="reason" example="Try again.">%1$s</xliff:g></string>
-    <string name="you_error_restore_not_copy">That file isn\'t an OpenStrap copy.</string>
-    <string name="you_error_restore_cant_open">OpenStrap can\'t open that file. Choose it again.</string>
+    <string name="you_error_restore_not_copy">That file isn\'t an unstrap copy.</string>
+    <string name="you_error_restore_cant_open">unstrap can\'t open that file. Choose it again.</string>
     <!-- The reason a failure gives when there's nothing better to say. -->
     <string name="you_error_try_again">Try again.</string>
     <!-- A failed Health Connect read or write: what failed (you_hc_restore_failed and the like), then why. -->
     <string name="you_error_hc"><xliff:g id="what" example="Couldn't copy to Health Connect">%1$s</xliff:g>. <xliff:g id="reason" example="Try again.">%2$s</xliff:g></string>
-    <string name="you_error_hc_permission">OpenStrap no longer has permission. Allow it in Health Connect.</string>
+    <string name="you_error_hc_permission">unstrap no longer has permission. Allow it in Health Connect.</string>
     <string name="you_error_hc_no_answer">Health Connect didn\'t answer. Try again.</string>
 </resources>

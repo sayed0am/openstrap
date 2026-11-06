@@ -3,7 +3,7 @@
   Activity: the Activity tab's cards and lists (ui/glow/GlowActivityScreen.kt) and the details they open: Heart points,
   Active minutes, Load, VO2 max, Time to recover, Calories, Distance and the week story (ui/glow/ActivityDetail.kt).
   A detail's headline is a big dotted number with a short label beside or under it, so labels there stay short.
-  OpenStrap is the app's name. Keep it as it is.
+  unstrap is the app's name, written in lowercase even at the start of a sentence. Keep it as it is.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The Activity tab -->

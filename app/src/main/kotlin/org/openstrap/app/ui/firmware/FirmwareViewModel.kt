@@ -248,7 +248,7 @@ class FirmwareViewModel(
     }
 
     private fun log(message: String) {
-        android.util.Log.w("OpenStrap", message)
+        android.util.Log.w("unstrap", message)
         (strap as? StrapManager)?.log(message)
     }
 

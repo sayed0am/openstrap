@@ -14,7 +14,7 @@ class BackupFilesTest {
     private val day = LocalDate.of(2026, 10, 29)
 
     @Test fun `a backup is named by its day, and its temp name is never one`() {
-        assertEquals("OpenStrap-backup-2026-10-29.zip", BackupFiles.name(day))
+        assertEquals("unstrap-backup-2026-10-29.zip", BackupFiles.name(day))
         assertEquals(day, BackupFiles.dateOf(BackupFiles.name(day)))
         assertNull(BackupFiles.dateOf(BackupFiles.tempName(day)))
         assertTrue(BackupFiles.isTemp(BackupFiles.tempName(day)))
@@ -23,14 +23,26 @@ class BackupFilesTest {
 
     @Test fun `only our own names count as backups`() {
         for (name in listOf(
-            "OpenStrap-backup-2026-10-29 (1).zip", "openstrap-backup-2026-10-29.zip", "OpenStrap-backup-2026-10-29.zip.bak",
-            "OpenStrap-backup-2026-13-40.zip", "openstrap-export.zip", "notes.txt", "",
+            "unstrap-backup-2026-10-29 (1).zip", "Unstrap-backup-2026-10-29.zip", "unstrap-backup-2026-10-29.zip.bak",
+            "unstrap-backup-2026-13-40.zip", "OpenStrap-backup-2026-10-29 (1).zip", "openstrap-backup-2026-10-29.zip",
+            "OpenStrap-backup-2026-10-29.zip.bak", "OpenStrap-backup-2026-13-40.zip", "openstrap-export.zip", "notes.txt", "",
         )) assertNull(name, BackupFiles.dateOf(name))
+    }
+
+    @Test fun `backups from before the rename are still ours`() {
+        assertEquals(day, BackupFiles.dateOf("OpenStrap-backup-2026-10-29.zip"))
+        assertTrue(BackupFiles.isTemp("OpenStrap-backup-2026-10-29.part"))
+    }
+
+    @Test fun `old and new names count together, the seven newest kept whatever their name`() {
+        val old = (5L until 10).map { "OpenStrap-backup-${day.minusDays(it)}.zip" }
+        val new = (0L until 5).map { BackupFiles.name(day.minusDays(it)) }
+        assertEquals(old.drop(2).toSet(), BackupFiles.toDelete((old + new).shuffled()).toSet())
     }
 
     @Test fun `retention keeps the seven newest and deletes only ours`() {
         val backups = (0L until 10).map { BackupFiles.name(day.minusDays(it)) }.shuffled()
-        val others = listOf("openstrap-export.zip", "OpenStrap-backup-2020-01-01 (1).zip", "photo.jpg", BackupFiles.tempName(day))
+        val others = listOf("openstrap-export.zip", "unstrap-backup-2020-01-01 (1).zip", "OpenStrap-backup-2020-01-01 (1).zip", "photo.jpg", BackupFiles.tempName(day))
         val deleted = BackupFiles.toDelete(backups + others)
         assertEquals((7L until 10).map { BackupFiles.name(day.minusDays(it)) }.toSet(), deleted.toSet())
         assertEquals(3, deleted.size)

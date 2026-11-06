@@ -43,7 +43,7 @@ class TodayCopyTest {
         assertEquals("No sleep recorded that night.", TodayCopy.waking(null, null, false, null, false, false))
         assertEquals("Recovery starts after your first night with the strap.", TodayCopy.waking(null, null, false, learning, true, true))
         val slept = (5 * 60 + 32) * 60L
-        assertEquals("Slept 5 h 32. OpenStrap is still learning your nights, 5 of 7.", TodayCopy.waking(slept, null, false, learning, false, true))
+        assertEquals("Slept 5 h 32. unstrap is still learning your nights, 5 of 7.", TodayCopy.waking(slept, null, false, learning, false, true))
         assertEquals(
             "Slept 5 h 32. Not enough heart data last night for a Recovery score.",
             TodayCopy.waking(slept, null, false, TodayCopy.NoScore.NoHeartData, false, true),
@@ -55,10 +55,10 @@ class TodayCopyTest {
     @Test fun `recovery shows the score, else the strap's estimate, else why not`() {
         assertEquals(TodayCopy.RecoveryShown(78, "Ready", "Recovered enough for your usual training."), TodayCopy.recoveryShown(78, false, null, 90, "No reading yet"))
         assertEquals(
-            TodayCopy.RecoveryShown(90, "Strap's estimate", "OpenStrap is still learning your nights, 5 of 7.", estimate = true),
+            TodayCopy.RecoveryShown(90, "Strap's estimate", "unstrap is still learning your nights, 5 of 7.", estimate = true),
             TodayCopy.recoveryShown(null, false, learning, 90, "No reading yet"),
         )
-        assertEquals(TodayCopy.RecoveryShown(null, null, "OpenStrap is still learning your nights, 5 of 7."), TodayCopy.recoveryShown(null, false, learning, null, "No reading yet"))
+        assertEquals(TodayCopy.RecoveryShown(null, null, "unstrap is still learning your nights, 5 of 7."), TodayCopy.recoveryShown(null, false, learning, null, "No reading yet"))
         assertEquals(TodayCopy.RecoveryShown(null, null, "No reading yet"), TodayCopy.recoveryShown(null, false, null, null, "No reading yet"))
     }
 

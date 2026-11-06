@@ -185,6 +185,6 @@ class WorkoutEffectEngine(private val dao: HealthDao) {
         /** Fitness takes 42 days to build (Recovery.CTL_DAYS); the activity class uses the last 28 of them. */
         const val TREND_DAYS = Recovery.CTL_DAYS
         const val DEFAULT_RESTING_HR = 60f
-        const val TAG = "OpenStrap"
+        const val TAG = "unstrap"
     }
 }

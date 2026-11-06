@@ -116,7 +116,7 @@ class WorkoutLocation(private val context: Context, private val onFix: (Route.Po
         internal const val FUSED_TIMEOUT_MS = 20_000L
         private const val FUSED = "fused" // LocationManager.FUSED_PROVIDER, named from API 31
         private const val GPS = LocationManager.GPS_PROVIDER
-        private const val TAG = "OpenStrap"
+        private const val TAG = "unstrap"
 
         /** From a mock-location app rather than the GPS chip. `isMock` replaced `isFromMockProvider` in API 31. */
         @Suppress("DEPRECATION")

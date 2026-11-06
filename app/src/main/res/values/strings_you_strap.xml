@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The Strap page, opened from the header's strap chip: the strap's state, its rows, pairing, and the messages its
-  actions give (ui/device/DeviceScreen.kt, DeviceViewModel.kt, ErrorCopy.kt). OpenStrap is the app's name, Zepp is the
+  actions give (ui/device/DeviceScreen.kt, DeviceViewModel.kt, ErrorCopy.kt). unstrap is the app's name, written in lowercase even at the start of a sentence, Zepp is the
   strap maker's app and account, and Helio Strap is the strap. Keep them as they are.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -13,7 +13,7 @@
     <string name="you_strap_state_not_synced">Connected. Not synced</string>
     <string name="you_strap_state_connected">Connected</string>
     <string name="you_strap_state_connecting">Connecting…</string>
-    <!-- The strap refused OpenStrap's auth key. -->
+    <!-- The strap refused unstrap's auth key. -->
     <string name="you_strap_state_key_rejected">The strap rejected the key</string>
     <string name="you_strap_state_cant_connect">Can\'t connect</string>
     <string name="you_strap_state_not_paired">Not paired</string>
@@ -23,20 +23,20 @@
 
     <!-- Asked before Disconnect. -->
     <string name="you_strap_disconnect_title">Disconnect the strap?</string>
-    <string name="you_strap_disconnect_text">The strap keeps recording on its own, but OpenStrap won\'t sync or show live heart rate until you connect again.</string>
+    <string name="you_strap_disconnect_text">The strap keeps recording on its own, but unstrap won\'t sync or show live heart rate until you connect again.</string>
     <!-- The same while a sync runs. -->
-    <string name="you_strap_disconnect_text_syncing">The sync in progress will stop. The strap keeps recording on its own, but OpenStrap won\'t sync or show live heart rate until you connect again.</string>
+    <string name="you_strap_disconnect_text_syncing">The sync in progress will stop. The strap keeps recording on its own, but unstrap won\'t sync or show live heart rate until you connect again.</string>
     <!-- The button that confirms, and the Strap page's row. -->
     <string name="you_strap_disconnect">Disconnect</string>
     <!-- Asked before Restart strap. -->
     <string name="you_strap_restart_title">Restart the strap?</string>
-    <string name="you_strap_restart_text">The strap restarts and disconnects. OpenStrap reconnects on its own once it\'s back, which can take a minute.</string>
+    <string name="you_strap_restart_text">The strap restarts and disconnects. unstrap reconnects on its own once it\'s back, which can take a minute.</string>
     <!-- The same while a sync runs. -->
-    <string name="you_strap_restart_text_syncing">The sync in progress will stop. The strap restarts and disconnects. OpenStrap reconnects on its own once it\'s back, which can take a minute.</string>
+    <string name="you_strap_restart_text_syncing">The sync in progress will stop. The strap restarts and disconnects. unstrap reconnects on its own once it\'s back, which can take a minute.</string>
     <string name="you_strap_restart">Restart</string>
     <!-- Asked before Forget this strap. -->
     <string name="you_strap_forget_title">Forget this strap?</string>
-    <string name="you_strap_forget_text">OpenStrap will disconnect and delete the strap\'s address and auth key from this phone. Your synced health data stays. To pair again you\'ll need the auth key.\n\nThis doesn\'t unlink the strap from your Zepp account.</string>
+    <string name="you_strap_forget_text">unstrap will disconnect and delete the strap\'s address and auth key from this phone. Your synced health data stays. To pair again you\'ll need the auth key.\n\nThis doesn\'t unlink the strap from your Zepp account.</string>
     <string name="you_strap_forget">Forget</string>
 
     <!-- The Strap page's title. -->
@@ -66,30 +66,30 @@
     <string name="you_strap_not_signed_in">Not signed in</string>
     <string name="you_strap_row_restart">Restart strap</string>
     <string name="you_strap_row_forget">Forget this strap</string>
-    <!-- The row that keeps the strap connected while OpenStrap is closed. -->
+    <!-- The row that keeps the strap connected while unstrap is closed. -->
     <string name="you_strap_row_background">Stay connected in the background</string>
     <string name="you_strap_battery_settings_failed">Couldn\'t open battery settings on this phone.</string>
     <!-- After the battery's number in large dots, "86% battery". The number isn't part of it: the placeholder is the percent sign, which can move or take a space before it. -->
     <string name="you_strap_battery_unit"><xliff:g id="percent_sign" example="%">%1$s</xliff:g> battery</string>
     <!-- Under the reason the strap couldn't connect. -->
-    <string name="you_strap_retrying">OpenStrap keeps retrying. Keep the strap on its charger near the phone, and make sure the Zepp app isn\'t running. The strap talks to one app at a time.</string>
+    <string name="you_strap_retrying">unstrap keeps retrying. Keep the strap on its charger near the phone, and make sure the Zepp app isn\'t running. The strap talks to one app at a time.</string>
     <!-- Why the sync stopped, a sentence from the sync. -->
     <string name="you_strap_sync_stopped">Sync stopped. <xliff:g id="reason" example="The strap stopped answering.">%1$s</xliff:g></string>
     <!-- Under it. The sentence before is "Your data is still on the strap." -->
-    <string name="you_strap_sync_retry"><xliff:g id="data_on_strap" example="Your data is still on the strap.">%1$s</xliff:g> OpenStrap tries again by itself.</string>
+    <string name="you_strap_sync_retry"><xliff:g id="data_on_strap" example="Your data is still on the strap.">%1$s</xliff:g> unstrap tries again by itself.</string>
 
     <!-- The pairing panel, with no strap paired. -->
     <string name="you_pair_title">Pair your Helio Strap</string>
-    <string name="you_pair_intro">OpenStrap needs the strap\'s auth key, which Zepp creates when you link the strap. You only do this once.</string>
+    <string name="you_pair_intro">unstrap needs the strap\'s auth key, which Zepp creates when you link the strap. You only do this once.</string>
     <!-- Three numbered steps, each a title and what to do. -->
     <string name="you_pair_step_link">Link the strap in the Zepp app</string>
     <string name="you_pair_step_link_text">Install Zepp, sign in, and link your Helio Strap.</string>
-    <string name="you_pair_step_link_note">OpenStrap signs in with email only. If you signed up with Google or Apple, add an email and password to your account in the Zepp app\'s account settings.</string>
+    <string name="you_pair_step_link_note">unstrap signs in with email only. If you signed up with Google or Apple, add an email and password to your account in the Zepp app\'s account settings.</string>
     <string name="you_pair_step_ready">Get the strap ready</string>
     <string name="you_pair_step_ready_text">Put the strap on its charger, close to this phone.</string>
     <string name="you_pair_step_ready_note">Force-stop or uninstall Zepp so it lets go of the strap. Don\'t unlink the strap in Zepp: that wipes its key.</string>
     <string name="you_pair_step_sign_in">Sign in and pair</string>
-    <string name="you_pair_step_sign_in_text">Sign in with the same Zepp email. OpenStrap finds your strap and its key, then pairs.</string>
+    <string name="you_pair_step_sign_in_text">Sign in with the same Zepp email. unstrap finds your strap and its key, then pairs.</string>
     <!-- A button that opens Zepp's sign-in, on the Strap and Zepp account pages. -->
     <string name="you_pair_sign_in">Sign in with Zepp</string>
     <!-- The sign-in's confirm button when pairing. -->
@@ -128,10 +128,10 @@
     <!-- Debug builds only. -->
     <string name="you_strap_sample_loaded">Loaded a week of sample data.</string>
     <!-- Android's prompt to keep the strap connected was turned down. -->
-    <string name="you_strap_not_linked">Background connection not allowed. You can turn off battery optimisation for OpenStrap instead.</string>
+    <string name="you_strap_not_linked">Background connection not allowed. You can turn off battery optimisation for unstrap instead.</string>
     <string name="you_strap_buzz_failed">Couldn\'t buzz the strap</string>
     <string name="you_strap_stop_buzz_failed">Couldn\'t stop the strap buzzing</string>
-    <string name="you_strap_restarting">Restarting the strap. OpenStrap reconnects when it\'s back.</string>
+    <string name="you_strap_restarting">Restarting the strap. unstrap reconnects when it\'s back.</string>
     <string name="you_strap_restart_failed">Couldn\'t restart the strap</string>
     <!-- A strap command that got no answer. -->
     <string name="you_error_no_answer">The strap didn\'t answer. Try again.</string>

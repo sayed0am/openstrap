@@ -2,7 +2,7 @@
 <!--
   The You page and what it opens for you: Profile, the goals sheet, the Updates page and Diagnostics
   (ui/device/YouPage.kt, ProfileScreen.kt, GoalsSheet.kt, UpdatesPage.kt, DeviceScreen.kt), and the buttons and values
-  every You and Strap page shares. OpenStrap is the app's name, GitHub is where its releases are and Health Connect is
+  every You and Strap page shares. unstrap is the app's name, written in lowercase even at the start of a sentence, GitHub is where its releases are and Health Connect is
   Android's health store. Keep all three as they are.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -51,7 +51,7 @@
         <item quantity="other"><xliff:g id="count" example="250">%1$d</xliff:g> lines, for bug reports</item>
     </plurals>
     <!-- Centred at the foot of the You page: the version running. -->
-    <string name="you_footer">OpenStrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>. Everything stays on this phone.</string>
+    <string name="you_footer">unstrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>. Everything stays on this phone.</string>
 
     <!-- The Goals row, one line: the three daily goals joined, "8,000 steps, 450 active kcal, 8 active hours". -->
     <string name="you_goals_line"><xliff:g id="steps" example="8,000 steps">%1$s</xliff:g>, <xliff:g id="calories" example="450 active kcal">%2$s</xliff:g>, <xliff:g id="hours" example="8 active hours">%3$s</xliff:g></string>
@@ -92,7 +92,7 @@
     <!-- A field's label, then the unit shown inside it, short. -->
     <string name="you_profile_age">Age</string>
     <string name="you_profile_age_unit">years</string>
-    <!-- Over the Female and Male segments. Calories, Load and Habit Age are names of OpenStrap's pages and scores. -->
+    <!-- Over the Female and Male segments. Calories, Load and Habit Age are names of unstrap's pages and scores. -->
     <string name="you_profile_sex_note">Sex, for Calories, Load, fitness and Habit Age</string>
     <!-- Two segments side by side, a word each. -->
     <string name="you_profile_sex_female">Female</string>
@@ -162,7 +162,7 @@
     <string name="you_updates_title">Updates</string>
     <string name="you_updates_check_now">Check now</string>
     <!-- The row of the newest version, to install it. -->
-    <string name="you_updates_release">OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g></string>
+    <string name="you_updates_release">unstrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g></string>
     <!-- The daily check's switch and its line. -->
     <string name="you_updates_daily">Check every day</string>
     <string name="you_updates_daily_note">Notifies you of new versions</string>
@@ -176,7 +176,7 @@
     <!-- The panel's title when this build is newer than every release, a developer's. -->
     <string name="you_updates_latest">Latest release</string>
     <!-- Centred at the foot of the Updates page. -->
-    <string name="you_updates_installed">You have OpenStrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>.</string>
+    <string name="you_updates_installed">You have unstrap <xliff:g id="version" example="2.1.0">%1$s</xliff:g>.</string>
     <string name="you_updates_no_notes">No notes for this release.</string>
 
     <!-- The Diagnostics page: the strap's log, for bug reports. -->
@@ -184,7 +184,7 @@
     <!-- A short button that copies the whole log. -->
     <string name="you_diagnostics_copy">Copy</string>
     <!-- The clipboard's label for the copied log, which some phones show. -->
-    <string name="you_diagnostics_clip_label">OpenStrap log</string>
+    <string name="you_diagnostics_clip_label">unstrap log</string>
     <string name="you_diagnostics_log">Strap log</string>
     <!-- Beside the log's title. -->
     <plurals name="you_diagnostics_lines">

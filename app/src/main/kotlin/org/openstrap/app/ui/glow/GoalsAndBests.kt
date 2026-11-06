@@ -115,14 +115,11 @@ private fun weekStory(view: RewardsView, first: LocalDate, strings: Strings = St
     val meters = mine.sumOf { (it.meters ?: 0f).toDouble() }.toFloat()
     val kcal = Math.round(mine.mapNotNull { it.activeKcal }.sum())
     val totals = if (mine.isEmpty()) emptyList() else listOfNotNull(
-        WeekFigure(AppIcons.Timer, Units.clockDuration(seconds), null, strings.get(R.string.glow_goals_hours)),
+        StoryStat(Units.clockDuration(seconds), null, strings.get(R.string.glow_goals_hours)),
         meters.takeIf { it >= MIN_WEEK_METERS }?.let {
-            WeekFigure(
-                AppIcons.Route01, Units.km(it, Units.Precision.Day), strings.get(R.string.glow_unit_km),
-                strings.get(R.string.glow_goals_distance),
-            )
+            StoryStat(Units.km(it, Units.Precision.Day), strings.get(R.string.glow_unit_km), strings.get(R.string.glow_goals_distance))
         },
-        kcal.takeIf { it > 0 }?.let { WeekFigure(AppIcons.Fire, Units.count(it), null, strings.get(R.string.glow_goals_active_kcal)) },
+        kcal.takeIf { it > 0 }?.let { StoryStat(Units.count(it), null, strings.get(R.string.glow_goals_active_kcal)) },
     )
     val run = Rewards.inARow(view.weeks, first)
     val best = view.bests.firstOrNull { it.date in from until to }
@@ -138,7 +135,7 @@ private fun weekStory(view: RewardsView, first: LocalDate, strings: Strings = St
         },
     )
     return StoryCard.Week(
-        Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), "$count",
+        Ranges.of(DayWords.dayMonth(first), DayWords.dayMonth(first.plusDays(6))), strings.get(R.string.glow_share_my_week), "$count",
         strings.format(R.string.glow_goals_story_goal, strings.plural(R.plurals.glow_goals_workouts_word, count), goal),
         weekDots(view, first), totals, chips,
     )
@@ -290,7 +287,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
     var sharing by rememberSaveable { mutableStateOf(false) }
     if (sharing && view != null) {
         val card = remember(view, first) { weekStory(view, first) }
-        WeekShareScreen(card, "OpenStrap_week_$first.png") { sharing = false }
+        WeekShareScreen(card, "unstrap_week_$first.png") { sharing = false }
         return
     }
     BackHandler(onBack = onBack)

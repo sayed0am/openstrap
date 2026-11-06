@@ -1,6 +1,6 @@
 # Evidence review
 
-What published research says about each part of OpenStrap's health model, and what we're changing. The current model is in [recovery.md](recovery.md); constant names match `Recovery.kt`.
+What published research says about each part of unstrap's health model, and what we're changing. The current model is in [recovery.md](recovery.md); constant names match `Recovery.kt`.
 
 **Status: steps 1–12 are done on branch `evidence-review` (2026-10-18), including the FRIEND 2022 band and fitness age (Kaminsky 2022 Table 3; bands at the reported 30th/50th/70th/90th percentiles). [recovery.md](recovery.md) describes the model as built.** Not done: step 13 (personal weights, which need ≥ 6 weeks of check-ins), VO2max phase 2 (phone GPS), the optional personal sleep need, and BioCharge logging (not readable from the strap). The new weights haven't been checked against real data yet. Constants marked for review are settled at the strap calibration review on **2026-10-30** ([readiness-calibration.md](readiness-calibration.md)).
 
@@ -102,7 +102,7 @@ New weights (design choice), renormalised over the contributors present:
 
 Vendors define these differently and often don't say how: Garmin hides its window timing, WHOOP weights the last slow-wave stage, Polar uses the first 4 h. Those choices change agreement with ECG (Dial 2025). The strap's method is unknown and could change with firmware. A baseline that mixes two definitions measures the switch, not the body.
 
-1. Until there are 7 valid nights of our own values, show the strap's values and sub-scores, labelled "Strap's estimate". They never enter OpenStrap's score.
+1. Until there are 7 valid nights of our own values, show the strap's values and sub-scores, labelled "Strap's estimate". They never enter unstrap's score.
 2. On a night where our own value fails the validity rule, use the strap's value for display and alerts, flagged "strap fallback", and keep it out of the baseline.
 3. Raise a data-quality flag when ours and the strap's differ by more than 15 % (HRV) or 3 bpm (RHR).
 4. At the 2026-10-30 review, compare the night-to-night robust SD of both, and how each responds to tagged events. Switch to the strap's definitions only if they're clearly less noisy with the same response; then switch completely and rebuild the baseline.
@@ -355,7 +355,7 @@ The Helio Strap has no published validation for nightly RMSSD, resting HR, skin 
 * Does the strap's "awake" stage include falling-asleep time or a time-in-bed boundary? (WASO vs time-in-bed efficiency.)
 * How often does it log sleep SpO2? Does the type-74 apnea summary land on the right morning?
 * Does any channel expose beat-to-beat RR intervals, for artefact-corrected HRV?
-* Can a strap used only with OpenStrap report BioCharge `totalCharge`?
+* Can a strap used only with unstrap report BioCharge `totalCharge`?
 * Do chest- and arm-worn step counts track cadence well enough for the 100/130 thresholds?
 
 **Validity**

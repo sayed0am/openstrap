@@ -114,7 +114,7 @@ fun ZeppSignInDialog(
     var attempt by remember { mutableIntStateOf(0) }
     val app = LocalContext.current.applicationContext
     val diagnostics: (String) -> Unit = { line ->
-        ((app as? OpenStrapApp)?.container?.strap as? StrapManager)?.log(line) ?: Log.w("OpenStrap", line)
+        ((app as? OpenStrapApp)?.container?.strap as? StrapManager)?.log(line) ?: Log.w("unstrap", line)
     }
 
     // Watch the cookies while the user signs in; the site is a single-page app, so page loads alone don't tell us.

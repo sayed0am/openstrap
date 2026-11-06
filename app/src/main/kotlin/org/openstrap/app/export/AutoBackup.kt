@@ -71,7 +71,7 @@ class AutoBackup(
             Outcome.Done(name)
         }.getOrElse { e ->
             val failure = (e as? Failed)?.failure ?: BackupFiles.classify(e)
-            if (e !is Failed) Log.w("OpenStrap", "backup: failed ($failure): $e")
+            if (e !is Failed) Log.w("unstrap", "backup: failed ($failure): $e")
             settings.setBackupFailed(failure, now)
             Outcome.Failed(failure)
         }
@@ -86,7 +86,7 @@ class AutoBackup(
      */
     suspend fun chooseFolder(uri: Uri): Boolean {
         val kept = runCatching { context.contentResolver.takePersistableUriPermission(uri, FOLDER_ACCESS) }
-        kept.onFailure { Log.w("OpenStrap", "backup: folder permission not kept: $it") }
+        kept.onFailure { Log.w("unstrap", "backup: folder permission not kept: $it") }
         if (kept.isFailure) return false
         val before = settings.backup.first().folder
         if (before != null && before != uri.toString()) releaseFolder(before)
@@ -157,7 +157,7 @@ class AutoBackup(
     }
 
     private fun deleteQuietly(file: DocumentFile) {
-        runCatching { file.delete() }.onFailure { Log.w("OpenStrap", "backup: ${file.name} not deleted: $it") }
+        runCatching { file.delete() }.onFailure { Log.w("unstrap", "backup: ${file.name} not deleted: $it") }
     }
 
     companion object {

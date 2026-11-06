@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The app's frame (ui/root and ui/components): the tab bar, pull to sync, and the messages and dialogs when Android
-  permissions or Health Connect are missing. OpenStrap, Health Connect and Nearby devices (Android's name for the
+  permissions or Health Connect are missing. unstrap, Health Connect and Nearby devices (Android's name for the
   Bluetooth permission) are names, keep them as Android shows them in the phone's language.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -16,21 +16,21 @@
     <!-- A message when Health Connect can be installed from the Play Store. -->
     <string name="day_hc_install_first">Install Health Connect first.</string>
     <!-- A message when the user turned Health Connect's permissions down. -->
-    <string name="day_hc_not_granted">OpenStrap doesn\'t have Health Connect permission.</string>
+    <string name="day_hc_not_granted">unstrap doesn\'t have Health Connect permission.</string>
 
     <!-- A message when the user turned the Bluetooth permission down. -->
-    <string name="day_bluetooth_required">OpenStrap needs Nearby devices to reach your strap.</string>
+    <string name="day_bluetooth_required">unstrap needs Nearby devices to reach your strap.</string>
     <!-- The same on Android 11, where finding the strap needs the location permission instead. -->
-    <string name="day_bluetooth_required_location">OpenStrap needs location access to find your strap. It doesn\'t use your location.</string>
+    <string name="day_bluetooth_required_location">unstrap needs location access to find your strap. It doesn\'t use your location.</string>
     <!-- A message when the user turned location down for a workout: it starts anyway, without GPS. -->
     <string name="day_location_declined">Without location, distance comes from the strap\'s steps.</string>
     <!-- The dialog when Nearby devices was turned down for good: its title. -->
     <string name="day_nearby_title">Allow Nearby devices</string>
     <!-- Its text. Permissions is the heading in Android's settings page for the app. -->
-    <string name="day_nearby_text">OpenStrap needs Nearby devices to find and connect to your strap. Android won\'t ask again, so turn it on in OpenStrap\'s settings, under Permissions.</string>
+    <string name="day_nearby_text">unstrap needs Nearby devices to find and connect to your strap. Android won\'t ask again, so turn it on in unstrap\'s settings, under Permissions.</string>
     <!-- The same dialog on Android 11, where finding the strap needs the location permission instead. -->
     <string name="day_nearby_title_location">Allow location</string>
-    <string name="day_nearby_text_location">On Android 11, OpenStrap needs location access to find and connect to your strap. It doesn\'t use your location. Android won\'t ask again, so turn it on in OpenStrap\'s settings, under Permissions.</string>
+    <string name="day_nearby_text_location">On Android 11, unstrap needs location access to find and connect to your strap. It doesn\'t use your location. Android won\'t ask again, so turn it on in unstrap\'s settings, under Permissions.</string>
     <!-- Its button that opens Android's settings page for the app. -->
     <string name="day_nearby_open_settings">Open settings</string>
     <!-- Its button that closes it. -->

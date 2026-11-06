@@ -1,4 +1,4 @@
-# OpenStrap
+# unstrap
 
 ## Widget gallery
 

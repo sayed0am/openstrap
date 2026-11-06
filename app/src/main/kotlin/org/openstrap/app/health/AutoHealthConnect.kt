@@ -182,7 +182,7 @@ class HealthConnectAutoSync(
     }
 
     companion object {
-        private const val TAG = "OpenStrap"
+        private const val TAG = "unstrap"
         private const val WORK = "health_connect_auto"
     }
 }

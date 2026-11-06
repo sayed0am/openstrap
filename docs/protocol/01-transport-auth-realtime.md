@@ -293,7 +293,7 @@ From the shared secret `S[0..23]` and the auth key `K[0..15]` (`d/ubk.java:2018-
 
 These values are only installed **after** the device answers step 2 with success. They are replaced on every authentication.
 
-### 3.4 Already-bound reconnect (what OpenStrap implements)
+### 3.4 Already-bound reconnect (what unstrap implements)
 
 All messages go to endpoint **`0x0082`** (decimal 130), unencrypted. Primitive: `AES(key, block)` = AES-128-ECB encryption without padding (`d/fqg0.java:470-486`).
 
@@ -586,14 +586,14 @@ Example: `13` → `10 13 01 <mtu u16>` (§1.3).
 
 ### 5.8 Buzzing the strap: find device (`0x001A`) and motor patterns (`0x0018`)
 
-The strap has no screen and no notification module: `0x001E` NotificationModule is not in its services list, and Zepp leaves notifications off for it. OpenStrap buzzes it for phone calls and notifications with two endpoints the strap does list, both encrypted.
+The strap has no screen and no notification module: `0x001E` NotificationModule is not in its services list, and Zepp leaves notifications off for it. unstrap buzzes it for phone calls and notifications with two endpoints the strap does list, both encrypted.
 
 **`0x001A` FindDeviceModule** (`d/uhh.java`, impl `d/hhh.java`, receive `d/ccf.java:591-630`):
 
 | Bytes | Dir | Meaning |
 |---|---|---|
 | `03` | P→S | Start buzzing; reply `04 01 01` (1 = OK). **Buzzes until `06`.** It does not stop by itself, and tapping the strap did not stop it (hardware, below). |
-| `05 01` | P→S | Zepp's continuous find (`d/ghh.java:68-81`), used by its Find strap button with `06` to stop (`d/bgu.java`, `d/mys.java` case 7). Not answered. **The strap doesn't vibrate**, although it ACKs it and sends `07` after `06` (hardware, below). OpenStrap doesn't use it. |
+| `05 01` | P→S | Zepp's continuous find (`d/ghh.java:68-81`), used by its Find strap button with `06` to stop (`d/bgu.java`, `d/mys.java` case 7). Not answered. **The strap doesn't vibrate**, although it ACKs it and sends `07` after `06` (hardware, below). unstrap doesn't use it. |
 | `06` | P→S | Stop. Not answered; the strap then sends `07`. |
 | `07` | S→P | Buzzing stopped. |
 
@@ -602,11 +602,11 @@ The strap has no screen and no notification module: `0x001E` NotificationModule 
 * The pattern alternates vibrate and pause milliseconds, zero-padded to an even count; `nPairs` = count / 2.
 * `custom` = 1 uses the pattern; `test` = 1 plays it at once. It plays once and stops on its own.
 * `scene` is the ordinal of Zepp's `VibrateType` (`com/xiaomi/hm/health/ui/smartplay/customvibrate/model/VibrateType.java`): 0 APP_NOTIFY, 1 INCOMING_CALL, 2 SMS, 3 EMAIL, 4 SPORT_REACH_GOAL, 5 ALARM, 6 LONG_SIT, 7 DISCONNECT, 8 EVENT_REMIND, 9 FIND_BAND, 10 TODO, 11 COUNT_DOWN, 12 SCHEDULE.
-* Zepp's "test" sends the record with `test` = 1, then again with `test` = 0, which is the save (`d/ypk.java:396-407`). OpenStrap only sends the play, under scene 0, which the strap never uses on its own. So even if a play also saved, the alarm vibration is untouched.
+* Zepp's "test" sends the record with `test` = 1, then again with `test` = 0, which is the save (`d/ypk.java:396-407`). unstrap only sends the play, under scene 0, which the strap never uses on its own. So even if a play also saved, the alarm vibration is untouched.
 
 Example: two short buzzes, 150 ms on / 150 ms off / 150 ms on: `03 00 01 01 02 9600 9600 9600 0000`.
 
-How OpenStrap uses them:
+How unstrap uses them:
 
 * **Notification:** a `0x0018` pattern. If the strap doesn't list `0x0018`, it falls back to `0x001A` `03`, then `06` after 1.5 s.
 * **Ringing call:** `0x001A` `03` when the phone starts ringing, `06` when it is answered or ends. It stops after 60 s at most.
@@ -615,13 +615,13 @@ How OpenStrap uses them:
 
 ### 5.9 Settings the strap page uses: restart and the wear reminder (`0x000A`)
 
-Settings writes are `05 group groupVersion 00 n {key type value}`, answered `06 01`, with the group version taken from a read just before (codemap 03 §3.6.1). OpenStrap uses three keys beyond the health group:
+Settings writes are `05 group groupVersion 00 n {key type value}`, answered `06 01`, with the group version taken from a read just before (codemap 03 §3.6.1). unstrap uses three keys beyond the health group:
 
 | Group / key | Type | Use |
 |---|---|---|
-| GENERAL `0x0A` / 45 (`0x2D`) | bool | **Restart.** Writing true restarts the strap: `05 0A 02 00 01 2D 0B 01` with GENERAL at version 2. The ack may not arrive before the link drops; the usual reconnect brings the strap back. Zepp shows Restart only when the strap reports key 45, and so does OpenStrap (read on connect). |
-| GENERAL `0x0A` / 44 (`0x2C`) | bool | The strap's wear-reminder switch (`wearStatusAlertSwitch`). Zepp turns it on for the strap; OpenStrap does on connect while its Off-body reminder setting is on, writing only when the strap doesn't already report it on. |
-| DEVICE_INFORMATION `0x00` / 16 (`0x10`) | bool | `wearStatus`: false while the strap is off-body. Read with the rest of the group on connect, and pushed in a `04` when it changes (codemap 07 §4 N5). OpenStrap logs the first push raw (`wear status push …`). |
+| GENERAL `0x0A` / 45 (`0x2D`) | bool | **Restart.** Writing true restarts the strap: `05 0A 02 00 01 2D 0B 01` with GENERAL at version 2. The ack may not arrive before the link drops; the usual reconnect brings the strap back. Zepp shows Restart only when the strap reports key 45, and so does unstrap (read on connect). |
+| GENERAL `0x0A` / 44 (`0x2C`) | bool | The strap's wear-reminder switch (`wearStatusAlertSwitch`). Zepp turns it on for the strap; unstrap does on connect while its Off-body reminder setting is on, writing only when the strap doesn't already report it on. |
+| DEVICE_INFORMATION `0x00` / 16 (`0x10`) | bool | `wearStatus`: false while the strap is off-body. Read with the rest of the group on connect, and pushed in a `04` when it changes (codemap 07 §4 N5). unstrap logs the first push raw (`wear status push …`). |
 
 None of the three has been checked on a strap yet: whether it reports keys 44 and 45, restarts on 45, and pushes key 16.
 
@@ -661,7 +661,7 @@ None of the three has been checked on a strap yet: whether it reports keys 44 an
 
 ## Verified on hardware (Helio Strap, firmware 3.20.0.1, 2026-10-16)
 
-The first real connection, from OpenStrap on an Android 16 phone, confirmed the following:
+The first real connection, from unstrap on an Android 16 phone, confirmed the following:
 
 * Channel version reply: v2 with `encryptEnable = true`.
 * The services list arrives before auth. The strap lists `0000, 0081*, 0015, 0047, 0029, 0017*, 0028, 0043, 000a*, 0030*, 000d, 0048, 0016, 0022, 0049, 0032, 0036*, 001d, 0031, 0018*, 0082, 0025, 004b, 000c*, 004d*, 0019*, 000f, 001a*` (`*` = requires encryption).

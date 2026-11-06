@@ -51,7 +51,7 @@ object TodayCopy {
         data object NoHeartData : NoScore
     }
 
-    /** "OpenStrap is still learning your nights, 5 of 7." and the like. */
+    /** "unstrap is still learning your nights, 5 of 7." and the like. */
     fun noScoreLine(why: NoScore, strings: Strings = Strings.app): String = when (why) {
         is NoScore.Learning -> strings.format(R.string.core_today_no_score_learning, why.nights, why.of)
         NoScore.NoHeartData -> strings.get(R.string.core_today_no_score_heart)

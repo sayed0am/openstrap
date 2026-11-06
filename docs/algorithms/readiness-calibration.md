@@ -1,12 +1,12 @@
 # Readiness calibration against the strap
 
-**Status: collecting data.** Started 2026-10-16. Revisit after about two weeks of daily data, around **2026-10-30**. OpenStrap's Readiness formula stays as it is until then.
+**Status: collecting data.** Started 2026-10-16. Revisit after about two weeks of daily data, around **2026-10-30**. unstrap's Readiness formula stays as it is until then.
 
 ## Why
 
-The strap computes its own Readiness (channel module `0x0049`). OpenStrap computes its own as well (see [recovery.md](recovery.md)). The two can disagree a lot. On the first day:
+The strap computes its own Readiness (channel module `0x0049`). unstrap computes its own as well (see [recovery.md](recovery.md)). The two can disagree a lot. On the first day:
 
-| | Strap | OpenStrap |
+| | Strap | unstrap |
 |---|---|---|
 | Readiness | 91 | 52 |
 | HRV part | 89 (62 ms overnight) | none yet: no HRV baseline ("learning 0/14 nights") |
@@ -17,20 +17,20 @@ The strap computes its own Readiness (channel module `0x0049`). OpenStrap comput
 
 A single day can't support a fit, so we collect first. Possible changes once there's data:
 
-* Scale OpenStrap's HRV and resting-HR parts to match the strap's (HRV 30 % and RHR 22 % of our weight).
-* Use the strap's parts while OpenStrap's own baselines are still learning.
-* Keep OpenStrap's sleep parts either way. The strap leaves sleep out, so its score reads high after a short night.
+* Scale unstrap's HRV and resting-HR parts to match the strap's (HRV 30 % and RHR 22 % of our weight).
+* Use the strap's parts while unstrap's own baselines are still learning.
+* Keep unstrap's sleep parts either way. The strap leaves sleep out, so its score reads high after a short night.
 
 ## What is collected
 
-* **When:** at the end of every sync (`HistorySync.syncReadiness`), OpenStrap asks the strap for its score (`08 <since>`).
+* **When:** at the end of every sync (`HistorySync.syncReadiness`), unstrap asks the strap for its score (`08 <since>`).
 * **What comes back:** the strap holds only its latest score and returns it whatever `since` is. A history therefore exists only for days the phone synced.
 * **Stored in:** table `strap_readiness`, one row per local day (`day` = local midnight, epoch seconds).
   * `score`
   * `hrvScore`, `restingHrScore`, `skinTemperatureScore`, `breathingScore`
   * `sleepHrv` (ms) and `sleepRestingHr` (bpm)
   * `algorithmVersion` (the strap reported `4.3`)
-* **OpenStrap's own score is not stored.** It is computed from the synced data (`RecoveryEngine`), so the score for any past day can be recomputed during the comparison.
+* **unstrap's own score is not stored.** It is computed from the synced data (`RecoveryEngine`), so the score for any past day can be recomputed during the comparison.
 
 **Gaps:** a day the phone doesn't sync before the next morning's score replaces it is lost. Open the app at least once a day while collecting.
 
@@ -50,7 +50,7 @@ Agreement with the strap is agreement with another unvalidated score, so the rev
 
 * **Morning check-in** (Today screen, before noon): how you feel, 1 (poor) to 5 (great). Table `check_in`, one row per local day.
 * **Tags** were removed from the app: they changed no score. Old rows in table `day_tag` are still exported, imported and written to the backtest CSV.
-* **OpenStrap's own nightly inputs**, logged each time the day's score is computed. Table `night_metrics`: `hrvLn` (`hrv_n`, ln of the mean gated RMSSD, 5–200 ms), `rhrLowest30` (`rhr_n`), `rhrMeanSleep`, `rhrP10`, the sample counts, and the strap's `sleepHrv` / `sleepRestingHr` for the same night.
+* **unstrap's own nightly inputs**, logged each time the day's score is computed. Table `night_metrics`: `hrvLn` (`hrv_n`, ln of the mean gated RMSSD, 5–200 ms), `rhrLowest30` (`rhr_n`), `rhrMeanSleep`, `rhrP10`, the sample counts, and the strap's `sleepHrv` / `sleepRestingHr` for the same night.
 
 All of these are in the CSV backup (`check_in.csv`, `day_tag.csv`, `night_metrics.csv`).
 
@@ -69,9 +69,9 @@ The database is copied first, so Room's migration never touches the original. Wi
 
 ## Soft-minimum fusion
 
-Zepp combines its parts with a soft minimum (analysis `native/06-readiness.md` §4.8): each part weighs e^(−(s/100)²), so a low part counts up to e ≈ 2.7× a perfect one. OpenStrap uses a weighted mean, and caps the score at worst + 30 when a physiological part is below 40.
+Zepp combines its parts with a soft minimum (analysis `native/06-readiness.md` §4.8): each part weighs e^(−(s/100)²), so a low part counts up to e ≈ 2.7× a perfect one. unstrap uses a weighted mean, and caps the score at worst + 30 when a physiological part is below 40.
 
-`Recovery.softMinimum` keeps OpenStrap's importance weights and adds Zepp's: w = weight · e^(−(s/100)²), score = Σ w·s / Σ w. It drops the red-flag cap; the Alert cap stays. The app still shows the weighted mean (`SOFT_MIN_FUSION` is off). The backtest writes both scores side by side for each day: `readiness` (shown), `readiness_soft_min`, then `strap_score`.
+`Recovery.softMinimum` keeps unstrap's importance weights and adds Zepp's: w = weight · e^(−(s/100)²), score = Σ w·s / Σ w. It drops the red-flag cap; the Alert cap stays. The app still shows the weighted mean (`SOFT_MIN_FUSION` is off). The backtest writes both scores side by side for each day: `readiness` (shown), `readiness_soft_min`, then `strap_score`.
 
 At the review (about 2026-11-06, once there are 14+ scored nights), run the backtest and compare:
 
@@ -81,12 +81,12 @@ At the review (about 2026-11-06, once there are 14+ scored nights), run the back
 
 Switch `SOFT_MIN_FUSION` on only if the soft minimum is at least as good on both, and record the numbers here.
 
-**Also test whether the strap scores against population curves only** (`native/06` §9, idea 1). For each `strap_readiness` row, compute Zepp's population-curve HRV and RHR parts from the row's own `strap_sleep_hrv` / `strap_sleep_resting_hr` and the user's age (§4.3, §4.4), fuse them with the soft minimum (equal base weights) and compare with `strap_score`. If they keep matching after 7+ nights, the strap has no personal history and OpenStrap could reproduce its score exactly; if they drift apart, the strap keeps its own baselines and the z-curves in §4.3–4.5 are the model to fit.
+**Also test whether the strap scores against population curves only** (`native/06` §9, idea 1). For each `strap_readiness` row, compute Zepp's population-curve HRV and RHR parts from the row's own `strap_sleep_hrv` / `strap_sleep_resting_hr` and the user's age (§4.3, §4.4), fuse them with the soft minimum (equal base weights) and compare with `strap_score`. If they keep matching after 7+ nights, the strap has no personal history and unstrap could reproduce its score exactly; if they drift apart, the strap keeps its own baselines and the z-curves in §4.3–4.5 are the model to fit.
 
 ## When revisiting
 
-1. Check that there are at least 10–14 days of rows and that OpenStrap's baselines have finished learning.
-2. For each day, recompute OpenStrap's Readiness and its contributors. Put them next to the strap's score and parts.
+1. Check that there are at least 10–14 days of rows and that unstrap's baselines have finished learning.
+2. For each day, recompute unstrap's Readiness and its contributors. Put them next to the strap's score and parts.
 3. Compare part by part:
    * our HRV balance against the strap's `hrvScore`
    * our resting HR against `restingHrScore`

@@ -74,7 +74,8 @@ import org.openstrap.app.ui.workout.ZoneSeconds
  * Debug builds only: every design v2 foundation piece on one scrolling screen, to check them on a phone, then the live
  * workout's parts with fixed numbers, which an emulator can't show otherwise (no strap, no workout).
  * `adb shell am start -n org.openstrap.app.dev/org.openstrap.app.gallery.ComponentGalleryActivity` (the dev build), with
- * `--es section live` for the live parts alone, `--es section pictures` for the picture cards' pictures.
+ * `--es section live` for the live parts alone, `--es section pictures` for the picture cards' pictures, `--es section share`
+ * for every share card.
  */
 class ComponentGalleryActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -84,7 +85,15 @@ class ComponentGalleryActivity : ComponentActivity() {
             navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
         )
         val section = intent.getStringExtra("section")
-        setContent { OpenStrapTheme { if (section == "mind") MindLive() else Gallery(section == "live", section == "pictures") } }
+        setContent {
+            OpenStrapTheme {
+                when (section) {
+                    "mind" -> MindLive()
+                    "share" -> SharePreview()
+                    else -> Gallery(section == "live", section == "pictures")
+                }
+            }
+        }
     }
 }
 

@@ -106,7 +106,7 @@ object WorkoutNotification {
             setImageViewBitmap(R.id.strip, strip(card.zoneSeconds))
         }
         val b = NotificationCompat.Builder(context, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(card.sport)
             .setContentText(card.text)
             .setStyle(NotificationCompat.DecoratedCustomViewStyle())

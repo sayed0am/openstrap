@@ -3,7 +3,6 @@ package org.openstrap.app.ui.glow
 import org.openstrap.app.R
 import org.openstrap.app.i18n.Strings
 import org.openstrap.app.presentation.DayWords
-import androidx.compose.ui.res.stringResource
 import org.openstrap.app.ui.glow.draw.EdgeSurface
 import androidx.compose.ui.graphics.asAndroidPath
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
@@ -16,7 +15,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -43,8 +41,14 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import java.time.Instant
 import java.time.ZoneId
 import kotlin.math.cos
@@ -65,8 +69,9 @@ import org.openstrap.app.ui.glow.draw.DotSize
 import org.openstrap.app.ui.dashboard.LocalHeartZones
 
 /*
- * The story cards a workout shares as (workouts spec 2.9, boards ShareRun to ShareGame): 9 by 16, one for each kind
- * of workout, lit from below in the kind's colour or laid over your photo with a dark fade so the text reads. Drawn at
+ * The story cards a workout shares as (workouts spec 2.9, one system for every kind in mockups/share-cards-system.html):
+ * 9 by 16, the wordmark and date on top, the picture zone left clear, and what the card says in one block on the foot,
+ * lit from below in the kind's colour or laid over your photo with a dark fade so the text reads. Drawn at
  * [StoryWidth] by [StoryHeight] and scaled, so the preview and the saved 1080 by 1920 picture are the same card.
  */
 
@@ -76,167 +81,163 @@ internal val StoryWidth = 360.dp
 /** The card's own height, 16 to [StoryWidth]'s 9. */
 internal val StoryHeight = 640.dp
 
-/** A chip on a card: the best it set, else the weekly goal. */
+/** A chip on a card: a best, the weekly goal, or the weeks in a row. */
 internal class StoryChip(val text: String, val best: Boolean, val met: Boolean)
 
-/** What a share card says, by kind of workout. Every text is ready to show. */
-internal sealed interface StoryCard {
-    val family: Workouts.Family
-
-    /** A run, ride or walk: distance, time and pace (or what it has), a best, the sport and the date. */
-    class Run(val stats: List<StoryStat>, val chip: StoryChip?, val footer: String) : StoryCard {
-        override val family = Workouts.Family.Distance
-    }
-
-    /** Strength: kg lifted in dots, each exercise's sets and top weight, then the total. */
-    class Lift(val whenLine: String, val sport: String, val value: String, val unit: String, val rows: List<Pair<String, String>>, val chip: StoryChip?) : StoryCard {
-        override val family = Workouts.Family.Strength
-    }
-
-    /** Indoor cardio: the time in dots, the zone strip, average heart rate and kcal, and a chip. */
-    class Indoor(val date: String, val sport: String, val time: String, val zones: List<Int>, val line: String?, val chip: StoryChip?) : StoryCard {
-        override val family = Workouts.Family.IndoorCardio
-    }
-
-    /** Intervals: rounds in dots, a column for each round's peak, the peak and the work. */
-    class Rounds(val whenLine: String, val sport: String, val done: String, val unit: String, val peaks: List<Int?>, val maxHeartRate: Int, val line: String?) : StoryCard {
-        override val family = Workouts.Family.Intervals
-    }
-
-    /** Mind and body: minutes in dots and how the heart settled, over its line. */
-    class Calm(val sport: String, val whenLine: String, val minutes: String, val unit: String, val line: String?, val heart: List<Float?>) : StoryCard {
-        override val family = Workouts.Family.MindBody
-    }
-
-    /**
-     * A week (the recap's Share week): the [range], the workouts [count] in dots with the [goalLine], its [days] as
-     * the app's week dots, the [totals] and up to two chips, the streak and a best.
-     */
-    class Week(val range: String, val count: String, val goalLine: String, val days: List<Pair<String, Boolean>>, val totals: List<WeekFigure>, val chips: List<StoryChip>) : StoryCard {
-        // Not a kind of workout: the card is lit in the goal green, as the recap is.
-        override val family = Workouts.Family.Distance
-    }
-
-    /** A game: minutes in dots, Load and the peak. */
-    class Game(val sport: String, val minutes: String, val unit: String, val load: String?, val peak: String?) : StoryCard {
-        override val family = Workouts.Family.Games
-    }
-}
-
-/** A week's total on its card: its icon, value, the small unit after it, and its label. */
-internal class WeekFigure(val icon: androidx.compose.ui.graphics.vector.ImageVector, val value: String, val unit: String?, val label: String)
-
-/** A run's figure: its value, the small unit after it, and its label. */
+/** A figure in a card's stat row: its value, the small unit after it, and its label. */
 internal class StoryStat(val value: String, val unit: String?, val label: String)
 
 /**
- * The card for [summary]'s workout of [family], from the [hero] its summary shows, what it [earned] and your
- * [usualLoad] for a game's Load. [now] names the day.
+ * What a share card says (mockups/share-cards-system.html): every kind has the same parts, the [date] by the wordmark,
+ * the [title], one [value] in dots with its [unit], two or three [stats] and up to two [chips]. Each kind adds the one
+ * picture of the session its summary draws. Every text is ready to show.
  */
+internal sealed class StoryCard(
+    val family: Workouts.Family,
+    val date: String,
+    val title: String,
+    val value: String,
+    val unit: String,
+    val stats: List<StoryStat>,
+    val chips: List<StoryChip>,
+) {
+    /** A run, ride or walk: the distance (else the time), its route drawn above when there is one. */
+    class Run(date: String, title: String, value: String, unit: String, stats: List<StoryStat>, chips: List<StoryChip>) :
+        StoryCard(Workouts.Family.Distance, date, title, value, unit, stats, chips)
+
+    /** Strength: kg lifted, each exercise's sets and top weight as [rows]. */
+    class Lift(
+        date: String, title: String, value: String, unit: String, val rows: List<Pair<String, String>>,
+        stats: List<StoryStat>, chips: List<StoryChip>,
+    ) : StoryCard(Workouts.Family.Strength, date, title, value, unit, stats, chips)
+
+    /** Indoor cardio: the time, and the [zones] strip. */
+    class Indoor(date: String, title: String, value: String, val zones: List<Int>, stats: List<StoryStat>, chips: List<StoryChip>) :
+        StoryCard(Workouts.Family.IndoorCardio, date, title, value, "", stats, chips)
+
+    /** Intervals: rounds done, a column for each round's peak. */
+    class Rounds(
+        date: String, title: String, value: String, unit: String, val peaks: List<Int?>, val maxHeartRate: Int,
+        stats: List<StoryStat>, chips: List<StoryChip>,
+    ) : StoryCard(Workouts.Family.Intervals, date, title, value, unit, stats, chips)
+
+    /** Mind and body: minutes, and the [heart] rate through the session as one line. */
+    class Calm(
+        date: String, title: String, value: String, unit: String, val heart: List<Float?>, stats: List<StoryStat>, chips: List<StoryChip>,
+    ) : StoryCard(Workouts.Family.MindBody, date, title, value, unit, stats, chips)
+
+    /** A game: minutes, with nothing drawn between, so a photo leads. */
+    class Game(date: String, title: String, value: String, unit: String, stats: List<StoryStat>, chips: List<StoryChip>) :
+        StoryCard(Workouts.Family.Games, date, title, value, unit, stats, chips)
+
+    /** A week (the recap's Share week): the workouts counted against the goal, its [days] as the app's week dots. */
+    // Not a kind of workout: the card is lit in the goal green, as the recap is.
+    class Week(
+        range: String, title: String, count: String, goalLine: String, val days: List<Pair<String, Boolean>>,
+        totals: List<StoryStat>, chips: List<StoryChip>,
+    ) : StoryCard(Workouts.Family.Distance, range, title, count, goalLine, totals, chips.take(2))
+}
+
+/** The card for [summary]'s workout of [family], from the [hero] its summary shows and what it [earned]. */
 internal fun storyCard(
-    family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>, usualLoad: Float?, now: Long,
+    family: Workouts.Family, summary: PhoneSummary, hero: SummaryHero, earned: List<EarnedLine>,
     zone: ZoneId = ZoneId.systemDefault(), strings: Strings = Strings.app,
 ): StoryCard {
     val a = summary.analysis
     val active = a.activeSeconds
     val readings = FamilySummary.readings(summary)
-    val whenLine = FamilySummary.whenLine(a.shownStart, now, zone)
     val date = DayWords.monthDay(Instant.ofEpochSecond(a.shownStart).atZone(zone).toLocalDate())
-    val avg = a.workout.averageHeartRate
-    val kcal = kcalFigure(a)
+    val sport = a.sportName
     val (minutes, minUnit) = minutesFigure(active, strings)
-    fun join(parts: List<String>) = joinParts(parts, strings)
-    val chip = earned.firstOrNull { it.kind == EarnedLine.Kind.Best }?.let { StoryChip(it.text, best = true, met = false) }
-        ?: earned.firstOrNull { it.kind == EarnedLine.Kind.Goal }?.let {
-            StoryChip(join(listOfNotNull(it.text, it.value)) ?: it.text, best = false, met = it.met)
-        }
-    val timeLabel = strings.get(R.string.glow_share_stat_time)
-    val avgBpm = strings.get(R.string.glow_share_stat_avg_bpm)
+    val chips = listOfNotNull(
+        earned.firstOrNull { it.kind == EarnedLine.Kind.Best }?.let { StoryChip(it.text, best = true, met = false) }
+            ?: earned.firstOrNull { it.kind == EarnedLine.Kind.Goal }?.let {
+                val text = it.value?.let { v -> strings.format(R.string.glow_share_join, it.text, v) } ?: it.text
+                StoryChip(text, best = false, met = it.met)
+            },
+    )
+    val time = StoryStat(workoutClock(active), null, strings.get(R.string.glow_share_stat_time))
+    val timeMinutes = StoryStat(minutes, minUnit, strings.get(R.string.glow_share_stat_time))
+    val avg = a.workout.averageHeartRate?.let { StoryStat("$it", null, strings.get(R.string.glow_share_stat_avg_bpm)) }
+    val peak = readings.maxOfOrNull { it.second }?.let { StoryStat("$it", null, strings.get(R.string.glow_share_stat_peak_bpm)) }
+    val kcal = kcalFigure(a)?.let { StoryStat(it, null, strings.get(R.string.glow_share_stat_active_kcal)) }
     return when (family) {
         Workouts.Family.Distance -> {
             val m = summary.distanceMeters?.takeIf { it > 0f }
-            val pace = hero.pace
-            val stats = if (m != null) listOfNotNull(
-                StoryStat(hero.value, hero.unit, strings.get(R.string.glow_share_stat_distance)),
-                StoryStat(workoutClock(active), null, timeLabel),
-                pace?.let { StoryStat(it, strings.get(R.string.glow_share_unit_per_km), strings.get(R.string.glow_share_stat_pace)) }
-                    ?: avg?.let { StoryStat("$it", null, avgBpm) },
-            ) else listOfNotNull(
-                StoryStat(workoutClock(active), null, timeLabel),
-                avg?.let { StoryStat("$it", null, avgBpm) },
-                kcal?.let { StoryStat(it, null, strings.get(R.string.glow_share_stat_active_kcal)) },
-            )
-            StoryCard.Run(stats, chip, strings.format(R.string.glow_share_footer, a.sportName, date))
+            if (m != null) {
+                val pace = hero.pace?.let {
+                    StoryStat(it, strings.get(R.string.glow_share_unit_per_km), strings.get(R.string.glow_share_stat_pace))
+                }
+                StoryCard.Run(date, sport, hero.value, hero.unit, listOfNotNull(time, pace, avg), chips)
+            } else {
+                StoryCard.Run(date, sport, dotClock(active), "", listOfNotNull(avg, kcal, peak).take(MAX_STATS), chips)
+            }
         }
         Workouts.Family.Strength -> {
             val lifted = Strength.kgLifted(summary.sets)
             val done = FamilySummary.setsDone(summary.sets)
-            val length = strings.format(if (active >= 60) R.string.glow_share_total_minutes else R.string.glow_share_total_seconds, minutes)
-            val total = join(listOfNotNull(length, strings.plural(R.plurals.glow_share_sets, done, done).takeIf { done > 0 })) ?: length
+            val sets = StoryStat("$done", null, strings.get(R.string.glow_share_stat_sets)).takeIf { done > 0 }
             StoryCard.Lift(
-                whenLine, a.sportName, hero.value, if (lifted != null) strings.get(R.string.glow_share_unit_kg) else hero.unit,
-                exerciseRows(summary.sets, strings).take(MAX_EXERCISES) + (strings.get(R.string.glow_share_total) to total), chip,
+                date, sport, hero.value, if (lifted != null) strings.get(R.string.glow_share_unit_kg) else hero.unit,
+                exerciseRows(summary.sets, strings).take(MAX_EXERCISES), listOfNotNull(timeMinutes, sets, avg), chips,
             )
         }
-        Workouts.Family.IndoorCardio -> {
-            val line = listOfNotNull(
-                avg?.let { strings.format(R.string.glow_share_avg_bpm, it) }, kcal?.let { strings.format(R.string.glow_share_kcal, it) },
-            )
-            StoryCard.Indoor(date, a.sportName, dotClock(active), a.zoneSeconds, join(line), chip)
-        }
-        Workouts.Family.Intervals -> roundsCard(summary, readings, whenLine, minutes to minUnit, strings)
+        Workouts.Family.IndoorCardio ->
+            StoryCard.Indoor(date, sport, dotClock(active), a.zoneSeconds, listOfNotNull(avg, kcal, peak), chips)
+        Workouts.Family.Intervals -> roundsCard(summary, date, minutes to minUnit, listOfNotNull(peak), time, chips, strings)
         Workouts.Family.MindBody -> {
             val settled = FamilySummary.settled(readings, a.shownStart, a.end)
-            StoryCard.Calm(
-                a.sportName, whenLine, minutes, minUnit,
-                settled?.let { (f, t) -> FamilySummary.settledShort(f, t) }, heartLine(readings),
-            )
+            val stats = settled?.let { (from, to) ->
+                listOf(
+                    StoryStat("$from", null, strings.get(R.string.glow_share_stat_bpm_start)),
+                    StoryStat("$to", null, strings.get(R.string.glow_share_stat_bpm_end)),
+                )
+            } ?: listOfNotNull(avg)
+            StoryCard.Calm(date, sport, minutes, minUnit, heartLine(readings), stats, chips)
         }
         Workouts.Family.Games -> {
-            val load = a.workout.trainingLoad
-            StoryCard.Game(
-                a.sportName, minutes, minUnit,
-                load?.let { FamilySummary.loadLine(it, usualLoad) },
-                readings.maxOfOrNull { it.second }?.let { strings.format(R.string.glow_share_peak, it) },
-            )
+            val load = a.workout.trainingLoad?.let { StoryStat("$it", null, strings.get(R.string.glow_share_stat_load)) }
+            StoryCard.Game(date, sport, minutes, minUnit, listOfNotNull(load, peak, avg), chips)
         }
     }
 }
 
-/** Two or more parts of a card's line as one, "141 avg bpm, 320 kcal", null when there are none. */
-private fun joinParts(parts: List<String>, strings: Strings): String? =
-    parts.reduceOrNull { x, y -> strings.format(R.string.glow_share_join, x, y) }
+/** The most figures a stat row holds. */
+private const val MAX_STATS = 3
 
-/** An intervals card: the reps or rounds done of those planned, each one's peak, and the peak and the work under them. */
+/** An intervals card: the reps or rounds done of those planned and each one's peak, then the [peak], the work and the [time]. */
 private fun roundsCard(
-    summary: PhoneSummary, readings: List<Pair<Long, Int>>, whenLine: String, minutes: Pair<String, String>, strings: Strings,
+    summary: PhoneSummary, date: String, minutes: Pair<String, String>, peak: List<StoryStat>, time: StoryStat,
+    chips: List<StoryChip>, strings: Strings,
 ): StoryCard.Rounds {
     val a = summary.analysis
     val done = Phases.roundsDone(summary.rounds)
     val reps = summary.structure is Structure.Reps
     val planned = (summary.structure as? Structure.Timed)?.rounds ?: (summary.structure as? Structure.Reps)?.rounds
+    val readings = FamilySummary.readings(summary)
     val lines = FamilySummary.rounds(summary.rounds, readings)
-    val peak = lines.mapNotNull { it.peak }.maxOrNull() ?: readings.maxOfOrNull { it.second }
-    val work = FamilySummary.workSeconds(summary.rounds)
-    val workText = if (work >= 60) {
-        strings.format(R.string.glow_share_work_minutes, work / 60)
-    } else {
-        strings.format(R.string.glow_share_work_seconds, work)
+    val roundsPeak = lines.mapNotNull { it.peak }.maxOrNull()
+    val peakStat = roundsPeak?.let { StoryStat("$it", null, strings.get(R.string.glow_share_stat_peak_bpm)) } ?: peak.firstOrNull()
+    if (done == 0) {
+        val stats = listOfNotNull(peakStat, time)
+        return StoryCard.Rounds(date, a.sportName, minutes.first, minutes.second, emptyList(), a.maxHeartRate, stats, chips)
     }
-    val peakText = peak?.let { strings.format(R.string.glow_share_peak_bpm, it) }
-    if (done == 0) return StoryCard.Rounds(whenLine, a.sportName, minutes.first, minutes.second, emptyList(), a.maxHeartRate, peakText)
+    val work = FamilySummary.workSeconds(summary.rounds)
+    val workStat = if (work >= 60) {
+        StoryStat("${work / 60}", strings.get(R.string.glow_unit_min), strings.get(R.string.glow_share_stat_work))
+    } else {
+        StoryStat("$work", strings.get(R.string.glow_summary_unit_s), strings.get(R.string.glow_share_stat_work))
+    }
     val unit = when {
         planned != null && planned >= done ->
             strings.plural(if (reps) R.plurals.glow_share_unit_of_reps else R.plurals.glow_share_unit_of_rounds, planned, planned)
         else -> strings.get(if (reps) R.string.glow_share_unit_reps else R.string.glow_share_unit_rounds)
     }
-    return StoryCard.Rounds(
-        whenLine, a.sportName, "$done", unit,
-        lines.map { it.peak }, a.maxHeartRate, joinParts(listOfNotNull(peakText, workText), strings),
-    )
+    val stats = listOfNotNull(peakStat, workStat, time)
+    return StoryCard.Rounds(date, a.sportName, "$done", unit, lines.map { it.peak }, a.maxHeartRate, stats, chips)
 }
 
-/** Exercises a strength card names; the total follows them. */
+/** Exercises a strength card names; the time and sets go in its stat row. */
 private const val MAX_EXERCISES = 4
 
 /**
@@ -322,29 +323,135 @@ internal fun StoryCardView(card: StoryCard, photo: ImageBitmap?, route: List<Rou
     Box(modifier.size(StoryWidth, StoryHeight).background(EdgeSurface)) {
         if (photo != null) {
             Image(photo, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            PhotoFade(top = card !is StoryCard.Run && card !is StoryCard.Game)
-        } else StoryGlow(storyColor(card), if (card is StoryCard.Calm) 0.6f else 0.95f)
-        if (route.size >= 2) RouteLine(route, Modifier.fillMaxWidth().padding(horizontal = 48.dp).padding(top = 110.dp).height(240.dp))
-        Box(Modifier.fillMaxSize().padding(24.dp)) {
-            when (card) {
-                is StoryCard.Run -> RunStory(card)
-                is StoryCard.Lift -> LiftStory(card)
-                is StoryCard.Indoor -> IndoorStory(card)
-                is StoryCard.Rounds -> RoundsStory(card)
-                is StoryCard.Calm -> CalmStory(card)
-                is StoryCard.Game -> GameStory(card)
-                is StoryCard.Week -> WeekStory(card)
+            PhotoFade()
+        } else StoryGlow(storyColor(card))
+        // In the picture zone, between the header and the stack at the foot.
+        if (route.size >= 2) {
+            val box = Modifier.fillMaxWidth().padding(horizontal = StoryRouteInset).padding(top = StoryRouteTop).height(StoryRouteHeight)
+            RouteLine(route, box)
+        }
+        Box(Modifier.fillMaxSize().padding(StoryGap.Part)) {
+            BrandRow(card.date)
+            StoryStack(card, modifier = Modifier.align(Alignment.BottomStart))
+        }
+    }
+}
+
+/** The three gaps on a card (mockups/share-cards-system.html): inside a part, stats to chips, and between parts. */
+private object StoryGap {
+    val Inner = 8.dp
+    val Near = 16.dp
+    val Part = 24.dp
+}
+
+/** Where a run's route sits in the picture zone: its top, height and side insets. */
+private val StoryRouteTop = 76.dp
+private val StoryRouteHeight = 232.dp
+private val StoryRouteInset = 48.dp
+
+/** How wide the dotted number may be before it shrinks, leaving room for its unit. */
+private val StoryHeroRoom = 230.dp
+
+/**
+ * Everything a card says, as one block on the foot, left aligned: the title over the number in dots, the kind's own
+ * picture of the session, the stat row, then the chips.
+ */
+@Composable
+private fun StoryStack(card: StoryCard, modifier: Modifier = Modifier) {
+    Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(StoryGap.Part)) {
+        Column(verticalArrangement = Arrangement.spacedBy(StoryGap.Inner)) {
+            Text(card.title, color = Color.White, style = GlowType.cardTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            HeroValue(card.value, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = StoryHeroRoom)
+        }
+        StoryDetail(card)
+        if (card.stats.isNotEmpty() || card.chips.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(StoryGap.Near)) {
+                if (card.stats.isNotEmpty()) StatRow(card.stats)
+                if (card.chips.isNotEmpty()) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(StoryGap.Inner)) { card.chips.forEach { StoryChipView(it) } }
+                }
             }
         }
     }
 }
 
-/** A card's light: its kind's colour, except indoor cardio's, which is heart red like the board. */
+/** The one picture of the session a kind draws between its number and its figures; a run and a game draw none. */
+@Composable
+private fun StoryDetail(card: StoryCard) {
+    when (card) {
+        is StoryCard.Lift -> if (card.rows.isNotEmpty()) Column {
+            card.rows.forEachIndexed { i, (name, text) ->
+                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
+                Row(Modifier.fillMaxWidth().padding(vertical = StoryGap.Inner), verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        name, color = Color.White, style = GlowType.body, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(end = 12.dp),
+                    )
+                    Text(text, color = Color.White.copy(alpha = 0.8f), style = GlowType.body, maxLines = 1)
+                }
+            }
+        }
+        // Time in each zone as one strip, its ends rounded.
+        is StoryCard.Indoor -> if (card.zones.any { it > 0 }) {
+            ZoneBar(card.zones, ZONE_COLORS, height = 10.dp, gap = 3.dp, corner = 2.dp, ends = 5.dp)
+        }
+        is StoryCard.Rounds -> if (card.peaks.isNotEmpty()) {
+            val heartZones = LocalHeartZones.current
+            // Each round's peak in its zone's colour, white once it reached the top zone.
+            fun colorOf(bpm: Int) = WorkoutRecorder.liveZone(bpm, card.maxHeartRate, heartZones)?.takeIf { it < ZONE_COLORS.lastIndex }
+            PeakBars(card.peaks, { bpm -> colorOf(bpm)?.let { ZONE_COLORS[it] } ?: Color.White })
+        }
+        // The heart rate through the session as one soft white line.
+        is StoryCard.Calm -> if (card.heart.isNotEmpty()) {
+            PlainLine(card.heart, Color.White.copy(alpha = 0.55f), 40.dp, smooth = false, stroke = 2.dp)
+        }
+        is StoryCard.Week -> WeekDots(card.days, Color.White, dot = 34.dp)
+        is StoryCard.Run, is StoryCard.Game -> Unit
+    }
+}
+
+/** Two or three figures in equal columns, a thin rule between them: the value large with its unit, the label under. */
+@Composable
+// The figures arrive whole with each card and never change in place.
+@Suppress("UnstableCollections", "ComposeUnstableCollections")
+private fun StatRow(stats: List<StoryStat>) {
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+        stats.forEachIndexed { i, s ->
+            if (i > 0) Box(Modifier.padding(end = StoryGap.Near).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.18f)))
+            Column(Modifier.weight(1f)) {
+                // The value and its unit as one line on one baseline; a long one ("10:05 /km") shrinks the value to fit.
+                val text = buildAnnotatedString {
+                    append(s.value)
+                    s.unit?.let { withStyle(GlowType.body.toSpanStyle()) { append(" $it") } }
+                }
+                // Kept at the full line's height, so a shrunk value's label lines up with its neighbours'.
+                val line = with(LocalDensity.current) { GlowType.storyStat.lineHeight.toDp() }
+                Box(Modifier.height(line), contentAlignment = Alignment.BottomStart) {
+                    BasicText(
+                        text, style = GlowType.storyStat.copy(color = Color.White), maxLines = 1, softWrap = false,
+                        autoSize = TextAutoSize.StepBased(minFontSize = StatMinSize, maxFontSize = GlowType.storyStat.fontSize),
+                    )
+                }
+                Text(
+                    s.label, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+    }
+}
+
+/** The smallest a stat's value shrinks to before its column is full. */
+private val StatMinSize = 20.sp
+
+/** A card's light: its kind's colour, as on Choose and Ready, and the week's goal green. */
 private fun storyColor(card: StoryCard): Color = when (card) {
-    is StoryCard.Indoor -> MetricColors.heart
     is StoryCard.Week -> MetricColors.good
     else -> familyColor(card.family)
 }
+
+/** How strong a card's light is at its foot, the same for every kind. */
+private const val STORY_LIGHT = 0.95f
 
 /** Where the board's light sits, in card heights from the top, and its size in card widths and heights. */
 private const val STORY_LIGHT_BELOW = 1.12f
@@ -362,7 +469,7 @@ private const val STORY_LIGHT_RIM = 0.08f
  * black at its edge.
  */
 @Composable
-private fun StoryGlow(color: Color, strength: Float) {
+private fun StoryGlow(color: Color, strength: Float = STORY_LIGHT) {
     Box(
         Modifier.fillMaxSize().drawBehind {
             drawCardLight(
@@ -374,15 +481,20 @@ private fun StoryGlow(color: Color, strength: Float) {
     )
 }
 
-/** The dark fade over a photo: up from the foot so the figures read, and down from the top when the card has text there. */
+/**
+ * The dark fade over a photo: down from the top, where every card has the wordmark, and up from the foot, high enough
+ * for the tallest stack.
+ */
 @Composable
-private fun PhotoFade(top: Boolean) {
+private fun PhotoFade() {
     Box(Modifier.fillMaxSize()) {
-        if (top) Box(
-            Modifier.fillMaxWidth().fillMaxHeight(0.3f).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.6f), Color.Transparent))),
+        Box(
+            // Deep enough that the wordmark's red reads over a bright photo.
+            Modifier.fillMaxWidth().fillMaxHeight(0.3f)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent))),
         )
         Box(
-            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(if (top) 0.62f else 0.32f).background(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.62f).background(
                 Brush.verticalGradient(0f to Color.Transparent, 0.35f to Color.Black.copy(alpha = 0.55f), 1f to Color.Black.copy(alpha = 0.85f)),
             ),
         )
@@ -412,19 +524,19 @@ private fun RouteLine(route: List<Route.Point>, modifier: Modifier) {
     }
 }
 
-/** "OpenStrap", with the ring before it on the calm and game cards. */
+/**
+ * The top row: the wordmark on the left, always at full white, and [date] on the right. The light rises from the foot
+ * and a photo is darkened at the top, so the red reads on every card.
+ */
 @Composable
-private fun Brand(ring: Boolean = false) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        if (ring) {
-            Canvas(Modifier.size(14.dp)) { drawCircle(Color.White.copy(alpha = 0.8f), radius = size.minDimension * 0.34f, style = Stroke(2.4.dp.toPx())) }
-            Spacer(Modifier.width(6.dp))
-        }
-        Text("OpenStrap", color = if (ring) Color.White.copy(alpha = 0.8f) else Color.White, style = GlowType.storyBrand, maxLines = 1)
+private fun BrandRow(date: String) {
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.weight(1f)) { Wordmark() }
+        Text(date, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
     }
 }
 
-/** A best or the weekly goal on a dark pill, its icon in its colour. */
+/** A best, the weekly goal or the weeks in a row on a dark pill, its icon in its colour. */
 @Composable
 private fun StoryChipView(chip: StoryChip) {
     val (icon, tint) = if (chip.best) AppIcons.FlagCheckered to MetricColors.calories else AppIcons.Target to if (chip.met) MetricColors.good else Color.White
@@ -441,188 +553,3 @@ private val ChipText = GlowType.secondary.copy(fontWeight = FontWeight.Medium)
 
 /** White for a card's dimmer lines, as on the boards. */
 private const val StoryDim = 0.7f
-
-/** Board ShareRun: everything at the foot, the best over the three figures, the sport and date beside the brand. */
-@Composable
-private fun RunStory(card: StoryCard.Run) {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(14.dp, Alignment.Bottom)) {
-        card.chip?.let { StoryChipView(it) }
-        Row(Modifier.fillMaxWidth()) {
-            card.stats.forEach { s ->
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(s.value, color = Color.White, style = GlowType.storyStat, maxLines = 1)
-                        s.unit?.let { Text(" $it", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.padding(bottom = 3.dp)) }
-                    }
-                    Text(s.label, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1)
-                }
-            }
-        }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(card.footer, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, modifier = Modifier.weight(1f))
-            Brand()
-        }
-    }
-}
-
-/** When, then the sport large, as the strength and HIIT cards open. */
-@Composable
-private fun StoryHeading(whenLine: String, sport: String) {
-    Text(whenLine, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-    Text(sport, color = Color.White, style = GlowType.storyTitle, maxLines = 1, modifier = Modifier.padding(top = 4.dp))
-}
-
-/** Board ShareStrength: kg lifted in dots, each exercise and the total as rows, the best and the brand at the foot. */
-@Composable
-private fun LiftStory(card: StoryCard.Lift) {
-    Column(Modifier.fillMaxSize()) {
-        StoryHeading(card.whenLine, card.sport)
-        Box(Modifier.padding(top = 30.dp)) { HeroValue(card.value, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 250.dp) }
-        Column(Modifier.padding(top = 26.dp)) {
-            card.rows.forEachIndexed { i, (name, text) ->
-                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.12f)))
-                Row(Modifier.fillMaxWidth().padding(vertical = 9.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(name, color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.weight(1f).padding(end = 12.dp))
-                    Text(text, color = Color.White.copy(alpha = 0.8f), style = GlowType.body, maxLines = 1)
-                }
-            }
-        }
-        Spacer(Modifier.weight(1f))
-        FootRow(card.chip)
-    }
-}
-
-/** A chip, if any, on the left and the brand on the right. */
-@Composable
-private fun FootRow(chip: StoryChip?) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.weight(1f)) { chip?.let { StoryChipView(it) } }
-        Brand()
-    }
-}
-
-/** Board ShareIndoor: the brand and date, the time in dots in the middle, then the zones, the figures and a chip. */
-@Composable
-private fun IndoorStory(card: StoryCard.Indoor) {
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Brand() }
-            Text(card.date, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-        }
-        Spacer(Modifier.weight(1f))
-        Text(card.sport, color = Color.White, style = GlowType.cardTitle, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
-            DotMatrixText(card.time, dot = DotSize.Detail, scale = dotFitScale(card.time, DotSize.Detail, 310.dp))
-        }
-        Text(
-            stringResource(R.string.glow_share_workout_time), color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary,
-            maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.weight(1f))
-        // Time in each zone as one strip, its ends rounded.
-        ZoneBar(card.zones, ZONE_COLORS, height = 10.dp, gap = 3.dp, corner = 2.dp, ends = 5.dp)
-        card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 14.dp)) }
-        card.chip?.let { Box(Modifier.padding(top = 14.dp)) { StoryChipView(it) } }
-    }
-}
-
-/**
- * The week (mockups/share-week-days.html, option A): the brand and the dates, "My week" and the count in dots in the
- * middle with the goal under it, the days as the app's week dots, then the totals and the chips.
- */
-@Composable
-private fun WeekStory(card: StoryCard.Week) {
-    Column(Modifier.fillMaxSize()) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.weight(1f)) { Brand() }
-            Text(card.range, color = Color.White.copy(alpha = 0.6f), style = GlowType.secondary, maxLines = 1)
-        }
-        Spacer(Modifier.weight(1f))
-        Text(
-            stringResource(R.string.glow_share_my_week), color = Color.White, style = GlowType.cardTitle, maxLines = 1,
-            textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
-        )
-        Box(Modifier.fillMaxWidth().padding(top = 18.dp, bottom = 10.dp), contentAlignment = Alignment.Center) {
-            DotMatrixText(card.count, dot = DotSize.Live, scale = dotFitScale(card.count, DotSize.Live, 310.dp))
-        }
-        Text(card.goalLine, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-        WeekDots(card.days, Color.White, Modifier.padding(top = 28.dp), dot = 34.dp)
-        Spacer(Modifier.weight(1f))
-        if (card.totals.isNotEmpty()) WeekFigures(card.totals)
-        if (card.chips.isNotEmpty()) Row(Modifier.padding(top = 14.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            card.chips.take(2).forEach { StoryChipView(it) }
-        }
-    }
-}
-
-/**
- * The week's totals (mockups/share-week-totals.html, option A with icons): each its icon over the value large with its
- * unit, the label under, thin rules between them.
- */
-@Composable
-private fun WeekFigures(figures: List<WeekFigure>) {
-    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-        figures.forEachIndexed { i, f ->
-            if (i > 0) Box(Modifier.padding(end = 14.dp).width(1.dp).fillMaxHeight().background(Color.White.copy(alpha = 0.18f)))
-            Column(Modifier.weight(1f)) {
-                Icon(f.icon, null, tint = Color.White.copy(alpha = 0.85f), modifier = Modifier.size(18.dp))
-                Row(Modifier.padding(top = 8.dp), verticalAlignment = Alignment.Bottom) {
-                    Text(f.value, color = Color.White, style = GlowType.storyStat, maxLines = 1)
-                    f.unit?.let { Text(" $it", color = Color.White, style = GlowType.body, maxLines = 1, modifier = Modifier.padding(bottom = 3.dp)) }
-                }
-                Text(f.label, color = Color.White.copy(alpha = StoryDim), style = GlowType.secondary, maxLines = 1)
-            }
-        }
-    }
-}
-
-/** Board ShareHiit: rounds in dots, a column for each round's peak, the line under them and the brand. */
-@Composable
-private fun RoundsStory(card: StoryCard.Rounds) {
-    Column(Modifier.fillMaxSize()) {
-        StoryHeading(card.whenLine, card.sport)
-        Box(Modifier.padding(top = 30.dp)) { HeroValue(card.done, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 200.dp) }
-        if (card.peaks.isNotEmpty()) {
-            val heartZones = LocalHeartZones.current
-            // Each round's peak in its zone's colour, white once it reached the top zone.
-            fun colorOf(bpm: Int) = WorkoutRecorder.liveZone(bpm, card.maxHeartRate, heartZones)?.takeIf { it < ZONE_COLORS.lastIndex }
-            PeakBars(card.peaks, { bpm -> colorOf(bpm)?.let { ZONE_COLORS[it] } ?: Color.White }, Modifier.padding(top = 30.dp))
-        }
-        card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 2, modifier = Modifier.padding(top = 16.dp)) }
-        Spacer(Modifier.weight(1f))
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) { Brand() }
-    }
-}
-
-/** Board ShareMind: the sport and when, minutes in dots low in the middle, how the heart settled over its line. */
-@Composable
-private fun CalmStory(card: StoryCard.Calm) {
-    Column(Modifier.fillMaxSize()) {
-        Text(card.sport, color = Color.White.copy(alpha = 0.85f), style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
-        Text(card.whenLine, color = Color.White.copy(alpha = 0.55f), style = GlowType.secondary, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
-        Spacer(Modifier.weight(1f))
-        HeroValue(card.minutes, card.unit, dot = DotSize.Detail, gap = 10.dp, maxWidth = 250.dp)
-        card.line?.let { Text(it, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = Modifier.padding(top = 16.dp)) }
-        // The heart rate through the session as one soft white line.
-        PlainLine(card.heart, Color.White.copy(alpha = 0.55f), 40.dp, Modifier.padding(top = 16.dp), smooth = false, stroke = 2.dp)
-        Spacer(Modifier.weight(1f))
-        Brand(ring = true)
-    }
-}
-
-/** Board ShareGame: everything at the foot over the photo, the sport, minutes in dots, Load and the peak, the brand. */
-@Composable
-private fun GameStory(card: StoryCard.Game) {
-    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Bottom) {
-        Text(card.sport, color = Color.White, style = GlowType.body.copy(fontWeight = FontWeight.Medium), maxLines = 1)
-        Box(Modifier.padding(top = 12.dp)) { HeroValue(card.minutes, card.unit, gap = 10.dp, maxWidth = 250.dp) }
-        card.load?.let { GameLine(it, Modifier.padding(top = 14.dp)) }
-        card.peak?.let { GameLine(it, Modifier.padding(top = 2.dp)) }
-        Box(Modifier.padding(top = 16.dp)) { Brand(ring = true) }
-    }
-}
-
-/** One of a game card's lines under the minutes. */
-@Composable
-private fun GameLine(text: String, modifier: Modifier) =
-    Text(text, color = Color.White, style = GlowType.sentence, maxLines = 1, modifier = modifier)

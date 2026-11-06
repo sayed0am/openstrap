@@ -62,7 +62,7 @@ class DailyCaloriesFailuresTest {
             },
         )
         assertEquals(days, reads)
-        val lines = ShadowLog.getLogsForTag("OpenStrap").map { it.msg }
+        val lines = ShadowLog.getLogsForTag("unstrap").map { it.msg }
         assertEquals(lines.toString(), days, lines.count { it.startsWith("daily energy: energy for ") && "disk gone" in it })
     }
 

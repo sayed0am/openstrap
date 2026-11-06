@@ -285,7 +285,7 @@ class DayViewModel(
                     catching { repo.recovery(d, p) }.fold(
                         onSuccess = { RecoveryOutcome.Ready(it.also { r -> lastRecovery = r }) },
                         onFailure = { e ->
-                            Log.w("OpenStrap", "recovery failed", e)
+                            Log.w("unstrap", "recovery failed", e)
                             RecoveryOutcome.Failed(RecoveryFailure(d, yesterdayScore(d, p)))
                         },
                     )
@@ -312,7 +312,7 @@ class DayViewModel(
             last.readinessTrend.firstOrNull { it.first == yesterday }?.let { return it.second }
         }
         return catching { repo.recovery(yesterday, profile).readiness.score }
-            .onFailure { Log.w("OpenStrap", "yesterday's recovery failed", it) }
+            .onFailure { Log.w("unstrap", "yesterday's recovery failed", it) }
             .getOrNull()
     }
 
@@ -327,7 +327,7 @@ class DayViewModel(
                 catching {
                     val from = d.minusDays(org.openstrap.app.data.UsualSteps.DAYS.toLong())
                     org.openstrap.app.data.UsualSteps.byHour(repo.hourlySteps(from, d.minusDays(1)), d)
-                }.onFailure { Log.w("OpenStrap", "usual steps failed", it) }.getOrNull()
+                }.onFailure { Log.w("unstrap", "usual steps failed", it) }.getOrNull()
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -338,7 +338,7 @@ class DayViewModel(
         combine(selected, profile, repo.changes().debounce(800)) { d, p, _ -> d to p }
             .mapLatest { (d, p) ->
                 withContext(work) {
-                    catching { repo.healthspan(d, p) }.onFailure { Log.w("OpenStrap", "healthspan failed", it) }.getOrNull()
+                    catching { repo.healthspan(d, p) }.onFailure { Log.w("unstrap", "healthspan failed", it) }.getOrNull()
                 }
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -377,7 +377,7 @@ class DayViewModel(
             val best = if (stored != null && storedDay != null && storedDay < d) {
                 listOfNotNull(stored.value.toInt(), loaded).maxOrNull()
             } else {
-                catching { repo.mostStepsBefore(d) }.onFailure { Log.w("OpenStrap", "best steps failed", it) }.getOrNull() ?: loaded
+                catching { repo.mostStepsBefore(d) }.onFailure { Log.w("unstrap", "best steps failed", it) }.getOrNull() ?: loaded
             }
             steps to best
         }

@@ -52,7 +52,7 @@ class ShareCardsTest {
         return PhoneSummary(WorkoutRecorder.analyse(w, hr, 190, HeartZones.STANDARD), emptyList(), start, start + seconds, null, sets = sets)
     }
 
-    @Test fun `a strength card lists each exercise's sets and top weight, then the total`() {
+    @Test fun `a strength card lists each exercise's sets and top weight, and its time and sets as figures`() {
         val sets = listOf(
             AppWorkoutSet(start, 0, start, start + 60, exercise = "Bench press", reps = 10, weightKg = 60f),
             AppWorkoutSet(start, 1, start + 120, start + 180, exercise = "Bench press", reps = 10, weightKg = 65f),
@@ -60,12 +60,10 @@ class ShareCardsTest {
             AppWorkoutSet(start, 3, start + 360, start + 420, exercise = "squat ", reps = 6, weightKg = 80f),
         )
         val s = summary(2040, 52, sets = sets)
-        val card = storyCard(Workouts.Family.Strength, s, summaryHero(Workouts.Family.Strength, s, null), emptyList(), null, start) as StoryCard.Lift
+        val card = storyCard(Workouts.Family.Strength, s, summaryHero(Workouts.Family.Strength, s, null), emptyList()) as StoryCard.Lift
         assertEquals("kg", card.unit)
-        assertEquals(
-            listOf("Bench press" to "2 × 10, top 65 kg", "Squat" to "2 sets, top 90 kg", "Total" to "34 min, 4 sets"),
-            card.rows,
-        )
+        assertEquals(listOf("Bench press" to "2 × 10, top 65 kg", "Squat" to "2 sets, top 90 kg"), card.rows)
+        assertEquals(listOf("34 min Time", "4 Sets"), card.stats.map { listOfNotNull(it.value, it.unit, it.label).joinToString(" ") })
     }
 
     @Test fun `a card leads with a best over the weekly goal`() {
@@ -74,15 +72,15 @@ class ShareCardsTest {
             EarnedLine(EarnedLine.Kind.Best, "Fastest 5 km", "26:41"),
         )
         val s = summary(1925, 2, 141)
-        val indoor = storyCard(Workouts.Family.IndoorCardio, s, summaryHero(Workouts.Family.IndoorCardio, s, null), earned.take(1), null, start) as StoryCard.Indoor
-        assertEquals("Weekly goal, 3 of 4", indoor.chip?.text)
-        assertEquals("32:05", indoor.time)
-        assertEquals("141 avg bpm", indoor.line)
-        val run = storyCard(Workouts.Family.Distance, s, summaryHero(Workouts.Family.Distance, s, null), earned, null, start) as StoryCard.Run
-        assertEquals("Fastest 5 km", run.chip?.text)
+        val indoor = storyCard(Workouts.Family.IndoorCardio, s, summaryHero(Workouts.Family.IndoorCardio, s, null), earned.take(1)) as StoryCard.Indoor
+        assertEquals(listOf("Weekly goal, 3 of 4"), indoor.chips.map { it.text })
+        assertEquals("32:05", indoor.value)
+        assertEquals("141" to "Avg bpm", indoor.stats.first().let { it.value to it.label })
+        val run = storyCard(Workouts.Family.Distance, s, summaryHero(Workouts.Family.Distance, s, null), earned) as StoryCard.Run
+        assertEquals(listOf("Fastest 5 km"), run.chips.map { it.text })
     }
 
-    @Test fun `a calm card and a game card say what their summaries say, shorter`() {
+    @Test fun `a calm card and a game card say what their summaries say, as figures`() {
         // Half an hour coming down from 96 to 66.
         val w = AppWorkout(start, start + 1800, 74, averageHeartRate = 80)
         val hr = (0L..1800L step 5).map { AppWorkoutHeartRate(start, start + it, (96 - it * 30 / 1800).toInt(), false) }
@@ -91,29 +89,22 @@ class ShareCardsTest {
         val readings = recorded.map { it.timestamp to it.bpm }
         assertEquals(readings, org.openstrap.app.ui.workout.FamilySummary.readings(calm))
         val (from, to) = org.openstrap.app.ui.workout.FamilySummary.settled(readings, start, start + 1800)!!
-        val card = storyCard(Workouts.Family.MindBody, calm, summaryHero(Workouts.Family.MindBody, calm, null), emptyList(), null, start) as StoryCard.Calm
-        assertEquals("Heart settled $from to $to", card.line)
+        val card = storyCard(Workouts.Family.MindBody, calm, summaryHero(Workouts.Family.MindBody, calm, null), emptyList()) as StoryCard.Calm
+        assertEquals(listOf("$from", "$to"), card.stats.map { it.value })
         assertEquals("Your heart settled from $from to $to.", summaryHero(Workouts.Family.MindBody, calm, null).sentence)
 
         val played = PhoneSummary(WorkoutRecorder.analyse(w.copy(epoc = 130f), hr, 190, HeartZones.STANDARD), recorded, start, start + 1800, null)
-        val game = storyCard(Workouts.Family.Games, played, summaryHero(Workouts.Family.Games, played, 100f), emptyList(), 100f, start) as StoryCard.Game
-        assertEquals("Load 130, above usual", game.load)
-        assertEquals("Peak 96", game.peak)
+        val game = storyCard(Workouts.Family.Games, played, summaryHero(Workouts.Family.Games, played, 100f), emptyList()) as StoryCard.Game
+        assertEquals(listOf("130" to "Load", "96" to "Peak bpm"), game.stats.take(2).map { it.value to it.label })
     }
 
     @Test fun `no card text uses an interpunct, semicolon or dash`() {
         val s = summary(1800, 2, 120)
         Workouts.Family.entries.forEach { f ->
-            val card = storyCard(f, s, summaryHero(f, s, null), emptyList(), null, start)
-            val texts = when (card) {
-                is StoryCard.Run -> card.stats.flatMap { listOfNotNull(it.value, it.unit, it.label) } + card.footer
-                is StoryCard.Lift -> card.rows.flatMap { it.toList() } + card.unit
-                is StoryCard.Indoor -> listOfNotNull(card.line, card.time)
-                is StoryCard.Rounds -> listOfNotNull(card.line, card.unit)
-                is StoryCard.Calm -> listOfNotNull(card.line, card.unit)
-                is StoryCard.Game -> listOfNotNull(card.load, card.peak, card.unit)
-                is StoryCard.Week -> listOf(card.range, card.goalLine) + card.totals.flatMap { listOfNotNull(it.value, it.unit, it.label) }
-            }
+            val card = storyCard(f, s, summaryHero(f, s, null), emptyList())
+            val texts = listOf(card.date, card.title, card.value, card.unit) +
+                card.stats.flatMap { listOfNotNull(it.value, it.unit, it.label) } + card.chips.map { it.text } +
+                ((card as? StoryCard.Lift)?.rows?.flatMap { it.toList() } ?: emptyList())
             texts.forEach { t -> assertTrue("\"$t\"", t.none { it in "·;—–" }) }
         }
     }

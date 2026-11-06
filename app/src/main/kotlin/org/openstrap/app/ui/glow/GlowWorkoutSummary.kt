@@ -151,7 +151,7 @@ fun GlowWorkoutSummaryScreen(
     // Share opens the share screen (workouts spec 2.9) in the summary's place; close comes back here.
     var sharing by rememberSaveable { mutableStateOf(false) }
     if (sharing && summary != null && hero != null) {
-        WorkoutShareScreen(summary, hero, rewards?.earned.orEmpty(), liveRoute, workouts, contentPadding, onClose = { sharing = false })
+        WorkoutShareScreen(summary, hero, rewards?.earned.orEmpty(), liveRoute, contentPadding, onClose = { sharing = false })
         return
     }
     val trim = summary?.let { rememberWorkoutTrim(it, onTrim, onUndoTrim) }
