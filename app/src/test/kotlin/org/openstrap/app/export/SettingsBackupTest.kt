@@ -22,7 +22,6 @@ class SettingsBackupTest {
         "today_hidden" to "Stress,Energy",
         "today_pinned" to "",
         "first_score_day" to 20_380L,
-        "live_hr" to true,
         "workout_sides" to "1:1,2:0",
         "buzz_pattern" to "ONE_LONG",
     )

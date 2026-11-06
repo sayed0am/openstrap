@@ -70,7 +70,7 @@ internal fun DetailHost(
     when (detail) {
         // A night signal's detail is always the night's, as its rows read it (SleepCopy.NIGHT_SIGNALS).
         is Detail.OfMetric -> GlowMetricDetailScreen(
-            detail.metric, detail.night || detail.metric in SleepCopy.NIGHT_SIGNALS, day, histories.daily, live.bpm, live.enabled, live.canUse, live.toggle,
+            detail.metric, detail.night || detail.metric in SleepCopy.NIGHT_SIGNALS, day, histories.daily, live.bpm, live.canUse,
             push, onSwitch, dayVm::select, padding, pop,
         )
         is Detail.OfScore -> GlowScoreDetailScreen(

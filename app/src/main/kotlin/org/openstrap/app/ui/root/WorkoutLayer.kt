@@ -117,7 +117,6 @@ internal fun TabletopTop(
     workoutOnTop: WorkoutState.Recording?,
     day: DayUiState,
     live: Int?,
-    liveEnabled: Boolean,
     connection: ConnectionState,
 ) {
     val density = LocalDensity.current
@@ -129,9 +128,7 @@ internal fun TabletopTop(
         val kcal by container.workout.kcal.collectAsStateWithLifecycle()
         GlowWorkoutGlance(workoutOnTop, live, recent, zoneSeconds, connection, top, kcal)
     } else {
-        GlowTabletopHeart(
-            day, live, liveEnabled.takeIf { connection is ConnectionState.Connected }, { container.strap.setLiveHeartRate(it) }, top,
-        )
+        GlowTabletopHeart(day, live.takeIf { connection is ConnectionState.Connected }, top)
     }
     Spacer(Modifier.height(with(density) { hinge.bounds.height().toDp() }))
 }

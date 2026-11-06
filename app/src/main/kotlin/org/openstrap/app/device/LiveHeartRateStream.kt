@@ -8,13 +8,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.openstrap.app.ble.GattClient
 import org.openstrap.app.ble.StrapUuids
 import org.openstrap.app.data.catching
-import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.protocol.ChannelSession
 import org.openstrap.protocol.services.Endpoints
 import org.openstrap.protocol.services.LiveHeartRate
@@ -23,14 +21,14 @@ import org.openstrap.protocol.toHex
 import org.openstrap.protocol.u8
 
 /**
- * Live heart rate from the strap, on the channel push, or the standard 2A37 characteristic without it. It streams only while
- * it's shown, a workout records it, or workout auto-start watches for effort ([wanted]).
+ * Live heart rate from the strap, on the channel push, or the standard 2A37 characteristic without it. It streams
+ * only while the app is on screen, a workout records it, or workout auto-start watches for effort ([wanted]). There is
+ * no switch for it, as in Zepp: the strap's own measuring is set by its monitor frequency.
  */
 // One setter per reason to stream, as StrapController has them, plus start, stop and the reading.
 @Suppress("TooManyFunctions")
 internal class LiveHeartRateStream(
     private val scope: CoroutineScope,
-    private val settings: SettingsStore,
     private val link: LiveLink,
     private val connection: StateFlow<ConnectionState>,
     private val firmwareUpdating: StateFlow<Boolean>,
@@ -39,7 +37,6 @@ internal class LiveHeartRateStream(
 ) {
     val liveHeartRate = MutableStateFlow<Int?>(null)
     val heartRateReadings = MutableSharedFlow<Int>(extraBufferCapacity = 64, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-    val enabled = MutableStateFlow(true)
 
     private var liveJob: Job? = null
 
@@ -52,15 +49,9 @@ internal class LiveHeartRateStream(
 
     @Volatile private var effortWatch = false
 
-    private fun wanted() = workoutActive || effortWatch || (enabled.value && appVisible)
+    private fun wanted() = workoutActive || effortWatch || appVisible
 
     val isRunning: Boolean get() = liveJob?.isActive == true
-
-    fun setEnabled(on: Boolean) {
-        enabled.value = on
-        scope.launch { settings.setLiveHeartRate(on) }
-        refresh()
-    }
 
     fun setAppVisible(visible: Boolean) {
         if (visible == appVisible) return
@@ -81,9 +72,8 @@ internal class LiveHeartRateStream(
         refresh()
     }
 
-    /** A new connection: reads the user's switch and starts streaming if [wanted]. */
-    suspend fun onConnected() {
-        enabled.value = settings.liveHeartRate.first()
+    /** A new connection: starts streaming if [wanted]. */
+    fun onConnected() {
         if (wanted()) start()
     }
 
@@ -104,7 +94,7 @@ internal class LiveHeartRateStream(
         }
     }
 
-    /** Stops streaming without changing the user's preference (e.g. during a firmware update). */
+    /** Stops streaming for now (e.g. during a firmware update); [refresh] starts it again when it's wanted. */
     fun pause() {
         liveJob?.cancel()
         liveHeartRate.value = null
