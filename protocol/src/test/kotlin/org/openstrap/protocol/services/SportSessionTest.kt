@@ -62,5 +62,11 @@ class SportSessionTest {
         // With distance (bit 3) before the heart rate.
         assertEquals(Push.Data(150), SportSession.parsePush("12 00 28000000 E8030000 96".hexToBytes()))
         assertNull(SportSession.parsePush("12 00 2000".hexToBytes()))
+        // A hardware 14 frame: elapsed 75 s, hr 137, kcal 8, avg 115, max 137.
+        assertEquals(Push.Data(137), SportSession.parsePush("14 00 24010006 4b000000 89 08000000 73 89".hexToBytes()))
+        // The same with hr 0: the strap has no reading (off the body, or the first seconds of a session).
+        assertEquals(Push.Data(null, noReading = true), SportSession.parsePush("14 00 24010006 4b000000 00 08000000 73 89".hexToBytes()))
+        // No hr field: neither a reading nor "no reading".
+        assertEquals(Push.Data(null), SportSession.parsePush("14 00 04000000 4b000000".hexToBytes()))
     }
 }

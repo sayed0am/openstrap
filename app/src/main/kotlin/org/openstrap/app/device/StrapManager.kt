@@ -510,7 +510,10 @@ class StrapManager(
         s.messagesFor(SportSession.ENDPOINT).collect { p ->
             if (p.isNotEmpty() && p.u8(0) == SportSession.REPLY) return@collect
             log("sport < ${p.toHex()}")
-            SportSession.parsePush(p)?.let { sportSessionPushes.tryEmit(it) }
+            SportSession.parsePush(p)?.let {
+                if (it is SportSession.Push.Data) live.onSessionData(it)
+                sportSessionPushes.tryEmit(it)
+            }
         }
     }
 

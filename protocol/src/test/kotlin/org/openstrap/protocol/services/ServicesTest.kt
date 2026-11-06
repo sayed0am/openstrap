@@ -103,6 +103,14 @@ class ServicesTest {
         assertEquals(64, LiveHeartRate.parseMeasurement("00 40".hexToBytes()))
         assertEquals(300 - 250, (LiveHeartRate.parseMeasurement("01 2c01".hexToBytes()) ?: 50))
     }
+
+    @Test
+    fun measurementContactBits() {
+        org.junit.Assert.assertFalse(LiveHeartRate.measurementOffBody("00 40".hexToBytes())) // contact not supported
+        org.junit.Assert.assertFalse(LiveHeartRate.measurementOffBody("06 40".hexToBytes())) // supported, in contact
+        org.junit.Assert.assertTrue(LiveHeartRate.measurementOffBody("04 40".hexToBytes())) // supported, no contact
+        org.junit.Assert.assertFalse(LiveHeartRate.measurementOffBody(ByteArray(0)))
+    }
 }
 
 class RealtimeStepsTest {

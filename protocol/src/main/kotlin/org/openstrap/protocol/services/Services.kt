@@ -212,6 +212,20 @@ object LiveHeartRate {
     fun parsePush(payload: ByteArray): Int? =
         if (payload.size >= 3 && payload.u8(0) == 0x05) (payload.u8(1) or (payload.u8(2) shl 8)).takeIf { it in 1..250 } else null
 
+    /**
+     * True when a 2A37 value says the sensor supports contact detection (flags bit 2) and has no contact (bit 1 clear),
+     * i.e. the strap is off the body. Zepp ignores these bits; the BLE spec says the heart rate is then not valid.
+     */
+    fun measurementOffBody(value: ByteArray): Boolean {
+        if (value.isEmpty()) return false
+        val flags = value.u8(0)
+        return flags and CONTACT_SUPPORTED != 0 && flags and CONTACT_DETECTED == 0
+    }
+
+    /** 2A37 flags: bit 2 = contact detection supported, bit 1 = contact detected. */
+    private const val CONTACT_SUPPORTED = 0x04
+    private const val CONTACT_DETECTED = 0x02
+
     /** Standard BLE HR measurement (2A37). */
     fun parseMeasurement(value: ByteArray): Int? {
         if (value.size < 2) return null
