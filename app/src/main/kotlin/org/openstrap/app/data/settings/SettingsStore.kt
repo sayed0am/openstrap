@@ -206,14 +206,6 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         }
     }
 
-    private val liveHr = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.LIVE_HR)
-
-    /** Whether live heart rate starts automatically on connect. On by default. */
-    val liveHeartRate: Flow<Boolean> = read { it[liveHr] ?: true }
-
-    suspend fun setLiveHeartRate(enabled: Boolean) {
-        store.edit { it[liveHr] = enabled }
-    }
 
     private val autoStartKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.AUTO_START_WORKOUTS)
 
@@ -793,7 +785,6 @@ object SettingsKeys {
     const val ZEPP_LOGIN_TOKEN = "zepp_login_token"
     const val ZEPP_APP_TOKEN_AT = "zepp_app_token_at"
     const val ZEPP_APP_TTL = "zepp_app_ttl"
-    const val LIVE_HR = "live_hr"
     const val AUTO_START_WORKOUTS = "auto_start_workouts"
     const val WEAR_REMINDER = "wear_reminder"
     const val STRAP_SESSIONS = "strap_sessions"

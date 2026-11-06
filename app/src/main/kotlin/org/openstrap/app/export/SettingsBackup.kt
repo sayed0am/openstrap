@@ -43,7 +43,6 @@ object SettingsBackup {
             CELEBRATE_GOAL to Type.BOOLEAN,
             WEEKLY_RECAP to Type.BOOLEAN,
             FIRST_SCORE_DAY to Type.LONG,
-            LIVE_HR to Type.BOOLEAN,
             AUTO_START_WORKOUTS to Type.BOOLEAN,
             WEAR_REMINDER to Type.BOOLEAN,
             WORKOUT_LIVE_VIEW to Type.INT,

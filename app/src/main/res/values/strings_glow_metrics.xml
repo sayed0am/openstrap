@@ -75,7 +75,6 @@
     <!-- Beside the detail showing now, in the switcher's list. -->
     <string name="glow_metrics_showing">Showing</string>
     <!-- A chip beside the heart rate that turns the live reading on and off. One short word. -->
-    <string name="glow_metrics_live">Live</string>
     <!-- Under No reading on a night's week. -->
     <string name="glow_metrics_last_7_nights">In the last 7 nights</string>
     <!-- In the chart's place when the last 7 nights have no readings of this metric. The page title names the metric. -->

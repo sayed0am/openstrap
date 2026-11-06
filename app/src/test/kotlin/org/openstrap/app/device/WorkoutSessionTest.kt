@@ -747,7 +747,6 @@ class WorkoutSessionTest {
         override val syncEnded: SharedFlow<Unit> = synced
         override val liveHeartRate: StateFlow<Int?> = MutableStateFlow(null)
         override val heartRateReadings: SharedFlow<Int> = readings
-        override val liveHeartRateEnabled: StateFlow<Boolean> = MutableStateFlow(false)
         val steps = MutableStateFlow<StepTotals?>(null)
         override val todaySteps: StateFlow<StepTotals?> = steps
         override val info: StateFlow<StrapInfo?> = MutableStateFlow(null)
@@ -762,7 +761,6 @@ class WorkoutSessionTest {
         override fun backgroundConnect() = Unit
         override fun disconnect() = Unit
         override fun syncNow() = Unit
-        override fun setLiveHeartRate(enabled: Boolean) = Unit
         override fun setAppVisible(visible: Boolean) = Unit
         override fun setWorkoutActive(active: Boolean) = Unit
         override fun setEffortWatch(active: Boolean) = Unit

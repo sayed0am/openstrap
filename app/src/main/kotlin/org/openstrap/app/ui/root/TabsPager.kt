@@ -102,8 +102,8 @@ class ShownDay(
 /** The stored histories the charts read. */
 class Histories(val daily: DailyHistory)
 
-/** Live heart rate, whether it's on, whether it can be (the strap connected), and the switch. */
-class LiveHeart(val bpm: Int?, val enabled: Boolean, val canUse: Boolean, val toggle: (Boolean) -> Unit)
+/** Live heart rate, and whether it can be shown (the strap connected). */
+class LiveHeart(val bpm: Int?, val canUse: Boolean)
 
 /** Each tab's count of taps asking its lists to scroll to the top. */
 @Stable

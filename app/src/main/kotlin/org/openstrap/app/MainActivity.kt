@@ -324,7 +324,6 @@ private fun AppRoot(
     val strapFacts by rootVm.strap.collectAsStateWithLifecycle()
     val connected = strapFacts.connection is ConnectionState.Connected
     val live by rootVm.liveHeartRate.collectAsStateWithLifecycle()
-    val liveEnabled by rootVm.liveEnabled.collectAsStateWithLifecycle()
     val workoutState by container.workout.state.collectAsStateWithLifecycle()
     val workoutMinimized by container.workout.minimized.collectAsStateWithLifecycle()
     val running = workoutState as? WorkoutState.Recording
@@ -337,7 +336,7 @@ private fun AppRoot(
     val histories = remember(container) {
         Histories { m, from, to -> container.health.daily(m, from, to) }
     }
-    val liveHeart = LiveHeart(live, liveEnabled, connected) { container.strap.setLiveHeartRate(it) }
+    val liveHeart = LiveHeart(live, connected)
     val pairedKnown = strapFacts.pairedKnown && preview != StrapPreview.NotPaired
     val scan by deviceVm.scan.collectAsStateWithLifecycle()
     val pairing = rememberPairingStage(strapFacts.pairedKnown, scan.scanning, scan.found.isNotEmpty(), strapFacts.connection, dataPreview)
@@ -422,7 +421,7 @@ private fun AppRoot(
     ) {
       Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (hinge != null) {
-            TabletopTop(hinge, container, running?.takeIf { !workoutMinimized }, day, live, liveEnabled, strapFacts.connection)
+            TabletopTop(hinge, container, running?.takeIf { !workoutMinimized }, day, live, strapFacts.connection)
         }
         // Below the fold the status bar is far away, so the pages don't make room for it.
         BoxWithConstraints(

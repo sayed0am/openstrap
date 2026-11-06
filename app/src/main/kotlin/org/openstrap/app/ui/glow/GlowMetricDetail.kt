@@ -378,9 +378,7 @@ fun GlowMetricDetailScreen(
     state: DayUiState,
     history: DailyHistory,
     liveHeartRate: Int?,
-    liveEnabled: Boolean,
     canUseLive: Boolean,
-    onLiveToggle: (Boolean) -> Unit,
     onOpen: (Detail) -> Unit,
     onSwitch: (Detail) -> Unit,
     onSelectDay: (LocalDate) -> Unit,
@@ -407,7 +405,9 @@ fun GlowMetricDetailScreen(
     val color = colorOf(metric)
     val nightly = if (night) range == Range.Day || range == Range.Week || SleepCopy.dailyIsNightly(metric) else metric in NIGHTLY
     val isToday = end == today
-    val live = if (!night && metric == Metric.HeartRate && isToday && canUseLive && liveEnabled) liveHeartRate else null
+    // Live only on today's heart rate by day, and only with the strap connected.
+    val heartToday = !night && metric == Metric.HeartRate && isToday
+    val live = liveHeartRate.takeIf { heartToday && canUseLive }
     var scrub by remember(metric, night, range, end) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable(metric, night) { mutableStateOf(false) }
 
@@ -445,14 +445,6 @@ fun GlowMetricDetailScreen(
         contentPadding = contentPadding, headline = headline,
         strip = DetailCopy.strip(end, today, withData), onDay = onSelectDay,
         ranges = Range.entries, range = range, onRange = { rangeIndex = it.ordinal }, scrubbed = { scrub },
-        heroSide = if (!night && metric == Metric.HeartRate && isToday && canUseLive && range == Range.Day) {
-            {
-                PageChip(
-                    stringResource(R.string.glow_metrics_live), liveEnabled, { onLiveToggle(!liveEnabled) }, role = Role.Switch,
-                    filled = true,
-                )
-            }
-        } else null,
         // The Stress card's picture: the day as one strip, calm to high.
         heroPicture = if (!night && range == Range.Day && metric == Metric.Stress && state.stressStrip.any { it != null }) {
             { DetailPicture(height = 28.dp) { m -> DayStrip(state.stressStrip, color, PictureSize.Wide, m) } }

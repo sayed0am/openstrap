@@ -70,7 +70,7 @@ class ForgetDeviceTest {
         val job = scope.launch { settings.goals.collect { seen += it } }
         suspend fun until(n: Int) = withContext(Dispatchers.Default) { withTimeout(5_000) { while (seen.size < n) delay(10) } }
         until(1)
-        settings.setLiveHeartRate(false)
+        settings.setAutoStartWorkouts(false)
         settings.setWeeklyRecap(false)
         val changed = seen[0].copy(steps = seen[0].steps + 1_000)
         settings.saveGoals(changed)
