@@ -253,7 +253,7 @@ class AppUpdater(
         try {
             conn.connectTimeout = 15_000
             conn.readTimeout = 30_000
-            conn.setRequestProperty("User-Agent", "OpenStrap/$installed")
+            conn.setRequestProperty("User-Agent", "unstrap/$installed")
             if (conn.responseCode !in 200..299) throw IOException("Download returned HTTP ${conn.responseCode}")
             val total = conn.contentLengthLong.takeIf { it > 0 } ?: apk.size
             val digest = MessageDigest.getInstance("SHA-256")
@@ -341,7 +341,7 @@ class AppUpdater(
         try {
             conn.connectTimeout = 15_000
             conn.readTimeout = 20_000
-            conn.setRequestProperty("User-Agent", "OpenStrap/$installed")
+            conn.setRequestProperty("User-Agent", "unstrap/$installed")
             if (github) {
                 conn.setRequestProperty("Accept", "application/vnd.github+json")
                 conn.setRequestProperty("X-GitHub-Api-Version", "2022-11-28")

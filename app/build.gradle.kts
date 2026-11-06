@@ -56,7 +56,7 @@ android {
             if (providers.gradleProperty("demoApp").isPresent) applicationIdSuffix = ".demo"
             if (providers.gradleProperty("devApp").isPresent) {
                 applicationIdSuffix = ".dev"
-                manifestPlaceholders["appLabel"] = "OpenStrap ${appVersionName.removeSuffix(".0")}"
+                manifestPlaceholders["appLabel"] = "Unstrap ${appVersionName.removeSuffix(".0")}"
             }
         }
         release {
@@ -74,7 +74,7 @@ android {
             isMinifyEnabled = false
             isShrinkResources = false
             applicationIdSuffix = ".dev"
-            manifestPlaceholders["appLabel"] = "OpenStrap ${appVersionName.removeSuffix(".0")}"
+            manifestPlaceholders["appLabel"] = "Unstrap ${appVersionName.removeSuffix(".0")}"
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
         }

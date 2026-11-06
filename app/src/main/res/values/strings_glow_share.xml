@@ -2,7 +2,7 @@
 <!--
   Sharing a workout (ui/glow/ShareCards.kt, ShareScreen.kt): the story cards drawn into a 9 by 16 picture, and the Share
   screen around them. A card's text is drawn into the picture, so it has one line of room unless a comment says otherwise.
-  OpenStrap is the app's name and stands on every card. Keep it as it is.
+  unstrap is the app's name, written in lowercase even at the start of a sentence and stands on every card. Keep it as it is.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Two parts of one card line joined, as "141 avg bpm, 320 kcal" or "Weekly goal, 3 of 4". -->

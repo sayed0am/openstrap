@@ -61,7 +61,7 @@ object KeepRecordingNotice {
         )
         val text = TEXT
         val notification = NotificationCompat.Builder(context, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(title(sportType))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))

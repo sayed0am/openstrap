@@ -23,7 +23,7 @@ class ErrorCopyTest {
         IOException("write failed: ENOSPC (No space left on device)"),
         SecurityException("Permission Denial: opening provider"),
         ZipException("invalid END header"),
-        IllegalArgumentException("This isn't an OpenStrap export."),
+        IllegalArgumentException("This isn't an unstrap export."),
         IllegalStateException("Room cannot verify the data integrity"),
         GattTimeoutException("op 0x12 timed out"),
         IOException("Unable to resolve host"),
@@ -51,21 +51,21 @@ class ErrorCopyTest {
 
     @Test fun `a full disk and a lost permission say so`() {
         assertEquals("Couldn't save the copy. There isn't enough space for it.", ErrorCopy.saveCopy(raw[2]))
-        assertEquals("Couldn't save the copy. OpenStrap wasn't allowed to write there. Choose another place.", ErrorCopy.saveCopy(raw[3]))
+        assertEquals("Couldn't save the copy. unstrap wasn't allowed to write there. Choose another place.", ErrorCopy.saveCopy(raw[3]))
         assertEquals("Couldn't save the copy. That place is no longer available. Choose another one.", ErrorCopy.saveCopy(raw[1]))
         assertEquals("Couldn't save the copy. Try again, or choose another place.", ErrorCopy.saveCopy(raw[0]))
     }
 
     @Test fun `a file that isn't a copy says so`() {
-        assertEquals("Couldn't restore the copy. That file isn't an OpenStrap copy.", ErrorCopy.restoreCopy(raw[4]))
-        assertEquals("Couldn't restore the copy. That file isn't an OpenStrap copy.", ErrorCopy.restoreCopy(raw[5]))
-        assertEquals("Couldn't restore the copy. OpenStrap can't open that file. Choose it again.", ErrorCopy.restoreCopy(raw[1]))
+        assertEquals("Couldn't restore the copy. That file isn't an unstrap copy.", ErrorCopy.restoreCopy(raw[4]))
+        assertEquals("Couldn't restore the copy. That file isn't an unstrap copy.", ErrorCopy.restoreCopy(raw[5]))
+        assertEquals("Couldn't restore the copy. unstrap can't open that file. Choose it again.", ErrorCopy.restoreCopy(raw[1]))
         assertEquals("Couldn't restore the copy. Try again.", ErrorCopy.restoreCopy(raw[6]))
     }
 
     @Test fun `health connect says permission or no answer`() {
         assertEquals(
-            "Couldn't write to Health Connect. OpenStrap no longer has permission. Allow it in Health Connect.",
+            "Couldn't write to Health Connect. unstrap no longer has permission. Allow it in Health Connect.",
             ErrorCopy.healthConnect("Couldn't write to Health Connect", raw[3]),
         )
         assertEquals(

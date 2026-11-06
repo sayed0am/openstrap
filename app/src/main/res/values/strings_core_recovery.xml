@@ -4,9 +4,9 @@
   (data/SleepRegularity.kt). HRV is heart rate variability, keep it as is.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <!-- A data quality note when OpenStrap's HRV and the strap's own disagree. Numbers are milliseconds. -->
+    <!-- A data quality note when unstrap's HRV and the strap's own disagree. Numbers are milliseconds. -->
     <string name="core_recovery_quality_hrv">HRV <xliff:g id="ours" example="48">%1$d</xliff:g> ms here, <xliff:g id="strap" example="61">%2$d</xliff:g> ms from the strap</string>
-    <!-- A data quality note when OpenStrap's resting heart rate and the strap's own disagree. Numbers are beats a minute. -->
+    <!-- A data quality note when unstrap's resting heart rate and the strap's own disagree. Numbers are beats a minute. -->
     <string name="core_recovery_quality_rhr">Resting heart rate <xliff:g id="ours" example="52">%1$d</xliff:g> bpm here, <xliff:g id="strap" example="56">%2$d</xliff:g> bpm from the strap</string>
     <!-- A likely cause noted beside a body-signal alert, lower case: a hard workout the day before. -->
     <string name="core_recovery_cause_hard_day">a hard training day</string>

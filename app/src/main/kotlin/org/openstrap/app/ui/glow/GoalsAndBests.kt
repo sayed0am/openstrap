@@ -290,7 +290,7 @@ fun WeeklyRecapPage(view: RewardsView?, first: LocalDate, contentPadding: Paddin
     var sharing by rememberSaveable { mutableStateOf(false) }
     if (sharing && view != null) {
         val card = remember(view, first) { weekStory(view, first) }
-        WeekShareScreen(card, "OpenStrap_week_$first.png") { sharing = false }
+        WeekShareScreen(card, "unstrap_week_$first.png") { sharing = false }
         return
     }
     BackHandler(onBack = onBack)

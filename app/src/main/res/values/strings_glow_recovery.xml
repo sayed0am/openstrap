@@ -58,7 +58,7 @@
     <string name="glow_recovery_this_morning">this morning</string>
     <!-- Under an earlier day's Recovery score, lower case: when it was scored. -->
     <string name="glow_recovery_that_morning">that morning</string>
-    <!-- Under the strap's own score, shown while OpenStrap's is held back. -->
+    <!-- Under the strap's own score, shown while unstrap's is held back. -->
     <string name="glow_recovery_strap_estimate">The strap\'s estimate</string>
     <!-- The Recovery detail's week view when no day has a score. -->
     <string name="glow_recovery_none_week">No Recovery scores in the last 7 days yet.</string>

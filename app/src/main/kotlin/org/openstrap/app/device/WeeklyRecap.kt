@@ -82,7 +82,7 @@ object WeeklyRecap {
         manager.notify(
             ID,
             NotificationCompat.Builder(context, CHANNEL)
-                .setSmallIcon(R.drawable.ic_stat_openstrap)
+                .setSmallIcon(R.drawable.ic_stat_unstrap)
                 .setContentTitle(Strings.app.format(R.string.system_recap_title, range))
                 .setContentText(text)
                 .setAutoCancel(true)

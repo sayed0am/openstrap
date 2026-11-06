@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Goals and bests: the Goals and bests page from You, All badges, the weekly goal sheet, the weekly recap the Monday
-  notification opens and its share card (ui/glow/GoalsAndBests.kt). OpenStrap is the app's name. Keep it as it is.
+  notification opens and its share card (ui/glow/GoalsAndBests.kt). unstrap is the app's name, written in lowercase even at the start of a sentence. Keep it as it is.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The Goals and bests page's title. -->

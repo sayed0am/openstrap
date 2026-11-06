@@ -105,7 +105,7 @@ internal fun WorkoutShareScreen(
         storyCard(FamilySummary.familyOf(a.workout.sportType, summary.structure), summary, hero, earned, usualLoad, System.currentTimeMillis() / 1000)
     }
     val route = remember(summary, liveRoute) { summary.route.ifEmpty { liveRoute.filter { it.t in a.shownStart..a.end } } }
-    ShareScreen(card, route, "OpenStrap_${a.workout.start}.png", contentPadding, onClose)
+    ShareScreen(card, route, "unstrap_${a.workout.start}.png", contentPadding, onClose)
 }
 
 /**

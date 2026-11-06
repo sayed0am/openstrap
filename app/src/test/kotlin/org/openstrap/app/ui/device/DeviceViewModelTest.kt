@@ -110,7 +110,7 @@ class DeviceViewModelTest {
 
         backups.next = BackupResult.Failed(ZipException("bad"))
         vm.importCsv(uri).join()
-        assertEquals("Couldn't restore the copy. That file isn't an OpenStrap copy.", vm.message.value)
+        assertEquals("Couldn't restore the copy. That file isn't an unstrap copy.", vm.message.value)
     }
 
     @Test fun `back up now with automatic backup off says so`() = runBlocking {

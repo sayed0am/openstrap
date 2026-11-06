@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The page of a past workout: its sentence, its small facts, the heart rate drop, and the (i) sheet on its Load card
-  (ui/workout/WorkoutDetailCopy.kt). OpenStrap is the app's name, keep it. Load is the app's name for how much a workout
+  (ui/workout/WorkoutDetailCopy.kt). unstrap is the app's name, written in lowercase even at the start of a sentence, keep it. Load is the app's name for how much a workout
   asked of your body, and EPOC and VO2 max are the usual names of those measures. A sport in these lines is its short
   noun in lower case ("run", "walk", "ride") or its name ("strength training", "HIIT").
 -->
@@ -144,7 +144,7 @@
     <!-- The Where row for a phone workout whose figures are the strap's own. -->
     <string name="workout_detail_where_strap_too">From the strap, which recorded this workout alongside the phone and worked these out itself.</string>
     <!-- The Where row for a phone workout the app calculated. -->
-    <string name="workout_detail_where_phone">Calculated by OpenStrap from your heart rate, on the strap\'s own scales.</string>
+    <string name="workout_detail_where_phone">Calculated by unstrap from your heart rate, on the strap\'s own scales.</string>
     <!-- The Where row for a workout the strap recorded. -->
     <string name="workout_detail_where_strap">From the strap, calculated during the workout.</string>
     <!-- After the Where row: the strap kept its own record of this phone workout. The figures are "aerobic 3.0, anaerobic 0.8, Load 80, time to recover 12 h". -->

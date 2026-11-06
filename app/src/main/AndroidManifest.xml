@@ -3,9 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- INTERNET is used only for Zepp sign-in (device list), strap firmware checks and downloads, map tiles, and the
-         daily check for a new OpenStrap on GitHub and its download. Health data is never uploaded. -->
+         daily check for a new unstrap on GitHub and its download. Health data is never uploaded. -->
     <uses-permission android:name="android.permission.INTERNET" />
-    <!-- Installing a new OpenStrap downloaded from its GitHub releases (update/AppUpdater.kt). Android asks the user to
+    <!-- Installing a new unstrap downloaded from its GitHub releases (update/AppUpdater.kt). Android asks the user to
          allow it the first time. -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -39,13 +39,13 @@
          late (widgets spec 7). Never USE_EXACT_ALARM, which is for clocks and calendars. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
-    <!-- Companion device association with the paired strap (no watch profile): lets OpenStrap run and reconnect
+    <!-- Companion device association with the paired strap (no watch profile): lets unstrap run and reconnect
          in the background and wakes it when the strap comes into range. -->
     <uses-permission android:name="android.permission.REQUEST_COMPANION_RUN_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.REQUEST_COMPANION_USE_DATA_IN_BACKGROUND" />
     <uses-permission android:name="android.permission.REQUEST_OBSERVE_COMPANION_DEVICE_PRESENCE" />
     <uses-feature android:name="android.software.companion_device_setup" android:required="false" />
-    <!-- Fallback when there is no association: asks to leave OpenStrap out of battery optimization. -->
+    <!-- Fallback when there is no association: asks to leave unstrap out of battery optimization. -->
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
 
     <uses-permission android:name="android.permission.health.WRITE_HEART_RATE" />
@@ -59,7 +59,7 @@
     <!-- Asked for with the rest, but a write without them still goes, the calories left out. -->
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.WRITE_TOTAL_CALORIES_BURNED" />
-    <!-- Reading back what OpenStrap exported, to restore it (Import from Health Connect). -->
+    <!-- Reading back what unstrap exported, to restore it (Import from Health Connect). -->
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
@@ -70,7 +70,7 @@
 
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
-        <!-- Open Health Connect on the You page: its screen for OpenStrap's data, on Android 14 and up and before. -->
+        <!-- Open Health Connect on the You page: its screen for unstrap's data, on Android 14 and up and before. -->
         <intent>
             <action android:name="android.health.connect.action.MANAGE_HEALTH_DATA" />
         </intent>
@@ -126,7 +126,7 @@
         <service
             android:name=".device.WorkoutTileService"
             android:exported="true"
-            android:icon="@drawable/ic_stat_openstrap"
+            android:icon="@drawable/ic_stat_unstrap"
             android:label="@string/tile_workout"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
             <intent-filter>
@@ -225,7 +225,7 @@
             <intent-filter>
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
-            <!-- Android 12+: only notifications that alert (sound or vibration) and conversations reach OpenStrap.
+            <!-- Android 12+: only notifications that alert (sound or vibration) and conversations reach unstrap.
                  Silent and ongoing ones are off, and the user can narrow it further, or leave out apps, in system settings. -->
             <meta-data
                 android:name="android.service.notification.default_filter_types"

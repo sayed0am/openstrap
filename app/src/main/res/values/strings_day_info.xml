@@ -3,7 +3,7 @@
   The info sheets behind the (i) on every detail (ui/dashboard/InfoCopy.kt): a title, a bold one-line meaning, the
   scale the value is read on, and three folded rows (How it's measured, What moves it, What can throw it off). The
   folded rows are a short paragraph each, with room to wrap.
-  OpenStrap is the app's name. Keep the names of methods and studies as they are: PAI, EPOC, TRIMP, Mifflin-St Jeor,
+  unstrap is the app's name, written in lowercase even at the start of a sentence. Keep the names of methods and studies as they are: PAI, EPOC, TRIMP, Mifflin-St Jeor,
   Jurca, FRIEND, UK Biobank, Sleep Regularity Index, World Health Organization.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -85,7 +85,7 @@
     <!-- Skin temperature's sheet. -->
     <string name="day_info_skin_temp_name">Skin temperature</string>
     <string name="day_info_skin_temp_meaning">The temperature of your skin under the strap. What matters is the change from your normal, not the level.</string>
-    <string name="day_info_skin_temp_how">The strap measures it against your skin. The level depends on fit and the room, so OpenStrap shows it as a change from your normal of the last 30 days.</string>
+    <string name="day_info_skin_temp_how">The strap measures it against your skin. The level depends on fit and the room, so unstrap shows it as a change from your normal of the last 30 days.</string>
     <string name="day_info_skin_temp_moves">It moves with alcohol, a warm room, hard training, the menstrual cycle, or when your body is fighting something off.</string>
     <string name="day_info_skin_temp_off">A warm bed, a heavy duvet or the strap sitting loose all change it without your body changing.</string>
 
@@ -105,7 +105,7 @@
 
     <!-- Recovery's sheet. Its title is the Recovery detail's (day_score_recovery). -->
     <string name="day_info_recovery_meaning">How ready your body is for effort today, from 0 to 100, calculated each morning from your night.</string>
-    <string name="day_info_recovery_how">Each morning OpenStrap compares your night with what\'s normal for you, not with other people: HRV (heart rate variability), resting heart rate, skin temperature, breathing rate and blood oxygen, last night\'s sleep and the past few nights, and how hard yesterday was. About half the score comes from HRV and resting heart rate, about a quarter from sleep. One signal far from your normal caps it, so good sleep can\'t fully make up for it. Everything is calculated on this phone from your strap\'s data.</string>
+    <string name="day_info_recovery_how">Each morning unstrap compares your night with what\'s normal for you, not with other people: HRV (heart rate variability), resting heart rate, skin temperature, breathing rate and blood oxygen, last night\'s sleep and the past few nights, and how hard yesterday was. About half the score comes from HRV and resting heart rate, about a quarter from sleep. One signal far from your normal caps it, so good sleep can\'t fully make up for it. Everything is calculated on this phone from your strap\'s data.</string>
     <string name="day_info_recovery_moves">Good sleep, easy days and nights without alcohol lift it. Hard training, short nights, late meals, stress and illness hold it down.</string>
     <!-- The nights it needs before it gives a score, then before it settles. -->
     <plurals name="day_info_recovery_off">
@@ -129,7 +129,7 @@
     <!-- Sleep regularity's sheet. -->
     <string name="day_info_regularity_meaning">How alike your sleep and wake times are from one day to the next. 100 is the same every day.</string>
     <!-- The hours of wear it needs before it gives the full measure. -->
-    <string name="day_info_regularity_how">OpenStrap calculates the Sleep Regularity Index. It marks each minute of the day asleep or awake and counts how often a minute matches the same minute the day before, over the last 7 days. It needs <xliff:g id="hours" example="120">%1$d</xliff:g> h of wear compared day to day, about 5 days worn around the clock, and until then shows how much the middle of your sleep moved. The bands follow how UK Biobank adults scored, where half of them were between 74 and 86. Your usual times are the average of the last 7 nights.</string>
+    <string name="day_info_regularity_how">unstrap calculates the Sleep Regularity Index. It marks each minute of the day asleep or awake and counts how often a minute matches the same minute the day before, over the last 7 days. It needs <xliff:g id="hours" example="120">%1$d</xliff:g> h of wear compared day to day, about 5 days worn around the clock, and until then shows how much the middle of your sleep moved. The bands follow how UK Biobank adults scored, where half of them were between 74 and 86. Your usual times are the average of the last 7 nights.</string>
     <string name="day_info_regularity_moves">Going to bed and getting up at the same times, weekends too, raises it. Late nights, lie-ins and long naps lower it.</string>
     <string name="day_info_regularity_off">Minutes with the strap off aren\'t compared, so a week with little wear rests on fewer days. Lying awake in bed can count as asleep.</string>
 
@@ -141,7 +141,7 @@
 
     <!-- Heart points' sheet. The target is the points a week to aim for. -->
     <string name="day_info_heart_points_meaning">Points for the minutes your heart rate is raised, harder minutes earning more, over the last 7 days. Aim for <xliff:g id="target" example="100">%1$d</xliff:g>.</string>
-    <string name="day_info_heart_points_how">Heart points are the strap\'s PAI, Personal Activity Intelligence. The strap calculates them itself from how far your heart rate rises above resting, against your age and sex, and OpenStrap shows them as they come. Each day\'s points count for 7 days, then drop off, so the total always covers the last week.</string>
+    <string name="day_info_heart_points_how">Heart points are the strap\'s PAI, Personal Activity Intelligence. The strap calculates them itself from how far your heart rate rises above resting, against your age and sex, and unstrap shows them as they come. Each day\'s points count for 7 days, then drop off, so the total always covers the last week.</string>
     <string name="day_info_heart_points_moves">Anything that gets you out of breath adds the most. Brisk walking adds a little. A few hard sessions a week keep the total at <xliff:g id="target" example="100">%1$d</xliff:g> or more.</string>
     <string name="day_info_heart_points_off">The total updates when the strap syncs, so it can lag behind today\'s effort. A loose strap in a workout misses raised heart rate.</string>
 
@@ -160,19 +160,19 @@
 
     <!-- VO2 max's sheet. -->
     <string name="day_info_vo2max_meaning">The most oxygen your body can use in hard effort, a measure of fitness. Higher is fitter.</string>
-    <string name="day_info_vo2max_how">It\'s measured in millilitres of oxygen per kilogram of body weight a minute (ml/kg/min). After a workout that gives the strap enough to go on, the number is its own estimate from your heart rate and pace. Otherwise OpenStrap estimates it from your age, sex, body mass index, resting heart rate while asleep and how active you say you are (Jurca and others, 2005), updated weekly, and shows it as a range. Where you sit for your age and sex comes from treadmill tests of thousands of adults (FRIEND, 2022).</string>
+    <string name="day_info_vo2max_how">It\'s measured in millilitres of oxygen per kilogram of body weight a minute (ml/kg/min). After a workout that gives the strap enough to go on, the number is its own estimate from your heart rate and pace. Otherwise unstrap estimates it from your age, sex, body mass index, resting heart rate while asleep and how active you say you are (Jurca and others, 2005), updated weekly, and shows it as a range. Where you sit for your age and sex comes from treadmill tests of thousands of adults (FRIEND, 2022).</string>
     <string name="day_info_vo2max_moves">Regular hard effort raises it over weeks. Weight, age and long breaks from training lower it.</string>
     <string name="day_info_vo2max_off">The estimate from your profile is typically within about 5 ml/kg/min either way. A resting heart rate thrown by a short night or illness moves it.</string>
 
     <!-- Time to recover's sheet. -->
     <string name="day_info_recover_meaning">How long your body needs after your last workout before it\'s ready for another hard one.</string>
-    <string name="day_info_recover_how">It\'s the strap\'s estimate, or OpenStrap\'s own for a workout recorded on the phone, from how hard the workout was: its EPOC, the extra oxygen your body uses afterwards to recover. The same EPOC gives each workout its training effect, from 0 to 5, for how much it builds your fitness.</string>
+    <string name="day_info_recover_how">It\'s the strap\'s estimate, or unstrap\'s own for a workout recorded on the phone, from how hard the workout was: its EPOC, the extra oxygen your body uses afterwards to recover. The same EPOC gives each workout its training effect, from 0 to 5, for how much it builds your fitness.</string>
     <string name="day_info_recover_moves">Longer and harder workouts need more time. Easy sessions need little.</string>
     <string name="day_info_recover_off">It knows only the workout, not your sleep, stress or the rest of the day. Recovery here is time, not the morning\'s Recovery score.</string>
 
     <!-- Calories' sheet. kcal is kilocalories. -->
     <string name="day_info_calories_meaning">Active kcal are what moving burned on top of your body\'s use at rest. The total adds that rest. Both are estimates, in kilocalories (kcal).</string>
-    <string name="day_info_calories_how">Your body\'s use at rest comes from your weight, height, age and sex (Mifflin-St Jeor). On top of it come your steps each minute and, for effort without steps, your heart rate. A workout recorded in OpenStrap counts its own minutes from your heart rate and steps, the same figure its page shows. A strap workout uses the strap\'s kcal. Sleep counts at a little under resting. Active is the total less your use at rest for each minute worn, never below zero, so sleep takes nothing away. Your goal is in active kcal, as the strap\'s is.</string>
+    <string name="day_info_calories_how">Your body\'s use at rest comes from your weight, height, age and sex (Mifflin-St Jeor). On top of it come your steps each minute and, for effort without steps, your heart rate. A workout recorded in unstrap counts its own minutes from your heart rate and steps, the same figure its page shows. A strap workout uses the strap\'s kcal. Sleep counts at a little under resting. Active is the total less your use at rest for each minute worn, never below zero, so sleep takes nothing away. Your goal is in active kcal, as the strap\'s is.</string>
     <string name="day_info_calories_moves">Moving more raises it, most of all workouts. A heavier body uses more at rest and in motion.</string>
     <string name="day_info_calories_off">Food digestion isn\'t included. It only covers the minutes the strap was worn, so a day with it off for hours reads low. An out-of-date profile throws off the resting part.</string>
 
@@ -268,7 +268,7 @@
     <string name="day_info_sleep_note_need">Your sleep need here is <xliff:g id="need" example="8 h">%1$s</xliff:g>, from your age or your own setting.</string>
 
     <!-- A note under Recovery's sheet: the strap's own readiness score today, kept for comparison. -->
-    <string name="day_info_recovery_note_strap">The strap\'s own score today is <xliff:g id="score" example="91">%1$d</xliff:g>. It doesn\'t count sleep length, so after a short night it reads higher than OpenStrap\'s. It\'s kept for comparison and never enters OpenStrap\'s score.</string>
+    <string name="day_info_recovery_note_strap">The strap\'s own score today is <xliff:g id="score" example="91">%1$d</xliff:g>. It doesn\'t count sleep length, so after a short night it reads higher than unstrap\'s. It\'s kept for comparison and never enters unstrap\'s score.</string>
     <string name="day_info_recovery_note_capped">Today one body signal is far from your normal, so the score is capped.</string>
     <!-- A note under Recovery's sheet: the strap's HRV used in place of the night's own. -->
     <string name="day_info_recovery_note_hrv">Last night\'s own HRV wasn\'t clean enough, so the strap\'s <xliff:g id="ms" example="41">%1$d</xliff:g> ms stands in.</string>

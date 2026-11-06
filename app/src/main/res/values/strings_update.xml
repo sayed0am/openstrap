@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Updates: the You page's Updates row, the Updates page and the update notifications (update/UpdateCopy.kt).
-  OpenStrap is the app's name and GitHub is where its releases are. Keep both as they are.
+  unstrap is the app's name, written in lowercase even at the start of a sentence and GitHub is where its releases are. Keep both as they are.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- The You page's Updates row, under its title, when a newer version can be installed. One line. -->
-    <string name="update_summary_ready">OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g> is ready to install</string>
+    <string name="update_summary_ready">unstrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g> is ready to install</string>
     <!-- The You page's Updates row while it asks GitHub for new versions. -->
     <string name="update_summary_checking">Checking…</string>
     <!-- The You page's Updates row before it has ever checked: the version running. -->
@@ -28,8 +28,8 @@
     <string name="update_install_downloading_percent">Downloading, <xliff:g id="percent" example="45">%1$d</xliff:g>%%</string>
     <!-- The install row while the new version downloads and its size isn't known: how much has come so far. -->
     <string name="update_install_downloading_size">Downloading, <xliff:g id="size" example="19.3 MB">%1$s</xliff:g></string>
-    <!-- The install row once Android has the new version. OpenStrap closes itself to update. -->
-    <string name="update_install_installing">Installing. OpenStrap closes when it\'s done</string>
+    <!-- The install row once Android has the new version. unstrap closes itself to update. -->
+    <string name="update_install_installing">Installing. unstrap closes when it\'s done</string>
     <!-- The install row when the release on GitHub has no app file (APK) to install. -->
     <string name="update_install_no_apk">No app file in this release. Open it on GitHub</string>
     <!-- The install row while a workout records, and why an install waited for one: installing closes the app. -->
@@ -46,22 +46,22 @@
     <!-- Why an install stopped: GitHub had no checksum to check the file against. -->
     <string name="update_failure_no_checksum">GitHub had no way to check the download, so it wasn\'t installed</string>
     <!-- Why an install stopped: the file is another app. -->
-    <string name="update_failure_not_openstrap">The download isn\'t OpenStrap, so it wasn\'t installed</string>
+    <string name="update_failure_not_openstrap">The download isn\'t unstrap, so it wasn\'t installed</string>
     <!-- Why an install stopped: this copy came from somewhere else (a store, a build of its own) and Android won't replace it. -->
-    <string name="update_failure_signature">This copy of OpenStrap is signed with another key. Install it from GitHub instead</string>
+    <string name="update_failure_signature">This copy of unstrap is signed with another key. Install it from GitHub instead</string>
     <!-- Why an install stopped: the phone is full. -->
     <string name="update_failure_storage">There isn\'t enough space to install it</string>
     <!-- Why an install stopped: Android refused it for another reason. -->
     <string name="update_failure_android">Android couldn\'t install it. Tap to try again</string>
 
     <!-- The notification's title when a new version is out. -->
-    <string name="update_available_title">OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g> is out</string>
+    <string name="update_available_title">unstrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g> is out</string>
     <!-- The notification's text when the release notes have nothing short to show. -->
     <string name="update_available_text">See what\'s new and install it from the Updates page.</string>
-    <!-- The notification's title after OpenStrap updated itself. -->
-    <string name="update_installed_title">Updated to OpenStrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g></string>
-    <!-- The notification's text after OpenStrap updated itself. A tap opens the release notes. -->
+    <!-- The notification's title after unstrap updated itself. -->
+    <string name="update_installed_title">Updated to unstrap <xliff:g id="version" example="2.2.0">%1$s</xliff:g></string>
+    <!-- The notification's text after unstrap updated itself. A tap opens the release notes. -->
     <string name="update_installed_text">Tap to see what\'s new.</string>
-    <!-- The notification channel's name in Android's notification settings for OpenStrap. -->
+    <!-- The notification channel's name in Android's notification settings for unstrap. -->
     <string name="update_channel_name">App updates</string>
 </resources>

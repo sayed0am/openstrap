@@ -244,7 +244,7 @@ class StrapService : LifecycleService() {
     )
 
     private fun notification(title: String, text: String): Notification = NotificationCompat.Builder(this, CHANNEL)
-        .setSmallIcon(R.drawable.ic_stat_openstrap)
+        .setSmallIcon(R.drawable.ic_stat_unstrap)
         .setContentTitle(title)
         .setContentText(text)
         .setOngoing(true)
@@ -297,7 +297,7 @@ class StrapService : LifecycleService() {
 
     private fun idleNotification(i: IdleContent): Notification {
         val b = NotificationCompat.Builder(this, CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(i.title)
             .setContentText(i.text)
             .setOngoing(true)
@@ -392,7 +392,7 @@ class StrapService : LifecycleService() {
                 }
             }
         val b = NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(card.sport)
             .setContentText(card.text)
             .setStyle(bar)
@@ -458,7 +458,7 @@ class StrapService : LifecycleService() {
         val time = TimeOfDay.format(end, java.time.ZoneId.systemDefault())
         val text = if (cut != null) getString(R.string.system_saved_cut, facts, time, (cut / 60).toInt()) else facts
         val b = NotificationCompat.Builder(this, SAVED_CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(R.string.system_saved_title, Workouts.sportName(w.sportType)))
             .setContentText(facts)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -490,7 +490,7 @@ class StrapService : LifecycleService() {
             else -> getString(R.string.system_strength_rest_over, done + 1)
         }
         val b = NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(title)
             .setContentText(
                 if (!connected) getString(R.string.system_strength_strap_gone, WorkoutWords.STRAP_GONE)
@@ -532,7 +532,7 @@ class StrapService : LifecycleService() {
         val sport = Workouts.sportName(r.workout.sportType).lowercase()
         val text = getString(if (r.inCar) R.string.system_stopped_car_text else R.string.system_stopped_text, time, sport)
         return NotificationCompat.Builder(this, WorkoutNotification.CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(if (r.inCar) R.string.system_stopped_car_title else R.string.system_stopped_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -553,7 +553,7 @@ class StrapService : LifecycleService() {
         val sport = Workouts.sportName(o.sportType).lowercase()
         val text = getString(R.string.system_offer_text, time, o.averageHeartRate, sport)
         return NotificationCompat.Builder(this, OFFER_CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_openstrap)
+            .setSmallIcon(R.drawable.ic_stat_unstrap)
             .setContentTitle(getString(R.string.system_offer_title))
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))

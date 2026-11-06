@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   The strap's alarms, its health alerts and the phone alerts it buzzes for, pages opened from the Strap page, and what
-  their rows say there (ui/alarms/). OpenStrap is the app's name and WhatsApp an example of a calling app. Keep both as
+  their rows say there (ui/alarms/). unstrap is the app's name, written in lowercase even at the start of a sentence and WhatsApp an example of a calling app. Keep both as
   they are. bpm is beats a minute.
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -92,7 +92,7 @@
     <string name="you_health_oxygen">Low blood oxygen alert</string>
     <!-- The blood oxygen alert's value, in percent. -->
     <string name="you_health_below_percent">Below <xliff:g id="percent" example="90">%1$d</xliff:g>%%</string>
-    <string name="you_health_note">The strap buzzes when an alert goes off. OpenStrap isn\'t a medical device.</string>
+    <string name="you_health_note">The strap buzzes when an alert goes off. unstrap isn\'t a medical device.</string>
 
     <!-- The Strap page's Phone alerts row. -->
     <string name="you_phone_summary_both">Calls and notifications</string>
@@ -110,7 +110,7 @@
     <string name="you_phone_calls">Incoming calls</string>
     <string name="you_phone_calls_note">Buzzes while your phone rings. App calls like WhatsApp need notification access.</string>
     <string name="you_phone_calls_blocked">Needs phone access. Android won\'t ask again, so turn it on under Permissions.</string>
-    <!-- A button that opens Android's settings for OpenStrap. -->
+    <!-- A button that opens Android's settings for unstrap. -->
     <string name="you_phone_open_settings">Open settings</string>
     <string name="you_phone_call_buzz">Call buzz</string>
     <!-- Above the choice of how long the strap buzzes for a ringing call. -->

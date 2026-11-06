@@ -2,7 +2,7 @@
 <!--
   Today: the hero's sentences, its small facts and the header's title (presentation/TodayCopy.kt, HeaderCopy.kt and
   FirstNightCopy.kt). The widgets and the Recovery and Sleep tabs show some of them too.
-  OpenStrap is the app's name, keep it as it is. Recovery, Energy and Load are the names of the app's scores, written
+  unstrap is the app's name, written in lowercase even at the start of a sentence, keep it as it is. Recovery, Energy and Load are the names of the app's scores, written
   with a capital where they stand for the score.
 -->
 <resources xmlns:tools="http://schemas.android.com/tools" xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
@@ -75,7 +75,7 @@
     <string name="core_today_meaning_low">Still catching up. An easy day helps.</string>
 
     <!-- Why there is no Recovery score yet: nights so far of the nights the first score needs. -->
-    <string name="core_today_no_score_learning">OpenStrap is still learning your nights, <xliff:g id="nights" example="5">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g>.</string>
+    <string name="core_today_no_score_learning">unstrap is still learning your nights, <xliff:g id="nights" example="5">%1$d</xliff:g> of <xliff:g id="needed" example="7">%2$d</xliff:g>.</string>
     <!-- Why there is no Recovery score: the night lacked the heart readings a score needs. -->
     <string name="core_today_no_score_heart">Not enough heart data last night for a Recovery score.</string>
 
@@ -91,10 +91,10 @@
     <string name="core_today_deleted_last_night">You deleted last night\'s sleep.</string>
     <!-- In place of the above on a past day whose night the user deleted. -->
     <string name="core_today_deleted_that_night">You deleted that night\'s sleep.</string>
-    <!-- The word beside the strap's own Recovery number, shown while OpenStrap's score isn't ready. Short. -->
+    <!-- The word beside the strap's own Recovery number, shown while unstrap's score isn't ready. Short. -->
     <string name="core_today_strap_estimate">Strap\'s estimate</string>
-    <!-- The line under the strap's estimate when OpenStrap's own score isn't ready. -->
-    <string name="core_today_own_score_not_ready">OpenStrap\'s own score isn\'t ready yet.</string>
+    <!-- The line under the strap's estimate when unstrap's own score isn't ready. -->
+    <string name="core_today_own_score_not_ready">unstrap\'s own score isn\'t ready yet.</string>
 
     <!-- The Energy hero before the first night. -->
     <string name="core_today_energy_first_night">Energy starts after your first night. Sleep is what fills it.</string>
