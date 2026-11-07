@@ -18,8 +18,9 @@ import org.openstrap.app.data.settings.SettingsStore
 import org.openstrap.protocol.ChannelSession
 
 /**
- * History sync: one at a time, a full sync or the types the strap pushed queued behind it, the hourly auto sync, and
- * the work that follows each sync (body signals, workout gap fill, workout effect, daily calories).
+ * History sync: one at a time, a full sync or the types the strap pushed queued behind it, the automatic syncs
+ * [SyncPolicy] allows, and the work that follows each sync (body signals, workout gap fill, workout effect, daily
+ * calories).
  */
 // The sync queue and each piece of work after a sync, as small functions.
 @Suppress("TooManyFunctions")
@@ -40,7 +41,11 @@ internal class SyncCoordinator(
     val syncRecord = MutableStateFlow(SyncRecord())
     val syncEnded = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
-    private var lastAutoSync = 0L
+    /** When the last full sync started, of any kind; null before the first in this process. */
+    @Volatile private var lastFullSync: Long? = null
+
+    /** Whether the app is in front, so a connect meanwhile counts as the user looking. */
+    @Volatile private var appVisible = false
 
     init {
         // Every sync's start and end, pulled or in the background, so Today can tell a stuck sync from a slow one.
@@ -54,20 +59,33 @@ internal class SyncCoordinator(
     }
 
     /**
-     * Sync right after connecting (unless one ran recently and didn't fail), then every [AUTO_SYNC_SECONDS] while
-     * connected. A failed one is retried at once: it was most likely cut off by the link this connect replaces.
+     * On connect, then every [CHECK_SECONDS] while connected: syncs when [SyncPolicy] says one is due. A failed sync is
+     * retried at the next check: it was most likely cut off by a lost link.
      */
     fun autoSync(s: ChannelSession) = scope.launch {
+        // A connect while the app is open is the user looking, as Zepp's home page is.
+        var trigger = if (appVisible) SyncPolicy.Trigger.APP_IN_FRONT else SyncPolicy.Trigger.CONNECT
         while (isActive && link.session === s) {
-            val now = nowSeconds()
-            val due = now - lastAutoSync >= MIN_SYNC_GAP_SECONDS || sync.value is SyncState.Failed
-            if (due && sync.value !is SyncState.Running && !firmwareUpdating.value) {
-                lastAutoSync = now
-                log("auto sync")
-                syncNow()
-            }
-            delay(AUTO_SYNC_SECONDS * MILLIS_PER_SECOND)
+            autoSyncIfDue(trigger)
+            trigger = SyncPolicy.Trigger.TIMER
+            delay(CHECK_SECONDS * MILLIS_PER_SECOND)
         }
+    }
+
+    /**
+     * The app came to the front or left it. In front, sync if the last one is a few minutes old, as Zepp does when
+     * its home page shows; a strap not connected yet syncs by the same rule when it connects.
+     */
+    fun setAppVisible(visible: Boolean) {
+        appVisible = visible
+        if (visible && link.activeSession != null) autoSyncIfDue(SyncPolicy.Trigger.APP_IN_FRONT)
+    }
+
+    private fun autoSyncIfDue(trigger: SyncPolicy.Trigger) {
+        if (sync.value is SyncState.Running || firmwareUpdating.value) return
+        if (!SyncPolicy.due(trigger, nowSeconds(), lastFullSync, sync.value is SyncState.Failed)) return
+        log("auto sync (${trigger.name.lowercase()})")
+        syncNow()
     }
 
     fun syncNow() = startSync(full = true)
@@ -98,7 +116,10 @@ internal class SyncCoordinator(
         if (firmwareUpdating.value) return
         val s = link.activeSession ?: return
         val client = link.gatt ?: return
-        if (full) pendingFull.set(true)
+        if (full) {
+            pendingFull.set(true)
+            lastFullSync = nowSeconds()
+        }
         scope.launch {
             // A sync is running: it picks up what was just queued when it finishes.
             if (!syncLock.tryLock()) return@launch
@@ -196,8 +217,8 @@ internal class SyncCoordinator(
     private fun nowSeconds() = System.currentTimeMillis() / MILLIS_PER_SECOND
 
     private companion object {
-        const val MIN_SYNC_GAP_SECONDS = 15 * 60L
-        const val AUTO_SYNC_SECONDS = 60 * 60L
+        /** How often a connected strap is checked for a due sync. */
+        const val CHECK_SECONDS = 15 * 60L
         const val MILLIS_PER_SECOND = 1_000L
         const val SECONDS_PER_DAY = 86_400L
         /**
@@ -212,5 +233,26 @@ internal class SyncCoordinator(
         const val DAILY_CALORIES_PROFILE = "daily_energy_profile"
         /** The [org.openstrap.app.data.WorkoutEffect.MODEL] phone workouts' effects were last worked out with. */
         const val EFFECT_MODEL = "workout_effect_model"
+    }
+}
+
+/**
+ * When an automatic sync is due, set to Zepp's pace (zepp-alt analysis/firmware/01 §10): Zepp syncs on connect, when
+ * its home page shows (no more than once in 5 minutes), on workout pushes and about every 6 hours in the background.
+ * It stays connected, while unstrap reconnects many times a day, so a connect only syncs once the background interval
+ * has passed. Syncing far more often went with the strap's activity store gaining minutes that never happened, which
+ * placed its sleep hours late. Syncs the user asks for, workout ends and strap pushes don't go through this.
+ */
+internal object SyncPolicy {
+    const val BACKGROUND_SECONDS = 6 * 3600L
+    const val IN_FRONT_GAP_SECONDS = 5 * 60L
+
+    enum class Trigger { CONNECT, TIMER, APP_IN_FRONT }
+
+    /** [lastFullSync] is when the last full sync of any kind started, null when none has run yet. */
+    fun due(trigger: Trigger, now: Long, lastFullSync: Long?, lastFailed: Boolean): Boolean {
+        if (lastFullSync == null || lastFailed) return true
+        val gap = if (trigger == Trigger.APP_IN_FRONT) IN_FRONT_GAP_SECONDS else BACKGROUND_SECONDS
+        return now - lastFullSync >= gap
     }
 }
