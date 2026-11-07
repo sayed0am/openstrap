@@ -189,6 +189,13 @@ private fun NightHero(state: DayUiState, firstNights: Boolean, onRestore: (org.o
                 Spacer(Modifier.height(18.dp))
                 GlowSleepStages(state.sleepStages, 96.dp)
             }
+            if (session.fromMinutes) {
+                Spacer(Modifier.height(16.dp))
+                Text(
+                    stringResource(R.string.glow_sleep_from_minutes),
+                    color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
+                )
+            }
             state.sleepBreakdown?.let { b ->
                 // Stage totals as text, never dots (spec 2.3): a stage under a minute leaves its segment and legend out.
                 val totals = stageTotals(b.byStage)

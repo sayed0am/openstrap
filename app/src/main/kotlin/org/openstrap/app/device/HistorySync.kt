@@ -190,6 +190,10 @@ class HistorySync internal constructor(
                 .takeStrapEffects(System.currentTimeMillis() / 1000 - WORKOUT_LOOKBACK, WorkoutSession.LOCK)
         }
             .onFailure { log("strap effect: $it") }
+        // A night from the strap's minute sleep signal where its own sleep result is missing or wrong (firmware 3.27.0.1).
+        catching { org.openstrap.app.data.MinuteSleep.apply(dao, zone, System.currentTimeMillis() / 1000) }
+            .onSuccess { if (it.isNotEmpty()) log("history: sleep from the minute signal for $it") }
+            .onFailure { log("minute sleep: $it") }
         // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
         catching { org.openstrap.app.data.SleepSource(dao).purgeExpired(System.currentTimeMillis() / 1000) }
             .onSuccess { if (it > 0) log("history: removed $it sleep sessions deleted over a week ago") }

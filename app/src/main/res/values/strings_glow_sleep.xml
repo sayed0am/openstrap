@@ -10,6 +10,8 @@
     <string name="glow_sleep_last_night">Last night</string>
     <!-- A button that brings back a deleted night. -->
     <string name="glow_sleep_restore">Restore</string>
+    <!-- Under the night on the Sleep tab when the strap's own sleep for it was missing or wrong, and the app worked out the times from the strap's minute by minute data instead. Those nights have no stages or strap score. -->
+    <string name="glow_sleep_from_minutes">Your strap missed this night, so unstrap rebuilt it from what the strap recorded each minute. You get times and wake-ups, but no stages.</string>
     <!-- What a screen reader says for one stage of the night's chart: the stage, its times and its length. -->
     <string name="glow_sleep_stage_span"><xliff:g id="stage" example="Deep">%1$s</xliff:g>, <xliff:g id="times" example="01:10 to 01:55">%2$s</xliff:g>, <xliff:g id="minutes" example="45">%3$d</xliff:g> min</string>
     <!-- Title of the list of heart rate, HRV and breathing while asleep. -->

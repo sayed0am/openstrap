@@ -133,7 +133,8 @@ data class DayUiState(
     /** The day's stress hour by hour, 0..1, null for hours without a reading or to come ([stressStrip]). */
     val stressStrip: List<Float?> = emptyList(),
 ) {
-    val asleepSeconds: Long? get() = sleepBreakdown?.asleepSeconds ?: sleep?.let { it.end - it.start }
+    /** From the stages, else the session's own count: a night without stages ([SleepSession.fromMinutes]) has its awake minutes out. */
+    val asleepSeconds: Long? get() = sleepBreakdown?.asleepSeconds ?: sleep?.let(org.openstrap.app.data.SleepHistory::asleepSeconds)
 }
 
 /** The day's Recovery couldn't be worked out. [yesterday] is yesterday's score, shown dimmed in its place, when known. */
