@@ -65,6 +65,9 @@ class DeviceViewModel(
     /** The words of its messages, in res/values/strings_you_*.xml. Read on each use, so they follow the app's language. */
     private val strings: Strings get() = Strings.app
 
+    /** Restart shows only when the strap reports it: asked by the Device screen as it opens, once per connection. */
+    fun checkCanRestart() = viewModelScope.launch { strap.checkCanRestart() }
+
     val paired: StateFlow<PairedDevice?> =
         settings.pairedDevice.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -86,10 +89,8 @@ class DeviceViewModel(
     val buzzOnCalls: StateFlow<Boolean> = settings.buzzOnCalls.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val buzzOnNotifications: StateFlow<Boolean> = settings.buzzOnNotifications.stateIn(viewModelScope, SharingStarted.Eagerly, false)
     val wearReminder: StateFlow<Boolean> = settings.wearReminder.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    val autoStartWorkouts: StateFlow<Boolean> = settings.autoStartWorkouts.stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
     fun setWearReminder(on: Boolean) = viewModelScope.launch { settings.setWearReminder(on) }
-    fun setAutoStartWorkouts(on: Boolean) = viewModelScope.launch { settings.setAutoStartWorkouts(on) }
 
     private val _scan = MutableStateFlow(ScanUiState())
     val scan = _scan.asStateFlow()

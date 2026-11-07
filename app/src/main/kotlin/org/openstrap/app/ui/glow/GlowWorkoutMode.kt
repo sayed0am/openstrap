@@ -73,7 +73,6 @@ import org.openstrap.app.ui.workout.PhoneSummary
 import org.openstrap.app.ui.components.pressClickable
 import org.openstrap.app.ui.theme.MetricColors
 import org.openstrap.app.ui.theme.AppIcons
-import org.openstrap.app.ui.theme.SportIcons
 import org.openstrap.app.ui.workout.ZONE_COLORS
 import androidx.compose.ui.semantics.onClick
 import org.openstrap.app.ui.workout.SummaryCopy
@@ -214,10 +213,7 @@ internal fun WorkoutPage(
 
 /* ----------------------------------------- Activity tab entry ---------------------------------------- */
 
-/**
- * Where an offer or a suggestion sits: a quiet panel, or on Today an unlit strip ([strip]), so the
- * two never look alike when both show.
- */
+/** Where a suggestion sits: a quiet panel, or on Today an unlit strip ([strip]). */
 @Composable
 private fun OfferBox(strip: Boolean, content: @Composable ColumnScope.() -> Unit) {
     if (!strip) QuietPanel(content = content)
@@ -247,34 +243,6 @@ internal fun SuggestionPanel(
             val dismiss = stringResource(R.string.glow_workout_suggestion_dismiss)
             Box(Modifier.weight(1f)) { WorkoutButton(save, Color.White, Color.Black, onSave, height = 48.dp) }
             Box(Modifier.weight(1f)) { WorkoutButton(dismiss, Raised, Color.White, onDismiss, height = 48.dp) }
-        }
-    }
-}
-
-/**
- * "Looks like a workout": an effort still under way that nobody started, offered for recording from its start.
- * [strip] draws it as a Today strip.
- */
-@Composable
-internal fun OfferPanel(o: org.openstrap.app.data.AutoStart.Offer, onRecord: () -> Unit, onDecline: () -> Unit, strip: Boolean = false) {
-    OfferBox(strip) {
-        Row(verticalAlignment = Alignment.Top) {
-            Icon(SportIcons.of(o.sportType), null, tint = MetricColors.heart, modifier = Modifier.padding(top = 2.dp).size(20.dp))
-            Spacer(Modifier.width(10.dp))
-            Column {
-                Text(stringResource(R.string.glow_workout_offer_title), color = Color.White, style = GlowType.cardTitle, maxLines = 1)
-                PageNote(
-                    stringResource(
-                        R.string.glow_workout_offer_text, clock(o.start), o.averageHeartRate, Workouts.sportName(o.sportType).lowercase(),
-                    ),
-                )
-            }
-        }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            val record = stringResource(R.string.glow_workout_offer_record)
-            val decline = stringResource(R.string.glow_workout_offer_decline)
-            Box(Modifier.weight(1f)) { WorkoutButton(record, MetricColors.heart, Color.Black, onRecord, height = 48.dp) }
-            Box(Modifier.weight(1f)) { WorkoutButton(decline, Raised, Color.White, onDecline, height = 48.dp) }
         }
     }
 }

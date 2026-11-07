@@ -150,13 +150,14 @@ fun DeviceScreen(
     BackHandler(onBack = onBack)
     val paired by vm.paired.collectAsStateWithLifecycle()
     val connection by vm.connection.collectAsStateWithLifecycle()
+    val strapConnected = connection is ConnectionState.Connected
+    androidx.compose.runtime.LaunchedEffect(strapConnected) { if (strapConnected) vm.checkCanRestart() }
     val sync by vm.sync.collectAsStateWithLifecycle()
     val scan by vm.scan.collectAsStateWithLifecycle()
     val info by vm.info.collectAsStateWithLifecycle()
     val calls by vm.buzzOnCalls.collectAsStateWithLifecycle()
     val notifications by vm.buzzOnNotifications.collectAsStateWithLifecycle()
     val wearReminder by vm.wearReminder.collectAsStateWithLifecycle()
-    val autoStart by vm.autoStartWorkouts.collectAsStateWithLifecycle()
     var confirmForget by rememberSaveable { mutableStateOf(false) }
     var confirmDisconnect by rememberSaveable { mutableStateOf(false) }
     var confirmRestart by rememberSaveable { mutableStateOf(false) }
@@ -246,10 +247,6 @@ fun DeviceScreen(
                 )
                 PageSwitchRow(
                     stringResource(R.string.you_strap_row_off_body), null, wearReminder, vm::setWearReminder, icon = AppIcons.HandPalm,
-                )
-                PageSwitchRow(
-                    stringResource(R.string.you_strap_row_auto_detect), null, autoStart, vm::setAutoStartWorkouts,
-                    icon = AppIcons.PersonSimpleRun,
                 )
                 KeepConnectedRow(vm, keepConnected, device.address)
                 val firmware = info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware

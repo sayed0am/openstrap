@@ -88,13 +88,12 @@ private fun MainActivity.strapCommands() {
     manager?.simulate(script, intent.getIntExtra("simulate_steps", 0), intent.getIntExtra("simulate_battery", SIMULATED_BATTERY))
 }
 
-/** `--es buzz AboveTarget` plays a cue's pattern on the strap (a Cue name, Stop or Offer), to feel it. */
+/** `--es buzz AboveTarget` plays a cue's pattern on the strap (a Cue name or Stop), to feel it. */
 private fun MainActivity.buzz() {
     val buzz = intent.getStringExtra("buzz") ?: return
     intent.removeExtra("buzz")
     val pattern = when (buzz) {
         "Stop" -> WorkoutSession.STOP_BUZZ
-        "Offer" -> WorkoutSession.OFFER_BUZZ
         else -> Cue.entries.firstOrNull { it.name == buzz }?.pattern
     } ?: return
     val strap = container.strap

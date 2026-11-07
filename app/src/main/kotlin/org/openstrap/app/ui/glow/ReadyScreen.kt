@@ -343,6 +343,7 @@ internal fun MinusPlus(
 /** The strap in one line with its dot, on Choose: "Strap ready, 72 bpm". */
 @Composable
 internal fun StrapLine(connection: ConnectionState, liveHeartRate: Int?) {
+    org.openstrap.app.ui.components.HoldLiveHeartRate()
     StatusDot(
         StartCopy.strapLine(connection, liveHeartRate), if (connection is ConnectionState.Connected) TrendGood else TrendBad,
         Modifier.padding(horizontal = 4.dp),

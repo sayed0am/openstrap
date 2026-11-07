@@ -89,9 +89,7 @@ class DeviceViewModelTest {
 
     @Test fun `the strap page's switches write the settings`() = runBlocking {
         vm.setWearReminder(false).join()
-        vm.setAutoStartWorkouts(false).join()
         assertEquals(false, settings.wearReminder.first())
-        assertEquals(false, settings.autoStartWorkouts.first())
     }
 
     @Test fun `save a copy and restore say what the repository did`() = runBlocking {

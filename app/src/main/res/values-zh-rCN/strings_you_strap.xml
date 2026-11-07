@@ -33,7 +33,6 @@
     <string name="you_strap_row_phone_alerts">手机提醒</string>
     <string name="you_strap_row_health_alerts">健康提醒</string>
     <string name="you_strap_row_off_body">离手提醒</string>
-    <string name="you_strap_row_auto_detect">自动识别运动</string>
     <string name="you_strap_row_firmware">固件</string>
     <string name="you_strap_check_for_updates">检查更新</string>
     <string name="you_strap_row_zepp">Zepp 账号</string>

@@ -40,7 +40,7 @@ fun defaultLook(slot: TodaySlot, moment: Moment?, live: Boolean = false): CardLo
 
 private fun ownLook(slot: TodaySlot, moment: Moment?): CardLook = when (slot.card) {
     TodayCard.Hero -> glow(heroHue(moment))
-    TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts -> strip(Hue.Heart)
+    TodayCard.Suggestion, TodayCard.Alerts -> strip(Hue.Heart)
     TodayCard.CheckIn, TodayCard.StartWorkout -> strip(Hue.Neutral)
     TodayCard.BodyMorning -> ListLook
     TodayCard.LastNight -> if (slot.size == CardSize.Strip) strip(Hue.Sleep) else picture(Hue.Sleep, PictureKind.StageBar)
@@ -62,7 +62,7 @@ private fun ownLook(slot: TodaySlot, moment: Moment?): CardLook = when (slot.car
  * Unlit strips with no picture look alike, so a run of these is the one place two strips may touch: each holds its
  * own question and buttons.
  */
-private val ANSWER = setOf(TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts, TodayCard.CheckIn)
+private val ANSWER = setOf(TodayCard.Suggestion, TodayCard.Alerts, TodayCard.CheckIn)
 
 /** Whether [a] and [b], neighbours, look the same in [look]s: the same design, unless both are strips needing an answer. */
 private fun clash(a: TodaySlot, b: TodaySlot, look: (TodaySlot) -> CardLook): Boolean =
@@ -191,4 +191,4 @@ private fun move(
     return null
 }
 
-private val URGENT = setOf(TodayCard.Hero, TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts)
+private val URGENT = setOf(TodayCard.Hero, TodayCard.Suggestion, TodayCard.Alerts)

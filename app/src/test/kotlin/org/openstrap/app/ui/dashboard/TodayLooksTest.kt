@@ -24,7 +24,7 @@ import org.openstrap.app.ui.glow.packGrid
  * phone and on two columns, and Today's rows keep the grid's rules (2.4): no lone Small, no pair right after a pair.
  */
 class TodayLooksTest {
-    private val allFacts = TodayFacts(offer = true, suggestion = true, alerts = true, workout = true, healthspan = true)
+    private val allFacts = TodayFacts(suggestion = true, alerts = true, workout = true, healthspan = true)
 
     /** The three ways Today is laid out: a phone, two columns, and two columns with the Small pairs across both. */
     private val layouts = listOf(false to false, true to false, true to true)
@@ -182,7 +182,7 @@ class TodayLooksTest {
         assertEquals(CardSize.Wide, pinned[2].size)
         // The strips that need an answer stack under the hero as they are.
         val stack = today(Moment.Waking, allFacts)
-        assertEquals(List(4) { CardSize.Strip }, stack.drop(1).take(4).map { it.size })
+        assertEquals(List(3) { CardSize.Strip }, stack.drop(1).take(3).map { it.size })
         assertVaried(stack, false, "answer strips")
     }
 
@@ -249,7 +249,7 @@ class TodayLooksTest {
         val rnd = Random(42)
         repeat(20_000) {
             val m = Moment.entries.random(rnd)
-            val facts = TodayFacts(rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean())
+            val facts = TodayFacts(rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean(), rnd.nextBoolean())
             val pins = pinLists.random(rnd)
             val hidden = hideable.filter { rnd.nextInt(3) == 0 }.toSet() - pins.toSet()
             val live = rnd.nextBoolean()

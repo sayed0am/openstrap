@@ -18,7 +18,6 @@ import org.openstrap.app.ui.glow.CardSize
  */
 enum class TodayCard(@StringRes private val labelRes: Int?, val editable: Boolean = true, val pinnable: Boolean = false) {
     Hero(null, editable = false),
-    Offer(R.string.day_card_offer, editable = false),
     Suggestion(R.string.day_card_suggestion, editable = false),
     Alerts(R.string.day_card_alerts, editable = false),
     CheckIn(R.string.day_card_check_in),
@@ -66,7 +65,6 @@ data class TodaySlot(
 /** What Today has to show beyond the moment's own cards; each false leaves its card out. */
 data class TodayFacts(
     val isToday: Boolean = true,
-    val offer: Boolean = false,
     val suggestion: Boolean = false,
     val alerts: Boolean = false,
     /** A finished workout to show after it (the after-workout moment). */
@@ -126,7 +124,6 @@ fun todayCards(moment: Moment?, facts: TodayFacts, morning: Boolean = true): Lis
     return fitRows(
         listOfNotNull(
             TodaySlot(TodayCard.Hero, CardSize.Large),
-            strip(TodayCard.Offer).takeIf { facts.offer && facts.isToday },
             strip(TodayCard.Suggestion).takeIf { facts.suggestion && facts.isToday },
             strip(TodayCard.Alerts).takeIf { facts.alerts },
         ) + own + listOfNotNull(
@@ -223,7 +220,7 @@ fun applyEdits(slots: List<TodaySlot>, edits: TodayEdits, moment: Moment?, unava
             .ifEmpty { pinnedSlots(card) }.map { it.copy(pinned = true) }.let(::fitRows)
     }
     val rest = slots.filter { it.card.owner() !in edits.hidden && it.card.owner() !in pins }
-    val urgent = setOf(TodayCard.Hero, TodayCard.Offer, TodayCard.Suggestion, TodayCard.Alerts)
+    val urgent = setOf(TodayCard.Hero, TodayCard.Suggestion, TodayCard.Alerts)
     val at = rest.indexOfFirst { it.card !in urgent }.let { if (it < 0) rest.size else it }
     return fitRows(rest.take(at) + pinned + fitRows(rest.drop(at)))
 }

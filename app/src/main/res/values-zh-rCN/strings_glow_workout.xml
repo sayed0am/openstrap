@@ -9,10 +9,6 @@
     <string name="glow_workout_suggestion_text">%1$s %2$s，主要在 %3$d 区，平均 %4$d bpm。未被记录。</string>
     <string name="glow_workout_suggestion_save">保存为运动</string>
     <string name="glow_workout_suggestion_dismiss">不是运动</string>
-    <string name="glow_workout_offer_title">看起来是一次运动</string>
-    <string name="glow_workout_offer_text">你的心率自 %1$s 以来持续偏高，平均 %2$d bpm。要记录为从 %1$s 开始的%3$s吗？</string>
-    <string name="glow_workout_offer_record">记录</string>
-    <string name="glow_workout_offer_decline">暂不</string>
     <string name="glow_workout_add_title">添加运动</string>
     <string name="glow_workout_add_choose_sport">选择运动项目</string>
     <string name="glow_workout_add_no_heart">手环尚未同步当天的心率数据。请先同步，然后再试。</string>

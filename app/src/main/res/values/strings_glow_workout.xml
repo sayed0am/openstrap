@@ -26,14 +26,6 @@
     <string name="glow_workout_suggestion_save">Save as workout</string>
     <!-- Button that dismisses the offer. Half the width. -->
     <string name="glow_workout_suggestion_dismiss">Not a workout</string>
-    <!-- Title of the offer to record an effort still under way that nobody started. One line. -->
-    <string name="glow_workout_offer_title">Looks like a workout</string>
-    <!-- The offer's text. The time is "18:02", the same both times, and the sport is in lower case, as "run". -->
-    <string name="glow_workout_offer_text">Your heart rate has been up since <xliff:g id="time" example="18:02">%1$s</xliff:g>, <xliff:g id="bpm" example="141">%2$d</xliff:g> bpm on average. Record it as <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time_again" example="18:02">%1$s</xliff:g>?</string>
-    <!-- Button that starts recording from when the effort began. Half the width. -->
-    <string name="glow_workout_offer_record">Record</string>
-    <!-- Button that declines the offer. Half the width. -->
-    <string name="glow_workout_offer_decline">Not now</string>
 
     <!-- Title of the page that adds a workout after the fact. -->
     <string name="glow_workout_add_title">Add a workout</string>

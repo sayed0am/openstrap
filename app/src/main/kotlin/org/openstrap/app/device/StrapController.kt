@@ -111,19 +111,32 @@ interface StrapController {
      */
     fun backgroundConnect()
     fun disconnect()
+
+    /**
+     * A sync the user asked for (pull-to-refresh, the widget, the notification, Sync now). As Zepp's user action, it
+     * runs only if more than 120 s have passed since the last good sync, else it shows a moment of progress only.
+     */
     fun syncNow()
 
-    /** Called as the app's screen comes to the front or leaves it; live HR only runs while it's visible. */
+    /** Called as the app's screen comes to the front or leaves it: steps notify, the user-action sync, live HR. */
     fun setAppVisible(visible: Boolean)
 
     /**
-     * While a workout records, live HR streams whatever the switch and the screen say, and starts again after each
-     * reconnect.
+     * While a workout records, live HR streams whatever the screen shows, and starts again after each reconnect.
      */
     fun setWorkoutActive(active: Boolean)
 
-    /** While idle: live HR streams for workout auto-start ([org.openstrap.app.data.AutoStart]) while this is on. */
-    fun setEffortWatch(active: Boolean)
+    /**
+     * A screen that shows live heart rate holds it with [key] while [shown], as Zepp's screens do. Live HR streams only
+     * while one holds it and the app is in front, or a workout records.
+     */
+    fun showLiveHeartRate(key: Any, shown: Boolean)
+
+    /**
+     * Reads whether the strap reports GENERAL key 45 (restart), into [StrapInfo.canRestart]. Asked by the Device screen
+     * when it opens, not on every connect.
+     */
+    suspend fun checkCanRestart()
 
     /**
      * Sends [file] to the strap and applies it (docs/protocol/03 §3.4). The strap reboots afterwards and the

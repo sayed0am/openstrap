@@ -168,10 +168,6 @@ fun GlowTodayScreen(
     onStartSport: (Int) -> Unit = {},
     /** Opens the ready screen on its sport list. */
     onOtherSport: () -> Unit = {},
-    /** An effort under way nobody started ([org.openstrap.app.data.AutoStart]); null hides the strip. */
-    offer: org.openstrap.app.data.AutoStart.Offer? = null,
-    onRecordOffer: () -> Unit = {},
-    onDeclineOffer: () -> Unit = {},
     /** A workout recording now: the hero during a workout leads back to it ([WorkoutShortcut]). */
     running: org.openstrap.app.device.WorkoutState.Recording? = null,
     onOpenRunning: () -> Unit = {},
@@ -210,6 +206,7 @@ fun GlowTodayScreen(
     val zone = ZoneId.systemDefault()
     val now = Instant.now()
     val isToday = state.date == now.atZone(zone).toLocalDate()
+    org.openstrap.app.ui.components.HoldLiveHeartRate(isToday)
     val rec = recovery?.takeIf { it.date == state.date }
     val lastWorkout = workouts.maxByOrNull { it.end }
     val ctx = TodayContext(
@@ -227,7 +224,7 @@ fun GlowTodayScreen(
     // Before a strap is paired, or while it connects for the first time, the hero is the pairing stage (E3).
     val pairing = strap.pairing ?: PairStep.Ready.takeIf { !strap.paired }
     val facts = TodayFacts(
-        isToday = isToday, offer = offer != null, suggestion = suggestion != null, alerts = state.alerts.isNotEmpty(),
+        isToday = isToday, suggestion = suggestion != null, alerts = state.alerts.isNotEmpty(),
         workout = lastWorkout != null && isToday,
         healthspan = healthspan?.result?.let { r ->
             val asOf = Instant.ofEpochSecond(r.asOf).atZone(zone).toLocalDate()
@@ -290,7 +287,7 @@ fun GlowTodayScreen(
                                         )
                                         TodayCard.EditToday -> EditTodayButton({ editing = true })
                                         else -> TodayRow(slot, ctx, healthspan, history, checkIn, onCheckIn, onOpenMetric,
-                                            onOpenWorkout, onOpenHealthspan, onOpenProfile, offer, onRecordOffer, onDeclineOffer, suggestion,
+                                            onOpenWorkout, onOpenHealthspan, onOpenProfile, suggestion,
                                             onSaveSuggestion, onDismissSuggestion, onOpen, usualSteps, onRetryRecovery,
                                             if (slot.size == CardSize.Small) Modifier.fillMaxSize() else Modifier, onStartSport = onStartSport,
                                             stepsFacts = stepsFacts)
@@ -761,7 +758,6 @@ private fun TodayRow(
     slot: TodaySlot, ctx: TodayContext, healthspan: org.openstrap.app.data.Healthspan.Outcome?, history: DailyHistory?,
     checkIn: Int?, onCheckIn: (Int?) -> Unit, onOpenMetric: (Metric) -> Unit,
     onOpenWorkout: (Long) -> Unit, onOpenHealthspan: () -> Unit, onOpenProfile: () -> Unit,
-    offer: org.openstrap.app.data.AutoStart.Offer?, onRecordOffer: () -> Unit, onDeclineOffer: () -> Unit,
     suggestion: org.openstrap.app.data.WorkoutSuggestions.Suggestion?, onSaveSuggestion: () -> Unit, onDismissSuggestion: () -> Unit,
     onOpen: (org.openstrap.app.ui.dashboard.Detail) -> Unit, usualSteps: List<Float>?, onRetryRecovery: () -> Unit,
     /** The size a Small takes in its row. */
@@ -780,7 +776,6 @@ private fun TodayRow(
     // Last night opens the Sleep score's detail, as the Sleep tab's hero does (spec 3.3).
     val onOpenSleep = { openScore(org.openstrap.app.ui.dashboard.Score.Sleep) }
     when (slot.card) {
-        TodayCard.Offer -> offer?.let { OfferPanel(it, onRecordOffer, onDeclineOffer, strip = true) }
         TodayCard.Suggestion -> suggestion?.let { SuggestionPanel(it, onSaveSuggestion, onDismissSuggestion, strip = true) }
         TodayCard.Alerts -> AlertsStrip(s.alerts, onOpenMetric)
         TodayCard.CheckIn -> CheckInStrip(checkIn, onCheckIn)

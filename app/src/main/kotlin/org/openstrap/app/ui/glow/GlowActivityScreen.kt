@@ -171,6 +171,7 @@ fun GlowActivityScreen(
     val heartPoints = state.pai?.total ?: stored[state.date]?.total
     val r = recovery?.takeIf { it.date == state.date }
     val live = liveHeartRate?.takeIf { isToday }
+    org.openstrap.app.ui.components.HoldLiveHeartRate(isToday)
     val slots = activityCards(ActivityFacts(isToday = isToday, suggestion = suggestion != null, live = live != null))
     val restingRange = rememberNormal(Metric.RestingHr, state.date, history)
     // A partial day lowers the steps and the day's totals: those two cards carry the tag (spec 4.3).

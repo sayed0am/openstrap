@@ -18,8 +18,6 @@
     <string name="system_channel_strap">Strap connection</string>
     <!-- Channel name: the summary shown once a workout is saved. -->
     <string name="system_channel_saved">Workout saved</string>
-    <!-- Channel name: the question when the strap's readings look like a workout that isn't being recorded. -->
-    <string name="system_channel_offer">Workout noticed</string>
     <!-- Channel name: the ongoing notification of the workout being recorded. -->
     <string name="system_channel_workout">Workout</string>
     <!-- Channel name: the reminder when the strap is taken off. -->
@@ -143,13 +141,6 @@
     <string name="system_stopped_chip">End?</string>
     <string name="system_stopped_action_end_at">End at <xliff:g id="time" example="18:50">%1$s</xliff:g></string>
     <string name="system_stopped_action_keep">Keep going</string>
-
-    <!-- When the heart rate looks like a workout that isn't being recorded. The sport is lower case, "run". -->
-    <string name="system_offer_title">Looks like a workout</string>
-    <string name="system_offer_text">Your heart rate has been up since <xliff:g id="time" example="17:40">%1$s</xliff:g>, <xliff:g id="bpm" example="138">%2$d</xliff:g> bpm on average. Record a <xliff:g id="sport" example="run">%3$s</xliff:g> from <xliff:g id="time" example="17:40">%1$s</xliff:g>?</string>
-    <string name="system_offer_action_record">Record</string>
-    <!-- Swiping it away means the same. -->
-    <string name="system_offer_action_decline">Not now</string>
 
     <!-- When the strap is taken off. -->
     <string name="system_wear_title">Strap is off</string>

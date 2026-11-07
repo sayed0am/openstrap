@@ -105,6 +105,7 @@ private val HeartLight = listOf(0f to 0.7f, 0.5f to 0.18f)
  */
 @Composable
 internal fun ReadyHeartCard(connection: ConnectionState, liveHeartRate: Int?, color: Color = MetricColors.heart) {
+    org.openstrap.app.ui.components.HoldLiveHeartRate()
     val hero = WorkoutCopy.readyHero(connection, liveHeartRate)
     val bpm = liveHeartRate.takeIf { hero.live }
     val light = if (bpm != null) 1f else 0.4f
