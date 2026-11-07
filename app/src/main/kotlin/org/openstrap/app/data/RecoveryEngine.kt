@@ -425,7 +425,11 @@ class RecoveryEngine(private val dao: HealthDao) {
         val simTo = span.simTo
         val day = span.day
         val stages = (reads.sessions + reads.ahead).filter { it.end > simFrom && it.start < simTo }
-            .flatMap { s -> reads.stagesOf(s).map { Triple(it.start, it.end, it.stage) } }
+            .flatMap { s ->
+                val own = reads.stagesOf(s).map { Triple(it.start, it.end, it.stage) }
+                // A night unstrap made from the minute signal has no stages: it still recharges ([MinuteSleep.rechargeStages]).
+                if (own.isEmpty() && s.fromMinutes) MinuteSleep.rechargeStages(s, reads.activity) else own
+            }
         val stress = reads.stress.within(simFrom, simTo) { it.timestamp }.map { it.timestamp to it.value }
         val simActivity = reads.activity.within(simFrom, simTo) { it.timestamp }
         val steps = simActivity.associate { it.timestamp / 60 * 60 to it.steps }

@@ -122,4 +122,13 @@ class MinuteSleepTest {
         assertEquals(emptyList<LocalDate>(), MinuteSleep.apply(dao, zone, at(date, 17, 30)))
         assertEquals(listOf(right), dao.sleepSessionsOnce(0, Long.MAX_VALUE))
     }
+
+    @Test fun `a rebuilt night recharges Energy as light sleep, its awake minutes as awake`() {
+        val n = MinuteSleep.night(night(), windowStart, windowEnd, latest = at(9, 0))!!
+        val stages = MinuteSleep.rechargeStages(MinuteSleep.session(n, date), night())
+        assertEquals(listOf(SleepStage.LIGHT, SleepStage.AWAKE, SleepStage.LIGHT), stages.map { it.third })
+        assertEquals(at(3, 0) to at(3, 12), stages[1].first to stages[1].second)
+        assertEquals(n.start, stages.first().first)
+        assertEquals(n.end, stages.last().second)
+    }
 }

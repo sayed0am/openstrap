@@ -3,6 +3,7 @@ package org.openstrap.app.data
 import org.openstrap.app.data.db.ActivityMinute
 import org.openstrap.app.data.db.HealthDao
 import org.openstrap.app.data.db.SleepSession
+import org.openstrap.app.data.db.SleepStage
 import org.openstrap.protocol.history.ActivityMode
 import java.time.LocalDate
 import java.time.ZoneId
@@ -145,6 +146,24 @@ object MinuteSleep {
         val missing = night.asleepMinutes - RecoveryEngine.asleepMinutes(strap)
         val partOnly = missing >= MISSING_MINUTES && overlap / nightMinutes < MIN_STRAP_OVERLAP
         return onAwake || partOnly
+    }
+
+    /**
+     * Stand-in stages for Energy's recharge ([Recovery.charge]) on a night unstrap made, which has none of its own:
+     * without them Energy counted the whole night as awake and barely recharged. Asleep minutes become light sleep,
+     * whose recharge weight (0.8) is about what a usual night's mix of deep, light and REM averages to, and the rest
+     * awake. Only for Energy: the night still shows no stages.
+     */
+    fun rechargeStages(s: SleepSession, minutes: List<ActivityMinute>): List<Triple<Long, Long, Int>> {
+        val byTime = minutes.associateBy { it.timestamp }
+        val out = mutableListOf<Triple<Long, Long, Int>>()
+        for (t in minutesIn(Math.floorDiv(s.start, MINUTE) * MINUTE, s.end)) {
+            val stage = if (isAsleep(byTime[t])) SleepStage.LIGHT else SleepStage.AWAKE
+            val last = out.lastOrNull()
+            if (last != null && last.third == stage && last.second == t) out[out.size - 1] = last.copy(second = t + MINUTE)
+            else out += Triple(t, t + MINUTE, stage)
+        }
+        return out
     }
 
     /** [night] as the day's main sleep, marked as unstrap's. */
