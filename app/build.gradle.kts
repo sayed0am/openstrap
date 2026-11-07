@@ -14,7 +14,30 @@ val appVersionName = providers.gradleProperty("appVersion").orNull?.removePrefix
 // 1.2.3 -> 10203, so every release installs over the one before it.
 val appVersionCode = appVersionName.substringBefore('-').split('.').map { it.toInt() }
     .let { (major, minor, patch) -> major * 10_000 + minor * 100 + patch }
-val releaseKeystore = env("OPENSTRAP_KEYSTORE")
+
+// `-PphoneApp` builds a debug app as the real one (org.openstrap.app, signed with the release key), so a branch installs
+// over the release on the developer's own phone and keeps its data, and the phone runs one app like everyone else's.
+val phoneApp = providers.gradleProperty("phoneApp").isPresent
+if (phoneApp && (providers.gradleProperty("devApp").isPresent || providers.gradleProperty("demoApp").isPresent)) {
+    error("-PphoneApp builds the real app: leave out -PdevApp and -PdemoApp")
+}
+
+// The release key's settings for a phone build, when the env vars aren't set: ~/.openstrap/signing.env, shell
+// `NAME=value` lines (an `export` and quotes are allowed, and a leading ~ or $HOME in a value is the home folder).
+val home: String = System.getProperty("user.home")
+val signingFile: Map<String, String> = if (!phoneApp) emptyMap() else
+    providers.fileContents(layout.projectDirectory.file("$home/.openstrap/signing.env")).asText.orNull.orEmpty()
+        .lines().map { it.trim().removePrefix("export ").trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") && '=' in it }
+        .associate { line ->
+            val value = line.substringAfter('=').trim().removeSurrounding("\"").removeSurrounding("'")
+            line.substringBefore('=').trim() to value.replaceFirst(Regex("^(~|\\\$HOME|\\$\\{HOME})"), home)
+        }
+
+/** A signing setting: its env var (CI sets them from secrets), or for a phone build the signing file. */
+fun signing(name: String): String? = env(name) ?: signingFile[name]?.takeIf { it.isNotBlank() }
+
+val releaseKeystore = signing("OPENSTRAP_KEYSTORE")
 
 android {
     namespace = "org.openstrap.app"
@@ -38,10 +61,13 @@ android {
         // The release key, when its env vars are set (CI sets them from secrets); see README "Releases".
         if (releaseKeystore != null) create("release") {
             storeFile = file(releaseKeystore)
-            storePassword = env("OPENSTRAP_KEYSTORE_PASSWORD")
-            keyAlias = env("OPENSTRAP_KEY_ALIAS")
-            keyPassword = env("OPENSTRAP_KEY_PASSWORD")
+            storePassword = signing("OPENSTRAP_KEYSTORE_PASSWORD")
+            keyAlias = signing("OPENSTRAP_KEY_ALIAS")
+            keyPassword = signing("OPENSTRAP_KEY_PASSWORD")
         }
+    }
+    if (phoneApp && releaseKeystore == null) {
+        error("-PphoneApp needs the release key: set the OPENSTRAP_KEYSTORE env vars or write ~/.openstrap/signing.env")
     }
 
     buildTypes {
@@ -58,6 +84,8 @@ android {
                 applicationIdSuffix = ".dev"
                 manifestPlaceholders["appLabel"] = "Unstrap ${appVersionName.removeSuffix(".0")}"
             }
+            // Installs only over a release with a lower version: pass -PappVersion past the one on the phone.
+            if (phoneApp) signingConfig = signingConfigs.getByName("release")
         }
         release {
             isMinifyEnabled = true
