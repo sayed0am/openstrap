@@ -191,7 +191,9 @@ class HistorySync internal constructor(
         }
             .onFailure { log("strap effect: $it") }
         // A night from the strap's minute sleep signal where its own sleep result is missing or wrong (firmware 3.27.0.1).
-        catching { org.openstrap.app.data.MinuteSleep.apply(dao, zone, System.currentTimeMillis() / 1000) }
+        catching {
+            org.openstrap.app.data.MinuteSleep.apply(dao, zone, System.currentTimeMillis() / 1000, cursors.get(MINUTES_CHECKED_KEY))
+        }
             .onSuccess { if (it.isNotEmpty()) log("history: sleep from the minute signal for $it") }
             .onFailure { log("minute sleep: $it") }
         // Sleep deleted over a week ago goes for good, and a copy the strap just sent again with it.
@@ -295,7 +297,24 @@ class HistorySync internal constructor(
             log("history: cursor for $type was ${Instant.ofEpochSecond(cursor)}, reset to ${Instant.ofEpochSecond(reset)}")
             cursors.set(key, reset)
         }
+        refetchSleepOnce(now)
         removeUnownedEffects(now)
+    }
+
+    /**
+     * 3.0.0 replaced right strap nights with nights from minutes that a catch-up had timed hours late. Once, the strap's
+     * results for the last [SLEEP_REFETCH_SECONDS] are fetched again (it keeps about 60 days), so those nights come back
+     * and the rules that keep them now ([org.openstrap.app.data.MinuteSleep.replaces]) decide again.
+     */
+    private suspend fun refetchSleepOnce(now: Long) {
+        if (cursors.get(SLEEP_REFETCHED_KEY) != null) return
+        val key = "gdsp_${HistoryDataType.SLEEP_RESULT.code}"
+        val from = now - SLEEP_REFETCH_SECONDS
+        cursors.get(key)?.takeIf { it > from }?.let {
+            log("history: fetching sleep results again from ${Instant.ofEpochSecond(from)}")
+            cursors.set(key, from)
+        }
+        cursors.set(SLEEP_REFETCHED_KEY, now)
     }
 
     /** Effects stored before a sync left them out ([unownedEffects]) go, remembered as a sync would. */
@@ -361,6 +380,12 @@ class HistorySync internal constructor(
         // The strap keeps updating a day's max exercise HR, so Zepp re-fetches it from the start of the day on every
         // sync (y4t.java:62-69).
         if (spec.type == HistoryDataType.DAILY_MAX_EXERCISE_HR) cursor = dayStart(cursor)
+        // Minutes fetched long after they were recorded can come back hours late: no nights are made from them.
+        val now = System.currentTimeMillis() / 1000
+        if (spec.type == HistoryDataType.ACTIVITY && cursor < now - org.openstrap.app.data.MinuteSleep.CATCHUP_SECONDS) {
+            log("history: catching up minutes from ${Instant.ofEpochSecond(cursor)}, no nights made from them")
+            cursors.set(MINUTES_CHECKED_KEY, now)
+        }
         repeat(MAX_CHUNKS_PER_TYPE) {
             val chunk = when (val f = client.fetch(spec.code, cursor, zone)) {
                 is GdspFetch.Chunk -> f
@@ -678,6 +703,13 @@ class HistorySync internal constructor(
         private val HISTORY_CONTROL = java.util.UUID.fromString("00000004-0000-3512-2118-0009af100700")
         private val HISTORY_DATA = java.util.UUID.fromString("00000005-0000-3512-2118-0009af100700")
         private const val DEFAULT_LOOKBACK = 2L * 24 * 3600
+
+        /** When the last minutes catch-up ended ([org.openstrap.app.data.MinuteSleep.CATCHUP_SECONDS]). */
+        internal const val MINUTES_CHECKED_KEY = "minutes_checked_from"
+
+        /** Set once the strap's sleep results were fetched again ([refetchSleepOnce]). */
+        internal const val SLEEP_REFETCHED_KEY = "sleep_refetched_301"
+        private const val SLEEP_REFETCH_SECONDS = 21L * 24 * 3600
         /**
          * As far back as the strap keeps history. A fetch from 60 days back on firmware 3.25.0.3 returned the whole
          * window for stress, skin temperature, extended activity and sleep, and each shorter type from its oldest

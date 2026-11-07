@@ -79,6 +79,9 @@ class MinuteSleepTest {
     private fun strap(start: Long, end: Long) =
         SleepSession(start, end, DayKey.of(date), score = 70, deepMinutes = 60, lightMinutes = ((end - start) / 60).toInt() - 90, remMinutes = 30)
 
+    /** A strap sleep with no stage totals. */
+    private fun bare(start: Long, end: Long) = SleepSession(start, end, DayKey.of(date))
+
     private fun minuteNight() = MinuteSleep.Night(at(23, 10), at(7, 0), 458, 12, 1, 62)
 
     @Test fun `the strap's sleep stays when it matches the minutes`() {
@@ -86,17 +89,24 @@ class MinuteSleepTest {
         assertFalse(MinuteSleep.replaces(strap, strapAsleepMinutes = 440, night = minuteNight()))
     }
 
-    @Test fun `no strap sleep, or one over awake minutes, or a fraction of the night is replaced`() {
+    @Test fun `no strap sleep, a fraction of the night, or one without stages over awake minutes is replaced`() {
         assertTrue(MinuteSleep.replaces(null, 0, minuteNight()))
-        // Placed in the afternoon after, over minutes the strap itself marked awake (5 November).
-        assertTrue(MinuteSleep.replaces(strap(at(9, 38), at(17, 10)), strapAsleepMinutes = 0, night = minuteNight()))
         // Only the last 91 minutes (7 November).
         assertTrue(MinuteSleep.replaces(strap(at(5, 29), at(7, 0)), strapAsleepMinutes = 91, night = minuteNight()))
+        assertTrue(MinuteSleep.replaces(bare(at(9, 38), at(17, 10)), strapAsleepMinutes = 0, night = minuteNight()))
+    }
+
+    @Test fun `a strap sleep with stages apart from the minutes stays, as the minutes may be the late ones`() {
+        // The strap's own night placed in the afternoon after (5 November), or a right night under minutes a catch-up
+        // timed hours late (31 October): from the minutes alone the two look the same.
+        assertFalse(MinuteSleep.replaces(strap(at(9, 38), at(17, 10)), strapAsleepMinutes = 0, night = minuteNight()))
+        // A short strap sleep only half inside the night is apart too.
+        assertFalse(MinuteSleep.replaces(strap(at(6, 0), at(8, 0)), strapAsleepMinutes = 60, night = minuteNight()))
     }
 
     @Test fun `after a sync a wrong strap night is replaced, and again after the strap sends it again`() = runBlocking {
         dao.insertActivity(night())
-        val wrong = strap(at(9, 38), at(17, 10))
+        val wrong = bare(at(9, 38), at(17, 10))
         dao.replaceSleepDay(date, nap = false, listOf(wrong), listOf(SleepStage(wrong.start, wrong.end, wrong.start, SleepStage.LIGHT)))
         val now = at(date, 17, 30)
 
@@ -113,6 +123,16 @@ class MinuteSleepTest {
         dao.replaceSleepDay(date, nap = false, listOf(wrong), emptyList())
         assertEquals(listOf(date), MinuteSleep.apply(dao, zone, now))
         assertTrue(dao.sleepSessionsOnce(0, Long.MAX_VALUE).single().fromMinutes)
+    }
+
+    @Test fun `no night is made from minutes a catch-up fetched`() = runBlocking {
+        dao.insertActivity(night())
+        val now = at(date, 17, 30)
+        // The catch-up ended after this night began: its minutes may be hours late.
+        assertEquals(emptyList<LocalDate>(), MinuteSleep.apply(dao, zone, now, checkedFrom = at(20, 0)))
+        assertTrue(dao.sleepSessionsOnce(0, Long.MAX_VALUE).isEmpty())
+        // One that ended before it leaves the night to be made.
+        assertEquals(listOf(date), MinuteSleep.apply(dao, zone, now, checkedFrom = at(date.minusDays(1), 17, 0)))
     }
 
     @Test fun `a right strap night is kept`() = runBlocking {
