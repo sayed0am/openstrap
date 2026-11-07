@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="you_backup_status_off">关闭。每天在你选择的文件夹中保存一个压缩包</string>
+    <string name="you_backup_status_failed">上次备份失败。%1$s</string>
+    <string name="you_backup_status_waiting">每天在手机充电时备份。暂无备份</string>
+    <string name="you_backup_last">上次备份于 %1$s</string>
+    <string name="you_backup_summary_failed">上次备份失败</string>
+    <string name="you_backup_summary_waiting">开启。暂无备份</string>
+    <string name="you_backup_failure_folder_gone">该文件夹已不可用。</string>
+    <string name="you_backup_failure_permission">unstrap 无法再访问该文件夹。请重新选择。</string>
+    <string name="you_backup_failure_no_space">存储空间不足。</string>
+    <string name="you_backup_failure_cant_write">unstrap 无法写入该文件夹。</string>
+    <string name="you_backup_failure_other">请重试，或等待明天的备份。</string>
+    <plurals name="you_backup_restored_records_settings">
+        <item quantity="other">已恢复 %1$s 条记录和你的设置。</item>
+    </plurals>
+    <plurals name="you_backup_restored_records">
+        <item quantity="other">已恢复 %1$s 条记录。</item>
+    </plurals>
+    <string name="you_backup_restored_settings">已恢复你的设置。你的记录已存在。</string>
+    <string name="you_backup_restored_nothing">无需恢复。全部数据已在此处。</string>
+    <plurals name="you_backup_restored_skipped">
+        <item quantity="other">有 %1$s 条记录无法读取。</item>
+    </plurals>
+    <string name="you_backup_restored_with_skipped">%1$s%2$s</string>
+    <string name="you_backup_folder_unknown">你选择的文件夹</string>
+    <string name="you_backup_outcome_done">已备份为 %1$s。</string>
+    <string name="you_backup_outcome_recording">正在记录运动。运动结束后将进行备份。</string>
+    <string name="you_backup_outcome_off">自动备份已关闭。</string>
+    <string name="you_backup_outcome_failed">无法备份。%1$s</string>
+    <string name="you_backup_saved_copy">已保存副本。</string>
+    <string name="you_backup_folder_refused">unstrap 无法持续写入该文件夹。请选择其他文件夹。</string>
+    <string name="you_backup_title">备份</string>
+    <string name="you_backup_automatic">自动备份</string>
+    <string name="you_backup_folder">备份文件夹</string>
+    <string name="you_backup_now">立即备份</string>
+    <string name="you_backup_now_running">正在备份…</string>
+    <string name="you_backup_now_note">将今天的压缩包保存到该文件夹</string>
+    <string name="you_backup_restore_note">任意 unstrap 压缩包。补全此手机缺失的数据</string>
+    <string name="you_backup_save_copy">保存副本</string>
+    <string name="you_backup_save_copy_note">保存在你自选位置的 zip 文件。unstrap 绝不会删除它</string>
+    <string name="you_deleted_sleep_title">已删除的睡眠</string>
+    <string name="you_hc_line_stopped_permissions">已停止。Health Connect 权限已被关闭</string>
+    <string name="you_hc_line_stopped_install">已停止。安装 Health Connect 即可重新开启</string>
+    <string name="you_hc_line_stopped_unavailable">已停止。此手机不支持 Health Connect</string>
+    <string name="you_hc_line_off">已关闭。每次手环同步后复制新数据</string>
+    <string name="you_hc_line_on">已开启。每次手环同步后复制新数据</string>
+    <string name="you_hc_line_last">已开启。上次复制于 %1$s</string>
+    <string name="you_hc_summary_stopped_permissions">已停止。权限已被关闭</string>
+    <string name="you_hc_summary_stopped_install">已停止。请安装 Health Connect</string>
+    <string name="you_hc_summary_stopped_unavailable">已停止。此手机不支持</string>
+    <string name="you_hc_title">Health Connect</string>
+    <string name="you_hc_auto">自动复制到 Health Connect</string>
+    <string name="you_hc_any_time">随时</string>
+    <string name="you_hc_copy_now">立即复制</string>
+    <string name="you_hc_copy_now_note">最近 30 天，复制到 Health Connect</string>
+    <string name="you_hc_restore_note">找回 unstrap 曾保存在那里的数据</string>
+    <string name="you_hc_open">打开 Health Connect</string>
+    <string name="you_hc_open_note">权限与数据</string>
+    <string name="you_hc_install">安装 Health Connect</string>
+    <string name="you_hc_install_note">在此手机上 Health Connect 是来自 Play 商店的应用。请安装它以便将数据复制到其中。</string>
+    <string name="you_hc_store_failed">无法打开 Play 商店。</string>
+    <string name="you_hc_restored_none">Health Connect 中没有可恢复的 unstrap 数据。</string>
+    <plurals name="you_hc_restored">
+        <item quantity="other">已从 Health Connect 恢复 %1$s 条记录。</item>
+    </plurals>
+    <plurals name="you_hc_wrote">
+        <item quantity="other">已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
+    </plurals>
+    <plurals name="you_hc_auto_wrote">
+        <item quantity="other">自动复制已开启。已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
+    </plurals>
+    <string name="you_hc_restore_failed">无法从 Health Connect 恢复</string>
+    <string name="you_hc_write_failed">无法复制到 Health Connect</string>
+    <string name="you_hc_auto_failed">自动复制已开启，但首次复制未成功</string>
+    <string name="you_error_save_copy">无法保存副本。%1$s</string>
+    <string name="you_error_save_copy_permission">unstrap 无权写入该位置。请选择其他位置。</string>
+    <string name="you_error_save_copy_gone">该位置已不可用。请选择其他位置。</string>
+    <string name="you_error_save_copy_other">请重试，或选择其他位置。</string>
+    <string name="you_error_restore_copy">无法恢复副本。%1$s</string>
+    <string name="you_error_restore_not_copy">该文件不是 unstrap 备份副本。</string>
+    <string name="you_error_restore_cant_open">unstrap 无法打开该文件。请重新选择。</string>
+    <string name="you_error_try_again">请重试。</string>
+    <string name="you_error_hc">%1$s。%2$s</string>
+    <string name="you_error_hc_permission">unstrap 已失去权限。请在 Health Connect 中允许访问。</string>
+    <string name="you_error_hc_no_answer">Health Connect 没有响应。请重试。</string>
+</resources>

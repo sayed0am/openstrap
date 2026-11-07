@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_activity_pace_more_now">目前多于平时</string>
+    <string name="core_activity_pace_about_now">目前与平时差不多</string>
+    <string name="core_activity_pace_fewer_now">目前少于平时</string>
+    <string name="core_activity_pace_more_day">多于你平时的一天</string>
+    <string name="core_activity_pace_about_day">与你平时的一天差不多</string>
+    <string name="core_activity_pace_fewer_day">少于你平时的一天</string>
+    <string name="core_activity_goal_met">已达标</string>
+    <string name="core_activity_goal_share">已达成目标的 %1$d%%</string>
+    <string name="core_activity_line_more_now">%1$s，此时多于平时</string>
+    <string name="core_activity_line_about_now">%1$s，此时与平时相当</string>
+    <string name="core_activity_line_fewer_now">%1$s，此时少于平时</string>
+    <string name="core_activity_line_more_day">%1$s，多于你平时的一天</string>
+    <string name="core_activity_line_about_day">%1$s，与你平时的一天相当</string>
+    <string name="core_activity_line_fewer_day">%1$s，少于你平时的一天</string>
+    <string name="core_activity_hour_label">步数，%1$s 至 %2$s</string>
+    <string name="core_activity_points_at_aim">已达目标</string>
+    <string name="core_activity_points_week_met">周周保持在 %1$d 以上才是关键。</string>
+    <string name="core_activity_points_week_to_go">距 %2$d 还差 %1$d。</string>
+    <plurals name="core_activity_points_drop_off">
+        <item quantity="other">明天，%2$s 获得的 %1$d 点积分将不再计入。</item>
+    </plurals>
+    <string name="core_activity_points_earned">已获积分，%1$s</string>
+    <string name="core_activity_points_month_under">过去 30 天每天都低于 %1$d，在 %2$d 到 %3$d 之间。</string>
+    <string name="core_activity_points_month_all">过去 30 天内有记录的每一天都在 %1$d 及以上。</string>
+    <plurals name="core_activity_points_month_some">
+        <item quantity="other">过去 30 天的 %3$d 天中有 %2$d 天达到 %1$d 及以上。</item>
+    </plurals>
+    <string name="core_activity_active_goal_met">已达标</string>
+    <string name="core_activity_active_week_at">正好达到目标 %1$d。</string>
+    <string name="core_activity_active_week_past">比目标 %2$d 超出 %1$d。</string>
+    <string name="core_activity_active_week_to_go">距 %2$d 还差 %1$d。</string>
+    <plurals name="core_activity_minutes">
+        <item quantity="other">%1$d 分钟</item>
+    </plurals>
+    <string name="core_activity_active_none_today">今天目前还没有活跃分钟。</string>
+    <string name="core_activity_active_none_day">当天没有活跃分钟。</string>
+    <string name="core_activity_active_brisk_today">今天截至目前，轻快活动 %1$s。</string>
+    <string name="core_activity_active_brisk_day">当天轻快活动 %1$s。</string>
+    <string name="core_activity_active_hard_today">今天截至目前，高强度活动 %1$s。</string>
+    <string name="core_activity_active_hard_day">当天高强度活动 %1$s。</string>
+    <string name="core_activity_active_both_today">今天截至目前，轻快活动 %1$s，高强度活动 %2$s。</string>
+    <string name="core_activity_active_both_day">当天轻快活动 %1$s，高强度活动 %2$s。</string>
+    <string name="core_activity_usual_band">你的常态，%1$d 到 %2$d</string>
+    <string name="core_activity_load_long_run_today">你今天的跑步比前一个月最长的一次长了 %1$d%%。单次跑步增加超过 10%% 的跑者更容易受伤，建议循序渐进。</string>
+    <string name="core_activity_load_long_run_day">你当天的跑步比前一个月最长的一次长了 %1$d%%。单次跑步增加超过 10%% 的跑者更容易受伤，建议循序渐进。</string>
+    <string name="core_activity_load_learning">佩戴一周后会显示你的常态。</string>
+    <string name="core_activity_load_harder_today">今天截至目前，至少与过去 3 个月中 %1$d%% 的日子一样费力。</string>
+    <string name="core_activity_load_harder_day">当天至少与过去 3 个月中 %1$d%% 的日子一样费力。</string>
+    <string name="core_activity_load_easier_today">今天截至目前，比过去 3 个月中 %1$d%% 的日子更轻松。</string>
+    <string name="core_activity_load_easier_day">当天比过去 3 个月中 %1$d%% 的日子更轻松。</string>
+    <string name="core_activity_balance_building">你过去 7 天远高于平时，体能正在提升。</string>
+    <string name="core_activity_balance_easing">你过去 7 天远低于平时，正在减量放松。</string>
+    <string name="core_activity_balance_steady">你过去 7 天接近平时，保持平稳。</string>
+    <string name="core_activity_span_none_week">过去 7 天内没有一天高于平时。</string>
+    <string name="core_activity_span_none_month">过去 30 天内没有一天高于平时。</string>
+    <string name="core_activity_span_one_week">过去 7 天内有 1 天高于平时。</string>
+    <string name="core_activity_span_one_month">过去 30 天内有 1 天高于平时。</string>
+    <plurals name="core_activity_span_days_week">
+        <item quantity="other">过去 7 天内有 %1$d 天高于平时。</item>
+    </plurals>
+    <plurals name="core_activity_span_days_month">
+        <item quantity="other">过去 30 天内有 %1$d 天高于平时。</item>
+    </plurals>
+    <string name="core_activity_strap_range">手环的有效区间，%1$d 至 %2$d</string>
+    <string name="core_activity_vo2_workout">来自你最近一次有有效读数的运动。</string>
+    <string name="core_activity_vo2_profile">根据个人资料和静息心率估算，每周更新。</string>
+    <string name="core_activity_ended">%1$s 于 %2$s</string>
+    <string name="core_activity_recover">自你%2$s结束的%1$s起计算。</string>
+    <string name="core_activity_calories_at_rest">在没有任何运动前，你的身体每天静息消耗约 %1$s kcal。</string>
+    <string name="core_activity_distance_from_steps">km，来自步数</string>
+    <string name="core_activity_distance_from_strap">km，来自手环</string>
+    <string name="core_activity_distance_steps_today">今天截至目前超过 %1$s 步。</string>
+    <string name="core_activity_distance_steps_day">当天超过 %1$s 步。</string>
+</resources>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_workout_untitled">运动</string>
+    <string name="glow_workout_loading">正在加载…</string>
+    <string name="glow_workout_day_times">%1$s，%2$s</string>
+    <string name="glow_workout_zone_under">低于 %1$d bpm</string>
+    <string name="glow_workout_zone_range">%1$s bpm</string>
+    <string name="glow_workout_suggestion_title">看起来你刚刚运动了</string>
+    <string name="glow_workout_suggestion_text">%1$s %2$s，主要在 %3$d 区，平均 %4$d bpm。未被记录。</string>
+    <string name="glow_workout_suggestion_save">保存为运动</string>
+    <string name="glow_workout_suggestion_dismiss">不是运动</string>
+    <string name="glow_workout_offer_title">看起来是一次运动</string>
+    <string name="glow_workout_offer_text">你的心率自 %1$s 以来持续偏高，平均 %2$d bpm。要记录为从 %1$s 开始的%3$s吗？</string>
+    <string name="glow_workout_offer_record">记录</string>
+    <string name="glow_workout_offer_decline">暂不</string>
+    <string name="glow_workout_add_title">添加运动</string>
+    <string name="glow_workout_add_choose_sport">选择运动项目</string>
+    <string name="glow_workout_add_no_heart">手环尚未同步当天的心率数据。请先同步，然后再试。</string>
+    <string name="glow_workout_add_when">运动时间是？</string>
+    <string name="glow_workout_add_hint">拖动滑块调整运动的起止时间。心率数据取自手环的分钟级记录。</string>
+    <string name="glow_workout_delete">删除此运动</string>
+    <string name="glow_workout_delete_confirm">要删除此运动吗？</string>
+    <string name="glow_workout_delete_phone">其心率和时间记录将从 unstrap 中删除，手环自带的历史记录仍会保留。</string>
+    <string name="glow_workout_delete_strap">其心率和时间记录将从 unstrap 中删除，下次同步也不会恢复。手环自带的历史记录仍会保留。</string>
+    <string name="glow_workout_trim_title">裁剪起止时间</string>
+    <string name="glow_workout_undo">撤销</string>
+    <string name="glow_workout_trim_start">已裁剪为从 %1$s 开始。未删除任何内容。</string>
+    <string name="glow_workout_trim_seconds">%1$d 秒</string>
+    <string name="glow_workout_trim_minutes">%1$d 分钟</string>
+    <string name="glow_workout_trim_car">于 %1$s 结束。已排除 %2$s 的乘车时间。</string>
+    <string name="glow_workout_trim_auto">于 %1$s（即停止运动时）结束，已排除之后的 %2$s。</string>
+    <string name="glow_workout_trim_range">已裁剪，现为 %1$s。未删除任何内容。</string>
+    <string name="glow_workout_heart_by_zone">按区间着色</string>
+    <string name="glow_workout_heart_at">于 %1$s</string>
+    <string name="glow_workout_heart_at_after">于 %1$s（运动结束后）</string>
+    <string name="glow_workout_unit_bpm_average">bpm 平均</string>
+    <string name="glow_workout_heart_max_lowest">最高 %1$d，最低 %2$d bpm</string>
+    <string name="glow_workout_heart_max">最高 %1$d bpm</string>
+    <string name="glow_workout_heart_lowest">最低 %1$d bpm</string>
+    <string name="glow_workout_heart_none">手环尚未发送此运动的心率数据。</string>
+    <string name="glow_workout_heart_drop_after">%1$s 后的心率下降</string>
+    <string name="glow_workout_heart_dimmed">置灰部分：%1$s 来自手环历史记录。</string>
+    <string name="glow_workout_in_your_day">全天占比</string>
+    <string name="glow_workout_facts_title">运动</string>
+    <string name="glow_workout_list_title">运动记录</string>
+    <plurals name="glow_workout_list_recorded">
+        <item quantity="other">已记录 %d 项</item>
+    </plurals>
+    <string name="glow_workout_list_empty">暂无运动记录</string>
+    <string name="glow_workout_list_empty_text">在 unstrap 中开始的运动会显示在此处，手环端记录的运动会在同步后显示。</string>
+    <string name="glow_workout_capsule_pause">暂停</string>
+    <string name="glow_workout_capsule_next">下一项</string>
+    <string name="glow_workout_capsule_lines">%1$s。%2$s</string>
+</resources>

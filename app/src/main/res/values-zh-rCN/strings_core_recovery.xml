@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_recovery_quality_hrv">此处 HRV 为 %1$d ms，手环为 %2$d ms</string>
+    <string name="core_recovery_quality_rhr">此处静息心率为 %1$d bpm，手环为 %2$d bpm</string>
+    <string name="core_recovery_cause_hard_day">高强度训练日</string>
+    <string name="core_regularity_irregular">不规律</string>
+    <string name="core_regularity_fair">一般</string>
+    <string name="core_regularity_regular">规律</string>
+    <string name="core_regularity_very_regular">非常规律</string>
+</resources>

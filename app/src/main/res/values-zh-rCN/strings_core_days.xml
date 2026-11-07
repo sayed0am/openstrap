@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_day_today">今日</string>
+    <string name="core_day_yesterday">昨天</string>
+    <string name="core_day_today_in_sentence">今日</string>
+    <string name="core_day_yesterday_in_sentence">昨日</string>
+    <string name="core_day_at">%1$s 于 %2$s</string>
+    <string name="core_day_done_today">今天 %1$s</string>
+    <string name="core_day_done_yesterday">昨天 %1$s</string>
+    <string name="core_day_done_on">%1$s</string>
+</resources>

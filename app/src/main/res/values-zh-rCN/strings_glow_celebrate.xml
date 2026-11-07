@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_celebrate_personal_best">个人最佳</string>
+    <string name="glow_celebrate_settings">庆祝</string>
+    <string name="glow_celebrate_goal_met">本周目标达成</string>
+    <string name="glow_celebrate_goal_note">每周达成目标时显示一次。</string>
+    <string name="glow_celebrate_title">庆祝</string>
+    <string name="glow_celebrate_sheet_note">不要求连续打卡，也不催促提醒。只有这两项。</string>
+    <string name="glow_celebrate_goal_moment">周目标达成时刻</string>
+    <string name="glow_celebrate_goal_moment_line">每周达成目标时全屏展示一次</string>
+    <string name="glow_celebrate_recap">每周回顾</string>
+    <string name="glow_celebrate_recap_line">周一早晨发送一条通知，回顾你过去一周的情况</string>
+    <string name="glow_celebrate_history_title">来自你过往的运动</string>
+    <plurals name="glow_celebrate_history_badges">
+        <item quantity="other">已获得 %d 枚徽章。新徽章将在运动后的总结中展示。</item>
+    </plurals>
+</resources>

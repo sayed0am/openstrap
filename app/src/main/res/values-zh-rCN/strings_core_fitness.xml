@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_strength_bench_press">卧推</string>
+    <string name="core_strength_squat">深蹲</string>
+    <string name="core_strength_deadlift">硬拉</string>
+    <string name="core_strength_overhead_press">推举</string>
+    <string name="core_strength_barbell_row">杠铃划船</string>
+    <string name="core_strength_pull_up">引体向上</string>
+    <string name="core_strength_lat_pulldown">高位下拉</string>
+    <string name="core_strength_romanian_deadlift">罗马尼亚硬拉</string>
+    <string name="core_strength_hip_thrust">臀推</string>
+    <string name="core_strength_leg_press">腿举</string>
+    <string name="core_strength_lunge">弓步蹲</string>
+    <string name="core_strength_dumbbell_curl">哑铃弯举</string>
+    <string name="core_strength_triceps_extension">肱三头肌屈伸</string>
+    <string name="core_strength_push_up">俯卧撑</string>
+    <string name="core_strength_dips">双杠臂屈伸</string>
+    <string name="core_strength_plank">平板支撑</string>
+    <string name="core_vo2_activity_inactive">缺乏运动，或仅有少量日常活动</string>
+    <string name="core_vo2_activity_light">轻度活动，每次至少 10 分钟，每周 5 天或以上</string>
+    <string name="core_vo2_activity_aerobic_low">每周有氧运动 20 到 60 分钟</string>
+    <string name="core_vo2_activity_aerobic_mid">每周有氧运动 1 到 3 小时</string>
+    <string name="core_vo2_activity_aerobic_high">每周有氧运动 3 小时以上</string>
+</resources>

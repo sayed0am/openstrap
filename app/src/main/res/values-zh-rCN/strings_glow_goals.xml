@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_goals_title">目标与个人最佳</string>
+    <string name="glow_goals_loading">正在加载…</string>
+    <string name="glow_goals_this_week">本周</string>
+    <string name="glow_goals_goal_button">目标 %1$d</string>
+    <plurals name="glow_goals_of_workouts">
+        <item quantity="other">/ %d 次运动</item>
+    </plurals>
+    <plurals name="glow_goals_count_of_goal">
+        <item quantity="other">%1$d / %2$d 次运动</item>
+    </plurals>
+    <string name="glow_goals_personal_bests">个人最佳</string>
+    <string name="glow_goals_no_bests">完成首次运动后，你的最佳记录将显示在这里。</string>
+    <string name="glow_goals_badges_count">徽章，%1$d / %2$d</string>
+    <string name="glow_goals_all_badges">全部徽章</string>
+    <string name="glow_goals_last_week">上周回顾</string>
+    <string name="glow_goals_celebrations">庆祝</string>
+    <string name="glow_goals_earned_count">已获得 %1$d / %2$d</string>
+    <string name="glow_goals_group_firsts">首次达成</string>
+    <string name="glow_goals_group_milestones">里程碑</string>
+    <string name="glow_goals_group_kinds">全新尝试</string>
+    <string name="glow_goals_weekly_goal">周目标</string>
+    <string name="glow_goals_sheet_note">更改将应用于本周。以往各周保持原定目标不变。</string>
+    <string name="glow_goals_your_week">你的一周</string>
+    <string name="glow_goals_goal_met">已达标</string>
+    <plurals name="glow_goals_weekly_streak">
+        <item quantity="other">连续 %d 周达成目标</item>
+    </plurals>
+    <plurals name="glow_goals_short_of_goal">
+        <item quantity="other">距离目标还差 %d 次运动</item>
+    </plurals>
+    <string name="glow_goals_highlights">本周亮点</string>
+    <string name="glow_goals_best">%1$s，%2$s</string>
+    <string name="glow_goals_in_all">总计</string>
+    <plurals name="glow_goals_workouts_count">
+        <item quantity="other">%d 次运动</item>
+    </plurals>
+    <string name="glow_goals_hours">小时</string>
+    <string name="glow_goals_distance">距离</string>
+    <string name="glow_goals_active_kcal">活动千卡</string>
+    <string name="glow_goals_next_week">下周：%1$d</string>
+    <string name="glow_goals_share_week">分享本周</string>
+    <plurals name="glow_goals_workouts_word">
+        <item quantity="other">运动</item>
+    </plurals>
+    <string name="glow_goals_story_goal">%1$s，目标 %2$d</string>
+    <plurals name="glow_goals_weeks_in_a_row">
+        <item quantity="other">连续 %d 周</item>
+    </plurals>
+</resources>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_notif_end_question">结束运动？点「是，结束」以保存。</string>
+    <string name="core_notif_paused">已暂停</string>
+    <string name="core_notif_waiting">等待中</string>
+    <string name="core_notif_bpm">%1$d bpm</string>
+    <string name="core_notif_still_recording">仍在记录</string>
+    <string name="core_notif_minutes_in_target">在 %2$s %1$d 分钟</string>
+    <string name="core_notif_goal">目标 %1$s</string>
+</resources>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_share_join">%1$s，%2$s</string>
+    <string name="glow_share_stat_time">时长</string>
+    <string name="glow_share_stat_pace">配速</string>
+    <string name="glow_share_stat_avg_bpm">平均心率</string>
+    <string name="glow_share_stat_active_kcal">活动千卡</string>
+    <string name="glow_share_stat_peak_bpm">最高心率</string>
+    <string name="glow_share_stat_sets">组数</string>
+    <string name="glow_share_stat_work">运动</string>
+    <string name="glow_share_stat_bpm_start">开始心率</string>
+    <string name="glow_share_stat_bpm_end">结束心率</string>
+    <string name="glow_share_stat_load">负荷</string>
+    <string name="glow_share_unit_per_km">/km</string>
+    <string name="glow_share_unit_kg">kg</string>
+    <plurals name="glow_share_sets">
+        <item quantity="other">%d 组</item>
+    </plurals>
+    <string name="glow_share_row_reps">%1$d × %2$d</string>
+    <string name="glow_share_row_top">%1$s，最高 %2$s kg</string>
+    <string name="glow_share_unit_reps">次</string>
+    <string name="glow_share_unit_rounds">轮</string>
+    <plurals name="glow_share_unit_of_reps">
+        <item quantity="other">/%1$d 次</item>
+    </plurals>
+    <plurals name="glow_share_unit_of_rounds">
+        <item quantity="other">/%1$d 轮</item>
+    </plurals>
+    <string name="glow_share_my_week">我的一周</string>
+    <string name="glow_share_saved">已保存</string>
+    <string name="glow_share_not_saved">未保存</string>
+    <string name="glow_share_remove_photo">移除照片</string>
+    <string name="glow_share_change_photo">更换照片</string>
+    <string name="glow_share_add_photo">添加照片</string>
+    <string name="glow_share_route">路线</string>
+    <string name="glow_share_route_off">关闭</string>
+    <string name="glow_share_route_line">线条</string>
+    <string name="glow_share_hide_ends">隐藏起点与终点</string>
+</resources>

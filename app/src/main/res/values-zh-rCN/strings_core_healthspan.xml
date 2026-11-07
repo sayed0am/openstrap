@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_healthspan_habit_strength">力量训练</string>
+    <string name="core_healthspan_habit_vo2max">体能（最大摄氧量）</string>
+    <string name="core_healthspan_habit_steps">步数</string>
+    <string name="core_healthspan_habit_regularity">睡眠规律性</string>
+    <string name="core_healthspan_habit_resting_hr">静息心率</string>
+    <string name="core_healthspan_habit_time_asleep">睡眠时长</string>
+    <string name="core_healthspan_withheld_no_age">在个人资料中添加你的出生年份，即可查看习惯年龄。</string>
+    <string name="core_healthspan_withheld_age">习惯年龄适用于 20 至 79 岁。</string>
+    <string name="core_healthspan_withheld_sex">在个人资料中添加性别：女性和男性的典型参考值有所不同。</string>
+    <string name="core_healthspan_withheld_medication">服用 β 受体阻滞剂期间或孕期不显示：此时静息心率无法真实反映体能。</string>
+    <string name="core_healthspan_withheld_learning">需要佩戴满 30 天后才能进行首次估算。</string>
+    <string name="core_healthspan_withheld_resting_hr">需要近期约半数夜晚的静息心率数据。</string>
+    <string name="core_healthspan_withheld_steps">需要近期约半数天数佩戴满 10 小时以上。</string>
+    <string name="core_healthspan_withheld_regularity">需要更多周的睡眠规律性数据。</string>
+    <string name="core_healthspan_withheld_sleep">需要近期约半数夜晚的睡眠数据。</string>
+</resources>

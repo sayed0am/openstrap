@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_metric_heart_rate">心率</string>
+    <string name="core_metric_resting_hr">静息心率</string>
+    <string name="core_metric_hrv">HRV</string>
+    <string name="core_metric_spo2">血氧</string>
+    <string name="core_metric_stress">压力</string>
+    <string name="core_metric_skin_temperature">皮肤温度</string>
+    <string name="core_metric_breathing">呼吸频率</string>
+    <string name="core_metric_steps">步数</string>
+    <string name="core_metric_range_day">日</string>
+    <string name="core_metric_range_week">周</string>
+    <string name="core_metric_range_month">月</string>
+    <string name="core_metric_range_year">年</string>
+</resources>
