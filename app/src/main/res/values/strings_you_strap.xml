@@ -57,7 +57,6 @@
     <string name="you_strap_row_health_alerts">Health alerts</string>
     <!-- The strap buzzes when it's taken off. -->
     <string name="you_strap_row_off_body">Off-body reminder</string>
-    <string name="you_strap_row_auto_detect">Auto-detect workouts</string>
     <string name="you_strap_row_firmware">Firmware</string>
     <!-- The Firmware row's value before the strap said its version. -->
     <string name="you_strap_check_for_updates">Check for updates</string>

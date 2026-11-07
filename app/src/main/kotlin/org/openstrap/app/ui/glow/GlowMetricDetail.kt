@@ -408,6 +408,7 @@ fun GlowMetricDetailScreen(
     // Live only on today's heart rate by day, and only with the strap connected.
     val heartToday = !night && metric == Metric.HeartRate && isToday
     val live = liveHeartRate.takeIf { heartToday && canUseLive }
+    org.openstrap.app.ui.components.HoldLiveHeartRate(heartToday && canUseLive)
     var scrub by remember(metric, night, range, end) { mutableStateOf<DetailHeadline?>(null) }
     var info by rememberSaveable(metric, night) { mutableStateOf(false) }
 

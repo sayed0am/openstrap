@@ -763,7 +763,8 @@ class WorkoutSessionTest {
         override fun syncNow() = Unit
         override fun setAppVisible(visible: Boolean) = Unit
         override fun setWorkoutActive(active: Boolean) = Unit
-        override fun setEffortWatch(active: Boolean) = Unit
+        override fun showLiveHeartRate(key: Any, shown: Boolean) = Unit
+        override suspend fun checkCanRestart() = Unit
         override suspend fun installFirmware(file: ByteArray, type: Int, onProgress: (org.openstrap.protocol.firmware.DfuProgress) -> Unit) = Unit
         override suspend fun readAlarms(): Pair<AlarmCapabilities, List<Alarm>> = throw StrapCommandException("not connected")
         override suspend fun saveAlarm(alarm: Alarm, isNew: Boolean) = Unit

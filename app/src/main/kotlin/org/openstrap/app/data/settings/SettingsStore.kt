@@ -220,15 +220,6 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     }
 
 
-    private val autoStartKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.AUTO_START_WORKOUTS)
-
-    /** Notice a workout as it starts and offer to record it from where it began ([org.openstrap.app.data.AutoStart]). On by default. */
-    val autoStartWorkouts: Flow<Boolean> = read { it[autoStartKey] ?: true }
-
-    suspend fun setAutoStartWorkouts(enabled: Boolean) {
-        store.edit { it[autoStartKey] = enabled }
-    }
-
     private val wearReminderKey = androidx.datastore.preferences.core.booleanPreferencesKey(SettingsKeys.WEAR_REMINDER)
 
     /**
@@ -516,7 +507,9 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     suspend fun forgetDevice() {
         store.edit { prefs ->
             prefs.asMap().keys
-                .filter { it.name in STRAP_KEYS || it.name.startsWith(SettingsKeys.HISTORY_CURSOR_PREFIX) }
+                .filter {
+                    it.name in STRAP_KEYS || it.name.startsWith(SettingsKeys.HISTORY_CURSOR_PREFIX) || it.name.startsWith(SENT_TO_STRAP)
+                }
                 .forEach { prefs.remove(it) }
         }
     }
@@ -650,6 +643,13 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
         store.edit { it[syncDone] = epochSeconds }
     }
 
+    /** What the strap last took for [what] (a profile checksum, a goal), so a connect alone doesn't send it again. */
+    suspend fun sentToStrap(what: String): Long? = store.data.first()[longPreferencesKey(SENT_TO_STRAP + what)]
+
+    suspend fun setSentToStrap(what: String, value: Long) {
+        store.edit { it[longPreferencesKey(SENT_TO_STRAP + what)] = value }
+    }
+
     /** Last synced timestamp (epoch seconds) for a history data type. */
     suspend fun lastSync(type: String): Long? =
         store.data.first()[longPreferencesKey(SettingsKeys.LAST_SYNC_PREFIX + type)]
@@ -774,6 +774,9 @@ class SettingsStore private constructor(private val store: DataStore<Preferences
     }
 
     companion object {
+        /** Prefix of [sentToStrap]'s keys, removed with the strap: a new strap hasn't taken anything yet. */
+        private const val SENT_TO_STRAP = "sent_to_strap_"
+
         /**
          * What [forgetDevice] removes: the paired strap (address, auth key, name), its companion association and the
          * answer to Android's association prompt, the Disconnect hold, the battery and sync time widgets show, and the
@@ -809,6 +812,7 @@ object SettingsKeys {
     const val ZEPP_LOGIN_TOKEN = "zepp_login_token"
     const val ZEPP_APP_TOKEN_AT = "zepp_app_token_at"
     const val ZEPP_APP_TTL = "zepp_app_ttl"
+    /** Workout auto-start's old switch: no longer read, the key stays for backups made before. */
     const val AUTO_START_WORKOUTS = "auto_start_workouts"
     const val WEAR_REMINDER = "wear_reminder"
     const val STRAP_SESSIONS = "strap_sessions"

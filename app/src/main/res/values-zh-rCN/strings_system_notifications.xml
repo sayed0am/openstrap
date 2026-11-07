@@ -6,7 +6,6 @@
     <string name="system_channel_keep_recording_description">在 Android 可能会停止运动时，提醒你打开 unstrap。</string>
     <string name="system_channel_strap">手环连接</string>
     <string name="system_channel_saved">运动已保存</string>
-    <string name="system_channel_offer">检测到运动</string>
     <string name="system_channel_workout">运动</string>
     <string name="system_channel_wear">佩戴提醒</string>
     <string name="system_channel_recap">每周小结</string>
@@ -77,10 +76,6 @@
     <string name="system_stopped_chip">结束？</string>
     <string name="system_stopped_action_end_at">在 %1$s 结束</string>
     <string name="system_stopped_action_keep">继续</string>
-    <string name="system_offer_title">看起来是一次运动</string>
-    <string name="system_offer_text">你的心率自 %1$s 以来持续偏高，平均 %2$d bpm。要记录从 %1$s 开始的%3$s吗？</string>
-    <string name="system_offer_action_record">记录</string>
-    <string name="system_offer_action_decline">暂不</string>
     <string name="system_wear_title">手环已取下</string>
     <string name="system_wear_text">心率和睡眠监测已暂停，重新佩戴后将继续记录。</string>
     <string name="system_recap_title">你的这一周，%1$s</string>

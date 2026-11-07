@@ -19,8 +19,6 @@
     <string name="day_score_calories">Calories</string>
     <string name="day_score_distance">Distance</string>
 
-    <!-- A Today card's name in Edit Today, a row in a list. The card offering to go back to a workout still recording. -->
-    <string name="day_card_offer">Workout under way</string>
     <!-- The card offering to save a workout the strap noticed. -->
     <string name="day_card_suggestion">Workout to save</string>
     <!-- The card with the strap's health alerts. -->

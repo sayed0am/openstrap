@@ -17,7 +17,6 @@ import org.openstrap.app.ui.dashboard.TodayCard.HeartRate
 import org.openstrap.app.ui.dashboard.TodayCard.Hero
 import org.openstrap.app.ui.dashboard.TodayCard.LastNight
 import org.openstrap.app.ui.dashboard.TodayCard.LoadToday
-import org.openstrap.app.ui.dashboard.TodayCard.Offer
 import org.openstrap.app.ui.dashboard.TodayCard.Recover
 import org.openstrap.app.ui.dashboard.TodayCard.Recovery
 import org.openstrap.app.ui.dashboard.TodayCard.Stress
@@ -126,10 +125,10 @@ class TodayPlanTest {
     }
 
     @Test fun `strips that need an answer sit under the hero, today only`() {
-        val facts = TodayFacts(offer = true, suggestion = true, alerts = true, healthspan = true)
-        assertEquals(listOf(Hero, Offer, Suggestion, Alerts, Recovery), cards(Moment.Midday, facts).take(5))
+        val facts = TodayFacts(suggestion = true, alerts = true, healthspan = true)
+        assertEquals(listOf(Hero, Suggestion, Alerts, Recovery), cards(Moment.Midday, facts).take(4))
         assertEquals(listOf(Week, HabitAge, StartWorkout, EditToday), cards(Moment.Midday, facts).takeLast(4))
-        // A past day: no offer, suggestion or check-in, but its alerts still show.
+        // A past day: no suggestion or check-in, but its alerts still show.
         val past = cards(layoutMoment(Moment.Evening, isToday = false), facts.copy(isToday = false))
         assertEquals(listOf(Hero, Alerts, BodyMorning), past.take(3))
         assertFalse(StartWorkout in past)

@@ -21,9 +21,10 @@ import org.openstrap.protocol.toHex
 import org.openstrap.protocol.u8
 
 /**
- * Live heart rate from the strap, on the channel push, or the standard 2A37 characteristic without it. It streams
- * only while the app is on screen, a workout records it, or workout auto-start watches for effort ([wanted]). There is
- * no switch for it, as in Zepp: the strap's own measuring is set by its monitor frequency.
+ * Live heart rate from the strap, on the channel push, or the standard 2A37 characteristic without it. As in Zepp
+ * 10.10.5 it streams only while something uses it ([wanted]): a screen that shows it, with the app in front, or a
+ * workout recording. Never just because the strap connected. There is no switch for it, as in Zepp: the strap's own
+ * measuring is set by its monitor frequency.
  */
 // One setter per reason to stream, as StrapController has them, plus start, stop and the reading.
 @Suppress("TooManyFunctions")
@@ -43,13 +44,13 @@ internal class LiveHeartRateStream(
     /** Which of the strap's heart rate sources is shown and recorded ([HeartRateSources]); guarded by itself. */
     private val sources = HeartRateSources()
 
-    /** Live HR streams only while the app is on screen, where it's shown, or while a workout records it. */
     @Volatile private var appVisible = false
     @Volatile private var workoutActive = false
 
-    @Volatile private var effortWatch = false
+    /** The screens showing live HR now, each by its own key (Zepp's HeartRateCenter consumers). */
+    private val screens = mutableSetOf<Any>()
 
-    private fun wanted() = workoutActive || effortWatch || appVisible
+    private fun wanted() = workoutActive || (appVisible && synchronized(screens) { screens.isNotEmpty() })
 
     val isRunning: Boolean get() = liveJob?.isActive == true
 
@@ -66,13 +67,13 @@ internal class LiveHeartRateStream(
         refresh()
     }
 
-    fun setEffortWatch(active: Boolean) {
-        if (active == effortWatch) return
-        effortWatch = active
-        refresh()
+    /** A screen showing live HR came or went. */
+    fun showOnScreen(key: Any, shown: Boolean) {
+        val changed = synchronized(screens) { if (shown) screens.add(key) else screens.remove(key) }
+        if (changed) refresh()
     }
 
-    /** A new connection: starts streaming if [wanted]. */
+    /** A new connection: starts again if something still uses it, as Zepp's `uyl.f` restarts its consumers. */
     fun onConnected() {
         if (wanted()) start()
     }
@@ -130,7 +131,9 @@ internal class LiveHeartRateStream(
                 while (isActive) {
                     delay(LiveHeartRate.KEEP_ALIVE_MS)
                     if (channel) {
-                        s.send(Endpoints.OPEN_APP, LiveHeartRate.KEEP_ALIVE)
+                        // Zepp only logs the keep-alive's result: a failed one doesn't stop the stream.
+                        catching { s.send(Endpoints.OPEN_APP, LiveHeartRate.KEEP_ALIVE) }
+                            .onFailure { log("live hr keep-alive failed: $it") }
                     } else {
                         val keepAlive = LiveHeartRate.LEGACY_KEEP_ALIVE
                         client.write(StrapUuids.HEART_RATE_SERVICE, StrapUuids.HR_CONTROL, keepAlive, withResponse = true)
@@ -157,11 +160,11 @@ internal class LiveHeartRateStream(
                 LiveHeartRate.parsePush(p)?.let { offer(HeartRateSources.Source.CHANNEL, it, noReading = false) }
             }
         }
-        // Each keep-alive is answered with `05 02`; only log the first reply and anything else.
-        var opens = 0
+        // Each keep-alive is answered alike; log each different reply once.
+        val seen = mutableSetOf<String>()
         launch {
             s.messagesFor(Endpoints.OPEN_APP).collect { p ->
-                if (opens++ == 0 || !p.contentEquals(KEEP_ALIVE_REPLY)) log("live hr 001d < ${p.toHex()}")
+                if (p.isNotEmpty() && p.u8(0) == OPEN_REPLY && seen.add(p.toHex())) log("live hr 001d < ${p.toHex()}")
             }
         }
         if (channel) return
@@ -238,7 +241,6 @@ internal class LiveHeartRateStream(
     }
 
     private companion object {
-        val KEEP_ALIVE_REPLY = byteArrayOf(0x05, 0x02)
         const val OPEN_TIMEOUT_MS = 5_000L
         const val OPEN_REPLY = 0x05
         const val SUBSCRIBE_REPLY = 0x04

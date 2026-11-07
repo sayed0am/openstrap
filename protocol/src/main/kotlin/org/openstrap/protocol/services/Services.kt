@@ -90,6 +90,10 @@ data class BatteryInfo(val level: Int, val charging: Boolean?) {
     companion object {
         val GET: ByteArray = bytesOf(0x03)
 
+        /** Module version query, sent once per connection before [GET] as Zepp does (`g54`, `yst.X0`). */
+        val VERSION: ByteArray = bytesOf(0x01)
+        const val VERSION_REPLY = 0x02
+
         /** Parses a raw BatteryInfo (legacy 0006 value, or channel payload after the `04`/`05` byte). */
         fun parse(info: ByteArray): BatteryInfo {
             val flags = info.u8(0)
@@ -191,11 +195,11 @@ data class UserProfile(
 
 /** Real-time heart rate (§5.6). */
 object LiveHeartRate {
-    // Endpoint 0x001D (03 §3.10): open 04 02, close 04 01, keep-alive 04 03. On hardware open answers 05 03
-    // and keep-alive 05 02.
-    val OPEN: ByteArray = bytesOf(0x04, 0x02)
-    val CLOSE: ByteArray = bytesOf(0x04, 0x01)
-    val KEEP_ALIVE: ByteArray = bytesOf(0x04, 0x03)
+    // Endpoint 0x001D: `04 (state - 1)` with Zepp 10.10.5's states 1 close, 2 open, 3 keep-alive (codemap
+    // zepp-connected-traffic-10.10.5 §4.1, from bytecode). Earlier builds sent 04 02 / 04 03 / 04 01, read from 10.9.0.
+    val OPEN: ByteArray = bytesOf(0x04, 0x01)
+    val CLOSE: ByteArray = bytesOf(0x04, 0x00)
+    val KEEP_ALIVE: ByteArray = bytesOf(0x04, 0x02)
 
     // Endpoint 0x0048.
     val SUBSCRIBE: ByteArray = bytesOf(0x03, 0x01)

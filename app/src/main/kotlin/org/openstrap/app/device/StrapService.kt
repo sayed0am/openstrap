@@ -126,16 +126,10 @@ class StrapService : LifecycleService() {
             ACTION_START_SET -> workout.startSet()
             ACTION_SET_DONE -> workout.setDone()
             ACTION_EXTEND -> workout.extendRest()
-            ACTION_RECORD -> workout.recordOffer()
-            ACTION_DECLINE -> workout.declineOffer()
         }
         val recording = workout.state.value is WorkoutState.Recording
         if (observing) return if (recording) START_STICKY else START_NOT_STICKY
         observing = true
-        lifecycleScope.launch {
-            val nm = getSystemService(NotificationManager::class.java)
-            workout.offer.collect { o -> if (o == null) nm.cancel(OFFER_ID) else nm.notify(OFFER_ID, offerNotification(o)) }
-        }
         // "End?" falls back to the usual actions if nobody answers.
         lifecycleScope.launch { confirmEnd.collectLatest { until -> if (until > 0) { delay(CONFIRM_MS); confirmEnd.value = 0 } } }
         lifecycleScope.launch(Dispatchers.Default) {
@@ -223,12 +217,8 @@ class StrapService : LifecycleService() {
         )
         WorkoutNotification.createChannel(this)
         KeepRecordingNotice.createChannel(this)
-        // Seen, not heard: the strap's buzz is the alert.
-        val offer = NotificationChannel(OFFER_CHANNEL, getString(R.string.system_channel_offer), NotificationManager.IMPORTANCE_DEFAULT)
-        nm.createNotificationChannel(offer.apply {
-            setSound(null, null)
-            enableVibration(false)
-        })
+        // Left by workout auto-start ("Looks like a workout"), which is gone.
+        nm.deleteNotificationChannel("workout_offer")
     }
 
     override fun onDestroy() {
@@ -604,25 +594,6 @@ class StrapService : LifecycleService() {
             .build()
     }
 
-    /** "Looks like a workout": record it from where the effort began, or not. Swiping it away is "Not now". */
-    private fun offerNotification(o: org.openstrap.app.data.AutoStart.Offer): Notification {
-        val time = TimeOfDay.format(o.start, java.time.ZoneId.systemDefault())
-        val sport = Workouts.sportName(o.sportType).lowercase()
-        val text = getString(R.string.system_offer_text, time, o.averageHeartRate, sport)
-        return NotificationCompat.Builder(this, OFFER_CHANNEL)
-            .setSmallIcon(R.drawable.ic_stat_unstrap)
-            .setContentTitle(getString(R.string.system_offer_title))
-            .setContentText(text)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            .setCategory(NotificationCompat.CATEGORY_WORKOUT)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(openApp())
-            .setDeleteIntent(service(ACTION_DECLINE))
-            .addAction(NotificationCompat.Action(0, getString(R.string.system_offer_action_record), service(ACTION_RECORD)))
-            .addAction(NotificationCompat.Action(0, getString(R.string.system_offer_action_decline), service(ACTION_DECLINE)))
-            .build()
-    }
-
     /** The app's gauge marker in each zone's colour: a solid dot in a soft halo of itself, drawn once per zone. */
     private val trackers = arrayOfNulls<androidx.core.graphics.drawable.IconCompat>(WorkoutColors.ZONES.size)
 
@@ -654,8 +625,6 @@ class StrapService : LifecycleService() {
     companion object {
         private const val CHANNEL = "strap"
         private const val NOTIFICATION_ID = 1
-        private const val OFFER_ID = 3
-        private const val OFFER_CHANNEL = "workout_offer"
         internal const val ACTION_END_ASK = "org.openstrap.app.workout.END_ASK"
         internal const val ACTION_END_CANCEL = "org.openstrap.app.workout.END_CANCEL"
         private const val ACTION_SYNC = "org.openstrap.app.strap.SYNC"
@@ -671,8 +640,6 @@ class StrapService : LifecycleService() {
         private const val FIGURES_REFRESH_MS = 30 * 60_000L
         /** The red dot in the "OS." logo, the app's heart colour: zone 5's red. */
         private const val BRAND_DOT = WorkoutColors.ZONE_5
-        private const val ACTION_RECORD = "org.openstrap.app.workout.RECORD"
-        private const val ACTION_DECLINE = "org.openstrap.app.workout.DECLINE"
         private const val WORKOUT_REFRESH_MS = 10_000L
         internal const val ACTION_PAUSE = "org.openstrap.app.workout.PAUSE"
         internal const val ACTION_SAMPLE = "org.openstrap.app.workout.SAMPLE"

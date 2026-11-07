@@ -252,7 +252,6 @@ private fun TabRoot(
     when (t) {
         // The moment's mood lights Today only (spec 2.1 Moods), the Sleep tab sets its own.
         Tab.Today -> CompositionLocalProvider(LocalGlowMood provides (today.moment?.let(::momentMood) ?: GlowMood.Day)) {
-            val offer by container.workout.offer.collectAsStateWithLifecycle()
             val edits by rootVm.todayEdits.collectAsStateWithLifecycle()
             val habitAgeSeen by rootVm.habitAgeSeenAsOf.collectAsStateWithLifecycle()
             GlowTodayScreen(
@@ -279,9 +278,6 @@ private fun TabRoot(
                 // The same way in as Activity's start card: the ready screen for the sport, or Choose with every sport.
                 onStartSport = { nav.openReady(it) },
                 onOtherSport = nav::openChoose,
-                offer = offer,
-                onRecordOffer = { container.workout.recordOffer() },
-                onDeclineOffer = { container.workout.declineOffer() },
                 running = today.running,
                 onOpenRunning = today.onOpenRunning,
                 liveHero = today.liveHero,

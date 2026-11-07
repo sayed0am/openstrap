@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.withIndex
 import kotlinx.coroutines.launch
 import org.openstrap.app.R
 import org.openstrap.app.i18n.Strings
@@ -42,6 +42,7 @@ import org.openstrap.protocol.services.Setting
 import org.openstrap.protocol.services.SettingsCodec
 import org.openstrap.protocol.services.SettingsGroup
 import org.openstrap.protocol.services.RealtimeSteps
+import org.openstrap.protocol.services.ConnectCodec
 import org.openstrap.protocol.services.StepTotals
 import org.openstrap.protocol.services.SportSession
 import org.openstrap.protocol.crypto.crc32
@@ -53,10 +54,8 @@ import org.openstrap.protocol.firmware.DfuProgress
 import org.openstrap.protocol.firmware.DfuSession
 import org.openstrap.app.ble.GattDfuLink
 import android.os.PowerManager
-import org.openstrap.protocol.services.TimeSync
 import org.openstrap.protocol.toHex
 import org.openstrap.protocol.u8
-import java.time.ZonedDateTime
 
 /**
  * Owns the connection to the strap: GATT, the channel session and everything built on it. The connection's life is
@@ -83,7 +82,7 @@ class StrapManager(
         context, settings, scope, ::log,
         object : ConnectionManager.Hooks {
             override suspend fun setUp(client: GattClient, link: GattStrapLink, session: ChannelSession) {
-                afterAuth(client, link, session)
+                afterAuth(client, session)
             }
             override fun connectedState(): ConnectionState.Connected = ConnectionState.Connected(battery, firmware, charging)
             override suspend fun onConnected(job: CoroutineScope, session: ChannelSession) {
@@ -101,7 +100,10 @@ class StrapManager(
     private val syncs: SyncCoordinator = SyncCoordinator(
         context, scope, settings, dao, connections, firmwareUpdating,
         SyncCoordinator.Notifiers(AutoDetectNotifier(context), healthAlerts), ::log,
+        workoutActive = { workoutActive },
+        afterFinished = { s -> clock.write(s, StrapClock.Why.AFTER_SYNC) },
     )
+    private val clock = StrapClock(context, scope, connections, ::log)
     private val live: LiveHeartRateStream =
         LiveHeartRateStream(scope, connections, connections.connection, firmwareUpdating, ::log)
 
@@ -142,25 +144,31 @@ class StrapManager(
 
     private suspend inline fun <T> step(name: String, block: () -> T): T? = setupStep(name, { log(it) }, block)
 
-    /** The setup after auth, as named steps. Each failed step is logged and setup goes on without it. */
-    private suspend fun afterAuth(client: GattClient, l: GattStrapLink, s: ChannelSession) {
-        queryMtu(l, s)
+    /**
+     * The setup after auth, in Zepp 10.10.5's order (codemap zepp-connected-traffic-10.10.5 §6.2): time version, the
+     * clock (a failure drops the link, as in Zepp), settings version, battery, then device information. Each other
+     * failed step is logged and setup goes on without it.
+     */
+    private suspend fun afterAuth(client: GattClient, s: ChannelSession) {
+        clock.queryVersion(s)
+        clock.setOnConnect(s, client)
         querySettingsVersion(s)
+        readBattery(client, s)
         val deviceInformation = queryDeviceInformation(s)
         queryFeatures(s)
         readDeviceInfo(client, s, deviceInformation)
-        queryRestartKey(s)
-        querySoundGroup(s)
-        readBattery(client, s)
-        queryTimeVersion(s)
-        syncTime(s, client)
     }
 
-    /** Payload MTU reported by the strap (§1.3). */
-    private suspend fun queryMtu(l: GattStrapLink, s: ChannelSession) {
-        if (s.services.has(Endpoints.CONNECT)) {
-            step("mtu query") {
-                val r = s.request(Endpoints.CONNECT, byteArrayOf(1), 5_000) { it.u8(0) == 0x02 }
+    /**
+     * The strap's payload MTU, as it pushes it (`02 n u16`, 03 §3.2). Zepp listens for it and sends no query on
+     * connect, so the link stays at the strap's 20 bytes until a push. Ends with the connection.
+     */
+    private fun CoroutineScope.watchMtu(s: ChannelSession) = launch {
+        val l = connections.link ?: return@launch
+        if (!s.services.has(Endpoints.CONNECT)) return@launch
+        launch {
+            s.messagesFor(Endpoints.CONNECT).collect { r ->
+                if (r.size < 3 || r.u8(0) != MTU_PUSH) return@collect
                 val n = r.u8(1) or (r.u8(2) shl 8)
                 if (n + 3 in 23..247) l.payloadMtu = n
                 log("strap payload mtu=$n")
@@ -227,63 +235,41 @@ class StrapManager(
         log("hardware=$hardware dfu=$dfu")
     }
 
-    /** GENERAL key 45 restarts the strap; like Zepp, offer Restart only when the strap reports it (03 §5.2, 07 §0). */
-    private suspend fun queryRestartKey(s: ChannelSession) {
-        if (s.services.has(Endpoints.SETTINGS)) {
-            step("restart key query") {
-                val group = SettingsCodec.GROUP_GENERAL
-                val r = s.request(Endpoints.SETTINGS, SettingsCodec.query(group, listOf(SettingsCodec.KEY_RESTART), withOptions = false), 5_000) { SettingsCodec.isReplyTo(group, it) }
-                val restart = SettingsCodec.parse(r, commands.settingsProtocol?.version)?.get(SettingsCodec.KEY_RESTART)
-                log("general key 45 ${r.toHex()} -> ${restart?.let { "reported" } ?: "not reported"}")
-                info.value = info.value?.copy(canRestart = restart != null)
-            }
-        }
-    }
-
-    /**
-     * Vibration strength: Zepp keeps it in SOUND key 4. Nobody knows yet whether the strap has the group, so read it
-     * whole (read-only) and log the reply; a strap without it answers with an error code.
-     */
-    private suspend fun querySoundGroup(s: ChannelSession) {
-        if (s.services.has(Endpoints.SETTINGS)) {
-            step("sound group query") {
-                val group = SettingsCodec.GROUP_SOUND
-                val r = s.request(Endpoints.SETTINGS, SettingsCodec.query(group), 5_000) { SettingsCodec.isReplyTo(group, it) }
-                val parsed = SettingsCodec.parse(r, commands.settingsProtocol?.version)
-                val keys = parsed?.settings?.values?.joinToString(" ") { "${it.key}=${it.text ?: it.number ?: it.raw.toHex()}" }
-                log("sound group ${r.toHex()} -> ${keys ?: "unparsed (code ${SettingsCodec.replyCode(r)})"}")
-            }
-        }
-    }
-
+    /** Zepp's `yst.X0`: the module version, then the level, read once more after 2 s if that came back empty. */
     private suspend fun readBattery(client: GattClient, s: ChannelSession) {
-        step("battery read") {
-            if (s.services.has(Endpoints.BATTERY)) {
-                BatteryInfo.parseChannel(s.request(Endpoints.BATTERY, BatteryInfo.GET) { it.u8(0) == 0x04 })
-            } else {
-                BatteryInfo.parse(client.read(StrapUuids.MAIN_SERVICE, StrapUuids.BATTERY))
+        if (s.services.has(Endpoints.BATTERY)) {
+            step("battery version query") {
+                val r = s.request(Endpoints.BATTERY, BatteryInfo.VERSION, 5_000) {
+                    it.isNotEmpty() && it.u8(0) == BatteryInfo.VERSION_REPLY
+                }
+                log("battery version ${r.toHex()}")
             }
-        }?.let {
+        }
+        val read = suspend {
+            step("battery read") {
+                if (s.services.has(Endpoints.BATTERY)) {
+                    BatteryInfo.parseChannel(s.request(Endpoints.BATTERY, BatteryInfo.GET) { it.u8(0) == 0x04 })
+                } else {
+                    BatteryInfo.parse(client.read(StrapUuids.MAIN_SERVICE, StrapUuids.BATTERY))
+                }
+            }
+        }
+        (read() ?: run { delay(BATTERY_RETRY_MS); read() })?.let {
             battery = it.level
             charging = it.charging == true
         }
         log("battery=$battery charging=$charging")
     }
 
-    private suspend fun queryTimeVersion(s: ChannelSession) {
-        timeProtocol = null
-        if (s.services.has(Endpoints.TIME)) {
-            timeProtocol = step("time version query") {
-                TimeSync.parseVersion(s.request(Endpoints.TIME, TimeSync.versionRequest, 5_000) { it.isNotEmpty() && it.u8(0) == TimeSync.VERSION + 1 })
-            }
-            log("time protocol $timeProtocol")
-        }
-    }
-
-    /** Connected: this connection's listeners in [job], the connect job, so they end with it. Then sync and live HR. */
+    /**
+     * Connected: this connection's listeners in [job], the connect job, so they end with it. Then, as Zepp's connected
+     * event: steps notify with the app in front, the connect sync, and live HR only if a screen or workout holds it.
+     */
     private fun connected(job: CoroutineScope, s: ChannelSession) {
         with(job) {
             watchBattery(s)
+            watchMtu(s)
+            watchPings(s)
             watchSteps(s)
             watchDataAvailable(s)
             watchProfile(s)
@@ -296,8 +282,24 @@ class StrapManager(
             watchSportSession(s)
             watchFeatures(s)
         }
-        syncs.autoSync(s)
+        syncs.onConnected()
         live.onConnected()
+    }
+
+    /**
+     * Each strap ping (`03` on 0x0015, about every 30 min; the session answers the pong) is Zepp's WAKE_UP: a steps
+     * query, the clock on every other ping since the app started, and every 12th a background sync. Ends with the
+     * connection.
+     */
+    private fun CoroutineScope.watchPings(s: ChannelSession) = launch {
+        if (!s.services.has(Endpoints.CONNECT)) return@launch
+        s.messagesFor(Endpoints.CONNECT).collect { p ->
+            if (p.isEmpty() || p.u8(0) != ConnectCodec.PING.u8(0)) return@collect
+            val writeClock = clock.onPing()
+            launch { querySteps(s) }
+            if (writeClock) launch { clock.write(s, StrapClock.Why.PING) }
+            syncs.onPing(s)
+        }
     }
 
     /** The strap's `03` "features changed" push carries a new bitmap (03 §3.7). Ends with this connection. */
@@ -310,44 +312,8 @@ class StrapManager(
         }
     }
 
-    /** The time module's version; the next-DST hint needs 2 or later (03 §3.8). */
-    @Volatile private var timeProtocol: Int? = null
-
-    /** Sets the strap's clock and time zone, and tells it when DST next changes, as Zepp does on connect and on every change. */
-    private suspend fun syncTime(s: ChannelSession, client: GattClient) {
-        val now = ZonedDateTime.now()
-        step("time sync") {
-            if (s.services.has(Endpoints.TIME)) {
-                val r = s.request(Endpoints.TIME, TimeSync.setRequest(now)) { it.u8(0) == 0x06 }
-                log("time set: ${r.toHex()}")
-            } else {
-                client.write(StrapUuids.MAIN_SERVICE, StrapUuids.CURRENT_TIME, TimeSync.struct(now), withResponse = true)
-                log("time set via 2A2B")
-            }
-        }
-        if ((timeProtocol ?: 0) >= 2) step("dst hint") {
-            val request = TimeSync.nextDstRequest(now)
-            val r = s.request(Endpoints.TIME, request) { it.isNotEmpty() && it.u8(0) == TimeSync.NEXT_DST + 1 }
-            log("next dst ${request.toHex()}: ${r.toHex()}")
-        }
-    }
-
-    /** The phone's clock or time zone changed (travel, DST, a manual change): pass it on while connected. */
-    private val timeChanged = object : android.content.BroadcastReceiver() {
-        override fun onReceive(c: Context, intent: android.content.Intent) {
-            val s = activeSession ?: return
-            val client = connections.gatt ?: return
-            log("phone time changed (${intent.action?.substringAfterLast('.')}), updating the strap")
-            scope.launch { syncTime(s, client) }
-        }
-    }
-
     init {
-        val filter = android.content.IntentFilter().apply {
-            addAction(android.content.Intent.ACTION_TIMEZONE_CHANGED)
-            addAction(android.content.Intent.ACTION_TIME_CHANGED)
-        }
-        androidx.core.content.ContextCompat.registerReceiver(context, timeChanged, filter, androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED)
+        clock.register()
         // The app was stopped while it knew the wear state: close that interval now, as nothing is connected yet.
         val now = System.currentTimeMillis() / 1000
         wearEvents.post { if (dao.lastWearEvent()?.worn != null) dao.insertWearEvent(WearEventRow(now, null)) }
@@ -360,35 +326,43 @@ class StrapManager(
     }
 
     /**
-     * Sends the user's profile to the strap now and whenever it changes, as Zepp does (03 §3.5); the strap uses it
-     * for calories and heart-rate zones. Runs in the connect job, so it ends with this connection.
+     * Sends the user's profile to the strap when it changes (03 §3.5); the strap uses it for calories and heart-rate
+     * zones. Not on every connect, which Zepp doesn't do: only a profile other than the one the strap last took.
+     * Runs in the connect job, so it ends with this connection.
      */
     private fun CoroutineScope.watchProfile(s: ChannelSession) = launch {
         if (!s.services.has(Endpoints.USER_INFO)) return@launch
         settings.profile.map { it.toStrapProfile() }.distinctUntilChanged().collect { p ->
             val payload = p.channelPayload() ?: return@collect
+            val key = crc32(payload).toLong() and 0xFFFF_FFFFL
+            if (catching { settings.sentToStrap(SENT_PROFILE) }.getOrNull() == key) return@collect
             catching {
                 val r = s.request(Endpoints.USER_INFO, payload, 5_000) { it.isNotEmpty() && it.u8(0) == StrapUserProfile.SET + 1 }
                 log("profile sent: ${r.toHex()}")
+                settings.setSentToStrap(SENT_PROFILE, key)
             }.onFailure { log("profile send failed: $it") }
         }
     }
 
     /**
-     * Sends the calorie goal to the strap as its calorie target (HEALTH key 83, an i16 of active kcal) now and whenever
-     * it changes, as Zepp does, so the strap's own goal buzz matches the app's. Only a strap that reports the key is
-     * written, in the type it reported, and only when it holds another value. Runs in the connect job.
+     * Sends the calorie goal to the strap as its calorie target (HEALTH key 83, an i16 of active kcal) when it changes,
+     * so the strap's own goal buzz matches the app's. Not on every connect: only a goal other than the one last sent.
+     * Only a strap that reports the key is written, in the type it reported. Runs in the connect job.
      */
     private fun CoroutineScope.watchCalorieGoal(s: ChannelSession) = launch {
         if (!s.services.has(Endpoints.SETTINGS)) return@launch
         settings.goals.map { it.calories }.distinctUntilChanged().collect { kcal ->
+            if (catching { settings.sentToStrap(SENT_CALORIE_GOAL) }.getOrNull() == kcal.toLong()) return@collect
             catching {
                 val keys = listOf(SettingsCodec.KEY_CALORIE_TARGET)
                 val reply = commands.settingsQuery(SettingsCodec.GROUP_HEALTH, keys, withOptions = false)
                 val group = SettingsCodec.parse(reply, commands.settingsProtocol()?.version) ?: return@catching
-                val write = SettingsCodec.calorieTargetFor(group, kcal) ?: return@catching
-                val ack = commands.command(Endpoints.SETTINGS, write)
-                log(if (SettingsCodec.isWriteSuccess(ack)) "calorie goal sent: $kcal" else "calorie goal refused: ${ack.toHex()}")
+                val write = SettingsCodec.calorieTargetFor(group, kcal)
+                if (write != null) {
+                    val ack = commands.command(Endpoints.SETTINGS, write)
+                    log(if (SettingsCodec.isWriteSuccess(ack)) "calorie goal sent: $kcal" else "calorie goal refused: ${ack.toHex()}")
+                }
+                settings.setSentToStrap(SENT_CALORIE_GOAL, kcal.toLong())
             }.onFailure { log("calorie goal send failed: $it") }
         }
     }
@@ -418,8 +392,7 @@ class StrapManager(
             val group = SettingsCodec.parse(p, commands.settingsProtocol?.version)
             if (group == null) return@collect log("settings 04 unparsed: ${p.toHex()}")
             // Nobody has captured the strap's wear push yet: log the first one raw, for checking against hardware.
-            // The wear poll's own replies come through here too, so they're left out.
-            if (!wearPushLogged && !wearPolling && SettingsCodec.wearStatus(group) != null) {
+            if (!wearPushLogged && SettingsCodec.wearStatus(group) != null) {
                 wearPushLogged = true
                 log("wear status push ${p.toHex()}")
             }
@@ -428,34 +401,18 @@ class StrapManager(
     }
 
     @Volatile private var wearPushLogged = false
-    @Volatile private var wearPolling = false
 
     /**
-     * Wear / off-body, as Zepp does for the strap (07 §4 N5): with the app's switch on, turns on the strap's wear
-     * reminder (GENERAL key 44), then follows DEVICE_INFORMATION key 16 as read on connect, as pushed, and as polled
-     * every minute. Ends with this connection.
+     * Wear / off-body, as Zepp does for the strap (07 §4 N5): follows DEVICE_INFORMATION key 16 as read on connect and
+     * as pushed, never polled (Zepp only listens). Turning the app's switch on turns on the strap's wear reminder
+     * (GENERAL key 44); a connect alone doesn't touch it. Ends with this connection.
      */
     private fun CoroutineScope.watchWear(s: ChannelSession) = launch {
         if (!s.services.has(Endpoints.SETTINGS)) return@launch
         launch {
-            settings.wearReminder.distinctUntilChanged().collect { on ->
-                if (on) enableWearAlert()
+            settings.wearReminder.distinctUntilChanged().withIndex().collect { (i, on) ->
+                if (on && i > 0) enableWearAlert()
                 wearNotifier.apply(WearReminder.decide(lastWorn, on, wearNotifier.shown))
-            }
-        }
-        // Firmware 3.25.0.3 didn't push key 16 when taken off or put back on (2026-10-23), though a fresh read had it
-        // right; poll so a change shows within a minute. The reply also reaches settingsChanged, and onWear dedupes.
-        launch {
-            while (isActive && connections.session === s) {
-                delay(WEAR_POLL_MS)
-                if (firmwareUpdating.value) continue
-                wearPolling = true
-                catching {
-                    val keys = listOf(SettingsCodec.KEY_WEAR_STATUS)
-                    val reply = commands.settingsQuery(SettingsCodec.GROUP_DEVICE_INFORMATION, keys, withOptions = false)
-                    SettingsCodec.parse(reply, commands.settingsProtocol?.version)?.let(SettingsCodec::wearStatus)?.let { onWear(it) }
-                }.onFailure { log("wear status poll failed: $it") }
-                wearPolling = false
             }
         }
         info.value?.deviceInformation?.let(SettingsCodec::wearStatus)?.let { onWear(it) }
@@ -554,6 +511,10 @@ class StrapManager(
         }
     }
 
+    /**
+     * Today's steps on 0x0016, as Zepp's RealtimeStepService: pushes while notify is on, which is on while the app is
+     * in front (or a phone workout records), and a query on every ping. No timer. Ends with the connection.
+     */
     private fun CoroutineScope.watchSteps(s: ChannelSession) = launch {
         if (!s.services.has(Endpoints.REALTIME_ACTIVITY)) return@launch
         launch {
@@ -568,14 +529,26 @@ class StrapManager(
                 }
             }
         }
-        catching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.NOTIFY_ON) }.onFailure { log("steps notify failed: $it") }
-        // Pushes may only come while walking; poll as a fallback.
-        while (isActive && connections.session === s) {
-            if (!firmwareUpdating.value) {
-                catching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.QUERY) }.onFailure { log("steps query failed: $it") }
+        // On connect: notify on only with the app in front or a phone workout recording, else nothing (`yt00.d`).
+        if (appVisible || workoutActive) stepsNotify(s, on = true) else log("steps: connected in the background, notify left off")
+    }
+
+    /** `05 01`, then once its `06` reply is in, one `03` (`ot00.b`); or `05 00`. */
+    private suspend fun stepsNotify(s: ChannelSession, on: Boolean) {
+        if (!s.services.has(Endpoints.REALTIME_ACTIVITY)) return
+        catching {
+            if (on) {
+                s.request(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.NOTIFY_ON, 5_000) { it.isNotEmpty() && it.u8(0) == STEPS_NOTIFY_REPLY }
+                s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.QUERY)
+            } else {
+                s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.NOTIFY_OFF)
             }
-            delay(60_000)
-        }
+        }.onFailure { log("steps notify ${if (on) "on" else "off"} failed: $it") }
+    }
+
+    private suspend fun querySteps(s: ChannelSession) {
+        if (!s.services.has(Endpoints.REALTIME_ACTIVITY) || firmwareUpdating.value) return
+        catching { s.send(Endpoints.REALTIME_ACTIVITY, RealtimeSteps.QUERY) }.onFailure { log("steps query failed: $it") }
     }
 
     /**
@@ -587,13 +560,14 @@ class StrapManager(
         s.messagesFor(Endpoints.HISTORY).collect { p ->
             val m = FetchCodec.parse(p) as? GdspMessage.DataAvailable ?: return@collect
             val types = m.typesToSync.toSet()
-            if (types.isEmpty()) return@collect
+            if (types.isEmpty()) return@collect log("strap has new data of type ${m.typeCode}, nothing to sync")
             log("strap has new data of type ${m.typeCode}, syncing $types")
-            syncs.syncPushed(types)
+            syncs.syncPushed(m.typeCode, types)
         }
     }
 
-    override fun syncNow() = syncs.syncNow()
+    /** Every sync the user asks for is Zepp's USER_ACTION: run only if 120 s have passed since the last good one. */
+    override fun syncNow() = syncs.userAction()
 
     /** Debug aid, see [HistorySync.dumpRaw]. */
     fun dumpRaw(days: Int, types: Set<Int>? = null) = syncs.dumpRaw(days, types)
@@ -641,11 +615,39 @@ class StrapManager(
     }
 
 
-    override fun setAppVisible(visible: Boolean) = live.setAppVisible(visible)
+    /**
+     * The app came to the front or left it. In front, as Zepp: steps notify on (with a 1.5 s debounce per state) and a
+     * user-action sync. Behind: steps notify off, unless a phone workout records.
+     */
+    override fun setAppVisible(visible: Boolean) {
+        if (visible == appVisible) return
+        appVisible = visible
+        live.setAppVisible(visible)
+        syncs.setAppVisible(visible)
+        val s = activeSession ?: return
+        if (visible) syncs.userAction()
+        if (visible || !workoutActive) updateStepsNotify(s, visible)
+    }
 
-    override fun setWorkoutActive(active: Boolean) = live.setWorkoutActive(active)
+    /** Steps notify to match the app's place, after Zepp's 1.5 s debounce. */
+    private fun updateStepsNotify(s: ChannelSession, visible: Boolean) {
+        stepsJob?.cancel()
+        stepsJob = scope.launch {
+            delay(STEPS_DEBOUNCE_MS)
+            if (activeSession === s && appVisible == visible) stepsNotify(s, on = visible)
+        }
+    }
 
-    override fun setEffortWatch(active: Boolean) = live.setEffortWatch(active)
+    @Volatile private var appVisible = false
+    @Volatile private var workoutActive = false
+    private var stepsJob: kotlinx.coroutines.Job? = null
+
+    override fun setWorkoutActive(active: Boolean) {
+        workoutActive = active
+        live.setWorkoutActive(active)
+    }
+
+    override fun showLiveHeartRate(key: Any, shown: Boolean) = live.showOnScreen(key, shown)
 
     override suspend fun readAlarms(): Pair<AlarmCapabilities, List<Alarm>> = commands.readAlarms()
 
@@ -660,6 +662,25 @@ class StrapManager(
     override suspend fun writeHealthSettings(version: Int, settings: List<Setting>) = commands.writeHealthSettings(version, settings)
 
     override suspend fun restartStrap() = commands.restartStrap()
+
+    /**
+     * GENERAL key 45 restarts the strap; like Zepp, offer Restart only when the strap reports it (03 §5.2, 07 §0).
+     * Read when the Device screen opens, once per connection, so a connect alone sends nothing for it.
+     */
+    override suspend fun checkCanRestart() {
+        val s = activeSession ?: return
+        if (!s.services.has(Endpoints.SETTINGS) || restartChecked === s) return
+        catching {
+            val group = SettingsCodec.GROUP_GENERAL
+            val r = commands.settingsQuery(group, listOf(SettingsCodec.KEY_RESTART), withOptions = false)
+            val restart = SettingsCodec.parse(r, commands.settingsProtocol()?.version)?.get(SettingsCodec.KEY_RESTART)
+            log("general key 45 ${r.toHex()} -> ${restart?.let { "reported" } ?: "not reported"}")
+            info.value = info.value?.copy(canRestart = restart != null)
+            restartChecked = s
+        }.onFailure { log("restart key query failed: $it") }
+    }
+
+    @Volatile private var restartChecked: ChannelSession? = null
 
     override suspend fun buzz(pattern: List<Int>) = buzzer.buzz(pattern)
 
@@ -718,6 +739,11 @@ class StrapManager(
     }
 
     private companion object {
-        const val WEAR_POLL_MS = 60_000L
+        const val MTU_PUSH = 0x02
+        const val STEPS_NOTIFY_REPLY = 0x06
+        const val STEPS_DEBOUNCE_MS = 1_500L
+        const val BATTERY_RETRY_MS = 2_000L
+        const val SENT_PROFILE = "profile_crc"
+        const val SENT_CALORIE_GOAL = "calorie_goal"
     }
 }
