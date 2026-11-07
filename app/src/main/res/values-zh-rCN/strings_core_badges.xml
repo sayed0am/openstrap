@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_badge_first_workout">首次运动</string>
+    <string name="core_badge_first_10k_steps">首次单日万步</string>
+    <string name="core_badge_workouts_10">10 次运动</string>
+    <string name="core_badge_workouts_50">50 次运动</string>
+    <string name="core_badge_workouts_100">100 次运动</string>
+    <string name="core_badge_workouts_500">500 次运动</string>
+    <string name="core_badge_km_100">累计 100 km</string>
+    <string name="core_badge_km_500">累计 500 km</string>
+    <string name="core_badge_km_1000">累计 1,000 km</string>
+    <string name="core_badge_steps_1m">累计百万步</string>
+    <string name="core_badge_goal_first">首次达成周目标</string>
+    <string name="core_badge_goal_4">连续 4 周达成目标</string>
+    <string name="core_badge_goal_12">连续 12 周达成目标</string>
+    <string name="core_badge_goal_26">连续 26 周达成目标</string>
+    <string name="core_badge_goal_52">连续 52 周达成目标</string>
+    <string name="core_badge_first_run">首次跑步</string>
+    <string name="core_badge_first_5k">首次 5 km 跑</string>
+    <string name="core_badge_first_10k">首次 10 km 跑</string>
+    <string name="core_badge_first_indoor">首次室内运动</string>
+    <string name="core_badge_first_log">首次记录力量训练</string>
+    <string name="core_badge_first_tabata">首次 Tabata</string>
+    <string name="core_badge_first_reps">首次间歇跑</string>
+    <string name="core_badge_first_mind">首次瑜伽或静心</string>
+    <string name="core_badge_first_game">首次球类运动</string>
+    <string name="core_badge_art_run">跑步</string>
+    <string name="core_badge_art_indoor">室内</string>
+    <string name="core_badge_art_log">kg</string>
+    <string name="core_badge_art_tabata">Tab</string>
+    <string name="core_badge_art_reps">间歇</string>
+    <string name="core_badge_art_mind">Om</string>
+    <string name="core_badge_art_game">球类</string>
+</resources>

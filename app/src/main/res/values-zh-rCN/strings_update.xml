@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="update_summary_ready">unstrap %1$s 已准备好安装</string>
+    <string name="update_summary_checking">正在检查…</string>
+    <string name="update_summary_version">版本 %1$s</string>
+    <string name="update_summary_up_to_date">已是最新。检查于 %1$s</string>
+    <string name="update_check_checking">正在检查 GitHub…</string>
+    <string name="update_check_failed_last">无法连接 GitHub。上次检查于 %1$s</string>
+    <string name="update_check_failed">无法连接 GitHub</string>
+    <string name="update_check_last">上次检查于 %1$s</string>
+    <string name="update_check_never">从未检查</string>
+    <string name="update_install_downloading_percent">正在下载，%1$d%%</string>
+    <string name="update_install_downloading_size">正在下载，%1$s</string>
+    <string name="update_install_installing">正在安装。完成后 unstrap 将关闭</string>
+    <string name="update_install_no_apk">此版本未包含应用安装文件。在 GitHub 上打开</string>
+    <string name="update_install_after_workout">运动结束后再安装。安装会关闭应用</string>
+    <string name="update_install_download">下载并安装，%1$s</string>
+    <string name="update_megabytes">%1$.1f MB</string>
+    <string name="update_failure_network">下载已停止。轻触重试</string>
+    <string name="update_failure_checksum">下载的文件与 GitHub 上的不一致。点击重试</string>
+    <string name="update_failure_no_checksum">无法校验下载的文件，因此未安装</string>
+    <string name="update_failure_not_openstrap">下载的文件不是 unstrap，因此未安装</string>
+    <string name="update_failure_signature">此 unstrap 副本使用了不同的密钥签名。请改为从 GitHub 安装</string>
+    <string name="update_failure_storage">存储空间不足，无法安装</string>
+    <string name="update_failure_android">Android 无法安装。轻触重试</string>
+    <string name="update_available_title">unstrap %1$s 已发布</string>
+    <string name="update_available_text">到更新页查看新变化并安装。</string>
+    <string name="update_installed_title">已更新至 unstrap %1$s</string>
+    <string name="update_installed_text">轻触查看新变化。</string>
+    <string name="update_channel_name">应用更新</string>
+</resources>

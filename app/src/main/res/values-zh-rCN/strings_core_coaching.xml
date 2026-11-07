@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_coach_zone">%1$d 区</string>
+    <string name="core_coach_zones">%1$d 至 %2$d 区</string>
+    <string name="core_coach_minutes">%1$d 分钟</string>
+    <string name="core_coach_kcal">%1$d kcal</string>
+    <string name="core_coach_meters">%1$d 米</string>
+    <string name="core_coach_km">%1$s km</string>
+</resources>

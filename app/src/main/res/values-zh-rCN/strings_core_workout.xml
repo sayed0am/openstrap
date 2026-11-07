@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_workout_zone_easy">轻松</string>
+    <string name="core_workout_zone_aerobic">有氧</string>
+    <string name="core_workout_zone_tempo">节奏</string>
+    <string name="core_workout_zone_threshold">阈值</string>
+    <string name="core_workout_zone_max">最大</string>
+    <string name="core_workout_zone_easy_in_sentence">轻松</string>
+    <string name="core_workout_zone_aerobic_in_sentence">有氧</string>
+    <string name="core_workout_zone_tempo_in_sentence">节奏</string>
+    <string name="core_workout_zone_threshold_in_sentence">阈值</string>
+    <string name="core_workout_zone_max_in_sentence">最大</string>
+    <string name="core_workout_zone_number">%1$d 区，</string>
+    <string name="core_workout_zone_line">%1$d 区，%2$s</string>
+    <string name="core_workout_zone_time_under">在此区间不足 1 分钟</string>
+    <string name="core_workout_zone_time">在此区间 %1$d 分钟</string>
+    <string name="core_workout_paused">已暂停</string>
+    <string name="core_workout_strap_gone">等待手环连接</string>
+    <string name="core_workout_waiting_hr">等待心率数据</string>
+    <string name="core_workout_strap_gone_note">手环未连接。记录仍在继续，手环同步后将补全遗漏的数据。</string>
+    <string name="core_workout_split">第 %1$d 公里用时 %2$s</string>
+    <string name="core_workout_split_avg">%1$s，%2$d bpm</string>
+    <string name="core_workout_just_now">刚刚</string>
+    <string name="core_workout_min_ago">%1$d 分钟前</string>
+    <string name="core_workout_location_off">定位已关闭</string>
+    <string name="core_workout_location_off_note">开启后可记录距离与地图轨迹，也可以直接开始。</string>
+    <string name="core_workout_route_on">已开启。保存在本手机上用于查看地图。</string>
+    <string name="core_workout_route_off">已关闭。仅保留汇总数据。</string>
+    <string name="core_workout_start_sport">开始%1$s</string>
+    <string name="core_workout_start_workout">开始运动</string>
+    <string name="core_workout_open_sport">返回%1$s</string>
+    <string name="core_workout_open_workout">返回运动</string>
+    <string name="core_workout_set_of">第 %1$d 组，共 %2$d 组</string>
+    <string name="core_workout_set">第 %1$d 组</string>
+    <string name="core_workout_rest_rule">时间到即结束休息。</string>
+    <string name="core_workout_rest_rule_below">时间到或心率持续低于 %1$d bpm 时结束休息。</string>
+    <string name="core_workout_set_weight">%1$d × %2$s kg</string>
+    <plurals name="core_workout_set_reps">
+        <item quantity="one">%1$d 次</item>
+        <item quantity="other">%1$d 次</item>
+    </plurals>
+    <string name="core_workout_set_peak">峰值 %1$d</string>
+    <string name="core_workout_list">%1$s，%2$s</string>
+    <string name="core_workout_no_zone_paused">暂停时无心率区间</string>
+    <string name="core_workout_no_zone">暂无心率区间</string>
+    <string name="core_workout_progress">%1$s / %2$s</string>
+    <string name="core_workout_gps_finding">正在搜寻 GPS</string>
+    <string name="core_workout_gps">GPS ±%1$d m</string>
+</resources>

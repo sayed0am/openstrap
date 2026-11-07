@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="system_widget_status_not_paired">配对手环</string>
+    <string name="system_widget_status_not_paired_short">配对手环</string>
+    <string name="system_widget_status_low_battery">手环电量 %1$d%%</string>
+    <string name="system_widget_status_percent">%1$d%%</string>
+    <string name="system_widget_status_syncing">正在同步…</string>
+    <string name="system_widget_status_synced">已同步 %1$s</string>
+    <string name="system_widget_open">打开</string>
+    <string name="system_widget_this_week">本周</string>
+    <string name="system_widget_since">自 %1$s 起</string>
+    <string name="system_widget_steps_today">今日</string>
+    <string name="system_widget_steps_goal">目标 %1$s</string>
+    <string name="system_widget_steps_to_go">还差 %1$s</string>
+    <string name="system_widget_steps_goal_met">已达标</string>
+    <string name="system_widget_steps_week">%2$s中已达标 %1$d 天</string>
+    <plurals name="system_widget_steps_days">
+        <item quantity="one">%1$d 天</item>
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+    <plurals name="system_widget_steps_description">
+        <item quantity="one">今日 %1$s 步，%2$s</item>
+        <item quantity="other">今日 %1$s 步，%2$s</item>
+    </plurals>
+    <string name="system_widget_steps_line_description">今日截止目前步数，%1$s</string>
+    <string name="system_widget_steps_week_description">本周每日步数</string>
+    <string name="system_widget_recovery_this_morning">今晨</string>
+    <string name="system_widget_recovery_yesterday">昨天</string>
+    <string name="system_widget_recovery_no_reading">暂无读数</string>
+    <string name="system_widget_recovery_resting_hr">静息心率</string>
+    <string name="system_widget_recovery_hrv">HRV</string>
+    <string name="system_widget_recovery_sleep">睡眠</string>
+    <string name="system_widget_recovery_figure">%1$s%2$s</string>
+    <string name="system_widget_score_word">%1$s，%2$s</string>
+    <string name="system_widget_recovery_week_description">最近七天每日恢复情况</string>
+    <string name="system_widget_sleep_title">昨晚</string>
+    <string name="system_widget_sleep_last_synced">前一晚</string>
+    <string name="system_widget_sleep_score_word">睡眠分数 %1$s，%2$s</string>
+    <string name="system_widget_sleep_score">睡眠分数 %1$s</string>
+    <string name="system_widget_sleep_stage_description">%1$s%2$s</string>
+    <string name="system_widget_start_usual">你平时</string>
+    <string name="system_widget_start_usual_gps_on">你平时，GPS 开启</string>
+    <string name="system_widget_start_usual_gps_off">你平时，GPS 关闭</string>
+    <string name="system_widget_start_all_sports">全部运动</string>
+    <string name="system_widget_start_all_sports_action">选择运动</string>
+    <string name="system_widget_start_short_title">开始</string>
+    <plurals name="system_widget_start_week">
+        <item quantity="one">%1$d 次运动，%2$s</item>
+        <item quantity="other">%1$d 次运动，%2$s</item>
+    </plurals>
+    <string name="system_widget_start_no_workouts">暂无运动记录</string>
+    <string name="system_widget_start_last">最后 %1$s</string>
+    <string name="system_widget_start_last_workout">上次运动</string>
+    <string name="system_widget_start_last_line">%1$s，%2$s</string>
+    <string name="system_widget_start_none_yet">暂无</string>
+    <plurals name="system_widget_start_sets">
+        <item quantity="one">%1$d 组</item>
+        <item quantity="other">%1$d 组</item>
+    </plurals>
+    <string name="system_widget_recording">正在记录</string>
+    <string name="system_widget_paused">已暂停</string>
+    <string name="system_widget_moment_energy_left">剩余精力</string>
+    <string name="system_widget_moment_left">剩余</string>
+    <string name="system_widget_moment_energy_at_waking">起床时精力 %1$d</string>
+    <string name="system_widget_moment_drained">已消耗 %1$s，已恢复 %2$d</string>
+    <string name="system_widget_moment_drained_short">已消耗 %1$s</string>
+    <string name="system_widget_moment_recovery_word">恢复 %1$d，%2$s</string>
+    <string name="system_widget_moment_recovery">恢复 %1$d</string>
+    <string name="system_widget_moment_energy">剩余精力 %1$d</string>
+    <string name="system_widget_moment_two_sentences">%1$s。%2$s</string>
+    <string name="system_widget_moment_sentence">%1$s。</string>
+    <string name="system_widget_moment_start">开始%1$s</string>
+    <string name="system_widget_moment_recording_since">自 %1$s 起正在记录</string>
+    <string name="system_widget_moment_workout">运动</string>
+    <string name="system_widget_moment_min_since_your">距你的%1$s（分钟）</string>
+    <string name="system_widget_moment_min_since">距运动结束（分钟）</string>
+    <string name="system_widget_moment_min">分钟</string>
+    <plurals name="system_widget_moment_minutes_since">
+        <item quantity="one">距你的%2$s已过去 %1$d 分钟</item>
+        <item quantity="other">距你的%2$s已过去 %1$d 分钟</item>
+    </plurals>
+    <string name="system_widget_moment_load_today">今日负荷 %1$d</string>
+    <string name="system_widget_moment_load">负荷 %1$d</string>
+    <string name="system_widget_moment_heart_since">你的%1$s以来的心率</string>
+    <string name="system_widget_moment_min_to_bedtime">距就寝（分钟）</string>
+    <plurals name="system_widget_moment_minutes_to_bedtime">
+        <item quantity="one">距就寝还有 %1$d 分钟</item>
+        <item quantity="other">距就寝还有 %1$d 分钟</item>
+    </plurals>
+    <string name="system_widget_moment_bedtime">就寝时间 %1$s</string>
+    <string name="system_widget_moment_stages_description">昨晚睡眠阶段，%1$s</string>
+    <string name="system_widget_moment_energy_since">自 %1$s 起的精力</string>
+    <string name="system_widget_moment_energy_since_now">自 %1$s 以来的精力，当前 %2$d</string>
+    <string name="system_widget_moment_heart_today">今日心率</string>
+</resources>

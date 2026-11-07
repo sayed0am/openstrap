@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Unstrap</string>
+    <string name="shortcut_run">开始跑步</string>
+    <string name="shortcut_strength">开始力量训练</string>
+    <string name="shortcut_run_long">开始跑步</string>
+    <string name="shortcut_strength_long">开始力量训练</string>
+    <string name="tile_workout">开始运动</string>
+    <string name="widget_moment_name">时刻</string>
+    <string name="widget_moment_description">呈现当下要点，随一天作息动态变化</string>
+    <string name="widget_recovery_name">恢复</string>
+    <string name="widget_recovery_description">今晨的恢复状态及影响因素</string>
+    <string name="widget_steps_name">步数</string>
+    <string name="widget_steps_description">今日步数与你的目标</string>
+    <string name="widget_sleep_name">睡眠</string>
+    <string name="widget_sleep_description">昨晚的睡眠分数、睡眠时长与各阶段</string>
+    <string name="widget_start_name">开始运动</string>
+    <string name="widget_start_description">一键开启你平时的运动</string>
+</resources>

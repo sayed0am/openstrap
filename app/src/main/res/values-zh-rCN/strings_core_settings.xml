@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_settings_buzz_single">单次</string>
+    <string name="core_settings_buzz_double">两次</string>
+    <string name="core_settings_buzz_triple">三次</string>
+    <string name="core_settings_buzz_long">长振</string>
+    <string name="core_settings_call_steady">平稳</string>
+    <string name="core_settings_call_pulsed">脉冲</string>
+    <string name="core_settings_call_5s">5 秒</string>
+    <string name="core_settings_call_10s">10 秒</string>
+    <string name="core_settings_call_15s">15 秒</string>
+    <string name="core_settings_call_until_answered">持续响铃</string>
+</resources>

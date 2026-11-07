@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_body_title">部分身体信号偏离你的常态</string>
+    <string name="core_body_short">部分信号偏离你的常态</string>
+    <string name="core_body_causes">高强度训练、饮酒、出行、睡眠不佳，或身体正在抵抗不适时都可能出现这种情况。</string>
+    <string name="core_body_advice">今天放轻松点可能会有帮助。如果你感到不适，不妨咨询医务人员。</string>
+    <string name="core_body_disclaimer">此结果仅供健康参考，不可作为医疗评估依据。</string>
+    <string name="core_body_push_several_again">你的多项夜间指标（%1$s）已有两晚或以上超出你的常态范围。</string>
+    <string name="core_body_push_several_once">昨晚，你的多项夜间指标（%1$s）超出了你的常态范围。</string>
+    <string name="core_body_push_one_again">你的夜间%1$s已有两晚或以上超出你的常态范围。</string>
+    <string name="core_body_push_one_once">昨晚，你的夜间%1$s超出了你的常态范围。</string>
+    <string name="core_body_family_cardiac">静息心率</string>
+    <string name="core_body_family_thermal">皮肤温度</string>
+    <string name="core_body_family_respiratory">呼吸频率</string>
+    <string name="core_body_signal_rhr">静息心率偏高 %1$d bpm</string>
+    <string name="core_body_signal_temperature">皮肤温度高于你的常态</string>
+    <string name="core_body_signal_breathing">呼吸频率偏高 %1$s 次/分钟</string>
+    <string name="core_body_signal_hrv">HRV 远低于你的常态</string>
+    <string name="core_checkin_poor">较差</string>
+    <string name="core_checkin_low">低</string>
+    <string name="core_checkin_ok">确定</string>
+    <string name="core_checkin_good">良好</string>
+    <string name="core_checkin_great">极佳</string>
+</resources>

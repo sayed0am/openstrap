@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_choose_title">开始运动</string>
+    <string name="glow_choose_search_all">搜索所有运动</string>
+    <string name="glow_choose_recent">最近</string>
+    <string name="glow_choose_all_sports">全部运动</string>
+    <string name="glow_choose_more_sports">更多运动</string>
+    <string name="glow_choose_more_sports_detail">网球、板网球、舞蹈等</string>
+    <string name="glow_choose_your_usual">你平时</string>
+    <string name="glow_choose_start">开始</string>
+    <string name="glow_choose_outdoors">户外</string>
+    <string name="glow_choose_pick_title">选择运动</string>
+    <string name="glow_choose_search">搜索</string>
+    <string name="glow_choose_sports">常用运动</string>
+    <string name="glow_choose_no_match">没有找到与“%1$s”匹配的运动。</string>
+    <string name="glow_choose_clear">清除</string>
+    <plurals name="glow_choose_sports_count">
+        <item quantity="one">%d 项运动</item>
+        <item quantity="other">%d 项运动</item>
+    </plurals>
+    <string name="glow_ready_bpm_live">bpm，手环实时读数</string>
+    <string name="glow_ready_plan_description">%1$s。%2$s</string>
+    <string name="glow_ready_shorter">缩短</string>
+    <string name="glow_ready_longer">延长</string>
+    <string name="glow_ready_save_title">%1$s%2$s</string>
+    <string name="glow_ready_with">含</string>
+    <string name="glow_ready_rest_between">组间休息</string>
+    <string name="glow_ready_rest_after_set">每组后休息</string>
+    <string name="glow_ready_with_a">含</string>
+    <string name="glow_ready_break">休息</string>
+    <string name="glow_ready_unit_sets">组数</string>
+    <string name="glow_ready_unit_rounds">轮</string>
+    <string name="glow_ready_unit_s_on">秒运动</string>
+    <string name="glow_ready_unit_s_off">秒休息</string>
+    <string name="glow_ready_unit_s_a_round">秒/轮</string>
+    <plurals name="glow_ready_rounds_description">
+        <item quantity="one">%1$d 轮，%2$d 秒运动，%3$d 秒休息</item>
+        <item quantity="other">%1$d 轮，%2$d 秒运动，%3$d 秒休息</item>
+    </plurals>
+</resources>

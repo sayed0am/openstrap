@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_recovery_title">恢复</string>
+    <string name="glow_recovery_about">关于恢复</string>
+    <string name="glow_recovery_scored_each_morning">每天早晨根据昨夜的睡眠计算恢复分数。</string>
+    <string name="glow_recovery_yesterday">昨天</string>
+    <string name="glow_recovery_what_drove">影响因素</string>
+    <string name="glow_recovery_drivers_all">全部 %1$d 项</string>
+    <string name="glow_recovery_waiting_night">等待整夜数据</string>
+    <string name="glow_recovery_drivers_waiting">每天早晨这里会显示影响恢复的因素</string>
+    <string name="glow_recovery_energy">精力</string>
+    <string name="glow_recovery_now">当前</string>
+    <string name="glow_recovery_charge_at_start">开始时 %1$d</string>
+    <string name="glow_recovery_charge_at_waking">起床时 %1$d</string>
+    <string name="glow_recovery_recharged">已恢复</string>
+    <string name="glow_recovery_drained">已消耗</string>
+    <string name="glow_recovery_overnight">夜间从 %1$d 到 %2$d</string>
+    <string name="glow_recovery_skin_temperature">皮肤温度</string>
+    <string name="glow_recovery_breathing_rate">呼吸频率</string>
+    <string name="glow_recovery_blood_oxygen">血氧</string>
+    <string name="glow_recovery_stress">压力</string>
+    <string name="glow_recovery_body_signals">身体信号</string>
+    <string name="glow_recovery_against_normal">对比你的常态</string>
+    <string name="glow_recovery_week_average">最近 7 天平均</string>
+    <string name="glow_recovery_no_scores">暂无分数</string>
+    <string name="glow_recovery_in_last_7_days">最近 7 天</string>
+    <string name="glow_recovery_this_morning">今天早晨</string>
+    <string name="glow_recovery_that_morning">那天早晨</string>
+    <string name="glow_recovery_strap_estimate">手环估算值</string>
+    <string name="glow_recovery_none_week">最近 7 天暂无恢复分数。</string>
+    <string name="glow_recovery_waiting">等待中</string>
+    <string name="glow_recovery_after_first_night">度过首晚后</string>
+    <string name="glow_recovery_needs_heart_rate">需要数小时的心率数据</string>
+    <string name="glow_recovery_at_time">于 %1$s</string>
+    <string name="glow_recovery_now_lower">现在</string>
+    <string name="glow_recovery_end_of_day">当天结束时</string>
+    <string name="glow_recovery_at_start">开始时</string>
+    <string name="glow_recovery_at_waking">起床时</string>
+    <string name="glow_recovery_highest">最高</string>
+    <string name="glow_recovery_lowest">最低</string>
+    <string name="glow_recovery_where_it_went">精力去向</string>
+    <string name="glow_recovery_last_night">昨晚</string>
+    <string name="glow_recovery_no_sleep">未记录到睡眠</string>
+    <string name="glow_recovery_asleep">睡眠时长</string>
+</resources>

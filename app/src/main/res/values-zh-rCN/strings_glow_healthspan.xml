@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_healthspan_pace_learning">正在了解</string>
+    <string name="glow_healthspan_pace_slower">更慢</string>
+    <string name="glow_healthspan_pace_faster">更快</string>
+    <string name="glow_healthspan_pace_steady">平稳</string>
+    <string name="glow_healthspan_pace_times">%1$sx</string>
+    <string name="glow_healthspan_effect_none">无变化</string>
+    <string name="glow_healthspan_effect_off_months">减少几个月</string>
+    <string name="glow_healthspan_effect_adds_months">增加几个月</string>
+    <string name="glow_healthspan_effect_off_half">减少约半年</string>
+    <string name="glow_healthspan_effect_adds_half">增加约半年</string>
+    <plurals name="glow_healthspan_effect_off_years">
+        <item quantity="one">减少约 %d 岁</item>
+        <item quantity="other">减少约 %d 岁</item>
+    </plurals>
+    <plurals name="glow_healthspan_effect_adds_years">
+        <item quantity="one">增加约 %d 岁</item>
+        <item quantity="other">增加约 %d 岁</item>
+    </plurals>
+    <string name="glow_healthspan_no_vo2max">运动中暂无 VO2 max 记录，按同龄常态计算</string>
+    <string name="glow_healthspan_no_data">数据尚不充足，按同龄常态计算</string>
+    <string name="glow_healthspan_strength_none_aim">暂无记录，常态：无，建议每周达到 %1$d 分钟</string>
+    <string name="glow_healthspan_strength_none">暂无记录，常态：无</string>
+    <string name="glow_healthspan_strength_minutes_aim">每周 %1$d 分钟，常态：无，建议达到 %2$d 分钟</string>
+    <string name="glow_healthspan_strength_minutes">每周 %1$d 分钟，常态：无</string>
+    <string name="glow_healthspan_vo2max">%1$d ml/kg/min，%2$d 岁常态：%3$s</string>
+    <string name="glow_healthspan_steps_aim">每天 %1$s 步，常态：%2$s，建议达到 %3$s</string>
+    <string name="glow_healthspan_steps">日均 %1$s 步，常态：%2$s</string>
+    <string name="glow_healthspan_regularity">%1$d，常态：%2$s</string>
+    <string name="glow_healthspan_resting_hr">睡眠心率 %1$d bpm，常态：约 %2$s</string>
+    <string name="glow_healthspan_time_asleep">每晚 %1$s，低于 %2$s 才计入</string>
+    <string name="glow_healthspan_profile_birth_year">在个人资料中添加你的出生年份，即可查看习惯年龄。</string>
+    <string name="glow_healthspan_profile_sex">在个人资料中添加你的性别，即可查看习惯年龄。</string>
+    <string name="glow_healthspan_profile_both">在个人资料中添加你的出生年份和性别，即可查看习惯年龄。</string>
+    <string name="glow_healthspan_title">习惯年龄</string>
+    <string name="glow_healthspan_about">关于习惯年龄</string>
+    <string name="glow_healthspan_years">岁</string>
+    <string name="glow_healthspan_updated_today">今天已更新，下次更新于周日</string>
+    <string name="glow_healthspan_updated_tomorrow">周日已更新，下次更新在明天</string>
+    <plurals name="glow_healthspan_updated_next">
+        <item quantity="one">周日已更新，下次更新还有 %d 天</item>
+        <item quantity="other">周日已更新，下次更新还有 %d 天</item>
+    </plurals>
+    <string name="glow_healthspan_updated_weekly">每周更新，于周日</string>
+    <string name="glow_healthspan_pace_title">衰老速率</string>
+    <string name="glow_healthspan_pace_note">%1$s，%2$s</string>
+    <string name="glow_healthspan_last_30_days">近 30 天</string>
+    <string name="glow_healthspan_pace_needs">需要 30 天充足的数据以及此前 3 个月的基线，以区分真实的趋势变化与日常波动。</string>
+    <string name="glow_healthspan_pace_beat">你近 30 天的表现优于过去 6 个月的习惯水平。若继续保持，估算年龄将会下降。</string>
+    <string name="glow_healthspan_pace_behind">你近 30 天的表现落后于过去 6 个月的习惯水平。若长期如此，估算年龄将会上升。</string>
+    <string name="glow_healthspan_pace_match">你近 30 天的表现与过去 6 个月的习惯水平相符，估算年龄随时间自然同步增长。</string>
+    <string name="glow_healthspan_scale_slower">−1x 更慢</string>
+    <string name="glow_healthspan_scale_steady">1x</string>
+    <string name="glow_healthspan_scale_faster">3x 更快</string>
+    <string name="glow_healthspan_terms_title">影响因素</string>
+    <string name="glow_healthspan_terms_note">近 6 个月</string>
+    <string name="glow_healthspan_scale_younger">年轻 −1½ 岁</string>
+    <string name="glow_healthspan_scale_older">年长 +1½ 岁</string>
+    <string name="glow_healthspan_fitness_capped">体能习惯已达上限：静息心率、步数和 VO2 max 累计影响最多不超过 ±3 岁。</string>
+</resources>

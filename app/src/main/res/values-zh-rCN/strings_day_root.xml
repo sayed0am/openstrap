@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="day_tab_today">今日</string>
+    <string name="day_tab_recovery">恢复</string>
+    <string name="day_tab_sleep">睡眠</string>
+    <string name="day_tab_activity">活动</string>
+    <string name="day_hc_unavailable">此手机上无法使用 Health Connect。</string>
+    <string name="day_hc_install_first">请先安装 Health Connect。</string>
+    <string name="day_hc_not_granted">unstrap 未获得 Health Connect 权限。</string>
+    <string name="day_bluetooth_required">unstrap 需要“附近设备”权限来连接你的手环。</string>
+    <string name="day_bluetooth_required_location">unstrap 需要位置权限来查找你的手环，不会使用你的具体位置。</string>
+    <string name="day_location_declined">未授予位置权限，距离将根据手环步数计算。</string>
+    <string name="day_nearby_title">允许“附近设备”权限</string>
+    <string name="day_nearby_text">unstrap 需要“附近设备”权限来查找并连接你的手环。Android 不会再次询问，请在 unstrap 的系统设置中开启“权限”。</string>
+    <string name="day_nearby_title_location">允许位置权限</string>
+    <string name="day_nearby_text_location">在 Android 11 上，unstrap 需要位置权限来查找并连接你的手环。应用不会使用你的位置信息。Android 不会再次询问，请在 unstrap 的设置中前往「权限」开启。</string>
+    <string name="day_nearby_open_settings">打开设置</string>
+    <string name="day_nearby_not_now">暂不</string>
+    <string name="day_pull_sync_failed">无法同步。%1$s</string>
+    <string name="day_pull_not_connected">手环未连接。</string>
+    <string name="day_pull_syncing">正在同步手环…</string>
+    <string name="day_pull_release">松开同步手环</string>
+    <string name="day_pull_pull">下拉同步手环</string>
+</resources>

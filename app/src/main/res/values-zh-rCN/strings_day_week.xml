@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="day_week_active_minutes">
+        <item quantity="one">%1$d 活跃分钟</item>
+        <item quantity="other">%1$d 活跃分钟</item>
+    </plurals>
+    <string name="day_week_asleep">已睡 %1$s</string>
+    <plurals name="day_week_busiest">
+        <item quantity="one">%2$s 活动量最高，共 %1$s 步。</item>
+        <item quantity="other">%2$s 活动量最高，共 %1$s 步。</item>
+    </plurals>
+    <string name="day_week_workouts_none">这周和上周都没有运动记录。</string>
+    <plurals name="day_week_workouts_same">
+        <item quantity="one">%1$d 次运动，与上周持平。</item>
+        <item quantity="other">%1$d 次运动，与上周持平。</item>
+    </plurals>
+    <plurals name="day_week_workouts_more">
+        <item quantity="one">%1$d 次运动，比上周多 %2$d 次。</item>
+        <item quantity="other">%1$d 次运动，比上周多 %2$d 次。</item>
+    </plurals>
+    <plurals name="day_week_workouts_fewer">
+        <item quantity="one">%1$d 次运动，比上周少 %2$d 次。</item>
+        <item quantity="other">%1$d 次运动，比上周少 %2$d 次。</item>
+    </plurals>
+    <string name="day_week_steps_up">步数比上周增加 %1$d%%。</string>
+    <string name="day_week_steps_down">步数比上周减少 %1$d%%。</string>
+    <string name="day_week_steps_steady">步数与上周基本持平。</string>
+    <string name="day_week_label">每日步数，%1$s</string>
+    <string name="day_week_nothing">无记录</string>
+</resources>

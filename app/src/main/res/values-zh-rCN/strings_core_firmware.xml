@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_firmware_part_firmware">固件</string>
+    <string name="core_firmware_part_resources">图片与文字</string>
+    <string name="core_firmware_part_base_resources">基础图片与文字</string>
+    <string name="core_firmware_part_extra_resources">附加图片与文字</string>
+    <string name="core_firmware_part_font">字体包</string>
+    <string name="core_firmware_part_gps">GPS</string>
+</resources>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="workout_zones_title">心率区间</string>
+    <string name="workout_zones_max_title">你的最大心率</string>
+    <string name="workout_zones_set_it">自行设定</string>
+    <string name="workout_zones_learn_it">重新学习</string>
+    <string name="workout_zones_note">各运动项目共用相同区间。区间目标与区间时长均以此为依据，负荷计算则采用你的最大心率。轻点某个区间可调整其上下限。</string>
+    <string name="workout_zones_you_line_max">最大心率 %1$d bpm，各运动共用相同区间</string>
+    <string name="workout_zones_you_line">各运动共用相同区间</string>
+    <string name="workout_zones_max_row">最大心率</string>
+    <string name="workout_zones_profile_set">%1$d bpm，由你设定</string>
+    <string name="workout_zones_profile_worked_out">根据你的年龄和运动记录计算得出</string>
+    <string name="workout_zones_source_set">由你设定</string>
+    <string name="workout_zones_source_learned_on">根据全力运动记录学习得出，%1$s</string>
+    <string name="workout_zones_source_learned">根据全力运动记录学习得出</string>
+    <string name="workout_zones_source_age">目前根据年龄推算，待有更高强度运动数据后将更新</string>
+    <string name="workout_zones_source_strap">目前取自你的 Zepp 个人资料，待有更高强度运动数据后将更新</string>
+    <string name="workout_zones_source_guess">初始预估值。请补充你的年龄，或自行设定。</string>
+    <string name="workout_zones_zone_name">%1$d 区</string>
+    <string name="workout_zones_bpm_range">%1$d 至 %2$d</string>
+    <string name="workout_zones_bpm_up">%1$d 及以上</string>
+    <string name="workout_zones_starts_at">起始于</string>
+    <string name="workout_zones_ends_at">结束于</string>
+    <string name="workout_zones_edges_first">调整其结束值会同步改变 2 区的起始值。</string>
+    <string name="workout_zones_edges_last">5 区上限为你的最大心率。调整其起始值会同步改变 4 区的结束值。</string>
+    <string name="workout_zones_edges_other">调整区间边界会同步改变相邻区间。</string>
+    <string name="workout_zones_reset">恢复默认区间</string>
+    <string name="workout_zones_set_title">你的最大心率</string>
+    <string name="workout_zones_set_note">来自全力以赴的测试或比赛。各区间将以此为准。</string>
+    <string name="workout_zones_set_field">最大心率</string>
+    <string name="workout_zones_save">保存</string>
+</resources>

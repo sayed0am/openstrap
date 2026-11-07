@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="day_calories_row_line">活动目标 %1$s。总计 %2$s</string>
+    <string name="day_calories_row_line_met">活动已达标。总计 %1$s</string>
+    <string name="day_calories_day_label_today">今日截至目前的活动千卡</string>
+    <string name="day_calories_day_label">活动千卡</string>
+    <string name="day_calories_to_goal">距离 %2$s 目标还差 %1$s</string>
+    <string name="day_calories_to_goal_met">已达成 %1$s 目标</string>
+    <string name="day_calories_peak">峰值在 %1$s，%2$s kcal</string>
+    <string name="day_calories_hour_label">活动千卡，%1$s</string>
+    <string name="day_calories_source_workout_line">%1$s，%2$s</string>
+    <string name="day_calories_source_walking">步行</string>
+    <string name="day_calories_source_everyday">日常活动</string>
+    <string name="day_calories_source_everyday_line">站立、家务与日常走动</string>
+    <string name="day_calories_walking_none">运动之外无步行</string>
+    <plurals name="day_calories_walking">
+        <item quantity="one">运动之外步行或跑步 %1$d 分钟</item>
+        <item quantity="other">运动之外步行或跑步 %1$d 分钟</item>
+    </plurals>
+    <string name="day_calories_range_label_year">日均活动千卡，过去 12 个月</string>
+    <plurals name="day_calories_range_label">
+        <item quantity="one">日均活动千卡，过去 %1$d 天</item>
+        <item quantity="other">日均活动千卡，过去 %1$d 天</item>
+    </plurals>
+    <string name="day_calories_goal_days">%2$s中有 %1$d 天达标</string>
+    <plurals name="day_calories_days">
+        <item quantity="one">%1$d 天</item>
+        <item quantity="other">%1$d 天</item>
+    </plurals>
+    <string name="day_calories_vs_year">相比前一年</string>
+    <plurals name="day_calories_vs_days">
+        <item quantity="one">相比前 %1$d 天</item>
+        <item quantity="other">相比前 %1$d 天</item>
+    </plurals>
+    <string name="day_calories_range_workouts">运动占了你活动千卡的 %1$d%%。其余来自步行与日常活动。</string>
+    <string name="day_calories_range_busiest">你活动量最高的一天是 %1$s，达到 %2$s 活动千卡。</string>
+    <string name="day_calories_in_your_day_phone_today">本次%1$s占今日 %3$s 活动千卡中的 %2$s。当日数据按相同数值计入。</string>
+    <string name="day_calories_in_your_day_phone_yesterday">本次%1$s占昨日 %3$s 活动千卡中的 %2$s。当日数据按相同数值计入。</string>
+    <string name="day_calories_in_your_day_phone_that_day">本次%1$s占当天 %3$s 活动千卡中的 %2$s。当日数据按相同数值计入。</string>
+    <string name="day_calories_in_your_day_strap_today">本次%1$s占今日 %3$s 活动千卡中的 %2$s。当日数据按手环自身数值计入。</string>
+    <string name="day_calories_in_your_day_strap_yesterday">本次%1$s占昨日 %3$s 活动千卡中的 %2$s。当日数据按手环自身数值计入。</string>
+    <string name="day_calories_in_your_day_strap_that_day">本次%1$s占当天 %3$s 活动千卡中的 %2$s。当日数据按手环自身数值计入。</string>
+</resources>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_unit_meters">%1$s m</string>
+    <string name="core_unit_km">%1$s km</string>
+    <string name="core_unit_minutes">%1$s 分钟</string>
+    <string name="core_unit_hours">%1$s 小时</string>
+    <string name="core_unit_hours_minutes">%1$s 小时 %2$s 分</string>
+    <string name="core_unit_seconds">%1$s 秒</string>
+    <string name="core_unit_pace">%1$s/km</string>
+    <string name="core_unit_kcal">%1$s kcal</string>
+    <string name="core_unit_bpm">bpm</string>
+    <string name="core_unit_ms">ms</string>
+    <string name="core_unit_celsius">°C</string>
+    <string name="core_unit_breaths">br/min</string>
+    <string name="core_unit_steps">步</string>
+    <string name="core_unit_lb">%1$d lb</string>
+    <string name="core_unit_kg">%1$d kg</string>
+    <string name="core_unit_feet_inches">%1$d′%2$d″</string>
+    <string name="core_unit_cm">%1$d cm</string>
+    <string name="core_range">%1$s 到 %2$s</string>
+</resources>

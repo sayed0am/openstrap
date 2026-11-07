@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_tag_personal_best">个人最佳</string>
+    <string name="glow_tag_best_month">本月最佳</string>
+    <string name="glow_tag_double_goal">双倍达标</string>
+    <string name="glow_tag_past_goal">超出目标 +%1$s</string>
+    <plurals name="glow_tag_in_a_row">
+        <item quantity="one">连续 %d 天</item>
+        <item quantity="other">连续 %d 天</item>
+    </plurals>
+    <string name="glow_tag_goal_met">已达标</string>
+    <string name="glow_tag_above_normal">高于常态</string>
+    <string name="glow_tag_below_normal">低于常态</string>
+    <string name="glow_tag_above_usual">高于平时</string>
+    <string name="glow_tag_below_usual">低于平时</string>
+    <string name="glow_tag_short">短时</string>
+    <string name="glow_tag_long">长振</string>
+    <string name="glow_tag_later">偏晚</string>
+    <string name="glow_tag_earlier">偏早</string>
+    <string name="glow_tag_older">偏大</string>
+    <string name="glow_tag_younger">偏小</string>
+    <string name="glow_tag_more_than_usual">多于平时</string>
+    <string name="glow_tag_up">增加</string>
+    <string name="glow_tag_down">减少</string>
+</resources>

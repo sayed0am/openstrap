@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_summary_join">%1$s，%2$s</string>
+    <string name="glow_summary_minutes">%1$d 分钟</string>
+    <string name="glow_summary_unit_s">秒</string>
+    <string name="glow_summary_unit_m">米</string>
+    <string name="glow_summary_unit_avg_bpm">平均 bpm</string>
+    <string name="glow_summary_unit_kg_lifted">kg 负重</string>
+    <plurals name="glow_summary_unit_sets">
+        <item quantity="one">组</item>
+        <item quantity="other">组</item>
+    </plurals>
+    <string name="glow_summary_unit_reps_done">次完成</string>
+    <string name="glow_summary_unit_rounds_done">轮完成</string>
+    <string name="glow_summary_unit_min_played">分钟比赛</string>
+    <string name="glow_summary_unit_s_played">秒比赛</string>
+    <string name="glow_summary_figure_time">时长</string>
+    <string name="glow_summary_figure_avg_bpm">平均心率</string>
+    <string name="glow_summary_figure_active_kcal">活动千卡</string>
+    <string name="glow_summary_figure_avg_pace">平均配速</string>
+    <string name="glow_summary_figure_peak">最高心率</string>
+    <string name="glow_summary_figure_peak_bpm">最高心率</string>
+    <string name="glow_summary_figure_sets">组数</string>
+    <string name="glow_summary_figure_avg_rest">平均休息</string>
+    <string name="glow_summary_figure_rep_time">分段用时</string>
+    <string name="glow_summary_figure_work_time">运动用时</string>
+    <string name="glow_summary_figure_zone_4_5">处于 4 区与 5 区</string>
+    <string name="glow_summary_figure_load">负荷</string>
+    <string name="glow_summary_line_average_bpm">平均 %1$d bpm</string>
+    <string name="glow_summary_line_active_kcal">%1$d 活动千卡</string>
+    <string name="glow_summary_rest_title">休息</string>
+    <string name="glow_summary_recovery_title">休息</string>
+    <string name="glow_summary_each_rep">各组</string>
+    <string name="glow_summary_each_round">各轮</string>
+    <string name="glow_summary_each_half">各半场</string>
+    <string name="glow_summary_each_quarter">各节</string>
+    <string name="glow_summary_each_period">各局</string>
+    <string name="glow_summary_rep_times_time">用时</string>
+    <string name="glow_summary_peak_then_rest">峰值与休息</string>
+    <string name="glow_summary_round_down">减少</string>
+    <plurals name="glow_summary_hard_efforts">
+        <item quantity="one">%d 次高强度发力</item>
+        <item quantity="other">%d 次高强度发力</item>
+    </plurals>
+    <string name="glow_summary_period_avg">平均</string>
+    <string name="glow_summary_route">路线</string>
+    <string name="glow_summary_climb">爬升 %1$d 米</string>
+    <string name="glow_summary_sets_title">组数</string>
+    <string name="glow_summary_peak_heart_rate">最高心率</string>
+    <string name="glow_summary_set_peak">最高 %1$d</string>
+    <string name="glow_summary_time_in_zones">各区间时长</string>
+    <string name="glow_summary_zone_name">%1$d 区，%2$s</string>
+    <string name="glow_summary_zone">%1$d 区</string>
+    <string name="glow_summary_zones_max">最高 %1$d bpm</string>
+    <string name="glow_summary_heart_rate">心率</string>
+    <string name="glow_summary_heart_down">下降 %1$d</string>
+    <string name="glow_summary_at_start">开始时</string>
+    <string name="glow_summary_at_end">结束时</string>
+    <string name="glow_summary_vs_last">较上次：</string>
+    <string name="glow_summary_this_week">本周</string>
+    <string name="glow_summary_that_week">那一周</string>
+    <plurals name="glow_summary_week_days_this">
+        <item quantity="one">本周有 %d 天进行了运动。</item>
+        <item quantity="other">本周有 %d 天进行了运动。</item>
+    </plurals>
+    <plurals name="glow_summary_week_days_that">
+        <item quantity="one">那一周有 %d 天进行了运动。</item>
+        <item quantity="other">那一周有 %d 天进行了运动。</item>
+    </plurals>
+    <string name="glow_summary_earned">获得</string>
+    <string name="glow_summary_drop_title">心率下降</string>
+    <string name="glow_summary_drop_since">自 %1$s 起</string>
+    <string name="glow_summary_drop_about">关于心率恢复</string>
+    <string name="glow_summary_unit_bpm_now">当前 bpm</string>
+    <string name="glow_summary_drop_last_minute">最后一分钟</string>
+    <string name="glow_summary_drop_end">结束</string>
+    <string name="glow_summary_load_title">负荷</string>
+    <string name="glow_summary_load_about">关于负荷与训练效果</string>
+    <string name="glow_summary_load_none">心率数据不足，无法计算负荷。</string>
+    <string name="glow_summary_splits">分段</string>
+    <string name="glow_summary_laps">计圈</string>
+    <string name="glow_summary_fastest_split">最快：%1$s</string>
+    <string name="glow_summary_split_fastest">最快</string>
+    <string name="glow_summary_split_fastest_bpm">最快，平均 %1$d bpm</string>
+    <string name="glow_summary_split_average">平均 %1$d bpm</string>
+    <string name="glow_summary_lap">第 %1$d 圈</string>
+    <plurals name="glow_summary_sets_done">
+        <item quantity="one">已完成 %d 组</item>
+        <item quantity="other">已完成 %d 组</item>
+    </plurals>
+    <string name="glow_summary_set">第 %1$d 组</string>
+    <string name="glow_summary_set_rest">休息 %1$s</string>
+</resources>

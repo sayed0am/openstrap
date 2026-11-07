@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_rewards_best_fastest">最快 %1$s</string>
+    <string name="core_rewards_best_heaviest">最大重量 %1$s</string>
+    <string name="core_rewards_best_longest_run">最长跑步</string>
+    <string name="core_rewards_best_longest_workout">最长运动</string>
+    <string name="core_rewards_best_most_steps">单日最多步数</string>
+    <string name="core_rewards_best_personal">个人最佳</string>
+    <string name="core_rewards_half_marathon">半程马拉松</string>
+    <string name="core_rewards_km">%1$d km</string>
+    <string name="core_rewards_kg">%1$s kg</string>
+    <string name="core_rewards_meters">%1$s m</string>
+    <string name="core_rewards_beat_faster">快了 %1$s</string>
+    <string name="core_rewards_beat_kg_more">增加了 %1$s kg</string>
+    <string name="core_rewards_beat_farther">远了 %1$s</string>
+    <string name="core_rewards_beat_longer">长了 %1$d 分钟</string>
+    <string name="core_rewards_beat_more">多了 %1$s 步</string>
+    <string name="core_rewards_beat_line_faster">比你在 %2$s 的最佳纪录快了 %1$s。</string>
+    <string name="core_rewards_beat_line_kg_more">比你在 %2$s 的最佳纪录增加了 %1$s kg。</string>
+    <string name="core_rewards_beat_line_farther">比你在 %2$s 的最佳纪录远了 %1$s。</string>
+    <string name="core_rewards_beat_line_longer">比你在 %2$s 的最佳纪录长了 %1$d 分钟。</string>
+    <string name="core_rewards_beat_line_more">比你在 %2$s 的最佳纪录多了 %1$s 步。</string>
+    <plurals name="core_rewards_goal_weeks_in_a_row">
+        <item quantity="one">连续 %1$d 周</item>
+        <item quantity="other">连续 %1$d 周</item>
+    </plurals>
+    <string name="core_rewards_goal_met_this_week">本周已达标</string>
+    <plurals name="core_rewards_goal_to_go">
+        <item quantity="one">本周还差 %1$d 次</item>
+        <item quantity="other">本周还差 %1$d 次</item>
+    </plurals>
+    <string name="core_rewards_goal_met">每周目标已达成</string>
+    <string name="core_rewards_goal">每周目标</string>
+    <string name="core_rewards_goal_count">%1$d / %2$d</string>
+    <string name="core_rewards_new_best">新纪录，%1$s</string>
+    <string name="core_rewards_new_badge">新徽章</string>
+    <plurals name="core_rewards_moment_weeks">
+        <item quantity="one">已连续 %1$d 周达标。休息日从不会影响你的记录。</item>
+        <item quantity="other">已连续 %1$d 周达标。休息日从不会影响你的记录。</item>
+    </plurals>
+    <string name="core_rewards_moment_first">这是你第一周达成目标。休息日从不会影响你的记录。</string>
+    <string name="core_rewards_when_morning">%1$s，早间%2$s</string>
+    <string name="core_rewards_when_afternoon">%1$s，下午%2$s</string>
+    <string name="core_rewards_when_evening">%1$s，傍晚%2$s</string>
+    <string name="core_rewards_when_night">%1$s，夜间%2$s</string>
+    <plurals name="core_rewards_run_best_is">
+        <item quantity="one">已连续 %1$d 周达标。你的最佳纪录是 %2$d 周。</item>
+        <item quantity="other">已连续 %1$d 周达标。你的最佳纪录是 %2$d 周。</item>
+    </plurals>
+    <plurals name="core_rewards_run_best_yet">
+        <item quantity="one">已连续 %1$d 周达标，创下你的个人最佳纪录。</item>
+        <item quantity="other">已连续 %1$d 周达标，创下你的个人最佳纪录。</item>
+    </plurals>
+    <plurals name="core_rewards_run_best_was">
+        <item quantity="one">你的最佳纪录是连续 %1$d 周。</item>
+        <item quantity="other">你的最佳纪录是连续 %1$d 周。</item>
+    </plurals>
+    <string name="core_rewards_run_none">达成目标即可开启你的连续周纪录。</string>
+    <string name="core_rewards_progress_km">%1$s/%2$s km</string>
+    <string name="core_rewards_progress_steps">%1$s/%2$s 步</string>
+    <string name="core_rewards_progress_workouts">%1$s/%2$s 次运动</string>
+    <string name="core_rewards_progress_weeks">%1$s/%2$s 周</string>
+    <plurals name="core_rewards_recap">
+        <item quantity="one">完成 %2$d/%1$d 次运动。</item>
+        <item quantity="other">完成 %2$d/%1$d 次运动。</item>
+    </plurals>
+    <plurals name="core_rewards_recap_met">
+        <item quantity="one">完成 %1$d/%2$d 次运动，目标已达成。</item>
+        <item quantity="other">完成 %1$d/%2$d 次运动，目标已达成。</item>
+    </plurals>
+    <plurals name="core_rewards_recap_met_in_a_row">
+        <item quantity="one">完成 %2$d/%3$d 次运动，目标已达成。已连续 %1$d 周达标。</item>
+        <item quantity="other">完成 %2$d/%3$d 次运动，目标已达成。已连续 %1$d 周达标。</item>
+    </plurals>
+</resources>

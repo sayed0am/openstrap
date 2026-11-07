@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_cancel">取消</string>
+    <string name="glow_done">完成</string>
+    <string name="glow_save">保存</string>
+    <string name="glow_close">关闭</string>
+    <string name="glow_delete">删除</string>
+    <string name="glow_continue">继续</string>
+    <string name="glow_share">分享</string>
+    <string name="glow_trim">裁剪</string>
+    <string name="glow_no_reading">暂无读数</string>
+    <string name="glow_loading">正在加载…</string>
+    <string name="glow_unit_bpm">bpm</string>
+    <string name="glow_unit_min">分钟</string>
+    <string name="glow_unit_km">km</string>
+    <string name="glow_no_value">当天无数据</string>
+    <string name="glow_no_night_value">当晚无数据</string>
+    <string name="glow_no_reading_yet">尚无读数</string>
+    <string name="glow_after_next_sync">手环下次同步后</string>
+    <string name="glow_add_profile">添加年龄、体重和身高</string>
+    <string name="glow_no_value_yet">暂无数值</string>
+    <string name="glow_back">返回</string>
+    <string name="glow_page_switch">切换</string>
+    <string name="glow_page_change">更改</string>
+    <string name="glow_tag_about">关于 %1$s</string>
+    <string name="glow_info_how">计算方式</string>
+    <string name="glow_info_moves">影响因素</string>
+    <string name="glow_info_off">为何可能不准</string>
+    <string name="glow_info_fold">折叠</string>
+    <string name="glow_info_open">展开</string>
+    <string name="glow_tabletop_heart_rate">心率</string>
+    <string name="glow_tabletop_latest">最新</string>
+    <string name="glow_tabletop_live">实时</string>
+    <string name="glow_tabletop_resting">静息 %1$d</string>
+    <string name="glow_tabletop_bpm">%1$d bpm</string>
+    <string name="glow_unit_h">小时</string>
+    <string name="glow_unit_s">秒</string>
+</resources>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="glow_metrics_all_metrics">全部指标</string>
+    <string name="glow_metrics_recovery">恢复</string>
+    <string name="glow_metrics_sleep">睡眠</string>
+    <string name="glow_metrics_group_heart">心脏</string>
+    <string name="glow_metrics_group_body">身体信号</string>
+    <string name="glow_metrics_group_activity">活动</string>
+    <string name="glow_metrics_energy">精力</string>
+    <string name="glow_metrics_habit_age">习惯年龄</string>
+    <string name="glow_metrics_heart_rate">心率</string>
+    <string name="glow_metrics_resting_heart_rate">静息心率</string>
+    <string name="glow_metrics_hrv">HRV</string>
+    <string name="glow_metrics_blood_oxygen">血氧</string>
+    <string name="glow_metrics_skin_temperature">皮肤温度</string>
+    <string name="glow_metrics_breathing_rate">呼吸频率</string>
+    <string name="glow_metrics_stress">压力</string>
+    <string name="glow_metrics_steps">步数</string>
+    <string name="glow_metrics_workouts">运动记录</string>
+    <plurals name="glow_metrics_learning_nights">
+        <item quantity="one">正在了解，%1$d/%2$d 晚</item>
+        <item quantity="other">正在了解，%1$d/%2$d 晚</item>
+    </plurals>
+    <string name="glow_metrics_score_for_day">当日分数</string>
+    <string name="glow_metrics_score_for_night">当晚分数</string>
+    <string name="glow_metrics_latest">最新</string>
+    <string name="glow_metrics_end_of_day">日终值</string>
+    <string name="glow_metrics_latest_reading">最新读数</string>
+    <string name="glow_metrics_for_the_day">全天值</string>
+    <string name="glow_metrics_day_average">全天平均</string>
+    <string name="glow_metrics_night_average">睡眠平均</string>
+    <string name="glow_metrics_last_7_days">最近 7 天</string>
+    <string name="glow_metrics_updated_weekly">每周更新</string>
+    <string name="glow_metrics_starting_point">起始基准</string>
+    <string name="glow_metrics_needs_profile">需要出生年份和性别</string>
+    <string name="glow_metrics_not_worked_out">暂无估算</string>
+    <string name="glow_metrics_about">关于 %1$s</string>
+    <string name="glow_metrics_show_day">显示%1$s</string>
+    <string name="glow_metrics_showing">当前显示</string>
+    <string name="glow_metrics_last_7_nights">最近 7 晚</string>
+    <string name="glow_metrics_none_last_7_nights">最近 7 晚暂无数据。</string>
+    <string name="glow_metrics_none_in_range">此范围内暂无数据。</string>
+    <string name="glow_metrics_none_asleep">睡眠期间暂无读数。</string>
+    <string name="glow_metrics_none_this_day">当天暂无数据。</string>
+    <string name="glow_metrics_breathing_in_sleep">呼吸频率在睡眠期间测量。</string>
+    <string name="glow_metrics_unit_day">%1$s，%2$s</string>
+    <string name="glow_metrics_unit_at_time">%1$s 于 %2$s</string>
+    <string name="glow_metrics_at_time">于 %1$s</string>
+    <string name="glow_metrics_steps_hours">步，%1$s</string>
+    <string name="glow_metrics_week_of">%1$s 当周</string>
+    <string name="glow_metrics_related">相关指标</string>
+    <string name="glow_metrics_chart_average">平均 %1$s</string>
+    <string name="glow_metrics_zone_title">%1$s，%2$s</string>
+    <string name="glow_metrics_zone_lower">%1$s调低</string>
+    <string name="glow_metrics_zone_higher">%1$s调高</string>
+    <string name="glow_metrics_zone_bpm">%1$d bpm</string>
+</resources>

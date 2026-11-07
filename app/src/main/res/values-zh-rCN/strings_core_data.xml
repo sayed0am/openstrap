@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_data_recovery_hrv">%1$s ms，相比平时 %2$s%%</string>
+    <string name="core_data_recovery_resting_hr">%1$s bpm，相比平时 %2$s</string>
+    <string name="core_data_recovery_asleep">已睡 %1$s</string>
+    <string name="core_data_recovery_no_debt">无睡眠负债</string>
+    <string name="core_data_recovery_debt">睡眠负债 %1$s</string>
+    <string name="core_data_recovery_lowest_hr">醒前 %1$s 达到最低心率</string>
+    <string name="core_data_recovery_temperature">相比平时 %1$s °C</string>
+    <string name="core_data_recovery_breathing">相比平时 %1$s 次/分钟</string>
+    <string name="core_data_recovery_blood_oxygen">%1$s%%，相比平时 %2$s</string>
+    <string name="core_data_recovery_load">负荷 %1$s，平时 %2$s</string>
+    <string name="core_data_edit_wake_before_sleep">醒来时间必须在入睡时间之后。</string>
+    <string name="core_data_edit_nap_too_short">小睡至少需要 5 分钟。</string>
+    <string name="core_data_edit_sleep_too_short">睡眠至少需要 1 小时。</string>
+    <string name="core_data_edit_nap_too_long">小睡最长不能超过 4 小时。</string>
+    <string name="core_data_edit_sleep_too_long">睡眠最多为 16 小时。</string>
+    <string name="core_data_edit_future">时间不能晚于当前时间。</string>
+    <string name="core_data_edit_too_far">调整范围须在手环记录时间的 3 小时以内。</string>
+    <string name="core_data_edit_runs_into_nap">与你 %1$s 的小睡重叠。</string>
+    <string name="core_data_edit_runs_into_sleep">与你 %1$s 的睡眠重叠。</string>
+    <string name="core_data_vo2_needs_age">年龄须在 20 至 79 岁之间。</string>
+    <string name="core_data_vo2_needs_sex">需要你的性别信息：女性和男性的计算公式不同。</string>
+    <string name="core_data_vo2_needs_body">需要过去 90 天内记录的身高和体重。</string>
+    <string name="core_data_vo2_needs_activity">请回答活动情况问卷（每 6 个月询问一次）。</string>
+    <string name="core_data_vo2_medication">服用 β 受体阻滞剂期间或孕期不显示：此时静息心率无法真实反映体能。</string>
+    <string name="core_data_vo2_needs_resting_hr">需要过去 2 周内至少 5 晚的静息心率数据。</string>
+    <string name="core_data_vo2_band_below_30">低于第 30 百分位数</string>
+    <string name="core_data_vo2_band_30_50">第 30–50 百分位数</string>
+    <string name="core_data_vo2_band_50_70">第 50–70 百分位数</string>
+    <string name="core_data_vo2_band_70_90">第 70–90 百分位数</string>
+    <string name="core_data_vo2_band_top_10">前 %1$d%%</string>
+    <string name="core_data_vo2_estimate_rest">至 %1$s ml/kg/min</string>
+    <string name="core_data_goal_summary">%1$s 步，%2$s 活动千卡，%3$s 睡眠，%4$s 活跃小时</string>
+    <string name="core_data_goal_out_of_range">请输入 %1$s 至 %2$s 之间的数值</string>
+</resources>

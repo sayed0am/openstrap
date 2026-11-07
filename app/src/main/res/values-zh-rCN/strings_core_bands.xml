@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_band_recovery_easy">适当放松</string>
+    <string name="core_band_recovery_moderate">适中</string>
+    <string name="core_band_recovery_ready">准备就绪</string>
+    <string name="core_band_recovery_more">精力充沛</string>
+    <string name="core_band_sleep_poor">较差</string>
+    <string name="core_band_sleep_fair">一般</string>
+    <string name="core_band_sleep_good">良好</string>
+    <string name="core_band_sleep_great">极佳</string>
+    <string name="core_band_load_above">高于你平时</string>
+    <string name="core_band_load_usual">符合常态</string>
+    <string name="core_band_load_below">低于你平时</string>
+    <string name="core_band_load_so_far">今日目前</string>
+</resources>
