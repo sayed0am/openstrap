@@ -219,6 +219,7 @@ class FirmwareViewModel(
     }
 
     fun install(image: ReadyImage) {
+        if (!UPDATES_ENABLED) return fail(strings.get(R.string.you_firmware_install_failed))
         val blocking = blockers()
         if (blocking.isNotEmpty()) return fail(blocking.joinToString(" "))
         _step.value = FirmwareStep.Installing(strings.get(R.string.you_firmware_step_starting), null)
@@ -255,5 +256,12 @@ class FirmwareViewModel(
     companion object {
         /** Zepp's upgrade page refuses at this level or below (07 §1.1). */
         const val MIN_BATTERY = 30
+
+        /**
+         * Off for now: since firmware 3.27.0.1 the strap's own sleep result is empty or wrong on nights it was worn
+         * (2026-11-07), so no more strap updates until that is understood. The Strap page shows the version without
+         * opening this page, and [install] refuses.
+         */
+        const val UPDATES_ENABLED = false
     }
 }
