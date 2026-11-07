@@ -357,6 +357,34 @@ class HistorySyncTest {
         }
     }
 
+    @Test fun `minutes caught up from over a day back are marked, so no nights are made from them`() = runTest {
+        cursors.values[key(HistoryDataType.ACTIVITY)] = now - 3 * day
+        strap.records[HistoryDataType.ACTIVITY.code] = emptyList()
+        runSync()
+        val checked = cursors.values[HistorySync.MINUTES_CHECKED_KEY]
+        assertTrue("$checked", checked != null && checked >= now - 60)
+    }
+
+    @Test fun `minutes from a recent cursor leave no mark`() = runTest {
+        cursors.values[key(HistoryDataType.ACTIVITY)] = now - 3600
+        strap.records[HistoryDataType.ACTIVITY.code] = emptyList()
+        runSync()
+        assertEquals(null, cursors.values[HistorySync.MINUTES_CHECKED_KEY])
+    }
+
+    @Test fun `the strap's sleep results are fetched again once, three weeks back`() = runTest {
+        cursors.values[key(HistoryDataType.SLEEP_RESULT)] = now - 3600
+        strap.records[HistoryDataType.SLEEP_RESULT.code] = emptyList()
+        runSync()
+        val first = strap.starts.first { it.first == HistoryDataType.SLEEP_RESULT.code }.second
+        assertTrue("$first", first in now - 21 * day - 60..now - 21 * day + 60)
+
+        strap.starts.clear()
+        cursors.values[key(HistoryDataType.SLEEP_RESULT)] = now - 3600
+        runSync()
+        assertEquals(now - 3600, strap.starts.first { it.first == HistoryDataType.SLEEP_RESULT.code }.second)
+    }
+
     @Test fun `activity after now stays when the phone's clock went back`() = runTest {
         val ahead = (now + day) / 60 * 60
         // Before 2024: a strap whose clock was never set. That still goes.
