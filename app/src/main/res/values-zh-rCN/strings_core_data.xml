@@ -26,9 +26,9 @@
     <string name="core_data_vo2_medication">服用 β 受体阻滞剂期间或孕期不显示：此时静息心率无法真实反映体能。</string>
     <string name="core_data_vo2_needs_resting_hr">需要过去 2 周内至少 5 晚的静息心率数据。</string>
     <string name="core_data_vo2_band_below_30">低于第 30 百分位数</string>
-    <string name="core_data_vo2_band_30_50">第 30–50 百分位数</string>
-    <string name="core_data_vo2_band_50_70">第 50–70 百分位数</string>
-    <string name="core_data_vo2_band_70_90">第 70–90 百分位数</string>
+    <string name="core_data_vo2_band_30_50">第 30 至 50 百分位数</string>
+    <string name="core_data_vo2_band_50_70">第 50 至 70 百分位数</string>
+    <string name="core_data_vo2_band_70_90">第 70 至 90 百分位数</string>
     <string name="core_data_vo2_band_top_10">前 %1$d%%</string>
     <string name="core_data_vo2_estimate_rest">至 %1$s ml/kg/min</string>
     <string name="core_data_goal_summary">%1$s 步，%2$s 活动千卡，%3$s 睡眠，%4$s 活跃小时</string>
