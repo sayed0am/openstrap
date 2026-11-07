@@ -238,13 +238,13 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 it.int("walk"), it.int("sit"), it.int("steps"), it.int("calories"), it.int("distance_cm"))
         },
         { d, r -> d.insertActivityExtended(r) }),
-    CsvTable("sleep_session.csv", "start,end,start_epoch,end_epoch,nap,score,avg_hr,deep_min,light_min,rem_min,awake_min,wake_count,day_epoch,date",
+    CsvTable("sleep_session.csv", "start,end,start_epoch,end_epoch,nap,score,avg_hr,deep_min,light_min,rem_min,awake_min,wake_count,day_epoch,date,source",
         Key("sleep_session", "start", "start_epoch", span = Span("`end`", "end_epoch")),
         { d, f, t -> d.sleepSessionsOnce(f, t) },
         {
             listOf(iso(it.start), iso(it.end), it.start, it.end, it.nap, it.score, it.averageHeartRate,
                 it.deepMinutes, it.lightMinutes, it.remMinutes, it.awakeMinutes, it.wakeCount, it.strapDate?.let(::legacy) ?: 0,
-                it.strapDate)
+                it.strapDate, it.source)
         },
         {
             val start = it.long("start_epoch"); val end = it.long("end_epoch"); val nap = it.bool("nap")
@@ -252,6 +252,8 @@ val CSV_TABLES: List<CsvTable<*>> = listOf(
                 start, end, sleepDayOf(it, start, end, nap), nap,
                 it.intOrNull("score"), it.intOrNull("avg_hr"), it.intOrNull("deep_min"), it.intOrNull("light_min"),
                 it.intOrNull("rem_min"), it.intOrNull("awake_min"), it.intOrNull("wake_count"),
+                // Backups from before database 30 have no source: those are all the strap's.
+                it.intOrNull("source") ?: SleepSession.FROM_STRAP,
             )
         },
         { d, r -> d.insertSleepSessions(r) }),
