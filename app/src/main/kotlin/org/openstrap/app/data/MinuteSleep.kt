@@ -54,6 +54,20 @@ object MinuteSleep {
     const val MISSING_MINUTES = 90
     const val MIN_STRAP_OVERLAP = 0.6
 
+    /**
+     * A strap sleep with stages is only replaced when at least this share of it lies inside the night from the minutes:
+     * when they are apart, either side can be the wrong one. The strap misplaced its own result after the 3.27 update
+     * (5 November), but minutes fetched long after they were recorded come back hours late too (a week caught up on
+     * 7 November, 6 to 10 hours late), and replacing then deleted right nights. So the strap's stays.
+     */
+    const val MIN_STRAP_INSIDE = 0.8
+
+    /**
+     * A sync that fetches minutes from further back than this is a catch-up, whose minutes may be timed hours wrong
+     * (a strap reboot, such as a firmware update, in between). Nights before it are not made from the minutes.
+     */
+    const val CATCHUP_SECONDS = 24 * 3600L
+
     /** Days looked at after each sync. */
     const val DAYS_BACK = 14L
 
@@ -132,10 +146,11 @@ object MinuteSleep {
     }
 
     /**
-     * Whether [night] should stand in for the strap's main sleep [strap] for the same day: when the strap has none,
-     * when its sleep mostly lies on minutes it marked awake ([MIN_STRAP_COVERAGE]), or when it found only a small part of
-     * the night ([MISSING_MINUTES], [MIN_STRAP_OVERLAP]). [strapAsleepMinutes] is how many minutes inside [strap] are
-     * asleep by the minute signal. A night unstrap made before is always made again.
+     * Whether [night] should stand in for the strap's main sleep [strap] for the same day: when the strap has none, or
+     * when it found only a small part of the night ([MISSING_MINUTES], [MIN_STRAP_OVERLAP]) and lies inside it
+     * ([MIN_STRAP_INSIDE]). A strap sleep without stages is also replaced when it mostly lies on minutes marked awake
+     * ([MIN_STRAP_COVERAGE]); one with stages never is, as the minutes may be the late ones. [strapAsleepMinutes] is how
+     * many minutes inside [strap] are asleep by the minute signal. A night unstrap made before is always made again.
      */
     fun replaces(strap: SleepSession?, strapAsleepMinutes: Int, night: Night): Boolean {
         if (strap == null || strap.fromMinutes) return true
@@ -145,7 +160,8 @@ object MinuteSleep {
         val onAwake = strapAsleepMinutes.toDouble() / strapMinutes < MIN_STRAP_COVERAGE
         val missing = night.asleepMinutes - RecoveryEngine.asleepMinutes(strap)
         val partOnly = missing >= MISSING_MINUTES && overlap / nightMinutes < MIN_STRAP_OVERLAP
-        return onAwake || partOnly
+        val staged = listOf(strap.deepMinutes, strap.lightMinutes, strap.remMinutes).any { (it ?: 0) > 0 }
+        return if (staged) partOnly && overlap / strapMinutes >= MIN_STRAP_INSIDE else onAwake || partOnly
     }
 
     /**
@@ -174,14 +190,17 @@ object MinuteSleep {
     )
 
     /**
-     * Goes over the last [DAYS_BACK] days after a sync and puts in a night from the minutes wherever [replaces] says so.
+     * Goes over the last [DAYS_BACK] days after a sync and puts in a night from the minutes wherever [replaces] says so,
+     * leaving out days whose night starts before [checkedFrom], the end of the last catch-up ([CATCHUP_SECONDS]).
      * Returns the dates it wrote. Idempotent: the strap re-sends a day's result on later syncs, and this replaces it
      * again for as long as the strap's stays wrong, or keeps the strap's once it is right.
      */
-    suspend fun apply(dao: HealthDao, zone: ZoneId, now: Long): List<LocalDate> {
+    suspend fun apply(dao: HealthDao, zone: ZoneId, now: Long, checkedFrom: Long? = null): List<LocalDate> {
         val latest = dao.latestActivity(now) ?: return emptyList()
         val today = Days.date(now, zone)
-        val written = (DAYS_BACK downTo 0).map { today.minusDays(it) }.filter { date ->
+        val days = (DAYS_BACK downTo 0).map { today.minusDays(it) }
+            .filter { checkedFrom == null || Days.start(it, zone) - WINDOW_BEFORE_MIDNIGHT >= checkedFrom }
+        val written = days.filter { date ->
             val session = replacementFor(dao, date, zone, latest)
             if (session != null) dao.replaceSleepDay(date, nap = false, listOf(session), emptyList())
             session != null
