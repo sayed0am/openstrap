@@ -641,7 +641,10 @@ class StrapManager(
     }
 
 
-    override fun setAppVisible(visible: Boolean) = live.setAppVisible(visible)
+    override fun setAppVisible(visible: Boolean) {
+        live.setAppVisible(visible)
+        syncs.setAppVisible(visible)
+    }
 
     override fun setWorkoutActive(active: Boolean) = live.setWorkoutActive(active)
 
