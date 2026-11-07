@@ -47,6 +47,8 @@
     <string name="glow_recovery_body_signals">Body signals</string>
     <!-- The note on the body signals' title row: each is compared with your normal. -->
     <string name="glow_recovery_against_normal">Against your normal</string>
+    <!-- Under the skin temperature card's number (the change from your normal) when last night was within your normal range, where the card has no Above or Below tag. -->
+    <string name="glow_recovery_skin_close">Close to your normal</string>
 
     <!-- Under the Recovery score in the week view. -->
     <string name="glow_recovery_week_average">Average of the last 7 days</string>

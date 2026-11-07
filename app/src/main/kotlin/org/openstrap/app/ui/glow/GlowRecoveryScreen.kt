@@ -438,6 +438,7 @@ private fun SkinTempCard(
             Column(Modifier.weight(1f)) {
                 CardTitle(stringResource(R.string.glow_recovery_skin_temperature))
                 Spacer(Modifier.height(12.dp))
+                // Off your normal the tag says which way, and nothing under the number repeats it.
                 NumberWithTag(tag) {
                     androidx.compose.foundation.layout.Row(verticalAlignment = Alignment.Bottom) {
                         // Against your normal once there is one; until then last night's reading, as the Sleep tab shows it.
@@ -451,12 +452,14 @@ private fun SkinTempCard(
                         )
                     }
                 }
-                Text(
-                    when {
-                        today == null -> waiting
-                        normal == null -> learning ?: TodayCopy.normalWord(null)
-                        else -> stringResource(R.string.glow_recovery_against_normal)
-                    },
+                val line = when {
+                    today == null -> waiting
+                    normal == null || deviation == null -> learning ?: TodayCopy.normalWord(null)
+                    tag != null -> null
+                    else -> stringResource(R.string.glow_recovery_skin_close)
+                }
+                if (line != null) Text(
+                    line,
                     color = Color.White.copy(alpha = GlowType.SECONDARY_ALPHA), style = GlowType.secondary,
                     modifier = Modifier.padding(top = 6.dp), maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
