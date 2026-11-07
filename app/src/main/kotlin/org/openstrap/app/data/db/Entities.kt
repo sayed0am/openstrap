@@ -51,9 +51,22 @@ data class SleepSession(
     val remMinutes: Int? = null,
     val awakeMinutes: Int? = null,
     val wakeCount: Int? = null,
+    /** Who worked this sleep out: [FROM_STRAP], or [FROM_MINUTES] for one unstrap made ([org.openstrap.app.data.MinuteSleep]). */
+    @ColumnInfo(defaultValue = "0") val source: Int = FROM_STRAP,
 ) {
     /** The strap's day for this sleep, null for a row from before v2. */
     val strapDate: LocalDate? get() = day.takeIf { it != 0L }?.let(DayKey::date)
+
+    /** Made by unstrap from the strap's minute data, so it has no stages or strap score. */
+    val fromMinutes: Boolean get() = source == FROM_MINUTES
+
+    companion object {
+        /** The strap's own sleep result (history type 72). */
+        const val FROM_STRAP = 0
+
+        /** unstrap's night from the strap's per-minute sleep signal, when the strap's own result was missing or wrong. */
+        const val FROM_MINUTES = 1
+    }
 }
 
 /**

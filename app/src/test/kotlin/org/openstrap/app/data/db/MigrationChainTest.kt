@@ -30,7 +30,7 @@ class MigrationChainTest {
     @Test fun `every exported version opens at the current one`() = runTest {
         val versions = SourceTree.schemas.listFiles()!!.filter { it.extension == "json" }.map { it.nameWithoutExtension.toInt() }.sorted()
         assertEquals((1..current).toList(), versions)
-        assertEquals(29, current)
+        assertEquals(30, current)
         for (v in 1 until current) {
             val db = harness.open(harness.create(v))
             // Any read opens it, running the migrations and Room's check of the result.

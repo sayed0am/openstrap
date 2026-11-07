@@ -7,11 +7,11 @@ import java.io.File
 
 /**
  * Sleep is read through [SleepSource] (or the repository's wrappers of it), so every screen, widget and model counts
- * the same sleep after a move or a delete (sleep edit spec 3). Only the source itself, the sync that writes the
+ * the same sleep after a move or a delete (sleep edit spec 3). Only the source itself, the sync and [MinuteSleep] that write the
  * strap's sessions and the backup that copies them as they are may read the DAO's sleep sessions or stages.
  */
 class SleepReadersTest {
-    private val allowed = setOf("data/SleepSource.kt", "device/HistorySync.kt", "export/CsvTables.kt", "data/db/Daos.kt")
+    private val allowed = setOf("data/SleepSource.kt", "device/HistorySync.kt", "data/MinuteSleep.kt", "export/CsvTables.kt", "data/db/Daos.kt")
 
     /** A call of a sleep session or stage read, with what it's called on. */
     private val call = Regex("""(\w+)(\(\))?\.sleep(Sessions|Stages)\w*\(""")
