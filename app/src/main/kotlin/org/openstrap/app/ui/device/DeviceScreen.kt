@@ -62,6 +62,7 @@ import org.openstrap.app.ui.alarms.alarmsSummary
 import org.openstrap.app.ui.alarms.healthAlertsSummary
 import org.openstrap.app.ui.alarms.phoneAlertsSummary
 import org.openstrap.app.ui.dashboard.agoText
+import org.openstrap.app.ui.firmware.FirmwareViewModel
 import org.openstrap.app.ui.glow.draw.CoreShape
 import org.openstrap.app.ui.glow.DestructiveInk
 import org.openstrap.app.ui.glow.HeroValue
@@ -251,12 +252,16 @@ fun DeviceScreen(
                     icon = AppIcons.PersonSimpleRun,
                 )
                 KeepConnectedRow(vm, keepConnected, device.address)
-                PageRow(
-                    stringResource(R.string.you_strap_row_firmware),
-                    info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware
-                        ?: stringResource(R.string.you_strap_check_for_updates),
-                    onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == PageRowKeys.FIRMWARE,
-                )
+                val firmware = info?.firmware ?: (connection as? ConnectionState.Connected)?.firmware
+                if (FirmwareViewModel.UPDATES_ENABLED) {
+                    PageRow(
+                        stringResource(R.string.you_strap_row_firmware),
+                        firmware ?: stringResource(R.string.you_strap_check_for_updates),
+                        onClick = onFirmware, icon = AppIcons.Cpu, selected = selected == PageRowKeys.FIRMWARE,
+                    )
+                } else if (firmware != null) {
+                    PageRow(stringResource(R.string.you_strap_row_firmware), firmware, icon = AppIcons.Cpu)
+                }
                 PageRow(
                     stringResource(R.string.you_strap_row_zepp),
                     stringResource(if (zeppSignedIn) R.string.you_strap_signed_in else R.string.you_strap_not_signed_in),
