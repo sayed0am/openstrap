@@ -76,11 +76,9 @@
     <string name="core_today_evening_one_row">一次划船</string>
     <string name="core_today_evening_one_workout">一次运动</string>
     <plurals name="core_today_evening_workouts">
-        <item quantity="one">%d 次运动</item>
         <item quantity="other">%d 次运动</item>
     </plurals>
     <plurals name="core_today_evening_steps">
-        <item quantity="one">%1$s 步</item>
         <item quantity="other">%1$s 步</item>
     </plurals>
     <string name="core_today_evening_load_above">高于你平时的负荷</string>
@@ -95,15 +93,12 @@
     <string name="core_today_bedtime_in">距离入睡还有 %1$s</string>
     <string name="core_today_recovered">已恢复</string>
     <plurals name="core_today_recover_by">
-        <item quantity="one">小时后恢复，预计 %1$s</item>
         <item quantity="other">小时后恢复，预计 %1$s</item>
     </plurals>
     <plurals name="core_today_recover_tomorrow">
-        <item quantity="one">小时后恢复，预计明天</item>
         <item quantity="other">小时后恢复，预计明天</item>
     </plurals>
     <plurals name="core_today_recover_day">
-        <item quantity="one">小时后恢复，预计 %1$s</item>
         <item quantity="other">小时后恢复，预计 %1$s</item>
     </plurals>
     <string name="core_today_recover_short_by">预计在 %1$s 恢复</string>

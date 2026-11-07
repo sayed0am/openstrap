@@ -29,7 +29,6 @@
     <string name="workout_start_open_sets_note">组数不限。休息结束时手环会振动提醒。</string>
     <string name="workout_start_strength_typing">先输入组数，再输入休息秒数</string>
     <plurals name="workout_start_sets">
-        <item quantity="one">%d 组</item>
         <item quantity="other">%d 组</item>
     </plurals>
     <string name="workout_start_end_rest_early">提前结束休息</string>
@@ -70,11 +69,9 @@
     <string name="workout_start_every">每 %1$s</string>
     <string name="workout_start_total_line">总计 %1$s</string>
     <plurals name="workout_start_structure_timed">
-        <item quantity="one">%1$d / %2$d，%3$d 轮</item>
         <item quantity="other">%1$d / %2$d，%3$d 轮</item>
     </plurals>
     <plurals name="workout_start_structure_every">
-        <item quantity="one">每 %1$s，%2$d 轮</item>
         <item quantity="other">每 %1$s，%2$d 轮</item>
     </plurals>
     <string name="workout_start_structure_reps">%1$d × %2$s</string>
@@ -87,7 +84,6 @@
     <string name="workout_start_halves">上下半场</string>
     <string name="workout_start_quarters">四节</string>
     <plurals name="workout_start_periods">
-        <item quantity="one">%1$d 节</item>
         <item quantity="other">%1$d 节</item>
     </plurals>
     <string name="workout_start_half_1">上半场</string>

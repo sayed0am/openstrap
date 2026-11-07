@@ -12,7 +12,6 @@
     <string name="glow_celebrate_recap_line">周一早晨发送一条通知，回顾你过去一周的情况</string>
     <string name="glow_celebrate_history_title">来自你过往的运动</string>
     <plurals name="glow_celebrate_history_badges">
-        <item quantity="one">已获得 %d 枚徽章。新徽章将在运动后的总结中展示。</item>
         <item quantity="other">已获得 %d 枚徽章。新徽章将在运动后的总结中展示。</item>
     </plurals>
 </resources>

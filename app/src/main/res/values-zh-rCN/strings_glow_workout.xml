@@ -44,7 +44,6 @@
     <string name="glow_workout_facts_title">运动</string>
     <string name="glow_workout_list_title">运动记录</string>
     <plurals name="glow_workout_list_recorded">
-        <item quantity="one">已记录 %d 项</item>
         <item quantity="other">已记录 %d 项</item>
     </plurals>
     <string name="glow_workout_list_empty">暂无运动记录</string>

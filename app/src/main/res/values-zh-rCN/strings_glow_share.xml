@@ -14,7 +14,6 @@
     <string name="glow_share_unit_per_km">/km</string>
     <string name="glow_share_unit_kg">kg</string>
     <plurals name="glow_share_sets">
-        <item quantity="one">%d 组</item>
         <item quantity="other">%d 组</item>
     </plurals>
     <string name="glow_share_row_reps">%1$d × %2$d</string>
@@ -22,11 +21,9 @@
     <string name="glow_share_unit_reps">次</string>
     <string name="glow_share_unit_rounds">轮</string>
     <plurals name="glow_share_unit_of_reps">
-        <item quantity="one">/%1$d 次</item>
         <item quantity="other">/%1$d 次</item>
     </plurals>
     <plurals name="glow_share_unit_of_rounds">
-        <item quantity="one">/%1$d 轮</item>
         <item quantity="other">/%1$d 轮</item>
     </plurals>
     <string name="glow_share_my_week">我的一周</string>

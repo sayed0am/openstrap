@@ -15,7 +15,6 @@
     <string name="glow_choose_no_match">没有找到与“%1$s”匹配的运动。</string>
     <string name="glow_choose_clear">清除</string>
     <plurals name="glow_choose_sports_count">
-        <item quantity="one">%d 项运动</item>
         <item quantity="other">%d 项运动</item>
     </plurals>
     <string name="glow_ready_bpm_live">bpm，手环实时读数</string>
@@ -34,7 +33,6 @@
     <string name="glow_ready_unit_s_off">秒休息</string>
     <string name="glow_ready_unit_s_a_round">秒/轮</string>
     <plurals name="glow_ready_rounds_description">
-        <item quantity="one">%1$d 轮，%2$d 秒运动，%3$d 秒休息</item>
         <item quantity="other">%1$d 轮，%2$d 秒运动，%3$d 秒休息</item>
     </plurals>
 </resources>

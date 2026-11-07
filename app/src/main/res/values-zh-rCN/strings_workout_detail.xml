@@ -70,7 +70,6 @@
     <string name="workout_detail_where_strap">来自手环，在运动期间实时计算。</string>
     <string name="workout_detail_strap_one">手环也记录了本次运动。其自带数据为：%1$s。</string>
     <plurals name="workout_detail_strap_many">
-        <item quantity="one">手环自身将其记录为 %d 次运动。</item>
         <item quantity="other">手环自身将其记录为 %d 次运动。</item>
     </plurals>
     <string name="workout_detail_strap_from">自%1$s起：%2$s。</string>

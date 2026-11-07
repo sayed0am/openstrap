@@ -7,7 +7,6 @@
     <string name="glow_summary_unit_avg_bpm">平均 bpm</string>
     <string name="glow_summary_unit_kg_lifted">kg 负重</string>
     <plurals name="glow_summary_unit_sets">
-        <item quantity="one">组</item>
         <item quantity="other">组</item>
     </plurals>
     <string name="glow_summary_unit_reps_done">次完成</string>
@@ -39,7 +38,6 @@
     <string name="glow_summary_peak_then_rest">峰值与休息</string>
     <string name="glow_summary_round_down">减少</string>
     <plurals name="glow_summary_hard_efforts">
-        <item quantity="one">%d 次高强度发力</item>
         <item quantity="other">%d 次高强度发力</item>
     </plurals>
     <string name="glow_summary_period_avg">平均</string>
@@ -60,11 +58,9 @@
     <string name="glow_summary_this_week">本周</string>
     <string name="glow_summary_that_week">那一周</string>
     <plurals name="glow_summary_week_days_this">
-        <item quantity="one">本周有 %d 天进行了运动。</item>
         <item quantity="other">本周有 %d 天进行了运动。</item>
     </plurals>
     <plurals name="glow_summary_week_days_that">
-        <item quantity="one">那一周有 %d 天进行了运动。</item>
         <item quantity="other">那一周有 %d 天进行了运动。</item>
     </plurals>
     <string name="glow_summary_earned">获得</string>
@@ -85,7 +81,6 @@
     <string name="glow_summary_split_average">平均 %1$d bpm</string>
     <string name="glow_summary_lap">第 %1$d 圈</string>
     <plurals name="glow_summary_sets_done">
-        <item quantity="one">已完成 %d 组</item>
         <item quantity="other">已完成 %d 组</item>
     </plurals>
     <string name="glow_summary_set">第 %1$d 组</string>

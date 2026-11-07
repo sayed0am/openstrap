@@ -12,17 +12,14 @@
     <string name="you_backup_failure_cant_write">unstrap 无法写入该文件夹。</string>
     <string name="you_backup_failure_other">请重试，或等待明天的备份。</string>
     <plurals name="you_backup_restored_records_settings">
-        <item quantity="one">已恢复 %1$s 条记录和你的设置。</item>
         <item quantity="other">已恢复 %1$s 条记录和你的设置。</item>
     </plurals>
     <plurals name="you_backup_restored_records">
-        <item quantity="one">已恢复 %1$s 条记录。</item>
         <item quantity="other">已恢复 %1$s 条记录。</item>
     </plurals>
     <string name="you_backup_restored_settings">已恢复你的设置。你的记录已存在。</string>
     <string name="you_backup_restored_nothing">无需恢复。全部数据已在此处。</string>
     <plurals name="you_backup_restored_skipped">
-        <item quantity="one">有 %1$s 条记录无法读取。</item>
         <item quantity="other">有 %1$s 条记录无法读取。</item>
     </plurals>
     <string name="you_backup_restored_with_skipped">%1$s%2$s</string>
@@ -65,15 +62,12 @@
     <string name="you_hc_store_failed">无法打开 Play 商店。</string>
     <string name="you_hc_restored_none">Health Connect 中没有可恢复的 unstrap 数据。</string>
     <plurals name="you_hc_restored">
-        <item quantity="one">已从 Health Connect 恢复 %1$s 条记录。</item>
         <item quantity="other">已从 Health Connect 恢复 %1$s 条记录。</item>
     </plurals>
     <plurals name="you_hc_wrote">
-        <item quantity="one">已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
         <item quantity="other">已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
     </plurals>
     <plurals name="you_hc_auto_wrote">
-        <item quantity="one">自动复制已开启。已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
         <item quantity="other">自动复制已开启。已将 %1$d 条记录复制到 Health Connect（最近 30 天）。</item>
     </plurals>
     <string name="you_hc_restore_failed">无法从 Health Connect 恢复</string>

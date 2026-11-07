@@ -5,7 +5,6 @@
     <string name="glow_tag_double_goal">双倍达标</string>
     <string name="glow_tag_past_goal">超出目标 +%1$s</string>
     <plurals name="glow_tag_in_a_row">
-        <item quantity="one">连续 %d 天</item>
         <item quantity="other">连续 %d 天</item>
     </plurals>
     <string name="glow_tag_goal_met">已达标</string>

@@ -3,6 +3,7 @@
     <string name="glow_sleep_breathing_title">呼吸紊乱</string>
     <string name="glow_sleep_last_night">昨晚</string>
     <string name="glow_sleep_restore">恢复</string>
+    <string name="glow_sleep_from_minutes">手环未记录这一晚的数据，因此 unstrap 根据手环每分钟记录的内容重建了睡眠。你可以查看起止时间与清醒次数，但没有睡眠阶段。</string>
     <string name="glow_sleep_stage_span">%1$s，%2$s，%3$d 分钟</string>
     <string name="glow_sleep_vitals_title">夜间体征</string>
     <string name="glow_sleep_vitals_note">对比你的常态</string>

@@ -45,7 +45,6 @@
     <string name="workout_summary_when_day">%1$s %2$s</string>
     <string name="workout_summary_set_reps_kg">%1$d × %2$s kg</string>
     <plurals name="workout_summary_set_reps">
-        <item quantity="one">%1$d 次</item>
         <item quantity="other">%1$d 次</item>
     </plurals>
     <string name="workout_summary_rest">你的心率平均在 %2$s 内降至 %1$d 以下。</string>
@@ -63,11 +62,9 @@
     <string name="workout_summary_game_stronger">你收尾时的发挥比开局更强劲。</string>
     <string name="workout_summary_game_kept_up">你的运动强度一直保持到了最后。</string>
     <plurals name="workout_summary_week_goal_met">
-        <item quantity="one">本周已运动 %1$d 次，已达标。</item>
         <item quantity="other">本周已运动 %1$d 次，已达标。</item>
     </plurals>
     <plurals name="workout_summary_week_goal_more">
-        <item quantity="one">本周已运动 %1$d 次，距离目标还差 %2$d 次。</item>
         <item quantity="other">本周已运动 %1$d 次，距离目标还差 %2$d 次。</item>
     </plurals>
     <string name="workout_summary_mostly_zone">主要在 %1$d 区</string>

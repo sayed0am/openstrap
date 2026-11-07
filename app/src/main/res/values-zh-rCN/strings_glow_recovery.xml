@@ -21,6 +21,7 @@
     <string name="glow_recovery_stress">压力</string>
     <string name="glow_recovery_body_signals">身体信号</string>
     <string name="glow_recovery_against_normal">对比你的常态</string>
+    <string name="glow_recovery_skin_close">接近你的常态</string>
     <string name="glow_recovery_week_average">最近 7 天平均</string>
     <string name="glow_recovery_no_scores">暂无分数</string>
     <string name="glow_recovery_in_last_7_days">最近 7 天</string>

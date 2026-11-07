@@ -58,7 +58,6 @@
     <string name="you_firmware_download_failed">下载失败</string>
     <string name="you_firmware_install_failed">安装失败</string>
     <plurals name="you_firmware_file_size">
-        <item quantity="one">该文件大小为 %1$d 字节，不太可能是有效的固件镜像。</item>
         <item quantity="other">该文件大小为 %1$d 字节，不太可能是有效的固件镜像。</item>
     </plurals>
     <string name="you_firmware_file_untrusted">此文件并非来自 Zepp 针对该手环的更新服务器。请仅安装你信任的文件。</string>
@@ -67,7 +66,6 @@
     <string name="you_firmware_file_unread">无法读取该文件。请重新选择。</string>
     <string name="you_firmware_wrong_product">镜像显示其适用于产品 %1$d，但当前手环为产品 %2$d。</string>
     <plurals name="you_firmware_wrong_size">
-        <item quantity="one">文件大小小于镜像标明的大小（%1$d 字节）。文件可能不完整。</item>
         <item quantity="other">文件大小小于镜像标明的大小（%1$d 字节）。文件可能不完整。</item>
     </plurals>
     <string name="you_firmware_block_connect">请连接手环。</string>
@@ -115,7 +113,6 @@
     <string name="you_zepp_not_found">该账号下未找到 Helio Strap</string>
     <string name="you_zepp_account_empty">该账号下没有设备。请先在 Zepp 应用中绑定手环。如果已经绑定，请使用 Zepp 应用所用账号的邮箱登录。</string>
     <plurals name="you_zepp_account_other_devices">
-        <item quantity="one">该账号下有 %1$d 台设备，但不是 Amazfit Helio Strap。请先在 Zepp 应用中绑定手环，然后重新登录。</item>
         <item quantity="other">该账号下有 %1$d 台设备，但都不是 Amazfit Helio Strap。请先在 Zepp 应用中绑定手环，然后重新登录。</item>
     </plurals>
     <string name="you_zepp_key_missing">不在当前账号下</string>

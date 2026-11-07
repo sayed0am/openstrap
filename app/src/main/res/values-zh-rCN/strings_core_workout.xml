@@ -36,7 +36,6 @@
     <string name="core_workout_rest_rule_below">时间到或心率持续低于 %1$d bpm 时结束休息。</string>
     <string name="core_workout_set_weight">%1$d × %2$s kg</string>
     <plurals name="core_workout_set_reps">
-        <item quantity="one">%1$d 次</item>
         <item quantity="other">%1$d 次</item>
     </plurals>
     <string name="core_workout_set_peak">峰值 %1$d</string>

@@ -50,7 +50,6 @@
     <string name="glow_today_alert_other">手环提示异常的读数</string>
     <string name="glow_today_alerts_title">来自你的手环</string>
     <plurals name="glow_today_alerts_more">
-        <item quantity="one">今日还有 %d 条提醒</item>
         <item quantity="other">今日还有 %d 条提醒</item>
     </plurals>
     <string name="glow_today_alert_at">%2$s %1$s。</string>
@@ -69,7 +68,6 @@
     <string name="glow_today_workout_zone">主要在 %1$d 区</string>
     <string name="glow_today_week_title">你的一周</string>
     <plurals name="glow_today_week_at_goal">
-        <item quantity="one">%2$d 天中有 %1$d 天达标</item>
         <item quantity="other">%2$d 天中有 %1$d 天达标</item>
     </plurals>
     <string name="glow_today_week_steps_more">比上一周步数多 %1$d%%。</string>

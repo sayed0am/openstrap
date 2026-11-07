@@ -25,7 +25,6 @@
     <string name="you_alarms_summary_all_off">全部关闭</string>
     <string name="you_alarms_summary_first">%1$s%2$s</string>
     <plurals name="you_alarms_summary_more">
-        <item quantity="one">%2$s，另有 %1$d 项</item>
         <item quantity="other">%2$s，另有 %1$d 项</item>
     </plurals>
     <string name="you_health_summary_both">心率与血氧</string>

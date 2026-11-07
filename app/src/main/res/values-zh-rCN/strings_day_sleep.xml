@@ -90,18 +90,15 @@
     <string name="day_sleep_deleted_name_nap">小睡，%1$s</string>
     <string name="day_sleep_deleted_name_night">%1$s 夜间</string>
     <plurals name="day_sleep_deleted_line">
-        <item quantity="one">%2$s\n剩余 %1$d 天</item>
         <item quantity="other">%2$s\n剩余 %1$d 天</item>
     </plurals>
     <string name="day_sleep_still_nap">心率保持在 %1$d bpm，与静坐时类似。这可能不是小睡。</string>
     <plurals name="day_sleep_deleted_count">
-        <item quantity="one">%1$d 项可恢复</item>
         <item quantity="other">%1$d 项可恢复</item>
     </plurals>
     <string name="day_sleep_vital_no_sleep">未记录到睡眠</string>
     <string name="day_sleep_vital_no_reading">暂无读数</string>
     <plurals name="day_sleep_vital_learning">
-        <item quantity="one">正在了解，%1$d/%2$d 晚</item>
         <item quantity="other">正在了解，%1$d/%2$d 晚</item>
     </plurals>
     <string name="day_sleep_vital_lowest_heart">最低心率</string>

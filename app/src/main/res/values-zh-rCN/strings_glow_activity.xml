@@ -23,7 +23,6 @@
     <string name="glow_activity_distance">距离</string>
     <string name="glow_activity_workouts">运动记录</string>
     <plurals name="glow_activity_this_day">
-        <item quantity="one">当天 %d 次</item>
         <item quantity="other">当天 %d 次</item>
     </plurals>
     <string name="glow_activity_no_workouts">暂无运动记录</string>
@@ -47,15 +46,12 @@
     <string name="glow_activity_minutes_on">分钟，%1$s</string>
     <string name="glow_activity_needs_heart_day">需要全天的心率数据</string>
     <plurals name="glow_activity_load_average">
-        <item quantity="one">日均，近 %d 天</item>
         <item quantity="other">日均，近 %d 天</item>
     </plurals>
     <plurals name="glow_activity_in_last_days">
-        <item quantity="one">近 %d 天内</item>
         <item quantity="other">近 %d 天内</item>
     </plurals>
     <plurals name="glow_activity_no_load">
-        <item quantity="one">近 %d 天暂无负荷记录。</item>
         <item quantity="other">近 %d 天暂无负荷记录。</item>
     </plurals>
     <string name="glow_activity_from_workouts">来自运动</string>
@@ -81,15 +77,12 @@
     <string name="glow_activity_recovered_after">在%1$s（%2$s）之后</string>
     <string name="glow_activity_recover_ready">准备就绪</string>
     <plurals name="glow_activity_blocks_of">
-        <item quantity="one">%1$d / %2$d 分钟</item>
         <item quantity="other">%1$d / %2$d 分钟</item>
     </plurals>
     <plurals name="glow_activity_block_is">
-        <item quantity="one">每格代表 %1$d 分钟</item>
         <item quantity="other">每格代表 %1$d 分钟</item>
     </plurals>
     <plurals name="glow_activity_hours_to_go">
-        <item quantity="one">小时恢复所需</item>
         <item quantity="other">小时恢复所需</item>
     </plurals>
     <string name="glow_activity_recent_workouts">近期运动</string>

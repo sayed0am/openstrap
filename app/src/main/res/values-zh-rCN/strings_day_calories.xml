@@ -14,22 +14,18 @@
     <string name="day_calories_source_everyday_line">站立、家务与日常走动</string>
     <string name="day_calories_walking_none">运动之外无步行</string>
     <plurals name="day_calories_walking">
-        <item quantity="one">运动之外步行或跑步 %1$d 分钟</item>
         <item quantity="other">运动之外步行或跑步 %1$d 分钟</item>
     </plurals>
     <string name="day_calories_range_label_year">日均活动千卡，过去 12 个月</string>
     <plurals name="day_calories_range_label">
-        <item quantity="one">日均活动千卡，过去 %1$d 天</item>
         <item quantity="other">日均活动千卡，过去 %1$d 天</item>
     </plurals>
     <string name="day_calories_goal_days">%2$s中有 %1$d 天达标</string>
     <plurals name="day_calories_days">
-        <item quantity="one">%1$d 天</item>
         <item quantity="other">%1$d 天</item>
     </plurals>
     <string name="day_calories_vs_year">相比前一年</string>
     <plurals name="day_calories_vs_days">
-        <item quantity="one">相比前 %1$d 天</item>
         <item quantity="other">相比前 %1$d 天</item>
     </plurals>
     <string name="day_calories_range_workouts">运动占了你活动千卡的 %1$d%%。其余来自步行与日常活动。</string>

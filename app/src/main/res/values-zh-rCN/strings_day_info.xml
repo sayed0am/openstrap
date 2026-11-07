@@ -11,19 +11,15 @@
     <string name="day_info_scale_habit_same">与你同龄</string>
     <string name="day_info_scale_habit_older">比你年长</string>
     <plurals name="day_info_normal_waiting_nights">
-        <item quantity="one">积累 %1$d 晚有效数据后将显示你的常态，目前已有 %2$d 晚。</item>
         <item quantity="other">积累 %1$d 晚有效数据后将显示你的常态，目前已有 %2$d 晚。</item>
     </plurals>
     <plurals name="day_info_normal_waiting_days">
-        <item quantity="one">积累 %1$d 天有效数据后将显示你的常态，目前已有 %2$d 天。</item>
         <item quantity="other">积累 %1$d 天有效数据后将显示你的常态，目前已有 %2$d 天。</item>
     </plurals>
     <plurals name="day_info_normal_line_nights">
-        <item quantity="one">你当前处于此处。你的常态为 %2$s，基于 %1$d 晚数据。</item>
         <item quantity="other">你当前处于此处。你的常态为 %2$s，基于 %1$d 晚数据。</item>
     </plurals>
     <plurals name="day_info_normal_line_days">
-        <item quantity="one">你当前处于此处。你的常态为 %2$s，基于 %1$d 天数据。</item>
         <item quantity="other">你当前处于此处。你的常态为 %2$s，基于 %1$d 天数据。</item>
     </plurals>
     <string name="day_info_here">你在这里。</string>
@@ -71,7 +67,6 @@
     <string name="day_info_recovery_how">每天早晨，unstrap 会将你的夜间数据与你自己的常态进行对比，而非与他人对比：包括心率变异性（HRV）、静息心率、皮肤温度、呼吸频率和血氧，昨晚及过去几晚的睡眠，以及昨天的活动强度。约一半的分数来自 HRV 和静息心率，约四分之一来自睡眠。只要有一项指标严重偏离你的常态就会限制整体分数，因此仅靠睡个好觉无法完全弥补。所有数据均在此手机上根据手环数据计算。</string>
     <string name="day_info_recovery_moves">优质睡眠、轻松的日常和没有饮酒的夜晚能提升它；高强度训练、睡眠不足、深夜进食、压力和生病则会压低它。</string>
     <plurals name="day_info_recovery_off">
-        <item quantity="one">它需要 %1$d 个良好记录的夜晚开始计算，并在 %2$d 个夜晚后趋于稳定。夜间手环佩戴过松或未佩戴，或者有效 HRV 读数太少，都会使参考依据不足，此时可能会由手环自身的读数替代。</item>
         <item quantity="other">它需要 %1$d 个良好记录的夜晚开始计算，并在 %2$d 个夜晚后趋于稳定。夜间手环佩戴过松或未佩戴，或者有效 HRV 读数太少，都会使参考依据不足，此时可能会由手环自身的读数替代。</item>
     </plurals>
     <string name="day_info_energy_meaning">你当前的精力，范围从 0 到 100。睡眠为你补充精力，白天活动则消耗它。</string>
@@ -130,7 +125,6 @@
     <string name="day_info_calories_note_partial">仅涵盖了 %1$s 的佩戴数据，因此只是当天的一部分。</string>
     <string name="day_info_calories_note_unusual">对于一整天而言，该总消耗量显得有些异常。请检查你的个人资料以及手环佩戴情况。</string>
     <plurals name="day_info_calories_note_heart_rate">
-        <item quantity="one">有 %1$d 分钟来自心率测量而非步数。</item>
         <item quantity="other">有 %1$d 分钟来自心率测量而非步数。</item>
     </plurals>
     <string name="day_info_night_heart_rate">从夜间睡眠中打开时，仅显示你的睡眠数据：从入睡到醒来的心率曲线、睡眠中的最低心率以及手环记录的整夜平均值。“月”与“年”视图则为全天完整数据。</string>
@@ -155,7 +149,6 @@
     <string name="day_info_disturbances_last_night">昨晚每小时 %1$.1f 次。</string>
     <string name="day_info_disturbances_that_night">那晚每小时 %1$.1f 次。</string>
     <plurals name="day_info_disturbances_learning">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 晚。</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 晚。</item>
     </plurals>
     <string name="day_info_disturbances_usual">你平时为 %1$.1f。</string>

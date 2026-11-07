@@ -15,7 +15,6 @@
     <string name="workout_live_figure_climb">累计爬升 (m)</string>
     <string name="workout_live_figure_rounds_done">已完成轮数</string>
     <plurals name="workout_live_figure_sets_done">
-        <item quantity="one">已完成</item>
         <item quantity="other">已完成</item>
     </plurals>
     <string name="workout_live_figure_kg_lifted">总负重 (kg)</string>
@@ -58,14 +57,12 @@
     <string name="workout_live_done_of">已完成 %1$d/%2$d</string>
     <string name="workout_live_warm_up">热身</string>
     <plurals name="workout_live_all_reps_done">
-        <item quantity="one">已完成 %1$d 次</item>
         <item quantity="other">已完成全部 %1$d 次</item>
     </plurals>
     <string name="workout_live_then_rest">随后休息 %1$s</string>
     <string name="workout_live_last_rep">最后一次</string>
     <string name="workout_live_rep_next">接下来第 %1$d 次</string>
     <plurals name="workout_live_reps_after">
-        <item quantity="one">随后进行 %1$d 次</item>
         <item quantity="other">随后进行 %1$d 次</item>
     </plurals>
     <string name="workout_live_rep_word">%1$s 间歇</string>
@@ -110,17 +107,14 @@
     <string name="workout_live_heart_rate_down">心率 %1$d，已下降 %2$d</string>
     <string name="workout_live_add_10_s">+10 秒</string>
     <plurals name="workout_live_rounds_after">
-        <item quantity="one">随后 %1$d 轮</item>
         <item quantity="other">随后 %1$d 轮</item>
     </plurals>
     <string name="workout_live_rounds_start_hint">准备好后即可开始各轮训练</string>
     <plurals name="workout_live_all_rounds_done">
-        <item quantity="one">已完成 %1$d 轮</item>
         <item quantity="other">全部 %1$d 轮已完成</item>
     </plurals>
     <string name="workout_live_start_rounds">开始各轮训练</string>
     <plurals name="workout_live_rounds_done_description">
-        <item quantity="one">已完成 %1$d 轮，共 %2$d 轮</item>
         <item quantity="other">已完成 %1$d 轮，共 %2$d 轮</item>
     </plurals>
     <string name="workout_live_peaks_title">每轮峰值心率</string>
@@ -142,7 +136,6 @@
     <string name="workout_live_sets_add_30_s">+30 秒</string>
     <string name="workout_live_sets_start_set">开始第 %1$d 组</string>
     <plurals name="workout_live_sets_all_done">
-        <item quantity="one">已完成 %1$d 组。长按方块结束，或继续训练。</item>
         <item quantity="other">已完成全部 %1$d 组。长按方块结束，或继续训练。</item>
     </plurals>
     <string name="workout_live_sets_in_this_set">本组用时</string>
@@ -157,11 +150,9 @@
     <string name="workout_live_sets_next_set_exercise">第 %1$d 组，%2$s</string>
     <string name="workout_live_sets_falling_description">本组结束后的心率变化</string>
     <plurals name="workout_live_sets_dots_description">
-        <item quantity="one">已完成 %1$d 组</item>
         <item quantity="other">已完成 %1$d 组</item>
     </plurals>
     <plurals name="workout_live_sets_dots_description_to_go">
-        <item quantity="one">已完成 %1$d 组，还剩 %2$d 组</item>
         <item quantity="other">已完成 %1$d 组，还剩 %2$d 组</item>
     </plurals>
     <string name="workout_live_sets_name_it">命名动作</string>

@@ -11,11 +11,9 @@
     <string name="glow_healthspan_effect_off_half">减少约半年</string>
     <string name="glow_healthspan_effect_adds_half">增加约半年</string>
     <plurals name="glow_healthspan_effect_off_years">
-        <item quantity="one">减少约 %d 岁</item>
         <item quantity="other">减少约 %d 岁</item>
     </plurals>
     <plurals name="glow_healthspan_effect_adds_years">
-        <item quantity="one">增加约 %d 岁</item>
         <item quantity="other">增加约 %d 岁</item>
     </plurals>
     <string name="glow_healthspan_no_vo2max">运动中暂无 VO2 max 记录，按同龄常态计算</string>
@@ -39,7 +37,6 @@
     <string name="glow_healthspan_updated_today">今天已更新，下次更新于周日</string>
     <string name="glow_healthspan_updated_tomorrow">周日已更新，下次更新在明天</string>
     <plurals name="glow_healthspan_updated_next">
-        <item quantity="one">周日已更新，下次更新还有 %d 天</item>
         <item quantity="other">周日已更新，下次更新还有 %d 天</item>
     </plurals>
     <string name="glow_healthspan_updated_weekly">每周更新，于周日</string>

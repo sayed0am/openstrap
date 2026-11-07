@@ -22,28 +22,23 @@
     <string name="you_section_your_data">你的数据</string>
     <string name="you_section_help">帮助</string>
     <plurals name="you_goals_and_bests_line">
-        <item quantity="one">每周 %1$d 次运动、个人最佳与徽章</item>
         <item quantity="other">每周 %1$d 次运动、个人最佳与徽章</item>
     </plurals>
     <plurals name="you_diagnostics_line">
-        <item quantity="one">%1$d 行，用于反馈问题</item>
         <item quantity="other">%1$d 行，用于反馈问题</item>
     </plurals>
     <string name="you_footer">unstrap %1$s。所有数据仅保留在本手机上。</string>
     <string name="you_goals_line">%1$s，%2$s，%3$s</string>
     <plurals name="you_goals_steps">
-        <item quantity="one">%1$s 步</item>
         <item quantity="other">%1$s 步</item>
     </plurals>
     <string name="you_goals_active_kcal">%1$s 活动千卡</string>
     <plurals name="you_goals_active_hours">
-        <item quantity="one">%1$d 活跃小时</item>
         <item quantity="other">%1$d 活跃小时</item>
     </plurals>
     <string name="you_sleep_goal_line">%1$s。你的睡眠需求为 %2$s</string>
     <string name="you_profile_empty">添加年龄和性别，以便更准确地计算负荷与恢复</string>
     <plurals name="you_profile_age">
-        <item quantity="one">%1$d 岁</item>
         <item quantity="other">%1$d 岁</item>
     </plurals>
     <string name="you_profile_summary_female">女</string>
@@ -90,7 +85,6 @@
     <string name="you_goals_workouts_fewer">减少每周运动次数</string>
     <string name="you_goals_workouts_more">增加每周运动次数</string>
     <plurals name="you_goals_workouts_value">
-        <item quantity="one">每周 %1$d 次</item>
         <item quantity="other">每周 %1$d 次</item>
     </plurals>
     <string name="you_goals_workouts_note">10 分钟及以上的运动计入统计，每天最多 2 次。</string>
@@ -118,7 +112,6 @@
     <string name="you_diagnostics_clip_label">unstrap 日志</string>
     <string name="you_diagnostics_log">手环日志</string>
     <plurals name="you_diagnostics_lines">
-        <item quantity="one">%1$d 行</item>
         <item quantity="other">%1$d 行</item>
     </plurals>
     <string name="you_diagnostics_empty">暂无事件。</string>

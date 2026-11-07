@@ -20,7 +20,6 @@
     <string name="workout_glance_figure_effort">强度</string>
     <string name="workout_glance_effort_of_5">%1$d / 5</string>
     <plurals name="workout_glance_figure_sets_done">
-        <item quantity="one">已完成</item>
         <item quantity="other">已完成</item>
     </plurals>
     <string name="workout_glance_pause">暂停</string>
@@ -71,11 +70,9 @@
     <string name="workout_glance_warming_up">热身中，%1$s</string>
     <string name="workout_glance_start_rounds">开始轮次</string>
     <plurals name="workout_glance_all_reps_done">
-        <item quantity="one">已完成 %1$d 次</item>
         <item quantity="other">已完成全部 %1$d 次</item>
     </plurals>
     <plurals name="workout_glance_all_rounds_done">
-        <item quantity="one">已完成 %1$d 轮</item>
         <item quantity="other">已完成全部 %1$d 轮</item>
     </plurals>
     <string name="workout_glance_fastest_was">目前最快为第 %1$d 公里。</string>

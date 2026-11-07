@@ -5,19 +5,15 @@
     <string name="core_detail_status_usual">符合常态</string>
     <string name="core_detail_band_label">你的常态，%1$s 到 %2$s</string>
     <plurals name="core_detail_learning_nights">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 晚</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 晚</item>
     </plurals>
     <plurals name="core_detail_learning_days">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 天</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 天</item>
     </plurals>
     <plurals name="core_detail_learning_nights_sentence">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 晚。</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 晚。</item>
     </plurals>
     <plurals name="core_detail_learning_days_sentence">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 天。</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 天。</item>
     </plurals>
     <string name="core_detail_number_0">0</string>
@@ -31,11 +27,9 @@
     <string name="core_detail_number_8">8</string>
     <string name="core_detail_number_9">9</string>
     <plurals name="core_detail_nights">
-        <item quantity="one">%1$s 晚</item>
         <item quantity="other">%1$s 晚</item>
     </plurals>
     <plurals name="core_detail_days">
-        <item quantity="one">%1$s 天</item>
         <item quantity="other">%1$s 天</item>
     </plurals>
     <string name="core_detail_label_bpm_now">当前 bpm</string>
@@ -94,19 +88,15 @@
     <string name="core_detail_every_day_month">过去 30 天内每天均在你的常态范围内。</string>
     <string name="core_detail_every_day_with_data_month">过去 30 天内有数据的每天均在你的常态范围内。</string>
     <plurals name="core_detail_inside_nights">
-        <item quantity="one">%2$d 晚中有 %1$d 晚在你的常态范围内。</item>
         <item quantity="other">%2$d 晚中有 %1$d 晚在你的常态范围内。</item>
     </plurals>
     <plurals name="core_detail_inside_nights_month">
-        <item quantity="one">过去 30 天内，%2$d 晚中有 %1$d 晚在你的常态范围内。</item>
         <item quantity="other">过去 30 天内，%2$d 晚中有 %1$d 晚在你的常态范围内。</item>
     </plurals>
     <plurals name="core_detail_inside_days">
-        <item quantity="one">%2$d 天中有 %1$d 天在你的常态范围内。</item>
         <item quantity="other">%2$d 天中有 %1$d 天在你的常态范围内。</item>
     </plurals>
     <plurals name="core_detail_inside_days_month">
-        <item quantity="one">过去 30 天内，%2$d 天中有 %1$d 天在你的常态范围内。</item>
         <item quantity="other">过去 30 天内，%2$d 天中有 %1$d 天在你的常态范围内。</item>
     </plurals>
     <string name="core_detail_year_unit">过去 12 个月内，周平均值在 %1$s 到 %2$s %3$s 之间。</string>
@@ -120,7 +110,6 @@
     <string name="core_detail_recovery_no_sleep">当晚没有记录到睡眠</string>
     <string name="core_detail_recovery_learning">正在了解</string>
     <plurals name="core_detail_recovery_nights">
-        <item quantity="one">%1$d/%2$d 晚</item>
         <item quantity="other">%1$d/%2$d 晚</item>
     </plurals>
     <string name="core_detail_recovery_no_score">暂无分数</string>

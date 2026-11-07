@@ -8,7 +8,6 @@
     <string name="core_tab_vs_yesterday_down">较昨日 −%1$d</string>
     <string name="core_tab_same_as_yesterday">与昨日相同</string>
     <plurals name="core_tab_learning_nights">
-        <item quantity="one">正在了解，%1$d/%2$d 晚</item>
         <item quantity="other">正在了解，%1$d/%2$d 晚</item>
     </plurals>
     <string name="core_tab_factor_hrv">HRV</string>
@@ -64,7 +63,6 @@
     <string name="core_tab_asleep">已睡 %1$s</string>
     <string name="core_tab_slept_through">整夜未醒</string>
     <plurals name="core_tab_woke">
-        <item quantity="one">醒来 1 次</item>
         <item quantity="other">醒来 %d 次</item>
     </plurals>
     <string name="core_tab_regularity_needs">需要佩戴约 5 天</string>
@@ -72,12 +70,10 @@
     <string name="core_tab_regularity_moved">本周入睡时间有所变动</string>
     <string name="core_tab_usual_times">通常在 %1$s 入睡，%2$s 起床。</string>
     <plurals name="core_tab_breathing_learning">
-        <item quantity="one">正在了解你的常态，%1$d/%2$d 晚</item>
         <item quantity="other">正在了解你的常态，%1$d/%2$d 晚</item>
     </plurals>
     <string name="core_tab_breathing_usual">你平时为每小时 %1$s 次</string>
     <plurals name="core_tab_breathing_short_learning">
-        <item quantity="one">正在了解，%1$d/%2$d 晚</item>
         <item quantity="other">正在了解，%1$d/%2$d 晚</item>
     </plurals>
     <string name="core_tab_breathing_short_usual">平时 %1$s，早期预估</string>
@@ -98,19 +94,16 @@
     <string name="core_tab_mostly_awake">主要为清醒状态</string>
     <string name="core_tab_nothing_yet">暂无</string>
     <plurals name="core_tab_naps_title">
-        <item quantity="one">小睡</item>
         <item quantity="other">小睡</item>
     </plurals>
     <string name="core_tab_nap_at">于 %1$s</string>
     <plurals name="core_tab_naps_first_at">
-        <item quantity="one">%1$d 次小睡，首次于 %2$s</item>
         <item quantity="other">%1$d 次小睡，首次于 %2$s</item>
     </plurals>
     <string name="core_tab_last_7_days">最近 7 天</string>
     <string name="core_tab_auto_detected">自动识别</string>
     <string name="core_tab_fact_average_bpm">平均 %1$d bpm</string>
     <plurals name="core_tab_fact_sets">
-        <item quantity="one">%d 组</item>
         <item quantity="other">%d 组</item>
     </plurals>
     <string name="core_tab_fact_distance_pace">%1$s，%2$s</string>
@@ -121,11 +114,9 @@
     <string name="core_tab_age_for_now_waiting">目前显示你的实际年龄。%1$s</string>
     <string name="core_tab_habit_age_likely">预计 %1$d 至 %2$d 岁</string>
     <plurals name="core_tab_habit_age_younger">
-        <item quantity="one">比上周年轻 %d 岁</item>
         <item quantity="other">比上周年轻 %d 岁</item>
     </plurals>
     <plurals name="core_tab_habit_age_older">
-        <item quantity="one">比上周大 %d 岁</item>
         <item quantity="other">比上周大 %d 岁</item>
     </plurals>
     <string name="core_tab_habit_age_same">与上周相同</string>

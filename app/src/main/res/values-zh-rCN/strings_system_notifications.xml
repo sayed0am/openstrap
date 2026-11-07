@@ -65,7 +65,6 @@
     <string name="system_strength_strap_gone">%1$s。仍在记录。</string>
     <string name="system_strength_bpm">%1$d bpm</string>
     <plurals name="system_strength_sets">
-        <item quantity="one">%1$d/%2$d 组</item>
         <item quantity="other">%1$d/%2$d 组</item>
     </plurals>
     <string name="system_strength_action_start_set">开始第 %1$d 组</string>
